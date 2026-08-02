@@ -873,7 +873,7 @@ export function analyzeDataset(raw: RawDataset): DashboardData {
 
   const languageMap = new Map<
     string,
-    Omit<LanguageMetric, 'share'>
+    Omit<LanguageMetric, 'share' | 'footprintShare'>
   >()
   for (const repo of repositories) {
     const rawRepository = repoMap.get(repo.key)
@@ -908,11 +908,16 @@ export function analyzeDataset(raw: RawDataset): DashboardData {
     (sum, language) => sum + language.activityWeight,
     0,
   )
+  const totalLanguageBytes = [...languageMap.values()].reduce(
+    (sum, language) => sum + language.bytes,
+    0,
+  )
   const languages = [...languageMap.values()]
     .map((language) => ({
       ...language,
       activityWeight: rounded(language.activityWeight, 1),
-      share: rounded(language.activityWeight / Math.max(1, totalLanguageWeight), 3),
+      share: language.activityWeight / Math.max(1, totalLanguageWeight),
+      footprintShare: language.bytes / Math.max(1, totalLanguageBytes),
     }))
     .sort((a, b) => b.activityWeight - a.activityWeight)
 

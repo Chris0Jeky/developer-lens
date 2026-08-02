@@ -12,6 +12,11 @@ describe('analyzeDataset', () => {
     expect(dashboard.summary.mergedPullRequests).toBeGreaterThan(0)
     expect(dashboard.repositories).toHaveLength(4)
     expect(dashboard.languages[0]?.share).toBeGreaterThan(0)
+    expect(dashboard.languages[0]?.footprintShare).toBeGreaterThan(0)
+    expect(dashboard.languages.reduce((sum, language) => sum + language.share, 0)).toBeCloseTo(1, 2)
+    expect(
+      dashboard.languages.reduce((sum, language) => sum + language.footprintShare, 0),
+    ).toBeCloseTo(1, 2)
     expect(dashboard.insights.some((insight) => insight.order === 1)).toBe(true)
     expect(dashboard.insights.some((insight) => insight.order === 2)).toBe(true)
     expect(dashboard.archetype.signals).toHaveLength(3)
@@ -122,5 +127,17 @@ describe('analyzeDataset', () => {
     ]
 
     expect(analyzeDataset(raw).meta.coverageScore).toBe(83)
+  })
+
+  it('preserves a real language share below one tenth of one percent', () => {
+    const raw = createDemoDataset('6m')
+    raw.repositories[0].languages = [
+      { name: 'TypeScript', color: '#3178c6', size: 99_999 },
+      { name: 'TeX', color: '#3d6117', size: 1 },
+    ]
+
+    const tiny = analyzeDataset(raw).languages.find((language) => language.name === 'TeX')
+    expect(tiny?.share).toBeGreaterThan(0)
+    expect(tiny?.footprintShare).toBeGreaterThan(0)
   })
 })

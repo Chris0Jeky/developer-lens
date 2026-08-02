@@ -11,7 +11,7 @@ import {
   X,
 } from 'lucide-react'
 import type { DashboardData } from '../../shared/types'
-import { compactNumber, formatDuration, percentage } from '../lib/format'
+import { compactNumber, formatDuration, percentage, precisePercentage } from '../lib/format'
 import { LensLogo } from './LensLogo'
 
 interface WrappedExperienceProps {
@@ -205,10 +205,10 @@ export function WrappedExperience({ data, onClose, open }: WrappedExperienceProp
                   key={language.name}
                   style={{
                     borderColor: language.color,
-                    flexGrow: Math.max(0.08, language.share),
+                    flexGrow: language.share,
                   }}
                 >
-                  {language.name} · {Math.round(language.share * 100)}%
+                  {language.name} · {precisePercentage(language.share)}
                 </span>
               ))}
             </div>

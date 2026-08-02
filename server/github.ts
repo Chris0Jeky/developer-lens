@@ -376,10 +376,25 @@ function fromRestRepository(repository: RestRepository): RawRepository {
           color: undefined,
         }
       : undefined,
-    languages: repository.language
-      ? [{ name: repository.language, size: 1 }]
-      : [],
+    // REST exposes only a primary-language label, not byte composition. Keep
+    // this empty so it can never overwrite richer GraphQL language edges.
+    languages: [],
     topics: repository.topics ?? [],
+  }
+}
+
+export function mergeRepositoryData(
+  existing: RawRepository,
+  repository: RawRepository,
+): RawRepository {
+  return {
+    ...existing,
+    ...repository,
+    description: repository.description ?? existing.description,
+    primaryLanguage: repository.primaryLanguage ?? existing.primaryLanguage,
+    languages:
+      repository.languages.length > 0 ? repository.languages : existing.languages,
+    topics: repository.topics.length > 0 ? repository.topics : existing.topics,
   }
 }
 
@@ -388,19 +403,10 @@ function setRepository(
   repository: RawRepository,
 ): void {
   const existing = repositories.get(repository.nameWithOwner)
-  if (!existing) {
-    repositories.set(repository.nameWithOwner, repository)
-    return
-  }
-  repositories.set(repository.nameWithOwner, {
-    ...existing,
-    ...repository,
-    description: repository.description ?? existing.description,
-    primaryLanguage: repository.primaryLanguage ?? existing.primaryLanguage,
-    languages:
-      repository.languages.length > 0 ? repository.languages : existing.languages,
-    topics: repository.topics.length > 0 ? repository.topics : existing.topics,
-  })
+  repositories.set(
+    repository.nameWithOwner,
+    existing ? mergeRepositoryData(existing, repository) : repository,
+  )
 }
 
 export function classifyCommit(message: string): RawCommit['features'] {

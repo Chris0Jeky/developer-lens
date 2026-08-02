@@ -19,6 +19,14 @@ export function percentage(value: number): string {
   return `${Math.round(value * 100)}%`
 }
 
+export function precisePercentage(value: number): string {
+  const percent = value * 100
+  if (percent === 0) return '0%'
+  if (percent < 0.1) return '<0.1%'
+  if (percent < 10) return `${percent.toFixed(1).replace(/\.0$/, '')}%`
+  return `${Math.round(percent)}%`
+}
+
 export function formatRange(from: string, to: string): string {
   return `${format(parseISO(from), 'd MMM yyyy')} — ${format(parseISO(to), 'd MMM yyyy')}`
 }

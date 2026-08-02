@@ -41,6 +41,7 @@ export interface LanguageMetric {
   activityWeight: number
   repositoryCount: number
   share: number
+  footprintShare: number
 }
 
 export interface RepositoryMetric {
