@@ -2656,7 +2656,7 @@ button.heatmap__cell[aria-pressed="true"] {
   background: #11101b;
   isolation: isolate;
   grid-template-rows: 82px 44px 1fr 72px;
-  overflow: hidden;
+  overflow: clip;
 }
 
 .wrapped::before,
@@ -2820,10 +2820,12 @@ button.heatmap__cell[aria-pressed="true"] {
   position: absolute;
   z-index: 11;
   top: 72px;
-  left: 50%;
+  right: 0;
+  left: 0;
   display: grid;
   width: min(760px, calc(100% - 40px));
   max-height: min(690px, calc(100vh - 126px));
+  margin: 0 auto;
   padding: 14px;
   border: 1px solid rgba(255, 255, 255, 0.16);
   border-radius: 20px;
@@ -2833,7 +2835,6 @@ button.heatmap__cell[aria-pressed="true"] {
   grid-template-columns: repeat(3, 1fr);
   gap: 7px;
   overflow-y: auto;
-  transform: translateX(-50%);
 }
 
 .wrapped__chapter-menu > div {
