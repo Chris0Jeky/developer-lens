@@ -16,6 +16,8 @@ It is designed for a question that ordinary contribution graphs cannot answer: *
 - Observed facts, derived patterns, and higher-order hypotheses kept visually and semantically distinct.
 - Evidence trails, confidence labels, coverage limitations, and a local-only privacy boundary on every analytical layer.
 - A share studio for social cards, platform-ready post copy, native share sheets, and self-contained HTML reports.
+- Hover, focus, and touch inspectors for activity days, language weighting, repository bubbles, headline metrics, and chart context.
+- An explorable Wrapped story with swipe navigation, a chapter map, per-chapter deeper reads, and chapter-specific sharing.
 
 The deterministic engine in `server/analytics.ts` is the durable product: the initial narrative was shaped with an LLM-assisted analysis pass, then generalized into thresholds and cross-signal rules that can rerun without sending data to an LLM.
 

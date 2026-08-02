@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react'
+import { useCallback, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import {
   Activity,
   ArrowRight,
@@ -112,12 +112,17 @@ function App() {
   const [shareContext, setShareContext] = useState<ShareContext | null>(null)
   const closeWrapped = useCallback(() => setWrappedOpen(false), [])
   const closeShare = useCallback(() => setShareContext(null), [])
+  const followDashboardPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'touch') return
+    event.currentTarget.style.setProperty('--spotlight-x', `${event.clientX}px`)
+    event.currentTarget.style.setProperty('--spotlight-y', `${event.clientY}px`)
+  }, [])
   const { data, error, loading } = useDashboard(range)
   const publicShowcase =
     data?.meta.privacy === 'public-demo' || import.meta.env.VITE_STATIC_DEMO === 'true'
 
   return (
-    <div className="app" id="top">
+    <div className="app" id="top" onPointerMove={followDashboardPointer}>
       <div className="ambient ambient--one" aria-hidden="true" />
       <div className="ambient ambient--two" aria-hidden="true" />
       <header className="app-header">
@@ -215,7 +220,12 @@ function App() {
                   </span>
                 </div>
               </div>
-              <div className="hero-lens" aria-label={`${data.archetype.name} development archetype`}>
+              <button
+                aria-label={`Open Wrapped for ${data.archetype.name}`}
+                className="hero-lens"
+                onClick={() => setWrappedOpen(true)}
+                type="button"
+              >
                 <div className="hero-lens__orbit hero-lens__orbit--outer" />
                 <div className="hero-lens__orbit hero-lens__orbit--inner" />
                 <div className="hero-lens__core">
@@ -236,47 +246,58 @@ function App() {
                   <strong>{data.summary.repositories}</strong>
                   <span>repos</span>
                 </div>
-              </div>
+                <span className="hero-lens__hint">Enter the story <ArrowRight size={13} aria-hidden="true" /></span>
+              </button>
             </section>
 
             <section className="metric-grid" aria-label="Headline development statistics">
               <MetricCard
                 accent="#b79bff"
+                basis="Authored GitHub commits plus deduplicated local-only commits."
                 detail="GitHub-qualified plus local-only commits"
                 href="#rhythm"
                 icon={<GitCommit size={19} />}
+                insight="Continuity signal—not effort or output."
                 label="Observed commits"
                 value={compactNumber(data.summary.commits)}
               />
               <MetricCard
                 accent="#5be5bb"
+                basis="Authored pull requests with an observed merged timestamp."
                 detail={`${percentage(data.summary.mergeRate)} of authored PRs are merged`}
                 href="#delivery"
                 icon={<GitMerge size={19} />}
+                insight="Integration outcomes across the visible system."
                 label="Merged pull requests"
                 value={compactNumber(data.summary.mergedPullRequests)}
               />
               <MetricCard
                 accent="#6fd7ff"
+                basis="Submitted pull-request reviews visible to the authenticated account."
                 detail={`${Math.round(data.summary.reviews / Math.max(1, data.summary.pullRequests) * 10) / 10} reviews per authored PR`}
                 href="#delivery"
                 icon={<MessageSquare size={19} />}
+                insight="A collaboration surface, not a quality score."
                 label="Submitted reviews"
                 value={compactNumber(data.summary.reviews)}
               />
               <MetricCard
                 accent="#ffd166"
+                basis="Calendar days with at least one deduplicated visible event."
                 detail={`${data.summary.longestStreak}-day longest visible run`}
                 href="#rhythm"
                 icon={<Calendar size={19} />}
+                insight="Cadence shape without guessing hours worked."
                 label="Active development days"
                 value={String(data.summary.activeDays)}
               />
               <MetricCard
                 accent="#ff91a4"
+                basis="Repositories attached to commits, PRs, reviews, or issues in range."
                 detail={`${data.summary.privateRepositories} private · ${data.summary.effectiveRepositories} effective`}
                 href="#projects"
                 icon={<Boxes size={19} />}
+                insight="Portfolio breadth before sustained-attention weighting."
                 label="Repositories in motion"
                 value={String(data.summary.repositories)}
               />

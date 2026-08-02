@@ -82,6 +82,7 @@ export function InsightStack({ insights }: { insights: Insight[] }) {
               viewport={{ once: true, margin: '-60px' }}
               transition={{ delay: Math.min(index, 5) * 0.055 }}
               key={insight.id}
+              tabIndex={0}
             >
               <div className="insight-card__meta">
                 <span>

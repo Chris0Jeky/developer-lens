@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { motion, useReducedMotion } from 'framer-motion'
 import { ExternalLink, Lock, Radio } from 'lucide-react'
 import type { RepositoryMetric } from '../../shared/types'
@@ -70,6 +70,7 @@ function shortName(name: string) {
 export function RepoConstellation({ repositories }: RepoConstellationProps) {
   const [lens, setLens] = useState<ConstellationLens>('attention')
   const [selectedKey, setSelectedKey] = useState(repositories[0]?.key)
+  const mapRef = useRef<SVGSVGElement>(null)
   const reduceMotion = useReducedMotion()
   const visible = repositories.slice(0, POSITIONS.length)
   const selected = visible.find((repo) => repo.key === selectedKey) ?? visible[0]
@@ -111,8 +112,9 @@ export function RepoConstellation({ repositories }: RepoConstellationProps) {
 
       <div className="constellation__map">
         <svg
+          ref={mapRef}
           viewBox="0 0 680 420"
-          role="img"
+          role="group"
           aria-label={`Repository constellation sized by ${lensConfig.label.toLowerCase()}`}
         >
           <defs>
@@ -155,9 +157,11 @@ export function RepoConstellation({ repositories }: RepoConstellationProps) {
 
             return (
               <motion.g
+                aria-controls="constellation-detail"
                 aria-label={`${repo.displayName}; ${compactNumber(value)} ${lensConfig.unit}; select for details`}
                 aria-pressed={isSelected}
                 className={`constellation__node${isSelected ? ' is-selected' : ''}`}
+                data-node-index={index}
                 initial={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.45 }}
                 key={repo.key}
                 onClick={() => setSelectedKey(repo.key)}
@@ -166,11 +170,27 @@ export function RepoConstellation({ repositories }: RepoConstellationProps) {
                   if (event.key === 'Enter' || event.key === ' ') {
                     event.preventDefault()
                     setSelectedKey(repo.key)
+                    return
                   }
+                  let target = index
+                  if (event.key === 'ArrowRight' || event.key === 'ArrowDown') target += 1
+                  else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') target -= 1
+                  else if (event.key === 'Home') target = 0
+                  else if (event.key === 'End') target = visible.length - 1
+                  else return
+                  event.preventDefault()
+                  const bounded = Math.max(0, Math.min(visible.length - 1, target))
+                  const next = visible[bounded]
+                  if (!next) return
+                  setSelectedKey(next.key)
+                  window.requestAnimationFrame(() =>
+                    mapRef.current?.querySelector<SVGGElement>(`[data-node-index="${bounded}"]`)?.focus(),
+                  )
                 }}
+                onPointerEnter={() => setSelectedKey(repo.key)}
                 role="button"
                 style={{ transformOrigin: `${x}px ${y}px` }}
-                tabIndex={0}
+                tabIndex={isSelected ? 0 : -1}
                 transition={{
                   delay: reduceMotion ? 0 : index * 0.035,
                   duration: reduceMotion ? 0 : 0.35,
@@ -242,7 +262,7 @@ export function RepoConstellation({ repositories }: RepoConstellationProps) {
         )}
       </div>
 
-      <div className="constellation__detail" aria-live="polite">
+      <div className="constellation__detail" aria-live="polite" id="constellation-detail">
         <div className="constellation__identity">
           <span>Focused system</span>
           <strong>{selected.displayName}</strong>

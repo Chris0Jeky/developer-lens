@@ -19,6 +19,7 @@ interface TooltipEntry {
   dataKey?: string
   name?: string
   value?: number
+  payload?: WeeklyActivity
 }
 
 function PulseTooltip({
@@ -31,6 +32,7 @@ function PulseTooltip({
   payload?: TooltipEntry[]
 }) {
   if (!active || !payload?.length) return null
+  const week = payload[0]?.payload
   return (
     <div className="chart-tooltip">
       <span>Week of {label}</span>
@@ -43,6 +45,12 @@ function PulseTooltip({
             <span>{fullNumber(entry.value ?? 0)}</span>
           </div>
         ))}
+      {week && (
+        <p>
+          {fullNumber(week.total)} total signals · {week.activeDays} active days ·{' '}
+          {week.repositories} {week.repositories === 1 ? 'repository' : 'repositories'}
+        </p>
+      )}
     </div>
   )
 }

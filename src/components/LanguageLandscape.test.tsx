@@ -40,5 +40,9 @@ describe('LanguageLandscape', () => {
       'true',
     )
     expect(screen.getByText('90%')).toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /tiny/i }))
+    expect(screen.getByText(/occupies more of the current footprint/i)).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /tiny/i })).toHaveAttribute('aria-pressed', 'true')
   })
 })

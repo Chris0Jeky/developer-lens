@@ -1,4 +1,4 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { RepositoryMetric } from '../../shared/types'
@@ -42,10 +42,17 @@ describe('repository exploration', () => {
     expect(screen.getByText(/12 mapped · 13 observed/i)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /\+1 more in the ledger/i })).toBeInTheDocument()
 
-    await user.click(screen.getByRole('button', { name: /repository 2;.*select for details/i }))
+    const repositoryTwo = screen.getByRole('button', { name: /repository 2;.*select for details/i })
+    await user.click(repositoryTwo)
     const detail = document.querySelector('.constellation__detail')
     expect(detail).not.toBeNull()
     expect(within(detail as HTMLElement).getByText('Repository 2')).toBeInTheDocument()
+
+    await user.keyboard('{ArrowRight}')
+    expect(within(detail as HTMLElement).getByText('Repository 3')).toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: /repository 3;.*select for details/i })).toHaveFocus(),
+    )
 
     await user.click(screen.getByRole('button', { name: 'PR flow' }))
     expect(screen.getByRole('button', { name: 'PR flow' })).toHaveAttribute('aria-pressed', 'true')

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties } from 'react'
+import { useEffect, useRef, useState, type CSSProperties } from 'react'
 
 const JOURNEY = [
   { id: 'rhythm', number: '01', label: 'Rhythm' },
@@ -16,6 +16,7 @@ function initialSection() {
 
 export function JourneyNav() {
   const [active, setActive] = useState(initialSection)
+  const linksRef = useRef(new Map<string, HTMLAnchorElement>())
   const activeIndex = Math.max(
     0,
     JOURNEY.findIndex((item) => item.id === active),
@@ -50,6 +51,15 @@ export function JourneyNav() {
     }
   }, [])
 
+  useEffect(() => {
+    if (!window.matchMedia('(max-width: 1100px)').matches) return
+    linksRef.current.get(active)?.scrollIntoView({
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+      block: 'nearest',
+      inline: 'center',
+    })
+  }, [active])
+
   return (
     <nav
       aria-label="Dashboard journey"
@@ -64,6 +74,10 @@ export function JourneyNav() {
           href={`#${item.id}`}
           key={item.id}
           onClick={() => setActive(item.id)}
+          ref={(node) => {
+            if (node) linksRef.current.set(item.id, node)
+            else linksRef.current.delete(item.id)
+          }}
         >
           <span>{item.number}</span>
           <strong>{item.label}</strong>

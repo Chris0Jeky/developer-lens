@@ -6,15 +6,19 @@ interface MetricCardProps {
   label: string
   value: string
   detail: string
+  insight: string
+  basis: string
   accent: string
   href?: string
 }
 
 export function MetricCard({
   accent,
+  basis,
   detail,
   href,
   icon,
+  insight,
   label,
   value,
 }: MetricCardProps) {
@@ -29,6 +33,11 @@ export function MetricCard({
       <strong className="metric-card__value">{value}</strong>
       <span className="metric-card__label">{label}</span>
       <p>{detail}</p>
+      <span className="metric-card__peek">
+        <small>How to read it</small>
+        <strong>{insight}</strong>
+        <i>{basis}</i>
+      </span>
     </>
   )
 
