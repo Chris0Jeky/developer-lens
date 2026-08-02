@@ -1,13 +1,20 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { extname, join, resolve } from 'node:path'
+import {
+  DEMO_REPOSITORY_NAMES,
+  isCanonicalDemoRepositoryIdentity,
+} from '../server/demo.js'
 import type { DashboardData, RangeKey } from '../shared/types.js'
 import { buildShareCardSvg } from '../src/lib/shareCardMarkup.js'
+import { createPortableExportPayload } from '../src/lib/portableExportPayload.js'
+import { buildPortableExperienceReport } from '../src/lib/portableExportReport.js'
 import { createShareCaption, createSharePayload } from '../src/lib/sharePayload.js'
 import { buildStandaloneReport } from '../src/lib/standaloneReport.js'
 
 const publicData = resolve('public', 'data')
 const dist = resolve('dist')
 const textExtensions = new Set(['.css', '.html', '.js', '.json', '.map', '.svg', '.txt'])
+const canonicalDemoRepositoryNames = new Set<string>(DEMO_REPOSITORY_NAMES)
 const forbiddenPatterns = [
   { label: 'GitHub token prefix', pattern: /\b(?:github_pat_|gh[pousr]_)\w+/i },
   { label: 'private key material', pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
@@ -37,10 +44,15 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
   assert(dashboard.meta.mode === 'demo', `${range}: mode is not demo`)
   assert(dashboard.meta.subject.login === 'synthetic-builder', `${range}: subject is not synthetic`)
   assert(
+    dashboard.repositories.length === DEMO_REPOSITORY_NAMES.length &&
     dashboard.repositories.every(
-      (repository) => repository.nameWithOwner.startsWith('local/') && !repository.url,
+      (repository) =>
+        isCanonicalDemoRepositoryIdentity(
+          repository.nameWithOwner,
+          repository.displayName,
+        ) && !repository.url,
     ),
-    `${range}: a repository contains a non-synthetic owner or URL`,
+    `${range}: repository identities do not exactly match the canonical synthetic showcase set`,
   )
   assert(
     dashboard.pullRequests.every((pullRequest) => !pullRequest.url),
@@ -67,6 +79,42 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
     `${range}: a pull request title escaped into the public share output`,
   )
   assert(!/<script\b/i.test(shareOutput), `${range}: public share output contains a script`)
+
+  for (const artifact of ['dashboard', 'wrapped'] as const) {
+    const portablePayload = createPortableExportPayload(dashboard, {
+      aliasSeed: `synthetic-showcase-${range}`,
+      artifact,
+      repositoryRedaction: 'private-aliases',
+    })
+    const portableOutput = buildPortableExperienceReport(portablePayload)
+    assert(portablePayload.scope === 'public-demo', `${range}: portable scope is not public-demo`)
+    assert(
+      portablePayload.repositories.length === DEMO_REPOSITORY_NAMES.length &&
+        portablePayload.repositories.every(
+          (repository) =>
+            repository.disclosure === 'synthetic' &&
+            canonicalDemoRepositoryNames.has(repository.label),
+        ),
+      `${range}: a portable repository is not a canonical synthetic showcase identity`,
+    )
+    assert(
+      !dashboard.pullRequests.some((pullRequest) => portableOutput.includes(pullRequest.title)),
+      `${range}: a pull request title escaped into the portable ${artifact}`,
+    )
+    assert(
+      !portableOutput.includes(dashboard.meta.subject.login) &&
+        !portableOutput.includes(dashboard.meta.generatedAt),
+      `${range}: identity or exact generation time escaped into the portable ${artifact}`,
+    )
+    assert(!/<script\b/i.test(portableOutput), `${range}: portable ${artifact} contains a script`)
+    assert(!/<(?:img|link)\b/i.test(portableOutput), `${range}: portable ${artifact} references an asset`)
+    if (artifact === 'wrapped') {
+      assert(
+        portableOutput.includes('data-chapter="9"'),
+        `${range}: portable Wrapped does not contain all nine chapters`,
+      )
+    }
+  }
 }
 
 const socialCard = await readFile(join(dist, 'social-card.png'))
@@ -86,5 +134,5 @@ for (const path of await filesBelow(dist)) {
 }
 
 console.log(
-  'Verified synthetic identities, share/export boundaries, social card dimensions, and secret/path patterns in showcase output.',
+  'Verified synthetic identities, summary and full-experience export boundaries, social card dimensions, and secret/path patterns in showcase output.',
 )
