@@ -212,7 +212,7 @@ function boundary(payload: PortableExportPayload): string {
     <aside class="boundary">
       <span>Portable privacy boundary</span>
       <strong>${escapeHtml(payload.privacyNote)}</strong>
-      <p>${escapeHtml(repositoryRule)} Identity, repository URLs and descriptions, pull-request titles and URLs, exact dates, raw events, warnings, paths, and source prose are not present.</p>
+      <p>${escapeHtml(repositoryRule)} Identity, repository URLs and descriptions, pull-request titles and URLs, exact dates, raw events, warnings, paths, and source prose are not present. Aliases reduce direct identification, but distinctive aggregate patterns can still be recognisable.</p>
     </aside>`
 }
 

@@ -38,14 +38,29 @@ This split keeps the full interface publicly explorable without making a persona
 ## Sharing and export
 
 The public showcase can share its canonical URL immediately. Its social preview, downloadable
-1200 × 630 card, captions, and standalone report are generated from synthetic aggregates only.
+1200 × 630 card, captions, compact report, full dashboard, and complete nine-chapter Wrapped are
+generated from synthetic aggregates only.
 
 The local lens uses a stricter route. Opening Share Studio does not upload anything, and every
 export action stays disabled until you review and acknowledge a redacted preview. The exporter is
-allowlist-based: it can receive aggregate counts and a fixed narrative, but not identity fields,
-repository names or URLs, pull-request titles, exact dates, coverage warnings, or raw events. The
-generated PNG and self-contained HTML file stay on your device until you deliberately download,
-copy, or send them through the operating system share sheet.
+allowlist-based and has two deliberately separate paths:
+
+- Cards, captions, and compact reports receive six aggregate counts and fixed copy.
+- Portable full experiences receive aggregate rhythm, repository, language, delivery, theme, DNA,
+  coverage, and fixed narrative fields through a separate versioned schema. They never serialize
+  the live dashboard, its DOM, its raw insight prose, or the private source dataset.
+
+A portable export can contain the full seven-section dashboard or all nine Wrapped chapters in one
+self-contained, offline HTML file. It uses relative week labels instead of dates, removes identity,
+URLs, descriptions, topics, pull-request titles, source warnings, paths, and raw events, and creates
+a fresh alias map before rendering. By default, public repository names remain visible while private
+names become aliases such as `Project Aurora`; the stronger option aliases every repository name.
+Changing the artifact or redaction choice requires reviewing the export boundary again.
+
+The generated PNG and HTML files stay on your device until you deliberately download, copy, or send
+them through the operating system share sheet. Where a browser cannot share HTML files directly,
+Developer Lens downloads the complete file instead. Aliases reduce direct identification but are
+not an anonymity guarantee: distinctive aggregate activity can still be recognisable.
 
 Developer Lens does not provide a hosted URL for a private dashboard. The public link always opens
 the separate synthetic showcase, so it cannot be mistaken for a published version of local data.

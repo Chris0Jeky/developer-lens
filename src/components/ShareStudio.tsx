@@ -480,6 +480,8 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
                   Excluded: identity, URLs, descriptions, topics, PR titles, exact dates, raw events,
                   filenames, paths, warnings, and arbitrary source insight prose.
                 </p>
+                <p>Fresh aliases reduce direct identification but are not an anonymity guarantee when
+                  a project’s aggregate activity pattern is distinctive.</p>
               </details>
 
               <div className="share-full__actions">
