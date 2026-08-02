@@ -1,6 +1,6 @@
 import {
   differenceInCalendarDays,
-  differenceInHours,
+  differenceInMinutes,
   eachDayOfInterval,
   format,
   parseISO,
@@ -17,6 +17,7 @@ import type {
   RawCommit,
   RawDataset,
   RepositoryMetric,
+  SignalMetric,
   ThemeMetric,
   WeeklyActivity,
 } from '../shared/types.js'
@@ -84,6 +85,16 @@ function median(values: number[]): number | undefined {
     : sorted[middle]
 }
 
+function quantile(values: number[], percentile: number): number | undefined {
+  if (values.length === 0) return undefined
+  const sorted = [...values].sort((a, b) => a - b)
+  const position = (sorted.length - 1) * percentile
+  const lower = Math.floor(position)
+  const upper = Math.ceil(position)
+  if (lower === upper) return sorted[lower]
+  return sorted[lower] + (sorted[upper] - sorted[lower]) * (position - lower)
+}
+
 function clamp(value: number, min = 0, max = 100): number {
   return Math.max(min, Math.min(max, value))
 }
@@ -91,6 +102,12 @@ function clamp(value: number, min = 0, max = 100): number {
 function rounded(value: number, digits = 0): number {
   const factor = 10 ** digits
   return Math.round(value * factor) / factor
+}
+
+function durationLabel(hours: number): string {
+  if (hours < 1) return `${Math.max(1, Math.round(hours * 60))}m`
+  if (hours < 48) return `${rounded(hours, hours < 10 ? 1 : 0)}h`
+  return `${rounded(hours / 24, 1)}d`
 }
 
 function confidenceScore(
@@ -307,11 +324,17 @@ function repoAccumulator(): RepoAccumulator {
   }
 }
 
+function daySignalCount(day: ActivityDay): number {
+  const attributedGithubSignals =
+    day.commits + day.pullRequests + day.reviews + day.issues
+  return Math.max(day.contributions, attributedGithubSignals) + day.localCommits
+}
+
 function strongestMonth(activity: ActivityDay[]) {
   const months = new Map<string, number>()
   for (const day of activity) {
     const month = day.date.slice(0, 7)
-    months.set(month, (months.get(month) ?? 0) + day.contributions + day.localCommits)
+    months.set(month, (months.get(month) ?? 0) + daySignalCount(day))
   }
   const winner = [...months.entries()].sort((a, b) => b[1] - a[1])[0]
   return winner
@@ -323,17 +346,183 @@ function longestStreak(activity: ActivityDay[]): number {
   let current = 0
   let longest = 0
   for (const day of activity) {
-    const active =
-      day.contributions +
-        day.localCommits +
-        day.pullRequests +
-        day.reviews +
-        day.issues >
-      0
+    const active = daySignalCount(day) > 0
     current = active ? current + 1 : 0
     longest = Math.max(longest, current)
   }
   return longest
+}
+
+function buildSignalMetrics(args: {
+  coverageScore: number
+  activity: ActivityDay[]
+  weekly: WeeklyActivity[]
+  repositories: RepositoryMetric[]
+  pullRequests: RawDataset['pullRequests']
+  summary: DashboardData['summary']
+}): SignalMetric[] {
+  const { activity, coverageScore, pullRequests, repositories, summary, weekly } = args
+  const activeWeeks = weekly.filter((week) => week.total > 0)
+  const confidence = (eventCount: number) =>
+    confidenceLabel(confidenceScore(coverageScore, eventCount, activeWeeks.length))
+  const signals: SignalMetric[] = []
+
+  const mergedHours = pullRequests
+    .filter((pr) => pr.mergedAt)
+    .map(
+      (pr) =>
+        differenceInMinutes(parseISO(pr.mergedAt!), parseISO(pr.createdAt)) / 60,
+    )
+    .filter((hours) => hours >= 0)
+  if (mergedHours.length >= 5) {
+    const withinDay = mergedHours.filter((hours) => hours <= 24).length / mergedHours.length
+    const p75 = quantile(mergedHours, 0.75) ?? 0
+    signals.push({
+      id: 'integration-predictability',
+      category: 'flow',
+      order: 1,
+      label: 'Integration window',
+      value: `${Math.round(withinDay * 100)}%`,
+      title: 'merged within 24 hours',
+      context: `${durationLabel(median(mergedHours) ?? 0)} median · ${durationLabel(p75)} at p75`,
+      explanation:
+        'This separates a generally fast integration loop from a median that could be hiding a long tail.',
+      basis: `${mergedHours.length} merged authored PRs with valid timestamps`,
+      formula: 'PRs merged within 24h ÷ merged PRs; p75 is the 75th percentile latency.',
+      caveat: 'Repository automation, PR granularity, and process conventions all influence latency.',
+      confidence: confidence(mergedHours.length),
+    })
+  }
+
+  const sizedPullRequests = pullRequests.filter(
+    (pr) =>
+      pr.additions !== undefined &&
+      pr.deletions !== undefined &&
+      pr.changedFiles !== undefined,
+  )
+  if (sizedPullRequests.length >= 5) {
+    const churn = sizedPullRequests.map((pr) => pr.additions! + pr.deletions!)
+    const files = sizedPullRequests.map((pr) => pr.changedFiles!)
+    const medianFiles = median(files) ?? 0
+    signals.push({
+      id: 'change-batch-profile',
+      category: 'scope',
+      order: 1,
+      label: 'Change-batch profile',
+      value: `${rounded(medianFiles, 1)}`,
+      title: 'median files per authored PR',
+      context: `${Math.round(median(churn) ?? 0).toLocaleString()} changed lines median · ${Math.round(quantile(churn, 0.75) ?? 0).toLocaleString()} at p75`,
+      explanation:
+        'The middle and upper-quartile change surfaces show whether the delivery stream is mostly narrow slices or broad batches.',
+      basis: `${sizedPullRequests.length} of ${pullRequests.length} authored PRs with size metadata`,
+      formula: 'Changed lines = additions + deletions; medians and p75 use PR-level values.',
+      caveat: 'Generated files and mechanical changes can inflate churn; size is not complexity or value.',
+      confidence: confidence(sizedPullRequests.length),
+    })
+  }
+
+  if (activeWeeks.length >= 4) {
+    const repositoriesPerWeek = activeWeeks.map((week) => week.repositories)
+    const coordinatedWeeks =
+      activeWeeks.filter((week) => week.repositories >= 3).length / activeWeeks.length
+    signals.push({
+      id: 'coordination-regularity',
+      category: 'coordination',
+      order: 2,
+      label: 'Coordination regularity',
+      value: `${rounded(median(repositoriesPerWeek) ?? 0, 1)}`,
+      title: 'repositories active in a typical week',
+      context: `${Math.round(coordinatedWeeks * 100)}% of active weeks crossed 3+ repos · ${Math.max(...repositoriesPerWeek)} peak`,
+      explanation:
+        'A recurring multi-repository footprint is a stronger coordination signal than one exceptional migration week.',
+      basis: `${activeWeeks.length} active weeks`,
+      formula: 'Median distinct repositories per active week; coordinated weeks touch at least three.',
+      caveat: 'Temporal overlap cannot prove that repositories belonged to the same initiative.',
+      confidence: confidence(activeWeeks.length),
+    })
+  }
+
+  if (pullRequests.length >= 5) {
+    const reviewed = pullRequests.filter((pr) => pr.reviews > 0)
+    const commented = pullRequests.filter((pr) => pr.comments > 0)
+    signals.push({
+      id: 'feedback-surface',
+      category: 'feedback',
+      order: 1,
+      label: 'Feedback surface',
+      value: `${Math.round((reviewed.length / pullRequests.length) * 100)}%`,
+      title: 'of authored PRs carried a review',
+      context: `${rounded(median(pullRequests.map((pr) => pr.reviews)) ?? 0, 1)} median reviews · ${Math.round((commented.length / pullRequests.length) * 100)}% with comments`,
+      explanation:
+        'This complements submitted-review counts by showing how much of your own authored stream had an observable feedback surface.',
+      basis: `${pullRequests.length} authored PRs`,
+      formula: 'Authored PRs with one or more recorded reviews ÷ all authored PRs.',
+      caveat: 'Counts do not reveal reviewer identity, depth, approval state, or whether feedback changed the code.',
+      confidence: confidence(pullRequests.length),
+    })
+  }
+
+  const activeDaySignals = activity.map(daySignalCount).filter((count) => count > 0)
+  if (activeDaySignals.length >= 10) {
+    const sorted = [...activeDaySignals].sort((a, b) => b - a)
+    const total = sorted.reduce((sum, count) => sum + count, 0)
+    const topTenShare = sorted.slice(0, 10).reduce((sum, count) => sum + count, 0) / total
+    const weekendSignals = activity
+      .filter((day) => [0, 6].includes(parseISO(day.date).getDay()))
+      .reduce((sum, day) => sum + daySignalCount(day), 0)
+    signals.push({
+      id: 'cadence-concentration',
+      category: 'cadence',
+      order: 2,
+      label: 'Cadence concentration',
+      value: `${Math.round(topTenShare * 100)}%`,
+      title: 'of signals landed on the ten strongest days',
+      context: `${Math.round((weekendSignals / Math.max(1, total)) * 100)}% weekend share · ${summary.activeDays} active days`,
+      explanation:
+        'This distinguishes a steady background rhythm from a trace carried mainly by a handful of intense waves.',
+      basis: `${activeDaySignals.length} active days and ${total.toLocaleString()} dated signals`,
+      formula: 'Signals on the ten highest-volume days ÷ all dated signals in the window.',
+      caveat: 'Automated and bulk operations can dominate a day without representing equivalent human effort.',
+      confidence: confidence(total),
+    })
+  }
+
+  const eligibleRepositories = repositories.filter(
+    (repo) => repo.firstHalfActivity + repo.secondHalfActivity >= 5,
+  )
+  if (eligibleRepositories.length >= 4) {
+    const entrants = eligibleRepositories.filter(
+      (repo) => repo.firstHalfActivity < 2 && repo.secondHalfActivity >= 5,
+    )
+    const amplifiers = eligibleRepositories.filter(
+      (repo) => repo.firstHalfActivity >= 2 && repo.momentum >= 1.5,
+    )
+    const receding = eligibleRepositories.filter(
+      (repo) => repo.firstHalfActivity >= 5 && repo.secondHalfActivity / repo.firstHalfActivity <= 0.67,
+    )
+    signals.push({
+      id: 'portfolio-transition',
+      category: 'portfolio',
+      order: 2,
+      label: 'Portfolio transition',
+      value: `${entrants.length + amplifiers.length}`,
+      title: 'repositories gained visible gravity',
+      context: `${entrants.length} entrants · ${amplifiers.length} amplifiers · ${receding.length} receding`,
+      explanation:
+        'The portfolio is treated as a moving system: new centres can emerge while earlier work deliberately cools down.',
+      basis: `${eligibleRepositories.length} repositories with at least five weighted signals`,
+      formula: 'Compares weighted repository activity in the first and second halves of the selected window.',
+      caveat: 'Window boundaries can turn ordinary project phases into apparent momentum changes.',
+      confidence: confidence(
+        eligibleRepositories.reduce(
+          (sum, repo) => sum + repo.firstHalfActivity + repo.secondHalfActivity,
+          0,
+        ),
+      ),
+    })
+  }
+
+  return signals
 }
 
 function buildInsights(args: {
@@ -443,10 +632,10 @@ function buildInsights(args: {
   const midpoint = Math.floor(activity.length / 2)
   const firstHalf = activity
     .slice(0, midpoint)
-    .reduce((sum, day) => sum + day.contributions + day.localCommits, 0)
+    .reduce((sum, day) => sum + daySignalCount(day), 0)
   const secondHalf = activity
     .slice(midpoint)
-    .reduce((sum, day) => sum + day.contributions + day.localCommits, 0)
+    .reduce((sum, day) => sum + daySignalCount(day), 0)
   const momentumRatio = (secondHalf + 0.5) / (firstHalf + 0.5)
   if (firstHalf + secondHalf >= 20 && (momentumRatio >= 1.35 || momentumRatio <= 0.74)) {
     add({
@@ -601,7 +790,7 @@ function buildInsights(args: {
   }
 
   const activeDaySignals = activity
-    .map((day) => day.contributions + day.localCommits)
+    .map(daySignalCount)
     .filter((count) => count > 0)
     .sort((a, b) => b - a)
   const topTenDayShare =
@@ -793,12 +982,7 @@ export function analyzeDataset(raw: RawDataset): DashboardData {
   const weeklyMap = new Map<string, WeeklyActivity>()
   for (const day of activity) {
     const key = weekKey(day.date)
-    const total =
-      day.contributions +
-      day.localCommits +
-      day.pullRequests +
-      day.reviews +
-      day.issues
+    const total = daySignalCount(day)
     const week = weeklyMap.get(key) ?? {
       week: key,
       label: format(parseISO(key), 'd MMM'),
@@ -927,22 +1111,17 @@ export function analyzeDataset(raw: RawDataset): DashboardData {
   )
   const mergedPullRequests = raw.pullRequests.filter((pr) => pr.mergedAt)
   const mergeHours = mergedPullRequests
-    .map((pr) => differenceInHours(parseISO(pr.mergedAt!), parseISO(pr.createdAt)))
+    .map(
+      (pr) =>
+        differenceInMinutes(parseISO(pr.mergedAt!), parseISO(pr.createdAt)) / 60,
+    )
     .filter((hours) => hours >= 0)
-  const activeDays = activity.filter(
-    (day) =>
-      day.contributions +
-        day.localCommits +
-        day.pullRequests +
-        day.reviews +
-        day.issues >
-      0,
-  ).length
+  const activeDays = activity.filter((day) => daySignalCount(day) > 0).length
   const busiest = [...activity].sort(
-    (a, b) => b.contributions + b.localCommits - (a.contributions + a.localCommits),
+    (a, b) => daySignalCount(b) - daySignalCount(a),
   )[0]
   const summary: DashboardData['summary'] = {
-    contributions: raw.contributionTotal + localOnly.length,
+    contributions: activity.reduce((sum, day) => sum + daySignalCount(day), 0),
     commits: githubCommitCount + localOnly.length,
     localOnlyCommits: localOnly.length,
     pullRequests: raw.pullRequests.length,
@@ -958,10 +1137,10 @@ export function analyzeDataset(raw: RawDataset): DashboardData {
     effectiveRepositories,
     medianMergeHours: median(mergeHours),
     busiestDay:
-      busiest && busiest.contributions + busiest.localCommits > 0
+      busiest && daySignalCount(busiest) > 0
         ? {
             date: busiest.date,
-            contributions: busiest.contributions + busiest.localCommits,
+            contributions: daySignalCount(busiest),
           }
         : undefined,
     strongestMonth: strongestMonth(activity),
@@ -1036,6 +1215,14 @@ export function analyzeDataset(raw: RawDataset): DashboardData {
     themes,
     summary,
   })
+  const signals = buildSignalMetrics({
+    coverageScore,
+    activity,
+    weekly,
+    repositories,
+    pullRequests: raw.pullRequests,
+    summary,
+  })
 
   return {
     meta: {
@@ -1059,6 +1246,7 @@ export function analyzeDataset(raw: RawDataset): DashboardData {
     pullRequests: raw.pullRequests
       .map((pr) => ({ ...pr }))
       .sort((a, b) => b.createdAt.localeCompare(a.createdAt)),
+    signals,
     insights,
     dna,
     archetype,

@@ -19,6 +19,15 @@ describe('analyzeDataset', () => {
     ).toBeCloseTo(1, 2)
     expect(dashboard.insights.some((insight) => insight.order === 1)).toBe(true)
     expect(dashboard.insights.some((insight) => insight.order === 2)).toBe(true)
+    expect(dashboard.signals.map((signal) => signal.id)).toEqual(
+      expect.arrayContaining([
+        'integration-predictability',
+        'change-batch-profile',
+        'coordination-regularity',
+        'feedback-surface',
+        'cadence-concentration',
+      ]),
+    )
     expect(dashboard.archetype.signals).toHaveLength(3)
   })
 
@@ -101,6 +110,7 @@ describe('analyzeDataset', () => {
     expect(dashboard.summary.localOnlyCommits).toBe(1)
     expect(dashboard.summary.commits).toBe(2)
     expect(dashboard.repositories[0]?.localCommits).toBe(1)
+    expect(dashboard.weekly.reduce((sum, week) => sum + week.total, 0)).toBe(2)
   })
 
   it('lowers coverage for partial GitHub enrichment without penalizing unrequested local data', () => {

@@ -26,6 +26,7 @@ import { LensLogo } from './components/LensLogo'
 import { MetricCard } from './components/MetricCard'
 import { PulseChart } from './components/PulseChart'
 import { RepoConstellation } from './components/RepoConstellation'
+import { SignalLab } from './components/SignalLab'
 import { WrappedExperience } from './components/WrappedExperience'
 import { useDashboard } from './hooks/useDashboard'
 import {
@@ -330,10 +331,24 @@ function App() {
               </div>
             </section>
 
+            <section className="section-block" id="signals">
+              <div className="section-heading section-heading--split">
+                <div>
+                  <span className="eyebrow">03 · Signal lab</span>
+                  <h2>Go past totals. Inspect the shape of the system.</h2>
+                </div>
+                <p>
+                  Six reproducible lenses expose integration tails, change-batch shape, feedback,
+                  coordination, cadence, and portfolio motion. Open any method to see its formula.
+                </p>
+              </div>
+              <SignalLab signals={data.signals} />
+            </section>
+
             <section className="section-block" id="delivery">
               <div className="section-heading section-heading--split">
                 <div>
-                  <span className="eyebrow">03 · Developer DNA</span>
+                  <span className="eyebrow">04 · Developer DNA</span>
                   <h2>The shape behind the totals</h2>
                 </div>
                 <p>
@@ -380,7 +395,7 @@ function App() {
             <section className="section-block insights-section" id="insights">
               <div className="section-heading section-heading--split">
                 <div>
-                  <span className="eyebrow">04 · Connections</span>
+                  <span className="eyebrow">05 · Connections</span>
                   <h2>Facts become patterns. Patterns become hypotheses.</h2>
                 </div>
                 <p>
@@ -393,7 +408,7 @@ function App() {
 
             <section className="section-block" id="sources">
               <div className="section-heading">
-                <span className="eyebrow">05 · Coverage & privacy</span>
+                <span className="eyebrow">06 · Coverage & privacy</span>
                 <h2>Every insight should know what it cannot see</h2>
                 <p>
                   Private data is useful only if its boundary is as visible as its result.

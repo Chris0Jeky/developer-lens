@@ -107,6 +107,21 @@ export interface Insight {
   score: number
 }
 
+export interface SignalMetric {
+  id: string
+  category: 'flow' | 'scope' | 'coordination' | 'feedback' | 'cadence' | 'portfolio'
+  order: 1 | 2
+  label: string
+  value: string
+  title: string
+  context: string
+  explanation: string
+  basis: string
+  formula: string
+  caveat: string
+  confidence: Confidence
+}
+
 export interface DnaMetric {
   key:
     | 'focus'
@@ -181,6 +196,7 @@ export interface DashboardData {
   repositories: RepositoryMetric[]
   languages: LanguageMetric[]
   pullRequests: PullRequestMetric[]
+  signals: SignalMetric[]
   insights: Insight[]
   dna: DnaMetric[]
   archetype: DeveloperArchetype

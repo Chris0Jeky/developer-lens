@@ -25,6 +25,7 @@ describe('Developer Lens app', () => {
     render(<App />)
 
     expect(await screen.findByText('Your development trail,')).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /go past totals/i })).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /start your wrapped/i }))
     expect(screen.getByRole('dialog', { name: /developer lens wrapped/i })).toBeInTheDocument()
     expect(screen.getByText(/you didn’t just write code/i)).toBeInTheDocument()
