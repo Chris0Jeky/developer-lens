@@ -26,6 +26,7 @@ import { LensLogo } from './components/LensLogo'
 import { MetricCard } from './components/MetricCard'
 import { PulseChart } from './components/PulseChart'
 import { RepoConstellation } from './components/RepoConstellation'
+import { RepoLedger } from './components/RepoLedger'
 import { SignalLab } from './components/SignalLab'
 import { WrappedExperience } from './components/WrappedExperience'
 import { useDashboard } from './hooks/useDashboard'
@@ -285,50 +286,7 @@ function App() {
                   <LanguageLandscape languages={data.languages} />
                 </article>
               </div>
-              <div className="repo-ledger">
-                <div className="repo-ledger__header">
-                  <span>Repository</span>
-                  <span>Visible rhythm</span>
-                  <span>Change flow</span>
-                  <span>Momentum</span>
-                </div>
-                {data.repositories.slice(0, 10).map((repo, index) => (
-                  <a
-                    className="repo-row"
-                    href={repo.url ?? '#'}
-                    key={repo.key}
-                    rel="noreferrer"
-                    target={repo.url ? '_blank' : undefined}
-                  >
-                    <span className="repo-row__identity">
-                      <i>{String(index + 1).padStart(2, '0')}</i>
-                      <span>
-                        <strong>{repo.displayName}</strong>
-                        <small>
-                          {repo.isPrivate && <Lock size={10} aria-label="Private" />}
-                          {repo.primaryLanguage ?? 'Mixed stack'}
-                        </small>
-                      </span>
-                    </span>
-                    <span>
-                      <strong>{repo.activeWeeks} weeks</strong>
-                      <small>{repo.activeDays} active days</small>
-                    </span>
-                    <span>
-                      <strong>{compactNumber(repo.commits + repo.localCommits)} commits</strong>
-                      <small>{repo.pullRequests} PRs · {repo.reviews} reviews</small>
-                    </span>
-                    <span className={repo.momentum >= 1 ? 'momentum-up' : 'momentum-down'}>
-                      <strong>
-                        {repo.firstHalfActivity < 1 && repo.secondHalfActivity > 0
-                          ? 'New'
-                          : `${repo.momentum >= 10 ? '10+' : repo.momentum}×`}
-                      </strong>
-                      <small>second / first half</small>
-                    </span>
-                  </a>
-                ))}
-              </div>
+              <RepoLedger repositories={data.repositories} />
             </section>
 
             <section className="section-block" id="signals">
