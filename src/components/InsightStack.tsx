@@ -6,7 +6,13 @@ import type { Insight, InsightOrder } from '../../shared/types'
 const ORDER_LABELS: Record<InsightOrder, string> = {
   1: 'Observed',
   2: 'Derived',
-  3: 'Hypotheses',
+  3: 'Hypothesis',
+}
+
+const ORDER_DEFINITIONS: Record<InsightOrder, string> = {
+  1: 'Directly counted from the available sources.',
+  2: 'A reproducible combination of observed fields.',
+  3: 'An interpretation supported by multiple signals.',
 }
 
 const ORDER_ICONS = {
@@ -24,25 +30,46 @@ export function InsightStack({ insights }: { insights: Insight[] }) {
 
   return (
     <div className="insight-stack">
-      <div className="insight-filter" aria-label="Filter insights">
-        <button
-          className={filter === 'all' ? 'is-active' : ''}
-          onClick={() => setFilter('all')}
-          type="button"
-        >
-          All connections <span>{insights.length}</span>
-        </button>
-        {([1, 2, 3] as InsightOrder[]).map((order) => (
+      <div className="insight-taxonomy" aria-label="How to read the evidence levels">
+        {([1, 2, 3] as InsightOrder[]).map((order) => {
+          const Icon = ORDER_ICONS[order]
+          return (
+            <div className={`insight-taxonomy__item insight-taxonomy__item--${order}`} key={order}>
+              <Icon size={15} aria-hidden="true" />
+              <span>
+                <strong>{ORDER_LABELS[order]}</strong>
+                <small>{ORDER_DEFINITIONS[order]}</small>
+              </span>
+            </div>
+          )
+        })}
+      </div>
+      <div className="insight-toolbar">
+        <div className="insight-filter" aria-label="Filter insights" role="group">
           <button
-            className={filter === order ? 'is-active' : ''}
-            key={order}
-            onClick={() => setFilter(order)}
+            aria-pressed={filter === 'all'}
+            className={filter === 'all' ? 'is-active' : ''}
+            onClick={() => setFilter('all')}
             type="button"
           >
-            {ORDER_LABELS[order]}{' '}
-            <span>{insights.filter((insight) => insight.order === order).length}</span>
+            All connections <span>{insights.length}</span>
           </button>
-        ))}
+          {([1, 2, 3] as InsightOrder[]).map((order) => (
+            <button
+              aria-pressed={filter === order}
+              className={filter === order ? 'is-active' : ''}
+              key={order}
+              onClick={() => setFilter(order)}
+              type="button"
+            >
+              {ORDER_LABELS[order]}{' '}
+              <span>{insights.filter((insight) => insight.order === order).length}</span>
+            </button>
+          ))}
+        </div>
+        <p aria-live="polite" className="insight-result" role="status">
+          Showing {visible.length} of {insights.length}
+        </p>
       </div>
       <div className="insight-grid">
         {visible.map((insight, index) => {

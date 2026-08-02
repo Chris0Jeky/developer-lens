@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-import { AnimatePresence, motion } from 'framer-motion'
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion'
 import {
   ArrowLeft,
   ArrowRight,
@@ -59,6 +59,9 @@ function OrbitStory({ data }: { data: DashboardData }) {
 
 export function WrappedExperience({ data, onClose, open }: WrappedExperienceProps) {
   const [index, setIndex] = useState(0)
+  const dialogRef = useRef<HTMLDivElement>(null)
+  const returnFocusRef = useRef<HTMLElement | null>(null)
+  const reduceMotion = useReducedMotion()
   const topRepo = data.repositories[0]
   const topLanguage = data.languages[0]
   const privateEngagement = data.repositories
@@ -262,8 +265,12 @@ export function WrappedExperience({ data, onClose, open }: WrappedExperienceProp
   useEffect(() => {
     if (!open) return
     setIndex(0)
+    returnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     const previousOverflow = document.body.style.overflow
     document.body.style.overflow = 'hidden'
+    const focusFrame = window.requestAnimationFrame(() => {
+      dialogRef.current?.querySelector<HTMLElement>('[data-wrapped-close]')?.focus()
+    })
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') onClose()
       if (event.key === 'ArrowRight') {
@@ -272,11 +279,30 @@ export function WrappedExperience({ data, onClose, open }: WrappedExperienceProp
       if (event.key === 'ArrowLeft') {
         setIndex((current) => Math.max(0, current - 1))
       }
+      if (event.key === 'Tab') {
+        const focusable = Array.from(
+          dialogRef.current?.querySelectorAll<HTMLElement>(
+            'button:not([disabled]), a[href], [tabindex]:not([tabindex="-1"])',
+          ) ?? [],
+        )
+        if (focusable.length === 0) return
+        const first = focusable[0]
+        const last = focusable.at(-1) ?? first
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault()
+          last.focus()
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault()
+          first.focus()
+        }
+      }
     }
     window.addEventListener('keydown', handleKey)
     return () => {
+      window.cancelAnimationFrame(focusFrame)
       document.body.style.overflow = previousOverflow
       window.removeEventListener('keydown', handleKey)
+      returnFocusRef.current?.focus()
     }
   }, [onClose, open, stories.length])
 
@@ -289,18 +315,28 @@ export function WrappedExperience({ data, onClose, open }: WrappedExperienceProp
       role="dialog"
       aria-modal="true"
       aria-label="Developer Lens Wrapped"
+      aria-describedby="wrapped-description"
+      ref={dialogRef}
     >
+      <p className="sr-only" id="wrapped-description">
+        A nine-part interactive development retrospective. Use the arrow keys or the controls to
+        move between chapters; press Escape to close.
+      </p>
+      <span aria-live="polite" className="sr-only">
+        {story.chapter}. Story {index + 1} of {stories.length}.
+      </span>
       <div className="wrapped__grain" aria-hidden="true" />
       <header className="wrapped__header">
         <LensLogo />
         <span>{story.chapter}</span>
-        <button aria-label="Close Wrapped" autoFocus onClick={onClose} type="button">
+        <button aria-label="Close Wrapped" data-wrapped-close onClick={onClose} type="button">
           <X size={20} aria-hidden="true" />
         </button>
       </header>
       <div className="wrapped__progress" aria-label={`Story ${index + 1} of ${stories.length}`}>
         {stories.map((item, itemIndex) => (
           <button
+            aria-current={itemIndex === index ? 'step' : undefined}
             aria-label={`Go to ${item.chapter}`}
             className={itemIndex <= index ? 'is-active' : ''}
             key={item.id}
@@ -315,10 +351,10 @@ export function WrappedExperience({ data, onClose, open }: WrappedExperienceProp
         <AnimatePresence mode="wait">
           <motion.section
             key={story.id}
-            initial={{ opacity: 0, scale: 0.985, x: 24 }}
+            initial={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 0.985, x: 24 }}
             animate={{ opacity: 1, scale: 1, x: 0 }}
-            exit={{ opacity: 0, scale: 1.012, x: -24 }}
-            transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
+            exit={reduceMotion ? { opacity: 1 } : { opacity: 0, scale: 1.012, x: -24 }}
+            transition={{ duration: reduceMotion ? 0 : 0.45, ease: [0.22, 1, 0.36, 1] }}
           >
             {story.content}
           </motion.section>

@@ -21,6 +21,7 @@ import { ActivityHeatmap } from './components/ActivityHeatmap'
 import { CoveragePanel } from './components/CoveragePanel'
 import { DnaPanel } from './components/DnaPanel'
 import { InsightStack } from './components/InsightStack'
+import { JourneyNav } from './components/JourneyNav'
 import { LanguageLandscape } from './components/LanguageLandscape'
 import { LensLogo } from './components/LensLogo'
 import { MetricCard } from './components/MetricCard'
@@ -83,12 +84,7 @@ function App() {
         <a className="brand-link" href="#top">
           <LensLogo />
         </a>
-        <nav aria-label="Main navigation">
-          <a href="#rhythm">Rhythm</a>
-          <a href="#projects">Projects</a>
-          <a href="#insights">Insights</a>
-          <a href="#sources">Sources</a>
-        </nav>
+        {data && <JourneyNav />}
         <div className="app-header__actions">
           <RangeSwitch onChange={setRange} range={range} />
           <span className="local-pill">
@@ -133,8 +129,8 @@ function App() {
                     <Play fill="currentColor" size={15} aria-hidden="true" />
                     Start your Wrapped
                   </button>
-                  <a className="text-button" href="#insights">
-                    Explore the connections <ArrowRight size={16} aria-hidden="true" />
+                  <a className="text-button" href="#rhythm">
+                    Follow the signal trail <ArrowRight size={16} aria-hidden="true" />
                   </a>
                 </div>
                 <div className="hero-trust">

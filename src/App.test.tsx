@@ -1,4 +1,4 @@
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { analyzeDataset } from '../server/analytics'
@@ -26,12 +26,16 @@ describe('Developer Lens app', () => {
 
     expect(await screen.findByText('Your development trail,')).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /go past totals/i })).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: /start your wrapped/i }))
+    const wrappedTrigger = screen.getByRole('button', { name: /start your wrapped/i })
+    await user.click(wrappedTrigger)
     expect(screen.getByRole('dialog', { name: /developer lens wrapped/i })).toBeInTheDocument()
     expect(screen.getByText(/you didn’t just write code/i)).toBeInTheDocument()
 
     await user.keyboard('{ArrowRight}')
     expect(await screen.findByText(/repositories\./i)).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    await waitFor(() => expect(wrappedTrigger).toHaveFocus())
   })
 
   it('requests a fresh dataset when the range changes', async () => {
