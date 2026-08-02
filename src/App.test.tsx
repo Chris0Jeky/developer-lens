@@ -33,10 +33,12 @@ describe('Developer Lens app', () => {
     const wrappedTrigger = screen.getByRole('button', { name: /start your wrapped/i })
     await user.click(wrappedTrigger)
     expect(screen.getByRole('dialog', { name: /developer lens wrapped/i })).toBeInTheDocument()
-    expect(screen.getByText(/you didn’t just write code/i)).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /you didn’t just write code/i })).toBeInTheDocument()
 
     await user.keyboard('{ArrowRight}')
-    expect(await screen.findByText(/repositories\./i)).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: /repositories.*held the gravity/i }),
+    ).toBeInTheDocument()
 
     await user.keyboard('{Escape}')
     await waitFor(() => expect(wrappedTrigger).toHaveFocus())
@@ -57,6 +59,31 @@ describe('Developer Lens app', () => {
       '/api/dashboard?range=12m',
       expect.objectContaining({ signal: expect.any(AbortSignal) }),
     )
+  })
+
+  it('shares the active Wrapped chapter without losing story position', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => demo,
+      }),
+    )
+    const user = userEvent.setup()
+    render(<App />)
+    await screen.findByText('Your development trail,')
+
+    await user.click(screen.getByRole('button', { name: /start your wrapped/i }))
+    await user.keyboard('{ArrowRight}')
+    await user.click(screen.getByRole('button', { name: /share chapter 2/i }))
+
+    expect(screen.getByRole('dialog', { name: /turn the lens into something/i })).toBeInTheDocument()
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: /turn the lens into something/i })).not.toBeInTheDocument()
+    expect(screen.getByRole('dialog', { name: /developer lens wrapped.*repositories/i })).toBeInTheDocument()
+
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: /developer lens wrapped/i })).not.toBeInTheDocument()
   })
 
   it('keeps the hosted showcase explicitly synthetic and avoids inert PR links', async () => {

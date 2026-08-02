@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   Activity,
   ArrowRight,
@@ -110,6 +110,8 @@ function App() {
   const [range, setRange] = useState<RangeKey>('6m')
   const [wrappedOpen, setWrappedOpen] = useState(false)
   const [shareContext, setShareContext] = useState<ShareContext | null>(null)
+  const closeWrapped = useCallback(() => setWrappedOpen(false), [])
+  const closeShare = useCallback(() => setShareContext(null), [])
   const { data, error, loading } = useDashboard(range)
   const publicShowcase =
     data?.meta.privacy === 'public-demo' || import.meta.env.VITE_STATIC_DEMO === 'true'
@@ -458,11 +460,17 @@ function App() {
             </a>
           </footer>
 
-          <WrappedExperience data={data} onClose={() => setWrappedOpen(false)} open={wrappedOpen} />
+          <WrappedExperience
+            data={data}
+            onClose={closeWrapped}
+            onShare={setShareContext}
+            open={wrappedOpen}
+            suspended={Boolean(shareContext)}
+          />
           <ShareStudio
             context={shareContext ?? { kind: 'overview' }}
             data={data}
-            onClose={() => setShareContext(null)}
+            onClose={closeShare}
             open={Boolean(shareContext)}
           />
         </>
