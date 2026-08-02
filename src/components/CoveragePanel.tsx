@@ -1,4 +1,11 @@
-import { AlertTriangle, Check, CircleDashed, LockKeyhole, ShieldCheck } from 'lucide-react'
+import {
+  AlertTriangle,
+  Check,
+  CircleDashed,
+  Globe2,
+  LockKeyhole,
+  ShieldCheck,
+} from 'lucide-react'
 import type { DashboardMeta } from '../../shared/types'
 
 const STATUS_ICON = {
@@ -8,6 +15,8 @@ const STATUS_ICON = {
 }
 
 export function CoveragePanel({ meta }: { meta: DashboardMeta }) {
+  const publicDemo = meta.privacy === 'public-demo'
+
   return (
     <div className="coverage-panel">
       <div className="coverage-score">
@@ -21,11 +30,20 @@ export function CoveragePanel({ meta }: { meta: DashboardMeta }) {
           </span>
         </div>
         <div>
-          <span className="eyebrow">How sharp is this lens?</span>
-          <h3>{meta.coverageScore >= 90 ? 'High-resolution evidence' : 'Some edges remain soft'}</h3>
+          <span className="eyebrow">
+            {publicDemo ? 'What is inside the public lens?' : 'How sharp is this lens?'}
+          </span>
+          <h3>
+            {publicDemo
+              ? 'Complete synthetic evidence'
+              : meta.coverageScore >= 90
+                ? 'High-resolution evidence'
+                : 'Some edges remain soft'}
+          </h3>
           <p>
-            Coverage measures completed collection sources—not how complete GitHub is as a record of
-            real work.
+            {publicDemo
+              ? 'This score means the published file is complete for its generator. It does not represent a real GitHub account.'
+              : 'Coverage measures completed collection sources—not how complete GitHub is as a record of real work.'}
           </p>
         </div>
       </div>
@@ -61,10 +79,18 @@ export function CoveragePanel({ meta }: { meta: DashboardMeta }) {
       <div className="privacy-contract">
         <ShieldCheck size={20} aria-hidden="true" />
         <div>
-          <strong>Private by architecture</strong>
-          <span>Bound to this device. No telemetry. No token storage. No tracked activity data.</span>
+          <strong>{publicDemo ? 'Synthetic by architecture' : 'Private by architecture'}</strong>
+          <span>
+            {publicDemo
+              ? 'No account, token, private repository, or local Git history is embedded in this artifact.'
+              : 'Bound to this device. No telemetry. No token storage. No tracked activity data.'}
+          </span>
         </div>
-        <LockKeyhole size={17} aria-hidden="true" />
+        {publicDemo ? (
+          <Globe2 size={17} aria-hidden="true" />
+        ) : (
+          <LockKeyhole size={17} aria-hidden="true" />
+        )}
       </div>
     </div>
   )

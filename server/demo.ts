@@ -7,6 +7,65 @@ function seeded(index: number): number {
   return value - Math.floor(value)
 }
 
+const DEMO_REPOSITORIES = [
+  {
+    name: 'prism-core',
+    description: 'A systems-focused foundation for trustworthy workflows.',
+    language: 'TypeScript',
+    color: '#6ea8fe',
+    topics: ['agents', 'systems'],
+  },
+  {
+    name: 'signal-garden',
+    description: 'Experimental tooling for patterns, evidence, and reflection.',
+    language: 'Python',
+    color: '#55b4d4',
+    topics: ['research', 'data'],
+  },
+  {
+    name: 'orbit-cli',
+    description: 'A fast local command line for repeatable operations.',
+    language: 'Rust',
+    color: '#f2845c',
+    topics: ['cli', 'devtools'],
+  },
+  {
+    name: 'quiet-infra',
+    description: 'The maintenance layer that makes everything else possible.',
+    language: 'PowerShell',
+    color: '#61a7ef',
+    topics: ['reliability', 'automation'],
+  },
+  {
+    name: 'release-weaver',
+    description: 'Release intelligence and evidence across a portfolio of services.',
+    language: 'Go',
+    color: '#00add8',
+    topics: ['release', 'observability'],
+  },
+  {
+    name: 'docs-atlas',
+    description: 'Living technical maps that connect decisions to implementation.',
+    language: 'MDX',
+    color: '#fcb32c',
+    topics: ['documentation', 'knowledge'],
+  },
+  {
+    name: 'relay-api',
+    description: 'A compact event relay built around explicit contracts.',
+    language: 'Kotlin',
+    color: '#a97bff',
+    topics: ['api', 'events'],
+  },
+  {
+    name: 'sandbox-lab',
+    description: 'A deliberately small proving ground for risky ideas.',
+    language: 'JavaScript',
+    color: '#f1e05a',
+    topics: ['experiments', 'prototypes'],
+  },
+] as const
+
 export function createDemoDataset(range: RangeKey): RawDataset {
   const months = range === '6m' ? 6 : 12
   const toDate = new Date()
@@ -15,7 +74,7 @@ export function createDemoDataset(range: RangeKey): RawDataset {
   const to = formatISO(toDate)
   const contributionCalendar: Array<{ date: string; count: number }> = []
   const commitDaysByRepository: RawDataset['commitDaysByRepository'] = []
-  const repos = ['prism-core', 'signal-garden', 'orbit-cli', 'quiet-infra']
+  const repos = DEMO_REPOSITORIES.map((repository) => repository.name)
   const commits: RawDataset['commits'] = []
   const totalDays = Math.ceil((toDate.getTime() - fromDate.getTime()) / 86_400_000)
   let contributionTotal = 0
@@ -71,7 +130,6 @@ export function createDemoDataset(range: RangeKey): RawDataset {
         'Refine private data boundaries',
         'Make the release path observable',
       ][index % 4],
-      url: '#',
       createdAt: formatISO(created),
       mergedAt: index % 8 === 0 ? undefined : formatISO(merged),
       state: index % 8 === 0 ? 'OPEN' : 'MERGED',
@@ -103,34 +161,27 @@ export function createDemoDataset(range: RangeKey): RawDataset {
     contributionCalendar,
     contributionTotal,
     restrictedContributions: 0,
-    repositories: repos.map((name, index) => ({
+    repositories: DEMO_REPOSITORIES.map((repository, index) => ({
       id: `demo-repo-${index}`,
-      nameWithOwner: `local/${name}`,
-      name,
-      description: [
-        'A systems-focused foundation for trustworthy workflows.',
-        'Experimental tooling for patterns, evidence, and reflection.',
-        'A fast local command line for repeatable operations.',
-        'The maintenance layer that makes everything else possible.',
-      ][index],
+      nameWithOwner: `local/${repository.name}`,
+      name: repository.name,
+      description: repository.description,
       isPrivate: index % 3 === 0,
       isArchived: false,
       isFork: false,
       primaryLanguage: {
-        name: ['TypeScript', 'Python', 'Rust', 'PowerShell'][index],
-        color: ['#6ea8fe', '#55b4d4', '#f2845c', '#61a7ef'][index],
+        name: repository.language,
+        color: repository.color,
       },
       languages: [
         {
-          name: ['TypeScript', 'Python', 'Rust', 'PowerShell'][index],
-          color: ['#6ea8fe', '#55b4d4', '#f2845c', '#61a7ef'][index],
+          name: repository.language,
+          color: repository.color,
           size: 80,
         },
         { name: 'Shell', color: '#7de5ac', size: 20 },
       ],
-      topics: [['agents', 'systems'], ['research', 'data'], ['cli', 'devtools'], ['reliability']][
-        index
-      ],
+      topics: [...repository.topics],
     })),
     commits,
     commitDaysByRepository,

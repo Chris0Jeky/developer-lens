@@ -19,6 +19,10 @@ dist-ssr
 .env
 .env.*
 !.env.example
+!.env.showcase
+
+# Generated public showcase data. Always synthetic; rebuilt during deployment.
+public/data/dashboard-*.json
 
 # Test and coverage output.
 coverage/

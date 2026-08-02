@@ -10,7 +10,7 @@ describe('analyzeDataset', () => {
     expect(dashboard.meta.mode).toBe('demo')
     expect(dashboard.summary.commits).toBeGreaterThan(0)
     expect(dashboard.summary.mergedPullRequests).toBeGreaterThan(0)
-    expect(dashboard.repositories).toHaveLength(4)
+    expect(dashboard.repositories).toHaveLength(8)
     expect(dashboard.languages[0]?.share).toBeGreaterThan(0)
     expect(dashboard.languages[0]?.footprintShare).toBeGreaterThan(0)
     expect(dashboard.languages.reduce((sum, language) => sum + language.share, 0)).toBeCloseTo(1, 2)

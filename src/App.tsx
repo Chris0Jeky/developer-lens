@@ -15,7 +15,7 @@ import {
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
-import type { RangeKey } from '../shared/types'
+import type { PullRequestMetric, RangeKey } from '../shared/types'
 import './App.css'
 import { ActivityHeatmap } from './components/ActivityHeatmap'
 import { CoveragePanel } from './components/CoveragePanel'
@@ -71,10 +71,44 @@ function LoadingState() {
   )
 }
 
+function PullRequestRow({ pullRequest }: { pullRequest: PullRequestMetric }) {
+  const content = (
+    <>
+      <span className={pullRequest.mergedAt ? 'pr-status pr-status--merged' : 'pr-status'}>
+        <GitPullRequest size={14} aria-hidden="true" />
+      </span>
+      <span>
+        <strong>{pullRequest.title}</strong>
+        <small>
+          {pullRequest.repository} · #{pullRequest.number}
+        </small>
+      </span>
+      <span className="change-stream__stats">
+        {pullRequest.changedFiles !== undefined && <small>{pullRequest.changedFiles} files</small>}
+        <strong>{pullRequest.mergedAt ? 'Merged' : pullRequest.state.toLowerCase()}</strong>
+      </span>
+    </>
+  )
+
+  if (!pullRequest.url) return <div className="change-stream__item">{content}</div>
+  return (
+    <a
+      className="change-stream__item"
+      href={pullRequest.url}
+      rel="noreferrer"
+      target="_blank"
+    >
+      {content}
+    </a>
+  )
+}
+
 function App() {
   const [range, setRange] = useState<RangeKey>('6m')
   const [wrappedOpen, setWrappedOpen] = useState(false)
   const { data, error, loading } = useDashboard(range)
+  const publicShowcase =
+    data?.meta.privacy === 'public-demo' || import.meta.env.VITE_STATIC_DEMO === 'true'
 
   return (
     <div className="app" id="top">
@@ -87,8 +121,13 @@ function App() {
         {data && <JourneyNav />}
         <div className="app-header__actions">
           <RangeSwitch onChange={setRange} range={range} />
-          <span className="local-pill">
-            <Lock size={12} aria-hidden="true" /> Local only
+          <span className={`local-pill${publicShowcase ? ' local-pill--public' : ''}`}>
+            {publicShowcase ? (
+              <Sparkles size={12} aria-hidden="true" />
+            ) : (
+              <Lock size={12} aria-hidden="true" />
+            )}
+            {publicShowcase ? 'Public demo' : 'Local only'}
           </span>
         </div>
       </header>
@@ -97,8 +136,14 @@ function App() {
       {error && !data && (
         <main className="error-state">
           <ShieldCheck size={34} aria-hidden="true" />
-          <span className="eyebrow">The private API is offline</span>
-          <h1>Your data stayed private. The viewer needs its local service.</h1>
+          <span className="eyebrow">
+            {publicShowcase ? 'The showcase file is unavailable' : 'The private API is offline'}
+          </span>
+          <h1>
+            {publicShowcase
+              ? 'The synthetic showcase could not come into focus.'
+              : 'Your data stayed private. The viewer needs its local service.'}
+          </h1>
           <p>{error}</p>
         </main>
       )}
@@ -108,9 +153,16 @@ function App() {
           {data.meta.mode === 'demo' && (
             <div className="demo-banner">
               <Sparkles size={15} aria-hidden="true" />
-              <span>
-                Illustrative lens active. Run <code>npm run collect</code> for your private story.
-              </span>
+              {publicShowcase ? (
+                <span>
+                  Public showcase · every event and repository below is synthetic. No GitHub account
+                  data is hosted.
+                </span>
+              ) : (
+                <span>
+                  Illustrative lens active. Run <code>npm run collect</code> for your private story.
+                </span>
+              )}
             </div>
           )}
           <main>
@@ -135,10 +187,18 @@ function App() {
                 </div>
                 <div className="hero-trust">
                   <span>
-                    <ShieldCheck size={14} aria-hidden="true" /> {data.meta.coverageScore}% source coverage
+                    <ShieldCheck size={14} aria-hidden="true" /> {data.meta.coverageScore}%{' '}
+                    {publicShowcase ? 'synthetic dataset coverage' : 'source coverage'}
                   </span>
                   <span>
-                    <Lock size={13} aria-hidden="true" /> {data.summary.privateRepositories} private repos included
+                    {publicShowcase ? (
+                      <Sparkles size={13} aria-hidden="true" />
+                    ) : (
+                      <Lock size={13} aria-hidden="true" />
+                    )}
+                    {publicShowcase
+                      ? 'No personal GitHub data'
+                      : `${data.summary.privateRepositories} private repos included`}
                   </span>
                 </div>
               </div>
@@ -263,8 +323,9 @@ function App() {
                 <span className="eyebrow">02 · Project gravity</span>
                 <h2>A constellation, not a leaderboard</h2>
                 <p>
-                  Repository size reflects sustained observable engagement. Private systems are present,
-                  because leaving them out would tell the wrong story.
+                  {publicShowcase
+                    ? 'The hosted constellation uses invented systems. Private markers demonstrate the local experience without exposing a real portfolio.'
+                    : 'Repository size reflects sustained observable engagement. Private systems are present, because leaving them out would tell the wrong story.'}
                 </p>
               </div>
               <div className="project-grid">
@@ -318,25 +379,14 @@ function App() {
                   <span className="eyebrow">Recent authored change</span>
                   <h3>A small window into the delivery stream</h3>
                   <p>
-                    Titles stay on this device. Bodies, diffs, filenames, and reviewer identities are not
-                    collected.
+                    {publicShowcase
+                      ? 'These titles and repositories are invented to demonstrate delivery flow without publishing personal activity.'
+                      : 'Titles stay on this device. Bodies, diffs, filenames, and reviewer identities are not collected.'}
                   </p>
                 </div>
                 <div className="change-stream__list">
                   {data.pullRequests.slice(0, 6).map((pr) => (
-                    <a href={pr.url} key={pr.id} rel="noreferrer" target="_blank">
-                      <span className={pr.mergedAt ? 'pr-status pr-status--merged' : 'pr-status'}>
-                        <GitPullRequest size={14} aria-hidden="true" />
-                      </span>
-                      <span>
-                        <strong>{pr.title}</strong>
-                        <small>{pr.repository} · #{pr.number}</small>
-                      </span>
-                      <span className="change-stream__stats">
-                        {pr.changedFiles !== undefined && <small>{pr.changedFiles} files</small>}
-                        <strong>{pr.mergedAt ? 'Merged' : pr.state.toLowerCase()}</strong>
-                      </span>
-                    </a>
+                    <PullRequestRow key={pr.id} pullRequest={pr} />
                   ))}
                 </div>
                 <div className="delivery-badge">
@@ -365,7 +415,9 @@ function App() {
                 <span className="eyebrow">06 · Coverage & privacy</span>
                 <h2>Every insight should know what it cannot see</h2>
                 <p>
-                  Private data is useful only if its boundary is as visible as its result.
+                  {publicShowcase
+                    ? 'The hosted artifact keeps its synthetic boundary as visible as its results.'
+                    : 'Private data is useful only if its boundary is as visible as its result.'}
                 </p>
               </div>
               <article className="panel coverage-wrap">
@@ -379,8 +431,19 @@ function App() {
             <p>
               A local reflection on development—not a measure of productivity, quality, or human value.
             </p>
-            <a href="https://github.com" rel="noreferrer" target="_blank">
-              <CodeXml size={15} aria-hidden="true" /> Data sourced through your authenticated GitHub CLI
+            <a
+              href={
+                publicShowcase
+                  ? 'https://github.com/Chris0Jeky/developer-lens'
+                  : 'https://github.com'
+              }
+              rel="noreferrer"
+              target="_blank"
+            >
+              <CodeXml size={15} aria-hidden="true" />{' '}
+              {publicShowcase
+                ? 'View the source and generate your private lens'
+                : 'Data sourced through your authenticated GitHub CLI'}
             </a>
           </footer>
 

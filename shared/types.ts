@@ -75,7 +75,7 @@ export interface PullRequestMetric {
   repository: string
   number: number
   title: string
-  url: string
+  url?: string
   createdAt: string
   mergedAt?: string
   closedAt?: string
@@ -177,7 +177,7 @@ export interface DashboardMeta {
   to: string
   generatedAt: string
   mode: 'private' | 'demo'
-  privacy: 'local-only'
+  privacy: 'local-only' | 'public-demo'
   subject: {
     login: string
     name?: string
@@ -240,7 +240,7 @@ export interface RawPullRequest {
   repository: string
   number: number
   title: string
-  url: string
+  url?: string
   createdAt: string
   mergedAt?: string
   closedAt?: string

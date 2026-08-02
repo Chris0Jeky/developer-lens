@@ -62,6 +62,7 @@ export function WrappedExperience({ data, onClose, open }: WrappedExperienceProp
   const dialogRef = useRef<HTMLDivElement>(null)
   const returnFocusRef = useRef<HTMLElement | null>(null)
   const reduceMotion = useReducedMotion()
+  const publicDemo = data.meta.privacy === 'public-demo'
   const topRepo = data.repositories[0]
   const topLanguage = data.languages[0]
   const privateEngagement = data.repositories
@@ -79,9 +80,16 @@ export function WrappedExperience({ data, onClose, open }: WrappedExperienceProp
         variant: 'violet',
         content: (
           <div className="wrapped-copy wrapped-copy--center">
-            <span className="wrapped-kicker">Your {data.meta.range === '6m' ? 'six months' : 'year'} in development</span>
-            <h2>You didn’t just write code.</h2>
-            <p>You left a trace of systems changing, ideas converging, and work crossing the line.</p>
+            <span className="wrapped-kicker">
+              {publicDemo ? 'A synthetic' : 'Your'}{' '}
+              {data.meta.range === '6m' ? 'six months' : 'year'} in development
+            </span>
+            <h2>{publicDemo ? 'A portfolio came into focus.' : 'You didn’t just write code.'}</h2>
+            <p>
+              {publicDemo
+                ? 'Invented systems demonstrate how ideas, feedback, and work crossing the line become a story.'
+                : 'You left a trace of systems changing, ideas converging, and work crossing the line.'}
+            </p>
             <div className="wrapped-hero-number">
               <strong>{compactNumber(data.summary.contributions)}</strong>
               <span>visible contribution signals</span>
@@ -97,7 +105,9 @@ export function WrappedExperience({ data, onClose, open }: WrappedExperienceProp
           <div className="wrapped-split">
             <OrbitStory data={data} />
             <div className="wrapped-copy">
-              <span className="wrapped-kicker">Your development universe</span>
+            <span className="wrapped-kicker">
+              {publicDemo ? 'The synthetic development universe' : 'Your development universe'}
+            </span>
               <h2>
                 {data.summary.repositories} repositories.{' '}
                 <em>{data.summary.effectiveRepositories} held the gravity.</em>
@@ -174,20 +184,39 @@ export function WrappedExperience({ data, onClose, open }: WrappedExperienceProp
       },
       {
         id: 'hidden',
-        chapter: '06 · Beyond the public profile',
+        chapter: publicDemo ? '06 · The public boundary' : '06 · Beyond the public profile',
         variant: 'gold',
         content: (
           <div className="wrapped-copy wrapped-copy--wide">
             <Lock className="wrapped-icon" aria-hidden="true" />
-            <span className="wrapped-kicker">The hidden portfolio</span>
-            <h2>
-              {data.summary.privateRepositories} private repositories carried{' '}
-              <em>{Math.round((privateEngagement / Math.max(1, totalEngagement)) * 100)}% of attributed engagement.</em>
-            </h2>
-            <p>
-              Authenticated enrichment changed the story. This private surface remains on this device
-              and never enters the tracked application bundle.
-            </p>
+            <span className="wrapped-kicker">
+              {publicDemo ? 'The public boundary' : 'The hidden portfolio'}
+            </span>
+            {publicDemo ? (
+              <>
+                <h2>
+                  Zero personal repositories. <em>One fully synthetic story.</em>
+                </h2>
+                <p>
+                  Private markers demonstrate the local product’s visibility model, but no authenticated
+                  GitHub or local Git data enters this public artifact.
+                </p>
+              </>
+            ) : (
+              <>
+                <h2>
+                  {data.summary.privateRepositories} private repositories carried{' '}
+                  <em>
+                    {Math.round((privateEngagement / Math.max(1, totalEngagement)) * 100)}% of attributed
+                    engagement.
+                  </em>
+                </h2>
+                <p>
+                  Authenticated enrichment changed the story. This private surface remains on this device
+                  and never enters the tracked application bundle.
+                </p>
+              </>
+            )}
           </div>
         ),
       },
@@ -259,7 +288,16 @@ export function WrappedExperience({ data, onClose, open }: WrappedExperienceProp
         ),
       },
     ],
-    [data, finalInsight, onClose, privateEngagement, topLanguage, topRepo, totalEngagement],
+    [
+      data,
+      finalInsight,
+      onClose,
+      privateEngagement,
+      publicDemo,
+      topLanguage,
+      topRepo,
+      totalEngagement,
+    ],
   )
 
   useEffect(() => {

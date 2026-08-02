@@ -7,14 +7,23 @@ interface DashboardState {
   error?: string
 }
 
+export function dashboardEndpoint(
+  range: RangeKey,
+  staticDemo = import.meta.env.VITE_STATIC_DEMO === 'true',
+  baseUrl = import.meta.env.BASE_URL,
+) {
+  return staticDemo ? `${baseUrl}data/dashboard-${range}.json` : `/api/dashboard?range=${range}`
+}
+
 export function useDashboard(range: RangeKey): DashboardState {
   const [state, setState] = useState<DashboardState>({ loading: true })
 
   useEffect(() => {
     const controller = new AbortController()
+    const staticDemo = import.meta.env.VITE_STATIC_DEMO === 'true'
     setState((current) => ({ ...current, loading: true, error: undefined }))
 
-    fetch(`/api/dashboard?range=${range}`, { signal: controller.signal })
+    fetch(dashboardEndpoint(range, staticDemo), { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error(`Local API returned ${response.status}`)
         return (await response.json()) as DashboardData
@@ -25,7 +34,9 @@ export function useDashboard(range: RangeKey): DashboardState {
         setState({
           loading: false,
           error:
-            'The local data service is not available. Run npm run dev, or npm run start after building.',
+            staticDemo
+              ? 'The public showcase dataset could not be loaded. Try refreshing the page.'
+              : 'The local data service is not available. Run npm run dev, or npm run start after building.',
         })
       })
 

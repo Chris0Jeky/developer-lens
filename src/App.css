@@ -227,6 +227,12 @@
   text-transform: uppercase;
 }
 
+.local-pill--public {
+  border-color: rgba(183, 155, 255, 0.18);
+  color: #c6b3f6;
+  background: rgba(183, 155, 255, 0.055);
+}
+
 .demo-banner {
   display: flex;
   width: min(1440px, calc(100% - 56px));
@@ -1736,7 +1742,7 @@
   flex-direction: column;
 }
 
-.change-stream__list > a {
+.change-stream__item {
   display: grid;
   min-height: 65px;
   align-items: center;
@@ -1747,11 +1753,11 @@
   text-decoration: none;
 }
 
-.change-stream__list > a:last-child {
+.change-stream__item:last-child {
   border-bottom: 0;
 }
 
-.change-stream__list > a > span:not(.pr-status) {
+.change-stream__item > span:not(.pr-status) {
   display: flex;
   min-width: 0;
   flex-direction: column;

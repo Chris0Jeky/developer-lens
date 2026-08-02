@@ -4,16 +4,32 @@ Developer Lens turns an authenticated GitHub history into a private, local-first
 
 It is designed for a question that ordinary contribution graphs cannot answer: **what kind of development system did this body of work become?**
 
+**[Explore the live synthetic showcase](https://chris0jeky.github.io/developer-lens/)** · no account or private-repository data is present in the hosted artifact.
+
 ## What it shows
 
 - Six-month and twelve-month views of commits, pull requests, merges, reviews, issues, active days, streaks, languages, and repository concentration.
-- A project constellation that includes private repositories available to the authenticated GitHub CLI.
+- A selectable project constellation sized by attention, pull-request flow, or continuity, including private repositories available to the authenticated GitHub CLI.
 - Development rhythm, burst periods, cross-repository waves, delivery loops, emerging projects, and quiet craft such as tests, docs, refactors, and fixes.
-- A five-axis development DNA and a plain-language builder archetype.
+- A six-axis development DNA and a plain-language builder archetype.
+- A deterministic Signal Lab for integration predictability, change-batch shape, coordination regularity, feedback surface, cadence concentration, and portfolio transitions.
 - Observed facts, derived patterns, and higher-order hypotheses kept visually and semantically distinct.
 - Evidence trails, confidence labels, coverage limitations, and a local-only privacy boundary on every analytical layer.
 
 The deterministic engine in `server/analytics.ts` is the durable product: the initial narrative was shaped with an LLM-assisted analysis pass, then generalized into thresholds and cross-signal rules that can rerun without sending data to an LLM.
+
+## Public showcase versus private lens
+
+The GitHub Pages site is built from eight invented repositories and deterministic synthetic events. Its deployment job regenerates that data, verifies every subject and repository uses a synthetic identity, rejects repository and pull-request URLs, and scans the built artifact for credential and local-path patterns before upload.
+
+The hosted site cannot connect to a GitHub account. Private analysis is a separate local runtime:
+
+| Surface | Data | Network boundary |
+| --- | --- | --- |
+| Public showcase | Deterministic synthetic events only | Static GitHub Pages files |
+| Local lens | Your authenticated public and private GitHub activity, plus explicitly selected local Git roots | API bound to `127.0.0.1` |
+
+This split keeps the full interface publicly explorable without making a personal dataset part of the repository, frontend bundle, or Pages artifact.
 
 ## Private by construction
 
@@ -67,6 +83,14 @@ npm start
 
 When no private dataset exists, the UI intentionally falls back to a clearly labelled synthetic demo rather than failing or silently pretending that demo data is real.
 
+To build exactly the privacy-checked artifact used by GitHub Pages:
+
+```powershell
+npm run build:showcase
+```
+
+The generated JSON stays ignored and is rebuilt during deployment.
+
 ## Analysis model
 
 The pipeline has four layers:
@@ -84,16 +108,20 @@ This is a reflection on attention and integration patterns—not a productivity 
 
 ```powershell
 npm run check
+npm run build:showcase
 ```
 
-`check` runs Oxlint, the analytics/API/UI test suite, TypeScript project builds, and the production Vite build. The API tests also prove localhost-only binding behavior and that demo fallback remains explicit.
+`check` runs Oxlint, the analytics/API/UI test suite, TypeScript project builds, and the production Vite build. `build:showcase` additionally exports both synthetic ranges, builds with the GitHub Pages base path, verifies the public-data identity boundary, and scans the artifact for secret and local-path patterns. The API tests also prove localhost-only binding behavior and that demo fallback remains explicit.
 
 ## Project map
 
 - `scripts/collect.ts` — collection orchestration and private dataset writes.
+- `scripts/exportDemo.ts` — deterministic public showcase generation.
+- `scripts/verifyShowcase.ts` — structural privacy assertions and artifact scanning.
 - `server/github.ts` — authenticated GitHub ingestion.
 - `server/localGit.ts` — explicitly scoped local Git enrichment.
 - `server/analytics.ts` — deterministic statistics, classifications, and higher-order rules.
 - `server/index.ts` — localhost-only API and production host.
 - `src/` — responsive dashboard and Wrapped experience.
 - `shared/types.ts` — raw and presentation contracts.
+- `.github/workflows/pages.yml` — tested, privacy-checked GitHub Pages deployment.
