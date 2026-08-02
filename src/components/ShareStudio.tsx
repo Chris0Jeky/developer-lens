@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import {
   Check,
   Clipboard,
+  Download,
   ExternalLink,
   FileText,
   Image as ImageIcon,
@@ -23,6 +24,13 @@ import {
   type ShareTone,
 } from '../lib/sharePayload'
 import { buildStandaloneReport } from '../lib/standaloneReport'
+import {
+  createPortableExportPayload,
+  createPortableExportSeed,
+  type PortableArtifact,
+  type RepositoryRedaction,
+} from '../lib/portableExportPayload'
+import { buildPortableExperienceReport } from '../lib/portableExportReport'
 
 interface ShareStudioProps {
   context: ShareContext
@@ -66,6 +74,12 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
   const payload = useMemo(() => createSharePayload(data, context), [context, data])
   const [tone, setTone] = useState<ShareTone>('story')
   const [confirmed, setConfirmed] = useState(false)
+  const [portableArtifact, setPortableArtifact] = useState<PortableArtifact>(
+    context.kind === 'wrapped' ? 'wrapped' : 'dashboard',
+  )
+  const [repositoryRedaction, setRepositoryRedaction] =
+    useState<RepositoryRedaction>('private-aliases')
+  const [aliasSeed, setAliasSeed] = useState(createPortableExportSeed)
   const [cardBlob, setCardBlob] = useState<Blob | null>(null)
   const [cardError, setCardError] = useState('')
   const [status, setStatus] = useState('')
@@ -74,11 +88,22 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
   const caption = useMemo(() => createShareCaption(payload, tone), [payload, tone])
   const publicDemo = payload.scope === 'public-demo'
   const exportAllowed = publicDemo || confirmed
+  const portablePayload = useMemo(
+    () => createPortableExportPayload(data, {
+      aliasSeed,
+      artifact: portableArtifact,
+      repositoryRedaction,
+    }),
+    [aliasSeed, data, portableArtifact, repositoryRedaction],
+  )
 
   useEffect(() => {
     if (!open) return
     setTone('story')
     setConfirmed(false)
+    setPortableArtifact(context.kind === 'wrapped' ? 'wrapped' : 'dashboard')
+    setRepositoryRedaction('private-aliases')
+    setAliasSeed(createPortableExportSeed())
     setStatus('')
     setCardBlob(null)
     setCardError('')
@@ -93,7 +118,7 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
     return () => {
       active = false
     }
-  }, [open, payload])
+  }, [context.kind, open, payload])
 
   useEffect(() => {
     if (!open) return
@@ -171,6 +196,75 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
     setStatus('Self-contained HTML report downloaded. Nothing was uploaded.')
   }
 
+  const choosePortableArtifact = (artifact: PortableArtifact) => {
+    setPortableArtifact(artifact)
+    setStatus('')
+    if (!publicDemo) setConfirmed(false)
+  }
+
+  const chooseRepositoryRedaction = (redaction: RepositoryRedaction) => {
+    setRepositoryRedaction(redaction)
+    setAliasSeed(createPortableExportSeed())
+    setStatus('')
+    if (!publicDemo) setConfirmed(false)
+  }
+
+  const portableFile = () => {
+    const report = buildPortableExperienceReport(portablePayload)
+    return new File([report], `${portablePayload.fileStem}.html`, {
+      type: 'text/html;charset=utf-8',
+    })
+  }
+
+  const handleDownloadPortable = () => {
+    if (!exportAllowed) return
+    const file = portableFile()
+    downloadBlob(file, file.name)
+    setStatus(
+      `${portableArtifact === 'dashboard' ? 'Full dashboard' : 'Complete Wrapped'} downloaded as a self-contained HTML file. Nothing was uploaded.`,
+    )
+  }
+
+  const handleSharePortable = async () => {
+    if (!exportAllowed) return
+    const file = portableFile()
+    let canShareFile = false
+    try {
+      canShareFile = Boolean(window.navigator.canShare?.({ files: [file] }))
+    } catch {
+      canShareFile = false
+    }
+    const text = publicDemo
+      ? 'Explore the complete synthetic Developer Lens experience.'
+      : `My ${portablePayload.rangeLabel.toLowerCase()} Developer Lens, shared as a deliberately redacted portable file.`
+
+    if (window.navigator.share && (canShareFile || publicDemo)) {
+      try {
+        await window.navigator.share({
+          files: canShareFile ? [file] : undefined,
+          text,
+          title: portablePayload.title,
+          url: publicDemo ? portablePayload.canonicalUrl : undefined,
+        })
+        setStatus(
+          canShareFile
+            ? 'The full experience was sent to the system share sheet as a file.'
+            : 'The public interactive experience was sent to the system share sheet.',
+        )
+      } catch (error) {
+        if (error instanceof DOMException && error.name === 'AbortError') {
+          setStatus('Share cancelled. Nothing was sent.')
+        } else {
+          setStatus(error instanceof Error ? error.message : 'The system share sheet could not open.')
+        }
+      }
+      return
+    }
+
+    downloadBlob(file, file.name)
+    setStatus('File sharing is unavailable in this browser, so the full experience was downloaded instead.')
+  }
+
   const handleNativeShare = async () => {
     if (!exportAllowed) return
     if (!window.navigator.share) {
@@ -221,7 +315,8 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
           </button>
         </header>
         <p className="sr-only" id="share-studio-description">
-          Preview and export a privacy-aware social card, post caption, or standalone report.
+          Preview and export a privacy-aware social card, post caption, summary report, full dashboard,
+          or complete Wrapped story.
         </p>
 
         <div className="share-studio__layout">
@@ -259,7 +354,7 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
                 <strong>{publicDemo ? 'Ready for the public web' : 'Private source, redacted output'}</strong>
                 {publicDemo
                   ? 'This card and link describe the fully synthetic showcase.'
-                  : 'The exporter receives only six allowlisted aggregate metrics and a fixed narrative.'}
+                  : 'The card uses six allowlisted metrics. Full files use a separate aggregate-only schema with fresh project aliases.'}
               </span>
             </div>
           </section>
@@ -280,7 +375,8 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
                 <span>
                   <strong>I have reviewed this redacted preview</strong>
                   I understand the aggregate numbers can still describe my activity, even though names,
-                  titles, identities, dates, and raw events are excluded.
+                  titles, identities, exact dates, and raw events are excluded. Public repository names
+                  remain visible unless I choose to alias every project below.
                 </span>
               </label>
             )}
@@ -314,9 +410,87 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
                 <ImageIcon size={17} aria-hidden="true" /> Download image
               </button>
               <button className="share-action" disabled={!exportAllowed} onClick={handleDownloadReport} type="button">
-                <FileText size={17} aria-hidden="true" /> Export report
+                <FileText size={17} aria-hidden="true" /> Export summary
               </button>
             </div>
+
+            <section className="share-full" aria-labelledby="share-full-title">
+              <header>
+                <span><Sparkles size={15} aria-hidden="true" /> Full experience</span>
+                <strong id="share-full-title">Share the whole lens, not only the snapshot.</strong>
+                <p>One polished HTML file opens in any modern browser, works offline, prints cleanly,
+                  and includes no app bundle or private source dataset.</p>
+              </header>
+
+              <div className="share-full__label">Choose the experience</div>
+              <div className="share-full__choices" aria-label="Full export type" role="group">
+                <button
+                  aria-pressed={portableArtifact === 'dashboard'}
+                  className={portableArtifact === 'dashboard' ? 'is-active' : ''}
+                  onClick={() => choosePortableArtifact('dashboard')}
+                  type="button"
+                >
+                  <strong>Full dashboard</strong>
+                  <span>Seven guided sections with charts, project gravity, methods, and limits.</span>
+                </button>
+                <button
+                  aria-pressed={portableArtifact === 'wrapped'}
+                  className={portableArtifact === 'wrapped' ? 'is-active' : ''}
+                  onClick={() => choosePortableArtifact('wrapped')}
+                  type="button"
+                >
+                  <strong>Complete Wrapped</strong>
+                  <span>All nine scrollable chapters with reveals and evidence.</span>
+                </button>
+              </div>
+
+              {!publicDemo && (
+                <>
+                  <div className="share-full__label">Repository names</div>
+                  <div className="share-full__redaction" aria-label="Repository name redaction" role="group">
+                    <button
+                      aria-pressed={repositoryRedaction === 'private-aliases'}
+                      className={repositoryRedaction === 'private-aliases' ? 'is-active' : ''}
+                      onClick={() => chooseRepositoryRedaction('private-aliases')}
+                      type="button"
+                    >
+                      <strong>Alias private</strong>
+                      <span>Recommended · retain public names</span>
+                    </button>
+                    <button
+                      aria-pressed={repositoryRedaction === 'all-aliases'}
+                      className={repositoryRedaction === 'all-aliases' ? 'is-active' : ''}
+                      onClick={() => chooseRepositoryRedaction('all-aliases')}
+                      type="button"
+                    >
+                      <strong>Alias every project</strong>
+                      <span>Maximum portfolio privacy</span>
+                    </button>
+                  </div>
+                </>
+              )}
+
+              <details className="share-full__details">
+                <summary>What crosses the boundary?</summary>
+                <p>
+                  Included: aggregate totals, relative week and weekday buckets, project-level counts,
+                  language shares, fixed analysis templates, DNA axes, theme counts, and coverage status totals.
+                </p>
+                <p>
+                  Excluded: identity, URLs, descriptions, topics, PR titles, exact dates, raw events,
+                  filenames, paths, warnings, and arbitrary source insight prose.
+                </p>
+              </details>
+
+              <div className="share-full__actions">
+                <button className="share-action share-action--primary" disabled={!exportAllowed} onClick={handleSharePortable} type="button">
+                  <Share2 size={17} aria-hidden="true" /> Share full experience
+                </button>
+                <button className="share-action" disabled={!exportAllowed} onClick={handleDownloadPortable} type="button">
+                  <Download size={17} aria-hidden="true" /> Download full file
+                </button>
+              </div>
+            </section>
 
             {publicDemo ? (
               <div className="share-link-row">

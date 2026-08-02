@@ -91,6 +91,24 @@ interface RestCommit {
   parents?: Array<{ sha: string }>
 }
 
+interface ContributorWeek {
+  w: number
+  a: number
+  d: number
+  c: number
+}
+
+interface ContributorStats {
+  author?: { login?: string | null } | null
+  weeks: ContributorWeek[]
+}
+
+export interface ContributorLineStats {
+  additions: number
+  deletions: number
+  commits: number
+}
+
 interface RestRepository {
   node_id: string
   full_name: string
@@ -448,6 +466,34 @@ export function contributionCoverageStatus(
   return restrictedContributions > 0 ? 'partial' : 'complete'
 }
 
+export function sumContributorLineStats(
+  contributors: ContributorStats[],
+  login: string,
+  from: string,
+  to: string,
+): ContributorLineStats | undefined {
+  const contributor = contributors.find((item) => item.author?.login === login)
+  if (!contributor) return undefined
+
+  const fromTime = Date.parse(from)
+  const toTime = Date.parse(to)
+  const weekMilliseconds = 7 * 24 * 60 * 60 * 1000
+  return contributor.weeks
+    .filter((week) => {
+      const weekStart = week.w * 1000
+      const weekEnd = weekStart + weekMilliseconds
+      return weekStart < toTime && weekEnd > fromTime
+    })
+    .reduce(
+      (total, week) => ({
+        additions: total.additions + week.a,
+        deletions: total.deletions + week.d,
+        commits: total.commits + week.c,
+      }),
+      { additions: 0, deletions: 0, commits: 0 },
+    )
+}
+
 async function paginateConnection<TNode>(
   query: string,
   connectionName:
@@ -605,6 +651,33 @@ async function fetchRepositoryCommits(
       features: classifyCommit(item.commit.message),
     }
   })
+}
+
+async function fetchRepositoryLineStats(
+  repository: string,
+  login: string,
+  from: string,
+  to: string,
+): Promise<ContributorLineStats | undefined> {
+  let lastError: unknown
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      const contributors = await ghJson<ContributorStats[]>([
+        'api',
+        '--method',
+        'GET',
+        `repos/${repository}/stats/contributors`,
+      ])
+      if (contributors.length > 0) {
+        return sumContributorLineStats(contributors, login, from, to)
+      }
+      lastError = new Error('GitHub contributor statistics are still being calculated.')
+    } catch (error) {
+      lastError = error
+    }
+    await new Promise((resolve) => setTimeout(resolve, 750 * (attempt + 1)))
+  }
+  throw lastError ?? new Error('GitHub contributor statistics were unavailable.')
 }
 
 export async function collectGithub(
@@ -878,6 +951,51 @@ export async function collectGithub(
     itemCount: commits.length,
   })
 
+  const lineChangeResults = await mapWithLimit(repositoryNames, 4, async (repository) => ({
+    repository,
+    stats: await fetchRepositoryLineStats(
+      repository,
+      contributionRoot.viewer.login,
+      from,
+      to,
+    ),
+  }))
+  let lineAdditions = 0
+  let lineDeletions = 0
+  let lineCommits = 0
+  let lineRepositories = 0
+  let failedLineStats = 0
+  for (const result of lineChangeResults) {
+    if (result.status === 'fulfilled') {
+      if (result.value.stats) {
+        lineAdditions += result.value.stats.additions
+        lineDeletions += result.value.stats.deletions
+        lineCommits += result.value.stats.commits
+        lineRepositories += 1
+      }
+    } else {
+      failedLineStats += 1
+    }
+  }
+  if (failedLineStats > 0) {
+    warnings.push(
+      `${failedLineStats} repositories could not be queried for authored line statistics.`,
+    )
+  }
+  coverage.push({
+    id: 'github-line-changes',
+    label: 'GitHub authored line changes',
+    status:
+      failedLineStats === 0
+        ? 'complete'
+        : failedLineStats === repositoryNames.length
+          ? 'unavailable'
+          : 'partial',
+    detail:
+      'GitHub contributor additions and deletions on default-branch commits; boundary weeks are included because GitHub reports this source weekly.',
+    itemCount: lineCommits,
+  })
+
   const contributionCommitRepositories = new Set(
     commitDaysByRepository.map((day) => day.repository.toLowerCase()),
   )
@@ -929,6 +1047,15 @@ export async function collectGithub(
     restrictedContributions: collection.restrictedContributionsCount,
     repositories: [...repositories.values()],
     commits,
+    lineChanges:
+      lineChangeResults.some((result) => result.status === 'fulfilled')
+        ? {
+            additions: lineAdditions,
+            deletions: lineDeletions,
+            commits: lineCommits,
+            repositories: lineRepositories,
+          }
+        : undefined,
     commitDaysByRepository,
     pullRequests,
     reviews,

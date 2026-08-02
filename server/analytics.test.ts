@@ -9,6 +9,8 @@ describe('analyzeDataset', () => {
 
     expect(dashboard.meta.mode).toBe('demo')
     expect(dashboard.summary.commits).toBeGreaterThan(0)
+    expect(dashboard.summary.linesAdded).toBeGreaterThan(0)
+    expect(dashboard.summary.linesDeleted).toBeGreaterThan(0)
     expect(dashboard.summary.mergedPullRequests).toBeGreaterThan(0)
     expect(dashboard.repositories).toHaveLength(8)
     expect(dashboard.languages[0]?.share).toBeGreaterThan(0)
@@ -109,8 +111,20 @@ describe('analyzeDataset', () => {
     const dashboard = analyzeDataset(raw)
     expect(dashboard.summary.localOnlyCommits).toBe(1)
     expect(dashboard.summary.commits).toBe(2)
+    expect(dashboard.summary.linesAdded).toBe(10)
+    expect(dashboard.summary.linesDeleted).toBe(2)
     expect(dashboard.repositories[0]?.localCommits).toBe(1)
     expect(dashboard.weekly.reduce((sum, week) => sum + week.total, 0)).toBe(2)
+  })
+
+  it('uses collected GitHub line totals when commit detail lacks file statistics', () => {
+    const raw = createDemoDataset('6m')
+    raw.lineChanges = { additions: 123, deletions: 45, commits: 7, repositories: 2 }
+
+    const dashboard = analyzeDataset(raw)
+
+    expect(dashboard.summary.linesAdded).toBe(123)
+    expect(dashboard.summary.linesDeleted).toBe(45)
   })
 
   it('lowers coverage for partial GitHub enrichment without penalizing unrequested local data', () => {

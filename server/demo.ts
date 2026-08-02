@@ -111,6 +111,8 @@ export function createDemoDataset(range: RangeKey): RawDataset {
         repository: `local/${repo}`,
         occurredAt: `${dateString}T12:00:00Z`,
         source: 'github',
+        additions: 40 + Math.floor(seeded(index * 3 + commitIndex) * 560),
+        deletions: 8 + Math.floor(seeded(index * 5 + commitIndex + 7) * 180),
         features: classifyCommit(message),
       })
     }

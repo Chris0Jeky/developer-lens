@@ -18,6 +18,7 @@ It is designed for a question that ordinary contribution graphs cannot answer: *
 - A share studio for social cards, platform-ready post copy, native share sheets, and self-contained HTML reports.
 - Hover, focus, and touch inspectors for activity days, language weighting, repository bubbles, headline metrics, and chart context.
 - An explorable Wrapped story with swipe navigation, a chapter map, per-chapter deeper reads, and chapter-specific sharing.
+- Authored line-change totals in Wrapped, with additions and deletions kept distinct from code-only or productivity claims.
 
 The deterministic engine in `server/analytics.ts` is the durable product: the initial narrative was shaped with an LLM-assisted analysis pass, then generalized into thresholds and cross-signal rules that can rerun without sending data to an LLM.
 
@@ -112,6 +113,8 @@ The generated JSON stays ignored and is rebuilt during deployment.
 ## Analysis model
 
 The pipeline has four layers:
+
+GitHub line totals use authenticated contributor additions and deletions from weekly statistics for default-branch commits. Boundary weeks are included, and the metric covers changed lines across code, tests, docs, configuration, and generated files.
 
 1. **Collection** — contribution connections, authenticated repository enumeration, per-repository commit history, GitHub search enrichment, and optional local Git refs.
 2. **Normalization** — exact repository-and-SHA commit deduplication, activity calendars, weekly series, language shares, delivery timings, and effective-repository concentration.

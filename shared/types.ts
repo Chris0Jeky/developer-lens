@@ -153,6 +153,8 @@ export interface ThemeMetric {
 export interface SummaryMetrics {
   contributions: number
   commits: number
+  linesAdded?: number
+  linesDeleted?: number
   localOnlyCommits: number
   pullRequests: number
   mergedPullRequests: number
@@ -235,6 +237,13 @@ export interface RawCommit {
   }
 }
 
+export interface RawLineChanges {
+  additions: number
+  deletions: number
+  commits: number
+  repositories: number
+}
+
 export interface RawPullRequest {
   id: string
   repository: string
@@ -275,6 +284,7 @@ export interface RawDataset {
   restrictedContributions: number
   repositories: RawRepository[]
   commits: RawCommit[]
+  lineChanges?: RawLineChanges
   commitDaysByRepository: Array<{
     repository: string
     date: string

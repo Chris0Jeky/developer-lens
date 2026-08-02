@@ -174,6 +174,41 @@ function dedupeCommits(commits: RawCommit[]): {
   return { commits: [...merged.values()], localOnly }
 }
 
+function sumCommitLineChanges(commits: RawCommit[]) {
+  let additions = 0
+  let deletions = 0
+  let counted = 0
+  const repositories = new Set<string>()
+  for (const commit of commits) {
+    if (commit.additions === undefined && commit.deletions === undefined) continue
+    additions += commit.additions ?? 0
+    deletions += commit.deletions ?? 0
+    counted += 1
+    repositories.add(normalizedRepo(commit.repository))
+  }
+  return counted > 0
+    ? { additions, deletions, commits: counted, repositories: repositories.size }
+    : undefined
+}
+
+function lineChangeTotals(
+  raw: RawDataset,
+  commits: RawCommit[],
+  localOnly: RawCommit[],
+) {
+  if (raw.lineChanges) {
+    const local = sumCommitLineChanges(localOnly)
+    return {
+      additions: raw.lineChanges.additions + (local?.additions ?? 0),
+      deletions: raw.lineChanges.deletions + (local?.deletions ?? 0),
+    }
+  }
+  const fallback = sumCommitLineChanges(commits)
+  return fallback
+    ? { additions: fallback.additions, deletions: fallback.deletions }
+    : undefined
+}
+
 function buildThemes(commits: RawCommit[]): ThemeMetric[] {
   const counts = new Map<string, number>()
   for (const commit of commits) {
@@ -893,6 +928,7 @@ export function analyzeDataset(raw: RawDataset): DashboardData {
   const midpointTime = fromDate.getTime() + (toDate.getTime() - fromDate.getTime()) / 2
   const coverageScore = calculateCoverage(raw)
   const { commits: uniqueCommits, localOnly } = dedupeCommits(raw.commits)
+  const lineChanges = lineChangeTotals(raw, uniqueCommits, localOnly)
   const dayMap = new Map<string, ActivityDay>()
   const repoMap = new Map(raw.repositories.map((repo) => [normalizedRepo(repo.nameWithOwner), repo]))
   const repoActivity = new Map<string, RepoAccumulator>()
@@ -1123,6 +1159,8 @@ export function analyzeDataset(raw: RawDataset): DashboardData {
   const summary: DashboardData['summary'] = {
     contributions: activity.reduce((sum, day) => sum + daySignalCount(day), 0),
     commits: githubCommitCount + localOnly.length,
+    linesAdded: lineChanges?.additions,
+    linesDeleted: lineChanges?.deletions,
     localOnlyCommits: localOnly.length,
     pullRequests: raw.pullRequests.length,
     mergedPullRequests: mergedPullRequests.length,

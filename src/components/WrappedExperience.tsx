@@ -22,7 +22,13 @@ import {
   X,
 } from 'lucide-react'
 import type { DashboardData } from '../../shared/types'
-import { compactNumber, formatDuration, percentage, precisePercentage } from '../lib/format'
+import {
+  compactNumber,
+  formatDuration,
+  fullNumber,
+  percentage,
+  precisePercentage,
+} from '../lib/format'
 import type { ShareContext } from '../lib/sharePayload'
 import { LensLogo } from './LensLogo'
 
@@ -111,6 +117,9 @@ export function WrappedExperience({
   const contributionPerWeek = Math.round(
     data.summary.contributions / Math.max(1, data.summary.activeWeeks),
   )
+  const linesAdded = data.summary.linesAdded
+  const linesDeleted = data.summary.linesDeleted
+  const hasLineStats = linesAdded !== undefined && linesDeleted !== undefined
 
   const stories = useMemo<Story[]>(
     () => [
@@ -135,17 +144,33 @@ export function WrappedExperience({
               <strong>{compactNumber(data.summary.contributions)}</strong>
               <span>visible contribution signals</span>
             </div>
+            {hasLineStats && (
+              <div aria-label="Authored line changes" className="wrapped-signal-row">
+                <span>{compactNumber(linesAdded)} lines added</span>
+                <span>{compactNumber(linesDeleted)} removed</span>
+              </div>
+            )}
           </div>
         ),
         reveal: {
           label: 'Read the density',
           title: `${compactNumber(contributionPerWeek)} signals per active week`,
           body:
-            'This normalises the visible trace by weeks with activity. It describes density during active periods, not hours worked or productivity.',
-          evidence: [
-            `${compactNumber(data.summary.contributions)} visible contribution signals`,
-            `${data.summary.activeWeeks} weeks with observable activity`,
-          ],
+            hasLineStats
+              ? publicDemo
+                ? 'This synthetic showcase uses illustrative additions and deletions. In the private lens, the same panel reports GitHub change-volume across code, tests, docs, configuration, and generated files—not code-only output, effort, or value.'
+                : `GitHub reports ${fullNumber(linesAdded)} additions and ${fullNumber(linesDeleted)} deletions for authored default-branch commits. This is a change-volume measure across code, tests, docs, configuration, and generated files—not code-only output, effort, or value.`
+              : 'Line-change metadata was unavailable for this dataset. The visible trace can still be normalised by weeks with activity, but it does not estimate hours worked or productivity.',
+          evidence: hasLineStats
+            ? [
+                `${fullNumber(linesAdded)} lines added`,
+                `${fullNumber(linesDeleted)} lines removed`,
+                `${data.summary.commits} observed commits`,
+              ]
+            : [
+                `${compactNumber(data.summary.contributions)} visible contribution signals`,
+                `${data.summary.activeWeeks} weeks with observable activity`,
+              ],
         },
       },
       {
@@ -431,6 +456,9 @@ export function WrappedExperience({
       contributionPerWeek,
       data,
       finalInsight,
+      hasLineStats,
+      linesAdded,
+      linesDeleted,
       onClose,
       privateEngagement,
       publicDemo,

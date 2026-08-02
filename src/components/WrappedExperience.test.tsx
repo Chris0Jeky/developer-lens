@@ -24,6 +24,8 @@ describe('WrappedExperience', () => {
 
     expect(screen.getByRole('dialog', { name: /developer lens wrapped.*you didn’t just write code/i })).toBeInTheDocument()
 
+    expect(screen.getByLabelText('Authored line changes')).toHaveTextContent(/lines added/i)
+
     await user.click(screen.getByRole('button', { name: /read the density.*dig deeper/i }))
     expect(screen.getByRole('region', { name: /deeper chapter insight/i })).toHaveTextContent(
       /signals per active week/i,

@@ -3,6 +3,7 @@ import {
   contributionCoverageStatus,
   dedupeDatedEvents,
   mergeRepositoryData,
+  sumContributorLineStats,
 } from './github.js'
 
 describe('GitHub normalization', () => {
@@ -46,5 +47,25 @@ describe('GitHub normalization', () => {
     }
 
     expect(mergeRepositoryData(detailed, restFallback).languages).toEqual(detailed.languages)
+  })
+
+  it('sums contributor line changes from weekly buckets overlapping the range', () => {
+    expect(
+      sumContributorLineStats(
+        [
+          {
+            author: { login: 'test-builder' },
+            weeks: [
+              { w: 1769904000, a: 100, d: 20, c: 4 },
+              { w: 1770508800, a: 40, d: 5, c: 2 },
+              { w: 1785628800, a: 900, d: 90, c: 8 },
+            ],
+          },
+        ],
+        'test-builder',
+        '2026-02-02T00:00:00.000Z',
+        '2026-08-02T00:00:00.000Z',
+      ),
+    ).toEqual({ additions: 140, deletions: 25, commits: 6 })
   })
 })
