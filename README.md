@@ -15,6 +15,7 @@ It is designed for a question that ordinary contribution graphs cannot answer: *
 - A deterministic Signal Lab for integration predictability, change-batch shape, coordination regularity, feedback surface, cadence concentration, and portfolio transitions.
 - Observed facts, derived patterns, and higher-order hypotheses kept visually and semantically distinct.
 - Evidence trails, confidence labels, coverage limitations, and a local-only privacy boundary on every analytical layer.
+- A share studio for social cards, platform-ready post copy, native share sheets, and self-contained HTML reports.
 
 The deterministic engine in `server/analytics.ts` is the durable product: the initial narrative was shaped with an LLM-assisted analysis pass, then generalized into thresholds and cross-signal rules that can rerun without sending data to an LLM.
 
@@ -30,6 +31,21 @@ The hosted site cannot connect to a GitHub account. Private analysis is a separa
 | Local lens | Your authenticated public and private GitHub activity, plus explicitly selected local Git roots | API bound to `127.0.0.1` |
 
 This split keeps the full interface publicly explorable without making a personal dataset part of the repository, frontend bundle, or Pages artifact.
+
+## Sharing and export
+
+The public showcase can share its canonical URL immediately. Its social preview, downloadable
+1200 × 630 card, captions, and standalone report are generated from synthetic aggregates only.
+
+The local lens uses a stricter route. Opening Share Studio does not upload anything, and every
+export action stays disabled until you review and acknowledge a redacted preview. The exporter is
+allowlist-based: it can receive aggregate counts and a fixed narrative, but not identity fields,
+repository names or URLs, pull-request titles, exact dates, coverage warnings, or raw events. The
+generated PNG and self-contained HTML file stay on your device until you deliberately download,
+copy, or send them through the operating system share sheet.
+
+Developer Lens does not provide a hosted URL for a private dashboard. The public link always opens
+the separate synthetic showcase, so it cannot be mistaken for a published version of local data.
 
 ## Private by construction
 

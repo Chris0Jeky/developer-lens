@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title description">
+  <title id="title">Developer Lens</title>
+  <desc id="description">A synthetic development retrospective brought into focus.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#090a13"/>
+      <stop offset="0.58" stop-color="#111222"/>
+      <stop offset="1" stop-color="#080a11"/>
+    </linearGradient>
+    <radialGradient id="violet">
+      <stop stop-color="#9d72ff" stop-opacity=".85"/>
+      <stop offset="1" stop-color="#9d72ff" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="aqua">
+      <stop stop-color="#55e6bf" stop-opacity=".72"/>
+      <stop offset="1" stop-color="#55e6bf" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="blur"><feGaussianBlur stdDeviation="42"/></filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="13"/></filter>
+  </defs>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="1080" cy="80" r="310" fill="url(#violet)" filter="url(#blur)" opacity=".6"/>
+  <circle cx="1010" cy="590" r="280" fill="url(#aqua)" filter="url(#blur)" opacity=".45"/>
+  <rect x="48" y="40" width="1104" height="550" rx="34" fill="none" stroke="#fff" stroke-opacity=".1"/>
+  <g font-family="Inter,Segoe UI,Arial,sans-serif">
+    <g transform="translate(82 78)">
+      <circle cx="13" cy="13" r="12" fill="none" stroke="#55e6bf" stroke-width="2"/>
+      <circle cx="13" cy="13" r="4" fill="#9d72ff"/>
+      <text x="36" y="20" fill="#fff" font-size="18" font-weight="700">Developer Lens</text>
+    </g>
+    <rect x="865" y="72" width="242" height="38" rx="19" fill="#fff" fill-opacity=".07" stroke="#fff" stroke-opacity=".12"/>
+    <text x="986" y="97" fill="#ded6ff" font-size="14" font-weight="650" text-anchor="middle">SYNTHETIC SHOWCASE</text>
+    <text x="82" y="174" fill="#aeb4c8" font-size="16" font-weight="700" letter-spacing="3.2">DEVELOPMENT RETROSPECTIVE</text>
+    <text x="82" y="248" fill="#f8f6ff" font-size="64" font-weight="720" letter-spacing="-2.5">Your development trail,</text>
+    <text x="82" y="316" fill="#f8f6ff" font-size="64" font-weight="720" letter-spacing="-2.5">brought into focus.</text>
+    <text x="84" y="365" fill="#b9bece" font-size="21">Rhythm, project gravity, delivery signals, and a Wrapped story—</text>
+    <text x="84" y="396" fill="#b9bece" font-size="21">with evidence and limits attached.</text>
+    <line x1="82" y1="450" x2="790" y2="450" stroke="#fff" stroke-opacity=".11"/>
+    <text x="82" y="498" fill="#fff" font-size="31" font-weight="700">Interactive</text>
+    <text x="82" y="526" fill="#858da4" font-size="12" font-weight="700" letter-spacing="2">EXPLORE THE SIGNALS</text>
+    <text x="322" y="498" fill="#fff" font-size="31" font-weight="700">Private-first</text>
+    <text x="322" y="526" fill="#858da4" font-size="12" font-weight="700" letter-spacing="2">LOCAL ANALYSIS</text>
+    <text x="590" y="498" fill="#fff" font-size="31" font-weight="700">Shareable</text>
+    <text x="590" y="526" fill="#858da4" font-size="12" font-weight="700" letter-spacing="2">REDACTED EXPORTS</text>
+    <text x="82" y="565" fill="#858da4" font-size="13">Public artifact uses invented events and repositories · no personal GitHub data</text>
+  </g>
+  <g>
+    <circle cx="1020" cy="305" r="144" fill="none" stroke="#a984ff" stroke-opacity=".55" stroke-width="1.5"/>
+    <circle cx="1020" cy="305" r="98" fill="none" stroke="#57e7c0" stroke-opacity=".52" stroke-dasharray="5 10"/>
+    <circle cx="1020" cy="305" r="58" fill="#9d72ff" fill-opacity=".75" filter="url(#soft)"/>
+    <circle cx="1020" cy="305" r="42" fill="#17142b" stroke="#f1eaff" stroke-opacity=".58"/>
+    <circle cx="1148" cy="215" r="11" fill="#55e6bf"/>
+    <circle cx="890" cy="421" r="8" fill="#9d72ff"/>
+    <circle cx="931" cy="168" r="6" fill="#ffd166"/>
+  </g>
+</svg>

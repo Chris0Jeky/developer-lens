@@ -12,6 +12,7 @@ import {
   Lock,
   MessageSquare,
   Play,
+  Share2,
   ShieldCheck,
   Sparkles,
 } from 'lucide-react'
@@ -28,6 +29,7 @@ import { MetricCard } from './components/MetricCard'
 import { PulseChart } from './components/PulseChart'
 import { RepoConstellation } from './components/RepoConstellation'
 import { RepoLedger } from './components/RepoLedger'
+import { ShareStudio } from './components/ShareStudio'
 import { SignalLab } from './components/SignalLab'
 import { WrappedExperience } from './components/WrappedExperience'
 import { useDashboard } from './hooks/useDashboard'
@@ -37,6 +39,7 @@ import {
   formatRange,
   percentage,
 } from './lib/format'
+import type { ShareContext } from './lib/sharePayload'
 
 function RangeSwitch({ range, onChange }: { range: RangeKey; onChange: (range: RangeKey) => void }) {
   return (
@@ -106,6 +109,7 @@ function PullRequestRow({ pullRequest }: { pullRequest: PullRequestMetric }) {
 function App() {
   const [range, setRange] = useState<RangeKey>('6m')
   const [wrappedOpen, setWrappedOpen] = useState(false)
+  const [shareContext, setShareContext] = useState<ShareContext | null>(null)
   const { data, error, loading } = useDashboard(range)
   const publicShowcase =
     data?.meta.privacy === 'public-demo' || import.meta.env.VITE_STATIC_DEMO === 'true'
@@ -180,6 +184,13 @@ function App() {
                   <button className="primary-button" onClick={() => setWrappedOpen(true)} type="button">
                     <Play fill="currentColor" size={15} aria-hidden="true" />
                     Start your Wrapped
+                  </button>
+                  <button
+                    className="share-launch"
+                    onClick={() => setShareContext({ kind: 'overview' })}
+                    type="button"
+                  >
+                    <Share2 size={16} aria-hidden="true" /> Share or export
                   </button>
                   <a className="text-button" href="#rhythm">
                     Follow the signal trail <ArrowRight size={16} aria-hidden="true" />
@@ -448,6 +459,12 @@ function App() {
           </footer>
 
           <WrappedExperience data={data} onClose={() => setWrappedOpen(false)} open={wrappedOpen} />
+          <ShareStudio
+            context={shareContext ?? { kind: 'overview' }}
+            data={data}
+            onClose={() => setShareContext(null)}
+            open={Boolean(shareContext)}
+          />
         </>
       )}
     </div>

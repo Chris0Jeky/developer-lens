@@ -1,6 +1,9 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { extname, join, resolve } from 'node:path'
 import type { DashboardData, RangeKey } from '../shared/types.js'
+import { buildShareCardSvg } from '../src/lib/shareCardMarkup.js'
+import { createShareCaption, createSharePayload } from '../src/lib/sharePayload.js'
+import { buildStandaloneReport } from '../src/lib/standaloneReport.js'
 
 const publicData = resolve('public', 'data')
 const dist = resolve('dist')
@@ -43,7 +46,36 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
     dashboard.pullRequests.every((pullRequest) => !pullRequest.url),
     `${range}: a pull request contains a URL`,
   )
+
+  const sharePayload = createSharePayload(dashboard)
+  const shareOutput = [
+    JSON.stringify(sharePayload),
+    createShareCaption(sharePayload, 'professional'),
+    buildShareCardSvg(sharePayload),
+    buildStandaloneReport(sharePayload),
+  ].join('\n')
+  assert(sharePayload.scope === 'public-demo', `${range}: share scope is not public-demo`)
+  assert(
+    !dashboard.repositories.some(
+      (repository) =>
+        shareOutput.includes(repository.nameWithOwner) || shareOutput.includes(repository.displayName),
+    ),
+    `${range}: a repository identity escaped into the public share output`,
+  )
+  assert(
+    !dashboard.pullRequests.some((pullRequest) => shareOutput.includes(pullRequest.title)),
+    `${range}: a pull request title escaped into the public share output`,
+  )
+  assert(!/<script\b/i.test(shareOutput), `${range}: public share output contains a script`)
 }
+
+const socialCard = await readFile(join(dist, 'social-card.png'))
+assert(
+  socialCard.subarray(0, 8).equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10])),
+  'social card is not a PNG',
+)
+assert(socialCard.readUInt32BE(16) === 1200, 'social card width is not 1200px')
+assert(socialCard.readUInt32BE(20) === 630, 'social card height is not 630px')
 
 for (const path of await filesBelow(dist)) {
   if (!textExtensions.has(extname(path))) continue
@@ -53,4 +85,6 @@ for (const path of await filesBelow(dist)) {
   }
 }
 
-console.log('Verified synthetic identities, URL boundaries, and secret/path patterns in showcase output.')
+console.log(
+  'Verified synthetic identities, share/export boundaries, social card dimensions, and secret/path patterns in showcase output.',
+)
