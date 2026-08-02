@@ -1,20 +1,20 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { extname, join, resolve } from 'node:path'
-import {
-  DEMO_REPOSITORY_NAMES,
-  isCanonicalDemoRepositoryIdentity,
-} from '../server/demo.js'
 import type { DashboardData, RangeKey } from '../shared/types.js'
 import { buildShareCardSvg } from '../src/lib/shareCardMarkup.js'
 import { createPortableExportPayload } from '../src/lib/portableExportPayload.js'
 import { buildPortableExperienceReport } from '../src/lib/portableExportReport.js'
 import { createShareCaption, createSharePayload } from '../src/lib/sharePayload.js'
 import { buildStandaloneReport } from '../src/lib/standaloneReport.js'
+import {
+  APPROVED_SHOWCASE_REPOSITORY_NAMES,
+  isApprovedShowcaseRepositoryIdentity,
+  isApprovedShowcaseRepositoryName,
+} from './showcasePrivacyPolicy.js'
 
 const publicData = resolve('public', 'data')
 const dist = resolve('dist')
 const textExtensions = new Set(['.css', '.html', '.js', '.json', '.map', '.svg', '.txt'])
-const canonicalDemoRepositoryNames = new Set<string>(DEMO_REPOSITORY_NAMES)
 const forbiddenPatterns = [
   { label: 'GitHub token prefix', pattern: /\b(?:github_pat_|gh[pousr]_)\w+/i },
   { label: 'private key material', pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
@@ -43,15 +43,19 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
   assert(dashboard.meta.privacy === 'public-demo', `${range}: privacy marker is not public-demo`)
   assert(dashboard.meta.mode === 'demo', `${range}: mode is not demo`)
   assert(dashboard.meta.subject.login === 'synthetic-builder', `${range}: subject is not synthetic`)
+  const dashboardRepositoryNames = dashboard.repositories.map(
+    (repository) => repository.displayName,
+  )
   assert(
-    dashboard.repositories.length === DEMO_REPOSITORY_NAMES.length &&
-    dashboard.repositories.every(
-      (repository) =>
-        isCanonicalDemoRepositoryIdentity(
-          repository.nameWithOwner,
-          repository.displayName,
-        ) && !repository.url,
-    ),
+    dashboard.repositories.length === APPROVED_SHOWCASE_REPOSITORY_NAMES.length &&
+      new Set(dashboardRepositoryNames).size === APPROVED_SHOWCASE_REPOSITORY_NAMES.length &&
+      dashboard.repositories.every(
+        (repository) =>
+          isApprovedShowcaseRepositoryIdentity(
+            repository.nameWithOwner,
+            repository.displayName,
+          ) && !repository.url,
+      ),
     `${range}: repository identities do not exactly match the canonical synthetic showcase set`,
   )
   assert(
@@ -87,13 +91,17 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
       repositoryRedaction: 'private-aliases',
     })
     const portableOutput = buildPortableExperienceReport(portablePayload)
+    const portableRepositoryNames = portablePayload.repositories.map(
+      (repository) => repository.label,
+    )
     assert(portablePayload.scope === 'public-demo', `${range}: portable scope is not public-demo`)
     assert(
-      portablePayload.repositories.length === DEMO_REPOSITORY_NAMES.length &&
+      portablePayload.repositories.length === APPROVED_SHOWCASE_REPOSITORY_NAMES.length &&
+        new Set(portableRepositoryNames).size === APPROVED_SHOWCASE_REPOSITORY_NAMES.length &&
         portablePayload.repositories.every(
           (repository) =>
             repository.disclosure === 'synthetic' &&
-            canonicalDemoRepositoryNames.has(repository.label),
+            isApprovedShowcaseRepositoryName(repository.label),
         ),
       `${range}: a portable repository is not a canonical synthetic showcase identity`,
     )

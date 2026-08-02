@@ -66,21 +66,6 @@ const DEMO_REPOSITORIES = [
   },
 ] as const
 
-export const DEMO_REPOSITORY_NAMES = Object.freeze(
-  DEMO_REPOSITORIES.map((repository) => repository.name),
-)
-
-const demoRepositoryNameSet = new Set<string>(DEMO_REPOSITORY_NAMES)
-
-export function isCanonicalDemoRepositoryIdentity(
-  nameWithOwner: string,
-  repositoryName: string,
-): boolean {
-  return (
-    demoRepositoryNameSet.has(repositoryName) && nameWithOwner === `local/${repositoryName}`
-  )
-}
-
 export function createDemoDataset(range: RangeKey): RawDataset {
   const months = range === '6m' ? 6 : 12
   const toDate = new Date()
