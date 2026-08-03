@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash, createHmac, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { readFile, rename, unlink } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
@@ -9,6 +9,8 @@ import { STORAGE_SCHEMA_VERSION } from './schema.js'
 const dateTime = z.string().datetime({ offset: true })
 const opaqueIdentifier = z.string().min(1).max(128).regex(/^[A-Za-z0-9:._-]+$/)
 const repositoryReference = z.string().min(1).max(256).regex(/^[A-Za-z0-9:._/-]+$/)
+const localRepositoryIdentifier = z.string().min(1).max(262).regex(/^local:[A-Za-z0-9:._/-]+$/)
+const repositoryProviderIdentifier = z.union([opaqueIdentifier, localRepositoryIdentifier])
 const featureType = z.enum([
   'feat',
   'fix',
@@ -37,7 +39,7 @@ const v1DatasetSchema = z
     restrictedContributions: z.number().int().nonnegative(),
     repositories: z.array(
       z.object({
-        id: opaqueIdentifier,
+        id: repositoryProviderIdentifier,
         nameWithOwner: repositoryReference,
         name: repositoryReference,
         url: z.string().optional(),
@@ -106,6 +108,7 @@ export type MigrationFailurePoint = 'after-repository-upsert'
 export interface ImportV1Options {
   sourcePath: string
   targetPath: string
+  installationKey?: Buffer
   failAt?: MigrationFailurePoint
 }
 
@@ -117,6 +120,8 @@ export interface ImportProof {
 
 export type StorageFailureCode =
   | 'storage-disabled'
+  | 'storage-key-missing'
+  | 'storage-key-invalid'
   | 'source-read-failed'
   | 'v1-validation-failed'
   | 'storage-target-mismatch'
@@ -125,6 +130,16 @@ export type StorageFailureCode =
 export type StorageSelection =
   | { reader: 'legacy-json'; code: StorageFailureCode }
   | { reader: 'sqlite-v2'; checksum: string }
+
+export class InstallationKeyError extends Error {
+  public readonly code: 'INSTALLATION_KEY_REQUIRED' | 'INSTALLATION_KEY_TOO_SHORT'
+
+  constructor(code: 'INSTALLATION_KEY_REQUIRED' | 'INSTALLATION_KEY_TOO_SHORT') {
+    super(code)
+    this.name = 'InstallationKeyError'
+    this.code = code
+  }
+}
 
 export function parseV1Dataset(source: string): V1Dataset {
   let value: unknown
@@ -151,16 +166,19 @@ function validateReferences(dataset: V1Dataset): void {
   if (references.some((repository) => !repositoryNames.has(repository))) {
     throw new V1ValidationError()
   }
-  const capabilities = dataset.coverage.map((coverage) => mapCoverage(coverage).capabilityId)
-  if (new Set(capabilities).size !== capabilities.length) throw new V1ValidationError()
+  const coverageIds = dataset.coverage.map((coverage) => coverage.id)
+  if (new Set(coverageIds).size !== coverageIds.length) throw new V1ValidationError()
+  for (const coverage of dataset.coverage) mapCoverage(coverage)
 }
 
-function mapCoverage(coverage: V1Dataset['coverage'][number]): {
+interface MappedCoverage {
   capabilityId: 'github.core' | 'cap.local.git'
   status: 'unavailable' | 'censored'
   limitationCode: 'V1_UNAVAILABLE' | 'V1_PARTIAL_COVERAGE' | 'V1_COMPLETENESS_UNVERIFIED'
   observedUnits: number
-} {
+}
+
+function mapCoverage(coverage: V1Dataset['coverage'][number]): MappedCoverage {
   const capabilityId = coverage.id.startsWith('github-')
     ? 'github.core'
     : coverage.id === 'local-git'
@@ -191,12 +209,57 @@ function mapCoverage(coverage: V1Dataset['coverage'][number]): {
   }
 }
 
+function aggregateCoverage(coverageRecords: V1Dataset['coverage']): MappedCoverage[] {
+  // Legacy item counts use different units, so summing them would invent a total.
+  // Keep the least-favorable component and the lowest count when statuses tie.
+  const priority: Record<MappedCoverage['limitationCode'], number> = {
+    V1_COMPLETENESS_UNVERIFIED: 0,
+    V1_PARTIAL_COVERAGE: 1,
+    V1_UNAVAILABLE: 2,
+  }
+  const byCapability = new Map<MappedCoverage['capabilityId'], MappedCoverage>()
+  for (const coverage of coverageRecords) {
+    const mapped = mapCoverage(coverage)
+    const current = byCapability.get(mapped.capabilityId)
+    if (
+      !current ||
+      priority[mapped.limitationCode] > priority[current.limitationCode] ||
+      (priority[mapped.limitationCode] === priority[current.limitationCode] &&
+        mapped.observedUnits < current.observedUnits)
+    ) {
+      byCapability.set(mapped.capabilityId, mapped)
+    }
+  }
+  return [...byCapability.values()]
+}
+
 function digest(value: string | Buffer): string {
   return createHash('sha256').update(value).digest('hex')
 }
 
-function repositoryKey(providerId: string): string {
-  return `repo-${digest(providerId).slice(0, 24)}`
+function requireInstallationKey(value: Buffer | undefined): Buffer {
+  if (value === undefined || value.length === 0) throw new InstallationKeyError('INSTALLATION_KEY_REQUIRED')
+  if (value.length < 32) throw new InstallationKeyError('INSTALLATION_KEY_TOO_SHORT')
+  return value
+}
+
+function hmacAlias(key: Buffer, domain: string, value: string): string {
+  return createHmac('sha256', key).update(domain).update('\0').update(value).digest('hex')
+}
+
+function repositoryKey(providerId: string, installationKey: Buffer): string {
+  return `repo-${hmacAlias(installationKey, 'developer-lens/repository-analytical/v1', providerId)}`
+}
+
+function storageRepositoryProviderId(providerId: string, installationKey: Buffer): string {
+  return `repo-${hmacAlias(installationKey, 'developer-lens/repository-provider/v1', providerId)}`
+}
+
+function assertStorageChecks(db: ReturnType<typeof openStorageDatabase>): void {
+  const checks = runStorageChecks(db)
+  if (checks.integrity !== 'ok' || checks.quick !== 'ok' || checks.foreignKeys.length !== 0) {
+    throw new Error('STORAGE_CHECK_FAILED')
+  }
 }
 
 function canonicalState(db: ReturnType<typeof openStorageDatabase>): string {
@@ -221,10 +284,14 @@ function importIntoDatabase(
   db: ReturnType<typeof openStorageDatabase>,
   dataset: V1Dataset,
   sourceChecksum: string,
+  installationKey: Buffer,
   failAt?: MigrationFailurePoint,
 ): ImportProof {
   const repositoryProviderIds = new Map(
-    dataset.repositories.map((repository) => [repository.nameWithOwner, repository.id]),
+    dataset.repositories.map((repository) => [
+      repository.nameWithOwner,
+      storageRepositoryProviderId(repository.id, installationKey),
+    ]),
   )
   const transaction = db.transaction(() => {
     const insertRun = db.prepare(
@@ -246,9 +313,19 @@ function importIntoDatabase(
       'INSERT INTO dated_event_observation (provider_id, repository_provider_id, occurred_at, event_kind) VALUES (?, ?, ?, ?) ON CONFLICT(provider_id) DO UPDATE SET repository_provider_id = excluded.repository_provider_id, occurred_at = excluded.occurred_at, event_kind = excluded.event_kind',
     )
 
+    assertStorageChecks(db)
+    db.exec(`
+      DELETE FROM dated_event_observation;
+      DELETE FROM pull_request_fact;
+      DELETE FROM commit_observation;
+      DELETE FROM coverage_observation;
+      DELETE FROM repository_identity;
+      DELETE FROM import_run;
+    `)
     insertRun.run(sourceChecksum, STORAGE_SCHEMA_VERSION)
     for (const repository of dataset.repositories) {
-      insertRepository.run(repository.id, repositoryKey(repository.id), Number(repository.isPrivate), Number(repository.isArchived), Number(repository.isFork))
+      const providerId = storageRepositoryProviderId(repository.id, installationKey)
+      insertRepository.run(providerId, repositoryKey(repository.id, installationKey), Number(repository.isPrivate), Number(repository.isArchived), Number(repository.isFork))
     }
     if (failAt === 'after-repository-upsert') throw new Error('INJECTED_FAILURE')
     for (const commit of dataset.commits) {
@@ -257,22 +334,19 @@ function importIntoDatabase(
     for (const pullRequest of dataset.pullRequests) {
       insertPullRequest.run(pullRequest.id, repositoryProviderIds.get(pullRequest.repository), pullRequest.number, pullRequest.createdAt, pullRequest.mergedAt ?? null, pullRequest.closedAt ?? null, pullRequest.state, Number(pullRequest.isDraft), pullRequest.additions ?? null, pullRequest.deletions ?? null, pullRequest.changedFiles ?? null, pullRequest.comments, pullRequest.reviews)
     }
-    for (const coverage of dataset.coverage) {
-      const mapped = mapCoverage(coverage)
+    for (const mapped of aggregateCoverage(dataset.coverage)) {
       insertCoverage.run(mapped.capabilityId, mapped.status, mapped.limitationCode, mapped.observedUnits)
     }
     for (const event of dataset.reviews) insertEvent.run(event.id, repositoryProviderIds.get(event.repository), event.occurredAt, 'review')
     for (const event of dataset.issues) insertEvent.run(event.id, repositoryProviderIds.get(event.repository), event.occurredAt, 'issue')
-    const checks = runStorageChecks(db)
-    if (checks.integrity !== 'ok' || checks.quick !== 'ok' || checks.foreignKeys.length !== 0) {
-      throw new Error('STORAGE_CHECK_FAILED')
-    }
+    assertStorageChecks(db)
   })
   transaction()
   return { checksum: canonicalState(db), integrity: 'ok', foreignKeyViolations: 0 }
 }
 
 export async function importV1Json(options: ImportV1Options): Promise<ImportProof> {
+  const installationKey = requireInstallationKey(options.installationKey)
   const source = await readFile(options.sourcePath)
   const dataset = parseV1Dataset(source.toString('utf8'))
   const sourceChecksum = digest(source)
@@ -283,7 +357,7 @@ export async function importV1Json(options: ImportV1Options): Promise<ImportProo
   let db: ReturnType<typeof openStorageDatabase> | undefined
   try {
     db = openStorageDatabase(workingPath)
-    const result = importIntoDatabase(db, dataset, sourceChecksum, options.failAt)
+    const result = importIntoDatabase(db, dataset, sourceChecksum, installationKey, options.failAt)
     db.close()
     db = undefined
     if (!existingTarget) await rename(workingPath, options.targetPath)
@@ -307,6 +381,12 @@ export async function selectStorageReader(
     const proof = await importV1Json(options)
     return { reader: 'sqlite-v2', checksum: proof.checksum }
   } catch (error) {
+    if (error instanceof InstallationKeyError) {
+      return {
+        reader: 'legacy-json',
+        code: error.code === 'INSTALLATION_KEY_REQUIRED' ? 'storage-key-missing' : 'storage-key-invalid',
+      }
+    }
     if (error instanceof V1ValidationError) return { reader: 'legacy-json', code: 'v1-validation-failed' }
     if (error instanceof StorageDatabaseError) return { reader: 'legacy-json', code: 'storage-target-mismatch' }
     const nodeError = error as NodeJS.ErrnoException

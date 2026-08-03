@@ -5,8 +5,9 @@ Last updated: **2026-08-03**
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03.
 
-Current phase: **D1-D3 and the first synthetic P2 SQLite/importer proof are complete locally;
-the bounded P3 analysis-pack architecture/dependency decision is next**.
+Current phase: **D1-D3 and the synthetic P2 SQLite/importer proof are complete locally; the
+post-merge P2 migration-contract repair and its installation-HMAC blocker repair are implemented
+locally, with the one fix-round commit pending publication**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -14,25 +15,20 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Branch: `codex/persist-deep-signal-architecture`, no upstream before publication.
-- Exact executable P2 head: `d13cab2a48c92cf0020ee783b785e296a1f923ac`; committed documentation
-  successor: `4d7aab9a7a611bc8890cc246c7210cfba9f41460`. This publication-policy
-  successor has no SHA until it is committed.
-- Base: `origin/main` at `7f937547220e6160889eb96a7a72e2ef2c425b95`. The committed branch is
-  currently 15 commits ahead and 0 behind before this successor; refresh after commit/push.
-- Pull request: none before this authority update. The owner has replaced q-4's human-only relay:
-  agents may push and open/manage pull requests for the code-only/synthetic branch; only the
-  top-routed Sol model may merge after exact diff/showcase canaries, required review, CI/proving
-  checks, and post-push aging pass.
+- Branch: `codex/fix-v1-migration-contract`, tracking `origin/codex/fix-v1-migration-contract`.
+- Exact reviewed pre-fix head: `270ec16ba46090673420328cee2159057a236b3b`.
+  Pull request [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) is open and ready for
+  review at that head; this one fix-round commit is local and has not been pushed.
+- Base: `origin/main` at merge `5df1a09eddb1d9c003d5749b82f7462126a78e07`. The reviewed branch was
+  2 commits ahead and 0 behind at the pre-fix head above.
+- Pull request: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at the base above;
+  follow-up [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) carries the three migration
+  repairs and this single HMAC blocker fix round.
 - Worktrees: one registered Developer Lens worktree, the primary checkout; it was tracked-clean
   before this ledger edit. Refresh cleanliness and occupancy from Git before any further mutation.
-- Local branch commits before this P2-ledger successor: `4abb2c5` architecture/handoff;
-  `92cb782` G1 authority/charter; `2ea18a1` initial ledger/task card; `8809289` P1 executable
-  contracts; `26aefe9` P1 checkpoint; `b40be09` demo-first policy; then the historical P1-handoff
-  redirect; `6f1b800` D1 offline V2 signal demo; `4d87533` D3 repeatable-demo documentation;
-  `2104e56` D1-D3 milestone ledger; `8c8f309` the synthetic P2 SQLite/importer proof;
-  `e124f40` the parked-state ledger; `d13cab2` the separate target-ownership follow-up; and
-  `4d7aab9` the verified P2-complete checkpoint.
+- Local follow-up commit: `bb2a0d5` fixes producer coverage compatibility, local repository-ID
+  compatibility, and transactional replacement semantics; the current local fix round adds the
+  explicit installation-scoped HMAC key contract.
 
 ## Authority and owner gates
 
@@ -166,12 +162,23 @@ unresolved review threads outrank it whenever they disagree.
   New imports use a temporary target and rename; existing-target inserts plus integrity, quick, and
   foreign-key checks share one transaction.
 - The strict projection persists only bounded opaque identifiers, categorical states, counts,
-  timestamps, booleans, and a hashed analytical repository key. Names, titles, URLs, descriptions,
-  labels, warnings, subjects, paths, and actor metadata are not persisted.
+  timestamps, booleans, and full installation-scoped HMAC-SHA-256 repository provider/analytical
+  aliases with domain separation. Names, titles, URLs, descriptions, labels, warnings, subjects,
+  paths, raw repository provider IDs, and actor metadata are not persisted; imports fail closed
+  without a 32-byte installation key. Other bounded v1 object IDs remain restricted-store C2 keys.
 - Legacy coverage maps conservatively into the executable ten-state V2 union: `unavailable` remains
   `unavailable`; `partial` and unverifiable legacy `complete` become `censored` with fixed limitation
   codes. Bounded legacy `github-*` IDs map to `github.core`, exact `local-git` maps to
-  `cap.local.git`, and every other coverage ID is rejected.
+  `cap.local.git`, and every other coverage ID is rejected. Distinct producer `github-*` entries are
+  aggregated by their least-favorable state; ties retain the lowest observed count because the v1
+  item-count units cannot safely be summed. Exact duplicate source IDs remain invalid.
+- Collector-generated `local:<repository-reference>` provider IDs are accepted only within the same
+  bounded repository-reference alphabet and are deterministically hashed before persistence. The
+  raw local identifier and repository name do not enter the V2 target.
+- An existing target is a single replaceable v1 snapshot. Its integrity and foreign keys are checked
+  before mutation; all P2-owned snapshot rows and the superseded import checksum are cleared and
+  rebuilt inside the same transaction; post-import checks run before commit. Any injected or
+  integrity failure rolls the deletion and rebuild back to the previous canonical state.
 - The first review found four HIGH defects in target ownership, transaction placement, projection
   bounds, and legacy coverage semantics. One bounded fix batch closed all four reviewed
   reproductions; coordinator review also caught and closed both partial-header tuples before the
@@ -184,9 +191,27 @@ unresolved review threads outrank it whenever they disagree.
   literal-prefix `GLOB 'sqlite_*'` semantics with an adversarial `sqliteXview`. The final bounded
   review confirmed the prior HIGH closed and found no new CRITICAL issue. P2 is locally complete
   and agent-publication-eligible through the gated q-4 path.
+- After PR #3 merged, three late review threads exposed normal multi-record GitHub coverage
+  rejection, collector-generated local-ID rejection, and stale rows surviving replacement imports;
+  PR #4's late review additionally identified an unsalted local alias, which this fix round closes
+  with domain-separated installation HMAC aliases.
+  Commit `bb2a0d5a1adc922fb9dc5eed0c3f91ae5c546fe7` closes the three reproduced seams with invented
+  producer-shaped fixtures only; real/private data was not read or migrated.
 
 ## Verification
 
+- P2 migration-contract follow-up at pre-fix head
+  `270ec16ba46090673420328cee2159057a236b3b`: the focused migration proof passed 1 file / 15 tests;
+  `npm run check` passed lint, 21 files / 64 tests, TypeScript, and the Vite build;
+  `npm run build:showcase` passed synthetic export, social render, showcase build, identity/export
+  boundary verification, and secret/path scans; `npm audit --omit=dev` reported zero vulnerabilities;
+  and `git diff --check` passed. The source JSON byte-preservation assertions cover successful and
+  failed replacement imports.
+- The current local HMAC fix round adds synthetic missing/short-key failure, full
+  domain-separated installation-key alias, plain-hash non-equivalence, key-scope, raw-ID absence,
+  and transformed-ID collision regressions. Focused migration proof passed 1 file / 18 tests;
+  `npm run check` passed lint, 21 files / 67 tests, TypeScript, and the Vite build; showcase,
+  audit, and diff checks are recorded after this local commit before publication.
 - q-4 publication preflight with the current policy/declaration diff present: `npm run check` passed
   lint, 21 files / 61 tests, TypeScript, and the Vite build; `npm run build:showcase` passed export,
   social render, showcase build, synthetic identity/export-boundary checks, and secret/path scans;
@@ -262,6 +287,10 @@ unresolved review threads outrank it whenever they disagree.
   ceiling parked the original slice; a separate smallest follow-up broadened the guard. Its first
   review then found the SQL `_` wildcard also hid `sqliteXview`; one fix batch switched both code and
   assertions to literal-prefix GLOB semantics. Focused/full/showcase checks and final review passed.
+- The first focused run with the three new regressions failed exactly 3 of 15 tests: mapped GitHub
+  coverage identities collided at validation, the producer local ID failed its slash check, and a
+  replacement retained all six prior table populations plus both import checksums. After the bounded
+  repair, all 15 focused tests and the full gate passed.
 
 ## NOT verified
 
@@ -271,7 +300,7 @@ unresolved review threads outrank it whenever they disagree.
   migration and the G2 backup/grace/deletion protocol remain deliberately unexercised.
 - Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
   synthetic route and showcase verifier.
-- Hosted CI or connector review for the unpublished Developer Lens head.
+- Hosted CI or connector review for the local HMAC-fix head.
 - Runtime deny canary; no repository-owned Codex adapter exists.
 - The newly approved G2/G3 policy has no runtime activation path yet. No real-data migration,
   retention cleanup, backup, deletion, or named G3 connector ran in this decision slice.
@@ -286,6 +315,12 @@ unresolved review threads outrank it whenever they disagree.
   intended ownership boundary; no real/private source or production reader uses the new database.
 - P2 remains a disabled, synthetic proof without CLI/`dataStore`/API wiring; its reviewed ownership
   boundary is not evidence for unimplemented real-data migration or production compatibility.
+- The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
+  this bounded importer accepts only the registered ASCII repository-reference alphabet; that P2
+  compatibility gap remains tracked for the future canonical local-UUID/P6 seam.
+- A P2 target represents one complete v1 snapshot. Atomic whole-snapshot replacement is now proved;
+  multiple independent v1 sources sharing one target are unsupported and would need explicit row
+  provenance/scoping before such a mode could be introduced.
 - Existing JSON, raw API error behavior, late export sanitization, and person-shaped analytics
   retain the architecture's documented risks. They remain deferred in
   `docs/POST_DEMO_HARDENING.md` unless they cross the irreversible floor.
@@ -304,15 +339,14 @@ unresolved review threads outrank it whenever they disagree.
 - A future `cap.github.security` activation contract must encode its separate storage decision
   as well as G2+G3. P1 remains safe because the capability is `never_authorized` and has no
   activation path.
+- A future provider-expansion review must assert disjoint transformed repository IDs; current
+  installation HMAC aliases remove the raw local-alias collision path for the bounded producer.
 
 ## Exact resume point
 
-1. Treat `d13cab2a48c92cf0020ee783b785e296a1f923ac` as the exact executable P2 head and
-   `4d7aab9a7a611bc8890cc246c7210cfba9f41460` as its prior documentation successor; this
-   publication-policy successor has no SHA until committed. The owner authorizes agents to publish
-   this code-only/synthetic range through the exact declared route; only the top-routed Sol model
-   may merge after exact diff/showcase canaries, required review, CI/proving checks, and post-push
-   aging pass.
+1. Treat `270ec16ba46090673420328cee2159057a236b3b` as the exact pre-fix P2 migration-contract
+   head for PR #4; the one HMAC fix-round commit is local and must be pushed only after its checks,
+   diff review, and publication route are refreshed. Leave merge to the top-routed Sol model.
 2. Route the bounded P3 architecture/dependency decision to Sol/Terra before writing. Select and pin
    a Node 20/24 Windows-compatible DuckDB/Parquet path using current primary metadata plus a local
    native probe; do not claim Node 20 Windows behavior until directly tested.
