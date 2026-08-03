@@ -151,6 +151,12 @@ npm run build:showcase
 
 ## Project map
 
+Architecture and implementation handoff:
+
+- [`docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md`](docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md) — the original read-only research brief.
+- [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](docs/DEVELOPER_LENS_V2_ARCHITECTURE.md) — the resulting privacy-first architecture and staged backlog.
+- [`docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md`](docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md) — a fresh-session Sol Ultra prompt that coordinates Terra implementation and bounded Luna agents.
+
 - `scripts/collect.ts` — collection orchestration and private dataset writes.
 - `scripts/exportDemo.ts` — deterministic public showcase generation.
 - `scripts/verifyShowcase.ts` — structural privacy assertions and artifact scanning.
