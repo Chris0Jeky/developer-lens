@@ -25,10 +25,11 @@ unresolved review threads outrank it whenever they disagree.
 - Follow-up commits: `bb2a0d5` repairs producer coverage/local repository-ID compatibility and
   transactional replacement; `9c8c3e9` adds the explicit installation-scoped HMAC key contract;
   `739e371` narrows the repository-identity persistence claim to its exact C2 boundary.
-- P3 implementation commit: `51c30e2c2c77f9efa9e0d71326b9124f018bf1ff` adds the pinned
-  DuckDB Node dependency and the synthetic analysis-pack producer/replay seam. Refresh its PR,
-  hosted checks, review, merge, and `origin/main` state from GitHub; this ledger does not predict
-  publication.
+- P3 implementation commits: `51c30e2c2c77f9efa9e0d71326b9124f018bf1ff` adds the pinned
+  DuckDB Node dependency and the synthetic analysis-pack producer/replay seam;
+  `5acba15db7ee24bc73f291510908494d82995eba` derives the opaque pack ID from safe pack facts after
+  review. Refresh the PR, hosted checks, review, merge, and `origin/main` state from GitHub; this
+  ledger does not predict publication.
 
 ## Authority and owner gates
 
@@ -208,8 +209,10 @@ unresolved review threads outrank it whenever they disagree.
 - Pack boundary: the complete file set is `manifest.json`, `checksums.sha256`, `COMPLETE`, and
   `tables/coverage.parquet`. The strict runtime manifest fixes contract versions, the
   `redacted_aggregate` export class, the two safe P2 capability IDs, one C1 artifact, and no model
-  evidence. Replay also rejects extra files, unexpected Parquet columns/types/enums, duplicate
-  capabilities, manifest/table disagreement, and checksum or marker mismatch.
+  evidence. Its opaque `pack-<digest>` ID is derived from the declared timestamp and safe Parquet
+  checksum; callers cannot supply repository- or identity-shaped pack metadata. Replay also rejects
+  extra files, unexpected Parquet columns/types/enums, duplicate capabilities, manifest/table
+  disagreement, and checksum or marker mismatch.
 - Publication protocol: generate in a sibling temporary directory, write and close the Parquet
   file, hash and validate the manifest/table, write `COMPLETE` last, then rename the directory.
   The source database remains byte-identical in the deterministic proof.
@@ -223,12 +226,13 @@ unresolved review threads outrank it whenever they disagree.
   DuckDB `v1.5.5`, wrote a 315-byte deterministic Parquet fixture, and replayed ordered rows under
   Node `v24.13.1` / npm `11.8.0` and Node `v20.20.2`, both on Windows x64. The install audited 355
   packages with zero reported vulnerabilities; final `npm audit --omit=dev` also reported zero.
-- P3 focused proof at implementation commit
-  `51c30e2c2c77f9efa9e0d71326b9124f018bf1ff` passed 1 file / 4 tests. It builds two byte-identical
-  packs through paths containing spaces/backslashes, replays the same DuckDB summary repeatedly,
-  proves the SQLite source bytes unchanged, excludes invented C2/capability-policy canaries, and
-  fails closed for missing `COMPLETE`, corrupt Parquet, and an internally re-checksummed model
-  declaration. `npx tsc -p tsconfig.server.json --noEmit` passed.
+- P3 focused proof at reviewed fix commit
+  `5acba15db7ee24bc73f291510908494d82995eba` passed 1 file / 4 tests. It builds two byte-identical
+  packs through paths containing spaces/backslashes despite two different hostile caller `packId`
+  properties, replays the same DuckDB summary repeatedly, proves the SQLite source bytes unchanged,
+  excludes the caller values and invented C2/capability-policy canaries, and fails closed for missing
+  `COMPLETE`, corrupt Parquet, and an internally re-checksummed model declaration.
+  `npx tsc -p tsconfig.server.json --noEmit` passed.
 - `npm run check` passed lint, 22 test files / 71 tests, TypeScript project builds, and the Vite
   production build. Vite emitted only the existing >500 kB chunk-size advisory. `git diff --check`
   passed before the implementation commit.
@@ -337,6 +341,10 @@ unresolved review threads outrank it whenever they disagree.
   installation failed before the new producer ran: the existing `better-sqlite3` binary was built
   for ABI 137 while Node 20 requires ABI 115. The separate DuckDB/Parquet Node 20 native probe
   passed; the shared install was not rebuilt back and forth merely to manufacture a mixed-ABI run.
+- The first fresh-context P3 review found one HIGH privacy defect: a caller-controlled `packId`
+  could serialize a repository or identity label even though the table projection was C1-safe. The
+  bounded fix removed that input, derived an opaque ID only from the declared timestamp and Parquet
+  checksum, and added hostile extra-property regression coverage before rerunning the focused proof.
 
 ## NOT verified
 
@@ -398,8 +406,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The P3 code baseline is
-   `51c30e2c2c77f9efa9e0d71326b9124f018bf1ff`; this ledger deliberately leaves its PR, checks,
+1. Refresh Git/GitHub before mutation. The reviewed P3 code baseline is
+   `5acba15db7ee24bc73f291510908494d82995eba`; this ledger deliberately leaves its PR, checks,
    review, merge, and `origin/main` facts to live evidence.
 2. Preserve P3 as a synthetic, unactivated C1 coverage pack. Do not add more tables, CLI/API/UI,
    notebooks, collectors, Pages/export wiring, identities, names, C2+, or real input as a follow-up
