@@ -232,6 +232,12 @@ unresolved review threads outrank it whenever they disagree.
 - `npm run verify:context` checks required context artifacts, the T2 `AGENTS.md` line budget, skill
   frontmatter/default prompt, internal Markdown links, and consistent G1/G2/G3/G4 markers across
   the live authority documents. It is part of `npm run check` because the gate drift recurred.
+- Late automatic review of PR #9 found four direct gaps in that new verifier: a relative link could
+  escape the checkout before `existsSync`, a valid optional Markdown link title was treated as part
+  of the path, the tier file was checked only for presence, and incomplete skill frontmatter could
+  pass the prefix check. The bounded follow-up rejects absolute/traversing paths before filesystem
+  access, parses destinations separately from titles, asserts the declared T2/security/publication
+  values, and validates the complete closed skill-frontmatter block with focused regressions.
 - `docs/OVERNIGHT_EXECUTION_PROMPT.md` is reduced from a copied policy/queue snapshot to a thin
   launcher into `AGENTS.md`, the skill, owner decisions and live ledger. The deep-discovery prompt
   is explicitly historical.
@@ -261,6 +267,13 @@ unresolved review threads outrank it whenever they disagree.
   repository continuation skill and the ordinary check gate only; it cannot alter showcase input,
   export, verifier or built public data. The merge-triggered Pages workflow remains the hosted
   exact-merge showcase proof.
+- Context-verifier follow-up focused proof passed 1 file / 5 tests, including POSIX/encoded/Windows
+  path-escape canaries, titled and angle-wrapped Markdown destinations, complete skill frontmatter,
+  and sensitive-data authority drift. `npm run verify:context`, Oxlint,
+  `npx tsc -p tsconfig.server.json --noEmit`, and `git diff --check` passed with the fix present.
+  `npm run check` then passed 23 test files / 76 tests, TypeScript project builds, and the production
+  Vite build; `npm audit --omit=dev` reported zero vulnerabilities. Vite emitted only the existing
+  >500 kB chunk-size advisory.
 - Dependency metadata/probes: `npm view` resolved `@duckdb/node-api@1.5.5-r.3`, its pinned
   `@duckdb/node-bindings@1.5.5-r.3`, and the exact `win32-x64` package. A local native probe loaded
   DuckDB `v1.5.5`, wrote a 315-byte deterministic Parquet fixture, and replayed ordered rows under
@@ -343,6 +356,9 @@ unresolved review threads outrank it whenever they disagree.
 - The first context-verifier run matched authority markers before collapsing wrapped Markdown
   whitespace, so a semantically present marker failed on a line break. The verifier now normalizes
   whitespace before exact marker checks and passed both directly and inside `npm run check`.
+- The first late-review regression run passed four tests but correctly exposed that a Windows
+  absolute target such as `C:\\private.txt` was classified as a URI scheme before the absolute-path
+  guard. The guard now runs first; the focused suite then passed 5/5 without probing that path.
 - The first exact publication scan caught 62 machine-specific evidence-link targets and live
   metadata copied from a private registry into the new public docs. The links were converted to
   repository-relative targets, the private URL/PR/SHA/check-state references were removed, and the
