@@ -1,0 +1,53 @@
+# Source capability and consent matrix
+
+Contract version: **1.0.0**. This is the human-readable companion to the fail-closed registry in
+`shared/capabilities.ts`. The listed retention values became active owner policy when G2 was
+approved on 2026-08-03. Every executable capability definition still starts `never_authorized`:
+the decisions below authorize bounded implementation, but do not themselves activate collection,
+storage, credentials, or a source query. G2 is satisfied for every listed source. Standing G3
+authorization is also satisfied for Actions, deployments, dependencies, security, Projects,
+ownership, and source structure within the purpose/class/scope limits below.
+
+The owner-selected D1-D3 demo lane is synthetic-only and does not depend on any real-source
+activation. The approved G2/G3 decisions apply when a later task card proposes its named
+real/private source. G4 is refused, so external transmission is not a scheduling path.
+
+| Capability ID | Purpose and retained minimum | Class ceiling | Consent / phase | Retention policy | Delete / revoke behavior | Refusal or absence |
+|---|---|---:|---|---|---|---|
+| `github.core` | Repository/system lifecycle: stable IDs, flags, dates, numeric surfaces, PR/check/issue/release edges, and coverage; no names, prose, URLs, or people dimensions | C2 source → C1 facts | **G2 approved**; implement no earlier than P4/P7 for repositories explicitly selected locally | C1 36m; C2 13m | Delete source observations and every dependent fact, feature, alias, checkpoint, and pack | Remain `never_authorized` until implemented; when later refused/absent, record the exact coverage state and never infer zero |
+| `cap.local.git` | Explicit selected-ref topology and self-attributed aggregate change facts | C2 | **G2 approved**; explicit selected roots/refs in P6, with no implicit fetch or working-tree scope | 13m | Delete observations, topology descendants, checkpoints, aliases, and derived outputs | `refused`; do not inspect roots or execute Git |
+| `cap.git.signatures` | Aggregate commit/tag verification-policy coverage | C3 source → C1 summary | **G2 approved**; separate runtime opt-in after local-Git activation | C3 90d; C1 36m | Delete verification grades and dependent summaries | `refused` or `unavailable`; never run repository verifiers |
+| `cap.commit.intent` | Aggregate controlled maintenance/feature/test/docs/refactor/unknown mix | C4 input → C1 summary | **G2 approved**; separate ephemeral runtime opt-in; no external model | C4 process only; C1 36m | Destroy subjects immediately; delete summaries and classifier cache | `refused`; do not read subjects |
+| `cap.github.issue_taxonomy` | Issue/linkage facts and approved local taxonomy aliases | C3 source → C1 summary | **G2 approved**; implement in P7 for selected repositories; no Projects custom values | C3 90d; C1 36m | Delete aliases, observations, edges, summaries, and packs | Do not query labels, milestones, or project linkage until implemented |
+| `cap.github.actions` | Attempt-aware aggregate workflow-run/job feedback shape; no names, logs, artifacts, or caches | C3 source → C1 summary | **G2 + G3 approved**, P8 | C3 90d; C1 36m | Delete run/job observations, aliases, features, caches, and packs | Before implementation report `refused`; with insufficient permission report `restricted` or `unavailable` |
+| `cap.github.deployments` | Deployment outcome and release/change linkage using controlled states | C3 source → C1 summary | **G2 + G3 approved**, P8 | C3 90d; C1 36m | Delete observations and descendants; disclose provider-history censoring | Before implementation make no query; absence is never zero |
+| `cap.github.dependencies` | Aggregate ecosystem/update waves with local or pack-scoped aliases | C3 | **G2 + G3 approved**, P9 | 90d | Delete dependency aliases, observations, graph edges, summaries, and packs | Before implementation make no SBOM/alert request or local manifest read |
+| `cap.github.security` | Isolated aggregate Dependabot/code-scanning alert lifecycle | C3 restricted | **G2 + G3 approved**; P9 task card must fix its isolated schema/storage design | 90d | Delete restricted observations, aliases, summaries, caches, and packs | Distinguish disabled/403/404; never ingest secret scanning or private advisories |
+| `cap.github.projects` | ProjectV2 status snapshots and aggregate transitions | C3 | **G2 + G3 approved**, P10 | 90d | Delete project/item/field aliases, observations, transitions, and packs | Do not mutate token/scopes; unavailable history remains coverage |
+| `cap.github.ownership` | Repository-level ownership coverage counts only | C4 input → C3 graph/C1 summary | **G2 + G3 approved**, P10 | C4 process only; C3 90d; C1 36m | Destroy CODEOWNERS/team inputs; delete graph and summary descendants | Before implementation make no CODEOWNERS/team reads; never emit people or named bus factor |
+| `cap.source.structure` | Committed-tree composition, opaque module graph, cycles, coupling, and API-surface counts | C4 input → C3 graph/C1 summary | **G2 + G3 approved**, P10; selected immutable refs only | C4 process only; C3 90d; C1 36m | Destroy paths/source/parser diagnostics; delete parser cache, graph, summaries, and packs | Before implementation make no tree/blob read, working-tree scan, repository executable, plugin, or network |
+| `cap.external.model` | Optional hypotheses over a user-reviewed compact evidence bundle | C1 input/output only | **G4 refused; excluded from the current roadmap** | Not applicable | No request cache or model output may exist | No transport, SDK, initialization, cache, telemetry, or request |
+
+## Rejected capabilities
+
+The registry must not expose an authorization path for these capabilities:
+
+| Rejected ID | Rejected surface | Reason |
+|---|---|---|
+| `GH-PEOPLE-X` | Contributor/reviewer graph, ranking, centrality, named or pseudonymous bus factor | Human surveillance and re-identification |
+| `GH-SECRET-X` | Secret-scanning alerts, even aggregate counts | Privilege and exposure exceed reflective value |
+| `GH-ADVISORY-X` | Draft/private security advisories | Embargoed exploit detail and no legitimate current question |
+| `SRC-WORKTREE-X` | Dirty or untracked working-tree data | Unstable, materially more sensitive, and unnecessary |
+| `RAW-CONTENT-X` | Source, diffs, patches, paths, bodies, comments, logs, artifact/cache contents, binaries | Prohibited from every sink |
+| `PERSON-METRIC-X` | Productivity, performance, effort, attendance, hours, quality, sentiment, personality, worth, individual forecast | Outside the product boundary regardless of pseudonymization |
+
+## Gate status
+
+- G1: approved 2026-08-03; T2 + `sensitive_data` is declared.
+- G2: approved 2026-08-03 with C1=36m, C2=13m, C3=90d, C4=process lifetime,
+  repository-name isolation, canonical PR-title removal, and the seven-day migration protocol in
+  `HUMAN_TODO.md`.
+- G3: standing authorization granted 2026-08-03 for Actions, deployments, dependencies,
+  Dependabot/code-scanning security aggregates, Projects, ownership, and source structure within
+  this matrix. Missing permissions become explicit coverage, not a new owner gate.
+- G4: refused for the current roadmap; external-model transport and P12 are absent.

@@ -1,0 +1,109 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://developer-lens.local/schemas/analysis-pack-manifest-1.0.0.json",
+  "title": "Developer Lens analysis-pack manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "manifestVersion",
+    "privacyContractVersion",
+    "canonicalEnvelopeSchemaVersion",
+    "packId",
+    "createdAt",
+    "exportClassification",
+    "capabilities",
+    "coverageStatuses",
+    "artifacts"
+  ],
+  "properties": {
+    "manifestVersion": { "const": "1.0.0" },
+    "privacyContractVersion": { "const": "1.0.0" },
+    "canonicalEnvelopeSchemaVersion": { "const": "2.0.0" },
+    "packId": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$" },
+    "createdAt": { "type": "string", "format": "date-time" },
+    "exportClassification": { "const": "redacted_aggregate" },
+    "capabilities": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "github.core",
+          "cap.local.git",
+          "cap.git.signatures",
+          "cap.commit.intent",
+          "cap.github.issue_taxonomy",
+          "cap.github.actions",
+          "cap.github.deployments",
+          "cap.github.dependencies",
+          "cap.github.security",
+          "cap.github.projects",
+          "cap.github.ownership",
+          "cap.source.structure",
+          "cap.external.model"
+        ]
+      }
+    },
+    "coverageStatuses": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "never_authorized",
+          "refused",
+          "unavailable",
+          "restricted",
+          "truncated",
+          "stale",
+          "failed",
+          "deleted",
+          "censored",
+          "complete"
+        ]
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "sha256", "classification"],
+        "properties": {
+          "path": {
+            "enum": [
+              "COMPLETE",
+              "checksums.sha256",
+              "README.md",
+              "dictionary/data-dictionary.md",
+              "dictionary/feature-index.json",
+              "dictionary/classification-index.json",
+              "schemas/manifest.schema.json",
+              "schemas/evidence-bundle.schema.json",
+              "tables/source_snapshots.parquet",
+              "tables/coverage.parquet",
+              "tables/quality/data_quality_findings.parquet",
+              "tables/facts/pr_lifecycle.parquet",
+              "tables/facts/check_attempts.parquet",
+              "tables/facts/issue_pr_release_edges.parquet",
+              "tables/facts/release_intervals.parquet",
+              "tables/facts/repository_events.parquet",
+              "tables/features/feature_values.parquet",
+              "tables/insights/deterministic.parquet"
+            ]
+          },
+          "sha256": { "type": "string", "pattern": "^[a-f0-9]{64}$" },
+          "classification": { "enum": ["C0", "C1"] }
+        }
+      }
+    },
+    "externalModelEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schemaVersion", "classification", "artifactPath"],
+      "properties": {
+        "schemaVersion": { "const": "1.0.0" },
+        "classification": { "const": "C1" },
+        "artifactPath": { "const": "llm-pack/evidence.jsonl" }
+      }
+    }
+  }
+}

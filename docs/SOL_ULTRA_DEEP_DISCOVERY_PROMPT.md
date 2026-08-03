@@ -8,6 +8,11 @@ The first pass is deliberately research and architecture only. Its job is to map
 maximum useful signal universe, validate what GitHub and Git can actually provide, and
 turn the result into a staged design before another agent changes collection or storage.
 
+## Durable outputs
+
+- [Developer Lens v2 architecture](DEVELOPER_LENS_V2_ARCHITECTURE.md) — the decision-ready result of this brief.
+- [Sol Ultra implementation orchestrator](SOL_ULTRA_ORCHESTRATOR_PROMPT.md) — the fresh-session prompt for executing the architecture with Terra and the installed Luna roles.
+
 ## Copy-ready prompt
 
 ```text

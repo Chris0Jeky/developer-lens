@@ -94,6 +94,20 @@ npm run dev
 
 Open the Vite URL shown in the terminal. The API stays on `http://127.0.0.1:4141`; Vite proxies `/api` during development.
 
+### Try the offline V2 demo
+
+The repeatable synthetic journey needs no API server, GitHub authentication, account, repository, or local-history data:
+
+```powershell
+npm run dev:web
+```
+
+Open <http://127.0.0.1:5173/?demo=v2>. To run its focused smoke coverage without starting a server:
+
+```powershell
+npm run test:demo:v2
+```
+
 By default, `collect` produces both the six-month and twelve-month lenses. To refresh only one range:
 
 ```powershell
@@ -150,6 +164,14 @@ npm run build:showcase
 `check` runs Oxlint, the analytics/API/UI test suite, TypeScript project builds, and the production Vite build. `build:showcase` additionally exports both synthetic ranges, builds with the GitHub Pages base path, verifies the public-data identity boundary, and scans the artifact for secret and local-path patterns. The API tests also prove localhost-only binding behavior and that demo fallback remains explicit.
 
 ## Project map
+
+Architecture and implementation handoff:
+
+- [`docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md`](docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md) — the original read-only research brief.
+- [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](docs/DEVELOPER_LENS_V2_ARCHITECTURE.md) — the demo-first architecture and D1-D3 delivery lane.
+- [`docs/POST_DEMO_HARDENING.md`](docs/POST_DEMO_HARDENING.md) — security, privacy, resilience, and distribution work intentionally deferred until the working-demo milestone.
+- [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](docs/OVERNIGHT_EXECUTION_PROMPT.md) — the current copy-ready Sol Ultra prompt with closed owner gates, demo-first execution, and aggressive bounded Luna waves.
+- [`docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md`](docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md) — compatibility redirect to the current overnight prompt.
 
 - `scripts/collect.ts` — collection orchestration and private dataset writes.
 - `scripts/exportDemo.ts` — deterministic public showcase generation.

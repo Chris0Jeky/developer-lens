@@ -1,0 +1,24 @@
+{
+  "tier": 2,
+  "name": "daily-driver",
+  "authority": {
+    "push": "free",
+    "merge": "free"
+  },
+  "public_synthetic_publication": {
+    "remote": "origin",
+    "repository": "Chris0Jeky/developer-lens"
+  },
+  "flags": {
+    "sensitive_data": true,
+    "wave_mode": false,
+    "dormant_production": false,
+    "relaxed_work_loss_guards": false
+  },
+  "budgets": {
+    "standing_context_tokens": 3000,
+    "session_baseline_tokens": null
+  },
+  "human_todo": "HUMAN_TODO.md",
+  "last_reviewed": "2026-08-03"
+}
