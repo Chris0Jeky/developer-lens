@@ -1,6 +1,12 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { resolve } from 'node:path'
 import fg from 'fast-glob'
+import {
+  extractMarkdownLinkTargets,
+  parseSkillFrontmatter,
+  resolveRepositoryLinkTarget,
+  validateTierDeclaration,
+} from './projectContextValidation.js'
 
 const root = process.cwd()
 const failures: string[] = []
@@ -31,14 +37,24 @@ const requiredFiles = [
 requiredFiles.forEach(requireFile)
 
 if (failures.length === 0) {
+  try {
+    const tier = JSON.parse(read('.agent-harness/tier.json')) as unknown
+    for (const error of validateTierDeclaration(tier)) {
+      failures.push(`tier declaration drift: ${error}`)
+    }
+  } catch (error) {
+    failures.push(`tier declaration is not valid JSON: ${String(error)}`)
+  }
+
   const agentLines = read('AGENTS.md').split('\n').length
   if (agentLines > 100) {
     failures.push(`AGENTS.md exceeds the T2 context budget: ${agentLines} lines (maximum 100)`)
   }
 
   const skill = read('.agents/skills/developer-lens-continuation/SKILL.md')
-  if (!skill.startsWith('---\nname: developer-lens-continuation\ndescription:')) {
-    failures.push('continuation skill frontmatter is missing or malformed')
+  const parsedSkill = parseSkillFrontmatter(skill)
+  for (const error of parsedSkill.errors) {
+    failures.push(`continuation skill frontmatter is invalid: ${error}`)
   }
   if (skill.includes('[TODO') || skill.includes('TODO:')) {
     failures.push('continuation skill still contains template TODO text')
@@ -89,20 +105,18 @@ const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md'], {
   onlyFiles: true,
 })
 
-const linkPattern = /!?\[[^\]]*\]\(([^)]+)\)/g
 for (const path of markdownFiles) {
   const contents = read(path)
-  for (const match of contents.matchAll(linkPattern)) {
-    const rawTarget = match[1]?.trim().replace(/^<|>$/g, '')
-    if (!rawTarget || rawTarget.startsWith('#') || /^[a-z][a-z0-9+.-]*:/i.test(rawTarget)) {
+  for (const rawTarget of extractMarkdownLinkTargets(contents)) {
+    const resolution = resolveRepositoryLinkTarget(root, path, rawTarget)
+    if (resolution.kind === 'skip') {
       continue
     }
-    const targetWithoutAnchor = rawTarget.split('#', 1)[0]
-    if (!targetWithoutAnchor) {
+    if (resolution.kind === 'invalid') {
+      failures.push(`${path} contains an invalid local link (${resolution.reason})`)
       continue
     }
-    const target = resolve(root, dirname(path), decodeURIComponent(targetWithoutAnchor))
-    if (!existsSync(target)) {
+    if (!existsSync(resolution.target)) {
       failures.push(`${path} contains a missing local link target: ${rawTarget}`)
     }
   }
