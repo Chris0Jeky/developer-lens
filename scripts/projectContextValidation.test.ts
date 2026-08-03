@@ -14,6 +14,9 @@ describe('project context validation', () => {
         '[guide](docs/guide.md "Guide") [spaced](<docs/another guide.md> \'Another\')',
       ),
     ).toEqual(['docs/guide.md', 'docs/another guide.md'])
+    expect(extractMarkdownLinkTargets('[architecture\nnotes](docs/architecture.md)')).toEqual([
+      'docs/architecture.md',
+    ])
   })
 
   it('rejects local paths outside the checkout before filesystem access', () => {
@@ -40,6 +43,10 @@ describe('project context validation', () => {
     expect(resolveRepositoryLinkTarget(root, 'docs/guide.md', 'https://example.com')).toEqual({
       kind: 'skip',
     })
+    expect(resolveRepositoryLinkTarget(root, 'docs/guide.md', 'part%231.md#section')).toEqual({
+      kind: 'local',
+      target: resolve(root, 'docs', 'part#1.md'),
+    })
   })
 
   it('requires complete, closed skill frontmatter with only supported keys', () => {
@@ -62,6 +69,11 @@ describe('project context validation', () => {
     expect(parseSkillFrontmatter(valid.replace('Resume Developer Lens safely.', '"unterminated')).errors).toContain(
       'unterminated quoted scalar: "unterminated',
     )
+    for (const typedScalar of ['[]', '{}', 'true', '42', '2026-08-04']) {
+      expect(
+        parseSkillFrontmatter(valid.replace('Resume Developer Lens safely.', typedScalar)).errors,
+      ).toContain(`plain scalar must remain a string: ${typedScalar}`)
+    }
   })
 
   it('detects drift in security and publication authority', () => {
