@@ -3,6 +3,6 @@
 This prompt has been superseded by
 [`OVERNIGHT_EXECUTION_PROMPT.md`](./OVERNIGHT_EXECUTION_PROMPT.md).
 
-The replacement includes the owner-approved q-1 through q-4 decisions, demo-first D1-D3 queue,
-non-blocking overnight feedback rule, standing G3 authorization, G4 refusal, public publication boundary,
-and the current aggressive Sol/Luna operating model. Use it for every new implementation session.
+The replacement is a thin launcher into `AGENTS.md`, `$developer-lens-continuation`, the live
+implementation ledger, and the current owner-decision record. Use it for a new implementation
+session; do not treat this redirect or any historical prompt as project state.

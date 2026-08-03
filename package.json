@@ -18,8 +18,9 @@
     "test": "vitest run",
     "test:demo:v2": "vitest run src/App.test.tsx",
     "test:watch": "vitest",
+    "verify:context": "tsx scripts/verifyProjectContext.ts",
     "verify:showcase": "tsx scripts/verifyShowcase.ts",
-    "check": "npm run lint && npm run test && npm run build"
+    "check": "npm run lint && npm run verify:context && npm run test && npm run build"
   },
   "dependencies": {
     "@duckdb/node-api": "1.5.5-r.3",

@@ -10,7 +10,8 @@ ownership, and source structure within the purpose/class/scope limits below.
 
 The owner-selected D1-D3 demo lane is synthetic-only and does not depend on any real-source
 activation. The approved G2/G3 decisions apply when a later task card proposes its named
-real/private source. G4 is refused, so external transmission is not a scheduling path.
+real/private source. G4 is open and not approved, so external transmission is not an active
+scheduling path.
 
 | Capability ID | Purpose and retained minimum | Class ceiling | Consent / phase | Retention policy | Delete / revoke behavior | Refusal or absence |
 |---|---|---:|---|---|---|---|
@@ -26,7 +27,7 @@ real/private source. G4 is refused, so external transmission is not a scheduling
 | `cap.github.projects` | ProjectV2 status snapshots and aggregate transitions | C3 | **G2 + G3 approved**, P10 | 90d | Delete project/item/field aliases, observations, transitions, and packs | Do not mutate token/scopes; unavailable history remains coverage |
 | `cap.github.ownership` | Repository-level ownership coverage counts only | C4 input → C3 graph/C1 summary | **G2 + G3 approved**, P10 | C4 process only; C3 90d; C1 36m | Destroy CODEOWNERS/team inputs; delete graph and summary descendants | Before implementation make no CODEOWNERS/team reads; never emit people or named bus factor |
 | `cap.source.structure` | Committed-tree composition, opaque module graph, cycles, coupling, and API-surface counts | C4 input → C3 graph/C1 summary | **G2 + G3 approved**, P10; selected immutable refs only | C4 process only; C3 90d; C1 36m | Destroy paths/source/parser diagnostics; delete parser cache, graph, summaries, and packs | Before implementation make no tree/blob read, working-tree scan, repository executable, plugin, or network |
-| `cap.external.model` | Optional hypotheses over a user-reviewed compact evidence bundle | C1 input/output only | **G4 refused; excluded from the current roadmap** | Not applicable | No request cache or model output may exist | No transport, SDK, initialization, cache, telemetry, or request |
+| `cap.external.model` | Optional hypotheses over a user-reviewed compact evidence bundle | C1 input/output only | **G4 not approved; inactive unless a future provider-specific decision closes the gate** | Not applicable | No request cache or model output may exist | No transport, SDK, initialization, cache, telemetry, or request |
 
 ## Rejected capabilities
 
@@ -49,5 +50,9 @@ The registry must not expose an authorization path for these capabilities:
   `HUMAN_TODO.md`.
 - G3: standing authorization granted 2026-08-03 for Actions, deployments, dependencies,
   Dependabot/code-scanning security aggregates, Projects, ownership, and source structure within
-  this matrix. Missing permissions become explicit coverage, not a new owner gate.
-- G4: refused for the current roadmap; external-model transport and P12 are absent.
+  this matrix. Missing permissions become explicit coverage, not a new owner gate. A future source
+  may join this standing authority only through a reviewed registry/matrix change that remains
+  inside the charter and rejected-capability boundaries.
+- G4: open and not approved; external-model transport and P12 remain inactive. Closing G4 requires
+  an explicit provider-specific owner decision covering the exact payload, terms, spend and
+  deletion boundary.

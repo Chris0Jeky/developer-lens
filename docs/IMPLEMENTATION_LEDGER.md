@@ -5,8 +5,9 @@ Last updated: **2026-08-03**
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03.
 
-Current phase: **D1-D3 and the synthetic P2 SQLite/importer proof are published; the bounded,
-synthetic-only P3 analysis-pack foundation is implemented and locally verified**.
+Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, and the bounded synthetic P3
+analysis-pack foundation are published. P4 is the next architecture phase; the current milestone
+builds the durable context needed to resume it without policy or state loss**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -14,8 +15,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published P2 baseline: `origin/main` merge
-  `1171a42b988aae01121d74ce5f412b1a00fd4fc9`.
+- Published product baseline: `origin/main` merge
+  `cc08a2ecaa480660bda68bb40f4d2d2a02d5bbaf`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at the published baseline above
@@ -28,12 +29,16 @@ unresolved review threads outrank it whenever they disagree.
 - P3 implementation commits: `51c30e2c2c77f9efa9e0d71326b9124f018bf1ff` adds the pinned
   DuckDB Node dependency and the synthetic analysis-pack producer/replay seam;
   `5acba15db7ee24bc73f291510908494d82995eba` derives the opaque pack ID from safe pack facts after
-  review. Refresh the PR, hosted checks, review, merge, and `origin/main` state from GitHub; this
-  ledger does not predict publication.
+  review. [PR #8](https://github.com/Chris0Jeky/developer-lens/pull/8) merged with commit
+  preservation at the published baseline; exact-merge Pages run
+  [30858237376](https://github.com/Chris0Jeky/developer-lens/actions/runs/30858237376) passed the full
+  gate, showcase privacy verification, artifact upload, and deployment.
 
 ## Authority and owner gates
 
-- G1: approved in the 2026-08-03 initiating request.
+- G1 and G2 are owner-approved. G2 adopts C1=36 rolling months, C2=13 months, C3=90 days,
+  C4=process lifetime, repository-name isolation, canonical PR-title removal, and the copy-based
+  backup/seven-day-grace/rollback/deletion protocol in `HUMAN_TODO.md` and the data charter.
 - Repository declaration: T2 `daily-driver`, `sensitive_data=true`, `push=free`,
   `merge=free`, exact `public_synthetic_publication` route
   `origin` -> `Chris0Jeky/developer-lens`, human-action alias `HUMAN_TODO.md`.
@@ -42,20 +47,19 @@ unresolved review threads outrank it whenever they disagree.
   replaced q-4's actor restriction: agents may publish only the verified code, tests,
   documentation, and invented-synthetic branch through that exact route and normal repository
   gates; only the top-routed Sol model may merge.
-- Merged canonical agent-harness source PR
-  [#224](https://github.com/Chris0Jeky/agent-harness/pull/224) defines and tests the exact unanimous
-  route contract at merge `8a608e138f35e43a95bd2fd2ef43977dbb2e1354`. It does not deploy or activate
-  the owner-paused global runtime hook, change trust, or prove a branch synthetic; q-4's exact
-  tracked-diff and showcase gates still do that work.
 - Any separate registry reconciliation is outside this public ledger. It follows the matching public
   Developer Lens authority/policy commit and its own normal gates. Never copy a private registry's
   URL, PR number, commit IDs, review/check state, or other live metadata into tracked public docs.
-- Only G1 is trusted as owner-approved. `HUMAN_TODO.md` now records G2/G3/G4 as open; checked claims
-  in older revisions, this ledger's older prose, the architecture, and previous pull requests are
-  stale generated policy text and do not establish owner authorization.
-- G2, G3, and G4 therefore remain unapproved. This P3 slice does not need them: it uses an invented
-  SQLite fixture, retains every capability status (`never_authorized`/`refused` in the proof),
-  reads no real/private input, activates no source, and contains no model path.
+- G3 standing authorization is owner-approved for Actions, deployments, dependencies,
+  Dependabot/code-scanning security aggregates, Projects, ownership, and source structure within
+  the reviewed matrix. Future named sources may join only through a reviewed registry/matrix change
+  that stays inside the charter and rejected-capability boundaries.
+- G2/G3 approval is permission to implement bounded activation, not activation itself. Every
+  executable definition remains `never_authorized` until a task selects exact local scope, uses
+  existing read-only least-privilege access, and proves collection, coverage, retention, deletion,
+  rollback, and failure behavior.
+- G4 remains open and unapproved. `cap.external.model` stays `never_authorized`; no provider, SDK,
+  transport, payload, cache, telemetry, or spend path is scheduled.
 
 ## P0 result
 
@@ -65,10 +69,8 @@ unresolved review threads outrank it whenever they disagree.
   P1 task card.
 - Canonical tier validation returned no issues. Focused JSON, flag, 13-row capability, G2,
   human-gate, link/path, registry parity, Markdown table, and whitespace checks passed.
-- A broader harness audit remains red because the repository has no root `AGENTS.md` and the
-  approved `sensitive_data=true` declaration intentionally coexists with a public remote. The exact
-  route declaration makes that coexistence intentional without authorizing a harness bootstrap,
-  runtime-hook activation, or private-data publication.
+- The earlier repository-context audit found no root `AGENTS.md`. The durable-context milestone
+  closes that documentation gap without adding a project hook or changing the declared tier/route.
 - The bounded P0 review's consent ambiguity was fixed so every real/private source read requires
   G2 and all capability definitions remain `never_authorized`.
 
@@ -219,8 +221,46 @@ unresolved review threads outrank it whenever they disagree.
 - Scope: no CLI, `dataStore`, collector, migration, API, UI, exporter, Pages path, notebook, query
   directory, external model, real input, or production activation was added.
 
+## Durable continuation foundation
+
+- `AGENTS.md` is the bounded cold-start contract: repository identity, source-of-truth map, current
+  authority, protected-data task-card rule, exact seam checks, code map, Windows/native pitfalls,
+  and handoff shape. Stable rules live there; volatile state remains in this ledger.
+- `.agents/skills/developer-lens-continuation/` is the tracked resume workflow. It routes decisions,
+  policy, architecture, user documentation and live evidence to their canonical files instead of
+  loading or duplicating every historical prompt.
+- `npm run verify:context` checks required context artifacts, the T2 `AGENTS.md` line budget, skill
+  frontmatter/default prompt, internal Markdown links, and consistent G1/G2/G3/G4 markers across
+  the live authority documents. It is part of `npm run check` because the gate drift recurred.
+- `docs/OVERNIGHT_EXECUTION_PROMPT.md` is reduced from a copied policy/queue snapshot to a thin
+  launcher into `AGENTS.md`, the skill, owner decisions and live ledger. The deep-discovery prompt
+  is explicitly historical.
+- G2/G3 are synchronized from the owner's new explicit instruction. G4 remains open: external
+  transmission has separate provider terms, training/retention, telemetry, injection, spend,
+  cache and deletion boundaries, so it cannot be inferred from local retention/source approval.
+- No real/private input, generated dataset, credential, cache or browser profile was inspected.
+  No collector, migration, runtime capability, external model or publication data path was
+  activated by this documentation/control-plane slice.
+
 ## Verification
 
+- Durable-context proof on `codex/durable-project-context`: the official skill validator accepted
+  `.agents/skills/developer-lens-continuation`; `npm run verify:context` found all 10 required
+  artifacts, kept `AGENTS.md` within its 100-line T2 budget, verified authority markers and 12
+  Markdown files' local links; `npm audit --omit=dev` reported zero vulnerabilities; and
+  `git diff --check` passed. `npm run check` passed Oxlint, context verification, 22 test files / 71
+  tests, TypeScript project builds, and the production Vite build. Vite emitted only the existing
+  >500 kB chunk-size advisory.
+- A fresh-context forward test used only the tracked continuation skill and repository evidence. It
+  recovered P4 as the next phase and produced the bounded synthetic `github.core` checkpoint,
+  idempotency and coverage task card recorded below, while correctly excluding real reads,
+  credentials, persistence, runtime wiring, public data and G4. It also surfaced that G2/G3 are not
+  durable on the published baseline until this authority/context change lands; that is the intended
+  publication gap, not an activation claim.
+- `npm run build:showcase` was not rerun locally because this slice changes documentation, the
+  repository continuation skill and the ordinary check gate only; it cannot alter showcase input,
+  export, verifier or built public data. The merge-triggered Pages workflow remains the hosted
+  exact-merge showcase proof.
 - Dependency metadata/probes: `npm view` resolved `@duckdb/node-api@1.5.5-r.3`, its pinned
   `@duckdb/node-bindings@1.5.5-r.3`, and the exact `win32-x64` package. A local native probe loaded
   DuckDB `v1.5.5`, wrote a 315-byte deterministic Parquet fixture, and replayed ordered rows under
@@ -300,6 +340,9 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Failures and workarounds
 
+- The first context-verifier run matched authority markers before collapsing wrapped Markdown
+  whitespace, so a semantically present marker failed on a line break. The verifier now normalizes
+  whitespace before exact marker checks and passed both directly and inside `npm run check`.
 - The first exact publication scan caught 62 machine-specific evidence-link targets and live
   metadata copied from a private registry into the new public docs. The links were converted to
   repository-relative targets, the private URL/PR/SHA/check-state references were removed, and the
@@ -348,24 +391,26 @@ unresolved review threads outrank it whenever they disagree.
 - The automatic old-head review found one HIGH policy defect: the required human-action file still
   described generated G2/G3/G4 decisions as binding. `HUMAN_TODO.md` now records those gates as open
   and keeps only the separately reaffirmed synthetic publication route checked.
+- That repair was correct for the authority available at the time. The owner later explicitly
+  approved G2 real migration/retention and standing G3 for named sensitive sources; the durable
+  context slice records the newer decision without inventing an external-model decision.
 
 ## NOT verified
 
 - A clean Node 20 install of the complete P2+P3 suite. DuckDB/Parquet itself is directly verified
   on Node v20.20.2 and v24.13.1 Windows x64, but this checkout's `better-sqlite3@12.11.1` binary is
   the Node 24 build and cannot be reused by Node 20.
-- `npm run build:showcase`; the P3 module is server-only and has no import or data path into the
-  synthetic public artifact, so the user-directed relevance gate did not call for it.
+- A local `npm run build:showcase` for P3; the server-only module had no public data path. The
+  exact-merge hosted workflow later ran and passed that showcase/privacy gate.
 - CLI, `dataStore`, collector, API, export, or Pages activation of SQLite; real/private JSON
-  migration and the stale proposed backup/grace/deletion protocol remain deliberately
-  unexercised and require explicit G2 approval.
+  migration and the now-approved backup/grace/deletion protocol remain deliberately unexercised.
+  Issues #5/#6 and a bounded migration task still precede a real read or reader switch.
 - Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
   synthetic route and showcase verifier.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
-- Runtime deny canary; no repository-owned Codex adapter exists.
-- G2/G3/G4 behavior is intentionally not verified because those gates are not owner-approved. No
-  real-data migration, retention cleanup, backup, deletion, named sensitive connector, or external
-  model path ran in this slice.
+- G2/G3 runtime behavior is not verified merely by approval: no real-data migration, retention
+  cleanup, backup, deletion, or named sensitive connector ran in this slice. G4 remains unapproved,
+  and no external-model path ran.
 
 ## Residual risk
 
@@ -379,6 +424,9 @@ unresolved review threads outrank it whenever they disagree.
   accepts only the two closed P2 capability IDs; future facts/tables need a separately reviewed
   class ceiling and schema. Native deployment must retain the platform binding/DLL selected by the
   optional dependency.
+- A concurrent local writer can replace a completed Parquet file between checksum and DuckDB read.
+  Completed packs are immutable by contract today; any activated hostile-writer integrity claim
+  needs an immutable snapshot or post-read hash proof.
 - The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
   this bounded importer accepts only the registered ASCII repository-reference alphabet; that P2
   compatibility gap remains tracked in
@@ -391,7 +439,9 @@ unresolved review threads outrank it whenever they disagree.
   `docs/POST_DEMO_HARDENING.md` unless they cross the irreversible floor.
 - Future producers must use the registered schemas and sink helpers; P1 has no production call
   sites by design.
-- The broader harness audit exception remains as recorded under P0.
+- The repository now has a bounded Codex instruction/skill surface, but the separate estate row
+  remains a live external registry fact and must be refreshed independently after this public
+  authority change; do not copy private registry metadata here.
 
 ## Tracked non-blocking review findings
 
@@ -406,18 +456,20 @@ unresolved review threads outrank it whenever they disagree.
   installation HMAC aliases remove the raw local-alias collision path for the bounded producer.
   Duplicate repository identity rejection and installation-key continuity are tracked in
   [#6](https://github.com/Chris0Jeky/developer-lens/issues/6) before real migration.
+- A future activated analysis-pack reader must query the same immutable Parquet snapshot it hashes,
+  or verify the hash again after replay, before claiming concurrent local-mutation resistance.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The reviewed P3 code baseline is
-   `5acba15db7ee24bc73f291510908494d82995eba`; this ledger deliberately leaves its PR, checks,
-   review, merge, and `origin/main` facts to live evidence.
-2. Preserve P3 as a synthetic, unactivated C1 coverage pack. Do not add more tables, CLI/API/UI,
-   notebooks, collectors, Pages/export wiring, identities, names, C2+, or real input as a follow-up
-   to this foundation without a new bounded task.
-3. Treat issues #5/#6 as deferred prerequisites for real migration, not synthetic P3 blockers.
-   `HUMAN_TODO.md` records the live G1-only boundary. Obtain explicit owner G2 before any real
-   migration/source path, G3 before a named sensitive source, and G4 before any external model path.
-4. The next architecture phase is P4, but no real GitHub collector activation is safe under the
-   current G1-only authority. The next safe slice is therefore an owner-authorized, synthetic-only
-   P4 task card or another explicitly named product slice; do not manufacture speculative work.
+1. Refresh Git/GitHub before mutation. The published P3 baseline is merge
+   `cc08a2ecaa480660bda68bb40f4d2d2a02d5bbaf`; live evidence still outranks this checkpoint.
+2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
+   pack. Treat the concurrent-mutation snapshot finding as a concrete optional P3 hardening slice,
+   not a prerequisite for unrelated deterministic product work.
+3. G2 and standing G3 are approved, but no real path is automatically active. Reconcile issue #6's
+   duplicate-identity/key-continuity acceptance and issue #5's local-name/identity-vault boundary
+   before a real v1 migration. Use invented fixtures and a new bounded task card first.
+4. P4 incremental GitHub core is the next architecture phase. Start with its synthetic connector,
+   checkpoint, idempotency and coverage contract behind `never_authorized`; activate only after the
+   exact selected-repository scope, existing read-only credentials, deletion/rollback behavior and
+   focused tests are recorded. G4 is still required for any external-model work.

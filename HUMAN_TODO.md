@@ -1,20 +1,34 @@
 # Human actions
 
-Only G1 is trusted as owner-approved. G2, G3, and G4 remain open and require a new explicit owner
-decision; earlier checked boxes or generated policy prose do not authorize them. The current task
-separately reaffirms q-4's synthetic-only publication route.
+G1 and G2 are owner-approved. G3 standing authorization is owner-approved for the sensitive
+sources named in `docs/source-capability-matrix.md`, within that matrix and the data charter. G4
+remains open and is not approved. q-4's synthetic-only publication route remains active.
 
-- [ ] **q-1 — Decide G2 retention and real-migration policy.** No real/private migration, backup,
-  grace-period cleanup, deletion, or production reader may run until the owner explicitly approves
-  the complete policy in a new bounded task.
+- [x] **q-1 — G2 retention and real migration approved.** The owner delegated the implementation
+  details and accepted the existing conservative policy: C1 retains 36 rolling months, C2 13
+  months, C3 90 days, and C4 only for the process/worker lifetime. A real v1 migration uses one
+  timestamped application-controlled backup, a new SQLite target, atomic/idempotent import,
+  untouched old JSON, integrity/replay/rollback proof, and a seven-day grace period after a
+  successful migration report. On failure, retain the old JSON and switch readers back. After the
+  grace period, application-controlled cleanup removes the old JSON and migration backup. This
+  approval does not waive issues #5/#6, bounded task cards, selected paths, failure tests, or the
+  prohibition on tracking/publishing private data.
 
-- [ ] **q-2 — Decide G3 authorization for each named sensitive source.** No sensitive-source
-  collector or runtime activation may run until the owner explicitly approves the named source and
-  scope.
+- [x] **q-2 — Standing G3 authorization approved for named sensitive sources.** The current set is
+  Actions, deployments, dependencies, Dependabot/code-scanning security aggregates, Projects,
+  ownership, and source structure. Secret scanning, draft/private advisories, people graphs, raw
+  content, logs, artifacts/caches, and working-tree data remain rejected. A future source may be
+  named through a reviewed matrix/registry change without another owner question only when it stays
+  inside the existing product boundary, classes, read-only least-privilege posture, explicit local
+  selection, retention/deletion rules, and prohibited-surface list. Every executable capability
+  remains `never_authorized` until a bounded implementation supplies and tests its activation path;
+  this approval does not mutate credentials or authorize external writes.
 
-- [ ] **q-3 — Decide G4 external-model policy.** Until then, keep `cap.external.model`
-  `never_authorized` and do not add or run a provider, SDK, transport, cache, telemetry, spend path,
-  or model payload.
+- [ ] **q-3 — Decide whether to approve G4 external-model use.** G4 is separate because it would
+  transmit data to another provider and introduces provider retention/training terms, telemetry,
+  prompt-injection and payload-review risk, spend controls, provider-held copies, and model-output
+  deletion. Until explicitly approved, keep `cap.external.model` `never_authorized` and do not add
+  or run a provider, SDK, transport, cache, telemetry, spend path, or model payload.
 
 - [x] **q-4 — Publication route chosen: public synthetic product, agent-authorized code-only branch.**
   Keep the existing public remote and synthetic Pages surface. Agents may implement, test, review,
@@ -31,9 +45,13 @@ separately reaffirms q-4's synthetic-only publication route.
 
 ## Changelog
 
-- 2026-08-03: the owner explicitly clarified that only G1 is trusted as approved and that generated
-  G2/G3/G4 checks or prose are not authorization. q-1 through q-3 are reopened; q-4 remains active
-  for this explicitly requested synthetic-only code/PR route.
+- 2026-08-03: the owner explicitly approved real migration/retention and every named sensitive
+  source, delegating reasonable details. q-1 adopts the existing conservative retention/migration
+  protocol; q-2 grants standing G3 authority within the charter/matrix. G4 was discussed but not
+  approved, so q-3 remains open and `cap.external.model` stays `never_authorized`.
+- 2026-08-03: earlier that day, the owner clarified that only G1 was then trusted as approved and
+  that generated G2/G3/G4 checks or prose were not authorization. q-1 through q-3 were reopened;
+  the newer explicit decision above now supersedes that G2/G3 state while leaving G4 open.
 - 2026-08-03: the owner explicitly replaced q-4's human-only relay with full agent permission to
   push and open/manage pull requests for the code-only/synthetic public branch; only the top-routed
   Sol model may merge after normal diff, canary, review, CI/proving-check, and aging gates. The

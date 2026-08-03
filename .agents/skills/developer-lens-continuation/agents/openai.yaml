@@ -1,0 +1,4 @@
+interface:
+  display_name: "Developer Lens Continuation"
+  short_description: "Resume Developer Lens safely and accurately"
+  default_prompt: "Use $developer-lens-continuation to resume the next bounded Developer Lens product slice from live repository evidence."
