@@ -163,23 +163,52 @@ npm run build:showcase
 
 `check` runs Oxlint, the analytics/API/UI test suite, TypeScript project builds, and the production Vite build. `build:showcase` additionally exports both synthetic ranges, builds with the GitHub Pages base path, verifies the public-data identity boundary, and scans the artifact for secret and local-path patterns. The API tests also prove localhost-only binding behavior and that demo fallback remains explicit.
 
-## Project map
+## Continuing development
 
-Architecture and implementation handoff:
+Start with [`AGENTS.md`](AGENTS.md), then invoke the tracked
+[`$developer-lens-continuation`](.agents/skills/developer-lens-continuation/SKILL.md) skill. Those
+surfaces tell a fresh agent how to refresh live state and route information without reading every
+historical document.
 
-- [`docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md`](docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md) — the original read-only research brief.
-- [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](docs/DEVELOPER_LENS_V2_ARCHITECTURE.md) — the demo-first architecture and D1-D3 delivery lane.
-- [`docs/POST_DEMO_HARDENING.md`](docs/POST_DEMO_HARDENING.md) — security, privacy, resilience, and distribution work intentionally deferred until the working-demo milestone.
-- [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](docs/OVERNIGHT_EXECUTION_PROMPT.md) — the current copy-ready Sol Ultra prompt with closed owner gates, demo-first execution, and aggressive bounded Luna waves.
-- [`docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md`](docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md) — compatibility redirect to the current overnight prompt.
+Owner decisions live only in [`HUMAN_TODO.md`](HUMAN_TODO.md). G1/G2 are approved and G3 has
+standing approval within the named capability boundaries; runtime activation still needs a bounded,
+tested task. G4 remains open and unapproved, so external-model transmission is absent.
+
+The durable document roles are deliberately separate:
+
+- [`docs/data-charter.md`](docs/data-charter.md) — product/data boundary, classes, retention,
+  migration, deletion, and sinks.
+- [`docs/source-capability-matrix.md`](docs/source-capability-matrix.md) — source-specific purpose,
+  consent, class, retention, deletion, and refusal behavior.
+- [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](docs/DEVELOPER_LENS_V2_ARCHITECTURE.md) — stable design
+  and phase dependencies.
+- [`docs/IMPLEMENTATION_LEDGER.md`](docs/IMPLEMENTATION_LEDGER.md) — current evidence, residual
+  risks, and exact resume point.
+- [`docs/POST_DEMO_HARDENING.md`](docs/POST_DEMO_HARDENING.md) — deferred security, privacy,
+  resilience, and distribution work.
+- [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](docs/OVERNIGHT_EXECUTION_PROMPT.md) — a copy-ready launcher
+  into the tracked instruction/skill/state surfaces, not a competing policy file.
+- [`docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md`](docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md) — historical
+  research input only; do not use it as live continuation authority.
+
+Validate this context map, internal links, instruction budget, skill metadata, and gate-state parity
+with:
+
+```powershell
+npm run verify:context
+```
+
+## Code map
 
 - `scripts/collect.ts` — collection orchestration and private dataset writes.
 - `scripts/exportDemo.ts` — deterministic public showcase generation.
 - `scripts/verifyShowcase.ts` — structural privacy assertions and artifact scanning.
 - `server/github.ts` — authenticated GitHub ingestion.
 - `server/localGit.ts` — explicitly scoped local Git enrichment.
+- `server/storage/` — V2 SQLite contracts and synthetic importer proof.
+- `server/analysisPack/` — deterministic C1 Parquet pack/replay foundation.
 - `server/analytics.ts` — deterministic statistics, classifications, and higher-order rules.
 - `server/index.ts` — localhost-only API and production host.
-- `src/` — responsive dashboard and Wrapped experience.
-- `shared/types.ts` — raw and presentation contracts.
-- `.github/workflows/pages.yml` — tested, privacy-checked GitHub Pages deployment.
+- `src/` — responsive dashboard, Wrapped experience, and offline V2 demo.
+- `shared/` — raw/presentation plus privacy, capability, coverage, and provenance contracts.
+- `.github/workflows/pages.yml` — full gate, privacy-checked showcase build, and Pages deployment.

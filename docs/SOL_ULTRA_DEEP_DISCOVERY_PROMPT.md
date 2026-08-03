@@ -1,5 +1,10 @@
 # Sol Ultra deep-discovery brief
 
+> **Historical research input — do not execute as a continuation prompt.** Its durable output is
+> the architecture. Current instructions, owner decisions, phase state, and resume workflow live in
+> `AGENTS.md`, `HUMAN_TODO.md`, `docs/IMPLEMENTATION_LEDGER.md`, and
+> `$developer-lens-continuation`.
+
 Paste the prompt below into a new chat, choose **GPT-5.6 Sol**, and set reasoning to
 **Ultra**. Give that chat access to the Developer Lens checkout, but do not attach or
 paste the private `.developer-lens/` dataset.
