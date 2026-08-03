@@ -170,6 +170,29 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     await expect(readFile(source)).resolves.toEqual(sourceBytes)
   })
 
+  it('refuses a zero-header database that owns only a user view without mutating it', async () => {
+    const { source, target, sourceBytes } = await fixturePaths()
+    const unrelated = new Database(target)
+    unrelated.exec('CREATE VIEW sqliteXview AS SELECT 1 AS sentinel')
+    const beforeObjects = unrelated
+      .prepare("SELECT type, name, sql FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' ORDER BY type, name")
+      .all()
+    unrelated.close()
+
+    await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-target-mismatch' })
+    const after = new Database(target)
+    const afterObjects = after
+      .prepare("SELECT type, name, sql FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' ORDER BY type, name")
+      .all()
+    expect(after.prepare('PRAGMA application_id').pluck().get()).toBe(0)
+    expect(after.prepare('PRAGMA user_version').pluck().get()).toBe(0)
+    expect(afterObjects).toEqual(beforeObjects)
+    expect(after.prepare('SELECT sentinel FROM sqliteXview').pluck().get()).toBe(1)
+    expect(after.prepare("SELECT COUNT(*) FROM sqlite_schema WHERE type = 'table' AND name NOT GLOB 'sqlite_*'").pluck().get()).toBe(0)
+    after.close()
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
   it('refuses partial application and user-version tuples without repairing either header', async () => {
     const { directory, source, sourceBytes } = await fixturePaths()
     const partialTargets = [

@@ -19,9 +19,9 @@ function pragmaInteger(db: Database.Database, name: string): number {
   return Number(db.prepare(`PRAGMA ${name}`).pluck().get())
 }
 
-function hasUserTables(db: Database.Database): boolean {
+function hasUserSchemaObjects(db: Database.Database): boolean {
   return db
-    .prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' LIMIT 1")
+    .prepare("SELECT 1 FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' LIMIT 1")
     .get() !== undefined
 }
 
@@ -34,7 +34,7 @@ export function openStorageDatabase(path: string): Database.Database {
   const isFreshDatabase = applicationId === 0 && userVersion === 0
   const isV2Database =
     applicationId === SQLITE_APPLICATION_ID && userVersion === SQLITE_USER_VERSION
-  if ((isFreshDatabase && hasUserTables(db)) || (!isFreshDatabase && !isV2Database)) {
+  if ((isFreshDatabase && hasUserSchemaObjects(db)) || (!isFreshDatabase && !isV2Database)) {
     db.close()
     throw new StorageDatabaseError('STORAGE_TARGET_MISMATCH')
   }
