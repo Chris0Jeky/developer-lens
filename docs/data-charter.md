@@ -4,10 +4,11 @@ Version: **1.1.0**
 
 Architecture: [`DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md)
 
-Authority: G1 and G2 approved 2026-08-03; standing G3 authorization is granted for Actions,
-deployments, dependencies, security, Projects, ownership, and source structure; G4 is refused for
-the current roadmap. These decisions authorize bounded implementation, not automatic runtime
-activation.
+Authority: G1 and G2 are approved 2026-08-03; standing G3 authorization is granted for Actions,
+deployments, dependencies, Dependabot/code-scanning security aggregates, Projects, ownership, and
+source structure within the capability matrix. G4 is open and not approved. These decisions
+authorize bounded implementation, not automatic runtime activation, credential changes, external
+writes, or publication of private output.
 
 Development posture: the owner selected a demo-first D1-D3 lane on 2026-08-03. This charter gates
 real/private data and later distribution; it does not block invented C0 fixtures or local synthetic
@@ -89,8 +90,8 @@ Tests and implementation work must not inspect `.developer-lens/`, `public/data`
 browser profiles, credentials, real account activity, untracked private inputs, or generated
 operational datasets outside a named task card that states the exact read boundary, selected local
 scope, purpose, retained fields, rollback/deletion behavior, and proving checks. G2 and the seven
-named G3 source decisions are approved; their executable definitions remain `never_authorized`
-until a bounded implementation slice supplies and tests an activation path.
+currently named G3 source decisions are approved; their executable definitions remain
+`never_authorized` until a bounded implementation slice supplies and tests an activation path.
 
 ## Change control
 
@@ -98,3 +99,9 @@ Implementation within the approved classes, sinks, purposes, lifetimes, deletion
 private/synthetic boundary needs a bounded task card and focused tests, not another owner decision.
 A change to those policy boundaries requires a separate reviewed architecture decision before
 dependent implementation; record alternatives, data effect, migration effect, and rollback.
+
+A future sensitive source may be named without another G3 owner question only through a reviewed
+capability-registry/matrix change that stays within this charter, uses explicitly selected local
+scope and existing read-only least-privilege access, and does not weaken the rejected-capability or
+prohibited-field list. A new class, sink, external transmission boundary, credential mutation, or
+prohibited surface remains a new owner decision. External-model use remains G4-gated.

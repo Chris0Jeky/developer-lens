@@ -5,6 +5,10 @@ Labels: **V** verified repository fact · **D** documented platform constraint �
 
 > **Persistence note:** This file is the full durable capture of the read-only architecture response produced from `docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md`. The Changed/Verified closeout in section 15 describes that research pass, not the later documentation-only commit that saved it.
 
+> **Authority and state note:** `HUMAN_TODO.md` is the live owner-decision record and
+> `IMPLEMENTATION_LEDGER.md` is the live phase/evidence record. This file owns stable design and
+> dependency order; historical task cards and closeout snapshots do not override those sources.
+
 No repository files, generated datasets, private activity, credentials, `.developer-lens/`, `public/data`, `dist`, or caches were read or changed.
 
 ## 0. Owner development policy: demo first
@@ -28,15 +32,15 @@ before the demo is usable.
 
 The only immediate floor is the irreversible boundary inherited from the repository authority:
 do not expose secrets or private/generated data, destroy user work, mutate an external/production
-system, or publish anything outside the chosen q-4 code-only/synthetic route. G2 is
-approved and all seven named G3 sources have standing authorization for bounded implementation;
-G4 is refused and P12 is outside the current roadmap. These decisions do **not** automatically
-activate a source, and they do not block invented C0 fixtures or a local synthetic demo.
+system, or publish anything outside the chosen q-4 code-only/synthetic route. G2 is approved, and
+all seven named G3 sources have standing authorization for bounded implementation; G4 is open and
+not approved, so P12 remains inactive. These decisions do **not** automatically activate a source,
+and they do not block invented C0 fixtures or a local synthetic demo.
 
 ### D1-D3 working-demo lane
 
-This lane runs immediately after P1 and before the P2-P11 post-demo queue. The old P12 path is
-excluded by the owner's G4 refusal.
+This lane runs immediately after P1 and before the P2-P11 post-demo queue. The old P12 path remains
+inactive while G4 is unapproved.
 
 | Demo slice | Outcome | Acceptance |
 |---|---|---|
@@ -126,7 +130,7 @@ Developer Lens must not become:
 - Do not collect Actions logs, artifact contents, cache contents or keys, source, diffs, patch text, paths, bodies, comments, snippets, symbols, or parser diagnostics.
 - Do not use GitHub search or contribution profiles as complete history.
 - Do not build new Projects Classic ingestion.
-- Defer Projects, security, CODEOWNERS, source structure, and ML work until the data charter, provenance, coverage, retention, deletion, and privacy sink tests exist. External LLM work is excluded by the current G4 refusal.
+- Defer Projects, security, CODEOWNERS, source structure, and ML work until the data charter, provenance, coverage, retention, deletion, and privacy sink tests exist. External LLM work remains inactive while G4 is unapproved.
 
 ### Completed foundation slice
 
@@ -757,7 +761,7 @@ No model may ship unless it:
 
 ---
 
-## 10. Archived optional LLM/agent architecture — inactive while G4 is refused
+## 10. Archived optional LLM/agent architecture — inactive while G4 is unapproved
 
 This section preserves the evaluated design only as future reference. It is not in the current
 roadmap and must not create implementation tasks, SDKs, transports, caches, telemetry, or payloads.
@@ -1082,9 +1086,9 @@ Revocation tests must prove:
 ### Demo-first sequencing override
 
 D1-D3 in section 0 runs before this table. P2-P11 form the post-demo technical queue, except for a
-narrowly selected piece that is strictly necessary to make the D1-D3 journey work. P12 is excluded
-by G4 refusal. Security and resilience acceptance from the active phases is tracked, not
-implemented, until D3 is complete.
+narrowly selected piece that is strictly necessary to make the D1-D3 journey work. P12 stays
+inactive while G4 is open and unapproved. Security and resilience acceptance from the active
+phases is tracked, not implemented, until D3 is complete.
 
 | Phase | Goal and exact logical paths | Schema / acceptance / focused checks | Privacy, risk, cost, rollback and deferrals |
 |---|---|---|---|
@@ -1100,7 +1104,7 @@ implemented, until D3 is complete.
 | P9 — dependencies/security | Not now: later `server/connectors/github/dependencies.ts`, restricted storage | Standing G3 applies; a bounded task card fixes the schema/database design. Aggregate-only proofs and isolation tests. | Dependabot/code scanning only; secret scanning/advisories remain rejected. |
 | P10 — Projects/ownership/source structure | Not now: connector/worker modules only after P1–P8 evidence | Standing G3 applies; define schema and activation per capability task card, with parser isolation, sparse suppression, and coverage proof. | No working-tree scanning or people graph. |
 | P11 — statistical/ML | Not now: `server/research/*` or offline notebook prototypes | Model card, baseline, held-out evaluation, calibration/drift/abstention gates. | No product claim until gate. Delete without affecting deterministic engine. |
-| P12 — optional LLM | **Excluded from the current roadmap by the owner's G4 refusal.** | No provider, SDK, transport, cache, telemetry, spend path, or payload. | Reopen only after a future explicit owner decision naming the provider and contract. |
+| P12 — optional LLM | **Inactive while G4 remains unapproved.** | No provider, SDK, transport, cache, telemetry, spend path, or payload. | Activate only after a future explicit owner decision naming the provider and contract. |
 
 ---
 
@@ -1118,7 +1122,7 @@ implemented, until D3 is complete.
 | Current analytics contain person-shaped DNA/archetype/streak/cadence elements | **V** |
 | SQLite operational store + Parquet pack + DuckDB query engine | **R** |
 | Identity vault, title removal, coverage vector and explicit evidence layers | **R** |
-| Security/Projects/ownership/source structure authorized after prerequisites; ML deferred; LLM excluded by G4 refusal | **R** |
+| Security/Projects/ownership/source structure authorized after prerequisites; ML deferred; LLM inactive pending G4 | **R** |
 | No search, profile contribution, Projects snapshot or current Git state is treated as complete history | **R**, supported by **D** constraints |
 
 ### Assumptions
@@ -1162,7 +1166,10 @@ implemented, until D3 is complete.
 1. **G1 — repository authority: APPROVED 2026-08-03.** Developer Lens is registered as **T2 + `sensitive_data` overlay**.
 2. **G2 — retention and migration: APPROVED 2026-08-03.** C1=36 months, C2=13 months, C3=90 days, and C4=process lifetime. Repository names stay isolated locally, PR titles are absent from canonical analytics, and real migration uses the backup/seven-day-grace/rollback/deletion protocol in `HUMAN_TODO.md`.
 3. **G3 — sensitive source access: APPROVED 2026-08-03.** Standing authorization covers Actions, deployments, dependencies, Dependabot/code-scanning security aggregates, Projects, ownership, and source structure for repositories explicitly selected locally. Least-privilege read access and each matrix boundary still bind; missing permissions become coverage rather than another owner question.
-4. **G4 — external model: REFUSED for the current roadmap 2026-08-03.** `cap.external.model` stays `never_authorized`, and P12 is excluded unless a future explicit owner request reopens it with a named provider contract.
+4. **G4 — external model: OPEN / NOT APPROVED 2026-08-03.** `cap.external.model` stays
+   `never_authorized`, and P12 remains inactive unless a future explicit owner request approves a
+   named provider, exact redacted payload, retention/training terms, spend limit, telemetry/cache
+   behavior, and deletion boundary.
 
 ---
 
@@ -1491,13 +1498,13 @@ ORDER BY repository_alias, snapshot_at;
 | Source/module graph | Potentially high | Very high | Very high | Research after prerequisites |
 | Security alert aggregates | Narrow | High | Very high | Not now |
 | Statistical/ML layer | Unproven | High | Medium–high | Research only |
-| External LLM layer | Excluded by current G4 refusal | Not applicable | Not accepted | Reopen only by future explicit owner request |
+| External LLM layer | Inactive while G4 is unapproved | Not applicable | Not accepted | Activate only by future explicit owner request |
 | Secret scanning/audit/people graph | Low or invalid | High | Extreme | Reject |
 
 ## Appendix H. Historical P0/P1 implementation handoff
 
 > **Completed historical record - do not execute as the current task card.** P0 and P1 are complete.
-> The live next slice is D1 in section 0, with the exact resume state in
+> The live next slice is always the one named in
 > [`IMPLEMENTATION_LEDGER.md`](./IMPLEMENTATION_LEDGER.md). The lines below preserve the contract
 > foundation's original acceptance boundary only.
 
@@ -1510,4 +1517,6 @@ ORDER BY repository_alias, snapshot_at;
 7. Prove those canaries are rejected from every newly introduced persistent, API, export, model and public-schema contract without inspecting private data.
 8. Run the focused privacy-contract test, then `npm run check`; report every unrun check and distinguish pre-existing failures from regressions.
 9. Require a fresh-context review against this specification and show the exact diff, clean Git status, test output and zero new source/retention behavior.
-10. Before any later migration or sensitive connector, obtain G2 for retention/title/name deletion, G3 for that source’s least-privilege access, and G4 only if an external model is ever proposed.
+10. G2 and standing G3 are now approved. Before any later migration or sensitive connector,
+    prove the bounded task stays inside their charter/matrix limits; obtain G4 only if an external
+    model is ever proposed.
