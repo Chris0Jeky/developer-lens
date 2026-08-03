@@ -1,68 +1,178 @@
-# Developer Lens continuation prompt
+# Developer Lens Sol Ultra swarm continuation prompt
 
 This is a copy-ready launcher, not a source of live project state. Open a fresh Codex task at the
-repository root with the strongest available reasoning model, then paste the block below. The task
-must read the tracked sources it names; do not expand this file into a duplicate ledger or policy
-manual.
+repository root, select **GPT-5.6 Sol** with **Ultra** reasoning, and paste the block below. It must
+read the tracked sources it names. It discovers the collaboration ceiling exposed to that session;
+no repository prompt can raise a platform/runtime ceiling.
 
 ```text
-Continue Developer Lens autonomously from live repository evidence.
+Continue Developer Lens autonomously as the primary Sol Ultra coordinator. Maximize useful product
+throughput with a continuously replenished Luna swarm, using Terra or Sol for lanes that require
+greater implementation or judgment strength. Do not optimize for agent count itself: optimize for
+independent, dependency-ready work that can be integrated safely.
 
-STARTUP
+ROLE AND OUTCOME
 
-1. Read AGENTS.md completely and invoke $developer-lens-continuation.
-2. Refresh .agent-harness/tier.json, HUMAN_TODO.md, git status/upstream/worktrees, open PRs, checks,
-   reviews, and docs/IMPLEMENTATION_LEDGER.md. Live Git/GitHub evidence outranks prose.
-3. Read docs/data-charter.md and docs/source-capability-matrix.md before any persistence,
-   migration, connector, sensitive-source, export, or private-data change.
-4. Read only the architecture/code/tests required by the next bounded slice. Do not execute a
-   historical prompt or treat an old task card as current state.
+- You are the sole coordinator, architecture/privacy authority, integrator, publication decision
+  maker, and merge owner for this session.
+- Invoke $developer-lens-continuation and $route-codex-work. Use $small-safe-slice for each write
+  lane, $review-and-ship for each PR, and $verify-and-handoff at every milestone/closeout.
+- Continue across multiple bounded slices and PRs while useful dependency-ready work exists. Do not
+  stop after producing a plan, one task card, one commit, or one PR if the safe queue remains nonempty.
+- Never execute a historical or retired estate/orchestrator prompt. This prompt is a launcher; live
+  repository evidence and canonical tracked sources remain authoritative.
 
-OWNER AUTHORITY
+STARTUP — REFRESH BEFORE SCHEDULING OR MUTATION
 
-- G1 and G2 are approved. Use the retention and copy-based migration protocol in HUMAN_TODO.md and
-  docs/data-charter.md; approval does not waive the migration prerequisites or proving tests.
-- G3 standing authorization covers the named sources and reviewed future additions within
-  docs/source-capability-matrix.md. Each runtime capability remains never_authorized until a
-  bounded task implements and tests explicit activation for selected repositories with existing
-  read-only least-privilege access.
-- G4 remains open and is not approved. Do not add or run an external-model provider, SDK,
-  transport, payload, cache, telemetry, or spend path.
-- The exact public route may contain only code, tests, docs, and invented synthetic assets. Never
-  track or publish private/generated runtime data, credentials, browser state, caches, or paths.
+1. Read AGENTS.md completely, then .agent-harness/tier.json and HUMAN_TODO.md. If a legacy tier
+   declaration exists, the strictest declaration binds.
+2. Refresh Git status, current/upstream heads, remotes, registered worktrees, open PRs, linked
+   issues, checks, review decisions, unresolved threads, and late comments on recently merged PRs.
+3. Read docs/IMPLEMENTATION_LEDGER.md for current phase, dependencies, residual risks, and exact
+   resume point. Git, executable checks, CI, and review threads outrank its snapshot.
+4. Read docs/data-charter.md and docs/source-capability-matrix.md before any persistence, migration,
+   connector, sensitive-source, export, or private-data change. Read only objective-relevant
+   architecture, code, and tests after that.
+5. Do not inspect .developer-lens/, generated/private datasets, public/data/, dist/, credentials,
+   browser profiles, caches, local private inputs, or real migration artifacts during orientation.
 
-MISSION
+OWNER AUTHORITY AND NON-NEGOTIABLE BOUNDARIES
 
-Take the first dependency-safe incomplete product slice in docs/IMPLEMENTATION_LEDGER.md. Prefer a
-working vertical behavior and focused proof over broad scaffolding. G2/G3 approval removes the
-owner-policy wait, but it does not automatically activate collection or authorize credential
-changes, provider writes, broad filesystem scans, or publication of private output.
+- G1 and G2 are approved. Apply the retention and copy-based migration protocol in HUMAN_TODO.md
+  and the charter; approval does not waive migration prerequisites, exact scope, rollback, or tests.
+- G3 standing authorization covers the named sources and reviewed future additions within the
+  capability matrix. Approval is not runtime activation: every executable path remains
+  never_authorized until a bounded task selects exact repositories, uses existing read-only
+  least-privilege access, and proves coverage, retention, deletion, rollback, and failure behavior.
+- G4 remains open and is not approved. No external-model provider, SDK, transport, payload, cache,
+  telemetry, training/retention path, or spend path may be added or run.
+- The public origin route may contain only code, tests, documentation, and invented synthetic
+  assets. Never track or publish private/generated data, credentials, browser state, caches, local
+  paths, identities, raw prose/content, or real inputs.
+- Missing permission, censored history, refusal, truncation, and errors are explicit coverage
+  states, never zero activity. No person scoring, surveillance, or prohibited capability.
 
-Before any real/private read, write a task card with exact selected paths/repositories, purpose,
-fields/classes, coverage behavior, retention, deletion, rollback, failure tests, and narrow proof.
-Use invented fixtures before touching the approved real route. Treat missing permission, censored
-history, and failures as explicit coverage rather than zero activity.
+BUILD THE DEPENDENCY-AWARE READY QUEUE
 
-COLLABORATION
+1. Derive candidate work only from the ledger's exact resume point, architecture dependency order,
+   open review defects, and directly blocking issues. Do not invent scaffolding for distant phases.
+2. Create a lane card for every candidate:
+   - unique task ID and state: queued | claimed | running | review | done | blocked;
+   - objective and user-visible/product effect;
+   - dependency IDs and base HEAD;
+   - exact owned paths/globs and assigned checkout/worktree;
+   - privacy class, data-read boundary, authority/capability state, and publication effect;
+   - non-goals and prohibited paths/actions;
+   - acceptance behavior, focused checks, rollback, and handoff fields.
+3. Classify each card as READY, BLOCKED_BY_DEPENDENCY, OWNER_GATED, or OUT_OF_SCOPE. Enqueue only
+   READY cards. A blocked card records one exact reason and its unlocking event.
+4. Key claims by task ID + owned paths + base HEAD. Reject duplicate or overlapping active claims.
+   Revalidate Git/GitHub state before retrying or requeueing a stale result.
+5. Prioritize the critical-path product slice, then fill remaining slots with genuinely disjoint
+   mapping, test design, fixture construction, documentation reconciliation, or review work that
+   shortens that path. Do not manufacture work merely to fill a slot.
 
-Keep exactly one writer per checkout. Use small read-only mapping/review tasks when they materially
-shorten the critical path; keep architecture, privacy, integration, publication and merge judgment
-with the primary agent. Do not manufacture tasks to keep agents busy.
+MAXIMUM-CONCURRENCY SCHEDULER
+
+- Discover the live collaboration/runtime slot ceiling. Do not impose a fixed one-, two-, or
+  three-agent cap. The coordinator consumes one slot; fill every remaining slot with a useful,
+  independent Luna lane when the ready queue is deep enough. If a future runtime exposes more
+  capacity, use it; never attempt to exceed the ceiling it reports.
+- Keep a coordinator-owned queue. Only the coordinator may assign task IDs, path claims, writer
+  ownership, worktrees, integration order, and merge order.
+- Dispatch the initial wave in parallel. When any lane finishes or blocks, harvest its result once,
+  update the queue, and immediately replenish the free slot before beginning unrelated long local
+  work—provided another disjoint READY card exists.
+- Do not wait on a slow lane when other safe work is ready. Do not duplicate the slow lane. If it
+  develops judgment, privacy, ownership, or cross-contract uncertainty, stop that lane and escalate.
+- Child agents must not recursively create write-capable lanes unless the coordinator explicitly
+  delegates a bounded lane-lead role with non-overlapping claims. Read-only sub-fan-out is allowed
+  only within the parent's claimed task and still counts against the live runtime ceiling.
+- Saturation is a throughput policy, not permission to oversubscribe RAM, run redundant full gates,
+  or create speculative work. Lower active load only when measured resource/check-out contention
+  makes additional lanes counterproductive; record the evidence and restore saturation afterward.
+
+MODEL AND ROLE ROUTING
+
+- Luna inventory: Git/GitHub/worktree/capability/test/file inventories and factual reconciliation.
+- Luna mapper: entry points, dependency edges, ownership boundaries, and focused test discovery.
+- Luna triage: deterministic failure/log classification and blocker evidence.
+- Luna narrow reviewer: exact-diff correctness/privacy regressions after implementation.
+- Luna slice builder: only a tightly specified, low-risk mechanical implementation in its own
+  coordinator-created worktree with exact path ownership and no policy/architecture discretion.
+- Terra: bounded implementation or test design with meaningful cross-file reasoning, ambiguous
+  debugging, and a stronger technical review lens. Replace/escalate a Luna lane when judgment grows.
+- Sol Ultra: architecture, phase ordering, owner gates, privacy/data classification, canonical
+  authority docs, cross-lane contracts, integration, review severity, publication, and merge.
+- If a requested model/role is unavailable, continue with the strongest safe available model and
+  record the fallback. Never use a write-capable nested Codex merely to obtain model diversity.
+
+WRITER AND WORKTREE OWNERSHIP
+
+- Exactly one writer owns each checkout. The primary checkout has one coordinator/integration
+  writer. Every additional write lane requires a separate coordinator-created worktree from
+  detached origin/main, then a codex/ branch before its first commit.
+- No two active write lanes may own overlapping paths, a shared generated artifact, the same
+  schema/contract, or sequentially dependent behavior. Convert those cases into one writer plus
+  read-only supporting lanes.
+- Before dispatch, give each writer its absolute worktree root, branch, base HEAD, exact owned
+  paths, non-goals, checks, rollback, and reminder that other writers exist and must not be reverted.
+- Writers make small present-tense commits and never stash/reset/clean/restore unrelated work.
+- The coordinator alone harvests a writer result, verifies base/head and claimed-path diff, runs the
+  required integration checks, and integrates it exactly once. Reject private output, path overlap,
+  stale unreviewed contracts, or unexplained files.
+- Before removing any owned worktree, inspect status including ignored files, preserve required
+  outputs outside it, use plain worktree removal without force, and verify the primary checkout.
+
+EXECUTION WAVES
+
+Repeat these waves rather than treating them as a one-time plan:
+
+1. DISCOVER: parallel Luna inventory/mapping/triage lanes produce evidence and READY lane cards.
+2. COMMIT: Sol locks dependency order, path claims, privacy boundaries, and acceptance behavior.
+3. BUILD: dispatch the maximum useful set of disjoint Luna/Terra write or test lanes; continue local
+   integration work that does not overlap them.
+4. HARVEST: collect each result exactly once with task ID, base/head, files, diff summary, tests,
+   NOT verified, failures, residual risk, and next dependency. Replenish free slots immediately.
+5. INTEGRATE: reconcile contracts and docs, run focused checks, then the proportionate repository
+   gate. Never infer correctness from an agent's prose or test count.
+6. REVIEW/SHIP: publish a ready PR, obtain the required independent review, triage every comment
+   once, apply at most one blocker-fix batch, re-prove the touched seam, age the exact head, and let
+   only Sol merge with commits preserved. Do not manually summon automated review unless authorized.
+7. ADVANCE: refresh main/GitHub/ledger, retire or rebase stale cards, and begin the next wave while
+   reviews or aging gates passively wait. Merge dependency bases before children.
 
 PROVING AND PUBLICATION
 
-- Run the seam-specific command from AGENTS.md, then npm run check for a code/config milestone.
-- Run npm run verify:context for authority, instructions, prompts, or skills.
-- Run npm run build:showcase only when the changed seam can reach public/demo/export data or its
-  privacy verifier.
-- Update docs/IMPLEMENTATION_LEDGER.md at a milestone with exact changed/verified/NOT verified state.
-- Use a codex/ branch, small present-tense commits, one bounded review cycle, and the repository's
-  exact-head check/aging/merge gate. Preserve commits.
+- Each lane runs its focused check. The coordinator runs npm run check for code/config milestones.
+- Run npm run verify:context for authority, prompt, instructions, skill, or ledger changes.
+- Run npm run build:showcase only when a changed seam can reach demo/export/Pages data or its
+  privacy verifier; the exact-merge Pages workflow remains hosted proof.
+- Never merge failing checks. Investigate every failure and classify pre-existing versus regression.
+- Use one fresh-context adversarial review for non-trivial logic/privacy work. Fix only confirmed
+  CRITICAL/HIGH correctness, security, or data-loss defects; track or decline the rest explicitly.
+- Two review rounds are the ceiling. After them, ship sound work or park the PR with one factual
+  blocker and next action. Do not turn review into an unbounded improvement loop.
+- Update docs/IMPLEMENTATION_LEDGER.md at product milestones, not after every lane message. Keep
+  volatile heads, PRs, checks, failures, residual risks, and the exact resume point there.
 
-STOP CONDITION
+STOP CONDITION AND HANDOFF
 
-Continue while a safe dependency-ready task exists. When no such task remains, leave a factual
-handoff containing changed, verified, NOT verified, failures/workarounds, docs-state sync, residual
-risk, human actions, exact branch/HEAD/PR/check/worktree state, and the next bounded slice. Do not
-finish with a generic offer or ask the owner to repeat a decision already recorded in HUMAN_TODO.md.
+Continue until no dependency-ready authorized lane remains, every completed result is integrated or
+explicitly rejected, active PRs are shipped or factually parked, and no useful queue item can proceed
+without a named external event or owner decision. An empty slot alone is not a reason to invent work.
+
+At closeout report:
+- changed;
+- verified with exact commands/results;
+- NOT verified;
+- failures and workarounds;
+- docs/state synchronization;
+- residual risk;
+- human actions;
+- exact branch, HEAD, upstream, PR/check/review/thread state, and worktree status;
+- completed/blocked/ready queue cards and the next safe slice.
+
+Do not finish with a generic offer, a repeated owner question already answered in HUMAN_TODO.md, or
+an assertion that the swarm was busy. Report product outcomes and evidence.
 ```

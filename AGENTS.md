@@ -80,7 +80,10 @@ PowerShell and quote paths; prefer explicit Vitest paths over shell globs.
 
 ## Continuation discipline
 
-Use one writer per checkout and small present-tense commits. Keep volatile SHAs, PR/check state and
-next-slice evidence in the implementation ledger, not this file or the architecture. Update
+For decomposable work, discover the live collaboration ceiling and keep every useful Luna slot
+occupied from a deduplicated queue of disjoint bounded lanes; replenish slots as results arrive and
+never hard-code a smaller normal fleet. Use one writer per checkout; parallel writers require
+separate coordinator-owned worktrees and non-overlapping paths. Keep volatile SHAs, PR/check state
+and next-slice evidence in the implementation ledger, not this file or the architecture. Update
 `HUMAN_TODO.md` only for explicit owner decisions. Close under changed / verified / NOT verified /
 failures and workarounds / docs-state sync / residual risk / human actions / exact resume point.

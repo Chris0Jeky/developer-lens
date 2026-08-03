@@ -1,13 +1,14 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-03**
+Last updated: **2026-08-04**
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03.
 
-Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, and the bounded synthetic P3
-analysis-pack foundation are published. P4 is the next architecture phase; the current milestone
-builds the durable context needed to resume it without policy or state loss**.
+Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
+analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
+P4 is the next architecture phase; the current milestone upgrades the launcher and routing policy
+for maximum useful parallel continuation without weakening checkout or privacy ownership**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -15,7 +16,7 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published product baseline: `origin/main` merge
+- Published P3 implementation baseline: `origin/main` merge
   `cc08a2ecaa480660bda68bb40f4d2d2a02d5bbaf`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
@@ -248,8 +249,43 @@ unresolved review threads outrank it whenever they disagree.
   No collector, migration, runtime capability, external model or publication data path was
   activated by this documentation/control-plane slice.
 
+## Dynamic swarm continuation
+
+- `docs/OVERNIGHT_EXECUTION_PROMPT.md` now launches Sol Ultra as the sole coordinator over a
+  dependency-aware lane queue. It discovers the runtime collaboration ceiling, fills every useful
+  Luna slot, harvests results once, and replenishes immediately without imposing a smaller fixed
+  fleet size or inventing work.
+- Each lane has a unique ID, base HEAD, dependency state, exact path claim, worktree/writer,
+  privacy/authority boundary, acceptance checks, rollback, and evidence handoff. Concurrent writers
+  require separate coordinator-owned worktrees and non-overlapping paths; otherwise Luna remains a
+  read-only inventory, mapping, triage, or review lane.
+- Luna owns bounded mechanical work, Terra receives judgment-heavy implementation/review, and Sol
+  retains architecture, privacy, owner gates, canonical context, integration, publication, and
+  merge. G2/G3 approval still does not activate real sources, and G4 remains a hard stop.
+- The prompt carries no volatile SHA, PR, or phase snapshot. It reads this ledger and live GitHub at
+  startup and after each wave, so a larger future runtime ceiling is used automatically while the
+  currently exposed ceiling remains a platform fact rather than repository policy.
+- A fresh Sol Ultra forward run reconstructed the live four-slot scheduler without hidden expected
+  output: primary Sol integration, Luna late-review triage, Luna P4 entry-point mapping, and Terra P4
+  contract/test design. It respected the dirty checkout, produced unique queue cards, kept all first
+  wave lanes read-only, preserved `never_authorized`, and left real migration/G4 blocked.
+- That live refresh found three PR #10 comments which arrived after the prior closeout. Focused
+  repairs now validate multiline Markdown labels, keep encoded `#` inside local filenames by
+  splitting raw fragments before decoding, and reject YAML collection/implicit non-string scalars
+  in skill metadata. No private path or file was used by the invented regressions.
+
 ## Verification
 
+- Dynamic-swarm/context proof on `codex/sol-ultra-swarm-prompt`: both the tracked continuation skill
+  and the updated user-global routing skill passed the official skill validator;
+  `npm run verify:context` passed 12 Markdown files / 10 required files, including the new swarm
+  markers; `npm run check` passed Oxlint, 23 test files / 76 tests, TypeScript project builds, and
+  the production Vite build; `npm audit --omit=dev` reported zero vulnerabilities; and
+  `git diff --check` passed. Vite emitted only the existing >500 kB chunk-size advisory.
+- The focused context suite covers all three late PR #10 cases while remaining 1 file / 5 grouped
+  tests: a multiline-label missing link is discoverable, `%23` remains part of the decoded filename,
+  and YAML collections/booleans/numbers/dates reject as non-string frontmatter. The fresh Sol Ultra
+  scheduler run reconstructed all four live slots and the correct P4-centered ready/blocked queue.
 - Durable-context proof on `codex/durable-project-context`: the official skill validator accepted
   `.agents/skills/developer-lens-continuation`; `npm run verify:context` found all 10 required
   artifacts, kept `AGENTS.md` within its 100-line T2 budget, verified authority markers and 12
@@ -353,6 +389,12 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Failures and workarounds
 
+- The first combined prompt/docs patch was rejected atomically because the shell-rendered README
+  context showed mojibake in place of its real em dash. No partial edit landed; the same change was
+  applied as smaller exact-context patches and all context checks passed.
+- The first lint pass on the late-review scalar repair reported two unnecessary character-class
+  escapes. The check was not treated as green; the expression was simplified and the full gate then
+  passed without that warning.
 - The first context-verifier run matched authority markers before collapsing wrapped Markdown
   whitespace, so a semantically present marker failed on a line break. The verifier now normalizes
   whitespace before exact marker checks and passed both directly and inside `npm run check`.
@@ -413,6 +455,13 @@ unresolved review threads outrank it whenever they disagree.
 
 ## NOT verified
 
+- A write-capable multi-worktree swarm was not launched merely to demonstrate concurrency. The
+  forward test was read-only and proved queue construction, slot use, role escalation, ownership,
+  and stop conditions without creating branches, worktrees, commits, or private-data reads.
+- The active collaboration surface exposes four total slots including the coordinator. No editable
+  numeric limit exists in the inspected Codex config/agent profiles, and behavior under a future
+  larger platform ceiling is not locally executable; the prompt discovers that ceiling rather than
+  persisting four as policy.
 - A clean Node 20 install of the complete P2+P3 suite. DuckDB/Parquet itself is directly verified
   on Node v20.20.2 and v24.13.1 Windows x64, but this checkout's `better-sqlite3@12.11.1` binary is
   the Node 24 build and cannot be reused by Node 20.
@@ -430,6 +479,13 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Residual risk
 
+- The user-global `$route-codex-work` skill now removes its one-or-two-reviewer soft cap, but that
+  file is outside this repository and is not versioned by this PR. The tracked prompt, continuation
+  skill, root instructions, and context markers independently carry the dynamic-saturation policy
+  for Developer Lens; another machine's global router may still differ.
+- Maximum concurrency can become counterproductive under measured RAM, test-process, or worktree
+  contention. The scheduler defaults to the discovered ceiling, lowers active load only on evidence,
+  and never trades away task deduplication, one-writer ownership, or privacy gates to fill a slot.
 - P1 remains largely an inert contract foundation for existing v1 runtime paths; the D1 demo consumes
   the registered public seam only.
 - P2 is a synthetic proof seam, not a general compatibility framework. Exact V2 headers are the

@@ -11,7 +11,7 @@ export interface SkillFrontmatter {
 }
 
 const markdownLinkPattern =
-  /!?\[[^\]\r\n]*\]\(\s*(?:<([^>\r\n]+)>|([^\s)\r\n]+))(?:\s+(?:"[^"\r\n]*"|'[^'\r\n]*'|\([^\r\n)]*\)))?\s*\)/g
+  /!?\[[^\]]*\]\(\s*(?:<([^>\r\n]+)>|([^\s)\r\n]+))(?:\s+(?:"[^"\r\n]*"|'[^'\r\n]*'|\([^\r\n)]*\)))?\s*\)/g
 
 export function extractMarkdownLinkTargets(contents: string): string[] {
   return [...contents.matchAll(markdownLinkPattern)].map((match) => match[1] ?? match[2] ?? '')
@@ -26,25 +26,26 @@ export function resolveRepositoryLinkTarget(
     return { kind: 'skip' }
   }
 
+  const rawPathTarget = rawTarget.split('#', 1)[0]
+  if (!rawPathTarget) {
+    return { kind: 'skip' }
+  }
+
   let decodedTarget: string
   try {
-    decodedTarget = decodeURIComponent(rawTarget)
+    decodedTarget = decodeURIComponent(rawPathTarget)
   } catch {
-    return { kind: 'invalid', reason: `invalid URL encoding: ${rawTarget}` }
+    return { kind: 'invalid', reason: `invalid URL encoding: ${rawPathTarget}` }
   }
 
-  const targetWithoutAnchor = decodedTarget.split('#', 1)[0]
-  if (!targetWithoutAnchor) {
-    return { kind: 'skip' }
-  }
-  if (isAbsolute(targetWithoutAnchor) || win32.isAbsolute(targetWithoutAnchor)) {
+  if (isAbsolute(decodedTarget) || win32.isAbsolute(decodedTarget)) {
     return { kind: 'invalid', reason: `absolute local path: ${rawTarget}` }
   }
-  if (/^[a-z][a-z0-9+.-]*:/i.test(targetWithoutAnchor)) {
+  if (/^[a-z][a-z0-9+.-]*:/i.test(decodedTarget)) {
     return { kind: 'skip' }
   }
 
-  const target = resolve(root, dirname(sourcePath), targetWithoutAnchor)
+  const target = resolve(root, dirname(sourcePath), decodedTarget)
   const rootRelativeTarget = relative(root, target)
   if (
     rootRelativeTarget === '..' ||
@@ -76,6 +77,17 @@ function parseScalar(value: string): { value?: string; error?: string } {
   }
   if (value.includes(': ') || value.includes(' #')) {
     return { error: `unsupported plain scalar: ${value}` }
+  }
+  if (
+    value.startsWith('[') ||
+    value.startsWith('{') ||
+    /^[&*!|>@`#]/.test(value) ||
+    /^-\s/.test(value) ||
+    /^(?:~|null|true|false|yes|no|on|off|[-+]?\.(?:inf|nan))$/i.test(value) ||
+    /^[+-]?(?:0[xob][0-9a-f_]+|[0-9][0-9_]*(?:\.[0-9_]*)?(?:e[+-]?[0-9]+)?)$/i.test(value) ||
+    /^\d{4}-\d{1,2}-\d{1,2}(?:$|[Tt ])/i.test(value)
+  ) {
+    return { error: `plain scalar must remain a string: ${value}` }
   }
   return { value }
 }
