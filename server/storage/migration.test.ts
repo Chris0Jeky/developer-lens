@@ -223,10 +223,16 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     unknownState.pullRequests[0]!.state = 'DRAFT'
     const unknownCoverage = inventedV1Fixture()
     unknownCoverage.coverage[0]!.id = 'unknown-source'
+    const duplicateCoverage = inventedV1Fixture()
+    duplicateCoverage.coverage.push({ ...duplicateCoverage.coverage[0]! })
+    const unsafeLocalIdentifier = inventedV1Fixture()
+    unsafeLocalIdentifier.repositories[0]!.id = 'local:owner/repository name'
 
     expect(() => parseV1Dataset(JSON.stringify(whitespaceIdentifier))).toThrow('V1_VALIDATION_FAILED')
     expect(() => parseV1Dataset(JSON.stringify(unknownState))).toThrow('V1_VALIDATION_FAILED')
     expect(() => parseV1Dataset(JSON.stringify(unknownCoverage))).toThrow('V1_VALIDATION_FAILED')
+    expect(() => parseV1Dataset(JSON.stringify(duplicateCoverage))).toThrow('V1_VALIDATION_FAILED')
+    expect(() => parseV1Dataset(JSON.stringify(unsafeLocalIdentifier))).toThrow('V1_VALIDATION_FAILED')
 
     const { target } = await fixturePaths()
     const db = openStorageDatabase(target)
@@ -247,6 +253,92 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     const db = openStorageDatabase(target)
     expect(db.prepare('SELECT capability_id, status, limitation_code, observed_units FROM coverage_observation').get()).toEqual({ capability_id: 'cap.local.git', status: 'unavailable', limitation_code: 'V1_UNAVAILABLE', observed_units: 0 })
     db.close()
+  })
+
+  it('conservatively aggregates the multiple GitHub coverage records emitted by the collector', async () => {
+    const { source, target } = await fixturePaths()
+    const collectorShaped = inventedV1Fixture()
+    collectorShaped.coverage = [
+      { id: 'github-contributions', label: 'Contribution graph', status: 'complete', detail: 'Invented', itemCount: 12 },
+      { id: 'github-commits', label: 'Authored commits', status: 'complete', detail: 'Invented', itemCount: 8 },
+      { id: 'github-line-changes', label: 'Authored line changes', status: 'partial', detail: 'Invented', itemCount: 4 },
+      { id: 'github-private-repositories', label: 'Private repository enrichment', status: 'complete', detail: 'Invented', itemCount: 2 },
+    ]
+    const sourceBytes = Buffer.from(JSON.stringify(collectorShaped), 'utf8')
+    await writeFile(source, sourceBytes)
+
+    expect(() => parseV1Dataset(sourceBytes.toString('utf8'))).not.toThrow()
+    await expect(importV1Json({ sourcePath: source, targetPath: target })).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
+    const db = openStorageDatabase(target)
+    expect(db.prepare('SELECT capability_id, status, limitation_code, observed_units FROM coverage_observation').get()).toEqual({
+      capability_id: 'github.core',
+      status: 'censored',
+      limitation_code: 'V1_PARTIAL_COVERAGE',
+      observed_units: 4,
+    })
+    db.close()
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
+  it('normalizes collector-generated local repository IDs without persisting repository names', async () => {
+    const { source, target } = await fixturePaths()
+    const localOnly = inventedV1Fixture()
+    localOnly.repositories[0]!.id = 'local:invented-org/invented-repository'
+    localOnly.commits[0]!.source = 'local-git'
+    localOnly.pullRequests = []
+    localOnly.reviews = []
+    localOnly.issues = []
+    localOnly.coverage = [
+      { id: 'local-git', label: 'Local Git enrichment', status: 'complete', detail: 'Invented', itemCount: 1 },
+    ]
+    const sourceBytes = Buffer.from(JSON.stringify(localOnly), 'utf8')
+    await writeFile(source, sourceBytes)
+
+    expect(() => parseV1Dataset(sourceBytes.toString('utf8'))).not.toThrow()
+    await expect(importV1Json({ sourcePath: source, targetPath: target })).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
+    const db = openStorageDatabase(target)
+    const identity = db.prepare('SELECT provider_id, analytical_key FROM repository_identity').get() as {
+      provider_id: string
+      analytical_key: string
+    }
+    expect(identity.provider_id).toMatch(/^local-[a-f0-9]{24}$/)
+    expect(identity.analytical_key).toMatch(/^repo-[a-f0-9]{24}$/)
+    expect(JSON.stringify(identity)).not.toContain('invented-org')
+    expect(db.prepare('SELECT repository_provider_id FROM commit_observation').pluck().get()).toBe(identity.provider_id)
+    db.close()
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
+  it('transactionally replaces the previous snapshot and removes every absent row', async () => {
+    const { source, target } = await fixturePaths()
+    await importV1Json({ sourcePath: source, targetPath: target })
+    const replacement = inventedV1Fixture()
+    replacement.repositories = []
+    replacement.commits = []
+    replacement.commitDaysByRepository = []
+    replacement.pullRequests = []
+    replacement.reviews = []
+    replacement.issues = []
+    replacement.coverage = []
+    const replacementBytes = Buffer.from(JSON.stringify(replacement), 'utf8')
+    await writeFile(source, replacementBytes)
+
+    await expect(importV1Json({ sourcePath: source, targetPath: target })).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
+    const db = openStorageDatabase(target)
+    const rowCounts = [
+      'import_run',
+      'repository_identity',
+      'commit_observation',
+      'pull_request_fact',
+      'coverage_observation',
+      'dated_event_observation',
+    ].map((table) => Number(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get()))
+    const importedChecksum = db.prepare('SELECT source_checksum FROM import_run').pluck().get()
+    db.close()
+
+    expect(rowCounts).toEqual([1, 0, 0, 0, 0, 0])
+    expect(importedChecksum).toBe(createHash('sha256').update(replacementBytes).digest('hex'))
+    await expect(readFile(source)).resolves.toEqual(replacementBytes)
   })
 
   it('rolls back importer writes when an existing V2 target fails its in-transaction foreign-key check', async () => {
@@ -277,14 +369,25 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     await expect(readFile(source)).resolves.toEqual(sourceBytes)
   })
 
-  it('rolls back a failed re-import and retains the previous canonical state', async () => {
-    const { source, target, sourceBytes } = await fixturePaths()
+  it('rolls back a failed replacement and retains the previous canonical state', async () => {
+    const { source, target } = await fixturePaths()
     await importV1Json({ sourcePath: source, targetPath: target })
     const before = databaseDigest(target)
+
+    const replacement = inventedV1Fixture()
+    replacement.repositories = []
+    replacement.commits = []
+    replacement.commitDaysByRepository = []
+    replacement.pullRequests = []
+    replacement.reviews = []
+    replacement.issues = []
+    replacement.coverage = []
+    const replacementBytes = Buffer.from(JSON.stringify(replacement), 'utf8')
+    await writeFile(source, replacementBytes)
 
     await expect(importV1Json({ sourcePath: source, targetPath: target, failAt: 'after-repository-upsert' })).rejects.toThrow('INJECTED_FAILURE')
     await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true, failAt: 'after-repository-upsert' })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-import-failed' })
     expect(databaseDigest(target)).toBe(before)
-    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+    await expect(readFile(source)).resolves.toEqual(replacementBytes)
   })
 })
