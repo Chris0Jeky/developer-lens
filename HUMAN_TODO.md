@@ -1,47 +1,59 @@
 # Human actions
 
-Read this file at session start and surface every open item in milestone summaries. Agents may
-close an item only after the owner supplies the named decision and every stated condition is
-directly verified. Do not infer approval, acknowledgement, or subjective confirmation.
+There are no open owner decisions. On 2026-08-03 the owner explicitly delegated q-1 through q-4
+to Codex with a productivity-first mandate. The checked items below record the resulting binding
+defaults. A checked decision authorizes its bounded implementation; it does not claim that the
+runtime capability, migration, deletion, or publication has already been executed or verified.
 
-- [ ] **q-1 — Decide G2 retention and migration before any real private data is read or moved.**
-  Context: no slice may inspect or migrate the existing private JSON without an explicit policy for
-  retention, repository-name isolation, PR-title removal, backup, grace period, deletion, rollback,
-  and the limits of physical/external erasure. Recommended action: approve C1=36 rolling months,
-  C2=13 months, C3=90 days, C4=process lifetime, names isolated locally, and PR titles absent from
-  canonical analytics. Human step: review `docs/data-charter.md`, then state either `Approve G2 as
-  recommended` or list the exact revisions. Until then, do not read `.developer-lens/` or any
-  generated/private dataset. The D1-D3 synthetic working-demo lane proceeds now and does not wait
-  for this decision.
+- [x] **q-1 — G2 retention and migration approved with the recommended lifetimes and a fixed
+  migration protocol.** C1 retains 36 rolling months, C2 13 months, C3 90 days, and C4 only for
+  the process/worker lifetime. Repository names remain in the isolated local identity boundary and
+  use aliases elsewhere; PR titles are absent from canonical analytics. Before the first real v1
+  migration, create one timestamped application-controlled backup, import atomically and
+  idempotently into a new SQLite target, leave the old JSON untouched, and validate integrity,
+  deterministic replay, and rollback. Keep the old JSON and migration backup for a seven-day grace
+  period after a successful migration report, then remove them through application-controlled
+  cleanup. On failure, retain the old JSON and switch readers back to it. Revocation/deletion covers
+  application-controlled observations, descendants, caches, packs, and backups, while reports must
+  state that copied exports, provider-held copies, filesystem snapshots, and physical-media erasure
+  are outside the application's guarantee. Work within this policy needs a bounded task card and
+  proving tests, not another owner decision.
 
-- [ ] **q-2 — Authorize each G3 source only when its phase is ready.** Context: Actions,
-  deployments, dependencies, security, Projects, ownership, and source-structure access each have
-  distinct privilege and re-identification risk. Recommended action: leave every G3 capability off
-  until G2 is approved and its bounded task card identifies the provider permissions, selected
-  repositories, retained fields, deletion behavior, and proving tests. Human step: close q-1 first,
-  then approve or refuse one named capability; approval of one never authorizes another.
+- [x] **q-2 — Standing G3 authorization granted for all seven named sensitive sources.** Actions,
+  deployments, dependencies, Dependabot/code-scanning security aggregates, Projects, ownership,
+  and source structure may be implemented and used in their declared phases for repositories
+  explicitly selected locally. The capability matrix's purpose, class ceiling, retained fields,
+  deletion cascade, and rejected surfaces remain binding; secret scanning and draft/private
+  advisories remain rejected. Use read-only least-privilege provider access. If current credentials
+  lack a permission, record `restricted` or `unavailable` and continue with the remaining queue
+  instead of asking for another policy decision or mutating account authorization. Runtime
+  activation still needs the capability's bounded implementation, selected scope, and focused
+  tests, but no further owner approval.
 
-- [ ] **q-3 — Keep G4 external-model transmission absent unless a concrete provider contract is
-  reviewed.** Context: the deterministic local product is complete without a model. Recommended
-  action: leave G4 closed. Human step if this ever changes: name the provider, exact redacted input
-  schema, spend limit, and verified retention/training terms before any SDK, transport, provider
-  cache, telemetry, or payload is introduced.
+- [x] **q-3 — G4 refused for the current roadmap.** Keep `cap.external.model`
+  `never_authorized`; do not add an external provider, SDK, transport, provider cache, telemetry,
+  spend path, or model payload. The deterministic product is the complete product, and P12 is
+  excluded from the active queue. Reopen G4 only after a future explicit owner request naming the
+  provider, exact redacted input schema, spend limit, and verified retention/training terms.
 
-- [ ] **q-4 — Choose the publication route before this sensitive-data branch reaches the public
-  remote.** Context: T2 `push: free` governs autonomy, but the `sensitive_data` overlay still denies
-  agent pushes to the repository's currently public remote; the free dial does not override that
-  privacy wall. Recommended action: keep the branch local until the exact code-only/synthetic diff
-  is reviewed, then either make the remote private or explicitly authorize a human-relayed public
-  branch push while preserving synthetic-only Pages. Human step: state the chosen route; do not
-  copy `.developer-lens/`, generated data, credentials, or any private input into the relay.
-  This does not block local D1-D3 demo development from invented fixtures.
+- [x] **q-4 — Publication route chosen: public synthetic product, human-relayed code-only branch.**
+  Keep the existing public remote and synthetic Pages surface. Agents may implement, test, review,
+  commit locally, and prepare exact relay commands, but must not push or merge Developer Lens to
+  the public remote. After an exact tracked-diff and canary review, the human relay may publish only
+  code, tests, documentation, and invented synthetic assets. Never relay `.developer-lens/`,
+  generated or private datasets, credentials, browser profiles, caches, local paths, or private
+  inputs. The claude-config registration PR remains unmerged until the matching Developer Lens
+  authority/policy commits are relayed so the two records can land together.
 
 ## Changelog
 
+- 2026-08-03: the owner delegated q-1 through q-4 to Codex under a productivity-first mandate.
+  Codex approved G2 with 36m/13m/90d/process retention and a seven-day migration grace period,
+  granted standing G3 authorization to all seven named sources, refused G4 for the current roadmap,
+  and selected a human-relayed code-only/synthetic public publication route.
 - 2026-08-03: G1 was explicitly approved in the initiating request. Developer Lens is declared T2
-  with the `sensitive_data` overlay and `push: free` / `merge: free` authority. G2, G3, and G4 remain
-  unapproved.
-- 2026-08-03: the owner changed implementation sequencing to demo-first. D1-D3 now prioritize a
+  with the `sensitive_data` overlay and `push: free` / `merge: free` authority.
+- 2026-08-03: the owner changed implementation sequencing to demo-first. D1-D3 prioritize a
   working local synthetic demo, rapid feedback, and focused testing. Security/privacy hardening is
   documented in `docs/POST_DEMO_HARDENING.md` and deferred until D3, except for the irreversible
-  floor and the real/private-data or publication gates above.
+  floor and the real/private-data or publication boundaries above.

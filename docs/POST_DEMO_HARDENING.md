@@ -16,8 +16,8 @@ readiness.
 - The exception is the irreversible floor: no secrets or private/generated data in tracked/public
   outputs, no destroyed user work, no external/production mutation, and no public publication of
   the sensitive-data branch without the named owner decision.
-- Invented C0 fixtures are the default. G2/G3/G4 apply only when work proposes real/private source
-  access or external transmission.
+- Invented C0 fixtures are the default. G2 and all seven named G3 sources are approved for later
+  bounded activation; G4 is refused and external-model transmission is outside the roadmap.
 
 ## Seed backlog
 
@@ -25,7 +25,7 @@ These items are intentionally **not demo blockers**.
 
 | ID | Deferred work | Revisit after D3 with |
 |---|---|---|
-| HARD-001 | Retention, migration, backup, revocation, descendant deletion, and physical-erasure disclosures for real/private data | G2 decision, synthetic migration fixture, rollback and failure-injection plan |
+| HARD-001 | Retention, migration, backup, revocation, descendant deletion, and physical-erasure disclosures for real/private data | Approved G2 protocol, synthetic migration fixture, rollback and failure-injection plan |
 | HARD-002 | Repository-name isolation, PR-title removal, identity minimization, pack-scoped aliases, and sparse suppression | Field-by-field migration map and re-identification review |
 | HARD-003 | Loopback API bearer secret, exact Host/Origin rules, CORS/CSRF denial, pagination bounds, and stable redacted errors | Local attack test matrix and browser compatibility proof |
 | HARD-004 | Log/error scrubbing and taint coverage for raw, escaped, encoded, and nested prohibited values | Sink-specific fuzz/canary suite |
@@ -33,9 +33,9 @@ These items are intentionally **not demo blockers**.
 | HARD-006 | Export/public-build isolation, private-type import denylist, checksums, COMPLETE marker, acknowledgement invalidation, and bundle/source-map scans | End-to-end export and Pages regression suite |
 | HARD-007 | Connector permissions, pagination, rate/cost budgets, retries, checkpoint overlap, idempotency, truncation, and deletion coverage | Per-capability task card and provider-limit fixtures |
 | HARD-008 | Local Git and parser process isolation, no-network/no-exec controls, lazy-fetch prevention, resource caps, and malicious config handling | Invented repository corpus and worker sandbox proof |
-| HARD-009 | External-model provider terms, payload preview, retention/training claims, spend limit, injection resistance, and deterministic fallback | G4 decision and exact provider contract |
+| HARD-009 | External-model provider terms, payload preview, retention/training claims, spend limit, injection resistance, and deterministic fallback | Inactive while G4 is refused; reopen only with a future explicit provider contract |
 | HARD-010 | Dependency pinning, supply-chain review, CI hardening, artifact provenance, and release/distribution controls | Distribution plan and release gate |
-| HARD-011 | Restricted storage and deletion semantics for security/dependency/Projects/ownership/source-structure capabilities | Separate G3 plus schema/storage decision for each capability |
+| HARD-011 | Restricted storage and deletion semantics for security/dependency/Projects/ownership/source-structure capabilities | Standing G3 authorization plus a bounded schema/storage task for each capability |
 | HARD-012 | Full threat model, abuse cases, property/fuzz tests, and runtime privacy verification across every sink | Demo-frozen interfaces and risk-based test plan |
 
 ## Completion rule

@@ -28,22 +28,28 @@ before the demo is usable.
 
 The only immediate floor is the irreversible boundary inherited from the repository authority:
 do not expose secrets or private/generated data, destroy user work, mutate an external/production
-system, or publish the sensitive-data branch without the named owner decision. G2/G3/G4 continue to
-gate real/private source access and external transmission; they do **not** block invented C0 fixtures
-or a local synthetic demo.
+system, or publish the sensitive-data branch outside the chosen q-4 human-relay route. G2 is
+approved and all seven named G3 sources have standing authorization for bounded implementation;
+G4 is refused and P12 is outside the current roadmap. These decisions do **not** automatically
+activate a source, and they do not block invented C0 fixtures or a local synthetic demo.
 
 ### D1-D3 working-demo lane
 
-This lane runs immediately after P1 and before the old P2-P12 sequence:
+This lane runs immediately after P1 and before the P2-P11 post-demo queue. The old P12 path is
+excluded by the owner's G4 refusal.
 
 | Demo slice | Outcome | Acceptance |
 |---|---|---|
 | D1 - visible vertical slice | One invented system story crosses a typed fixture, local presentation boundary, and a useful UI view. Reuse the existing app instead of replacing infrastructure. | One focused behavior test proves the journey; no collection, migration, private input, or network dependency. |
-| D2 - feedback loop | Put the local demo in front of the owner, capture concrete usability feedback, and fix only what improves comprehension or flow. | The owner can identify what the view says, navigate it, and name the next most useful change. |
+| D2 - feedback loop | Put the local demo in front of the owner when available; otherwise run a local browser/visual usability pass, record assumptions and next-day questions, and keep moving. Fix only what improves comprehension or flow. | A reviewer can identify what the view says, navigate it, and name the next most useful change; unavailable overnight owner feedback is queued rather than treated as a blocker. |
 | D3 - demo milestone | Make the chosen journey easy to launch and stable enough for repeated local feedback. | One documented launch path, focused smoke coverage, and `npm run check` green. |
 
 The demo is complete when D3 is met. That is a development milestone, not a claim that the product
 is secure, production-ready, distributable, or ready for real/private data.
+
+For unattended work, D2 does not wait for synchronous owner input. Sol uses the local browser and
+focused tests as the provisional feedback loop, records any subjective assumption for next-day
+review, and proceeds to D3 when the acceptance above is met.
 
 #### Exact D1 task card
 
@@ -120,7 +126,7 @@ Developer Lens must not become:
 - Do not collect Actions logs, artifact contents, cache contents or keys, source, diffs, patch text, paths, bodies, comments, snippets, symbols, or parser diagnostics.
 - Do not use GitHub search or contribution profiles as complete history.
 - Do not build new Projects Classic ingestion.
-- Defer Projects, security, CODEOWNERS, source structure, ML, and external LLM work until the data charter, provenance, coverage, retention, deletion, and privacy sink tests exist.
+- Defer Projects, security, CODEOWNERS, source structure, and ML work until the data charter, provenance, coverage, retention, deletion, and privacy sink tests exist. External LLM work is excluded by the current G4 refusal.
 
 ### Completed foundation slice
 
@@ -362,7 +368,8 @@ The present tests cover core dedupe, line reconciliation, local-email matching, 
 | C4 | Ephemeral source-derived bytes | Subjects, paths, manifests, CODEOWNERS, workflow YAML, source AST | Process/worker lifetime only; never persisted |
 | X | Prohibited | Tokens, secrets, code, diffs, bodies, comments, logs, artifact/cache content, binaries | Never accepted by a persistence or export schema |
 
-Retention periods are recommendations requiring G2. Pseudonymized identifiers are not anonymous.
+These retention periods are active owner policy under G2 as of 2026-08-03. Pseudonymized
+identifiers are not anonymous.
 
 ### Boundary enforcement
 
@@ -750,7 +757,10 @@ No model may ship unless it:
 
 ---
 
-## 10. Optional LLM/agent architecture
+## 10. Archived optional LLM/agent architecture — inactive while G4 is refused
+
+This section preserves the evaluated design only as future reference. It is not in the current
+roadmap and must not create implementation tasks, SDKs, transports, caches, telemetry, or payloads.
 
 ### Evidence bundle
 
@@ -1071,25 +1081,26 @@ Revocation tests must prove:
 
 ### Demo-first sequencing override
 
-D1-D3 in section 0 runs before this table. P2-P12 remain the post-demo technical backlog, except
-for a narrowly selected piece that is strictly necessary to make the D1-D3 journey work. Security
-and resilience acceptance from those phases is tracked, not implemented, until D3 is complete.
+D1-D3 in section 0 runs before this table. P2-P11 form the post-demo technical queue, except for a
+narrowly selected piece that is strictly necessary to make the D1-D3 journey work. P12 is excluded
+by G4 refusal. Security and resilience acceptance from the active phases is tracked, not
+implemented, until D3 is complete.
 
 | Phase | Goal and exact logical paths | Schema / acceptance / focused checks | Privacy, risk, cost, rollback and deferrals |
 |---|---|---|---|
 | P0 — authority and charter | `.agent-harness/tier.json`; estate registration; `docs/data-charter.md`; `docs/source-capability-matrix.md` | No data schema. Owner-approved T2+sensitive-data authority; every capability has purpose/class/retention/delete. Docs lint plus parity review. | Low code risk; authority owner-gated. Rollback docs/tier commit. No collector work. |
 | P1 — executable privacy contract | `shared/privacy.ts`, `shared/capabilities.ts`, `shared/coverage.ts`, `shared/provenance.ts`, `docs/analysis-pack/manifest.schema.json`, `server/privacyContract.test.ts` | Contract v1. Fail closed on unknown class/capability/field; exact coverage union; poison fixtures; `npm test -- server/privacyContract.test.ts`, then `npm run check`. | No data behavior. Rollback one slice. Defer storage and new sources. |
-| P2 — SQLite and v1 importer | `server/storage/schema.ts`, `server/storage/database.ts`, `server/storage/migrations/*`, `scripts/migrateV1ToV2.ts`, storage/migration tests; adapt `server/dataStore.ts` | DB `2.0.0`. Atomic migration, FKs/integrity, idempotent synthetic import, rollback proof, old JSON untouched. | Medium risk. Backup first; feature flag returns to JSON. No real migration without G2. |
+| P2 — SQLite and v1 importer | `server/storage/schema.ts`, `server/storage/database.ts`, `server/storage/migrations/*`, `scripts/migrateV1ToV2.ts`, storage/migration tests; adapt `server/dataStore.ts` | DB `2.0.0`. Atomic migration, FKs/integrity, idempotent synthetic import, rollback proof, old JSON untouched. | Medium risk. Prove the invented migration first. G2 is approved for a later real migration using one timestamped backup, a seven-day grace period, and fallback to untouched JSON. |
 | P3 — analysis-pack foundation | `server/analysisPack/*`, `docs/analysis-pack/schemas/*`, `queries/*`, `notebooks/analysis.ipynb`, pack tests | Pack `1.0.0`. Existing safe deterministic facts only; schema/checksum/COMPLETE; DuckDB queries replay. | Medium privacy risk. Generate in temp; delete pack on rollback. No identities, C3, ML or LLM. |
 | P4 — incremental GitHub core | Adapt `server/github.ts`; add `server/connectors/github/*`, checkpoints/coverage tests | Observation schema `2.1.0`. REST 2026-03-10 pin, cursor/watermark overlap, retries, idempotency, cap warnings, capability manifest. | Medium API risk/cost. Feature flag retains existing collector. No Actions/Projects/security. |
 | P5 — system analytics/API/UI | Adapt `server/analytics.ts`, `server/index.ts`, `shared/types.ts`, `src/hooks/useDashboard.ts`, coverage/feature UI | Feature dictionary v1. Replace scalar confidence/DNA/archetypes with coverage vector and system analyses; authenticated local API. | Medium product migration. Roll back to legacy read-only dashboard during parity. |
 | P6 — explicit-ref local Git | Adapt `server/localGit.ts`; add `server/connectors/localGit/*` and invented repository fixtures | Observation schema `2.2.0`. No `--all`, lazy fetch, raw stderr or repository executables; shallow/partial coverage. | Medium local privacy risk. Capability off by default; revoke deletes records. Defer source parsing. |
 | P7 — PR/check/release/issue flow | GitHub connector modules for PR timelines, checks, issues and releases; related fact/feature tests | Schema `2.3.0`. Attempt-aware checks, explicit links, release ancestry, source caps and deterministic flow metrics. | Medium API volume/C3 risk. Separate capability flags. Defer Actions jobs/deployments. |
-| P8 — Actions and deployments | `server/connectors/github/actions.ts`, `deployments.ts`, feature tests | Schema `2.4.0`. Metadata allowlist only; 1,000-run/90-day censoring; no names/logs/artifacts. | High sensitivity/cost; owner enables. Revoke source/descendants. |
-| P9 — dependencies/security | Not now: later `server/connectors/github/dependencies.ts`, restricted storage | Separate schema/database decision required. Aggregate-only proofs and isolation tests. | High sensitivity. Dependabot/code scanning only; secret scanning/advisories remain rejected. |
-| P10 — Projects/ownership/source structure | Not now: connector/worker modules only after P1–P8 evidence | New consent and schema per capability; parser isolation, sparse suppression and coverage proof. | High re-identification/parser risk. No working-tree scanning or people graph. |
+| P8 — Actions and deployments | `server/connectors/github/actions.ts`, `deployments.ts`, feature tests | Schema `2.4.0`. Metadata allowlist only; 1,000-run/90-day censoring; no names/logs/artifacts. | Standing G3 authorization granted; implement behind bounded capability activation. Revoke source/descendants. |
+| P9 — dependencies/security | Not now: later `server/connectors/github/dependencies.ts`, restricted storage | Standing G3 applies; a bounded task card fixes the schema/database design. Aggregate-only proofs and isolation tests. | Dependabot/code scanning only; secret scanning/advisories remain rejected. |
+| P10 — Projects/ownership/source structure | Not now: connector/worker modules only after P1–P8 evidence | Standing G3 applies; define schema and activation per capability task card, with parser isolation, sparse suppression, and coverage proof. | No working-tree scanning or people graph. |
 | P11 — statistical/ML | Not now: `server/research/*` or offline notebook prototypes | Model card, baseline, held-out evaluation, calibration/drift/abstention gates. | No product claim until gate. Delete without affecting deterministic engine. |
-| P12 — optional LLM | Not now: evidence schema, preview, mock provider, local-model adapter | External transport remains absent until G4. Injection/privacy regression and deterministic fallback. | Highest external privacy risk. Provider disabled by default and removable. |
+| P12 — optional LLM | **Excluded from the current roadmap by the owner's G4 refusal.** | No provider, SDK, transport, cache, telemetry, spend path, or payload. | Reopen only after a future explicit owner decision naming the provider and contract. |
 
 ---
 
@@ -1107,7 +1118,7 @@ and resilience acceptance from those phases is tracked, not implemented, until D
 | Current analytics contain person-shaped DNA/archetype/streak/cadence elements | **V** |
 | SQLite operational store + Parquet pack + DuckDB query engine | **R** |
 | Identity vault, title removal, coverage vector and explicit evidence layers | **R** |
-| Security/Projects/ownership/source structure/ML/LLM deferred | **R** |
+| Security/Projects/ownership/source structure authorized after prerequisites; ML deferred; LLM excluded by G4 refusal | **R** |
 | No search, profile contribution, Projects snapshot or current Git state is treated as complete history | **R**, supported by **D** constraints |
 
 ### Assumptions
@@ -1148,10 +1159,10 @@ and resilience acceptance from those phases is tracked, not implemented, until D
 
 ### Genuine owner gates
 
-1. **G1 — repository authority:** approve and register **T2 + `sensitive_data` overlay** before implementation because the unregistered repository has a public deployment surface and handles private local data.
-2. **G2 — retention and migration:** approve C1=36 months, C2=13 months, C3=90 days, repository-name isolation, PR-title removal, migration grace period and deletion report semantics.
-3. **G3 — sensitive source access:** authorize each Actions/deployment/dependency/security/Projects/ownership/source-structure capability separately when its phase arrives, including the least-privilege GitHub App/repository selection.
-4. **G4 — external model:** explicitly authorize a named provider, exact redacted schema, budget and provider retention/training terms; otherwise the feature remains absent.
+1. **G1 — repository authority: APPROVED 2026-08-03.** Developer Lens is registered as **T2 + `sensitive_data` overlay**.
+2. **G2 — retention and migration: APPROVED 2026-08-03.** C1=36 months, C2=13 months, C3=90 days, and C4=process lifetime. Repository names stay isolated locally, PR titles are absent from canonical analytics, and real migration uses the backup/seven-day-grace/rollback/deletion protocol in `HUMAN_TODO.md`.
+3. **G3 — sensitive source access: APPROVED 2026-08-03.** Standing authorization covers Actions, deployments, dependencies, Dependabot/code-scanning security aggregates, Projects, ownership, and source structure for repositories explicitly selected locally. Least-privilege read access and each matrix boundary still bind; missing permissions become coverage rather than another owner question.
+4. **G4 — external model: REFUSED for the current roadmap 2026-08-03.** `cap.external.model` stays `never_authorized`, and P12 is excluded unless a future explicit owner request reopens it with a named provider contract.
 
 ---
 
@@ -1480,7 +1491,7 @@ ORDER BY repository_alias, snapshot_at;
 | Source/module graph | Potentially high | Very high | Very high | Research after prerequisites |
 | Security alert aggregates | Narrow | High | Very high | Not now |
 | Statistical/ML layer | Unproven | High | Medium–high | Research only |
-| External LLM layer | Optional | Variable | Very high external | Last / owner-gated |
+| External LLM layer | Excluded by current G4 refusal | Not applicable | Not accepted | Reopen only by future explicit owner request |
 | Secret scanning/audit/people graph | Low or invalid | High | Extreme | Reject |
 
 ## Appendix H. Historical P0/P1 implementation handoff

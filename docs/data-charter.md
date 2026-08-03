@@ -1,10 +1,13 @@
 # Developer Lens data charter
 
-Version: **1.0.0**
+Version: **1.1.0**
 
 Architecture: [`DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md)
 
-Authority: G1 approved 2026-08-03; G2, every G3 capability, and G4 remain unapproved.
+Authority: G1 and G2 approved 2026-08-03; standing G3 authorization is granted for Actions,
+deployments, dependencies, security, Projects, ownership, and source structure; G4 is refused for
+the current roadmap. These decisions authorize bounded implementation, not automatic runtime
+activation.
 
 Development posture: the owner selected a demo-first D1-D3 lane on 2026-08-03. This charter gates
 real/private data and later distribution; it does not block invented C0 fixtures or local synthetic
@@ -32,14 +35,18 @@ deleted, or censored evidence is never converted to zero activity.
 | Class | Meaning | Examples | Allowed lifetime and boundary |
 |---|---|---|---|
 | C0 | Invented synthetic public data | Allowlisted demo identities and repositories | May be tracked and published through the synthetic-only schema |
-| C1 | Low-identifiability aggregates | Counts, distributions, coverage states, controlled enums | Proposed 36 rolling months; exportable only after suppression and schema validation |
-| C2 | Local identifiers and provenance | Provider IDs, OIDs, exact source timestamps, local alias links | Proposed 13 months; local-only or remapped to pack-scoped aliases |
-| C3 | High-sensitivity isolated metadata | Workflow, dependency, security, project, team, or module aliases | Proposed 90 days; isolated and excluded from ordinary exports |
+| C1 | Low-identifiability aggregates | Counts, distributions, coverage states, controlled enums | 36 rolling months; exportable only after suppression and schema validation |
+| C2 | Local identifiers and provenance | Provider IDs, OIDs, exact source timestamps, local alias links | 13 months; local-only or remapped to pack-scoped aliases |
+| C3 | High-sensitivity isolated metadata | Workflow, dependency, security, project, team, or module aliases | 90 days; isolated and excluded from ordinary exports |
 | C4 | Ephemeral source-derived bytes | Subjects, paths, manifests, workflow YAML, CODEOWNERS, source AST | Process/worker lifetime only; never persisted, logged, or exported |
 | X | Prohibited | Tokens, secrets, code, diffs, bodies, comments, logs, artifact/cache contents, binaries | Rejected before every sink |
 
-The C1/C2/C3 periods are recommendations, not active policy. They require G2 before retention or
-migration behavior is implemented. Pseudonymous identifiers are not anonymous.
+The C1/C2/C3 periods are active owner policy under G2. Before the first real migration, create one
+timestamped application-controlled backup, import atomically and idempotently into a new SQLite
+target while leaving old JSON untouched, validate integrity/replay/rollback, and retain the old
+JSON plus migration backup for a seven-day grace period after a successful report. Remove both
+through application-controlled cleanup after the grace period. On failure, keep the old JSON and
+return readers to it. Pseudonymous identifiers are not anonymous.
 
 ## Sink contract
 
@@ -80,11 +87,14 @@ persistent, log, API, frontend, export, model, screenshot, bundle, or Pages gold
 
 Tests and implementation work must not inspect `.developer-lens/`, `public/data`, `dist`, caches,
 browser profiles, credentials, real account activity, untracked private inputs, or generated
-operational datasets without the exact later authorization described by G2/G3 and a named migration
-task card.
+operational datasets outside a named task card that states the exact read boundary, selected local
+scope, purpose, retained fields, rollback/deletion behavior, and proving checks. G2 and the seven
+named G3 source decisions are approved; their executable definitions remain `never_authorized`
+until a bounded implementation slice supplies and tests an activation path.
 
 ## Change control
 
-A change to classes, sinks, capability purpose, retention, deletion, schema compatibility, or the
-private/synthetic boundary requires a separate reviewed architecture decision before dependent
-implementation. The decision records alternatives, privacy effect, migration effect, and rollback.
+Implementation within the approved classes, sinks, purposes, lifetimes, deletion rules, and
+private/synthetic boundary needs a bounded task card and focused tests, not another owner decision.
+A change to those policy boundaries requires a separate reviewed architecture decision before
+dependent implementation; record alternatives, data effect, migration effect, and rollback.

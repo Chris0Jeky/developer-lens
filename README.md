@@ -156,7 +156,8 @@ Architecture and implementation handoff:
 - [`docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md`](docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md) — the original read-only research brief.
 - [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](docs/DEVELOPER_LENS_V2_ARCHITECTURE.md) — the demo-first architecture and D1-D3 delivery lane.
 - [`docs/POST_DEMO_HARDENING.md`](docs/POST_DEMO_HARDENING.md) — security, privacy, resilience, and distribution work intentionally deferred until the working-demo milestone.
-- [`docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md`](docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md) — a fresh-session Sol Ultra prompt that coordinates Terra implementation and bounded Luna agents.
+- [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](docs/OVERNIGHT_EXECUTION_PROMPT.md) — the current copy-ready Sol Ultra prompt with closed owner gates, demo-first execution, and aggressive bounded Luna waves.
+- [`docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md`](docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md) — compatibility redirect to the current overnight prompt.
 
 - `scripts/collect.ts` — collection orchestration and private dataset writes.
 - `scripts/exportDemo.ts` — deterministic public showcase generation.
