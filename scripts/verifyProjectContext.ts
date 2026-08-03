@@ -99,6 +99,28 @@ for (const path of liveAuthorityFiles) {
   }
 }
 
+const swarmMarkers: Record<string, readonly string[]> = {
+  'AGENTS.md': ['discover the live collaboration ceiling', 'keep every useful Luna slot occupied'],
+  '.agents/skills/developer-lens-continuation/SKILL.md': [
+    'discover the live collaboration ceiling',
+    'replenish slots as results arrive',
+  ],
+  'docs/OVERNIGHT_EXECUTION_PROMPT.md': [
+    'Do not impose a fixed one-, two-, or three-agent cap',
+    'immediately replenish the free slot',
+    '$route-codex-work',
+  ],
+}
+
+for (const [path, markers] of Object.entries(swarmMarkers)) {
+  const contents = read(path).replace(/\s+/g, ' ')
+  for (const marker of markers) {
+    if (!contents.includes(marker)) {
+      failures.push(`${path} is missing swarm-routing marker: ${marker}`)
+    }
+  }
+}
+
 const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md'], {
   cwd: root,
   dot: true,
