@@ -1483,7 +1483,12 @@ ORDER BY repository_alias, snapshot_at;
 | External LLM layer | Optional | Variable | Very high external | Last / owner-gated |
 | Secret scanning/audit/people graph | Low or invalid | High | Extreme | Reject |
 
-## Appendix H. Ten-line implementation handoff
+## Appendix H. Historical P0/P1 implementation handoff
+
+> **Completed historical record - do not execute as the current task card.** P0 and P1 are complete.
+> The live next slice is D1 in section 0, with the exact resume state in
+> [`IMPLEMENTATION_LEDGER.md`](./IMPLEMENTATION_LEDGER.md). The lines below preserve the contract
+> foundation's original acceptance boundary only.
 
 1. Start only after G1 records Developer Lens as T2 with the `sensitive_data` overlay and confirms the merge posture.
 2. Own only `docs/data-charter.md`, `docs/source-capability-matrix.md`, `shared/privacy.ts`, `shared/capabilities.ts`, `shared/coverage.ts`, `shared/provenance.ts`, `docs/analysis-pack/manifest.schema.json`, and `server/privacyContract.test.ts`.

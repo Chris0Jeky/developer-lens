@@ -16,14 +16,14 @@ unresolved review threads outrank it whenever they disagree.
 - Branch: `codex/persist-deep-signal-architecture`, no upstream.
 - Exact implementation head: `8809289657d260eb099cac755dd150d6c9f4b335`. This ledger update is
   its documentation-only successor, allowing the executable checkpoint to have an immutable SHA.
-- Base: `origin/main` at `7f937547220e6160889eb96a7a72e2ef2c425b95`. After this policy
-  commit, the local branch is six commits ahead.
+- Base: `origin/main` at `7f937547220e6160889eb96a7a72e2ef2c425b95`. After the historical
+  handoff redirect, the local branch is seven commits ahead.
 - Pull request: none. The Developer Lens branch remains intentionally unpublished under q-4.
 - Worktrees: the primary checkout is the only registered Developer Lens worktree and is clean after
   the checkpoint commit.
 - Local branch commits: `4abb2c5` architecture/handoff; `92cb782` G1 authority/charter;
   `2ea18a1` initial ledger/task card; `8809289` P1 executable contracts; `26aefe9` P1 checkpoint;
-  then this demo-first policy change.
+  `b40be09` demo-first policy; then the historical P1-handoff redirect.
 
 ## Authority and owner gates
 
