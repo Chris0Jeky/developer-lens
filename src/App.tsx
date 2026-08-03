@@ -32,6 +32,7 @@ import { RepoLedger } from './components/RepoLedger'
 import { ShareStudio } from './components/ShareStudio'
 import { SignalLab } from './components/SignalLab'
 import { WrappedExperience } from './components/WrappedExperience'
+import { V2Demo } from './components/V2Demo'
 import { useDashboard } from './hooks/useDashboard'
 import {
   compactNumber,
@@ -106,7 +107,7 @@ function PullRequestRow({ pullRequest }: { pullRequest: PullRequestMetric }) {
   )
 }
 
-function App() {
+function DashboardApp() {
   const [range, setRange] = useState<RangeKey>('6m')
   const [wrappedOpen, setWrappedOpen] = useState(false)
   const [shareContext, setShareContext] = useState<ShareContext | null>(null)
@@ -498,6 +499,12 @@ function App() {
       )}
     </div>
   )
+}
+
+function App() {
+  const demoV2 = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('demo') === 'v2'
+  if (demoV2) return <V2Demo />
+  return <DashboardApp />
 }
 
 export default App

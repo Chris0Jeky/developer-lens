@@ -3,6 +3,8 @@ import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { analyzeDataset } from '../server/analytics'
 import { createDemoDataset } from '../server/demo'
+import { payloadForSink } from '../shared/privacy'
+import { V2_DEMO_INSIGHTS, V2_DEMO_PAYLOAD, V2_DEMO_REGISTRATION } from '../shared/v2Demo'
 import App from './App'
 
 const demo = analyzeDataset(createDemoDataset('6m'))
@@ -15,6 +17,7 @@ describe('Developer Lens app', () => {
   afterEach(() => {
     cleanup()
     vi.unstubAllGlobals()
+    window.history.replaceState({}, '', '/')
   })
 
   it('renders the dashboard and opens the immersive Wrapped story', async () => {
@@ -102,5 +105,44 @@ describe('Developer Lens app', () => {
     expect(
       screen.queryByRole('link', { name: /shape the signal pipeline/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('renders the offline V2 story, filters every evidence level, and never fetches', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.replaceState({}, '', '/?demo=v2')
+    const user = userEvent.setup()
+
+    render(<App />)
+
+    expect(await screen.findByText(/invented c0 story/i)).toBeInTheDocument()
+    expect(screen.getAllByText(/no account, repository, or local-history input/i)).toHaveLength(2)
+    expect(screen.getByRole('heading', { name: /short, repeatable waves/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /small batches keep/i })).toBeInTheDocument()
+    expect(screen.getByRole('heading', { name: /optimized for deliberate coordination/i })).toBeInTheDocument()
+    expect(screen.getByText(/synthetic timestamps describe/i)).toBeInTheDocument()
+    expect(Object.values(V2_DEMO_REGISTRATION.fieldClasses).every((fieldClass) => fieldClass === 'C0')).toBe(true)
+    expect(() => V2_DEMO_REGISTRATION.schema.parse({ ...V2_DEMO_PAYLOAD, unexpected: true })).toThrow()
+    expect(payloadForSink('public', V2_DEMO_REGISTRATION, V2_DEMO_PAYLOAD)).toEqual(V2_DEMO_PAYLOAD)
+    for (const insight of V2_DEMO_INSIGHTS) {
+      expect(screen.getByRole('heading', { name: insight.title })).toBeInTheDocument()
+      expect(screen.getByText(insight.body)).toBeInTheDocument()
+      for (const evidence of insight.evidence) expect(screen.getByText(evidence)).toBeInTheDocument()
+      expect(insight.caveat).toBeTruthy()
+      if (insight.caveat) expect(screen.getByText(insight.caveat, { exact: false })).toBeInTheDocument()
+    }
+
+    await user.click(screen.getByRole('button', { name: /observed/i }))
+    expect(screen.getByRole('heading', { name: /short, repeatable waves/i })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /small batches keep/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /derived/i }))
+    expect(screen.getByRole('heading', { name: /small batches keep/i })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /short, repeatable waves/i })).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: /hypothesis/i }))
+    expect(screen.getByRole('heading', { name: /optimized for deliberate coordination/i })).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: /small batches keep/i })).not.toBeInTheDocument()
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
