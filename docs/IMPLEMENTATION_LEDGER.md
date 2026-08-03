@@ -5,7 +5,7 @@ Last updated: **2026-08-03**
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03.
 
-Current phase: **P0 and P1 complete locally; D1 synthetic working-demo slice is next**.
+Current phase: **D1-D3 complete locally; the first synthetic P2 SQLite/importer proof is next**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -14,20 +14,19 @@ unresolved review threads outrank it whenever they disagree.
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
 - Branch: `codex/persist-deep-signal-architecture`, no upstream.
-- Exact executable P1 head: `8809289657d260eb099cac755dd150d6c9f4b335`. The live branch's
-  documentation predecessor for this gate-decision update is
-  `2878ff15e1f7675e0131316adc4113c057a7254d`; verify current HEAD from Git before acting.
-- Base: `origin/main` at `7f937547220e6160889eb96a7a72e2ef2c425b95`. At documentation
-  predecessor `2878ff1`, the local branch was seven commits ahead; refresh the count from Git after
-  this successor is committed.
+- Exact executable D3 head/predecessor: `4d8753383e38e4b744f85d46927d448ac824e145`.
+  This ledger synchronization is its documentation successor; do not invent a successor SHA
+  before it is committed.
+- Base: `origin/main` at `7f937547220e6160889eb96a7a72e2ef2c425b95`. The branch is currently
+  10 commits ahead and 0 behind; refresh the count from Git after this successor is committed.
 - Pull request: none. q-4 is resolved through a human-relayed code-only/synthetic public branch;
   agents still do not push or merge Developer Lens.
-- Worktrees: the primary checkout was the only registered Developer Lens worktree at the
-  documentation predecessor. Refresh cleanliness and occupancy from Git before editing.
+- Worktrees: one registered Developer Lens worktree, the primary checkout; it was tracked-clean
+  before this ledger edit. Refresh cleanliness and occupancy from Git before any further mutation.
 - Local branch commits before this gate-decision successor: `4abb2c5` architecture/handoff;
   `92cb782` G1 authority/charter; `2ea18a1` initial ledger/task card; `8809289` P1 executable
   contracts; `26aefe9` P1 checkpoint; `b40be09` demo-first policy; then the historical P1-handoff
-  redirect.
+  redirect; `6f1b800` D1 offline V2 signal demo; `4d87533` D3 repeatable-demo documentation.
 
 ## Authority and owner gates
 
@@ -39,9 +38,12 @@ unresolved review threads outrank it whenever they disagree.
   code-only/synthetic branch after exact diff/canary review. Agents prepare local commits and relay
   evidence but do not push or merge this repository.
 - Canonical estate registration is published as ready
-  [claude-config PR #121](https://github.com/Chris0Jeky/claude-config/pull/121). Its live head must be
-  refreshed from GitHub; it remains unmerged until matching Developer Lens authority/policy commits
-  are relayed so both records can land together.
+  [claude-config PR #121](https://github.com/Chris0Jeky/claude-config/pull/121): open, clean,
+  non-draft, head `57f8ec10be6439e7d52640c89b3b19023812bbe2`, base
+  `82a24933db85bba67a029cdeb4f5fabc4be400c7`, no reported checks or review decision, and only a
+  resolved/outdated thread. It remains unmerged until matching Developer Lens authority/policy
+  commits are relayed so both records can land together.
+- `HUMAN_TODO.md` remains unchanged with zero open owner decisions.
 - G2: approved 2026-08-03. C1=36m, C2=13m, C3=90d, C4=process lifetime; repository names remain
   isolated locally and PR titles are absent from canonical analytics. Real migration is authorized
   after the invented P2 proof under the one-backup, new-target, untouched-JSON, seven-day-grace,
@@ -104,10 +106,11 @@ unresolved review threads outrank it whenever they disagree.
 
 - Decision: on 2026-08-03 the owner replaced hardening-first sequencing with demo-first delivery.
 - Priority: working local demo, speed/effectiveness/productivity, owner feedback, and focused tests.
-- Sequence: D1 visible synthetic vertical slice, D2 feedback iteration, D3 repeatable local demo
-  milestone. If the owner is unavailable overnight, Sol performs the local browser/visual D2 pass,
-  records subjective assumptions and next-day questions, and proceeds rather than waiting. P2-P11
-  become the post-demo technical queue; P12 is excluded by the G4 refusal.
+- Sequence: D1 visible synthetic vertical slice, D2 feedback iteration, and D3 repeatable local demo
+  milestone are complete locally. The first synthetic P2 SQLite/importer proof is next; P2-P11 are
+  the post-demo technical queue and P12 is excluded by the G4 refusal. For future overnight work,
+  Sol performs bounded browser/visual passes when needed, records subjective assumptions and
+  next-day questions, and proceeds rather than waiting.
 - Hardening rule: security, privacy hardening, resilience, and distribution concerns are recorded in
   [`POST_DEMO_HARDENING.md`](./POST_DEMO_HARDENING.md) and do not interrupt D1-D3 unless they cross
   the irreversible floor.
@@ -115,6 +118,28 @@ unresolved review threads outrank it whenever they disagree.
   external/production mutation, or public publication outside the chosen code-only/synthetic human
   relay. T2 plus `sensitive_data` remains declared for that floor; it is not a mandate for pre-demo
   scaffolding.
+
+## D1-D3 result
+
+- D1 implementation landed in `6f1b800f93952c88887f59f11ca92f4f5e3b789f`.
+  `?demo=v2` branches before `useDashboard`; one strict flat `public_showcase.v1` payload carries
+  all displayed metadata and insight fields as C0, validates through the public sink, and derives
+  the `InsightStack` input. Observed, Derived, and Hypothesis filters render without a fetch. A
+  fresh review found one HIGH boundary defect (insight fields originally bypassed registration); it
+  was fixed once and the final review closed the finding.
+- D2 browser proof used `npm run dev:web` and an in-app browser at
+  `http://127.0.0.1:5173/?demo=v2` with an 846x698 viewport. The invented boundary, title, and
+  evidence taxonomy were clear; each filter uniquely showed 1/3 with evidence and caveat text,
+  All restored 3/3, document width was 831 versus viewport width 846, and no browser warning or
+  error appeared. Subjective assumption: one filtered card retaining one-third width and whitespace
+  is acceptable for D3 because comprehension remains clear and the CSS choice is reversible. Next-day
+  questions: should a single filtered card expand, and which second synthetic story or decision would
+  be most useful?
+- D3 repeatability documentation landed in `4d8753383e38e4b744f85d46927d448ac824e145`.
+  `npm run test:demo:v2` passed 1 file / 5 tests; `npm run check` passed lint, 20 files / 49 tests,
+  TypeScript, and the Vite build; `npm run build:showcase` passed export, social render, build, and
+  verifier. The only warning was the existing Vite >500 kB chunk advisory. A narrow D3 review found
+  no CRITICAL/HIGH issue.
 
 ## Verification
 
@@ -146,12 +171,19 @@ unresolved review threads outrank it whenever they disagree.
 - The coordinator's first post-review full check passed lint and all 48 tests, then found one
   TypeScript narrowing error in the new public/private canary test. The test was branched
   explicitly by boundary; the focused test and complete check were rerun green.
+- The first D1 review found one HIGH defect: visible insight fields were outside the registered
+  public payload. A single bounded fix moved every displayed insight field into flat C0 arrays,
+  validated the payload through the public sink, and reran the focused and full checks green.
 
 ## NOT verified
 
-- A D1-D3 V2 working demo; no demo implementation changed in this policy slice.
-- Production adoption by existing collectors, storage, API, UI, exporters, or Pages.
-- App, collector, analysis, API/start, or showcase runtime.
+- The first synthetic P2 SQLite/schema/import proof; no CLI, `dataStore`, real JSON migration, or
+  feature-flag activation exists yet.
+- `better-sqlite3@12.11.1` and `@types/better-sqlite3@9.6.0` have been selected for P2, but Node 20
+  Windows native install/load remains unverified. Local evidence is Node v24.13.1 / npm 11.8.0;
+  latest `better-sqlite3` 13.0.2 requires Node >=22.
+- Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
+  synthetic route and showcase verifier.
 - Hosted CI or connector review for the unpublished Developer Lens head.
 - Runtime deny canary; no repository-owned Codex adapter exists.
 - The newly approved G2/G3 policy has no runtime activation path yet. No real-data migration,
@@ -161,10 +193,11 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Residual risk
 
-- P1 is an inert contract foundation. Existing v1 runtime paths do not yet consume it.
+- P1 remains largely an inert contract foundation for existing v1 runtime paths; the D1 demo consumes
+  the registered public seam only.
 - Existing JSON, raw API error behavior, late export sanitization, and person-shaped analytics
-  retain the architecture's documented risks. They are intentionally deferred in
-  `docs/POST_DEMO_HARDENING.md` until the D3 milestone unless they cross the irreversible floor.
+  retain the architecture's documented risks. They remain deferred in
+  `docs/POST_DEMO_HARDENING.md` unless they cross the irreversible floor.
 - Future producers must use the registered schemas and sink helpers; P1 has no production call
   sites by design.
 - The broader harness audit exception remains as recorded under P0.
@@ -183,20 +216,18 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Implement D1 in exactly four paths: add `shared/v2Demo.ts` and
-   `src/components/V2Demo.tsx`; modify `src/App.tsx` and `src/App.test.tsx`.
-2. Add an explicit `?demo=v2` client mode selected before `useDashboard` mounts. It renders a
-   strict `public_showcase.v1` C0 fixture through the existing visual system and `InsightStack`,
-   states that the content is invented, and makes no API request.
-3. Do not touch `server/demo.ts`, `server/dataStore.ts`, `server/index.ts`,
-   `scripts/exportDemo.ts`, collection, storage, migration, network, or hardening.
-4. Run `npm test -- src/App.test.tsx`, then `npm run check`. Launch with `npm run dev:web` and open
-   `http://127.0.0.1:5173/?demo=v2` for D2 feedback. If the owner is unavailable, Sol performs and
-   records a local browser/visual pass, then continues to D3.
-5. After D3, prove P2 with an invented v1 fixture first. G2 then permits a real copy-based migration
-   under the recorded backup/new-target/seven-day-grace/rollback protocol without another owner
-   question. Standing G3 authorization applies when P8-P10 prerequisites are reached; P12 is absent.
-6. For an unattended continuation, paste
+1. Treat `4d8753383e38e4b744f85d46927d448ac824e145` as the exact executable D3 head/predecessor;
+   this ledger synchronization is its documentation successor and has no successor SHA yet.
+2. Implement the first synthetic P2 SQLite/schema/import proof with
+   `better-sqlite3@12.11.1` and `@types/better-sqlite3@9.6.0`. Keep the slice synthetic-only:
+   include a disabled-by-default storage-mode flag whose failure outcome selects legacy JSON, but
+   add no CLI, `dataStore` wiring, real JSON migration, or production activation.
+3. Verify the selected dependency on the local Node v24.13.1/npm 11.8.0 toolchain. Do not claim
+   Node 20 Windows native install/load until it is directly tested.
+4. G2 permits a later real copy-based migration under the recorded backup/new-target/
+   seven-day-grace/rollback protocol without another owner question. Standing G3 authorization
+   applies when P8-P10 prerequisites are reached; P12 is absent.
+5. For an unattended continuation, paste
    [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](./OVERNIGHT_EXECUTION_PROMPT.md) into a fresh GPT-5.6 Sol
    Ultra task. It is the current self-contained execution contract and aggressively routes bounded
    inventory, mapping, triage, slice-building, and narrow review to Luna agents.
