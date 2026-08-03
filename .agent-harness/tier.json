@@ -5,6 +5,10 @@
     "push": "free",
     "merge": "free"
   },
+  "public_synthetic_publication": {
+    "remote": "origin",
+    "repository": "Chris0Jeky/developer-lens"
+  },
   "flags": {
     "sensitive_data": true,
     "wave_mode": false,

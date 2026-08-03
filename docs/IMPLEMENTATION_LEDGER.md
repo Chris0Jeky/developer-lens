@@ -14,15 +14,16 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Branch: `codex/persist-deep-signal-architecture`, no upstream.
-- Exact executable P2 head/predecessor: `d13cab2a48c92cf0020ee783b785e296a1f923ac`.
-  This ledger synchronization is its documentation successor; do not invent a successor SHA
-  before it is committed.
-- Base: `origin/main` at `7f937547220e6160889eb96a7a72e2ef2c425b95`. The branch is currently
-  14 commits ahead and 0 behind at the P2 head; refresh the count from Git after this successor is
-  committed.
-- Pull request: none. q-4 is resolved through a human-relayed code-only/synthetic public branch;
-  agents still do not push or merge Developer Lens.
+- Branch: `codex/persist-deep-signal-architecture`, no upstream before publication.
+- Exact executable P2 head: `d13cab2a48c92cf0020ee783b785e296a1f923ac`; committed documentation
+  successor: `4d7aab9a7a611bc8890cc246c7210cfba9f41460`. This publication-policy
+  successor has no SHA until it is committed.
+- Base: `origin/main` at `7f937547220e6160889eb96a7a72e2ef2c425b95`. The committed branch is
+  currently 15 commits ahead and 0 behind before this successor; refresh after commit/push.
+- Pull request: none before this authority update. The owner has replaced q-4's human-only relay:
+  agents may push and open/manage pull requests for the code-only/synthetic branch; only the
+  top-routed Sol model may merge after exact diff/showcase canaries, required review, CI/proving
+  checks, and post-push aging pass.
 - Worktrees: one registered Developer Lens worktree, the primary checkout; it was tracked-clean
   before this ledger edit. Refresh cleanliness and occupancy from Git before any further mutation.
 - Local branch commits before this P2-ledger successor: `4abb2c5` architecture/handoff;
@@ -30,24 +31,29 @@ unresolved review threads outrank it whenever they disagree.
   contracts; `26aefe9` P1 checkpoint; `b40be09` demo-first policy; then the historical P1-handoff
   redirect; `6f1b800` D1 offline V2 signal demo; `4d87533` D3 repeatable-demo documentation;
   `2104e56` D1-D3 milestone ledger; `8c8f309` the synthetic P2 SQLite/importer proof;
-  `e124f40` the parked-state ledger; and `d13cab2` the separate target-ownership follow-up.
+  `e124f40` the parked-state ledger; `d13cab2` the separate target-ownership follow-up; and
+  `4d7aab9` the verified P2-complete checkpoint.
 
 ## Authority and owner gates
 
 - G1: approved in the 2026-08-03 initiating request.
 - Repository declaration: T2 `daily-driver`, `sensitive_data=true`, `push=free`,
-  `merge=free`, human-action alias `HUMAN_TODO.md`.
-- The sensitive-data public-push deny binds over the free authority dial. q-4 is now closed: keep
-  the public remote and synthetic Pages, but publish Developer Lens only through a human-relayed,
-  code-only/synthetic branch after exact diff/canary review. Agents prepare local commits and relay
-  evidence but do not push or merge this repository.
-- Canonical estate registration is published as ready
-  [claude-config PR #121](https://github.com/Chris0Jeky/claude-config/pull/121): open, clean,
-  non-draft, head `57f8ec10be6439e7d52640c89b3b19023812bbe2`, base
-  `82a24933db85bba67a029cdeb4f5fabc4be400c7`, no reported checks or review decision, and only a
-  resolved/outdated thread. It remains unmerged until matching Developer Lens authority/policy
-  commits are relayed so both records can land together.
-- `HUMAN_TODO.md` remains unchanged with zero open owner decisions.
+  `merge=free`, exact `public_synthetic_publication` route
+  `origin` -> `Chris0Jeky/developer-lens`, human-action alias `HUMAN_TODO.md`.
+- The `sensitive_data` content boundary still forbids private/generated data, credentials, browser
+  state, caches, local paths, and private inputs from tracked/public output. The owner explicitly
+  replaced q-4's actor restriction: agents may publish only the verified code, tests,
+  documentation, and invented-synthetic branch through that exact route and normal repository
+  gates; only the top-routed Sol model may merge.
+- Merged canonical agent-harness source PR
+  [#224](https://github.com/Chris0Jeky/agent-harness/pull/224) defines and tests the exact unanimous
+  route contract at merge `8a608e138f35e43a95bd2fd2ef43977dbb2e1354`. It does not deploy or activate
+  the owner-paused global runtime hook, change trust, or prove a branch synthetic; q-4's exact
+  tracked-diff and showcase gates still do that work.
+- Any separate registry reconciliation is outside this public ledger. It follows the matching public
+  Developer Lens authority/policy commit and its own normal gates. Never copy a private registry's
+  URL, PR number, commit IDs, review/check state, or other live metadata into tracked public docs.
+- `HUMAN_TODO.md` records the expanded q-4 authority and still has zero open owner decisions.
 - G2: approved 2026-08-03. C1=36m, C2=13m, C3=90d, C4=process lifetime; repository names remain
   isolated locally and PR titles are absent from canonical analytics. Real migration is authorized
   after the invented P2 proof under the one-backup, new-target, untouched-JSON, seven-day-grace,
@@ -68,8 +74,9 @@ unresolved review threads outrank it whenever they disagree.
 - Canonical tier validation returned no issues. Focused JSON, flag, 13-row capability, G2,
   human-gate, link/path, registry parity, Markdown table, and whitespace checks passed.
 - A broader harness audit remains red because the repository has no root `AGENTS.md` and the
-  approved `sensitive_data=true` declaration intentionally coexists with a public remote. This
-  did not authorize a harness bootstrap or visibility change; q-4 records the publication effect.
+  approved `sensitive_data=true` declaration intentionally coexists with a public remote. The exact
+  route declaration makes that coexistence intentional without authorizing a harness bootstrap,
+  runtime-hook activation, or private-data publication.
 - The bounded P0 review's consent ambiguity was fixed so every real/private source read requires
   G2 and all capability definitions remain `never_authorized`.
 
@@ -119,8 +126,8 @@ unresolved review threads outrank it whenever they disagree.
   [`POST_DEMO_HARDENING.md`](./POST_DEMO_HARDENING.md) and do not interrupt D1-D3 unless they cross
   the irreversible floor.
 - Irreversible floor: no secret/private/generated-data exposure, destroyed user work,
-  external/production mutation, or public publication outside the chosen code-only/synthetic human
-  relay. T2 plus `sensitive_data` remains declared for that floor; it is not a mandate for pre-demo
+  external/production mutation, or public publication outside the chosen code-only/synthetic
+  route. T2 plus `sensitive_data` remains declared for that floor; it is not a mandate for pre-demo
   scaffolding.
 
 ## D1-D3 result
@@ -176,10 +183,23 @@ unresolved review threads outrank it whenever they disagree.
   was a wildcard; the single fix batch changed the predicate and matching regression assertions to
   literal-prefix `GLOB 'sqlite_*'` semantics with an adversarial `sqliteXview`. The final bounded
   review confirmed the prior HIGH closed and found no new CRITICAL issue. P2 is locally complete
-  and relay-eligible only through the human q-4 path.
+  and agent-publication-eligible through the gated q-4 path.
 
 ## Verification
 
+- q-4 publication preflight with the current policy/declaration diff present: `npm run check` passed
+  lint, 21 files / 61 tests, TypeScript, and the Vite build; `npm run build:showcase` passed export,
+  social render, showcase build, synthetic identity/export-boundary checks, and secret/path scans;
+  the focused migration proof passed 1 file / 12 tests; `npm audit --omit=dev` reported zero
+  vulnerabilities; and `git diff --check` passed. The complete tracked range contains only source,
+  tests, documentation, package metadata, the repository declaration, and invented synthetic
+  fixtures; `git ls-files -ci --exclude-standard` returned no tracked ignored paths.
+- The publication scan found zero credential/private-key patterns, zero machine-specific absolute
+  paths after repair, zero private registry identifiers or live metadata, 62/62 valid repository-
+  relative evidence links, and only public GitHub repository links. Canonical agent-harness 1.6.25
+  source resolved the declared `origin` route to the exact public repository. The broader harness
+  audit remains red only for the pre-existing missing root `AGENTS.md`; no harness bootstrap or
+  runtime-hook activation was added as a publication detour.
 - P2 ownership follow-up at executable head `d13cab2a48c92cf0020ee783b785e296a1f923ac`:
   `npm test -- server/storage/migration.test.ts` passed 1 file / 12 tests; `npm run check` passed
   lint, 21 files / 61 tests, TypeScript, and the Vite build; `npm run build:showcase` passed export,
@@ -213,6 +233,10 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Failures and workarounds
 
+- The first exact publication scan caught 62 machine-specific evidence-link targets and live
+  metadata copied from a private registry into the new public docs. The links were converted to
+  repository-relative targets, the private URL/PR/SHA/check-state references were removed, and the
+  complete tracked range was rescanned clean before any Developer Lens push.
 - The first ad hoc link check treated existing absolute Markdown links with `:line` suffixes as
   filenames, and the first estate-table check searched for the wrong header label. Both validation
   scripts were corrected and rerun green; neither failure came from a repository artifact.
@@ -283,10 +307,12 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Treat `d13cab2a48c92cf0020ee783b785e296a1f923ac` as the exact executable P2 head/predecessor;
-   this ledger synchronization is its documentation successor and has no successor SHA yet. Both
-   are eligible only for the human q-4 relay after an exact diff/canary review; agents do not push or
-   merge Developer Lens.
+1. Treat `d13cab2a48c92cf0020ee783b785e296a1f923ac` as the exact executable P2 head and
+   `4d7aab9a7a611bc8890cc246c7210cfba9f41460` as its prior documentation successor; this
+   publication-policy successor has no SHA until committed. The owner authorizes agents to publish
+   this code-only/synthetic range through the exact declared route; only the top-routed Sol model
+   may merge after exact diff/showcase canaries, required review, CI/proving checks, and post-push
+   aging pass.
 2. Route the bounded P3 architecture/dependency decision to Sol/Terra before writing. Select and pin
    a Node 20/24 Windows-compatible DuckDB/Parquet path using current primary metadata plus a local
    native probe; do not claim Node 20 Windows behavior until directly tested.

@@ -44,25 +44,30 @@ OWNER DECISIONS — BINDING; DO NOT REOPEN
   coverage and continue elsewhere; do not wait for another owner decision or mutate account auth.
 - G4 is refused for this roadmap. cap.external.model stays never_authorized. Do not implement P12,
   a provider, SDK, transport, provider cache, telemetry, spend path, or model payload.
-- Publication is resolved: keep the public remote and synthetic Pages, using a human-relayed,
-  code-only/synthetic branch. You may edit, test, review, and commit Developer Lens locally and
-  prepare exact relay commands. Do not push or merge Developer Lens yourself. Never relay
-  .developer-lens/, generated/private data, credentials, browser profiles, caches, or private input.
-- claude-config PR #121 stays unmerged until the matching Developer Lens policy/authority commits
-  are relayed. You may refresh and report it, but do not merge it.
+- Publication is resolved: keep the public remote and synthetic Pages, using an agent-authorized,
+  code-only/synthetic branch. You may edit, test, review, commit, push, and open/manage pull requests
+  through the exact declared `origin` -> `Chris0Jeky/developer-lens` route. Only the top-routed Sol
+  model may merge, after exact diff/showcase canaries, required review, CI/proving checks, and
+  post-push aging pass. Keep `sensitive_data=true`. Never publish .developer-lens/,
+  generated/private data, credentials, browser profiles, caches, local paths, or private input.
+  The route does not activate the owner-paused global runtime hook or prove content synthetic.
+- Any separate registry reconciliation may proceed after the matching Developer Lens
+  policy/authority commit is public and its own normal gates pass. Do not copy private registry
+  metadata into this public repository.
 
 STARTUP — REFRESH, THEN MOVE
 
-1. Read the applicable global/repository AGENTS.md instructions, ~/.claude/ESTATE.md,
-   .agent-harness/tier.json (and legacy .claude/tier.json if present), HUMAN_TODO.md,
+1. Read the applicable global/repository instructions and estate registry, then
+   .agent-harness/tier.json (and any co-located legacy tier declaration), HUMAN_TODO.md,
    docs/IMPLEMENTATION_LEDGER.md, docs/DEVELOPER_LENS_V2_ARCHITECTURE.md,
-   docs/source-capability-matrix.md, docs/data-charter.md, and this prompt. Read
-   ~/.claude/MACHINE.md only if a failure appears environmental.
+   docs/source-capability-matrix.md, docs/data-charter.md, and this prompt. Consult the applicable
+   machine manifest only if a failure appears environmental; do not copy private registry or
+   machine-manifest paths or contents into this public repository.
 2. Refresh git status --short --branch, exact HEAD/base/upstream/remotes/recent commits, and
    git worktree list --porcelain. Preserve every unrelated/dirty change; never stash, reset,
    restore, clean, or switch away from user work.
-3. Refresh relevant PR/check/review state. The expected registration is claude-config PR #121,
-   but live Git/GitHub evidence outranks this prompt and the ledger.
+3. Refresh relevant public PR/check/review state. Live Git/GitHub evidence outranks this prompt and
+   the ledger; keep any private registry state out of this repository.
 4. Reconcile stale prose in the ledger quickly. Do not spend the night auditing the harness or
    rewriting architecture when a product slice is ready.
 
@@ -169,8 +174,10 @@ COMMIT AND STATE DISCIPLINE
 - Preserve unrelated changes. Use small present-tense commits; do not squash or rewrite shared
   history. Do not add agent-attribution trailers.
 - Never commit secrets, private workbooks/datasets, generated operational output, or private input.
-- Do not push Developer Lens. Prepare a human relay ledger containing exact branch/head, commit
-  list, diff scope, focused/full check results, and code-only/synthetic exclusions.
+- Agent publication is authorized within q-4. Before pushing or merging, retain an exact publication
+  ledger containing branch/head, commit list, diff scope, focused/full check results, review/CI/aging
+  evidence, and code-only/synthetic exclusions. Non-Sol agents may push and manage the PR, but only
+  the top-routed Sol model may merge.
 - Keep HUMAN_TODO.md closed unless the owner introduces a genuinely new irreversible/external
   decision. Do not turn routine implementation choices into human tasks.
 - Update docs/IMPLEMENTATION_LEDGER.md at every material milestone, not after every tool call.
@@ -183,10 +190,10 @@ End with:
 2. Verified — exact commands/results and the exact head they prove.
 3. NOT verified — material runtime/external checks not run.
 4. Failures/workarounds — regressions versus pre-existing/environmental failures.
-5. Docs/state sync — ledger, HUMAN_TODO, and PR #121 status.
+5. Docs/state sync — ledger and HUMAN_TODO status; keep private registry metadata separate.
 6. Residual risk — concise post-demo backlog references only.
-7. Human actions — no open policy decisions are expected. Include optional public-relay commands
-   as an operational handoff that only the human may execute, not as a new approval question.
+7. Human actions — no open policy decisions or routine publication relay are expected. List only
+   genuinely external actions that remain after agent-authorized push/PR/merge work is exhausted.
 8. Exact resume point — the next bounded task card and its dependencies.
 
 Do not finish with a generic offer. Continue to the next eligible slice or leave a factual,

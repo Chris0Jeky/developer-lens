@@ -36,21 +36,30 @@ runtime capability, migration, deletion, or publication has already been execute
   excluded from the active queue. Reopen G4 only after a future explicit owner request naming the
   provider, exact redacted input schema, spend limit, and verified retention/training terms.
 
-- [x] **q-4 — Publication route chosen: public synthetic product, human-relayed code-only branch.**
+- [x] **q-4 — Publication route chosen: public synthetic product, agent-authorized code-only branch.**
   Keep the existing public remote and synthetic Pages surface. Agents may implement, test, review,
-  commit locally, and prepare exact relay commands, but must not push or merge Developer Lens to
-  the public remote. After an exact tracked-diff and canary review, the human relay may publish only
-  code, tests, documentation, and invented synthetic assets. Never relay `.developer-lens/`,
-  generated or private datasets, credentials, browser profiles, caches, local paths, or private
-  inputs. The claude-config registration PR remains unmerged until the matching Developer Lens
-  authority/policy commits are relayed so the two records can land together.
+  commit, push, and open or manage pull requests through the exact declared
+  `origin` -> `Chris0Jeky/developer-lens` route. Only the top-routed Sol model may merge, and only
+  after the exact tracked-diff, synthetic-showcase canary, required review, CI/proving checks, and
+  post-push aging gates pass. The repository retains `sensitive_data=true`; this route changes the
+  publication actor, not the protected-data boundary or the global runtime-hook pause.
+  Publication may contain only code, tests, documentation, and invented synthetic assets. Never
+  publish `.developer-lens/`, generated or private datasets, credentials, browser profiles, caches,
+  local paths, or private inputs. The existing Pages workflow may publish only its verified synthetic
+  artifact. Any separate registry reconciliation follows the matching public Developer Lens
+  authority/policy commit and its own normal gates; do not copy private registry metadata here.
 
 ## Changelog
 
+- 2026-08-03: the owner explicitly replaced q-4's human-only relay with full agent permission to
+  push and open/manage pull requests for the code-only/synthetic public branch; only the top-routed
+  Sol model may merge after normal diff, canary, review, CI/proving-check, and aging gates. The
+  prohibited-data boundary and global runtime-hook pause are unchanged.
 - 2026-08-03: the owner delegated q-1 through q-4 to Codex under a productivity-first mandate.
   Codex approved G2 with 36m/13m/90d/process retention and a seven-day migration grace period,
   granted standing G3 authorization to all seven named sources, refused G4 for the current roadmap,
-  and selected a human-relayed code-only/synthetic public publication route.
+  and initially selected a human-relayed code-only/synthetic public publication route; the newer
+  entry above replaces only that route's actor restriction.
 - 2026-08-03: G1 was explicitly approved in the initiating request. Developer Lens is declared T2
   with the `sensitive_data` overlay and `push: free` / `merge: free` authority.
 - 2026-08-03: the owner changed implementation sequencing to demo-first. D1-D3 prioritize a
