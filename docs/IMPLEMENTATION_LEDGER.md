@@ -5,9 +5,8 @@ Last updated: **2026-08-03**
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03.
 
-Current phase: **D1-D3 are complete locally. The first synthetic P2 SQLite/importer implementation
-is committed but parked after its bounded review/fix cycle; a separate target-ownership follow-up
-must close the recorded view-only SQLite defect before P3**.
+Current phase: **D1-D3 and the first synthetic P2 SQLite/importer proof are complete locally;
+the bounded P3 analysis-pack architecture/dependency decision is next**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -16,11 +15,11 @@ unresolved review threads outrank it whenever they disagree.
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
 - Branch: `codex/persist-deep-signal-architecture`, no upstream.
-- Exact executable P2 head/predecessor: `8c8f3090b31790e7038427c0a3015e0bfb2ba3d3`.
+- Exact executable P2 head/predecessor: `d13cab2a48c92cf0020ee783b785e296a1f923ac`.
   This ledger synchronization is its documentation successor; do not invent a successor SHA
   before it is committed.
 - Base: `origin/main` at `7f937547220e6160889eb96a7a72e2ef2c425b95`. The branch is currently
-  12 commits ahead and 0 behind at the P2 head; refresh the count from Git after this successor is
+  14 commits ahead and 0 behind at the P2 head; refresh the count from Git after this successor is
   committed.
 - Pull request: none. q-4 is resolved through a human-relayed code-only/synthetic public branch;
   agents still do not push or merge Developer Lens.
@@ -30,7 +29,8 @@ unresolved review threads outrank it whenever they disagree.
   `92cb782` G1 authority/charter; `2ea18a1` initial ledger/task card; `8809289` P1 executable
   contracts; `26aefe9` P1 checkpoint; `b40be09` demo-first policy; then the historical P1-handoff
   redirect; `6f1b800` D1 offline V2 signal demo; `4d87533` D3 repeatable-demo documentation;
-  `2104e56` D1-D3 milestone ledger; and `8c8f309` the synthetic P2 SQLite/importer proof.
+  `2104e56` D1-D3 milestone ledger; `8c8f309` the synthetic P2 SQLite/importer proof;
+  `e124f40` the parked-state ledger; and `d13cab2` the separate target-ownership follow-up.
 
 ## Authority and owner gates
 
@@ -110,10 +110,9 @@ unresolved review threads outrank it whenever they disagree.
 
 - Decision: on 2026-08-03 the owner replaced hardening-first sequencing with demo-first delivery.
 - Priority: working local demo, speed/effectiveness/productivity, owner feedback, and focused tests.
-- Sequence: D1 visible synthetic vertical slice, D2 feedback iteration, and D3 repeatable local demo
-  are complete locally. The first P2 implementation is committed but parked at the two-round ceiling
-  on the target-ownership defect below; a separate smallest follow-up precedes P3. P3-P11 remain the
-  post-demo technical queue and P12 is excluded by the G4 refusal. For future overnight work,
+- Sequence: D1 visible synthetic vertical slice, D2 feedback iteration, D3 repeatable local demo,
+  and the first synthetic P2 SQLite/importer proof are complete locally. P3-P11 remain the post-demo
+  technical queue and P12 is excluded by the G4 refusal. For future overnight work,
   Sol performs bounded browser/visual passes when needed, records subjective assumptions and
   next-day questions, and proceeds rather than waiting.
 - Hardening rule: security, privacy hardening, resilience, and distribution concerns are recorded in
@@ -146,7 +145,7 @@ unresolved review threads outrank it whenever they disagree.
   verifier. The only warning was the existing Vite >500 kB chunk advisory. A narrow D3 review found
   no CRITICAL/HIGH issue.
 
-## P2 synthetic storage implementation (parked)
+## P2 synthetic storage proof
 
 - Commit `8c8f3090b31790e7038427c0a3015e0bfb2ba3d3` adds exact
   `better-sqlite3@12.11.1` / `@types/better-sqlite3@9.6.0` dependencies and the bounded
@@ -155,10 +154,10 @@ unresolved review threads outrank it whenever they disagree.
   Disabled or failed selection returns a stable legacy-JSON code. There is no CLI, `dataStore`,
   collector, API, Pages, real-JSON, or production activation wiring.
 - A genuinely empty SQLite target is initialized with the Developer Lens application ID, user
-  version 2, strict tables, and foreign keys. A zero-header target with a user table and every
-  partial/mismatched header tuple is rejected before header or schema mutation. New imports use a
-  temporary target and rename; existing-target inserts plus integrity, quick, and foreign-key checks
-  share one transaction.
+  version 2, strict tables, and foreign keys. A zero-header target with any non-internal schema
+  object and every partial/mismatched header tuple is rejected before header or schema mutation.
+  New imports use a temporary target and rename; existing-target inserts plus integrity, quick, and
+  foreign-key checks share one transaction.
 - The strict projection persists only bounded opaque identifiers, categorical states, counts,
   timestamps, booleans, and a hashed analytical repository key. Names, titles, URLs, descriptions,
   labels, warnings, subjects, paths, and actor metadata are not persisted.
@@ -171,15 +170,22 @@ unresolved review threads outrank it whenever they disagree.
   reproductions; coordinator review also caught and closed both partial-header tuples before the
   final fresh review found no remaining
   CRITICAL/HIGH issue.
-- The later factual ledger review reproduced an unclosed target-ownership variant: a zero-header
-  foreign SQLite file containing a user view but no user table is accepted, receives Developer Lens
-  headers, and gets the V2 tables. This is a direct HIGH false-ownership path through the exported
-  opener/importer. The P2 slice is therefore parked after its bounded review/fix cycle and is not
-  eligible for human relay; D3 commit `2104e56257f742a2f369d0b12f39ba4ae0976680` remains the safe
-  relay boundary.
+- A later factual ledger review reproduced an unclosed view-only ownership variant and parked the
+  original task. Separate follow-up commit `d13cab2a48c92cf0020ee783b785e296a1f923ac`
+  rejects every non-internal schema object. Its first review found that `_` in `LIKE 'sqlite_%'`
+  was a wildcard; the single fix batch changed the predicate and matching regression assertions to
+  literal-prefix `GLOB 'sqlite_*'` semantics with an adversarial `sqliteXview`. The final bounded
+  review confirmed the prior HIGH closed and found no new CRITICAL issue. P2 is locally complete
+  and relay-eligible only through the human q-4 path.
 
 ## Verification
 
+- P2 ownership follow-up at executable head `d13cab2a48c92cf0020ee783b785e296a1f923ac`:
+  `npm test -- server/storage/migration.test.ts` passed 1 file / 12 tests; `npm run check` passed
+  lint, 21 files / 61 tests, TypeScript, and the Vite build; `npm run build:showcase` passed export,
+  social render, showcase build, identity/export-boundary verification, and secret/path scanning;
+  `npm audit --omit=dev` reported zero vulnerabilities; `git diff --check` passed. Final fresh review
+  confirmed the wildcard-collision HIGH closed with no new CRITICAL defect.
 - P2 executable checks at head `8c8f3090b31790e7038427c0a3015e0bfb2ba3d3`
   (green checks do not override the later ownership finding):
   `npm test -- server/storage/migration.test.ts` passed 1 file / 11 tests. `npm run check` passed
@@ -229,8 +235,9 @@ unresolved review threads outrank it whenever they disagree.
 - The subsequent ledger review exercised the literal "non-empty" ownership claim and found that the
   guard queries only user tables. A view-only foreign zero-header database is therefore claimed and
   mutated. This is a P2 regression, not an environmental or pre-existing failure. The two-round
-  ceiling parks the slice; it is recorded below as a separate smallest follow-up rather than a third
-  fix/review cascade.
+  ceiling parked the original slice; a separate smallest follow-up broadened the guard. Its first
+  review then found the SQL `_` wildcard also hid `sqliteXview`; one fix batch switched both code and
+  assertions to literal-prefix GLOB semantics. Focused/full/showcase checks and final review passed.
 
 ## NOT verified
 
@@ -238,8 +245,6 @@ unresolved review threads outrank it whenever they disagree.
   only on Node v24.13.1 / npm 11.8.0.
 - CLI, `dataStore`, collector, API, export, or Pages activation of SQLite; real/private JSON
   migration and the G2 backup/grace/deletion protocol remain deliberately unexercised.
-- Safe rejection of a zero-header foreign SQLite database that contains a user view but no user
-  table; the current exported opener/importer claims and mutates that target.
 - Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
   synthetic route and showcase verifier.
 - Hosted CI or connector review for the unpublished Developer Lens head.
@@ -255,8 +260,8 @@ unresolved review threads outrank it whenever they disagree.
   the registered public seam only.
 - P2 is a synthetic proof seam, not a general compatibility framework. Exact V2 headers are the
   intended ownership boundary; no real/private source or production reader uses the new database.
-- P2 is not relay-eligible while the view-only target-ownership defect remains. Its lack of current
-  CLI/`dataStore`/API wiring limits production exposure but does not make direct exported use safe.
+- P2 remains a disabled, synthetic proof without CLI/`dataStore`/API wiring; its reviewed ownership
+  boundary is not evidence for unimplemented real-data migration or production compatibility.
 - Existing JSON, raw API error behavior, late export sanitization, and person-shaped analytics
   retain the architecture's documented risks. They remain deferred in
   `docs/POST_DEMO_HARDENING.md` unless they cross the irreversible floor.
@@ -278,26 +283,22 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Treat `8c8f3090b31790e7038427c0a3015e0bfb2ba3d3` as the exact executable P2 head/predecessor;
-   this ledger synchronization is its documentation successor and has no successor SHA yet. Do not
-   relay either P2 commit; `2104e56257f742a2f369d0b12f39ba4ae0976680` is the safe D3 boundary.
-2. Start a separate `P2-FOLLOWUP-001` task, not a third round of the parked review: change the fresh
-   target guard to reject every non-internal SQLite schema object (including views) before any
-   header/schema mutation. Add a view-only zero-header regression that proves the original view SQL,
-   headers, schema-object set, and lack of V2 tables remain unchanged; rerun the focused migration
-   test and full gate, then give the small follow-up one fresh-context review.
-3. After P2 is sound, route the bounded P3 architecture/dependency decision to Sol/Terra before
-   writing. Select and pin a Node 20/24 Windows-compatible DuckDB/Parquet path using current primary
-   metadata plus a local native probe; do not claim Node 20 Windows behavior until directly tested.
-4. Then implement one minimal synthetic `server/analysisPack/*` producer and replay test that reads
+1. Treat `d13cab2a48c92cf0020ee783b785e296a1f923ac` as the exact executable P2 head/predecessor;
+   this ledger synchronization is its documentation successor and has no successor SHA yet. Both
+   are eligible only for the human q-4 relay after an exact diff/canary review; agents do not push or
+   merge Developer Lens.
+2. Route the bounded P3 architecture/dependency decision to Sol/Terra before writing. Select and pin
+   a Node 20/24 Windows-compatible DuckDB/Parquet path using current primary metadata plus a local
+   native probe; do not claim Node 20 Windows behavior until directly tested.
+3. Then implement one minimal synthetic `server/analysisPack/*` producer and replay test that reads
    only the safe P2 facts, emits C0/C1 redacted aggregates under the closed manifest schema, records
    checksums, writes `COMPLETE` last, and proves one deterministic replay query. Exclude notebooks,
    model/LLM artifacts, identity/repository names, C2/C3/C4/X, collectors, CLI/`dataStore`, API/UI,
    real data, and production activation.
-5. G2 permits a later real copy-based migration under the recorded backup/new-target/
+4. G2 permits a later real copy-based migration under the recorded backup/new-target/
    seven-day-grace/rollback protocol without another owner question. Standing G3 authorization
    applies when P8-P10 prerequisites are reached; P12 is absent.
-6. For an unattended continuation, paste
+5. For an unattended continuation, paste
    [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](./OVERNIGHT_EXECUTION_PROMPT.md) into a fresh GPT-5.6 Sol
    Ultra task. It is the current self-contained execution contract and aggressively routes bounded
    inventory, mapping, triage, slice-building, and narrow review to Luna agents.
