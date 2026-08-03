@@ -16,6 +16,7 @@
     "start": "tsx server/index.ts --production",
     "lint": "oxlint .",
     "test": "vitest run",
+    "test:demo:v2": "vitest run src/App.test.tsx",
     "test:watch": "vitest",
     "verify:showcase": "tsx scripts/verifyShowcase.ts",
     "check": "npm run lint && npm run test && npm run build"

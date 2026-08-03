@@ -94,6 +94,20 @@ npm run dev
 
 Open the Vite URL shown in the terminal. The API stays on `http://127.0.0.1:4141`; Vite proxies `/api` during development.
 
+### Try the offline V2 demo
+
+The repeatable synthetic journey needs no API server, GitHub authentication, account, repository, or local-history data:
+
+```powershell
+npm run dev:web
+```
+
+Open <http://127.0.0.1:5173/?demo=v2>. To run its focused smoke coverage without starting a server:
+
+```powershell
+npm run test:demo:v2
+```
+
 By default, `collect` produces both the six-month and twelve-month lenses. To refresh only one range:
 
 ```powershell
