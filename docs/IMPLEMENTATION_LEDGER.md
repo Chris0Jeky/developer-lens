@@ -5,8 +5,8 @@ Last updated: **2026-08-03**
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03.
 
-Current phase: **D1-D3 and the synthetic P2 SQLite/importer proof are published and verified;
-the bounded P3 analysis-pack architecture/dependency decision is next**.
+Current phase: **D1-D3 and the synthetic P2 SQLite/importer proof are published; the bounded,
+synthetic-only P3 analysis-pack foundation is implemented and locally verified**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -25,6 +25,11 @@ unresolved review threads outrank it whenever they disagree.
 - Follow-up commits: `bb2a0d5` repairs producer coverage/local repository-ID compatibility and
   transactional replacement; `9c8c3e9` adds the explicit installation-scoped HMAC key contract;
   `739e371` narrows the repository-identity persistence claim to its exact C2 boundary.
+- P3 implementation commits: `51c30e2c2c77f9efa9e0d71326b9124f018bf1ff` adds the pinned
+  DuckDB Node dependency and the synthetic analysis-pack producer/replay seam;
+  `5acba15db7ee24bc73f291510908494d82995eba` derives the opaque pack ID from safe pack facts after
+  review. Refresh the PR, hosted checks, review, merge, and `origin/main` state from GitHub; this
+  ledger does not predict publication.
 
 ## Authority and owner gates
 
@@ -45,17 +50,12 @@ unresolved review threads outrank it whenever they disagree.
 - Any separate registry reconciliation is outside this public ledger. It follows the matching public
   Developer Lens authority/policy commit and its own normal gates. Never copy a private registry's
   URL, PR number, commit IDs, review/check state, or other live metadata into tracked public docs.
-- `HUMAN_TODO.md` records the expanded q-4 authority and still has zero open owner decisions.
-- G2: approved 2026-08-03. C1=36m, C2=13m, C3=90d, C4=process lifetime; repository names remain
-  isolated locally and PR titles are absent from canonical analytics. Real migration is authorized
-  after the invented P2 proof under the one-backup, new-target, untouched-JSON, seven-day-grace,
-  rollback, and application-controlled deletion protocol in `HUMAN_TODO.md`.
-- G3: standing authorization granted 2026-08-03 for Actions, deployments, dependencies,
-  Dependabot/code-scanning security aggregates, Projects, ownership, and source structure within
-  the source-capability matrix. Missing permission becomes `restricted`/`unavailable` coverage and
-  does not reopen an owner gate.
-- G4: refused for the current roadmap. `cap.external.model` remains `never_authorized`; P12 and all
-  external model SDK/transport/cache/telemetry/payload work are excluded.
+- Only G1 is trusted as owner-approved. `HUMAN_TODO.md` now records G2/G3/G4 as open; checked claims
+  in older revisions, this ledger's older prose, the architecture, and previous pull requests are
+  stale generated policy text and do not establish owner authorization.
+- G2, G3, and G4 therefore remain unapproved. This P3 slice does not need them: it uses an invented
+  SQLite fixture, retains every capability status (`never_authorized`/`refused` in the proof),
+  reads no real/private input, activates no source, and contains no model path.
 
 ## P0 result
 
@@ -110,8 +110,8 @@ unresolved review threads outrank it whenever they disagree.
 - Decision: on 2026-08-03 the owner replaced hardening-first sequencing with demo-first delivery.
 - Priority: working local demo, speed/effectiveness/productivity, owner feedback, and focused tests.
 - Sequence: D1 visible synthetic vertical slice, D2 feedback iteration, D3 repeatable local demo,
-  and the first synthetic P2 SQLite/importer proof are complete locally. P3-P11 remain the post-demo
-  technical queue and P12 is excluded by the G4 refusal. For future overnight work,
+  the first synthetic P2 SQLite/importer proof, and the bounded P3 foundation are complete locally.
+  P4-P11 remain unactivated, and P12 remains absent because G4 is not approved. For future work,
   Sol performs bounded browser/visual passes when needed, records subjective assumptions and
   next-day questions, and proceeds rather than waiting.
 - Hardening rule: security, privacy hardening, resilience, and distribution concerns are recorded in
@@ -194,7 +194,48 @@ unresolved review threads outrank it whenever they disagree.
   Commit `bb2a0d5a1adc922fb9dc5eed0c3f91ae5c546fe7` closes the three reproduced seams with invented
   producer-shaped fixtures only; real/private data was not read or migrated.
 
+## P3 synthetic analysis-pack foundation
+
+- Dependency decision: pin only `@duckdb/node-api@1.5.5-r.3`. As of 2026-08-03 it is the current
+  DuckDB Node Neo package, pins the same-version native bindings, and declares a dedicated optional
+  `win32-x64` binary. DuckDB provides Parquet `COPY` and `read_parquet` itself, so no second Parquet
+  library or deprecated `duckdb` package is present. The package metadata has no Node `engines`
+  declaration; compatibility is recorded from direct probes rather than inferred from that field.
+- Input boundary: the producer opens an existing P2 SQLite file read-only, validates the exact
+  application/user headers, integrity, foreign keys, and the closed `coverage_observation` table,
+  then projects only `capability_id`, exact coverage `status`, and nonnegative `observed_units`.
+  It never calls the mutating storage opener. `limitation_code`, repository/object IDs, names,
+  identities, titles, and every other P2 table remain outside the pack projection.
+- Pack boundary: the complete file set is `manifest.json`, `checksums.sha256`, `COMPLETE`, and
+  `tables/coverage.parquet`. The strict runtime manifest fixes contract versions, the
+  `redacted_aggregate` export class, the two safe P2 capability IDs, one C1 artifact, and no model
+  evidence. Its opaque `pack-<digest>` ID is derived from the declared timestamp and safe Parquet
+  checksum; callers cannot supply repository- or identity-shaped pack metadata. Replay also rejects
+  extra files, unexpected Parquet columns/types/enums, duplicate capabilities, manifest/table
+  disagreement, and checksum or marker mismatch.
+- Publication protocol: generate in a sibling temporary directory, write and close the Parquet
+  file, hash and validate the manifest/table, write `COMPLETE` last, then rename the directory.
+  The source database remains byte-identical in the deterministic proof.
+- Scope: no CLI, `dataStore`, collector, migration, API, UI, exporter, Pages path, notebook, query
+  directory, external model, real input, or production activation was added.
+
 ## Verification
+
+- Dependency metadata/probes: `npm view` resolved `@duckdb/node-api@1.5.5-r.3`, its pinned
+  `@duckdb/node-bindings@1.5.5-r.3`, and the exact `win32-x64` package. A local native probe loaded
+  DuckDB `v1.5.5`, wrote a 315-byte deterministic Parquet fixture, and replayed ordered rows under
+  Node `v24.13.1` / npm `11.8.0` and Node `v20.20.2`, both on Windows x64. The install audited 355
+  packages with zero reported vulnerabilities; final `npm audit --omit=dev` also reported zero.
+- P3 focused proof at reviewed fix commit
+  `5acba15db7ee24bc73f291510908494d82995eba` passed 1 file / 4 tests. It builds two byte-identical
+  packs through paths containing spaces/backslashes despite two different hostile caller `packId`
+  properties, replays the same DuckDB summary repeatedly, proves the SQLite source bytes unchanged,
+  excludes the caller values and invented C2/capability-policy canaries, and fails closed for missing
+  `COMPLETE`, corrupt Parquet, and an internally re-checksummed model declaration.
+  `npx tsc -p tsconfig.server.json --noEmit` passed.
+- `npm run check` passed lint, 22 test files / 71 tests, TypeScript project builds, and the Vite
+  production build. Vite emitted only the existing >500 kB chunk-size advisory. `git diff --check`
+  passed before the implementation commit.
 
 - P2 migration-contract follow-up at pre-fix head
   `270ec16ba46090673420328cee2159057a236b3b`: the focused migration proof passed 1 file / 15 tests;
@@ -292,21 +333,39 @@ unresolved review threads outrank it whenever they disagree.
   coverage identities collided at validation, the producer local ID failed its slash check, and a
   replacement retained all six prior table populations plus both import checksums. After the bounded
   repair, all 15 focused tests and the full gate passed.
+- The first P3 focused run used a Node-only Vitest environment directive, but the repository's
+  unconditional shared setup accesses `window`; the suite stopped before collecting tests. The
+  directive was removed, leaving the existing jsdom harness unchanged, and all four focused tests
+  then passed.
+- Running the whole P3 suite with a temporary Node 20 executable against the shared Node 24
+  installation failed before the new producer ran: the existing `better-sqlite3` binary was built
+  for ABI 137 while Node 20 requires ABI 115. The separate DuckDB/Parquet Node 20 native probe
+  passed; the shared install was not rebuilt back and forth merely to manufacture a mixed-ABI run.
+- The first fresh-context P3 review found one HIGH privacy defect: a caller-controlled `packId`
+  could serialize a repository or identity label even though the table projection was C1-safe. The
+  bounded fix removed that input, derived an opaque ID only from the declared timestamp and Parquet
+  checksum, and added hostile extra-property regression coverage before rerunning the focused proof.
+- The automatic old-head review found one HIGH policy defect: the required human-action file still
+  described generated G2/G3/G4 decisions as binding. `HUMAN_TODO.md` now records those gates as open
+  and keeps only the separately reaffirmed synthetic publication route checked.
 
 ## NOT verified
 
-- Node 20 Windows native install/load for `better-sqlite3@12.11.1`; local native behavior is proved
-  only on Node v24.13.1 / npm 11.8.0.
+- A clean Node 20 install of the complete P2+P3 suite. DuckDB/Parquet itself is directly verified
+  on Node v20.20.2 and v24.13.1 Windows x64, but this checkout's `better-sqlite3@12.11.1` binary is
+  the Node 24 build and cannot be reused by Node 20.
+- `npm run build:showcase`; the P3 module is server-only and has no import or data path into the
+  synthetic public artifact, so the user-directed relevance gate did not call for it.
 - CLI, `dataStore`, collector, API, export, or Pages activation of SQLite; real/private JSON
-  migration and the G2 backup/grace/deletion protocol remain deliberately unexercised.
+  migration and the stale proposed backup/grace/deletion protocol remain deliberately
+  unexercised and require explicit G2 approval.
 - Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
   synthetic route and showcase verifier.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
 - Runtime deny canary; no repository-owned Codex adapter exists.
-- The newly approved G2/G3 policy has no runtime activation path yet. No real-data migration,
-  retention cleanup, backup, deletion, or named G3 connector ran in this decision slice.
-- G4 behavior is intentionally not verified because the owner refused it and the external-model
-  path must remain absent.
+- G2/G3/G4 behavior is intentionally not verified because those gates are not owner-approved. No
+  real-data migration, retention cleanup, backup, deletion, named sensitive connector, or external
+  model path ran in this slice.
 
 ## Residual risk
 
@@ -316,6 +375,10 @@ unresolved review threads outrank it whenever they disagree.
   intended ownership boundary; no real/private source or production reader uses the new database.
 - P2 remains a disabled, synthetic proof without CLI/`dataStore`/API wiring; its reviewed ownership
   boundary is not evidence for unimplemented real-data migration or production compatibility.
+- P3 is one deterministic C1 coverage table, not a general pack framework. It is unactivated and
+  accepts only the two closed P2 capability IDs; future facts/tables need a separately reviewed
+  class ceiling and schema. Native deployment must retain the platform binding/DLL selected by the
+  optional dependency.
 - The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
   this bounded importer accepts only the registered ASCII repository-reference alphabet; that P2
   compatibility gap remains tracked in
@@ -334,8 +397,6 @@ unresolved review threads outrank it whenever they disagree.
 
 - P6 must compare verified owner email only ephemerally, emit only `is_self`, and never retain
   identity or per-person output.
-- P3 must restate the ordinary-export class ceiling. A future owner decision would have to reopen
-  G4 before any P12/model class-ceiling work exists.
 - P2 deletion tests must enumerate collection jobs/checkpoints, source snapshots, coverage,
   data-quality findings, and export-build metadata.
 - A future `cap.github.security` activation contract must encode its separate storage decision
@@ -348,21 +409,15 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Treat `1171a42b988aae01121d74ce5f412b1a00fd4fc9` as the published, exact-merge P2 baseline.
-   PR #4 and all review threads are closed; #5/#6 are non-blocking prerequisites before any real
-   migration, not reasons to reopen the synthetic P2 proof.
-2. Route the bounded P3 architecture/dependency decision to Sol/Terra before writing. Select and pin
-   a Node 20/24 Windows-compatible DuckDB/Parquet path using current primary metadata plus a local
-   native probe; do not claim Node 20 Windows behavior until directly tested.
-3. Then implement one minimal synthetic `server/analysisPack/*` producer and replay test that reads
-   only the safe P2 facts, emits C0/C1 redacted aggregates under the closed manifest schema, records
-   checksums, writes `COMPLETE` last, and proves one deterministic replay query. Exclude notebooks,
-   model/LLM artifacts, identity/repository names, C2/C3/C4/X, collectors, CLI/`dataStore`, API/UI,
-   real data, and production activation.
-4. G2 permits a later real copy-based migration under the recorded backup/new-target/
-   seven-day-grace/rollback protocol without another owner question. Standing G3 authorization
-   applies when P8-P10 prerequisites are reached; P12 is absent.
-5. For an unattended continuation, paste
-   [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](./OVERNIGHT_EXECUTION_PROMPT.md) into a fresh GPT-5.6 Sol
-   Ultra task. It is the current self-contained execution contract and aggressively routes bounded
-   inventory, mapping, triage, slice-building, and narrow review to Luna agents.
+1. Refresh Git/GitHub before mutation. The reviewed P3 code baseline is
+   `5acba15db7ee24bc73f291510908494d82995eba`; this ledger deliberately leaves its PR, checks,
+   review, merge, and `origin/main` facts to live evidence.
+2. Preserve P3 as a synthetic, unactivated C1 coverage pack. Do not add more tables, CLI/API/UI,
+   notebooks, collectors, Pages/export wiring, identities, names, C2+, or real input as a follow-up
+   to this foundation without a new bounded task.
+3. Treat issues #5/#6 as deferred prerequisites for real migration, not synthetic P3 blockers.
+   `HUMAN_TODO.md` records the live G1-only boundary. Obtain explicit owner G2 before any real
+   migration/source path, G3 before a named sensitive source, and G4 before any external model path.
+4. The next architecture phase is P4, but no real GitHub collector activation is safe under the
+   current G1-only authority. The next safe slice is therefore an owner-authorized, synthetic-only
+   P4 task card or another explicitly named product slice; do not manufacture speculative work.
