@@ -32,7 +32,10 @@ Use the repository's tracked sources rather than caching project state in this s
 
 1. Prefer the ledger's first dependency-safe incomplete product slice.
 2. State objective, owned paths, non-goals, acceptance behavior, rollback and focused checks.
-3. Keep one writer per checkout; use read-only agents for mapping and independent review.
+3. For a decomposable queue, discover the live collaboration ceiling, fill every useful Luna slot
+   with a unique disjoint lane, and replenish slots as results arrive. Keep one writer per checkout;
+   parallel write lanes require separate coordinator-owned worktrees and non-overlapping paths.
+   Escalate judgment-heavy implementation or review to Terra/Sol.
 4. Use invented fixtures first. An approved real migration or sensitive-source task must still
    define exact local scope, read-only credentials, retained fields, coverage behavior, deletion,
    rollback and failure tests before activation.

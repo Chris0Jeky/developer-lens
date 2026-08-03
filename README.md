@@ -186,8 +186,9 @@ The durable document roles are deliberately separate:
   risks, and exact resume point.
 - [`docs/POST_DEMO_HARDENING.md`](docs/POST_DEMO_HARDENING.md) — deferred security, privacy,
   resilience, and distribution work.
-- [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](docs/OVERNIGHT_EXECUTION_PROMPT.md) — a copy-ready launcher
-  into the tracked instruction/skill/state surfaces, not a competing policy file.
+- [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](docs/OVERNIGHT_EXECUTION_PROMPT.md) — a copy-ready Sol
+  Ultra dynamic-swarm launcher that saturates useful Luna lanes and replenishes them without
+  becoming a competing policy/state file.
 - [`docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md`](docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md) — historical
   research input only; do not use it as live continuation authority.
 
