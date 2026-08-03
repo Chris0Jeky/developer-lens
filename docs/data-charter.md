@@ -6,6 +6,11 @@ Architecture: [`DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITEC
 
 Authority: G1 approved 2026-08-03; G2, every G3 capability, and G4 remain unapproved.
 
+Development posture: the owner selected a demo-first D1-D3 lane on 2026-08-03. This charter gates
+real/private data and later distribution; it does not block invented C0 fixtures or local synthetic
+demo work. Hardening that is not part of the irreversible floor is tracked in
+[`POST_DEMO_HARDENING.md`](./POST_DEMO_HARDENING.md) until D3 is complete.
+
 ## Product boundary
 
 Developer Lens is a local-first system-retrospective product. Its analytical subjects are

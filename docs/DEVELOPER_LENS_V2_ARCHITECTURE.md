@@ -1,4 +1,4 @@
-# Developer Lens privacy-first signal architecture
+# Developer Lens demo-first signal architecture
 
 Evidence date: **2026-08-03**.
 Labels: **V** verified repository fact · **D** documented platform constraint · **R** recommendation · **U** documentation uncertainty · **G** owner gate.
@@ -6,6 +6,62 @@ Labels: **V** verified repository fact · **D** documented platform constraint �
 > **Persistence note:** This file is the full durable capture of the read-only architecture response produced from `docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md`. The Changed/Verified closeout in section 15 describes that research pass, not the later documentation-only commit that saved it.
 
 No repository files, generated datasets, private activity, credentials, `.developer-lens/`, `public/data`, `dist`, or caches were read or changed.
+
+## 0. Owner development policy: demo first
+
+Owner decision: **2026-08-03**. This section controls implementation sequencing wherever the
+remainder of this architecture suggests a slower hardening-first order.
+
+The development priority is:
+
+1. a visibly useful, working local demo;
+2. speed, effectiveness, and low-friction developer productivity;
+3. short owner-feedback loops;
+4. focused behavior tests and a green milestone check;
+5. maintainability and performance only where they unblock the demo;
+6. security, privacy hardening, operational resilience, and distribution readiness after the demo.
+
+During the demo lane, a security or risk observation is recorded in
+[`POST_DEMO_HARDENING.md`](./POST_DEMO_HARDENING.md) and does not interrupt delivery. No speculative
+security scaffold, migration framework, production control, or comprehensive threat test is built
+before the demo is usable.
+
+The only immediate floor is the irreversible boundary inherited from the repository authority:
+do not expose secrets or private/generated data, destroy user work, mutate an external/production
+system, or publish the sensitive-data branch without the named owner decision. G2/G3/G4 continue to
+gate real/private source access and external transmission; they do **not** block invented C0 fixtures
+or a local synthetic demo.
+
+### D1-D3 working-demo lane
+
+This lane runs immediately after P1 and before the old P2-P12 sequence:
+
+| Demo slice | Outcome | Acceptance |
+|---|---|---|
+| D1 - visible vertical slice | One invented system story crosses a typed fixture, local presentation boundary, and a useful UI view. Reuse the existing app instead of replacing infrastructure. | One focused behavior test proves the journey; no collection, migration, private input, or network dependency. |
+| D2 - feedback loop | Put the local demo in front of the owner, capture concrete usability feedback, and fix only what improves comprehension or flow. | The owner can identify what the view says, navigate it, and name the next most useful change. |
+| D3 - demo milestone | Make the chosen journey easy to launch and stable enough for repeated local feedback. | One documented launch path, focused smoke coverage, and `npm run check` green. |
+
+The demo is complete when D3 is met. That is a development milestone, not a claim that the product
+is secure, production-ready, distributable, or ready for real/private data.
+
+#### Exact D1 task card
+
+- **Journey:** run `npm run dev:web`, open `http://127.0.0.1:5173/?demo=v2`, filter Observed,
+  Derived, and Hypothesis signals, and inspect evidence/caveat text. No API server is required.
+- **Owned paths:** add `shared/v2Demo.ts` and `src/components/V2Demo.tsx`; modify `src/App.tsx`
+  and `src/App.test.tsx` only.
+- **Boundary:** `App` selects the V2 demo before `useDashboard` mounts. The fixture module registers
+  a strict `public_showcase.v1` payload whose fields are all C0. The view says explicitly that its
+  content is invented and uses no account, repository, or local-history input.
+- **Reuse:** keep the existing visual system and `InsightStack`; do not introduce a new framework,
+  route, server, or storage abstraction.
+- **Non-goals:** no edits to `server/demo.ts`, `server/dataStore.ts`, `server/index.ts`,
+  `scripts/exportDemo.ts`, collection, storage, network, migration, or public-showcase generation.
+- **Proof:** `npm test -- src/App.test.tsx`, then `npm run check`. The focused test proves all three
+  evidence levels render and filter, registered fixture classes are C0, and `fetch` is never called.
+- **Known limitation:** D1 proves a visible C0 presentation seam, not canonical-envelope,
+  provenance, coverage, persistence, or real-data integration. Those do not block the demo.
 
 ## 1. Executive recommendation
 
@@ -66,7 +122,7 @@ Developer Lens must not become:
 - Do not build new Projects Classic ingestion.
 - Defer Projects, security, CODEOWNERS, source structure, ML, and external LLM work until the data charter, provenance, coverage, retention, deletion, and privacy sink tests exist.
 
-### Recommended first implementation slice
+### Completed foundation slice
 
 After authority gate G1, implement a **contract-only privacy foundation**:
 
@@ -80,6 +136,8 @@ After authority gate G1, implement a **contract-only privacy foundation**:
 - `server/privacyContract.test.ts`
 
 It must add no source, collector, retention, UI, API, or export behavior. Acceptance is an executable fail-closed field classification, consent registry, coverage union, provenance envelope, pack-manifest skeleton, and invented privacy canaries.
+
+P0 and P1 completed this foundation locally. The next implementation work is D1, not P2.
 
 ---
 
@@ -1010,6 +1068,12 @@ Revocation tests must prove:
 ---
 
 ## 14. Phased implementation backlog
+
+### Demo-first sequencing override
+
+D1-D3 in section 0 runs before this table. P2-P12 remain the post-demo technical backlog, except
+for a narrowly selected piece that is strictly necessary to make the D1-D3 journey work. Security
+and resilience acceptance from those phases is tracked, not implemented, until D3 is complete.
 
 | Phase | Goal and exact logical paths | Schema / acceptance / focused checks | Privacy, risk, cost, rollback and deferrals |
 |---|---|---|---|

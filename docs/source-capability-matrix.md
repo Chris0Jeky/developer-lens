@@ -7,6 +7,10 @@ it is never consent, and P1 cannot activate collection, storage, or a source que
 prerequisite for every real/private source read or retained record. A named G3 approval is additive
 to G2 for its sensitive source; it never replaces G2.
 
+The owner-selected D1-D3 demo lane is synthetic-only and therefore does not wait for G2/G3/G4.
+These gates become active scheduling constraints only when a slice proposes its named real/private
+source or external transmission.
+
 | Capability ID | Purpose and retained minimum | Class ceiling | Consent / phase | Recommended retention | Delete / revoke behavior | Refusal or absence |
 |---|---|---:|---|---|---|---|
 | `github.core` | Repository/system lifecycle: stable IDs, flags, dates, numeric surfaces, PR/check/issue/release edges, and coverage; no names, prose, URLs, or people dimensions | C2 source → C1 facts | Contract definition only in P1; real-data activation is closed until G2, then implemented no earlier than P4/P7 for selected repositories | C1 36m; C2 13m | Delete source observations and every dependent fact, feature, alias, checkpoint, and pack | Remain `never_authorized`; when later refused/absent, record the exact coverage state and never infer zero |

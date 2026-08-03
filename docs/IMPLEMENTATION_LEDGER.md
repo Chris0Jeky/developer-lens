@@ -5,7 +5,7 @@ Last updated: **2026-08-03**
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03.
 
-Current phase: **P0 and P1 complete locally; publication and P2 are owner-gated**.
+Current phase: **P0 and P1 complete locally; D1 synthetic working-demo slice is next**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -16,13 +16,14 @@ unresolved review threads outrank it whenever they disagree.
 - Branch: `codex/persist-deep-signal-architecture`, no upstream.
 - Exact implementation head: `8809289657d260eb099cac755dd150d6c9f4b335`. This ledger update is
   its documentation-only successor, allowing the executable checkpoint to have an immutable SHA.
-- Base: `origin/main` at `7f937547220e6160889eb96a7a72e2ef2c425b95`. After the ledger
-  successor commits, the local branch is five commits ahead.
+- Base: `origin/main` at `7f937547220e6160889eb96a7a72e2ef2c425b95`. After this policy
+  commit, the local branch is six commits ahead.
 - Pull request: none. The Developer Lens branch remains intentionally unpublished under q-4.
 - Worktrees: the primary checkout is the only registered Developer Lens worktree and is clean after
   the checkpoint commit.
 - Local branch commits: `4abb2c5` architecture/handoff; `92cb782` G1 authority/charter;
-  `2ea18a1` initial ledger/task card; `8809289` P1 executable contracts; this P1 checkpoint.
+  `2ea18a1` initial ledger/task card; `8809289` P1 executable contracts; `26aefe9` P1 checkpoint;
+  then this demo-first policy change.
 
 ## Authority and owner gates
 
@@ -35,7 +36,8 @@ unresolved review threads outrank it whenever they disagree.
   `2f51c09758ac93092ca53ce8467d02f46daadf5d` is published as ready PR
   [#121](https://github.com/Chris0Jeky/claude-config/pull/121). It remains unmerged until the
   Developer Lens authority/state commits can be co-landed through the owner-selected route.
-- G2: unapproved. No real/private source read, retention, migration, backup, or deletion work.
+- G2: unapproved. No real/private source read, retention, migration, backup, or deletion work. This
+  does not block D1-D3 because that lane accepts invented C0 fixtures only.
 - G3: unapproved separately for Actions, deployments, dependencies, security, Projects,
   ownership, and source structure.
 - G4: unapproved. No external model SDK, transport, cache, telemetry, or payload.
@@ -87,6 +89,19 @@ unresolved review threads outrank it whenever they disagree.
 - Rollback: revert the one P1 implementation commit. No database, migration, retained record,
   external call, or deletion side effect exists.
 
+## Owner development policy
+
+- Decision: on 2026-08-03 the owner replaced hardening-first sequencing with demo-first delivery.
+- Priority: working local demo, speed/effectiveness/productivity, owner feedback, and focused tests.
+- Sequence: D1 visible synthetic vertical slice, D2 owner-feedback iteration, D3 repeatable local
+  demo milestone. The former P2-P12 sequence becomes the post-demo technical backlog.
+- Hardening rule: security, privacy hardening, resilience, and distribution concerns are recorded in
+  [`POST_DEMO_HARDENING.md`](./POST_DEMO_HARDENING.md) and do not interrupt D1-D3 unless they cross
+  the irreversible floor.
+- Irreversible floor: no secret/private/generated-data exposure, destroyed user work,
+  external/production mutation, or public publication without the named owner gate. T2 plus
+  `sensitive_data` remains declared for that floor; it is not a mandate for pre-demo scaffolding.
+
 ## Verification
 
 - Final focused proof: `npm test -- server/privacyContract.test.ts` passed 7/7.
@@ -110,6 +125,7 @@ unresolved review threads outrank it whenever they disagree.
 
 ## NOT verified
 
+- A D1-D3 V2 working demo; no demo implementation changed in this policy slice.
 - Production adoption by existing collectors, storage, API, UI, exporters, or Pages.
 - App, collector, analysis, API/start, or showcase runtime.
 - Hosted CI or connector review for the unpublished Developer Lens head.
@@ -120,7 +136,8 @@ unresolved review threads outrank it whenever they disagree.
 
 - P1 is an inert contract foundation. Existing v1 runtime paths do not yet consume it.
 - Existing JSON, raw API error behavior, late export sanitization, and person-shaped analytics
-  retain the architecture's documented risks until later phases replace them.
+  retain the architecture's documented risks. They are intentionally deferred in
+  `docs/POST_DEMO_HARDENING.md` until the D3 milestone unless they cross the irreversible floor.
 - Future producers must use the registered schemas and sink helpers; P1 has no production call
   sites by design.
 - The broader harness audit exception remains as recorded under P0.
@@ -138,8 +155,14 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Owner answers q-4 with the publication route. Then publish the exact code-only branch and
-   co-land claude-config PR #121 in dependency order; never relay private/generated data.
-2. Owner answers q-1 with the G2 retention/migration decision.
-3. Only after G2, design P2 as a synthetic-first SQLite/importer slice. Do not inspect or migrate
-   existing private data until the approved conditions and migration task card say so.
+1. Implement D1 in exactly four paths: add `shared/v2Demo.ts` and
+   `src/components/V2Demo.tsx`; modify `src/App.tsx` and `src/App.test.tsx`.
+2. Add an explicit `?demo=v2` client mode selected before `useDashboard` mounts. It renders a
+   strict `public_showcase.v1` C0 fixture through the existing visual system and `InsightStack`,
+   states that the content is invented, and makes no API request.
+3. Do not touch `server/demo.ts`, `server/dataStore.ts`, `server/index.ts`,
+   `scripts/exportDemo.ts`, collection, storage, migration, network, or hardening.
+4. Run `npm test -- src/App.test.tsx`, then `npm run check`. Launch with `npm run dev:web` and open
+   `http://127.0.0.1:5173/?demo=v2` for D2 owner feedback.
+5. q-1 remains required only before real/private data access. q-4 remains required only before
+   publishing the sensitive-data branch. Neither blocks local synthetic D1-D3 work.
