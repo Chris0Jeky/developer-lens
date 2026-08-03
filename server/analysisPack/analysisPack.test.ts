@@ -11,9 +11,10 @@ import {
 
 const tempDirectories: string[] = []
 const CREATED_AT = '2026-08-03T12:00:00.000Z'
-const PACK_ID = 'synthetic-coverage-pack'
 const C2_PROVIDER_CANARY = 'repo-c2-provider-canary'
 const C2_ANALYTICAL_CANARY = 'repo-c2-analytical-canary'
+const CALLER_PACK_CANARY_ONE = 'acme-private-repository'
+const CALLER_PACK_CANARY_TWO = 'developer@example.invalid'
 const PACK_FILES = [
   'COMPLETE',
   'checksums.sha256',
@@ -93,18 +94,20 @@ describe('synthetic analysis-pack foundation', () => {
     const secondPack = join(root, 'pack output two')
     const sourceBefore = await readFile(databasePath)
 
-    const first = await buildAnalysisPack({
+    const firstOptions = {
       sourceDatabasePath: databasePath,
       outputDirectory: firstPack,
-      packId: PACK_ID,
+      packId: CALLER_PACK_CANARY_ONE,
       createdAt: CREATED_AT,
-    })
-    const second = await buildAnalysisPack({
+    }
+    const secondOptions = {
       sourceDatabasePath: databasePath,
       outputDirectory: secondPack,
-      packId: PACK_ID,
+      packId: CALLER_PACK_CANARY_TWO,
       createdAt: CREATED_AT,
-    })
+    }
+    const first = await buildAnalysisPack(firstOptions)
+    const second = await buildAnalysisPack(secondOptions)
 
     const firstFiles = await readPackFiles(firstPack)
     const secondFiles = await readPackFiles(secondPack)
@@ -125,7 +128,7 @@ describe('synthetic analysis-pack foundation', () => {
       manifestVersion: '1.0.0',
       privacyContractVersion: '1.0.0',
       canonicalEnvelopeSchemaVersion: '2.0.0',
-      packId: PACK_ID,
+      packId: expect.stringMatching(/^pack-[a-f0-9]{32}$/),
       createdAt: CREATED_AT,
       exportClassification: 'redacted_aggregate',
       capabilities: ['cap.local.git', 'github.core'],
@@ -140,6 +143,8 @@ describe('synthetic analysis-pack foundation', () => {
     const combined = Buffer.concat(Object.values(firstFiles))
     expect(combined.includes(Buffer.from(C2_PROVIDER_CANARY, 'utf8'))).toBe(false)
     expect(combined.includes(Buffer.from(C2_ANALYTICAL_CANARY, 'utf8'))).toBe(false)
+    expect(combined.includes(Buffer.from(CALLER_PACK_CANARY_ONE, 'utf8'))).toBe(false)
+    expect(combined.includes(Buffer.from(CALLER_PACK_CANARY_TWO, 'utf8'))).toBe(false)
     expect(combined.includes(Buffer.from('OWNER_GATE_NOT_APPROVED', 'utf8'))).toBe(false)
 
     const expectedReplay = [
@@ -157,7 +162,6 @@ describe('synthetic analysis-pack foundation', () => {
     await buildAnalysisPack({
       sourceDatabasePath: databasePath,
       outputDirectory: packDirectory,
-      packId: PACK_ID,
       createdAt: CREATED_AT,
     })
     await unlink(join(packDirectory, 'COMPLETE'))
@@ -173,7 +177,6 @@ describe('synthetic analysis-pack foundation', () => {
     await buildAnalysisPack({
       sourceDatabasePath: databasePath,
       outputDirectory: packDirectory,
-      packId: PACK_ID,
       createdAt: CREATED_AT,
     })
     await writeFile(join(packDirectory, 'tables/coverage.parquet'), 'invented-corruption', 'utf8')
@@ -189,7 +192,6 @@ describe('synthetic analysis-pack foundation', () => {
     await buildAnalysisPack({
       sourceDatabasePath: databasePath,
       outputDirectory: packDirectory,
-      packId: PACK_ID,
       createdAt: CREATED_AT,
     })
     await rewriteManifestWithModelEvidence(packDirectory)

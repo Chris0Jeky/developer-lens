@@ -22,7 +22,7 @@ const SAFE_CAPABILITY_IDS = ['cap.local.git', 'github.core'] as const
 
 const SafeCapabilityIdSchema = z.enum(SAFE_CAPABILITY_IDS)
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/)
-const PackIdSchema = z.string().regex(/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/)
+const PackIdSchema = z.string().regex(/^pack-[a-f0-9]{32}$/)
 const CreatedAtSchema = z.string().datetime({ offset: true })
 const LimitationCodeSchema = z.string().regex(/^[A-Z0-9_]{1,64}$/)
 const ObservedUnitsSchema = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)
@@ -97,7 +97,6 @@ export class AnalysisPackError extends Error {
 export interface BuildAnalysisPackOptions {
   sourceDatabasePath: string
   outputDirectory: string
-  packId: string
   createdAt: string
 }
 
@@ -387,7 +386,6 @@ async function verifyPack(packDirectory: string, complete: boolean): Promise<Ver
 }
 
 export async function buildAnalysisPack(options: BuildAnalysisPackOptions): Promise<BuildAnalysisPackResult> {
-  const packId = PackIdSchema.parse(options.packId)
   const createdAt = CreatedAtSchema.parse(options.createdAt)
   const sourceFacts = readSafeCoverageFacts(options.sourceDatabasePath)
   const coverageFacts = sourceFacts.map(({ capability_id, status, observed_units }) =>
@@ -407,6 +405,9 @@ export async function buildAnalysisPack(options: BuildAnalysisPackOptions): Prom
     const coveragePath = join(stagingDirectory, COVERAGE_ARTIFACT_PATH)
     await writeCoverageParquet(coveragePath, coverageFacts)
     const coverageSha256 = sha256(await readFile(coveragePath))
+    const packId = PackIdSchema.parse(
+      `pack-${sha256(`${createdAt}\0${coverageSha256}`).slice(0, 32)}`,
+    )
     const manifest = AnalysisPackManifestSchema.parse({
       manifestVersion: MANIFEST_VERSION,
       privacyContractVersion: PRIVACY_CONTRACT_VERSION,
