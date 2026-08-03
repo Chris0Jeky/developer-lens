@@ -1,4 +1,4 @@
-import { createHash } from 'node:crypto'
+import { createHash, createHmac } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
@@ -10,6 +10,11 @@ import { importV1Json, parseV1Dataset, selectStorageReader, storageV2Enabled } f
 import { SQLITE_APPLICATION_ID, SQLITE_USER_VERSION } from './schema.js'
 
 const tempDirectories: string[] = []
+const INSTALLATION_KEY = Buffer.from('synthetic-installation-key-material-0123456789', 'utf8')
+
+function migrationOptions(sourcePath: string, targetPath: string, extra: Record<string, unknown> = {}) {
+  return { sourcePath, targetPath, installationKey: INSTALLATION_KEY, ...extra }
+}
 
 afterEach(async () => {
   await Promise.all(tempDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })))
@@ -68,6 +73,10 @@ function databaseDigest(path: string): string {
   return createHash('sha256').update(JSON.stringify(rows)).digest('hex')
 }
 
+function expectedAlias(key: Buffer, domain: string, value: string): string {
+  return `repo-${createHmac('sha256', key).update(domain).update('\0').update(value).digest('hex')}`
+}
+
 describe('v1 to SQLite v2 synthetic migration proof', () => {
   it('keeps storage disabled unless the exact flag is supplied', async () => {
     const { source, target, sourceBytes } = await fixturePaths()
@@ -76,16 +85,31 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     expect(storageV2Enabled(false)).toBe(false)
     expect(storageV2Enabled('true')).toBe(false)
     expect(storageV2Enabled('1')).toBe(true)
-    const selected = await selectStorageReader({ sourcePath: source, targetPath: target, enabled: false })
+    const selected = await selectStorageReader(migrationOptions(source, target, { enabled: false }))
 
     expect(selected).toEqual({ reader: 'legacy-json', code: 'storage-disabled' })
     await expect(readFile(source)).resolves.toEqual(sourceBytes)
     expect(existsSync(target)).toBe(false)
   })
 
+  it('fails closed when installation HMAC key material is missing or too short', async () => {
+    const { source, target, sourceBytes } = await fixturePaths()
+    await expect(importV1Json({ sourcePath: source, targetPath: target })).rejects.toThrow('INSTALLATION_KEY_REQUIRED')
+    expect(existsSync(target)).toBe(false)
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+
+    const shortKeyDirectory = await mkdtemp(join(tmpdir(), 'developer-lens-storage-short-key-'))
+    tempDirectories.push(shortKeyDirectory)
+    const shortKeyTarget = join(shortKeyDirectory, 'storage-v2.sqlite')
+    await expect(importV1Json({ sourcePath: source, targetPath: shortKeyTarget, installationKey: Buffer.alloc(31, 0x5a) })).rejects.toThrow('INSTALLATION_KEY_TOO_SHORT')
+    expect(existsSync(shortKeyTarget)).toBe(false)
+    await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-key-missing' })
+    await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true, installationKey: Buffer.alloc(31, 0x5a) })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-key-invalid' })
+  })
+
   it('imports a strict invented v1 fixture with integrity and FK checks', async () => {
     const { source, target, sourceBytes } = await fixturePaths()
-    const selected = await selectStorageReader({ sourcePath: source, targetPath: target, enabled: true })
+    const selected = await selectStorageReader(migrationOptions(source, target, { enabled: true }))
     const db = openStorageDatabase(target)
     const checks = runStorageChecks(db)
     const schema = db.prepare("SELECT group_concat(sql, ' ') FROM sqlite_master WHERE type = 'table' ORDER BY name").pluck().get() as string
@@ -107,6 +131,7 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     expect(schema).toContain('STRICT')
     expect(schema).not.toMatch(/nameWithOwner|title|url|subject|warning|description|avatar|detail/i)
     expect(values).not.toContain('invented-org/invented-repository')
+    expect(values).not.toContain('repo-provider-101')
     expect(values).not.toContain('Invented title that must not persist')
     expect(values).not.toContain('https://invalid.example/pull/17')
     expect(coverage).toEqual([
@@ -118,9 +143,9 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
 
   it('is idempotent on replay with the same canonical checksum and row counts', async () => {
     const { source, target, sourceBytes } = await fixturePaths()
-    const first = await importV1Json({ sourcePath: source, targetPath: target })
+    const first = await importV1Json(migrationOptions(source, target))
     const firstDigest = databaseDigest(target)
-    const second = await importV1Json({ sourcePath: source, targetPath: target })
+    const second = await importV1Json(migrationOptions(source, target))
     const secondDigest = databaseDigest(target)
     const db = openStorageDatabase(target)
     const rowCounts = [
@@ -146,7 +171,7 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     await writeFile(source, JSON.stringify(invalid))
 
     expect(() => parseV1Dataset(JSON.stringify(invalid))).toThrow('V1_VALIDATION_FAILED')
-    await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'v1-validation-failed' })
+    await expect(selectStorageReader(migrationOptions(source, target, { enabled: true }))).resolves.toEqual({ reader: 'legacy-json', code: 'v1-validation-failed' })
     expect(existsSync(target)).toBe(false)
     expect(await readFile(source, 'utf8')).toBe(JSON.stringify(invalid))
     expect(sourceBytes).not.toEqual(await readFile(source))
@@ -159,7 +184,7 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     unrelated.prepare('INSERT INTO unrelated (value) VALUES (?)').run('sentinel')
     unrelated.close()
 
-    await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-target-mismatch' })
+    await expect(selectStorageReader(migrationOptions(source, target, { enabled: true }))).resolves.toEqual({ reader: 'legacy-json', code: 'storage-target-mismatch' })
     const after = new Database(target)
     const tables = after.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name").pluck().all()
     expect(after.prepare('PRAGMA application_id').pluck().get()).toBe(0)
@@ -179,7 +204,7 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
       .all()
     unrelated.close()
 
-    await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-target-mismatch' })
+    await expect(selectStorageReader(migrationOptions(source, target, { enabled: true }))).resolves.toEqual({ reader: 'legacy-json', code: 'storage-target-mismatch' })
     const after = new Database(target)
     const afterObjects = after
       .prepare("SELECT type, name, sql FROM sqlite_schema WHERE name NOT GLOB 'sqlite_*' ORDER BY type, name")
@@ -207,7 +232,7 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
       seeded.pragma(`user_version = ${partial.userVersion}`)
       seeded.close()
 
-      await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-target-mismatch' })
+      await expect(selectStorageReader(migrationOptions(source, target, { enabled: true }))).resolves.toEqual({ reader: 'legacy-json', code: 'storage-target-mismatch' })
       const after = new Database(target)
       expect(after.prepare('PRAGMA application_id').pluck().get()).toBe(partial.applicationId)
       expect(after.prepare('PRAGMA user_version').pluck().get()).toBe(partial.userVersion)
@@ -249,7 +274,7 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     unavailable.coverage = [{ id: 'local-git', label: 'Unavailable source', status: 'unavailable', detail: 'Unavailable', itemCount: 0 }]
     await writeFile(source, JSON.stringify(unavailable))
 
-    await expect(importV1Json({ sourcePath: source, targetPath: target })).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
+    await expect(importV1Json(migrationOptions(source, target))).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
     const db = openStorageDatabase(target)
     expect(db.prepare('SELECT capability_id, status, limitation_code, observed_units FROM coverage_observation').get()).toEqual({ capability_id: 'cap.local.git', status: 'unavailable', limitation_code: 'V1_UNAVAILABLE', observed_units: 0 })
     db.close()
@@ -268,7 +293,7 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     await writeFile(source, sourceBytes)
 
     expect(() => parseV1Dataset(sourceBytes.toString('utf8'))).not.toThrow()
-    await expect(importV1Json({ sourcePath: source, targetPath: target })).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
+    await expect(importV1Json(migrationOptions(source, target))).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
     const db = openStorageDatabase(target)
     expect(db.prepare('SELECT capability_id, status, limitation_code, observed_units FROM coverage_observation').get()).toEqual({
       capability_id: 'github.core',
@@ -278,6 +303,30 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     })
     db.close()
     await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
+  it('uses full domain-separated installation HMAC aliases instead of plain hashes', async () => {
+    const { directory, source, target } = await fixturePaths()
+    const secondTarget = join(directory, 'storage-v2-second-key.sqlite')
+    const secondKey = Buffer.from('synthetic-installation-key-material-abcdefgh', 'utf8')
+    const rawProviderId = 'repo-provider-101'
+
+    await importV1Json(migrationOptions(source, target))
+    await importV1Json({ sourcePath: source, targetPath: secondTarget, installationKey: secondKey })
+    const firstDb = openStorageDatabase(target)
+    const firstIdentity = firstDb.prepare('SELECT provider_id, analytical_key FROM repository_identity').get() as { provider_id: string; analytical_key: string }
+    firstDb.close()
+    const secondDb = openStorageDatabase(secondTarget)
+    const secondIdentity = secondDb.prepare('SELECT provider_id, analytical_key FROM repository_identity').get() as { provider_id: string; analytical_key: string }
+    secondDb.close()
+
+    expect(firstIdentity.provider_id).toBe(expectedAlias(INSTALLATION_KEY, 'developer-lens/repository-provider/v1', rawProviderId))
+    expect(firstIdentity.analytical_key).toBe(expectedAlias(INSTALLATION_KEY, 'developer-lens/repository-analytical/v1', rawProviderId))
+    expect(firstIdentity.provider_id).not.toBe(firstIdentity.analytical_key)
+    expect(firstIdentity.provider_id).not.toBe(`repo-${createHash('sha256').update(rawProviderId).digest('hex')}`)
+    expect(firstIdentity.provider_id).not.toBe(secondIdentity.provider_id)
+    expect(firstIdentity.analytical_key).not.toBe(secondIdentity.analytical_key)
+    expect(JSON.stringify(firstIdentity)).not.toContain(rawProviderId)
   })
 
   it('normalizes collector-generated local repository IDs without persisting repository names', async () => {
@@ -295,23 +344,58 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     await writeFile(source, sourceBytes)
 
     expect(() => parseV1Dataset(sourceBytes.toString('utf8'))).not.toThrow()
-    await expect(importV1Json({ sourcePath: source, targetPath: target })).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
+    await expect(importV1Json(migrationOptions(source, target))).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
     const db = openStorageDatabase(target)
     const identity = db.prepare('SELECT provider_id, analytical_key FROM repository_identity').get() as {
       provider_id: string
       analytical_key: string
     }
-    expect(identity.provider_id).toMatch(/^local-[a-f0-9]{24}$/)
-    expect(identity.analytical_key).toMatch(/^repo-[a-f0-9]{24}$/)
+    expect(identity.provider_id).toMatch(/^repo-[a-f0-9]{64}$/)
+    expect(identity.analytical_key).toMatch(/^repo-[a-f0-9]{64}$/)
+    expect(identity.provider_id).not.toBe('local:invented-org/invented-repository')
+    expect(identity.analytical_key).not.toBe('local:invented-org/invented-repository')
     expect(JSON.stringify(identity)).not.toContain('invented-org')
     expect(db.prepare('SELECT repository_provider_id FROM commit_observation').pluck().get()).toBe(identity.provider_id)
     db.close()
     await expect(readFile(source)).resolves.toEqual(sourceBytes)
   })
 
+  it('keeps local and opaque provider identities disjoint under installation HMAC', async () => {
+    const { source, target } = await fixturePaths()
+    const localProviderId = 'local:invented-org/invented-repository'
+    const oldPlainAlias = `local-${createHash('sha256').update(localProviderId).digest('hex').slice(0, 24)}`
+    const collisionFixture = inventedV1Fixture()
+    collisionFixture.repositories[0]!.id = localProviderId
+    collisionFixture.repositories.push({
+      ...collisionFixture.repositories[0]!,
+      id: oldPlainAlias,
+      nameWithOwner: 'other-org/other-repository',
+      name: 'other-repository',
+    })
+    collisionFixture.commits[0]!.source = 'local-git'
+    collisionFixture.commits.push({
+      ...collisionFixture.commits[0]!,
+      sha: 'invented-sha-202',
+      repository: 'other-org/other-repository',
+      source: 'github',
+    })
+    const sourceBytes = Buffer.from(JSON.stringify(collisionFixture), 'utf8')
+    await writeFile(source, sourceBytes)
+
+    await expect(importV1Json(migrationOptions(source, target))).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
+    const db = openStorageDatabase(target)
+    const identities = db.prepare('SELECT provider_id, analytical_key FROM repository_identity ORDER BY provider_id').all() as Array<{ provider_id: string; analytical_key: string }>
+    db.close()
+
+    expect(identities).toHaveLength(2)
+    expect(new Set(identities.map((identity) => identity.provider_id)).size).toBe(2)
+    expect(JSON.stringify(identities)).not.toContain(localProviderId)
+    expect(JSON.stringify(identities)).not.toContain(oldPlainAlias)
+  })
+
   it('transactionally replaces the previous snapshot and removes every absent row', async () => {
     const { source, target } = await fixturePaths()
-    await importV1Json({ sourcePath: source, targetPath: target })
+    await importV1Json(migrationOptions(source, target))
     const replacement = inventedV1Fixture()
     replacement.repositories = []
     replacement.commits = []
@@ -323,7 +407,7 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     const replacementBytes = Buffer.from(JSON.stringify(replacement), 'utf8')
     await writeFile(source, replacementBytes)
 
-    await expect(importV1Json({ sourcePath: source, targetPath: target })).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
+    await expect(importV1Json(migrationOptions(source, target))).resolves.toMatchObject({ integrity: 'ok', foreignKeyViolations: 0 })
     const db = openStorageDatabase(target)
     const rowCounts = [
       'import_run',
@@ -348,7 +432,7 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     seeded.prepare('INSERT INTO commit_observation (repository_provider_id, sha, occurred_at, source, feature_type, is_revert, is_fixup, message_length) VALUES (?, ?, ?, ?, ?, 0, 0, 0)').run('orphan-parent-101', 'orphan-sha-101', '2026-01-02T12:00:00.000Z', 'github', 'feat')
     seeded.close()
 
-    await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-import-failed' })
+    await expect(selectStorageReader(migrationOptions(source, target, { enabled: true }))).resolves.toEqual({ reader: 'legacy-json', code: 'storage-import-failed' })
     const db = openStorageDatabase(target)
     expect(Number(db.prepare('SELECT COUNT(*) FROM import_run').pluck().get())).toBe(0)
     expect(Number(db.prepare('SELECT COUNT(*) FROM repository_identity').pluck().get())).toBe(0)
@@ -363,15 +447,15 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
   it('rolls back a failed first import without publishing a partial target', async () => {
     const { source, target, sourceBytes } = await fixturePaths()
 
-    await expect(importV1Json({ sourcePath: source, targetPath: target, failAt: 'after-repository-upsert' })).rejects.toThrow('INJECTED_FAILURE')
-    await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true, failAt: 'after-repository-upsert' })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-import-failed' })
+    await expect(importV1Json(migrationOptions(source, target, { failAt: 'after-repository-upsert' }))).rejects.toThrow('INJECTED_FAILURE')
+    await expect(selectStorageReader(migrationOptions(source, target, { enabled: true, failAt: 'after-repository-upsert' }))).resolves.toEqual({ reader: 'legacy-json', code: 'storage-import-failed' })
     expect(existsSync(target)).toBe(false)
     await expect(readFile(source)).resolves.toEqual(sourceBytes)
   })
 
   it('rolls back a failed replacement and retains the previous canonical state', async () => {
     const { source, target } = await fixturePaths()
-    await importV1Json({ sourcePath: source, targetPath: target })
+    await importV1Json(migrationOptions(source, target))
     const before = databaseDigest(target)
 
     const replacement = inventedV1Fixture()
@@ -385,8 +469,8 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     const replacementBytes = Buffer.from(JSON.stringify(replacement), 'utf8')
     await writeFile(source, replacementBytes)
 
-    await expect(importV1Json({ sourcePath: source, targetPath: target, failAt: 'after-repository-upsert' })).rejects.toThrow('INJECTED_FAILURE')
-    await expect(selectStorageReader({ sourcePath: source, targetPath: target, enabled: true, failAt: 'after-repository-upsert' })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-import-failed' })
+    await expect(importV1Json(migrationOptions(source, target, { failAt: 'after-repository-upsert' }))).rejects.toThrow('INJECTED_FAILURE')
+    await expect(selectStorageReader(migrationOptions(source, target, { enabled: true, failAt: 'after-repository-upsert' }))).resolves.toEqual({ reader: 'legacy-json', code: 'storage-import-failed' })
     expect(databaseDigest(target)).toBe(before)
     await expect(readFile(source)).resolves.toEqual(replacementBytes)
   })

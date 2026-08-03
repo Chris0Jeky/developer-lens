@@ -1,4 +1,4 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash, createHmac, randomUUID } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { readFile, rename, unlink } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
@@ -108,6 +108,7 @@ export type MigrationFailurePoint = 'after-repository-upsert'
 export interface ImportV1Options {
   sourcePath: string
   targetPath: string
+  installationKey?: Buffer
   failAt?: MigrationFailurePoint
 }
 
@@ -119,6 +120,8 @@ export interface ImportProof {
 
 export type StorageFailureCode =
   | 'storage-disabled'
+  | 'storage-key-missing'
+  | 'storage-key-invalid'
   | 'source-read-failed'
   | 'v1-validation-failed'
   | 'storage-target-mismatch'
@@ -127,6 +130,16 @@ export type StorageFailureCode =
 export type StorageSelection =
   | { reader: 'legacy-json'; code: StorageFailureCode }
   | { reader: 'sqlite-v2'; checksum: string }
+
+export class InstallationKeyError extends Error {
+  public readonly code: 'INSTALLATION_KEY_REQUIRED' | 'INSTALLATION_KEY_TOO_SHORT'
+
+  constructor(code: 'INSTALLATION_KEY_REQUIRED' | 'INSTALLATION_KEY_TOO_SHORT') {
+    super(code)
+    this.name = 'InstallationKeyError'
+    this.code = code
+  }
+}
 
 export function parseV1Dataset(source: string): V1Dataset {
   let value: unknown
@@ -224,14 +237,22 @@ function digest(value: string | Buffer): string {
   return createHash('sha256').update(value).digest('hex')
 }
 
-function repositoryKey(providerId: string): string {
-  return `repo-${digest(providerId).slice(0, 24)}`
+function requireInstallationKey(value: Buffer | undefined): Buffer {
+  if (value === undefined || value.length === 0) throw new InstallationKeyError('INSTALLATION_KEY_REQUIRED')
+  if (value.length < 32) throw new InstallationKeyError('INSTALLATION_KEY_TOO_SHORT')
+  return value
 }
 
-function storageRepositoryProviderId(providerId: string): string {
-  return providerId.startsWith('local:')
-    ? `local-${digest(providerId).slice(0, 24)}`
-    : providerId
+function hmacAlias(key: Buffer, domain: string, value: string): string {
+  return createHmac('sha256', key).update(domain).update('\0').update(value).digest('hex')
+}
+
+function repositoryKey(providerId: string, installationKey: Buffer): string {
+  return `repo-${hmacAlias(installationKey, 'developer-lens/repository-analytical/v1', providerId)}`
+}
+
+function storageRepositoryProviderId(providerId: string, installationKey: Buffer): string {
+  return `repo-${hmacAlias(installationKey, 'developer-lens/repository-provider/v1', providerId)}`
 }
 
 function assertStorageChecks(db: ReturnType<typeof openStorageDatabase>): void {
@@ -263,12 +284,13 @@ function importIntoDatabase(
   db: ReturnType<typeof openStorageDatabase>,
   dataset: V1Dataset,
   sourceChecksum: string,
+  installationKey: Buffer,
   failAt?: MigrationFailurePoint,
 ): ImportProof {
   const repositoryProviderIds = new Map(
     dataset.repositories.map((repository) => [
       repository.nameWithOwner,
-      storageRepositoryProviderId(repository.id),
+      storageRepositoryProviderId(repository.id, installationKey),
     ]),
   )
   const transaction = db.transaction(() => {
@@ -302,8 +324,8 @@ function importIntoDatabase(
     `)
     insertRun.run(sourceChecksum, STORAGE_SCHEMA_VERSION)
     for (const repository of dataset.repositories) {
-      const providerId = storageRepositoryProviderId(repository.id)
-      insertRepository.run(providerId, repositoryKey(providerId), Number(repository.isPrivate), Number(repository.isArchived), Number(repository.isFork))
+      const providerId = storageRepositoryProviderId(repository.id, installationKey)
+      insertRepository.run(providerId, repositoryKey(repository.id, installationKey), Number(repository.isPrivate), Number(repository.isArchived), Number(repository.isFork))
     }
     if (failAt === 'after-repository-upsert') throw new Error('INJECTED_FAILURE')
     for (const commit of dataset.commits) {
@@ -324,6 +346,7 @@ function importIntoDatabase(
 }
 
 export async function importV1Json(options: ImportV1Options): Promise<ImportProof> {
+  const installationKey = requireInstallationKey(options.installationKey)
   const source = await readFile(options.sourcePath)
   const dataset = parseV1Dataset(source.toString('utf8'))
   const sourceChecksum = digest(source)
@@ -334,7 +357,7 @@ export async function importV1Json(options: ImportV1Options): Promise<ImportProo
   let db: ReturnType<typeof openStorageDatabase> | undefined
   try {
     db = openStorageDatabase(workingPath)
-    const result = importIntoDatabase(db, dataset, sourceChecksum, options.failAt)
+    const result = importIntoDatabase(db, dataset, sourceChecksum, installationKey, options.failAt)
     db.close()
     db = undefined
     if (!existingTarget) await rename(workingPath, options.targetPath)
@@ -358,6 +381,12 @@ export async function selectStorageReader(
     const proof = await importV1Json(options)
     return { reader: 'sqlite-v2', checksum: proof.checksum }
   } catch (error) {
+    if (error instanceof InstallationKeyError) {
+      return {
+        reader: 'legacy-json',
+        code: error.code === 'INSTALLATION_KEY_REQUIRED' ? 'storage-key-missing' : 'storage-key-invalid',
+      }
+    }
     if (error instanceof V1ValidationError) return { reader: 'legacy-json', code: 'v1-validation-failed' }
     if (error instanceof StorageDatabaseError) return { reader: 'legacy-json', code: 'storage-target-mismatch' }
     const nodeError = error as NodeJS.ErrnoException

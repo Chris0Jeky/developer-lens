@@ -6,7 +6,8 @@ Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARC
 evidence/design version 2026-08-03.
 
 Current phase: **D1-D3 and the synthetic P2 SQLite/importer proof are complete locally; the
-post-merge P2 migration-contract repair is implemented and locally verified but unpublished**.
+post-merge P2 migration-contract repair and its installation-HMAC blocker repair are implemented
+locally, with the one fix-round commit pending publication**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -14,20 +15,20 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Branch: `codex/fix-v1-migration-contract`, tracking `origin/main` locally and unpublished.
-- Exact executable P2 migration-contract head:
-  `bb2a0d5a1adc922fb9dc5eed0c3f91ae5c546fe7`; this ledger successor has no SHA until it is
-  committed.
-- Base: `origin/main` at merge `5df1a09eddb1d9c003d5749b82f7462126a78e07`. The executable branch is
-  1 commit ahead and 0 behind before this ledger successor.
-- Pull request: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at the base above.
-  Three late unresolved migration review threads were reproduced after merge and are addressed by
-  this local follow-up. Per the bounded task, no follow-up branch was pushed and no pull request was
-  opened.
+- Branch: `codex/fix-v1-migration-contract`, tracking `origin/codex/fix-v1-migration-contract`.
+- Exact reviewed pre-fix head: `270ec16ba46090673420328cee2159057a236b3b`.
+  Pull request [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) is open and ready for
+  review at that head; this one fix-round commit is local and has not been pushed.
+- Base: `origin/main` at merge `5df1a09eddb1d9c003d5749b82f7462126a78e07`. The reviewed branch was
+  2 commits ahead and 0 behind at the pre-fix head above.
+- Pull request: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at the base above;
+  follow-up [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) carries the three migration
+  repairs and this single HMAC blocker fix round.
 - Worktrees: one registered Developer Lens worktree, the primary checkout; it was tracked-clean
   before this ledger edit. Refresh cleanliness and occupancy from Git before any further mutation.
 - Local follow-up commit: `bb2a0d5` fixes producer coverage compatibility, local repository-ID
-  compatibility, and transactional replacement semantics in one bounded migration seam.
+  compatibility, and transactional replacement semantics; the current local fix round adds the
+  explicit installation-scoped HMAC key contract.
 
 ## Authority and owner gates
 
@@ -161,8 +162,10 @@ unresolved review threads outrank it whenever they disagree.
   New imports use a temporary target and rename; existing-target inserts plus integrity, quick, and
   foreign-key checks share one transaction.
 - The strict projection persists only bounded opaque identifiers, categorical states, counts,
-  timestamps, booleans, and a hashed analytical repository key. Names, titles, URLs, descriptions,
-  labels, warnings, subjects, paths, and actor metadata are not persisted.
+  timestamps, booleans, and full installation-scoped HMAC-SHA-256 repository provider/analytical
+  aliases with domain separation. Names, titles, URLs, descriptions, labels, warnings, subjects,
+  paths, raw provider IDs, and actor metadata are not persisted; imports fail closed without a
+  32-byte installation key.
 - Legacy coverage maps conservatively into the executable ten-state V2 union: `unavailable` remains
   `unavailable`; `partial` and unverifiable legacy `complete` become `censored` with fixed limitation
   codes. Bounded legacy `github-*` IDs map to `github.core`, exact `local-git` maps to
@@ -189,19 +192,26 @@ unresolved review threads outrank it whenever they disagree.
   review confirmed the prior HIGH closed and found no new CRITICAL issue. P2 is locally complete
   and agent-publication-eligible through the gated q-4 path.
 - After PR #3 merged, three late review threads exposed normal multi-record GitHub coverage
-  rejection, collector-generated local-ID rejection, and stale rows surviving replacement imports.
+  rejection, collector-generated local-ID rejection, and stale rows surviving replacement imports;
+  PR #4's late review additionally identified an unsalted local alias, which this fix round closes
+  with domain-separated installation HMAC aliases.
   Commit `bb2a0d5a1adc922fb9dc5eed0c3f91ae5c546fe7` closes the three reproduced seams with invented
   producer-shaped fixtures only; real/private data was not read or migrated.
 
 ## Verification
 
-- P2 migration-contract follow-up at executable head
-  `bb2a0d5a1adc922fb9dc5eed0c3f91ae5c546fe7`: the focused migration proof passed 1 file / 15 tests;
+- P2 migration-contract follow-up at pre-fix head
+  `270ec16ba46090673420328cee2159057a236b3b`: the focused migration proof passed 1 file / 15 tests;
   `npm run check` passed lint, 21 files / 64 tests, TypeScript, and the Vite build;
   `npm run build:showcase` passed synthetic export, social render, showcase build, identity/export
   boundary verification, and secret/path scans; `npm audit --omit=dev` reported zero vulnerabilities;
   and `git diff --check` passed. The source JSON byte-preservation assertions cover successful and
   failed replacement imports.
+- The current local HMAC fix round adds synthetic missing/short-key failure, full
+  domain-separated installation-key alias, plain-hash non-equivalence, key-scope, raw-ID absence,
+  and transformed-ID collision regressions. Focused migration proof passed 1 file / 18 tests;
+  `npm run check` passed lint, 21 files / 67 tests, TypeScript, and the Vite build; showcase,
+  audit, and diff checks are recorded after this local commit before publication.
 - q-4 publication preflight with the current policy/declaration diff present: `npm run check` passed
   lint, 21 files / 61 tests, TypeScript, and the Vite build; `npm run build:showcase` passed export,
   social render, showcase build, synthetic identity/export-boundary checks, and secret/path scans;
@@ -290,7 +300,7 @@ unresolved review threads outrank it whenever they disagree.
   migration and the G2 backup/grace/deletion protocol remain deliberately unexercised.
 - Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
   synthetic route and showcase verifier.
-- Hosted CI or connector review for the unpublished Developer Lens head.
+- Hosted CI or connector review for the local HMAC-fix head.
 - Runtime deny canary; no repository-owned Codex adapter exists.
 - The newly approved G2/G3 policy has no runtime activation path yet. No real-data migration,
   retention cleanup, backup, deletion, or named G3 connector ran in this decision slice.
@@ -305,6 +315,9 @@ unresolved review threads outrank it whenever they disagree.
   intended ownership boundary; no real/private source or production reader uses the new database.
 - P2 remains a disabled, synthetic proof without CLI/`dataStore`/API wiring; its reviewed ownership
   boundary is not evidence for unimplemented real-data migration or production compatibility.
+- The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
+  this bounded importer accepts only the registered ASCII repository-reference alphabet; that P2
+  compatibility gap remains tracked for the future canonical local-UUID/P6 seam.
 - A P2 target represents one complete v1 snapshot. Atomic whole-snapshot replacement is now proved;
   multiple independent v1 sources sharing one target are unsupported and would need explicit row
   provenance/scoping before such a mode could be introduced.
@@ -326,13 +339,14 @@ unresolved review threads outrank it whenever they disagree.
 - A future `cap.github.security` activation contract must encode its separate storage decision
   as well as G2+G3. P1 remains safe because the capability is `never_authorized` and has no
   activation path.
+- A future provider-expansion review must assert disjoint transformed repository IDs; current
+  installation HMAC aliases remove the raw local-alias collision path for the bounded producer.
 
 ## Exact resume point
 
-1. Treat `bb2a0d5a1adc922fb9dc5eed0c3f91ae5c546fe7` as the exact executable P2
-   migration-contract head and this ledger commit as its documentation successor. The branch is
-   intentionally unpublished. Before any later publication, refresh the base, run the declared
-   checks and fresh review against the exact head, and leave merge to the top-routed Sol model.
+1. Treat `270ec16ba46090673420328cee2159057a236b3b` as the exact pre-fix P2 migration-contract
+   head for PR #4; the one HMAC fix-round commit is local and must be pushed only after its checks,
+   diff review, and publication route are refreshed. Leave merge to the top-routed Sol model.
 2. Route the bounded P3 architecture/dependency decision to Sol/Terra before writing. Select and pin
    a Node 20/24 Windows-compatible DuckDB/Parquet path using current primary metadata plus a local
    native probe; do not claim Node 20 Windows behavior until directly tested.
