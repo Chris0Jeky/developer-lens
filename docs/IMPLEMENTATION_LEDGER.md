@@ -164,8 +164,8 @@ unresolved review threads outrank it whenever they disagree.
 - The strict projection persists only bounded opaque identifiers, categorical states, counts,
   timestamps, booleans, and full installation-scoped HMAC-SHA-256 repository provider/analytical
   aliases with domain separation. Names, titles, URLs, descriptions, labels, warnings, subjects,
-  paths, raw provider IDs, and actor metadata are not persisted; imports fail closed without a
-  32-byte installation key.
+  paths, raw repository provider IDs, and actor metadata are not persisted; imports fail closed
+  without a 32-byte installation key. Other bounded v1 object IDs remain restricted-store C2 keys.
 - Legacy coverage maps conservatively into the executable ten-state V2 union: `unavailable` remains
   `unavailable`; `partial` and unverifiable legacy `complete` become `censored` with fixed limitation
   codes. Bounded legacy `github-*` IDs map to `github.core`, exact `local-git` maps to
