@@ -50,9 +50,9 @@ unresolved review threads outrank it whenever they disagree.
 - Any separate registry reconciliation is outside this public ledger. It follows the matching public
   Developer Lens authority/policy commit and its own normal gates. Never copy a private registry's
   URL, PR number, commit IDs, review/check state, or other live metadata into tracked public docs.
-- Only G1 is trusted as owner-approved. The checked G2/G3/G4 claims in `HUMAN_TODO.md`, this
-  ledger's older prose, the architecture, and previous pull requests are stale generated policy
-  text and do not establish owner authorization.
+- Only G1 is trusted as owner-approved. `HUMAN_TODO.md` now records G2/G3/G4 as open; checked claims
+  in older revisions, this ledger's older prose, the architecture, and previous pull requests are
+  stale generated policy text and do not establish owner authorization.
 - G2, G3, and G4 therefore remain unapproved. This P3 slice does not need them: it uses an invented
   SQLite fixture, retains every capability status (`never_authorized`/`refused` in the proof),
   reads no real/private input, activates no source, and contains no model path.
@@ -345,6 +345,9 @@ unresolved review threads outrank it whenever they disagree.
   could serialize a repository or identity label even though the table projection was C1-safe. The
   bounded fix removed that input, derived an opaque ID only from the declared timestamp and Parquet
   checksum, and added hostile extra-property regression coverage before rerunning the focused proof.
+- The automatic old-head review found one HIGH policy defect: the required human-action file still
+  described generated G2/G3/G4 decisions as binding. `HUMAN_TODO.md` now records those gates as open
+  and keeps only the separately reaffirmed synthetic publication route checked.
 
 ## NOT verified
 
@@ -413,9 +416,8 @@ unresolved review threads outrank it whenever they disagree.
    notebooks, collectors, Pages/export wiring, identities, names, C2+, or real input as a follow-up
    to this foundation without a new bounded task.
 3. Treat issues #5/#6 as deferred prerequisites for real migration, not synthetic P3 blockers.
-   `HUMAN_TODO.md` still contains stale checked prose; only G1 is trusted. Obtain explicit owner G2
-   before any real migration/source path, G3 before a named sensitive source, and G4 before any
-   external model path.
+   `HUMAN_TODO.md` records the live G1-only boundary. Obtain explicit owner G2 before any real
+   migration/source path, G3 before a named sensitive source, and G4 before any external model path.
 4. The next architecture phase is P4, but no real GitHub collector activation is safe under the
    current G1-only authority. The next safe slice is therefore an owner-authorized, synthetic-only
    P4 task card or another explicitly named product slice; do not manufacture speculative work.
