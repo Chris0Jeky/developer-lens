@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { mkdtemp, readFile, readdir, rm, unlink, writeFile } from 'node:fs/promises'
+import { mkdtemp, readFile, readdir, rename, rm, unlink, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
@@ -32,7 +32,7 @@ function sha256(bytes: Uint8Array): string {
   return createHash('sha256').update(bytes).digest('hex')
 }
 
-async function syntheticSource(): Promise<{ root: string; databasePath: string }> {
+async function syntheticSource(localStatus: 'refused' | 'complete' = 'refused'): Promise<{ root: string; databasePath: string }> {
   const root = await mkdtemp(join(tmpdir(), 'developer lens analysis pack '))
   tempDirectories.push(root)
   const databasePath = join(root, 'synthetic P2.sqlite')
@@ -47,7 +47,7 @@ async function syntheticSource(): Promise<{ root: string; databasePath: string }
       INSERT INTO coverage_observation (
         capability_id, status, limitation_code, observed_units
       ) VALUES (?, ?, ?, ?)
-    `).run('cap.local.git', 'refused', 'OWNER_GATE_NOT_APPROVED', 0)
+    `).run('cap.local.git', localStatus, 'OWNER_GATE_NOT_APPROVED', 0)
     db.prepare(`
       INSERT INTO repository_identity (
         provider_id, analytical_key, is_private, is_archived, is_fork
@@ -184,6 +184,37 @@ describe('synthetic analysis-pack foundation', () => {
     await expect(replayCoverageSummary(packDirectory)).rejects.toMatchObject({
       code: 'ANALYSIS_PACK_CORRUPT',
     })
+  })
+
+  it('fails closed when a valid Parquet file changes during replay', async () => {
+    const { root, databasePath } = await syntheticSource()
+    const replacementSource = await syntheticSource('complete')
+    const packDirectory = join(root, 'post-read integrity pack')
+    const replacementPack = join(root, 'replacement pack')
+    await buildAnalysisPack({
+      sourceDatabasePath: databasePath,
+      outputDirectory: packDirectory,
+      createdAt: CREATED_AT,
+    })
+    await buildAnalysisPack({
+      sourceDatabasePath: replacementSource.databasePath,
+      outputDirectory: replacementPack,
+      createdAt: CREATED_AT,
+    })
+
+    let replaced = false
+    await expect(replayCoverageSummary(packDirectory, {
+      afterCoverageChecksumValidated: async () => {
+        await rename(
+          join(replacementPack, 'tables/coverage.parquet'),
+          join(packDirectory, 'tables/coverage.parquet'),
+        )
+        replaced = true
+      },
+    })).rejects.toMatchObject({
+      code: 'ANALYSIS_PACK_CORRUPT',
+    })
+    expect(replaced).toBe(true)
   })
 
   it('rejects an internally checksummed model artifact declaration', async () => {
