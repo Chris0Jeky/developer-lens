@@ -773,8 +773,8 @@ payload, request, cache, telemetry path, hosted tool, or persisted model output 
 ```json
 {
   "schema_version": "1.0.0",
-  "bundle_id": "pack-scoped-id",
-  "range": {"start": "2026-01-01", "end": "2026-04-01"},
+  "bundle_id": "request-scoped-id",
+  "range": {"start": "2026-01-01T00:00:00Z", "end": "2026-04-01T00:00:00Z"},
   "consent_revision": "consent-v3",
   "redaction_revision": "redaction-v2",
   "budget": {"max_input_tokens": 12000, "max_output_tokens": 1500},
@@ -783,7 +783,6 @@ payload, request, cache, telemetry path, hosted tool, or persisted model output 
       "evidence_id": "ev_01",
       "layer": "deterministic",
       "feature_id": "DL.CI.RERUN_RATIO.v1",
-      "grain": {"repository": "repo_02", "window": "2026-Q1"},
       "value": 0.08,
       "unit": "ratio",
       "coverage": {"status": "complete", "sample": 75},
@@ -793,7 +792,10 @@ payload, request, cache, telemetry path, hosted tool, or persisted model output 
 }
 ```
 
-The schema forbids arbitrary source text, names, titles, labels, paths, bodies, comments, dependency names, security details and raw identifiers.
+The schema forbids arbitrary source text, names, titles, labels, paths, bodies, comments, dependency
+names, security details, repository IDs/aliases, grain identifiers and raw identifiers. Its future
+executable implementation must use a strict schema and invented canaries that reject those fields
+before any credential read or transport call.
 
 ### Structured model output
 
@@ -804,13 +806,16 @@ interface ModelClaim {
   statementCode: string;
   evidenceIds: string[];
   contradictingEvidenceIds: string[];
-  alternatives: string[];
+  alternativeCodes: string[];
   confidenceBand: "low" | "medium" | "high";
   limitationCodes: string[];
 }
 ```
 
-All evidence IDs must exist in the bundle. Unknown IDs, free-form source citations, schema violations or unsupported recommendations reject the response.
+All evidence IDs must exist in the bundle; statement, alternative and limitation codes come from
+closed enums, and every array/string is bounded by the future executable schema. Unknown IDs or
+codes, free-form source citations, schema violations or unsupported recommendations reject the
+response.
 
 ### Controls
 
@@ -834,21 +839,16 @@ All evidence IDs must exist in the bundle. Unknown IDs, free-form source citatio
   process-only. A later reviewed task may store validated C1 output separately and delete it without
   touching deterministic evidence.
 - OpenAI documents no API training unless opted in, but ordinary non-ZDR abuse-monitoring content
-  may remain up to 30 days and encrypted prompt-cache state up to 24 hours. `store: false` is not a
-  Zero Data Retention claim; revalidate provider terms and pricing before every runtime task.
+  may remain by default for up to 30 days (subject to documented legal/service-protection
+  exceptions) and encrypted prompt-cache state up to 24 hours. `store: false` is not a Zero Data
+  Retention claim; revalidate provider terms and pricing before every runtime task.
 
-### Safe manual separate-chat workflow
+### Historical separate-chat export — not authorized
 
-1. Build the **compact LLM pack**, never the full local analysis pack.
-2. Run schema, classification, sparse-group and canary validation.
-3. Show exact fields, size, token estimate, provider and retention warning.
-4. Require explicit acknowledgement.
-5. Export `manifest.json` plus `evidence.jsonl`.
-6. Attach only those files to a separate chat.
-7. Use a prompt requiring structured claims, evidence IDs, alternatives and abstention.
-8. Disable tools/connectors in that chat where possible.
-9. Validate returned evidence IDs and schema locally before display.
-10. Delete the bundle/model output independently when requested.
+The earlier manual attach-to-chat workflow is retired. Do not export or attach an evidence bundle
+to ChatGPT or another model surface. G4 authorizes only the exact OpenAI Responses route and
+controls above; any other external surface, provider, model, hosted tool, or manual upload requires
+a new explicit owner decision. A local model option must keep every byte and derived index local.
 
 ---
 
