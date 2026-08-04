@@ -77,7 +77,7 @@ describe('github.core REST transport projection', () => {
     const result = await collectGithubCoreRest({ card: card(), rangeEnd, fetch: fixture.fetch, alias: (domain, id) => { aliases.push(`${domain}:${id}`); return `${domain}-alias-${id.replaceAll(/[^A-Za-z0-9_-]/g, '_')}` } })
     expect(result.kind).toBe('complete')
     if (result.kind !== 'complete') throw new Error('expected complete fixture result')
-    expect(result).toMatchObject({ repositoryAlias: 'repository-alias-101', repositoryFlags: { public: true, archived: true, disabled: false, fork: false }, observedUnitCount: 1, rateLimit: { remaining: null, reset: null } })
+    expect(result).toMatchObject({ repositoryAlias: 'repository-alias-101', rangeStart, rangeEnd, repositoryFlags: { public: true, archived: true, disabled: false, fork: false }, observedUnitCount: 1, rateLimit: { remaining: null, reset: null } })
     expect(result.units).toEqual([{ alias: 'pull_request-alias-raw___1', kind: 'pull_request', updatedAt: '2026-07-02T00:00:00.000Z' }])
     expect(Object.isFrozen(result)).toBe(true)
     expect(Object.isFrozen(result.units)).toBe(true)

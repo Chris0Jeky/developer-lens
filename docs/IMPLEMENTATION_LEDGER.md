@@ -16,9 +16,11 @@ ignored-card loader plus frozen alias-only membership on every accepted REST pag
 installation-
 scoped alias factory now preserves the existing migration identities and adds closed, domain-
 separated repository, issue, pull-request, and page aliases. The opt-in store now records restricted
-coverage as explicitly noncomplete without advancing a checkpoint or creating a snapshot. P4
-remains default-off and
-adds no credential, live read, storage composition,
+coverage as explicitly noncomplete without advancing a checkpoint or creating a snapshot. The
+current P4 publication candidate composes only validated complete REST results into a canonical,
+deeply frozen snapshot proposal with exact range/page/membership proof, a content-stable hash, and a
+job-unique opaque source-snapshot ID. P4 remains default-off and adds no credential, live read,
+storage write/integration,
 legacy-collector switch, or public/private output path. G4 is now provider-specifically approved,
 while a strict C1 evidence/output contract, deterministic local retrieval, and a credentialless
 OpenAI Responses request boundary remain default-off. The published P12 activation slice adds a
@@ -34,8 +36,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current restricted-storage milestone:
-  `origin/main` merge `4ee986ed1e65cd58a56799391827359224ce1f14`.
+- Published implementation baseline before the current complete-REST-composition candidate:
+  `origin/main` merge `f7aa9f4fcf9ac7cb69a6a0261dfb9f9978c5c093`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -450,6 +452,20 @@ unresolved review threads outrank it whenever they disagree.
   refusal, poison-field excision, half-open range filtering, GitHub canonical pagination, terminal
   proof, request-cap and rate truncation, deduplication/collision refusal, response-size/schema and
   HTTP/network classification, content-free failures, and frozen result mutation resistance.
+- `server/connectors/github/restComposition.ts` is a pure complete-only seam. It requires the exact
+  selected scope and half-open card range, canonical range-bounded unit timestamps, one contiguous
+  terminal page chain, exact counts, unique repository/unit/page aliases, and a one-to-one partition
+  of every unit into frozen page-local membership before delegating to the existing core reconciler.
+- Canonical serialization fixes the contract/query/API/scope/range flags and sorted unit/page
+  evidence into a content-stable SHA-256 snapshot hash. The source-snapshot ID is separately derived
+  from that hash plus the opaque collection job ID, so unchanged observations across distinct jobs
+  replay with the same content hash without violating per-job snapshot identity. The frozen proposal
+  includes sorted receipts, the terminal high watermark, and only the next page-receipt alias as its
+  checkpoint cursor.
+- Restricted, failed, truncated, rate-limited, or otherwise noncomplete REST results fail this seam
+  closed. It performs no filesystem, network, environment, credential, database, scheduler, logging,
+  export, or presentation action; noncomplete transition composition and storage replay remain the
+  next separate boundaries.
 - `server/storage/installationAliases.ts` snapshots one caller-injected installation key of at
   least 32 bytes and exposes only closed repository, issue, pull-request, and page alias methods.
   The existing repository provider and analytical HMAC byte streams, domains, and `repo-` prefix
@@ -597,6 +613,12 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
+- P4 complete-REST-composition candidate was rebased onto canonical-price-date merge `f7aa9f4`;
+  the focused REST transport/composition suites passed 2 files / 31 tests. `npm run check` passed
+  Oxlint, context verification, 36 test files / 190 tests, TypeScript project builds, and the
+  production Vite build; `git diff --check` passed. Exact rebased-head fresh-context review found
+  no CRITICAL/HIGH range-binding, pagination, membership, hashing, per-job identity, freezing, or
+  transport-regression defect.
 - P12 activation-card [PR #36](https://github.com/Chris0Jeky/developer-lens/pull/36)
   merged as `a2b7cab`; exact-merge hosted Pages run `30882690146` completed successfully. Its late
   automated review identified a direct evidence-gate defect: a textually shaped but impossible
@@ -884,9 +906,10 @@ unresolved review threads outrank it whenever they disagree.
 - CLI, `dataStore`, collector, API, export, or Pages activation of SQLite; real/private JSON
   migration and the now-approved backup/grace/deletion protocol remain deliberately unexercised.
   Issues #5/#6 and a bounded migration task still precede a real read or reader switch.
-- No REST result is composed into the incremental store. Page-local alias membership and restricted
-  persistence are proved only with invented input; canonical composition/hash/replay is not yet
-  implemented, and the real task card, Taskdeck scope, network, and task-owned database remain unread.
+- No REST result is written into the incremental store. Complete canonical composition and page-
+  local membership are proved only in process with invented input; noncomplete transition
+  composition, two-run storage replay/stability, the real task card, Taskdeck scope, network, and
+  task-owned database remain unread or unimplemented.
 - Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
   synthetic route and showcase verifier.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
@@ -985,12 +1008,13 @@ unresolved review threads outrank it whenever they disagree.
 - The REST endpoint is not an immutable provider snapshot. Terminal pagination and a frozen
   half-open time range prove the bounded observed response, but a composed real runner must use
   replay/stability evidence and report a non-complete coverage state if concurrent mutation makes
-  the observed snapshot unstable.
+  the observed snapshot unstable. The candidate's canonical hash proves equivalent accepted content,
+  not hostile provider stability.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current P12 canonical-date
-   follow-up is merge `a2b7cab55d7b66816965a02cfc8115a4cc7a89a7`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P4 complete-
+   composition candidate is merge `f7aa9f4fcf9ac7cb69a6a0261dfb9f9978c5c093`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -1003,7 +1027,9 @@ unresolved review threads outrank it whenever they disagree.
    operational values in tracked state. The shared alias factory now preserves existing repository
    identities and defines closed unit/page domains; the opt-in store now preserves restricted
    coverage without a snapshot or checkpoint advance, and published page receipts now expose frozen
-   alias-only membership. Next publish the pure canonical alias/hash/replay composition, then issue
+   alias-only membership. The current candidate composes only complete results into canonical hashes,
+   receipts, and checkpoint proposals. Next publish the pure noncomplete transition mapping and then
+   integrate both paths with two-run storage replay/stability proof before issue
    #6 key-
    lifecycle/mismatch enforcement,
    backup/restore, scoped deletion/tombstone, re-consent, and snapshot-stability proof. Keep runtime
