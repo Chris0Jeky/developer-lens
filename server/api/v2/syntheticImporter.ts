@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { CoverageRecord } from '../../../shared/coverage.js'
 import { openStorageDatabase } from '../../storage/database.js'
+import { defaultV2StorePath } from './config.js'
 import type { V2StoreProvenance } from './contract.js'
 import {
   SYNTHETIC_COVERAGE_RECORDS,
@@ -78,12 +79,7 @@ const invokedDirectly =
   resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url))
 
 if (invokedDirectly) {
-  const target = process.argv[2] ?? process.env.DEVELOPER_LENS_V2_STORE
-  if (!target) {
-    console.error('Usage: tsx server/api/v2/syntheticImporter.ts <store-path>')
-    process.exitCode = 1
-  } else {
-    seedSyntheticCoverageStore(target)
-    console.log(`Seeded the synthetic V2 bridge store at ${resolve(target)}`)
-  }
+  const target = process.argv[2] ?? defaultV2StorePath()
+  seedSyntheticCoverageStore(target)
+  console.log(`Seeded the synthetic V2 bridge store at ${resolve(target)}`)
 }

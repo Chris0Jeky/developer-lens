@@ -1,5 +1,4 @@
 import { join } from 'node:path'
-import { PRIVATE_DATA_DIRECTORY } from '../../dataStore.js'
 import type { V2GuardOptions } from './guard.js'
 
 /**
@@ -12,7 +11,19 @@ import type { V2GuardOptions } from './guard.js'
  */
 export const V2_DEFAULT_API_PORT = 4141
 export const V2_DEV_WEB_PORT = 5173
+
+/**
+ * The synthetic bridge store lives in its own directory, deliberately NOT in
+ * `.developer-lens/`: that directory holds real private runtime data and
+ * `AGENTS.md` forbids inspecting it, so a synthetic fixture store must not
+ * share it. This directory is gitignored and holds invented C0 data only.
+ */
+export const V2_SYNTHETIC_STORE_DIRECTORY = '.developer-lens-synthetic'
 export const V2_STORE_FILENAME = 'v2-bridge-synthetic.sqlite'
+
+export function defaultV2StorePath(env: NodeJS.ProcessEnv = process.env): string {
+  return env.DEVELOPER_LENS_V2_STORE ?? join(V2_SYNTHETIC_STORE_DIRECTORY, V2_STORE_FILENAME)
+}
 
 export interface V2RuntimeConfig extends V2GuardOptions {
   readonly storePath: string
@@ -34,6 +45,6 @@ export function resolveV2RuntimeConfig(
     token,
     allowedHosts: [`127.0.0.1:${port}`, `127.0.0.1:${V2_DEV_WEB_PORT}`],
     allowedOrigins: [`http://127.0.0.1:${port}`, `http://127.0.0.1:${V2_DEV_WEB_PORT}`],
-    storePath: env.DEVELOPER_LENS_V2_STORE ?? join(PRIVATE_DATA_DIRECTORY, V2_STORE_FILENAME),
+    storePath: defaultV2StorePath(env),
   }
 }
