@@ -193,9 +193,21 @@ export function parseOpenAiLunaActivationTaskCard(
     const card = CardSchema.parse(input)
     const authorizedAt = canonicalMillis(card.authorizedAt)
     const reviewedAt = canonicalMillis(card.review.reviewedAt)
-    if (authorizedAt > nowMs || reviewedAt > nowMs) throw new Error('future review')
-    for (const evidence of card.officialEvidence) assertNotFutureOrStale(evidence.retrievedAt, nowMs)
-    parseOpenAiLunaPriceQuote(card.priceQuote, now)
+    if (authorizedAt > reviewedAt || reviewedAt > nowMs) throw new Error('invalid review chronology')
+    for (const evidence of card.officialEvidence) {
+      assertNotFutureOrStale(evidence.retrievedAt, nowMs)
+      if (canonicalMillis(evidence.retrievedAt) > reviewedAt) throw new Error('evidence postdates review')
+    }
+    const priceQuote = parseOpenAiLunaPriceQuote(card.priceQuote, now)
+    const priceVerifiedAt = Date.parse(priceQuote.verifiedAt)
+    const pricingEvidence = card.officialEvidence.find((evidence) => evidence.kind === 'pricing')
+    if (
+      priceVerifiedAt > reviewedAt ||
+      pricingEvidence === undefined ||
+      priceVerifiedAt !== canonicalMillis(pricingEvidence.retrievedAt)
+    ) {
+      throw new Error('price evidence is not review-bound')
+    }
     return freezeDeep(card) as OpenAiLunaActivationTaskCard
   } catch {
     throw new OpenAiLunaActivationTaskCardError()

@@ -152,4 +152,21 @@ describe('OpenAI/Luna activation task card', () => {
     expectInvalid({ ...valid, stopConditions: [...valid.stopConditions, 'pricing_evidence_unreconciled'] })
     expectInvalid({ ...valid, review: { ...valid.review, status: 'pending' } })
   })
+
+  it('requires authorization, price, and evidence to predate the exact review', () => {
+    const valid = baseCard()
+    expectInvalid({ ...valid, authorizedAt: '2026-08-04T11:00:01.000Z' })
+    expectInvalid({ ...valid, review: { ...valid.review, reviewedAt: '2026-08-03T23:59:59.000Z' } })
+    expectInvalid({
+      ...valid,
+      priceQuote: { ...valid.priceQuote, verifiedAt: '2026-08-04T00:00:01Z' },
+    })
+    expectInvalid({
+      ...valid,
+      officialEvidence: valid.officialEvidence.map((evidence) =>
+        evidence.kind === 'data_controls'
+          ? { ...evidence, retrievedAt: '2026-08-04T11:00:01.000Z' }
+          : evidence),
+    })
+  })
 })
