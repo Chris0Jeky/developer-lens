@@ -73,9 +73,11 @@ OWNER AUTHORITY AND NON-NEGOTIABLE BOUNDARIES
 - G4 remains open and is not approved. No external-model provider, SDK, transport, payload, cache,
   telemetry, training/retention path, or spend path may be added or run.
 - The public origin route may contain only code, tests, documentation, and invented C0 synthetic
-  assets/identities accepted by the declared public-only schema. Never track or publish real or
-  private identities, private data, generated operational output, credentials, browser state,
-  caches, local paths, raw private prose/content, or real inputs.
+  fixture/assets admitted by the declared public-only schema, plus the verified workflow-generated
+  Pages artifact exception. Never track or publish generated datasets (including generated
+  synthetic datasets/public/data), other generated operational output, real or private identities,
+  private data, credentials, browser state, caches, local paths, raw private prose/content, or real
+  inputs.
 - Missing permission, censored history, refusal, truncation, and errors are explicit coverage
   states, never zero activity. No person scoring, surveillance, or prohibited capability.
 
