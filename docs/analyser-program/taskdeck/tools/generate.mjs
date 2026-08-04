@@ -179,10 +179,12 @@ const manifest = {
   seedCards: cardsOut,
 };
 
+const nlf = s => s.replace(/\r\n/g, '\n'); // CRLF-normalize both sides: Windows checkouts may
+// materialize these files with \r\n, and the drift check must compare content, not line endings
 const manifestOut = JSON.stringify(manifest, null, 2) + '\n';
 if (CHECK) {
   const current = readFileSync(OUT_JSON, 'utf8');
-  if (current !== manifestOut) { console.error('DRIFT: committed manifest differs from cards.mjs — run generate.mjs'); process.exit(1); }
+  if (nlf(current) !== nlf(manifestOut)) { console.error('DRIFT: committed manifest differs from cards.mjs — run generate.mjs'); process.exit(1); }
 } else {
   writeFileSync(OUT_JSON, manifestOut);
 }
@@ -204,7 +206,7 @@ const tailAt = afterMarker.indexOf('\n## ');
 const tail = tailAt >= 0 ? afterMarker.slice(tailAt + 1) : '';
 const roadmapOut = roadmap.slice(0, cut) + md + (tail ? '\n' + tail : '');
 if (CHECK) {
-  if (roadmap !== roadmapOut) { console.error('DRIFT: 07 card index differs from cards.mjs — run generate.mjs'); process.exit(1); }
+  if (nlf(roadmap) !== nlf(roadmapOut)) { console.error('DRIFT: 07 card index differs from cards.mjs — run generate.mjs'); process.exit(1); }
   console.log(`CHECK OK: manifest and 07 index match cards.mjs (${CARDS.length} cards)`);
   process.exit(0);
 }

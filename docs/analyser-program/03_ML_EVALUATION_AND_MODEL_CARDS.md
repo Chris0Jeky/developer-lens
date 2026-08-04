@@ -168,8 +168,11 @@ tests"), made concrete:
    preregistered and **never changes** — it cannot be redefined per attempt or per wave, `m ≥` the
    declared family size always, and a candidate submitting alone still carries the family's `m`. A
    promotion wave groups the tests actually *run*: it is a **scheduling unit, never a correction
-   unit**. `q` is a property of the family, not of a wave, and `m` for a family only ever **grows**
-   (item 6) — it never shrinks below the family declaration.
+   unit**. `q` is a property of the family, not of a wave. **What `m` denotes (clarified
+   2026-08-04):** under the item-6(a) preallocation rule the operative BH denominator `m` is the
+   family's **preregistered maximum size, fixed from the first test onward** — the *membership
+   count* grows toward that maximum as successors join, but the denominator never changes and
+   never shrinks below the declaration. A growing denominator is exactly the design item 6 voids.
 3. **Procedure (BH step-up):** order the family's *p*-values ascending; let `i*` be the **largest**
    `i` with `p_(i) ≤ (i/m)·q`; reject H0 for **all tests of rank `1…i*`** (none if no such `i`
    exists); `q = 0.10` at `benchmarked` tier. (Corrected 2026-08-04: rejecting only rank `i*`
@@ -197,16 +200,23 @@ tests"), made concrete:
      its version by enough to justify re-testing produces a new `candidate_id`, a new `prereg_id`,
      and a new sealed holdout — and that successor is **permanently a member of its predecessor's
      family**. Family membership is fixed at first preregistration and carried across every later
-     wave, so the family's `m` counts every predecessor attempt whatever wave it ran in and
-     **only ever grows**. The lineage is recorded in the registry, never re-derived per wave.
-     **Growth re-evaluates the whole family (corrected 2026-08-04 review round):** when a
-     successor enlarges `m`, every prior BH/BY decision in the family is recomputed under the new
-     `m` in the same registry transaction; a previously promoted candidate whose primary test no
-     longer clears the step-up under the larger family is **demoted** (registry demotion removes
-     its claims automatically). Family-level FDR control is a property of the *current* family,
-     not of the family as it stood at each historical decision — alternatively, a family may
-     preregister its maximum size up front and reject successors beyond it, or adopt the (iv)
-     online-FDR path.
+     wave, so every predecessor attempt counts against the family's preallocated size whatever
+     wave it ran in — the **membership count only ever grows toward the preregistered maximum,
+     while the BH denominator stays fixed at that maximum** (see item 2 and the next paragraph).
+     The lineage is recorded in the registry, never re-derived per wave.
+     **Adaptive growth voids fixed-family BH (corrected twice, 2026-08-04 review rounds):**
+     when a successor is introduced *because* its predecessor failed, the family size and the
+     stopping rule depend on observed p-values, and neither the original BH decision **nor a
+     recomputation after each addition** restores the promised FDR control (worked example:
+     independent global-null tests at `q = 0.10` — the first rejects with probability 0.10; if it
+     fails and a second is added, BH at `m = 2` contributes a further `0.90 × 0.05 = 0.045`,
+     giving 0.145 overall). Therefore only two admissible designs exist for successors:
+     **(a) preallocation** — the family's **maximum size is preregistered at its first
+     preregistration**, every BH threshold is computed at that maximum `m` from the first test
+     onward, and a successor beyond the preallocated size is rejected outright; or **(b) the
+     (iv) online-FDR amendment** for genuinely adaptive streams. A retrospective
+     recompute-and-demote sweep may still run as a *conservative cleanup* when a family is found
+     mis-sized, but it is explicitly **not** a control guarantee and never licenses growth.
    - **(iii) Re-testing an unchanged candidate in a later wave is prohibited.** Same method, same
      version, same features, new wave is not a new candidate — it is the same test run again until
      it passes, which is exactly the search this procedure exists to control. Such an attempt is
