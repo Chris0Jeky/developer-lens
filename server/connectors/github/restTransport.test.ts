@@ -110,12 +110,16 @@ describe('github.core REST transport projection', () => {
     expect(privateResult).not.toHaveProperty('repositoryFlags')
     const hostile = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }], { link: '<https://evil.invalid/repos/fixture-owner/fixture-repository/issues?page=2>; rel="next"' })])
     await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: hostile.fetch, alias: aliasFixture })).resolves.toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
+    const partial = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }], { link: '<https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=1&sort=updated&direction=asc>; rel="last"' })])
+    await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: partial.fetch, alias: aliasFixture })).resolves.toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
+    const empty = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }], { link: ' ' })])
+    await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: empty.fetch, alias: aliasFixture })).resolves.toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
     const terminal = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }])])
     await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: terminal.fetch, alias: aliasFixture })).resolves.toMatchObject({ kind: 'complete', observedPageCount: 1 })
   })
 
   it('truncates before a non-terminal page when the request cap is exhausted', async () => {
-    const fixture = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }], { link: '<https://api.github.com/repos/fixture-owner/fixture-repository/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=2&sort=updated&direction=asc>; rel="next"' })])
+    const fixture = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }], { link: '<https://api.github.com/repos/fixture-owner/fixture-repository/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=2&sort=updated&direction=asc>; rel="next", <https://api.github.com/repos/fixture-owner/fixture-repository/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=2&sort=updated&direction=asc>; rel="last"' })])
     await expect(collectGithubCoreRest({ card: card({ maximumRequests: 2 }), rangeEnd, fetch: fixture.fetch, alias: aliasFixture })).resolves.toMatchObject({ kind: 'truncated', code: 'REQUEST_BUDGET_EXHAUSTED', total: null })
     expect(fixture.calls).toHaveLength(2)
   })
@@ -127,7 +131,7 @@ describe('github.core REST transport projection', () => {
         { node_id: 'node-1', updated_at: '2026-07-02T00:00:00.000Z' },
         { node_id: 'node-1', updated_at: '2026-07-02T00:00:00.000Z' },
       ], { link: '<https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=2&sort=updated&direction=asc>; rel="next", <https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=2&sort=updated&direction=asc>; rel="last"' }),
-      response(200, [{ node_id: 'node-2', updated_at: '2026-07-03T00:00:00.000Z' }]),
+      response(200, [{ node_id: 'node-2', updated_at: '2026-07-03T00:00:00.000Z' }], { link: '<https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=1&sort=updated&direction=asc>; rel="prev", <https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=1&sort=updated&direction=asc>; rel="first"' }),
     ])
     const result = await collectGithubCoreRest({
       card: card(),
@@ -181,6 +185,19 @@ describe('github.core REST transport projection', () => {
     expect(result).toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
     expect(JSON.stringify(result)).not.toContain('raw-a')
     expect(JSON.stringify(result)).not.toContain('raw-b')
+  })
+
+  it('rejects empty provider node IDs instead of collapsing them into a complete undercount', async () => {
+    const fixture = fetchFixture([
+      response(200, metadata),
+      response(200, [
+        { node_id: '', updated_at: '2026-07-02T00:00:00.000Z' },
+        { node_id: '', updated_at: '2026-07-03T00:00:00.000Z' },
+      ]),
+    ])
+    const result = await collectGithubCoreRest({ card: card(), rangeEnd, fetch: fixture.fetch, alias: aliasFixture })
+    expect(result).toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
+    expect(result).not.toHaveProperty('observedUnitCount')
   })
 
   it('classifies rate, permission, not-found, server, network, and malformed responses without leaking messages', async () => {

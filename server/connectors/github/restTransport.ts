@@ -280,7 +280,12 @@ function parseIssues(value: unknown): readonly Record<string, unknown>[] | null 
   for (const item of value) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return null
     const record = item as Record<string, unknown>
-    if (typeof record.node_id !== 'string' || !canonicalTimestamp(record.updated_at)) return null
+    if (
+      typeof record.node_id !== 'string' ||
+      record.node_id.length < 1 ||
+      record.node_id.length > 256 ||
+      !canonicalTimestamp(record.updated_at)
+    ) return null
     if (Object.hasOwn(record, 'pull_request') && (typeof record.pull_request !== 'object' || record.pull_request === null)) return null
     result.push(record)
   }
@@ -293,14 +298,16 @@ function parseNextPage(
   expectedUrl: string,
   providerRepositoryId: string,
 ): number | null {
-  if (!link) return null
+  if (link === undefined) return null
+  if (link.trim().length === 0) throw new Error('schema')
   const segments = link.split(',').map((segment) => segment.trim()).filter(Boolean)
-  let next: number | null = null
+  const relations = new Map<'first' | 'prev' | 'next' | 'last', number>()
   for (const segment of segments) {
     const match = /^<([^>]+)>\s*;\s*rel="([^"]+)"$/.exec(segment)
     if (!match) throw new Error('schema')
-    if (!match[2].split(/\s+/).includes('next')) continue
-    if (next !== null) throw new Error('schema')
+    if (!['first', 'prev', 'next', 'last'].includes(match[2])) throw new Error('schema')
+    const relation = match[2] as 'first' | 'prev' | 'next' | 'last'
+    if (relations.has(relation)) throw new Error('schema')
     let candidate: URL
     try {
       candidate = new URL(match[1])
@@ -316,7 +323,7 @@ function parseNextPage(
     const candidateParams = [...candidate.searchParams.entries()]
     const expectedParams = [...expected.searchParams.entries()]
     const page = Number(candidate.searchParams.get('page'))
-    if (page !== currentPage + 1 || candidateParams.length !== expectedParams.length) throw new Error('schema')
+    if (!Number.isSafeInteger(page) || page < 1 || candidateParams.length !== expectedParams.length) throw new Error('schema')
     for (const [key, value] of expectedParams) {
       if (key === 'page') {
         if (candidate.searchParams.get(key) !== String(page)) throw new Error('schema')
@@ -324,7 +331,27 @@ function parseNextPage(
         throw new Error('schema')
       }
     }
-    next = page
+    relations.set(relation, page)
+  }
+  const next = relations.get('next')
+  const previous = relations.get('prev')
+  const first = relations.get('first')
+  const last = relations.get('last')
+  if (next === undefined) {
+    if (
+      currentPage === 1 ||
+      previous !== currentPage - 1 ||
+      first !== 1 ||
+      last !== undefined ||
+      relations.size !== 2
+    ) throw new Error('schema')
+    return null
+  }
+  if (next !== currentPage + 1 || last === undefined || last < next) throw new Error('schema')
+  if (currentPage === 1) {
+    if (previous !== undefined || first !== undefined || relations.size !== 2) throw new Error('schema')
+  } else if (previous !== currentPage - 1 || first !== 1 || relations.size !== 4) {
+    throw new Error('schema')
   }
   return next
 }
