@@ -640,20 +640,6 @@ interface CopyScanTarget {
 }
 
 /**
- * The text-bearing shape of a finding, spelled out rather than inferred: the scan runs inside
- * `FindingSchema`'s own refinement, so referring to `Finding` here would make the schema's type
- * circular. Same reason `shared/metrics.ts` spells out `ScannableDefinition`.
- */
-interface ScannableFinding {
-  readonly observation: string
-  readonly candidateInterpretation: string | null
-  readonly alternativeExplanations: readonly { readonly statement: string }[]
-  readonly discriminatingEvidence: { readonly statement: string } | null
-  readonly robustness: { readonly checks: readonly { readonly statement: string }[] }
-  readonly abstention: { readonly statement: string } | null
-}
-
-/**
  * Which text a finding gets scanned for, and for what.
  *
  * `limitations` carry copy keys rather than prose, and `prohibitedInterpretations` are EXEMPT
