@@ -41,9 +41,17 @@ const REVOKED_AT = '2026-05-01T00:00:00.000Z'
 const ALPHA_SCOPE = 'sc-alpha'
 const GAMMA_SCOPE = 'sc-gamma'
 
-/** C2 alias VALUES. The contract under test is that neither ever reaches a tree. */
+/** C2 alias VALUES held in `claim_scope`. The contract: neither ever reaches a tree. */
 const ALPHA_ALIAS = 'repo-a7'
 const GAMMA_ALIAS = 'repo-g2'
+
+/**
+ * The OTHER alias namespace: `collection_job.scope_alias` / `coverage_ledger.scope_alias`.
+ * Deliberately different values from the two above, because a canary set that only knew
+ * the `claim_scope` aliases was blind to the connector baking these into `coverage_id`
+ * (issue #86). Both namespaces are now pinned.
+ */
+const COVERAGE_SCOPE_ALIASES = ['scope-a', 'scope-b', 'scope-c'] as const
 
 /** Prose, paths, and names a caller might hand the resolver as a claim id. */
 const CANARIES = [
@@ -150,10 +158,19 @@ function claimInput(overrides: Record<string, unknown> = {}): Record<string, unk
   }
 }
 
+/**
+ * The alias-bearing identifiers the connector minted for this store. Asserted absent from
+ * every tree, so the resolver cannot regress into transporting them.
+ */
+function MINTED_COVERAGE_IDS(fixture: Fixture): string[] {
+  return [fixture.coverageA, fixture.coverageB, fixture.coverageC].map((key) => key.coverageId)
+}
+
 interface Fixture {
   readonly db: Database.Database
   readonly coverageA: CoverageKey
   readonly coverageB: CoverageKey
+  readonly coverageC: CoverageKey
   /** hypothesis claim carrying supports + contradicts + coverage_basis + limitation */
   readonly demoClaimId: string
   readonly tombstonedEvidenceClaimId: string
@@ -324,6 +341,7 @@ function whyFixture(): Fixture {
     db,
     coverageA,
     coverageB,
+    coverageC,
     demoClaimId: demo.claimId,
     tombstonedEvidenceClaimId: tombstoned.claimId,
     missingEvidenceClaimId: missingEvidence.claimId,
@@ -402,11 +420,11 @@ function assertTerminates(value: unknown, path: string): void {
   const node = value as Record<string, unknown>
   expect(NODE_KINDS, `${path} is not a tagged resolver node`).toContain(node.kind)
 
-  const resolvedOrMissing = (slot: string, resolvedKind: string): void => {
+  const resolvedOrMissing = (slot: string, ...resolvedKinds: string[]): void => {
     const child = node[slot] as { kind?: string } | null
     expect(child, `${path}.${slot} must not be absent`).toBeTruthy()
     expect(
-      [resolvedKind, 'missing_link'],
+      [...resolvedKinds, 'missing_link'],
       `${path}.${slot} must resolve or be an explicit missing link`,
     ).toContain(child?.kind)
   }
@@ -414,7 +432,9 @@ function assertTerminates(value: unknown, path: string): void {
   if (node.kind === 'evidence') resolvedOrMissing('coverage', 'coverage')
   if (node.kind === 'coverage') resolvedOrMissing('job', 'collection_job')
   if (node.kind === 'collection_job') resolvedOrMissing('capability', 'capability')
-  if (node.kind === 'edge') resolvedOrMissing('target', (node.target as { kind: string }).kind)
+  // The closed set of kinds an edge target may take — never the target's own kind, which
+  // would make this assertion true by construction.
+  if (node.kind === 'edge') resolvedOrMissing('target', 'evidence', 'claim_reference', 'coverage')
   if (node.kind === 'explanation') resolvedOrMissing('scope', 'scope')
   if (node.kind === 'missing_link') {
     expect(node.reason, `${path} must carry a reason code`).toEqual(expect.any(String))
@@ -485,7 +505,7 @@ describe('why resolver — the demo walk', () => {
     expect((soleTarget(tree, 'contradicts') as Record<string, unknown>).evidenceId).toBe('ev-a2')
     expect(soleTarget(tree, 'coverage_basis')).toMatchObject({
       kind: 'coverage',
-      coverageKey: fixture.coverageA,
+      coverageKey: { rangeStart: fixture.coverageA.rangeStart, jobId: fixture.coverageA.jobId },
       status: 'complete',
     })
 
@@ -804,20 +824,69 @@ describe('why resolver — unresolvable input never renders as resolvable', () =
 })
 
 describe('why resolver — the C2 boundary', () => {
-  it('carries scope_id only and never lets a claim_scope alias value cross', () => {
+  it('carries scope_id only and never lets any alias value cross', () => {
     const fixture = whyFixture()
+    // BOTH alias namespaces, because they are different values and an earlier version of
+    // this test checked only the first: the claim_scope C2 alias, AND the collection-side
+    // scope_alias, which the connector bakes into coverage_id verbatim (issue #86). The
+    // full minted coverage_id is asserted too, so a regression cannot pass by emitting the
+    // identifier while the bare alias happens not to appear.
+    const forbidden = [
+      ALPHA_ALIAS,
+      GAMMA_ALIAS,
+      ...COVERAGE_SCOPE_ALIASES,
+      ...MINTED_COVERAGE_IDS(fixture),
+      'scopeAlias',
+      'scope_alias',
+      'coverageId',
+      'coverage_id',
+    ]
     for (const claimId of allClaimIds(fixture.db)) {
       const serialized = JSON.stringify(resolveWhy(fixture.db, { claimId }))
-      expect(serialized).not.toContain(ALPHA_ALIAS)
-      expect(serialized).not.toContain(GAMMA_ALIAS)
-      expect(serialized).not.toContain('scopeAlias')
-      expect(serialized).not.toContain('scope_alias')
+      for (const needle of forbidden) {
+        expect(serialized, `tree for ${claimId} must not carry ${needle}`).not.toContain(needle)
+      }
     }
-    // The alias is still there to be read on the C2 path — it simply never joins a tree.
+    // Both aliases are still there to be read on their own paths — the boundary is a
+    // partition, not a deletion.
     expect(
       fixture.db.prepare('SELECT scope_alias FROM claim_scope WHERE scope_id = ?')
         .pluck().get(ALPHA_SCOPE),
     ).toBe(ALPHA_ALIAS)
+    expect(
+      fixture.db.prepare('SELECT scope_alias FROM collection_job WHERE job_id = ?')
+        .pluck().get('job-a1'),
+    ).toBe('scope-a')
+  })
+
+  it('names a coverage row by (rangeStart, jobId), never by the alias-bearing coverage_id', () => {
+    const fixture = whyFixture()
+    // The minted id really does carry the alias — that is the property being defended.
+    expect(fixture.coverageA.coverageId).toContain('scope-a')
+
+    const tree = explanation(resolveWhy(fixture.db, { claimId: fixture.demoClaimId }))
+    const coverageEdge = group(tree, 'coverage_basis').edges[0]
+    expect(coverageEdge.targetRef)
+      .toBe(`${fixture.coverageA.rangeStart}|${fixture.coverageA.jobId}`)
+    expect(coverageEdge.target).toMatchObject({
+      kind: 'coverage',
+      coverageKey: { rangeStart: fixture.coverageA.rangeStart, jobId: fixture.coverageA.jobId },
+    })
+    expect(Object.keys((coverageEdge.target as { coverageKey: object }).coverageKey))
+      .toEqual(['rangeStart', 'jobId'])
+  })
+
+  it('names an absent coverage row by its job id too', () => {
+    const fixture = whyFixture()
+    const tree = explanation(resolveWhy(fixture.db, { claimId: fixture.missingCoverageClaimId }))
+    const evidence = soleTarget(tree, 'supports') as Record<string, unknown>
+    const link = missing(evidence.coverage)
+    expect(link.reason).toBe('MISSING_COVERAGE')
+    expect(link.targetId).toBe(fixture.coverageC.jobId)
+    expect(link.coverageKey).toEqual({
+      rangeStart: fixture.coverageC.rangeStart,
+      jobId: fixture.coverageC.jobId,
+    })
   })
 
   it('reports the scope even when its C2 row was never registered', () => {

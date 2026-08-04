@@ -33,14 +33,25 @@ import { CAPABILITY_REGISTRY } from '../../shared/capabilities.js'
  *    only. `claim_scope.scope_alias` and `coverage_ledger.scope_alias` /
  *    `collection_job.scope_alias` are never selected — the scope node reports
  *    `hasAlias` computed inside SQLite (`scope_alias IS NOT NULL`), so the alias value
- *    never crosses into JavaScript at all.
+ *    never crosses into JavaScript at all. `coverage_id` is likewise never emitted: the
+ *    connector mints it as `github.core:${scopeAlias}:${rangeEnd}`, so the identifier
+ *    itself carries the alias verbatim (issue #86). A coverage row is referenced here by
+ *    `(rangeStart, jobId)` instead — `coverage_ledger.job_id` is UNIQUE, so that pair
+ *    identifies the row exactly. The durable fix is the connector re-minting a
+ *    content-free `coverage_id`; until then the resolver simply refuses to transport the
+ *    tainted identifier, which keeps this property true rather than merely asserted.
+ *
+ * WHAT THIS MODULE DOES NOT BOUND. The depth bound and per-claim de-duplication cap the
+ * two transitive walks, not the tree's total size: a claim may carry arbitrarily many
+ * edges, limitations, and lineage events, and there is no node or expansion budget over
+ * the whole result. A consumer that renders this (UX-ED) must bound its own output.
  *
  * ORDERING (the determinism rule, in full):
  * - Edge groups: the fixed `CLAIM_EDGE_ROLES` declaration order. All six groups are
  *   always present, empty ones included — "no contradicting evidence" is a fact the
  *   Drawer must be able to render.
  * - Edges within a group: ascending by `targetRef` (evidence id, claim id, or
- *   `coverageId|rangeStart|jobId`).
+ *   `rangeStart|jobId`).
  * - Limitations: ascending by `limitationCode|dimension` (the table's primary key).
  * - Lineage events: ascending by `occurredAt|eventKind|causedBy`.
  * - Walk steps: supersession in chain order; ancestry in depth-first pre-order, each
@@ -107,10 +118,28 @@ export const WHY_WALK_TERMINATIONS = [
 ] as const
 export type WhyWalkTermination = typeof WHY_WALK_TERMINATIONS[number]
 
+/**
+ * How the tree names a `coverage_ledger` row. Deliberately NOT the row's `coverage_id`:
+ * the connector mints that as `github.core:${scopeAlias}:${rangeEnd}`, so it carries the
+ * C2 alias value verbatim (issue #86 — the connector-side re-mint is the durable fix).
+ * `job_id` is UNIQUE in `coverage_ledger`, so `(rangeStart, jobId)` identifies the row
+ * exactly while staying content-free.
+ */
 export interface WhyCoverageKey {
-  readonly coverageId: string
   readonly rangeStart: string
   readonly jobId: string
+}
+
+/**
+ * The full composite primary key, used only to look the row up. It never leaves this
+ * module — every emitted reference is narrowed to `WhyCoverageKey` first.
+ */
+interface CoverageLookup extends WhyCoverageKey {
+  readonly coverageId: string
+}
+
+function emittedCoverageKey(lookup: CoverageLookup): WhyCoverageKey {
+  return { rangeStart: lookup.rangeStart, jobId: lookup.jobId }
 }
 
 export interface WhyLineageEvent {
@@ -212,6 +241,12 @@ export interface WhyClaimReferenceNode extends WhyClaimSummary {
  * C2 boundary node. `hasAlias` says whether the installation-scoped alias link still
  * exists; the alias VALUE is never read out of SQLite. Invariant, asserted in tests:
  * `hasAlias === (aliasLink === null)`.
+ *
+ * `linkedAt` is exported at the millisecond precision the C2 partition table stores,
+ * while ADR-01's grain rule renders derived surfaces at ISO-week grain or coarser. That
+ * is deliberate: the resolver exposes the raw value and the RENDER layer (UX-ED) owns
+ * applying the grain floor — a data module that pre-rounded would leave a retention
+ * sweeper unable to compute the 13-month alias-link boundary.
  */
 export interface WhyScopeNode {
   readonly kind: 'scope'
@@ -257,6 +292,11 @@ export interface WhyWalkStep extends WhyClaimSummary {
  * A bounded transitive walk. `termination` summarises the walk with a fixed precedence —
  * `cycle_detected` > `depth_limit_reached` > `missing_link` > `terminal` — while
  * `missingLinks` carries every individual marker, so no truncation is invisible.
+ *
+ * `depth_limit_reached` is conservative: in a re-convergent DAG a node first reached at
+ * depth >= bound latches the marker even if a later, shorter path would have completed
+ * the walk within the bound. The walk therefore may report truncation it did not
+ * ultimately suffer — it fails safe, and never under-reports a walk that really was cut.
  */
 export interface WhyWalk {
   readonly kind: 'walk'
@@ -463,7 +503,7 @@ function byKey<T>(key: (value: T) => string): (left: T, right: T) => number {
 }
 
 function coverageRef(key: WhyCoverageKey): string {
-  return `${key.coverageId}|${key.rangeStart}|${key.jobId}`
+  return `${key.rangeStart}|${key.jobId}`
 }
 
 function missingLink(
@@ -586,19 +626,26 @@ function resolveJob(
   }
 }
 
+/**
+ * Looks the row up by its full composite primary key — so a store whose foreign keys were
+ * not enforced cannot pass off a mismatched triple as present — and then emits only the
+ * content-free part of that key. `targetId` is the job id for the same reason.
+ */
 function resolveCoverage(
   statements: WhyStatements,
-  key: WhyCoverageKey,
+  lookup: CoverageLookup,
 ): WhyCoverageNode | WhyMissingLink {
-  const row = statements.coverage.get(key.coverageId, key.rangeStart, key.jobId) as
+  const row = statements.coverage.get(lookup.coverageId, lookup.rangeStart, lookup.jobId) as
     | CoverageRow
     | undefined
   if (!row) {
-    return missingLink('MISSING_COVERAGE', 'coverage', key.coverageId, { coverageKey: key })
+    return missingLink('MISSING_COVERAGE', 'coverage', lookup.jobId, {
+      coverageKey: emittedCoverageKey(lookup),
+    })
   }
   return {
     kind: 'coverage',
-    coverageKey: { coverageId: row.coverage_id, rangeStart: row.range_start, jobId: row.job_id },
+    coverageKey: { rangeStart: row.range_start, jobId: row.job_id },
     rangeEnd: row.range_end,
     status: row.status,
     limitationCode: row.limitation_code,
@@ -703,16 +750,20 @@ function resolveEdgeTarget(
   ) {
     return null
   }
-  const key: WhyCoverageKey = {
+  const lookup: CoverageLookup = {
     coverageId: row.target_coverage_id,
     rangeStart: row.target_coverage_range_start,
     jobId: row.target_coverage_job_id,
   }
-  return { targetRef: coverageRef(key), target: resolveCoverage(statements, key) }
+  return {
+    targetRef: coverageRef(emittedCoverageKey(lookup)),
+    target: resolveCoverage(statements, lookup),
+  }
 }
 
+/** Names the job id rather than `target_coverage_id`, which would carry the C2 alias (#86). */
 function malformedEdgeLink(row: EdgeRow): WhyMissingLink {
-  const targetId = row.target_evidence_id ?? row.target_claim_id ?? row.target_coverage_id
+  const targetId = row.target_evidence_id ?? row.target_claim_id ?? row.target_coverage_job_id
   return missingLink('MALFORMED_EDGE', 'edge', targetId ?? null)
 }
 
