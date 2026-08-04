@@ -1026,10 +1026,18 @@ export const MetricResultSchema = z
         path: ['value', 'observedCount'],
       })
     }
-    if (result.value.kind === 'quantiles' && result.value.sampleSize !== result.counts.eligible - result.counts.censored) {
+    /**
+     * Issue #82 (M-b): the sample is at MOST the uncensored eligible units, not exactly. A
+     * competing terminal outcome (a pull request closed without merging) leaves the risk set
+     * without the target event and without being right-censored, so it is counted in `eligible`
+     * yet is neither censored nor in the merged-duration sample — making sampleSize strictly less
+     * than eligible − censored. N−1 interval metrics undercount the same way. Only a sample that
+     * EXCEEDS the uncensored eligible units is impossible, so the equality is relaxed to `<=`.
+     */
+    if (result.value.kind === 'quantiles' && result.value.sampleSize > result.counts.eligible - result.counts.censored) {
       context.addIssue({
         code: 'custom',
-        message: 'A distribution samples exactly the eligible units that were not censored',
+        message: 'A distribution samples exactly the eligible units that were not censored, less any that left through a competing terminal outcome such as a close without merge; a sample can never exceed the uncensored eligible units',
         path: ['value', 'sampleSize'],
       })
     }
@@ -1251,7 +1259,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
       eventCode: 'PULL_REQUEST_MERGED',
       statement: 'The merge event recorded by the forge. It is the terminal event of the interval and never a cohort condition.',
       censoringRule: 'right_censor_at_window_end',
-      censoringStatement: 'An eligible pull request with no merge event by the window end is right-censored at the boundary and counted in the censored total, never dropped and never treated as merged.',
+      censoringStatement: 'An eligible pull request with no merge event by the window end is right-censored at the boundary and counted in the censored total, never dropped and never treated as merged. A pull request closed without merging leaves the risk set through a competing terminal outcome (issue #82): it stays in the eligible count, is excluded from the merged-duration sample, and is never right-censored, so the sampled distribution covers at most the uncensored eligible units and may cover fewer.',
     },
     missingness: {
       policy: 'exclude_from_eligible_cohort',
@@ -1429,10 +1437,25 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
     },
     sensitivityVariants: [
       { variantId: 'INCLUDE_CANCELLED_AS_UNKNOWN', statement: 'Recompute with cancelled series retained as unknown rather than excluded.', parameterChange: 'Move the CANCELLED_BEFORE_CONCLUSION rule from exclusion to unknown retention.' },
+      {
+        // Issue #82 (M-a): the eligible_minus_censored denominator is unbiased only under
+        // non-informative censoring. This worst-case variant bounds the share against the
+        // possibility that every still-running first attempt would have failed.
+        variantId: 'WORST_CASE_CENSORED_ALL_FAIL',
+        statement: 'Recompute a worst-case lower bound on the share by assuming every right-censored first attempt would have concluded as a failure.',
+        parameterChange: 'Add the censored count back into the denominator and leave the numerator unchanged, so the reported share becomes the smallest value the still-running attempts could resolve to.',
+      },
     ],
     knownConfounders: [
       { code: 'FLAKY_INFRASTRUCTURE', statement: 'Infrastructure flakiness moves the share without any change in the code under test.' },
       { code: 'WORKFLOW_REDEFINITION', statement: 'A redefined workflow changes what a first attempt even means across the window boundary.' },
+      {
+        // Issue #82 (M-a): CI censoring is informative, not missing at random — a longer-running
+        // first attempt is likelier to fail — so dropping the still-running units from the
+        // denominator biases the share upward. Surfaced here so the reading never reads as clean.
+        code: 'CENSORED_NOT_MISSING_AT_RANDOM',
+        statement: 'Right-censored first attempts are not missing at random: a longer-running attempt is likelier to fail, so excluding the still-running units from the denominator biases the share upward. The eligible_minus_censored denominator is unbiased only under non-informative censoring, which check-run timing violates.',
+      },
     ],
     prohibitedInterpretations: [
       { code: 'NOT_PERSON_MEASURE', statement: 'A pass share is a property of a check-run cohort and must never be attributed to any individual person.' },
@@ -1442,7 +1465,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
     coverageDimensions: [
       'permission', 'completeness', 'eligibility', 'freshness', 'censoring_freedom', 'consistency', 'sample', 'parser_coverage', 'comparability',
     ],
-    fixtureClasses: ['eligibility', 'missingness', 'censoring', 'boundary_dates', 'empty_eligible_cohort', 'truncation', 'counterexample'],
+    fixtureClasses: ['eligibility', 'missingness', 'censoring', 'boundary_dates', 'empty_eligible_cohort', 'truncation', 'sensitivity_variant', 'counterexample'],
     renderPolicy: {
       surfaces: ['atlas', 'evidence_drawer', 'api_v2'],
       requiresDefinitionCard: true,
@@ -1451,6 +1474,90 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
       maximumDataClass: 'C1',
     },
     supersession: { supersededBy: null, supersededAt: null, reasonCode: null },
+  }),
+  /**
+   * A REAL registered withdrawn definition (PR #88 review fold-in, item 5a). It exists so the
+   * finding contract's withdrawn-metric gate can be exercised against a genuinely
+   * registered-but-withdrawn metric rather than a test double: `isRegisteredMetric` returns true
+   * for it, yet `resolveMetricForRendering` throws because a withdrawn definition renders nothing.
+   * It is a fully specified, schema-valid, product-boundary-safe definition; it was withdrawn
+   * precisely for a construct-validity flaw — its cohort conditioned on the terminal merge event,
+   * which structurally erased right-censoring — with no successor version to route to.
+   */
+  defineMetric({
+    metricId: 'pull_request.merged_pull_request_count',
+    version: '1.0.0',
+    status: 'withdrawn',
+    label: 'Merged pull requests (withdrawn)',
+    questionAnswered: 'How many pull requests merged inside the window? Withdrawn: the cohort conditioned on the terminal merge event, which structurally erased right-censoring.',
+    analyticalSubject: 'pull_request_cohort',
+    unit: 'count_of_distinct',
+    semanticCategory: 'event_count',
+    windowSemantics: 'half_open_utc_window',
+    clockSource: 'injected_as_of',
+    requiredCapabilities: ['github.core'],
+    requiredFields: [
+      { fieldPath: 'pullRequest.opaqueId', dataClass: 'C1', nullable: false },
+      { fieldPath: 'pullRequest.mergedAt', dataClass: 'C1', nullable: true },
+    ],
+    eligibility: {
+      cohortId: 'pull_request.merged_in_window',
+      statement: 'Pull requests whose merge event fell inside the half-open window. Withdrawn: conditioning cohort membership on the terminal merge event made right-censoring unrepresentable.',
+      inclusionRules: [
+        { ruleCode: 'MERGED_IN_WINDOW', statement: 'The merge event falls inside the half-open window.' },
+      ],
+      exclusionRules: [
+        { ruleCode: 'MISSING_MERGE_TIMESTAMP', statement: 'No merge timestamp is recorded, so the cohort entry point cannot be placed.' },
+      ],
+    },
+    event: {
+      eventCode: 'PULL_REQUEST_MERGED',
+      statement: 'The merge event recorded by the forge.',
+      censoringRule: 'no_censoring_possible',
+      censoringStatement: 'A point fact inside a completed window cannot be censored; only coverage can be missing, and that is a different state.',
+    },
+    missingness: {
+      policy: 'exclude_from_eligible_cohort',
+      truncationPolicy: 'report_with_truncation_limitation',
+      statement: 'A pull request without a merge timestamp is excluded under its named reason and never counted as a zero.',
+    },
+    formula: {
+      kind: 'distinct_count',
+      procedureId: 'pull_request.merged_count_v1',
+      keyFieldPath: 'pullRequest.opaqueId',
+    },
+    supportGates: {
+      minimumEligible: 3,
+      appliesTo: 'display_eligibility',
+      emptyCohortExempt: true,
+      belowGateBehaviour: 'suppress_display',
+    },
+    comparisonRequirements: {
+      requiresMatchedWindow: false,
+      minimumMatchedFraction: 0,
+      incomparableOutcome: 'explicit_no_comparison',
+      emptyCohortOutcome: 'explicit_empty_outcome',
+    },
+    sensitivityVariants: [
+      { variantId: 'EXCLUDE_AUTOMATED_MERGES', statement: 'Recompute excluding automated merges.', parameterChange: 'Add an automation exclusion rule to the cohort.' },
+    ],
+    knownConfounders: [
+      { code: 'MERGE_QUEUE_BATCHING', statement: 'A merge queue batches merges, clustering the count without any change in how much work was proposed.' },
+    ],
+    prohibitedInterpretations: [
+      { code: 'NOT_PERSON_MEASURE', statement: 'A count of merged pull requests is a cohort property and must never be attributed to any individual person.' },
+      { code: 'NOT_OUTPUT', statement: 'A merge count is not a measure of delivered value or of effort spent.' },
+    ],
+    coverageDimensions: ['completeness', 'eligibility', 'sample'],
+    fixtureClasses: ['eligibility', 'missingness', 'censoring', 'boundary_dates', 'empty_eligible_cohort'],
+    renderPolicy: {
+      surfaces: ['atlas'],
+      requiresDefinitionCard: true,
+      requiresProhibitedInterpretations: true,
+      exportSinks: ['api'],
+      maximumDataClass: 'C1',
+    },
+    supersession: { supersededBy: null, supersededAt: null, reasonCode: 'COHORT_CONDITIONED_ON_TERMINAL_EVENT' },
   }),
 ]
 

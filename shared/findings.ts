@@ -679,10 +679,14 @@ interface CopyScanTarget {
  * confounders. Those fields exist so an author can write "this is never a productivity measure",
  * and scanning them would make the required warning impossible to express.
  *
- * `candidateInterpretation`, `alternativeExplanations`, and `discriminatingEvidence` are where a
- * causal reading is ALLOWED to be named — that is what a hypothesis is — so they are scanned for
- * blended constructs only. The `observation` is what was measured, at every layer, so it is
- * scanned for both.
+ * The causal/evaluative exemption is EXACTLY the three hypothesis fields —
+ * `candidateInterpretation`, `alternativeExplanations`, and `discriminatingEvidence` — where a
+ * causal reading is legitimately named (that is what a hypothesis is), so they are scanned for
+ * blended constructs only. Everything else that carries prose is scanned for BOTH the construct
+ * and the causal/evaluative families: the `observation` and the `abstention.statement`, and
+ * `robustness.checks[].statement`. A check statement describes a method perturbation ("recomputed
+ * on a shifted window"), never a causal claim, so unlicensed causal wording in one is a copy-test
+ * failure rather than licensed prose (issue #91).
  */
 function copyScanTargets(finding: Finding): readonly CopyScanTarget[] {
   const targets: CopyScanTarget[] = [
@@ -698,7 +702,9 @@ function copyScanTargets(finding: Finding): readonly CopyScanTarget[] {
     targets.push({ field: 'discriminatingEvidence.statement', text: finding.discriminatingEvidence.statement, scanCausal: false })
   }
   finding.robustness.checks.forEach((check, index) => {
-    targets.push({ field: `robustness.checks.${index}.statement`, text: check.statement, scanCausal: false })
+    // Issue #91: a check statement is scanned for causal/evaluative wording like the observation —
+    // it reports what the check did, so it never needs a licensed causal claim.
+    targets.push({ field: `robustness.checks.${index}.statement`, text: check.statement, scanCausal: true })
   })
   if (finding.abstention !== null) {
     targets.push({ field: 'abstention.statement', text: finding.abstention.statement, scanCausal: true })
@@ -977,6 +983,23 @@ export const FindingSchema = z
       context.addIssue({ code: 'custom', message: 'Limitations must be distinct by code and dimension', path: ['limitations'] })
     }
 
+    /**
+     * PR #88 fold-in (5c), tracked into DL-VALIDATE-01's remit: a truncated primary result cannot
+     * be presented under complete observation. Mirror `shared/metrics.ts`'s truncated rule — which
+     * requires a completeness entry naming a limiting reason — onto the finding's own coverage
+     * vector, so a finding cannot summarise a truncated result while claiming complete completeness.
+     */
+    if (finding.sampleSummary.state === 'truncated') {
+      const completeness = finding.coverage.find((entry) => entry.dimension === 'completeness')
+      if (!completeness || completeness.limiting_reason === null) {
+        context.addIssue({
+          code: 'custom',
+          message: 'A truncated sample summary requires a completeness coverage entry that names a limiting reason',
+          path: ['coverage'],
+        })
+      }
+    }
+
     /* -- Presentation ------------------------------------------------------------------------ */
 
     if (finding.robustness.status === 'fragile' && finding.limitations.length === 0) {
@@ -1105,6 +1128,23 @@ export function validateFinding(candidate: unknown): Finding {
       if (check.sensitivityVariantId !== null && !variantIds.has(check.sensitivityVariantId)) {
         throw new FindingContractError(
           `Robustness check ${check.checkId} names sensitivity variant "${check.sensitivityVariantId}", which ${primary.metricId}@${primary.metricVersion} does not define`,
+        )
+      }
+    }
+
+    /**
+     * PR #88 fold-in (5b), tracked into DL-VALIDATE-01's remit: the finding's metric-specific
+     * coverage is an embedded copy, and an embedded copy can drift. Cross-check that every
+     * dimension the finding reports is one the primary metric definition actually declares it
+     * consumes — the underlying result row is already validated dimension-for-dimension against the
+     * same definition by `validateMetricResult`, so a finding citing a dimension the metric never
+     * measures is a drift the conformance contract must catch.
+     */
+    const declaredDimensions = new Set<string>(definition.coverageDimensions)
+    for (const entry of finding.coverage) {
+      if (!declaredDimensions.has(entry.dimension)) {
+        throw new FindingContractError(
+          `Finding coverage dimension "${entry.dimension}" is not one the primary metric ${primary.metricId}@${primary.metricVersion} declares it consumes`,
         )
       }
     }
