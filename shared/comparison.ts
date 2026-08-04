@@ -7,7 +7,15 @@ import {
   type CoverageDimension,
   type CoverageLimitingReason,
 } from './coverage.js'
-import { MetricResultSchema, type MetricResult } from './metrics.js'
+import {
+  MetricResultSchema,
+  formatMetricReference,
+  getMetricDefinition,
+  isRegisteredMetric,
+  type MetricFormula,
+  type MetricResult,
+  type MetricValue,
+} from './metrics.js'
 
 /**
  * ADR-26 §3 (with ADR-07's matched-window middle case) — the reusable matched-period comparison
@@ -834,6 +842,50 @@ function isEmptyCohort(result: MetricResult): boolean {
   return result.state === 'empty_eligible_cohort'
 }
 
+/** The concrete value kind a metric produces — the value-kind universe minus the typed absence. */
+type EmptyCohortValueClass = Exclude<MetricValue['kind'], 'no_value'>
+
+/**
+ * Formula kind → the concrete value kind it produces. Mirrors metrics.ts's module-private
+ * `VALUE_KINDS_BY_FORMULA` (event_count/distinct_count → count, proportion_of_cohort → proportion,
+ * duration_quantiles/inter_event_interval_quantiles → quantiles), the same way
+ * `comparisonSupportUnits` mirrors its private `supportUnits`. Keying on `MetricFormula['kind']`
+ * makes it total: a formula kind added on the metrics side fails this map to compile rather than
+ * silently defaulting to a wrong class here.
+ */
+const FORMULA_VALUE_CLASS: Readonly<Record<MetricFormula['kind'], EmptyCohortValueClass>> = {
+  event_count: 'count',
+  distinct_count: 'count',
+  proportion_of_cohort: 'proportion',
+  duration_quantiles: 'quantiles',
+  inter_event_interval_quantiles: 'quantiles',
+}
+
+/**
+ * The value-kind class of an empty-cohort comparison.
+ *
+ * A concrete value on EITHER side is authoritative: both sides name one metric (binding is checked
+ * before any value work), so an empty side encoded as `count(0)` or `quantiles(0, null)` reveals
+ * its class exactly as a populated side does. Only when NEITHER side carries a concrete value —
+ * both are `no_value`-encoded, whether an empty side under the `EMPTY_ELIGIBLE_COHORT` encoding or
+ * a populated side that abstained — do we consult the registered formula, and only a registered
+ * metric can decide it. Otherwise the class is genuinely undecidable (`null`), and the caller must
+ * never reach for the proportion label it never established.
+ */
+function emptyCohortValueClass(
+  spec: ComparisonSpec,
+  current: MetricResult,
+  baseline: MetricResult,
+): EmptyCohortValueClass | null {
+  for (const value of [current.value, baseline.value]) {
+    if (value.kind !== 'no_value') {
+      return value.kind
+    }
+  }
+  const reference = formatMetricReference(spec.metric)
+  return isRegisteredMetric(reference) ? FORMULA_VALUE_CLASS[getMetricDefinition(reference).formula.kind] : null
+}
+
 /**
  * Decide the compared value. Order matters and is deliberate: a declared counts-only treatment
  * wins over everything (the caller asked for counts only), then structural absences on a side,
@@ -853,27 +905,55 @@ function compareValues(spec: ComparisonSpec, current: MetricResult, baseline: Me
   const baselineValue = baseline.value
 
   /**
-   * Issue #67. An empty eligible cohort is a complete observation of zero, so a COUNT still
-   * subtracts — 0 against 40 is a real difference of forty. A distribution does not: a null
-   * distribution has nothing to subtract, and fabricating a zero duration is exactly the failure
-   * this contract exists to prevent. A proportion has no denominator at all.
+   * Issue #67. An empty eligible cohort is a complete observation of zero, classified by the
+   * metric's value-kind CLASS rather than by whichever legal encoding a side happened to use. The
+   * old branch keyed off `no_value` and mislabelled every non-count case as an undefined
+   * proportion; because an empty count side is legally encodable as `no_value/EMPTY_ELIGIBLE_COHORT`
+   * that both mistagged empty count and quantile sides AND swallowed real count deltas.
    */
   if (currentEmpty || baselineEmpty) {
-    if (currentValue.kind === 'count' && baselineValue.kind === 'count') {
-      return {
-        kind: 'count_delta',
-        current: currentValue.observedCount,
-        baseline: baselineValue.observedCount,
-        delta: currentValue.observedCount - baselineValue.observedCount,
+    const bothEmpty = currentEmpty && baselineEmpty
+    const valueClass = emptyCohortValueClass(spec, current, baseline)
+
+    /**
+     * Count class. An empty eligible cohort is a complete observation of zero for a counting
+     * metric, so 0 against 40 is a real difference of forty. The empty side's entailed zero holds
+     * under EITHER legal encoding of the empty_eligible_cohort state: metrics.ts's
+     * `checkValueAgainstState` forces `observedCount === 0` for an empty count side ("An empty
+     * eligible cohort counts an observed zero"), and the same state's
+     * `{ kind: 'no_value', reasonCode: 'EMPTY_ELIGIBLE_COHORT' }` encoding stands for that same
+     * observed zero. So each empty side contributes 0; only a populated side that itself abstained
+     * (`no_value`) leaves nothing to subtract.
+     */
+    if (valueClass === 'count') {
+      const currentCount = currentEmpty ? 0 : currentValue.kind === 'count' ? currentValue.observedCount : null
+      const baselineCount = baselineEmpty ? 0 : baselineValue.kind === 'count' ? baselineValue.observedCount : null
+      if (currentCount === null || baselineCount === null) {
+        return { kind: 'no_value', reasonCode: 'NO_VALUE_SIDE' }
       }
+      return { kind: 'count_delta', current: currentCount, baseline: baselineCount, delta: currentCount - baselineCount }
     }
-    if (currentValue.kind === 'proportion' || baselineValue.kind === 'proportion' || currentValue.kind === 'no_value' || baselineValue.kind === 'no_value') {
+
+    /** Proportion class, actually established: an empty cohort leaves it with no denominator. */
+    if (valueClass === 'proportion') {
       return { kind: 'no_value', reasonCode: 'PROPORTION_UNDEFINED_ON_EMPTY_COHORT' }
     }
-    return {
-      kind: 'no_value',
-      reasonCode: currentEmpty && baselineEmpty ? 'BOTH_SIDES_EMPTY_COHORT' : 'EMPTY_SIDE_NO_DISTRIBUTION',
+
+    /**
+     * Undecidable class — the metric is unregistered and neither side carries a concrete value.
+     * Report only what is true, never the proportion label that was never established: both empty
+     * is two observed empty cohorts; one empty against a populated side that abstained (`no_value`)
+     * is that abstention, and that is all we can honestly say.
+     */
+    if (valueClass === null) {
+      return { kind: 'no_value', reasonCode: bothEmpty ? 'BOTH_SIDES_EMPTY_COHORT' : 'NO_VALUE_SIDE' }
     }
+
+    /**
+     * Quantile class. A null distribution has nothing to subtract, and fabricating a zero-duration
+     * value is exactly the failure this contract exists to prevent.
+     */
+    return { kind: 'no_value', reasonCode: bothEmpty ? 'BOTH_SIDES_EMPTY_COHORT' : 'EMPTY_SIDE_NO_DISTRIBUTION' }
   }
 
   if (currentValue.kind === 'no_value' || baselineValue.kind === 'no_value') {

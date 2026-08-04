@@ -574,7 +574,10 @@ describe('issue #67: empty cohorts and typed no-value', () => {
     }
   })
 
-  it('empty-vs-empty (proportion) refuses with a typed reason, never a zero share', () => {
+  it('empty-vs-empty on an unregistered, no_value-encoded metric is BOTH_SIDES_EMPTY_COHORT (proportion never established)', () => {
+    // F1: SHARE_METRIC is unregistered and both empty sides are no_value-encoded, so neither the
+    // side values nor the registry establish a proportion. The honest reading is two observed empty
+    // cohorts — never the PROPORTION_UNDEFINED label, which asserts a proportion that was never set.
     const result = compareMatchedWindows({
       spec: makeSpec({ metric: SHARE_METRIC }),
       current: makeSide(emptyShare(CURRENT_WINDOW), fullSub(CURRENT_WINDOW)),
@@ -582,7 +585,7 @@ describe('issue #67: empty cohorts and typed no-value', () => {
     })
     if (result.outcome === 'FULL') {
       expect(result.value.kind).toBe('no_value')
-      expect(result.value).toEqual({ kind: 'no_value', reasonCode: 'PROPORTION_UNDEFINED_ON_EMPTY_COHORT' })
+      expect(result.value).toEqual({ kind: 'no_value', reasonCode: 'BOTH_SIDES_EMPTY_COHORT' })
     } else {
       throw new Error('expected FULL with a no_value')
     }
@@ -659,6 +662,91 @@ describe('issue #67: empty cohorts and typed no-value', () => {
         // because none of these inputs is a genuine observed-zero count comparison.
         expect(result.value.kind).toBe('no_value')
       }
+    }
+  })
+})
+
+/* ------------------------------------------------------------------------------------------ *
+ * 5b. F1 — empty-cohort class holds under either legal encoding, and the no_value case
+ * ------------------------------------------------------------------------------------------ */
+
+describe('F1: empty-cohort classification under either legal encoding', () => {
+  // pull_request.ready_event_count@1.0.0 is a REGISTERED distinct_count (count class).
+  const REGISTERED_COUNT_METRIC = { metricId: 'pull_request.ready_event_count', version: '1.0.0' }
+
+  /** An empty side under the OTHER legal empty encoding: no_value/EMPTY_ELIGIBLE_COHORT. */
+  const emptyCountNoValue = (window: { start: string; end: string }, metric = COUNT_METRIC, resultId = 'r-empty-count-nv') =>
+    emptyCohort(window, metric, { kind: 'no_value', reasonCode: 'EMPTY_ELIGIBLE_COHORT' }, resultId)
+  const emptyIntervalNoValue = (window: { start: string; end: string }, resultId = 'r-empty-interval-nv') =>
+    emptyCohort(window, INTERVAL_METRIC, { kind: 'no_value', reasonCode: 'EMPTY_ELIGIBLE_COHORT' }, resultId)
+
+  it('no_value-encoded empty count side vs observed 40 is count_delta -40 (empty as current)', () => {
+    const result = compareMatchedWindows({
+      spec: makeSpec({ metric: COUNT_METRIC }),
+      current: makeSide(emptyCountNoValue(CURRENT_WINDOW), fullSub(CURRENT_WINDOW)),
+      baseline: makeSide(observedCount(BASELINE_WINDOW, { eligible: 40, count: 40 }), fullSub(BASELINE_WINDOW)),
+    })
+    expect(result.outcome).toBe('FULL')
+    if (result.outcome === 'FULL' && result.value.kind === 'count_delta') {
+      expect(result.value.current).toBe(0)
+      expect(result.value.baseline).toBe(40)
+      expect(result.value.delta).toBe(-40)
+    } else {
+      throw new Error('expected a count_delta of -40')
+    }
+  })
+
+  it('no_value-encoded empty count side vs observed 40 is count_delta +40 (empty as baseline)', () => {
+    const result = compareMatchedWindows({
+      spec: makeSpec({ metric: COUNT_METRIC }),
+      current: makeSide(observedCount(CURRENT_WINDOW, { eligible: 40, count: 40 }), fullSub(CURRENT_WINDOW)),
+      baseline: makeSide(emptyCountNoValue(BASELINE_WINDOW), fullSub(BASELINE_WINDOW)),
+    })
+    if (result.outcome === 'FULL' && result.value.kind === 'count_delta') {
+      expect(result.value.delta).toBe(40)
+    } else {
+      throw new Error('expected a count_delta of +40')
+    }
+  })
+
+  it('no_value-encoded empty quantile side vs populated is EMPTY_SIDE_NO_DISTRIBUTION', () => {
+    const populated = observedInterval(BASELINE_WINDOW, { eligible: 8, censored: 0, sampleSize: 8, quantiles: [{ quantile: 0.5, value: 40_000 }] })
+    const result = compareMatchedWindows({
+      spec: makeSpec({ metric: INTERVAL_METRIC }),
+      current: makeSide(emptyIntervalNoValue(CURRENT_WINDOW), fullSub(CURRENT_WINDOW)),
+      baseline: makeSide(populated, fullSub(BASELINE_WINDOW)),
+    })
+    expect(result.outcome).toBe('FULL')
+    if (result.outcome === 'FULL') {
+      expect(result.value).toEqual({ kind: 'no_value', reasonCode: 'EMPTY_SIDE_NO_DISTRIBUTION' })
+    }
+  })
+
+  it('both-empty no_value on the REGISTERED count metric is a real count_delta 0', () => {
+    // Neither side carries a concrete value, so the registered distinct_count formula decides the
+    // class and the two observed empty cohorts subtract to an honest zero — never a proportion label.
+    const result = compareMatchedWindows({
+      spec: makeSpec({ metric: REGISTERED_COUNT_METRIC }),
+      current: makeSide(emptyCountNoValue(CURRENT_WINDOW, REGISTERED_COUNT_METRIC, 'r-reg-cur'), fullSub(CURRENT_WINDOW)),
+      baseline: makeSide(emptyCountNoValue(BASELINE_WINDOW, REGISTERED_COUNT_METRIC, 'r-reg-base'), fullSub(BASELINE_WINDOW)),
+    })
+    expect(result.outcome).toBe('FULL')
+    if (result.outcome === 'FULL' && result.value.kind === 'count_delta') {
+      expect(result.value.delta).toBe(0)
+    } else {
+      throw new Error('expected a real count_delta of 0')
+    }
+  })
+
+  it('both-empty no_value on an UNREGISTERED metric is BOTH_SIDES_EMPTY_COHORT', () => {
+    const result = compareMatchedWindows({
+      spec: makeSpec({ metric: COUNT_METRIC }),
+      current: makeSide(emptyCountNoValue(CURRENT_WINDOW), fullSub(CURRENT_WINDOW)),
+      baseline: makeSide(emptyCountNoValue(BASELINE_WINDOW, COUNT_METRIC, 'r-empty-count-nv-2'), fullSub(BASELINE_WINDOW)),
+    })
+    expect(result.outcome).toBe('FULL')
+    if (result.outcome === 'FULL') {
+      expect(result.value).toEqual({ kind: 'no_value', reasonCode: 'BOTH_SIDES_EMPTY_COHORT' })
     }
   })
 })
