@@ -200,6 +200,16 @@ describe('github.core REST transport projection', () => {
     expect(result).not.toHaveProperty('observedUnitCount')
   })
 
+  it('rejects impossible provider timestamps instead of normalizing them into complete coverage', async () => {
+    const fixture = fetchFixture([
+      response(200, metadata),
+      response(200, [{ node_id: 'node-invalid-date', updated_at: '2026-02-30T00:00:00Z' }]),
+    ])
+    const result = await collectGithubCoreRest({ card: card(), rangeEnd, fetch: fixture.fetch, alias: aliasFixture })
+    expect(result).toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
+    expect(result).not.toHaveProperty('observedUnitCount')
+  })
+
   it('classifies rate, permission, not-found, server, network, and malformed responses without leaking messages', async () => {
     const cases: Array<[GithubCoreRestResponse | Error, string]> = [[response(429, {}, { 'x-ratelimit-remaining': '0' }), 'RATE_LIMITED'], [response(403, {}), 'PERMISSION_DENIED'], [response(404, {}), 'NOT_FOUND'], [response(503, {}), 'TRANSIENT'], [new Error('SECRET_NETWORK_DETAIL'), 'TRANSIENT']]
     for (const [outcome, code] of cases) {

@@ -139,7 +139,12 @@ function canonicalTimestamp(value: unknown): value is string {
 function normalizeProviderTimestamp(value: unknown): string | null {
   if (typeof value !== 'string' || !PROVIDER_UTC_TIMESTAMP.test(value)) return null
   const date = new Date(value)
-  return Number.isNaN(date.valueOf()) ? null : date.toISOString()
+  if (Number.isNaN(date.valueOf())) return null
+  const normalized = date.toISOString()
+  const expected = value.endsWith('.000Z') || value.includes('.')
+    ? value
+    : value.replace(/Z$/, '.000Z')
+  return normalized === expected ? normalized : null
 }
 
 function rangeIsValid(card: GithubCoreActivationTaskCard, rangeEnd: string): boolean {
