@@ -4,6 +4,7 @@ import {
   OPENAI_LUNA_ENDPOINT,
   OPENAI_LUNA_MAX_INPUT_BYTES,
   OPENAI_LUNA_OUTPUT_SCHEMA_NAME,
+  OpenAiLunaPriceQuoteSchema,
   OpenAiLunaRequestError,
   buildOpenAiLunaRequest,
   sendOpenAiLunaRequest,
@@ -90,6 +91,15 @@ describe('injected OpenAI/Luna Responses boundary', () => {
     expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, serviceTier: 'auto' }, now }), 'OPENAI_LUNA_PRICE_INVALID')
     expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, unit: 'USD_PER_TOKEN' }, now }), 'OPENAI_LUNA_PRICE_INVALID')
     expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, verifiedAt: '2026-08-02T11:59:59Z' }, now }), 'OPENAI_LUNA_PRICE_INVALID')
+    expect(OpenAiLunaPriceQuoteSchema.safeParse({
+      ...priceQuote,
+      verifiedAt: '2026-02-30T00:00:00Z',
+    }).success).toBe(false)
+    expectCode(() => buildOpenAiLunaRequest({
+      bundle,
+      priceQuote: { ...priceQuote, verifiedAt: '2026-02-30T00:00:00Z' },
+      now: '2026-03-02T00:00:00Z',
+    }), 'OPENAI_LUNA_PRICE_INVALID')
     expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, inputUsdPerToken: 1 }, now }), 'OPENAI_LUNA_PRICE_INVALID')
     expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, outputUsdPerMillionTokens: 10_000 }, now }), 'OPENAI_LUNA_COST_LIMIT')
     expectCode(() => buildOpenAiLunaRequest({
