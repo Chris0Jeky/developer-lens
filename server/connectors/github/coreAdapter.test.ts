@@ -96,6 +96,22 @@ describe('github.core invented page adapter', () => {
     expect(result.requests[0]?.scopeAlias).toBe('scope-01')
   })
 
+  it('snapshots validated input before callback closure mutation', async () => {
+    const previous = checkpoint()
+    const mutable = input({ checkpoint: previous })
+    const result = await collectSyntheticGithubCorePages(mutable, async (request) => {
+      ;(mutable as { scopeAlias: string }).scopeAlias = 'other-scope'
+      ;(mutable as { pageCap: number }).pageCap = 1_000
+      ;(previous as { scopeAlias: string }).scopeAlias = 'other-scope'
+      return page(request, 'receipt-01', null)
+    })
+
+    expect(result.status).toBe('complete')
+    expect(result.requests[0]?.scopeAlias).toBe('scope-01')
+    expect(result.coverage.scopeAlias).toBe('scope-01')
+    expect(result.checkpoint?.scopeAlias).toBe('scope-01')
+  })
+
   it('accepts no receipt when a page echo or nested receipt is hostile', async () => {
     const previous = checkpoint()
     const result = await collectSyntheticGithubCorePages(input({ checkpoint: previous }), async (request) => ({
@@ -107,7 +123,7 @@ describe('github.core invented page adapter', () => {
     expect(result.status).toBe('failed')
     expect(result.coverage.limitationCode).toBe('FAILURE_SCHEMA')
     expect(result.appliedReceiptIds).toEqual([])
-    expect(result.checkpoint).toBe(previous)
+    expect(result.checkpoint).toEqual(previous)
   })
 
   it('truncates at the cap and keeps the prior checkpoint with a non-durable hint', async () => {

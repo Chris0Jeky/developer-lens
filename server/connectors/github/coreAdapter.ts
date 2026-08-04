@@ -264,22 +264,26 @@ export async function collectSyntheticGithubCorePages(
 ): Promise<GithubCoreSyntheticCollectionResult> {
   validateInput(input)
   if (typeof acquire !== 'function') throw new Error('acquire must be a function')
+  const stableInput: GithubCoreSyntheticCollectionInput = Object.freeze({
+    ...input,
+    checkpoint: input.checkpoint ? Object.freeze({ ...input.checkpoint }) : null,
+  })
   const receipts: GithubCoreReceipt[] = []
   const requests: GithubCoreSyntheticPageRequest[] = []
   const seenCursors = new Set<string | null>([null])
   const seenReceipts = new Set<string>()
   let cursor: string | null = null
 
-  for (let pageNumber = 1; pageNumber <= input.pageCap; pageNumber += 1) {
+  for (let pageNumber = 1; pageNumber <= stableInput.pageCap; pageNumber += 1) {
     const request = Object.freeze({
       execution: 'invented_fixture',
       capabilityId: 'github.core',
-      scopeAlias: input.scopeAlias,
-      consentRevision: input.consentRevision,
+      scopeAlias: stableInput.scopeAlias,
+      consentRevision: stableInput.consentRevision,
       queryVersion: GITHUB_CORE_QUERY_VERSION,
       sourceApiVersion: GITHUB_CORE_REST_API_VERSION,
-      rangeStart: input.rangeStart,
-      rangeEnd: input.rangeEnd,
+      rangeStart: stableInput.rangeStart,
+      rangeEnd: stableInput.rangeEnd,
       pageNumber,
       cursor,
     })
@@ -293,13 +297,13 @@ export async function collectSyntheticGithubCorePages(
         if (FAILURE_KINDS.has(thrown.kind as GithubCoreFailureKind) && Number.isSafeInteger(thrown.attempt)) {
           try {
             const failure = validateFailure(thrown)
-            return transition(input, [], requests, failure, [])
+            return transition(stableInput, [], requests, failure, [])
           } catch {
-            return transition(input, [], requests, { kind: 'schema', attempt: 1 }, [])
+            return transition(stableInput, [], requests, { kind: 'schema', attempt: 1 }, [])
           }
         }
       }
-      return transition(input, [], requests, { kind: 'unknown', attempt: 1 }, [])
+      return transition(stableInput, [], requests, { kind: 'unknown', attempt: 1 }, [])
     }
 
     try {
@@ -308,7 +312,7 @@ export async function collectSyntheticGithubCorePages(
         keys(envelope, ['kind', 'request', 'failure'], 'page result')
         validateRequest(envelope.request, request)
         const failure = validateFailure(envelope.failure)
-        return transition(input, [], requests, failure, [])
+        return transition(stableInput, [], requests, failure, [])
       }
       if (envelope.kind !== 'page') throw new Error('page result kind is unsupported')
       keys(envelope, ['kind', 'request', 'receipt'], 'page result')
@@ -318,13 +322,13 @@ export async function collectSyntheticGithubCorePages(
       seenReceipts.add(receipt.receiptId)
       if (receipt.nextCursor !== null && seenCursors.has(receipt.nextCursor)) throw new Error('CURSOR_CYCLE')
       receipts.push(receipt)
-      if (receipt.nextCursor === null) return successfulTransition(input, receipts, requests)
+      if (receipt.nextCursor === null) return successfulTransition(stableInput, receipts, requests)
       seenCursors.add(receipt.nextCursor)
       cursor = receipt.nextCursor
     } catch {
-      return transition(input, [], requests, { kind: 'schema', attempt: 1 }, [])
+      return transition(stableInput, [], requests, { kind: 'schema', attempt: 1 }, [])
     }
   }
 
-  return successfulTransition(input, receipts, requests)
+  return successfulTransition(stableInput, receipts, requests)
 }
