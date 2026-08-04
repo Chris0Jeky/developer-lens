@@ -88,7 +88,7 @@ Example claim row (invented):
     {"target_coverage_id": "cov_112", "role": "coverage_basis"}
   ],
   "limitations": [
-    {"limitation_code": "GH_ACTIONS_FILTERED_1000_CAP", "dimension": "censoring_freedom", "copy_key": "hyp.ci_shift.censored"}
+    {"limitation_code": "GH_ACTIONS_FILTERED_1000_CAP", "dimension": "completeness", "copy_key": "hyp.ci_shift.truncated"}
   ]
 }
 ```

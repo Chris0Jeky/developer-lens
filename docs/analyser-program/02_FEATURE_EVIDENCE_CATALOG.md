@@ -805,8 +805,10 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   denominators (corrected 2026-08-04 review round). Absence is never zero. Corrections: key by run ID +
   attempt and use attempt-specific job endpoints (default listing is latest execution unless
   `filter=all`); deleted attempts censor. Deletion: C3 at 90 days plus cascade. Dimensions bound:
-  `completeness`, `censoring` (`GH_ACTIONS_FILTERED_1000_CAP`, `GH_CHECK_SUITES_1000_CAP`),
-  `sample`, `permission`, `drift` (workflow definition change mid-window).
+  `completeness` (`GH_ACTIONS_FILTERED_1000_CAP`, `GH_CHECK_SUITES_1000_CAP` — saturation is
+  cohort truncation, per the correction above), `censoring_freedom` (in-progress runs at the
+  window boundary), `sample`, `permission`, `drift_stability` (workflow definition change
+  mid-window).
 - **Confounders / falsifiers / bounds** — Confounders: runner class, cache state, matrix width,
   concurrency groups, provider scheduling, and self-hosted capacity dominate durations. **Wording
   rules, enforced in the copy dictionary and claim statement enums: rerun ≠ flaky

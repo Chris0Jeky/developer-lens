@@ -63,7 +63,8 @@ publication route remains active.
   checks named by that private card.
 
 - [ ] **q-6 — Intelligence-platform owner gates (none blocking; decide at leisure).** The
-  2026-08-04 planning session consolidated six genuinely open owner decisions in
+  2026-08-04 planning session (plus its reconciliation) consolidated seven genuinely open owner
+  decisions in
   `docs/analyser-program/08_OPEN_QUESTIONS.md` §1, mirrored as QUESTION cards on the seeded local
   Taskdeck board: (a) PR/issue prose semantic tier; (b) durable retrieval index as a reviewed
   sink; (c) pinned offline local model option; (d) per-candidate consented real datasets for ML

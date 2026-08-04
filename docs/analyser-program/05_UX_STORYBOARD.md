@@ -307,8 +307,9 @@ DESKTOP (Atlas vision — §2.1 governs what actually ships first) ────�
 ```
 
 ① Rail — **only staged surfaces render** (§2.1). The nine shown here are the Atlas vision, not first
-ship: at `DL-VALUE-01` the rail carries the Cockpit, the one comparative Atlas panel, and (once the
-first finding is accepted) the deterministic Story. Fixed order, non-color current indicator (left bar
+ship: at `DL-VALUE-01` the rail carries the Cockpit, the one comparative Atlas panel, and the
+Evidence Drawer affordance; the deterministic Story joins in wave R5 via `DL-UX-SS` (corrected
+2026-08-04 — the R3 slice does not deliver it). Fixed order, non-color current indicator (left bar
 + bold weight); an unbuilt surface is absent, never a greyed or placeholder item.
 ② Scope header binds repository or portfolio **alias** only (the identity vault never reaches the UI)
 and renders the **lens** — the question being asked — beside **both** windows: the current window and
