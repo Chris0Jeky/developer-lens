@@ -16,9 +16,10 @@ scoped alias factory now preserves the existing migration identities and adds cl
 separated repository, issue, pull-request, and page aliases. P4 remains default-off and
 adds no credential, live read, storage composition,
 legacy-collector switch, or public/private output path. G4 is now provider-specifically approved,
-while a strict C1 evidence/output contract and deterministic local-retrieval foundation remain
-default-off. The external-model capability is still `never_authorized`; there is no credential,
-provider request, response, cache, telemetry, persistence, or presentation path**.
+while a strict C1 evidence/output contract, deterministic local retrieval, and a credentialless
+OpenAI Responses request boundary remain default-off. The external-model capability is still
+`never_authorized`; there is no environment read, authorization-bearing transport, network/provider
+execution, raw response, cache, telemetry, persistence, or presentation path**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -26,8 +27,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current installation-alias milestone:
-  `origin/main` merge `0a8925a805ba5a4794824db521ead09dcf6360a6`.
+- Published implementation baseline before the current OpenAI request-contract milestone:
+  `origin/main` merge `eae8370c8dbdad0fd0c6e49589c3cafd612e6ac9`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -129,6 +130,11 @@ unresolved review threads outrank it whenever they disagree.
   gate, synthetic-showcase privacy verification, artifact upload, and deployment. Its Node 20
   action-runtime deprecation annotation is tracked separately in
   [#31](https://github.com/Chris0Jeky/developer-lens/issues/31).
+- [PR #32](https://github.com/Chris0Jeky/developer-lens/pull/32) publishes the installation-scoped
+  alias factory at merge `eae8370c8dbdad0fd0c6e49589c3cafd612e6ac9`; exact-merge Pages run
+  [30880417283](https://github.com/Chris0Jeky/developer-lens/actions/runs/30880417283) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment. Issue #6 remains
+  open for installation-key creation, persistence, mismatch, rotation/recovery, and deletion.
 
 ## Authority and owner gates
 
@@ -216,8 +222,9 @@ unresolved review threads outrank it whenever they disagree.
 - Sequence: D1 visible synthetic vertical slice, D2 feedback iteration, D3 repeatable local demo,
   the first synthetic P2 SQLite/importer proof, and the bounded P3 foundation are complete locally.
   P4-P11 remain unactivated. P12 is provider-specifically approved and now has a default-off C1
-  contract/local-retrieval foundation, but no request adapter, transport, credential read, or
-  activation path. For future work,
+  contract/local-retrieval foundation plus a credentialless request/callback boundary, but no
+  environment read, authorization-bearing HTTP transport, provider execution, or activation path.
+  For future work,
   Sol performs bounded browser/visual passes when needed, records subjective assumptions and
   next-day questions, and proceeds rather than waiting.
 - Hardening rule: security, privacy hardening, resilience, and distribution concerns are recorded in
@@ -517,7 +524,7 @@ unresolved review threads outrank it whenever they disagree.
   retaining literal `never_authorized`. This authority slice adds no provider SDK, request code,
   credential read, payload, response, external call, local cache, telemetry, or model-output data.
 
-## P12 default-off C1 contract and local retrieval foundation
+## P12 default-off C1 contract, local retrieval, and OpenAI request foundation
 
 - `server/externalModel/c1Contract.ts` accepts only four scalar ratio features from the architecture,
   request-scoped numeric evidence/claim IDs, the fixed consent/redaction revisions, exact V2
@@ -534,13 +541,31 @@ unresolved review threads outrank it whenever they disagree.
   unknown/duplicate IDs and oversized input, and sorts by feature then numeric opaque fact ID. It
   performs no filesystem, database, network, credential, environment, embedding, vector-store,
   hosted-tool, cache, telemetry, persistence, UI, export, or model operation.
-- This foundation does not activate `cap.external.model` and does not construct a provider request.
-  A later bounded slice must generate request-scoped IDs, project the smallest retrieved facts into
-  the validated bundle, build the complete prompt/request within the byte/cost gate, and inject a
-  no-retry Responses transport without letting provider IDs/bodies enter logs or state.
+- `server/externalModel/openaiResponses.ts` schema-validates a caller C1 bundle, a fresh injected
+  price quote, a caller clock, and one injected callback. It builds only a synchronous standard-tier
+  `POST https://api.openai.com/v1/responses` descriptor for `gpt-5.6-luna` with `store:false`, fixed
+  instructions, no tools, and provider-native strict Structured Outputs derived from the closed
+  local model-output schema.
+- The full serialized body and C1 input are each limited to 16,000 UTF-8 bytes. Worst-case spend
+  uses one token per body byte, the larger of standard input/cache-write prices, the requested output
+  ceiling, an exact USD-per-million-token unit, and a price quote no older than 24 hours; estimates
+  above USD 0.01 reject before the callback. The callback runs exactly once with no retry and may
+  return only status plus structured output; all other fields, non-2xx status, unknown evidence, or
+  semantic output mismatch fail with stable content-free errors.
+- This foundation does not activate `cap.external.model` and includes no environment read,
+  credential/Authorization surface, SDK, HTTP implementation, provider response parser/body/ID,
+  timeout, cache, telemetry, persistence, presentation, export, or public path. A later activation
+  slice must bind a separately reviewed task card, freshly revalidated model/price/data terms, the
+  one named environment credential, a body-discarding transport, and a user-reviewable exact payload
+  preview before any real request.
 
 ## Verification
 
+- P12 request-contract candidate [PR #33](https://github.com/Chris0Jeky/developer-lens/pull/33)
+  was rebased onto installation-alias merge `eae8370`; the focused request suite passed 1 file / 5
+  tests. `npm run check` passed Oxlint, context verification, 34 test files / 159 tests, TypeScript
+  project builds, and the production Vite build; `git diff --check` passed. Final fresh-context fix
+  review found no CRITICAL/HIGH provider-schema, service-tier, spend, privacy, or no-retry defect.
 - P4 installation-alias candidate [PR #32](https://github.com/Chris0Jeky/developer-lens/pull/32)
   was rebased onto loader-hardening merge `0a8925a`; the focused alias and migration suites passed
   2 files / 23 tests. `npm run check` passed Oxlint, context verification, 33 test files / 154
@@ -697,6 +722,14 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Failures and workarounds
 
+- Pre-publication inspection found that the first request draft omitted native Structured Outputs
+  and an explicit standard service tier, and estimated input tokens as bytes divided by four. The
+  fix adds the closed `text.format` JSON Schema, `service_tier: default`, cache-write pricing, and a
+  one-token-per-byte upper bound; the focused and full gates passed.
+- Fresh fix review then found Zod's Draft 7 conversion emitted unsupported `const` in the provider
+  schema. The closed conversion now removes `$schema`, maps every `const` to a single-value `enum`,
+  and recursively rejects unreviewed keywords or optional object properties before a request can be
+  built. Direct regression, focused tests, TypeScript, lint, full gate, and final fix review passed.
 - The first exact-head alias gate could not resolve `oxlint` because that isolated worktree had no
   local `node_modules`. A lockfile-pinned `npm ci` installed 354 packages with zero reported
   vulnerabilities; the unchanged full gate then passed 154/154 tests.
@@ -790,8 +823,9 @@ unresolved review threads outrank it whenever they disagree.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
 - G2/G3 runtime behavior is not verified merely by approval: no real-data migration, retention
   cleanup, backup, deletion, or named sensitive connector ran in this slice. G4 is now approved
-  only for the recorded OpenAI/Luna boundary; the C1 contract/local-retrieval foundation remains
-  process-local and no credential, provider adapter, external transport, or request has run.
+  only for the recorded OpenAI/Luna boundary; the C1, local-retrieval, and credentialless request
+  foundations remain process-local and no credential-bearing adapter, external transport, or real
+  provider request has run.
 
 ## Residual risk
 
@@ -816,6 +850,10 @@ unresolved review threads outrank it whenever they disagree.
   replayed file again before accepting it. Completed packs remain immutable by contract; an
   activated hostile-writer claim would still need an immutable snapshot or an equivalent stronger
   boundary to exclude an adversarial replace-read-restore sequence.
+- The P12 request seam validates caller-injected pricing shape and freshness but cannot authenticate
+  that the caller actually rechecked the official pages. It deliberately has no credential reader,
+  HTTP timeout/body parser, usage receipt, activation card, output retention, or presentation path;
+  those remain separate reviewed boundaries before a real call.
 - The P4 synthetic adapter and public REST transport are both injected seams with no runtime call
   site. The loader reads only the canonical task-owned card but no production caller composes it
   with transport or the opt-in storage bridge. Application-controlled backup/restore, installation-
@@ -875,8 +913,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current installation-alias
-   candidate is merge `0a8925a805ba5a4794824db521ead09dcf6360a6`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current OpenAI request
+   candidate is merge `eae8370c8dbdad0fd0c6e49589c3cafd612e6ac9`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -895,8 +933,9 @@ unresolved review threads outrank it whenever they disagree.
    gate pass.
 5. G4 is approved only for the exact OpenAI/Luna contract, but `cap.external.model` remains
    `never_authorized`. The strict C1 payload/output and deterministic local-retrieval foundation is
-   present. Next add a separately reviewed injected request builder/transport with freshly minted
-   request IDs, full serialized byte/cost enforcement, `store:false`, one request/no retry, stable
-   content-free errors, process-only validated output, and invented transport canaries. Make no live
-   request until that implementation, review, exact hosted gate, and an exact payload-preview/task-
-   card authorization pass.
+   present, and the credentialless request boundary now enforces native strict output, standard
+   service tier, serialized byte/cost ceilings, `store:false`, and one call/no retry. Next add a
+   separately reviewed task card and exact payload preview plus an authorization-bearing transport
+   that reads only the approved environment variable at call time, applies a finite timeout,
+   extracts only structured output, and discards raw provider bodies/IDs. Make no live request until
+   that implementation, review, exact hosted gate, and task-card authorization pass.
