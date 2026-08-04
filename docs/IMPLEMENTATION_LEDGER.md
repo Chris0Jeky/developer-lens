@@ -8,10 +8,12 @@ evidence/design version 2026-08-03.
 Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
 The public synthetic V2 demo now includes an accessible observed-to-derived-to-hypothesis story
-path over its existing validated C0 insight payload. The published P4 foundation includes an inert protocol, opt-in incremental storage bridge,
-invented-fixture page adapter, closed activation-card parser, injected public-unauthenticated GET
-transport with immediate projection, closed-world incremental-schema validation, and a confined
-descriptor-bound, duplicate-key-rejecting, 64 KiB ignored-card loader. A shared installation-
+path over its existing validated C0 insight payload. The published P4 foundation includes an inert
+protocol, opt-in incremental storage bridge, invented-fixture page adapter, closed activation-card
+parser, injected public-unauthenticated GET transport with immediate projection, closed-world
+incremental-schema validation, and a confined descriptor-bound, duplicate-key-rejecting, 64 KiB
+ignored-card loader. The current publication candidate adds frozen alias-only membership to every
+accepted REST page receipt. A shared installation-
 scoped alias factory now preserves the existing migration identities and adds closed, domain-
 separated repository, issue, pull-request, and page aliases. The opt-in store now records restricted
 coverage as explicitly noncomplete without advancing a checkpoint or creating a snapshot. P4
@@ -435,6 +437,11 @@ unresolved review threads outrank it whenever they disagree.
   constructs its own request. A terminal page alone can complete; the card's total request budget
   and rate exhaustion truncate with an unknown total. Response bytes are size-bounded,
   process-lifetime only, and discarded after immediate field projection.
+- Every accepted REST page receipt now snapshots the exact post-range-filter, post-global-dedup
+  unit aliases projected from that page. Membership arrays are alias-only, sorted, freshly allocated,
+  and frozen; each page's `unitCount` is derived from that exact array. This supplies deterministic
+  page-local evidence for the next pure composition/hash/replay slice without retaining provider IDs
+  or bodies.
 - `server/connectors/github/restTransport.test.ts` uses invented fetch/response/alias fixtures. It
   proves exact headers and query construction, no authorization/cookie, identity/visibility
   refusal, poison-field excision, half-open range filtering, GitHub canonical pagination, terminal
@@ -575,13 +582,20 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- P4 restricted-storage candidate [PR #34](https://github.com/Chris0Jeky/developer-lens/pull/34)
-  was rebased onto OpenAI request merge `4ee986e`; the focused incremental storage suite passed
-  1 file / 19 tests. `npm run check` passed Oxlint, context verification, 34 test files / 163 tests,
+- P4 page-membership candidate [PR #35](https://github.com/Chris0Jeky/developer-lens/pull/35)
+  was rebased onto restricted-storage merge `e0ed726`; the focused REST suite passed 1 file / 9
+  tests. `npm run check` passed Oxlint, context verification, 34 test files / 163 tests, TypeScript
+  project builds, and the production Vite build; `git diff --check` passed. A fresh-context review
+  found no CRITICAL/HIGH range-filtering, deduplication, alias-only membership, determinism, or
+  mutation-safety defect.
+- P4 restricted-storage [PR #34](https://github.com/Chris0Jeky/developer-lens/pull/34)
+  merged as `e0ed726` after rebasing onto OpenAI request merge `4ee986e`; the focused incremental
+  storage suite passed 1 file / 19 tests. `npm run check` passed Oxlint, context verification, 34 test files / 163 tests,
   TypeScript project builds, and the production Vite build; `git diff --check` passed. Direct
   regressions cover status alignment, prior-checkpoint preservation, no snapshot/cursor, nonnumeric
   derived observation, stable limitation, idempotent replay, rollback, scope deletion, exact
-  version/fingerprint, and fail-closed prior-schema handling.
+  version/fingerprint, and fail-closed prior-schema handling. Exact-merge hosted Pages run
+  `30881367082` completed successfully; its late automated review contained no finding.
 - P12 request-contract candidate [PR #33](https://github.com/Chris0Jeky/developer-lens/pull/33)
   was rebased onto installation-alias merge `eae8370`; the focused request suite passed 1 file / 5
   tests. `npm run check` passed Oxlint, context verification, 34 test files / 159 tests, TypeScript
@@ -839,8 +853,9 @@ unresolved review threads outrank it whenever they disagree.
 - CLI, `dataStore`, collector, API, export, or Pages activation of SQLite; real/private JSON
   migration and the now-approved backup/grace/deletion protocol remain deliberately unexercised.
   Issues #5/#6 and a bounded migration task still precede a real read or reader switch.
-- No REST result is composed into the incremental store. Restricted persistence is proved only with
-  invented input; the real task card, Taskdeck scope, network, and task-owned database remain unread.
+- No REST result is composed into the incremental store. Page-local alias membership and restricted
+  persistence are proved only with invented input; canonical composition/hash/replay is not yet
+  implemented, and the real task card, Taskdeck scope, network, and task-owned database remain unread.
 - Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
   synthetic route and showcase verifier.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
@@ -937,8 +952,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current restricted-storage
-   candidate is merge `4ee986ed1e65cd58a56799391827359224ce1f14`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current page-membership
+   candidate is merge `e0ed72656fbf900b21620ac5a442e12c1d5415a0`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -950,8 +965,9 @@ unresolved review threads outrank it whenever they disagree.
    descriptor-bound loader, and injected public-unauthenticated transport expose no identity or
    operational values in tracked state. The shared alias factory now preserves existing repository
    identities and defines closed unit/page domains; the opt-in store now preserves restricted
-   coverage without a snapshot or checkpoint advance. Next add page-local unit membership and the
-   pure alias/hash/replay composition, then issue #6 key-lifecycle/mismatch enforcement,
+   coverage without a snapshot or checkpoint advance. Page-local alias membership is the current
+   publication candidate. Next add pure canonical alias/hash/replay composition, then issue #6 key-
+   lifecycle/mismatch enforcement,
    backup/restore, scoped deletion/tombstone, re-consent, and snapshot-stability proof. Keep runtime
    default-off and make no real request until that composition, focused failure tests, review, and
    the exact hosted gate pass.
