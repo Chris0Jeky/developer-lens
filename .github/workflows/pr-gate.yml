@@ -1,0 +1,58 @@
+name: PR gate
+
+# Hosted proving gate for pull requests. Every step mirrors a local proving command from
+# AGENTS.md "Run and prove"; a failure here is meant to block the merge. Read-only by design:
+# no secrets, no real data, no capability activation — the showcase build is the synthetic
+# privacy canary (`verify:showcase` runs at the end of `npm run build:showcase`).
+# `main` pushes keep their own gate in `pages.yml`, so this workflow has no push trigger.
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Prove the pull request
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the pull request
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        # One Node major everywhere: better-sqlite3 is ABI-specific and the locked local major
+        # used for the proving commands is 24.
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify project context
+        run: npm run verify:context
+
+      - name: Check generated planning artifacts for drift
+        # A cards.mjs edit must not leave the committed Taskdeck manifest or the 07 card index
+        # stale; --check is non-mutating and fails on drift.
+        run: node docs/analyser-program/taskdeck/tools/generate.mjs --check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type-check and build
+        run: npm run build
+
+      - name: Build and privacy-check the synthetic showcase
+        run: npm run build:showcase
