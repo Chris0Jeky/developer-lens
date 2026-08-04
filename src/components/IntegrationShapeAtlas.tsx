@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Fragment, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { EvidenceDrawer } from './EvidenceDrawer'
 import { resolveIntegrationShapeEvidence } from '../../shared/integrationShapeEvidence'
@@ -9,7 +9,7 @@ import {
   type IntegrationShapePresentation,
 } from '../../shared/integrationShape'
 import type { AnalyticReference } from '../../shared/findings.js'
-import type { ComparisonResult } from '../../shared/comparison.js'
+import type { ComparisonResult, ResidualSegment } from '../../shared/comparison.js'
 import type { Finding } from '../../shared/findings.js'
 import type { MetricResult } from '../../shared/metrics.js'
 import './IntegrationShapeAtlas.css'
@@ -28,6 +28,9 @@ import './IntegrationShapeAtlas.css'
  */
 
 const QUANTILE_LABEL: Readonly<Record<number, string>> = { 0.5: 'p50 (median)', 0.75: 'p75', 0.9: 'p90 (tail)' }
+
+/** Window offsets are carried in milliseconds; the panel reads them back as day positions. */
+const DAY_MS = 86_400_000
 
 /** A clickable analytic mark: shows its value and opens the drawer on its reference. */
 function Mark({
@@ -206,6 +209,25 @@ function CoverageStage({ current }: { current: MetricResult }) {
   )
 }
 
+/** The unmatched stretches of a comparable outcome, each naming what disqualified it. */
+function ResidualList({ segments }: { segments: readonly ResidualSegment[] }) {
+  return (
+    <ul className="atlas-outcome-residual" aria-label="Unmatched stretches">
+      {segments.map((segment, index) => (
+        <li
+          key={`${segment.startOffsetMs}:${segment.endOffsetMs}:${index}`}
+          data-mismatch-kind={segment.mismatchKind}
+          data-dimension={segment.disqualifyingDimension}
+        >
+          unmatched day {(segment.startOffsetMs / DAY_MS).toFixed(1)}–{(segment.endOffsetMs / DAY_MS).toFixed(1)} · {segment.mismatchKind} ·{' '}
+          {segment.disqualifyingDimension}
+          {segment.limitingReason !== null ? ` (${segment.limitingReason})` : ''}
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 function OutcomeTable({ outcomes }: { outcomes: readonly IntegrationShapeOutcomeRow[] }) {
   return (
     <table className="atlas-table" data-testid="atlas-outcome-table">
@@ -226,11 +248,35 @@ function OutcomeTable({ outcomes }: { outcomes: readonly IntegrationShapeOutcome
                 ? `tail difference ${secondsToDayLabel(comparison.value.quantiles[comparison.value.quantiles.length - 1].delta)}`
                 : `no value: ${comparison.value.kind === 'no_value' ? comparison.value.reasonCode : comparison.value.kind}`
           return (
-            <tr key={row.key} data-outcome={comparison.outcome}>
-              <th scope="row">{row.label}</th>
-              <td>{comparison.matchedFraction === null ? '—' : `${Math.round(comparison.matchedFraction * 1000) / 10}%`}</td>
-              <td>{reading}</td>
-            </tr>
+            <Fragment key={row.key}>
+              <tr data-outcome={comparison.outcome}>
+                <th scope="row">{row.label}</th>
+                <td>{comparison.matchedFraction === null ? '—' : `${Math.round(comparison.matchedFraction * 1000) / 10}%`}</td>
+                <td>{reading}</td>
+              </tr>
+              {comparison.outcome !== 'INCOMPARABLE' && (
+                <tr className="atlas-outcome-detail" data-outcome-detail={comparison.outcome}>
+                  <td colSpan={3}>
+                    <div className="atlas-outcome-honesty">
+                      <p className="atlas-outcome-basis" data-arithmetic-basis={comparison.arithmeticBasis}>
+                        Arithmetic basis: <strong>{comparison.arithmeticBasis}</strong>
+                        {comparison.arithmeticBasis === 'matched_subwindows_only'
+                          ? ' — recomputed over matched subwindows only, not the whole window.'
+                          : ' — computed over the whole window.'}
+                      </p>
+                      <ul className="atlas-outcome-limitations" aria-label="Limitations for this outcome">
+                        {comparison.limitations.map((limitation) => (
+                          <li key={limitation.code} data-limitation={limitation.code} title={limitation.statement}>
+                            <strong>{limitation.code}</strong> — {limitation.statement}
+                          </li>
+                        ))}
+                      </ul>
+                      {comparison.residual.length > 0 && <ResidualList segments={comparison.residual} />}
+                    </div>
+                  </td>
+                </tr>
+              )}
+            </Fragment>
           )
         })}
       </tbody>

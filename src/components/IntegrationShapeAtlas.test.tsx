@@ -96,6 +96,51 @@ describe('IntegrationShapeAtlas — every stage of the walk renders', () => {
   })
 })
 
+describe('IntegrationShapeAtlas — per-outcome honesty in the comparison table', () => {
+  it('surfaces the matched-partial row limitation, residual, and matched-subwindow arithmetic basis', () => {
+    renderPanel()
+    const table = screen.getByTestId('atlas-outcome-table')
+    const detail = table.querySelector('[data-outcome-detail="MATCHED_PARTIAL"]')
+    expect(detail).not.toBeNull()
+    // (c) The arithmetic basis makes the row visibly a recomputation over matched time, not the whole window.
+    const basis = (detail as HTMLElement).querySelector('.atlas-outcome-basis')
+    expect(basis).toHaveAttribute('data-arithmetic-basis', 'matched_subwindows_only')
+    expect(basis).toHaveTextContent(/matched_subwindows_only/)
+    // (a) The mandatory selection-bias limitation, with its statement text accessible on the row.
+    const limitation = (detail as HTMLElement).querySelector('[data-limitation="MATCHED_SUBWINDOW_SELECTION_BIAS"]')
+    expect(limitation).not.toBeNull()
+    expect(limitation).toHaveTextContent(/non-random subsample/i)
+    // (b) The residual: the unmatched stretch named by its disqualifying kind and coverage dimension.
+    const residual = (detail as HTMLElement).querySelector('.atlas-outcome-residual [data-mismatch-kind="CONFIG_REVISION_CHANGED"]')
+    expect(residual).not.toBeNull()
+    expect(residual).toHaveAttribute('data-dimension', 'comparability')
+    expect(residual).toHaveTextContent(/unmatched day 24\.0/)
+    expect(residual).toHaveTextContent('28.0')
+  })
+
+  it('marks the FULL row as a whole-window computation with no unmatched residual', () => {
+    renderPanel()
+    const table = screen.getByTestId('atlas-outcome-table')
+    const detail = table.querySelector('[data-outcome-detail="FULL"]')
+    expect(detail).not.toBeNull()
+    const basis = (detail as HTMLElement).querySelector('.atlas-outcome-basis')
+    expect(basis).toHaveAttribute('data-arithmetic-basis', 'whole_window')
+    // FULL is total coverage of the period, so it names no unmatched residual.
+    expect((detail as HTMLElement).querySelector('.atlas-outcome-residual')).toBeNull()
+    // The mandatory matched-partial limitation is not on a FULL row.
+    expect((detail as HTMLElement).querySelector('[data-limitation="MATCHED_SUBWINDOW_SELECTION_BIAS"]')).toBeNull()
+  })
+
+  it('leaves the INCOMPARABLE row its reason, with no matched-only honesty detail', () => {
+    renderPanel()
+    const table = screen.getByTestId('atlas-outcome-table')
+    const incomparableRow = table.querySelector('tr[data-outcome="INCOMPARABLE"]')
+    expect(incomparableRow).toHaveTextContent(/no comparison: MATCHED_FRACTION_BELOW_MINIMUM/)
+    // A refusal carries no arithmetic, so it emits no honesty detail row.
+    expect(table.querySelector('[data-outcome-detail="INCOMPARABLE"]')).toBeNull()
+  })
+})
+
 describe('IntegrationShapeAtlas — evidence lineage opens from every mark', () => {
   it('opens the drawer on a derived quantile mark and resolves the full claim walk', async () => {
     const user = userEvent.setup()
