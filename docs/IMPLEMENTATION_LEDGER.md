@@ -21,9 +21,10 @@ remains default-off and
 adds no credential, live read, storage composition,
 legacy-collector switch, or public/private output path. G4 is now provider-specifically approved,
 while a strict C1 evidence/output contract, deterministic local retrieval, and a credentialless
-OpenAI Responses request boundary remain default-off. The current P12 publication candidate adds a
-strict, review-chronology-bound activation-card parser without reading its future card. The external-
-model capability is still
+OpenAI Responses request boundary remain default-off. The published P12 activation slice adds a
+strict, review-chronology-bound activation-card parser without reading its future card. A bounded
+follow-up now rejects calendar-invalid pricing timestamps that JavaScript would otherwise normalize
+into a different date. The external-model capability is still
 `never_authorized`; there is no environment read, authorization-bearing transport, network/provider
 execution, raw response, cache, telemetry, persistence, or presentation path**.
 
@@ -596,6 +597,15 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
+- P12 activation-card [PR #36](https://github.com/Chris0Jeky/developer-lens/pull/36)
+  merged as `a2b7cab`; exact-merge hosted Pages run `30882690146` completed successfully. Its late
+  automated review identified a direct evidence-gate defect: a textually shaped but impossible
+  `priceQuote.verifiedAt` date could normalize to the pricing-evidence date. The bounded follow-up
+  rejects normalization in both the exported quote schema and request parser; its focused activation/
+  request suites passed 2 files / 10 tests, and `npm run check` passed Oxlint, context verification,
+  35 test files / 168 tests, TypeScript project builds, and the production Vite build;
+  `git diff --check` passed. Fresh-context review found no CRITICAL/HIGH canonical-date, accepted-
+  format, schema-integration, or freshness defect.
 - P12 activation-card candidate was rebased onto page-membership merge `5b19f28`; the activation and
   request suites passed 2 files / 10 tests. `npm run check` passed Oxlint, context verification, 35
   test files / 168 tests, TypeScript project builds, and the production Vite build; `git diff --check`
@@ -909,8 +919,9 @@ unresolved review threads outrank it whenever they disagree.
   replayed file again before accepting it. Completed packs remain immutable by contract; an
   activated hostile-writer claim would still need an immutable snapshot or an equivalent stronger
   boundary to exclude an adversarial replace-read-restore sequence.
-- The P12 request seam and activation-card parser validate caller-injected pricing/evidence shape,
-  freshness, and review chronology but cannot authenticate page content or recompute the card's
+- The P12 request seam and activation-card parser validate caller-injected canonical pricing/
+  evidence timestamps, freshness, and review chronology but cannot authenticate page content or
+  recompute the card's
   bundle/body hashes. They deliberately have no card loader, exact preview binder, credential reader,
   HTTP timeout/body parser, usage receipt, output retention, or presentation path; those remain
   separate reviewed boundaries before a real call.
@@ -941,6 +952,10 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Tracked non-blocking review findings
 
+- The C1 evidence-bundle range parser still relies on shape-valid UTC text plus JavaScript date
+  parsing, which can normalize an impossible calendar date. This cannot bypass the repaired price-
+  freshness gate and remains separately tracked in
+  [#37](https://github.com/Chris0Jeky/developer-lens/issues/37).
 - P6 must compare verified owner email only ephemerally, emit only `is_self`, and never retain
   identity or per-person output.
 - P2 deletion tests must enumerate collection jobs/checkpoints, source snapshots, coverage,
@@ -974,8 +989,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current P12 activation-card
-   candidate is merge `5b19f284f2fbb4af617a4883d348e340edc1db5f`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P12 canonical-date
+   follow-up is merge `a2b7cab55d7b66816965a02cfc8115a4cc7a89a7`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -998,7 +1013,8 @@ unresolved review threads outrank it whenever they disagree.
    `never_authorized`. The strict C1 payload/output and deterministic local-retrieval foundation is
    present, and the credentialless request boundary now enforces native strict output, standard
    service tier, serialized byte/cost ceilings, `store:false`, and one call/no retry. The current
-   candidate adds the strict reviewed-card parser but does not load a card or authenticate its hashes.
+   published activation slice adds the strict reviewed-card parser but does not load a card or
+   authenticate its hashes. The current follow-up closes the late calendar-normalization finding.
    Next add a confined loader and pure exact payload-preview/hash binder, then an authorization-bearing
    transport that reads only the approved environment variable at call time, applies a finite timeout,
    extracts only structured output, and discards raw provider bodies/IDs. Make no live request until
