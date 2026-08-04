@@ -1,0 +1,36 @@
+{
+  "$comment": "PROPOSAL ONLY (DL-SPINE-04/05). Registered coverage-vector dimensions v2 and one per-family gate example. All values invented (C0).",
+  "dimension_registry_version": "2.0.1-proposal",
+  "dimensions": [
+    "permission", "completeness", "eligibility", "freshness", "censoring_freedom", "consistency",
+    "sample", "source_diversity", "parser_coverage", "comparability", "drift_stability", "calibration"
+  ],
+  "direction": "higher_is_better for EVERY dimension (registered per dimension; monotone abstention inverts if polarity is guessed — 2026-08-04 review correction)",
+  "dimension_value": { "type": "number|null", "null_requires": "limiting_reason code" },
+  "evidence_confidence_mapping": {
+    "freshness": "freshness", "sample": "sample", "eligibility": "eligibility",
+    "sourceDiversity": "source_diversity", "consistency": "consistency", "completeness": "completeness",
+    "new_null_start": ["permission", "censoring_freedom", "parser_coverage", "comparability", "drift_stability", "calibration"]
+  },
+  "producers": {
+    "calibration": "DL-EVQ-04 (accepted 2026-08-04); cold-start: modelled claims cap at deterministic tier until it produces",
+    "drift_stability": "DL-EVQ-03 (research role)"
+  },
+  "example_vector": {
+    "permission": 1, "completeness": 0.82, "eligibility": 0.9, "freshness": 0.9,
+    "censoring_freedom": { "value": null, "limiting_reason": "GH_DEPLOY_STATUS_90D_CENSOR" },
+    "consistency": 0.98, "sample": 0.6, "source_diversity": 0.5,
+    "parser_coverage": 0.71, "comparability": 1,
+    "drift_stability": { "value": null, "limiting_reason": "NO_RECOLLECTION_SERIES" },
+    "calibration": { "value": null, "limiting_reason": "NO_RESOLVED_QUESTIONS" }
+  },
+  "gate_example": {
+    "claim_family": "modelled.change_point",
+    "tier_requirements": {
+      "render_as_modelled": { "completeness": ">=0.8", "comparability": "==1", "calibration": "!=null" },
+      "degrade_to_deterministic_alert": { "completeness": ">=0.6" },
+      "abstain_below": "otherwise"
+    },
+    "monotonicity": "degrading any dimension can only hold or lower the tier; no cross-dimension compensation below floors"
+  }
+}

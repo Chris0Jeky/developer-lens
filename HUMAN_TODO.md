@@ -62,8 +62,26 @@ publication route remains active.
   reviewed parser, transport, projection, storage, rollback, deletion, and exact-head proving
   checks named by that private card.
 
+- [ ] **q-6 — Intelligence-platform owner gates (none blocking; decide at leisure).** The
+  2026-08-04 planning session consolidated six genuinely open owner decisions in
+  `docs/analyser-program/08_OPEN_QUESTIONS.md` §1, mirrored as QUESTION cards on the seeded local
+  Taskdeck board: (a) PR/issue prose semantic tier; (b) durable retrieval index as a reviewed
+  sink; (c) pinned offline local model option; (d) per-candidate consented real datasets for ML
+  validation; (e) cross-repository artifact identity key; (f) `agent_config` role class +
+  adoption-timing suppression; (g) capability-matrix rows for rulesets/attestations/discussions
+  (G-d) and artifact metadata-only counts (G-e) — the affected cards (DL-PORT-02, DL-PROV-01) are
+  owner-gated on the board and must not be implemented before a reviewed matrix change or your
+  decision. Additionally, the future real local Taskdeck dogfood analysis
+  (spec: `docs/analyser-program/06_TASKDECK_DEMO_PLAN.md` §2) still needs your explicit selection
+  of exact immutable refs and approval of its activation card before any run. Nothing on the
+  implementation critical path depends on any of these; refusing all of them leaves a complete
+  deterministic product.
+
 ## Changelog
 
+- 2026-08-04: the intelligence-platform planning session recorded q-6 — a consolidated register of
+  six new open owner gates plus the future Taskdeck-dogfood ref selection. No approval was inferred;
+  every listed decision remains open and non-blocking.
 - 2026-08-04: the owner explicitly approved G4 for OpenAI `gpt-5.6-luna` using the securely assigned
   `Llm__OpenAi__ApiKey` environment variable. q-3 records the narrow provider, payload, retention,
   retrieval, spend, and deletion boundary without activating a runtime request.

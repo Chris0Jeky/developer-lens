@@ -1,0 +1,18 @@
+{
+  "$comment": "PROPOSAL ONLY (DL-OPEN-01). Question claim family example. All values invented (C0).",
+  "question_id": "q_cl_44be…",
+  "kind": "evidence_gap",
+  "kinds_registry": ["evidence_gap", "contradiction", "untested_alternative", "future_source", "calibration_check", "structural_drift_gap"],
+  "spawned_by": ["cov_112", "cl_9f2ab8…"],
+  "statement_code": "WOULD_DEPLOY_HISTORY_CHANGE_CI_SHIFT_READING",
+  "cheapest_resolving_evidence": {
+    "action": "activate_capability_window",
+    "target": "cap.github.deployments",
+    "cost_class": "consented_collection",
+    "cost_classes_registry": ["fixtures_only", "recollection", "consented_collection", "owner_decision"]
+  },
+  "status": "open",
+  "statuses_registry": ["open", "answered", "obsolete"],
+  "answered_link": null,
+  "notes": "Questions are claims: exportable in packs, renderable in the Observatory, and the System Story may end on one."
+}

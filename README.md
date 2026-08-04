@@ -196,6 +196,10 @@ The durable document roles are deliberately separate:
   verification commands, and honest claim boundary.
 - [`docs/POST_DEMO_HARDENING.md`](docs/POST_DEMO_HARDENING.md) — deferred security, privacy,
   resilience, and distribution work.
+- [`docs/analyser-program/`](docs/analyser-program/00_PRODUCT_BRIEF.md) — the 2026-08-04
+  intelligence-platform planning programme (non-authoritative proposal space): product brief,
+  ADRs, catalogs, delivery roadmap, Taskdeck starter pack, and the implementation launcher naming
+  the next bounded slice. Accepted stable deltas live in the architecture document's Appendix I.
 - [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](docs/OVERNIGHT_EXECUTION_PROMPT.md) — a copy-ready Sol
   Ultra dynamic-swarm launcher that saturates useful Luna lanes and replenishes them without
   becoming a competing policy/state file.

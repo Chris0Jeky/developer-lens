@@ -1,0 +1,1936 @@
+{
+  "schemaVersion": "1.0",
+  "packId": "developer-lens-intelligence-platform",
+  "displayName": "Developer Lens - Intelligence Platform",
+  "description": "Planning board for the Developer Lens intelligence-platform programme (2026-08-04). Cards carry full task contracts in a keyed compact format; dependencies are encoded on the \"Deps:\" line of each card description because Taskdeck has no native dependency field. Source of truth for stable design: docs/DEVELOPER_LENS_V2_ARCHITECTURE.md + docs/analyser-program/. Template declarations are deliberately absent: the current apply path validates but never persists or materialises templates (verified 2026-08-04), so this pack relies only on labels, columns, and seedCards.",
+  "compatibility": {
+    "minTaskdeckVersion": "0.1.0"
+  },
+  "tags": [
+    "developer-lens",
+    "planning",
+    "architecture"
+  ],
+  "labels": [
+    {
+      "name": "status:ready",
+      "color": "#2E7D32"
+    },
+    {
+      "name": "status:blocked",
+      "color": "#9E9E9E"
+    },
+    {
+      "name": "status:research",
+      "color": "#6A1B9A"
+    },
+    {
+      "name": "status:parked",
+      "color": "#795548"
+    },
+    {
+      "name": "status:owner-gated",
+      "color": "#C62828"
+    },
+    {
+      "name": "status:question",
+      "color": "#00838F"
+    },
+    {
+      "name": "type:contract",
+      "color": "#1565C0"
+    },
+    {
+      "name": "type:implementation",
+      "color": "#0277BD"
+    },
+    {
+      "name": "type:research",
+      "color": "#7B1FA2"
+    },
+    {
+      "name": "type:ux",
+      "color": "#EF6C00"
+    },
+    {
+      "name": "type:evaluation",
+      "color": "#5E35B1"
+    },
+    {
+      "name": "type:process",
+      "color": "#455A64"
+    },
+    {
+      "name": "type:spec",
+      "color": "#00695C"
+    },
+    {
+      "name": "privacy:C0",
+      "color": "#66BB6A"
+    },
+    {
+      "name": "privacy:C1",
+      "color": "#43A047"
+    },
+    {
+      "name": "privacy:C1-C3",
+      "color": "#F9A825"
+    },
+    {
+      "name": "privacy:C4-ephemeral",
+      "color": "#EF5350"
+    },
+    {
+      "name": "gate:G2",
+      "color": "#8D6E63"
+    },
+    {
+      "name": "gate:G3-standing",
+      "color": "#D84315"
+    },
+    {
+      "name": "gate:G4-luna",
+      "color": "#AD1457"
+    },
+    {
+      "name": "gate:owner-decision",
+      "color": "#B71C1C"
+    },
+    {
+      "name": "risk:low",
+      "color": "#A5D6A7"
+    },
+    {
+      "name": "risk:medium",
+      "color": "#FFE082"
+    },
+    {
+      "name": "risk:high",
+      "color": "#EF9A9A"
+    },
+    {
+      "name": "M1-spine",
+      "color": "#90CAF9"
+    },
+    {
+      "name": "M2-first-slice",
+      "color": "#64B5F6"
+    },
+    {
+      "name": "M3-structure",
+      "color": "#42A5F5"
+    },
+    {
+      "name": "M4-flow",
+      "color": "#2196F3"
+    },
+    {
+      "name": "M5-feedback-pack",
+      "color": "#1E88E5"
+    },
+    {
+      "name": "M6-time-graph-wb",
+      "color": "#1976D2"
+    },
+    {
+      "name": "M7-interpretation",
+      "color": "#1565C0"
+    },
+    {
+      "name": "M8-story-frontier",
+      "color": "#0D47A1"
+    },
+    {
+      "name": "epic:spine",
+      "color": "#3949AB"
+    },
+    {
+      "name": "epic:lifecycle",
+      "color": "#5C6BC0"
+    },
+    {
+      "name": "epic:bridge",
+      "color": "#00897B"
+    },
+    {
+      "name": "epic:git-topology",
+      "color": "#6D4C41"
+    },
+    {
+      "name": "epic:xray",
+      "color": "#8E24AA"
+    },
+    {
+      "name": "epic:atlas",
+      "color": "#5E35B1"
+    },
+    {
+      "name": "epic:time-machine",
+      "color": "#3E2723"
+    },
+    {
+      "name": "epic:coupling",
+      "color": "#4E342E"
+    },
+    {
+      "name": "epic:semantic",
+      "color": "#00ACC1"
+    },
+    {
+      "name": "epic:flow-connectors",
+      "color": "#039BE5"
+    },
+    {
+      "name": "epic:traceability",
+      "color": "#0288D1"
+    },
+    {
+      "name": "epic:pr-observatory",
+      "color": "#0097A7"
+    },
+    {
+      "name": "epic:cadence",
+      "color": "#26A69A"
+    },
+    {
+      "name": "epic:ci-studio",
+      "color": "#7CB342"
+    },
+    {
+      "name": "epic:portfolio",
+      "color": "#9E9D24"
+    },
+    {
+      "name": "epic:governance",
+      "color": "#F9A825"
+    },
+    {
+      "name": "epic:pattern-lab",
+      "color": "#FB8C00"
+    },
+    {
+      "name": "epic:workbench",
+      "color": "#F4511E"
+    },
+    {
+      "name": "epic:retrieval",
+      "color": "#6D28D9"
+    },
+    {
+      "name": "epic:hypothesis",
+      "color": "#8E24AA"
+    },
+    {
+      "name": "epic:analysis-pack",
+      "color": "#546E7A"
+    },
+    {
+      "name": "epic:ux-atlas",
+      "color": "#D81B60"
+    },
+    {
+      "name": "epic:open-questions",
+      "color": "#00838F"
+    },
+    {
+      "name": "epic:demo",
+      "color": "#FFB300"
+    },
+    {
+      "name": "epic:evidence-quality",
+      "color": "#455A64"
+    },
+    {
+      "name": "demo:showcase",
+      "color": "#FFB300"
+    }
+  ],
+  "columns": [
+    {
+      "name": "Open Questions",
+      "position": 0
+    },
+    {
+      "name": "Proposed",
+      "position": 1
+    },
+    {
+      "name": "Ready",
+      "position": 2
+    },
+    {
+      "name": "In Progress",
+      "position": 3
+    },
+    {
+      "name": "Review",
+      "position": 4
+    },
+    {
+      "name": "Done",
+      "position": 5
+    }
+  ],
+  "seedCards": [
+    {
+      "title": "DL-SPINE-01 - Evidence claim graph table contracts",
+      "description": "[DL-SPINE-01 | epic:spine | contract | READY | risk:medium | effort:M | M1]\nOutcome: Typed claim/claim_evidence_edge/limitation_instance/lineage_event contracts exist in shared/ + STRICT SQLite tables, so every rendered statement can be resolved to evidence, contradiction, limitation, and correction lineage.\nDeps: none | Unlock: -\nPaths: shared/claims.ts (new); server/storage/schema additions (additive); server/storage tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no production caller yet\nBehavior: ADR-01: closed statement-code enums; edge roles supports/contradicts/contextualizes/derives_from/coverage_basis/limitation_basis; FK to evidence/coverage; unknown codes fail closed.\nAccept: Registering a claim with unknown statement code, unknown edge role, or missing evidence FK fails; canaries (prose, paths, names) rejected from all claim fields.\nProve: npm test -- server/storage/claims.test.ts; npm run check\nFixtures: Invented claim sets incl. contradiction pairs, superseded chains, orphan-edge attempts.\nRollback: Drop the four table families; no other table references them yet.\nDemo: Test output shows a claim resolving to its full evidence walk on fixtures.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:contract",
+        "privacy:C1",
+        "risk:medium",
+        "M1-spine",
+        "epic:spine",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-SPINE-02 - Deterministic claim canonicalisation and replay proof",
+      "description": "[DL-SPINE-02 | epic:spine | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M1]\nOutcome: Claim IDs are content-derived (sha256 over statement code, method@version, ordered evidence IDs, window, scope, schema) and replay reproduces identical IDs.\nDeps: DL-SPINE-01 | Unlock: DL-SPINE-01 merged\nPaths: shared/claims.ts; server/storage claim writer; replay test\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network\nBehavior: Versioned canonicalisation function; changed inputs produce a new claim + superseded_by link; failed replay is a data-quality finding, never overwrite.\nAccept: Same fixture inputs -> byte-identical claim IDs across two runs and shuffled insert order; changed evidence set -> new ID + lineage link.\nProve: npm test -- server/storage/claimReplay.test.ts; npm run check\nFixtures: Order-shuffled evidence lists; float/locale edge values; superseding chains.\nRollback: Canonicalisation version bump; old claims remain valid with recorded version.\nDemo: Replay test transcript.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M1-spine",
+        "epic:spine",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-SPINE-03 - Why-am-I-seeing-this resolver",
+      "description": "[DL-SPINE-03 | epic:spine | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M2]\nOutcome: One deterministic walk resolves UI element -> claim -> edges -> evidence -> coverage -> capability -> consent revision, powering the Evidence Drawer.\nDeps: DL-SPINE-01 | Unlock: DL-SPINE-01 merged\nPaths: server/ resolver module + tests (no UI in this card)\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network\nBehavior: Resolver returns a typed explanation tree; missing links are explicit coverage furniture, never omitted silently.\nAccept: For every fixture claim the walk terminates with either full lineage or explicit missing-link markers; no unresolvable ID renders as resolvable.\nProve: npm test -- server/storage/whyResolver.test.ts\nFixtures: Claims with revoked ancestors, tombstoned evidence, partial coverage.\nRollback: Resolver is read-only; remove module.\nDemo: Resolver output for one hypothesis fixture showing supports+contradicts+limitation.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M2-first-slice",
+        "epic:spine",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-SPINE-04 - Coverage-vector dimension registry v2",
+      "description": "[DL-SPINE-04 | epic:spine | contract | READY | risk:medium | effort:M | M1]\nOutcome: Registered closed 12-dimension set (permission, completeness, eligibility, freshness, censoring_freedom, consistency, sample, source_diversity, parser_coverage, comparability, drift_stability, calibration), every dimension direction=higher_is_better, per-dimension limiting-reason codes, and the explicit EvidenceConfidence mapping (six carried, six new-null) per ADR-02 as corrected 2026-08-04.\nDeps: none | Unlock: -\nPaths: shared/coverage.ts (extend, versioned); tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; never collapse to a single scalar\nBehavior: ADR-02: existing EvidenceConfidence maps 1:1 into the set; unknown dimensions fail closed; null carries a limiting reason, never a default value.\nAccept: Unknown dimension/limiting-code rejected; existing six components round-trip; null-with-reason enforced by schema.\nProve: npm test -- shared/coverage.test.ts; npm run check\nFixtures: Vectors with each dimension null/degraded; hostile unknown-dimension payloads.\nRollback: New dimensions ignored by readers pinned to v1.\nDemo: Fixture vector rendering with limiting reasons in test snapshot.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:contract",
+        "privacy:C1",
+        "risk:medium",
+        "M1-spine",
+        "epic:spine",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-SPINE-05 - Monotone abstention gates with degraded-fixture proof",
+      "description": "[DL-SPINE-05 | epic:spine | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M1]\nOutcome: Claim families declare minimum vector requirements per tier; degrading any dimension can only hold or lower a claim tier (monotone), proven on systematically degraded fixtures.\nDeps: DL-SPINE-04 | Unlock: DL-SPINE-04 merged\nPaths: shared/claims.ts gate registry; server gate evaluator; property tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no compensation across dimensions below floors\nBehavior: Per-family gate table; evaluator emits claim tier + limitation instances; property test sweeps single-dimension degradations asserting monotonicity.\nAccept: Property test proves monotonicity across the fixture grid; below-floor claims render as abstention objects with reasons.\nProve: npm test -- server/storage/abstentionGates.test.ts\nFixtures: Degradation grid per dimension x family; adversarial compensation attempts.\nRollback: Gates are data; revert registry rows.\nDemo: Grid output table in test snapshot.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M1-spine",
+        "epic:spine",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-LIFE-01 - Capability lifecycle state machine + approval-never-activates invariant",
+      "description": "[DL-LIFE-01 | epic:lifecycle | contract | READY | risk:high | effort:M | M1]\nOutcome: One typed lifecycle (never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked) instantiated by every capability, with a registry-snapshot test proving gate approvals perform no transition.\nDeps: none | Unlock: -\nPaths: shared/capabilities.ts (extend); server lifecycle module; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route; formalises the existing P4/P12 card idiom\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no transition without hash-bound reviewed card\nBehavior: ADR-03: transitions require card binding, preview, exact-head proving checks; unknown state fails closed; consentRevision = card sha256 (existing idiom).\nAccept: Simulated G2/G3/G4 approvals leave every capability state byte-identical; illegal transitions rejected; P4 activation card parses into the new lifecycle unchanged.\nProve: npm test -- server/lifecycle.test.ts; npm run check\nFixtures: Invented cards, tampered hashes, replayed approvals.\nRollback: Lifecycle wraps the existing registry; remove wrapper, registry unchanged.\nDemo: State-machine diagram + invariant test output.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:contract",
+        "privacy:C1",
+        "risk:high",
+        "M1-spine",
+        "epic:lifecycle",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-LIFE-02 - Deletion enumeration from schema registry + cascade proof",
+      "description": "[DL-LIFE-02 | epic:lifecycle | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M1]\nOutcome: Descendant deletion (facts, features, claims, graphs, caches, indexes, model outputs, app-controlled packs/backups) is generated from the schema registry, not hand lists; revocation leaves only a content-free tombstone.\nDeps: DL-LIFE-01 | Unlock: DL-LIFE-01 merged\nPaths: server/storage deletion planner; lineage_event writes; cascade tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no physical-erasure claims\nBehavior: Every registered table declares its capability lineage; planner enumerates + deletes in FK order; a canary table missing lineage fails CI.\nAccept: Fixture revocation deletes every descendant incl. planted deep dependents; tombstone content-free; missing-lineage canary fails the build.\nProve: npm test -- server/storage/deletionCascade.test.ts\nFixtures: Deep dependency chains; orphan attempts; pack/backup enumeration.\nRollback: Planner is read-only until executed in a transaction; abort restores state.\nDemo: Cascade log for one fixture revocation.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:high",
+        "M1-spine",
+        "epic:lifecycle",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-LIFE-03 - Backup/restore with tombstone replay",
+      "description": "[DL-LIFE-03 | epic:lifecycle | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M3]\nOutcome: Application-controlled backup/restore that cannot resurrect revoked data: restore replays tombstones last; task-owned key continuity binds backups.\nDeps: DL-LIFE-02 | Unlock: DL-LIFE-02 merged\nPaths: server/storage backup module (VACUUM INTO/backup API); restore replay; failure-injection tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no live-file copy backups\nBehavior: ADR-03 + charter G2 protocol; restore validates integrity/FK then replays lineage tombstones; key mismatch fails closed per issue #6/#59 decisions.\nAccept: Restore-after-revocation fixture ends with data absent + tombstone present; kill/disk-full injections leave a valid store.\nProve: npm test -- server/storage/backupRestore.test.ts\nFixtures: Backups taken before/after revocation; corrupted backup; partial key writes.\nRollback: Backups are files; delete them; store untouched.\nDemo: Failure-injection matrix output.\nConstraints: DL#6 (key continuity), DL#59 (failed key creation recovery)",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:high",
+        "M3-structure",
+        "epic:lifecycle",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-BRIDGE-01 - First V2 vertical slice: /api/v2 coverage+capabilities over synthetic store + Coverage Cockpit panel",
+      "description": "[DL-BRIDGE-01 | epic:bridge | implementation | READY | risk:medium | effort:M | M2]\nOutcome: The smallest user-visible V2 slice: lazy-mounted /api/v2/capabilities + /api/v2/coverage served from a synthetic-importer-populated SQLite store, rendered by a new Coverage Cockpit route; V2 stops being disconnected architecture.\nDeps: none | Unlock: -\nPaths: server/api/v2/*.ts (new); server/index.ts (mount only); src/components/CoverageCockpitV2.tsx; src/App.tsx route; focused tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route; serves only synthetic-marked stores (ADR-04 provenance rule)\nProhibited: No real-data read; no legacy endpoint changes; no DashboardData change (showcase CI coupling); no eager better-sqlite3 import in demo/showcase paths\nBehavior: ADR-04: dynamic import() isolates native deps; per-launch bearer + exact Host/Origin on v2 endpoints from birth; schema-validated responses; refuses stores without synthetic marker or bound card.\nAccept: Cockpit renders 10-state coverage from fixtures incl. never_authorized/refused rows; wrong bearer/Host/Origin rejected; demo+showcase builds unchanged with native deps absent from their bundles.\nProve: npm test -- server/api/v2/coverage.test.ts src/components/CoverageCockpitV2.test.tsx; npm run check; npm run build:showcase\nFixtures: Synthetic importer output with every coverage status + provenance markers.\nRollback: legacy-read-only flag pins V1; v2 mount is one line to remove.\nDemo: Local walkthrough: open cockpit, show absence rendered as coverage, never zero.\nConstraints: DL#5/#6 gate later real migration, not this synthetic slice",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:implementation",
+        "privacy:C0",
+        "risk:medium",
+        "M2-first-slice",
+        "epic:bridge",
+        "gate:G2",
+        "demo:showcase"
+      ]
+    },
+    {
+      "title": "DL-BRIDGE-02 - V2 features + evidence endpoints with claim links",
+      "description": "[DL-BRIDGE-02 | epic:bridge | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M2]\nOutcome: /api/v2/features and /api/v2/evidence/:id serve dictionary features and claim walks from the synthetic store, powering the Evidence Drawer.\nDeps: DL-BRIDGE-01, DL-SPINE-01, DL-SPINE-02 | Unlock: claim tables + first slice merged\nPaths: server/api/v2/features.ts, evidence.ts; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no generic SQL/table/file endpoint (charter sink rule)\nBehavior: Cursor pagination, allowlisted filters, resource-specific schemas; evidence endpoint returns the SPINE-03 walk.\nAccept: Feature values match dictionary goldens on fixtures; unknown feature/claim IDs 404 with stable codes; pagination bounded.\nProve: npm test -- server/api/v2/features.test.ts\nFixtures: Dictionary golden values (DL.PR.*, DL.CI.* fixtures) + claim chains.\nRollback: Endpoints are additive; unmount.\nDemo: Evidence walk JSON for one derived feature.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M2-first-slice",
+        "epic:bridge",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-BRIDGE-03 - V1->V2 parity fixtures + person-shape-absence proof",
+      "description": "[DL-BRIDGE-03 | epic:bridge | evaluation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M2]\nOutcome: One invented V1 dataset with golden safe-aggregate mapping into V2; a test asserts V2 API exposes no DNA/archetype/streak/person-shaped field anywhere.\nDeps: DL-BRIDGE-01 | Unlock: DL-BRIDGE-01 merged\nPaths: test fixtures; parity test module\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; parity never imports V1 person-shaped outputs as V2 features\nBehavior: ADR-04 step 3; V1 aggregates that V2 cannot reproduce become recorded coverage limitations, not patched values.\nAccept: Parity table green on counts/windows/coverage mapping; person-shape scanner finds zero matches in every v2 response schema.\nProve: npm test -- server/api/v2/parity.test.ts\nFixtures: Invented V1 JSON incl. PR titles/identities that must NOT cross; migration goldens.\nRollback: Fixtures only.\nDemo: Parity report table.\nConstraints: DL#5 (v1 name domain) informs fixture breadth",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:evaluation",
+        "privacy:C0",
+        "risk:medium",
+        "M2-first-slice",
+        "epic:bridge",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-BRIDGE-04 - Legacy view retirement ladder (DNA/archetype first)",
+      "description": "[DL-BRIDGE-04 | epic:bridge | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M5]\nOutcome: Person-shaped views (DnaPanel, archetype, streaks) retire behind the bridge order with deprecation banners then removal, each with its own revert.\nDeps: DL-BRIDGE-03, DL-UX-CC, DL-UX-ED | Unlock: replacement views accepted\nPaths: src/components/* (per-view cards); src/App.tsx routes\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No DashboardData shape change without its own showcase-gate card; no silent removal of legacy fallback until ladder completes\nBehavior: ADR-04 order: DNA/archetype -> scalar confidence -> legacy insight stack -> exporters -> collector last.\nAccept: Each retirement keeps npm run build:showcase green; legacy-read-only flag still renders the frozen V1 until final removal card.\nProve: npm run check; npm run build:showcase\nFixtures: Existing demo dataset (C0).\nRollback: Per-view revert; flag pin.\nDemo: Before/after route walkthrough.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C0",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:bridge",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-BRIDGE-05 - Exporter migration to ExportView-fed builders",
+      "description": "[DL-BRIDGE-05 | epic:bridge | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M5]\nOutcome: ShareStudio builders consume a pre-redacted ExportView instead of full DashboardData; the alias-everything default lands (closing the verified D13 doc-vs-code delta).\nDeps: DL-PACK-05 | Unlock: pack preview/suppression mechanics merged\nPaths: src/lib/sharePayload.ts, portableExportPayload.ts; src/components/ShareStudio.tsx; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: Exporter must lose access to identity fields it does not emit; no acknowledgement persistence across redaction changes\nBehavior: Canonical section 11 public/portable separation; default aliases every repository name; acknowledgement invalidation on any redaction change.\nAccept: Canary identities absent from every export byte; default export has zero public repo names; ack resets proven.\nProve: npm test -- src/lib/portableExportPayload.test.ts; npm run build:showcase\nFixtures: Canary-laden invented dashboards.\nRollback: Old builders behind legacy flag until removal card.\nDemo: Diff of default export before/after.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:high",
+        "M5-feedback-pack",
+        "epic:bridge",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-GIT-01 - Hardened explicit-ref extraction + coverage semantics",
+      "description": "[DL-GIT-01 | epic:git-topology | implementation | READY | risk:high | effort:M | M3]\nOutcome: cap.local.git extraction over explicitly selected immutable refs with the full ADR-08 flag set; shallow/partial/replace/missing objects become coverage codes, never fetches or zeros.\nDeps: none | Unlock: -\nPaths: server/connectors/localGit/* (new); invented repo fixture corpus; tests\nAuthority: G2 approved (matrix cap.local.git); executable stays never_authorized until this activation path + tests pass; explicit selected roots/refs only\nProhibited: No --all, no implicit/lazy fetch, no repository executables/hooks/config effects, no raw stderr, no path/subject retention, no working tree\nBehavior: ADR-08: rev-list/log/for-each-ref with --no-replace-objects --no-lazy-fetch, disabled aliases/hooks/filters/textconv; stderr -> stable codes; HMAC object keys (C2 13m).\nAccept: Hostile-config corpus (malicious diff/textconv/filter/signature display) produces zero execution side effects; shallow/partial fixtures yield exact coverage codes; deletion cascade proven.\nProve: npm test -- server/connectors/localGit/extraction.test.ts; npm run check\nFixtures: Invented repos: linear/merge, shallow, partial, replace refs, grafts, worktrees, hostile config.\nRollback: Capability revocation deletes observations + descendants.\nDemo: Coverage table for a deliberately shallow fixture.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:high",
+        "M3-structure",
+        "epic:git-topology",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-GIT-02 - Ref movement + first-parent release ancestry",
+      "description": "[DL-GIT-02 | epic:git-topology | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M3]\nOutcome: Ref-movement enums (ff/non-ff/deleted/stale) and first-parent release ancestry proofs feed release batches, traceability, and cadence.\nDeps: DL-GIT-01 | Unlock: DL-GIT-01 merged\nPaths: server/connectors/localGit/refMovement.ts, ancestry.ts; tests\nAuthority: Same as DL-GIT-01\nProhibited: Never assert force-push without authoritative movement observation; no ref/tag names retained\nBehavior: Successive tip snapshots + merge-base --is-ancestor; movement enums per GIT-REF-01; ancestry proofs stored as facts with evidence IDs.\nAccept: Fixture ff/non-ff/deletion sequences classify exactly; non-ancestor release targets yield null + limitation, not zero.\nProve: npm test -- server/connectors/localGit/refMovement.test.ts\nFixtures: Scripted ref-history fixtures incl. retag and stale upstream.\nRollback: Descendant deletion via lifecycle.\nDemo: Movement classification table on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M3-structure",
+        "epic:git-topology",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-XRAY-01 - Committed-tree role taxonomy + fixtures",
+      "description": "[DL-XRAY-01 | epic:xray | contract | READY | risk:low | effort:S | M3]\nOutcome: Closed 14-role taxonomy (build/test/docs/config/migration/api_surface/ci_definition/dependency_manifest/generated/vendored/binary_asset/schema_definition/fixture_golden/snapshot_artifact — last three accepted 2026-08-04, frontier A4) with classification rules as data + fixture corpus incl. sniff-precision floor.\nDeps: none | Unlock: -\nPaths: shared/ sourceRoles contract; fixtures; tests\nAuthority: G2+G3 standing (cap.source.structure boundary); contract-only, no tree read here\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no path retention in outputs\nBehavior: ADR-05: extension/manifest classification tables; roles are counts/presence only; unknown -> unclassified bucket, disclosed.\nAccept: Classification goldens on fixture trees; unknown-extension handling proven; no path strings in any output type.\nProve: npm test -- shared/sourceRoles.test.ts\nFixtures: Invented tree listings: monorepo, generated-heavy, symlink/binary mix.\nRollback: Contract only.\nDemo: Role table for fixture tree.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:contract",
+        "privacy:C1",
+        "risk:low",
+        "M3-structure",
+        "epic:xray",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-XRAY-02 - Worker tree enumeration + monorepo boundaries + parser coverage",
+      "description": "[DL-XRAY-02 | epic:xray | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M3]\nOutcome: Ephemeral ls-tree enumeration in the isolated worker yields C1 composition (languages, roles, monorepo boundary count) with enumeration/parser coverage recorded.\nDeps: DL-XRAY-01, DL-ATLAS-01 | Unlock: taxonomy + worker sandbox merged\nPaths: server/connectors/sourceStructure/composition.ts; worker glue; tests\nAuthority: G2+G3 standing; immutable selected refs only; runtime default-off until activation card\nProhibited: No working tree, no submodule recursion without consent, no file-content reads beyond closed manifest rules, no paths/names persisted\nBehavior: ls-tree -r -z --long streaming; C4 paths destroyed in-process; boundary classes from manifest presence.\nAccept: Dirty-working-tree fixture yields identical output to clean (committed tree only); crash on one file degrades parser_coverage without fabrication.\nProve: npm test -- server/connectors/sourceStructure/composition.test.ts\nFixtures: Invented repos: monorepo boundaries, huge files, malformed names (NUL-safe), symlinks.\nRollback: Revocation deletes composition rows.\nDemo: Composition + coverage output for fixture repo.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C4-ephemeral",
+        "risk:medium",
+        "M3-structure",
+        "epic:xray",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-ATLAS-01 - Isolated parser worker sandbox + resource caps + hostile corpus",
+      "description": "[DL-ATLAS-01 | epic:atlas | implementation | READY | risk:high | effort:L | M3]\nOutcome: A constrained worker process (no network/shell/repo executables, bounded input/time/memory/output, disabled stdio) that all source parsing runs inside, proven against a hostile corpus.\nDeps: none | Unlock: -\nPaths: server/connectors/sourceStructure/worker.ts; sandbox harness; hostile fixtures\nAuthority: G2+G3 standing (cap.source.structure); sandbox is a precondition for every parser card\nProhibited: No repository dependencies/plugins/config, no dynamic grammar loading, no stdout/stderr, no partial output on crash\nBehavior: ADR-06 execution model; per-file crash containment -> skip + parser_coverage record; caps configurable from local CPU/memory.\nAccept: Hostile fixtures (zip bombs, pathological nesting, binary masquerade, huge files) never exceed caps or escape the worker; crash of one file never kills the run.\nProve: npm test -- server/connectors/sourceStructure/worker.test.ts\nFixtures: Hostile corpus + timeout/memory boundary cases.\nRollback: Worker is self-contained; remove module.\nDemo: Sandbox report: caps hit, contained, coverage recorded.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:implementation",
+        "privacy:C4-ephemeral",
+        "risk:high",
+        "M3-structure",
+        "epic:atlas",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-ATLAS-02 - TypeScript tier-1 extractor (typed imports + public declarations)",
+      "description": "[DL-ATLAS-02 | epic:atlas | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:L | M3]\nOutcome: Pinned TS compiler API extractor emits HMAC module nodes, typed import edges, and public-declaration counts for TS/JS trees.\nDeps: DL-ATLAS-01 | Unlock: sandbox merged\nPaths: server/connectors/sourceStructure/tsExtractor.ts; tests\nAuthority: G2+G3 standing; parser bundle pinned + versioned\nProhibited: No identifiers/import strings/AST persisted; no type-aware cross-repo resolution; no repo tsconfig plugin execution\nBehavior: ADR-06 tier-1; parser_bundle_version stamps outputs; generated/vendored excluded per XRAY roles.\nAccept: Golden module graphs on fixture projects; parser-version bump invalidates only dependent features; canary identifiers absent from all outputs.\nProve: npm test -- server/connectors/sourceStructure/tsExtractor.test.ts\nFixtures: Invented TS/JS projects: cycles, barrel files, dynamic imports, broken files.\nRollback: Graph deletion via lifecycle; version-scoped.\nDemo: Opaque module graph stats for fixture project.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C4-ephemeral",
+        "risk:medium",
+        "M3-structure",
+        "epic:atlas",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-ATLAS-03 - tree-sitter tier-2 grammar set (Py/C#/Java/Go/Rust)",
+      "description": "[DL-ATLAS-03 | epic:atlas | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:L | M6]\nOutcome: Pinned bundled tree-sitter grammars extract import/reference edges + declaration counts for tier-2 languages; everything else abstains with recorded parser coverage.\nDeps: DL-ATLAS-02 | Unlock: tier-1 proves the extraction contract\nPaths: server/connectors/sourceStructure/tsitterExtractor.ts; grammar manifest; tests\nAuthority: G2+G3 standing; each language ships with a documented grammar-quality note + fixture corpus\nProhibited: No runtime grammar addition; no network grammar fetch; no partial-language silent coverage\nBehavior: ADR-06 tier-2; per-language quality tiers; abstention is explicit coverage.\nAccept: Per-language golden graphs; unsupported-language fixture yields abstention not zeros; grammar upgrade = bundle major bump.\nProve: npm test -- server/connectors/sourceStructure/tsitterExtractor.test.ts\nFixtures: Small invented corpora per language + malformed files.\nRollback: Per-language disable flags in bundle manifest.\nDemo: Coverage matrix language x capability.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C4-ephemeral",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:atlas",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-ATLAS-04 - Opaque module graph features: SCC, cycles, fan-in/out, layering",
+      "description": "[DL-ATLAS-04 | epic:atlas | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M3]\nOutcome: DL.ARCH.CYCLE.v1 + proposed fan-in/out distribution and layer-depth features computed over the opaque graph, with parser coverage bound into every claim.\nDeps: DL-ATLAS-02 | Unlock: tier-1 extractor merged\nPaths: server/analysis/architecture.ts; feature tests\nAuthority: G2+G3 standing\nProhibited: No module names; cycles never framed as defects without independent evidence; sparse suppression before display\nBehavior: Tarjan SCC; distributions not rankings; C3 graph 90d, C1 summaries 36m.\nAccept: Golden SCC/fan stats on planted-cycle fixtures; suppression below support gates proven.\nProve: npm test -- server/analysis/architecture.test.ts\nFixtures: Planted cycles/layers; near-empty graphs for suppression.\nRollback: Feature versions; delete summaries.\nDemo: Cycle proportion + fan distribution for fixture graph.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M3-structure",
+        "epic:atlas",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-ATLAS-05 - Public API-surface counts between snapshots",
+      "description": "[DL-ATLAS-05 | epic:atlas | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: DL.ARCH.API_SURFACE_DELTA.v1 implemented for tier-1 (and tier-2 where grammar quality allows), syntax-only, no compatibility claims.\nDeps: DL-ATLAS-02 | Unlock: tier-1 extractor merged\nPaths: server/connectors/sourceStructure/apiSurface.ts; tests\nAuthority: G2+G3 standing\nProhibited: No signatures/names retained; no breaking-change claims; rename appears as add+remove with limitation\nBehavior: Counts per language between comparable snapshots (ADR-07 rules); C4 inputs destroyed.\nAccept: Golden deltas on fixture snapshot pairs incl. rename-only case rendering with its limitation code.\nProve: npm test -- server/connectors/sourceStructure/apiSurface.test.ts\nFixtures: Snapshot pairs: additions, removals, renames, unsupported constructs.\nRollback: Feature deletion.\nDemo: Delta table for fixture pair.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:atlas",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-ATLAS-06 - Test-to-code topology",
+      "description": "[DL-ATLAS-06 | epic:atlas | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:M | M6]\nOutcome: Opaque test-module -> code-module edge aggregates (import-based) showing test topology shape (coverage breadth of structure, not quality).\nDeps: DL-ATLAS-04 | Unlock: module graph merged\nPaths: server/analysis/testTopology.ts; tests\nAuthority: G2+G3 standing\nProhibited: Never framed as test quality/coverage-percentage claims; no names\nBehavior: Role taxonomy marks test modules; edges aggregate into distribution features.\nAccept: Goldens on fixture projects; wording rule enforced in copy dictionary tests.\nProve: npm test -- server/analysis/testTopology.test.ts\nFixtures: Projects with hub tests, orphan code, generated tests.\nRollback: Feature deletion.\nDemo: Topology distribution for fixture.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:low",
+        "M6-time-graph-wb",
+        "epic:atlas",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-TIME-01 - Snapshot contract + comparability rules",
+      "description": "[DL-TIME-01 | epic:time-machine | contract | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: Snapshots keyed by (repo alias, ref OID, parser bundle version, config revision); comparability requires equal parser major + config; incomparable pairs render as limitation, never delta.\nDeps: DL-ATLAS-04, DL-XRAY-02 | Unlock: graph + composition features exist\nPaths: shared snapshot contract; server/analysis/snapshots.ts; tests\nAuthority: G2+G3 standing\nProhibited: No cross-major comparison; no silent config drift\nBehavior: ADR-07; comparability dimension feeds the ADR-02 vector.\nAccept: Cross-major fixture pair refuses delta with comparability limitation; equal-major pair produces era diff.\nProve: npm test -- server/analysis/snapshots.test.ts\nFixtures: Snapshot pairs across parser versions/configs.\nRollback: Contract + feature deletion.\nDemo: Comparable vs incomparable rendering fixture.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:contract",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:time-machine",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-TIME-02 - Module continuity / split-merge matching (modelled)",
+      "description": "[DL-TIME-02 | epic:time-machine | research | RESEARCH | risk:medium | effort:M | M6]\nOutcome: Content-overlap continuity matching across snapshots with reported match confidence; split/merge assignments are modelled-layer claims with planted-fixture stability proof, or the feature ships without continuity.\nDeps: DL-TIME-01 | Unlock: snapshot contract merged\nPaths: server/analysis/moduleContinuity.ts; planted fixtures; stability eval\nAuthority: G2+G3 standing\nProhibited: Continuity never rendered as observed; below-stability matching disables the feature (preregistered gate)\nBehavior: ADR-07: HMAC-normalized identifier-set overlap; stability threshold preregistered before tuning.\nAccept: Planted split/merge fixtures recovered above gate across seeds/orderings, else feature marked rejected in registry.\nProve: npm test -- server/analysis/moduleContinuity.test.ts\nFixtures: Planted renames, splits, merges, rewrites.\nRollback: Feature flag off; era diffs remain without continuity.\nDemo: Stability report on planted grid.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:time-machine",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-COUP-01 - Ephemeral diffset->module mapping with caps",
+      "description": "[DL-COUP-01 | epic:coupling | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: Selected-commit diffsets map path->HMAC module ephemerally (worker), with modules/commit cap 50, oversize/generated-only exclusion disclosed as coverage.\nDeps: DL-GIT-01 | Unlock: hardened extraction merged\nPaths: server/connectors/sourceStructure/coChange.ts; tests\nAuthority: G2+G3 standing (SRC-COUPLING-01)\nProhibited: No paths/diffs/messages retained; no per-author dimension; caps never silently raised\nBehavior: ADR-09 inputs; rename heuristic versioned; C3 sparse pair graph.\nAccept: Cap/exclusion fixtures produce exact coverage disclosures; canary paths absent from all outputs.\nProve: npm test -- server/connectors/sourceStructure/coChange.test.ts\nFixtures: Huge commits, rename storms, generated-only changes, monorepo boundaries.\nRollback: Revocation deletes pair graph.\nDemo: Pair support table on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C4-ephemeral",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:coupling",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-COUP-02 - Change radius, coupling stability, migration waves",
+      "description": "[DL-COUP-02 | epic:coupling | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: DL.ARCH.TEMPORAL_COUPLING.v1 plus proposed change-radius distribution, pair-persistence stability, and time-bounded migration-wave subgraphs.\nDeps: DL-COUP-01 | Unlock: mapping merged\nPaths: server/analysis/coupling.ts; tests\nAuthority: G2+G3 standing\nProhibited: Co-change never labelled dependency/fault/ownership/bad design (copy dictionary rule); support gates enforced\nBehavior: ADR-09 features; wording rule tested; sparse suppression.\nAccept: Golden features on scripted co-change fixtures; copy-rule test rejects banned framings.\nProve: npm test -- server/analysis/coupling.test.ts\nFixtures: Planted waves, stable pairs, drifting pairs.\nRollback: Feature deletion.\nDemo: Wave visualization data for fixture.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:coupling",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-COUP-03 - Cross-repository contract-wave lift",
+      "description": "[DL-COUP-03 | epic:coupling | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M7]\nOutcome: Weekly-lift wave detection across repositories over pack-scoped dependency/contract aliases (extends DL.CROSS.REPO_COOCCURRENCE_LIFT + DL.DEP.UPDATE_WAVE mechanics).\nDeps: DL-COUP-02, DL-DEP-01 | Unlock: dependency alias facts exist\nPaths: server/analysis/contractWaves.ts; tests\nAuthority: G2+G3 standing\nProhibited: Exact names stay C3-isolated; sparse pairs suppressed; automation confound stated in copy\nBehavior: ADR-09 cross-repo mechanics; alternatives include shared-automation explanation by default.\nAccept: Planted wave fixtures detected with support counts; independent-presence fixture yields lift ~1.\nProve: npm test -- server/analysis/contractWaves.test.ts\nFixtures: Coordinated vs coincidental update patterns.\nRollback: Feature deletion.\nDemo: Wave chart data for fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M7-interpretation",
+        "epic:coupling",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-SEM-01 - Change-intent rule families + multilingual fixtures",
+      "description": "[DL-SEM-01 | epic:semantic | implementation | READY | risk:medium | effort:M | M4]\nOutcome: cap.commit.intent rule classifier over ephemeral subjects: conventional-commit + language-agnostic rule families, controlled categories incl. migration/config/dependency/revert, unknown otherwise.\nDeps: none | Unlock: -\nPaths: server/connectors/commitIntent/*; tests\nAuthority: G2 approved (matrix cap.commit.intent); ephemeral opt-in; no external model; runtime default-off until activation card\nProhibited: Subjects never persisted/logged; no per-author dimension; PR/issue prose out of scope (owner-gated DL-Q-PROSE)\nBehavior: ADR-10 tier-1; C4 destroyed in-process; classifier version recorded.\nAccept: Golden categories on multilingual/injection/revert/empty/long fixtures; canary subjects absent from every sink.\nProve: npm test -- server/connectors/commitIntent/rules.test.ts\nFixtures: Multilingual, ambiguous, injection-like, fixup/revert, emoji, very long subjects.\nRollback: Revocation destroys summaries + classifier cache.\nDemo: Category mix on fixture corpus.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:implementation",
+        "privacy:C4-ephemeral",
+        "risk:medium",
+        "M4-flow",
+        "epic:semantic",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-SEM-02 - Intent mix features + abstention",
+      "description": "[DL-SEM-02 | epic:semantic | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M4]\nOutcome: DL.CHANGE.INTENT_MIX.v1 per window with >=20 subjects and >=80% parser completion gates; below-gate windows abstain.\nDeps: DL-SEM-01 | Unlock: rule families merged\nPaths: server/analysis/intentMix.ts; tests\nAuthority: G2 approved\nProhibited: Mix never framed as true intent; unknown share always displayed\nBehavior: Dictionary spec; abstention objects with reasons below gates.\nAccept: Golden mixes; gate boundary fixtures abstain correctly.\nProve: npm test -- server/analysis/intentMix.test.ts\nFixtures: Above/below-gate windows.\nRollback: Feature deletion.\nDemo: Mix chart data with unknown share.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M4-flow",
+        "epic:semantic",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-FLOW-01 - PR timeline connector (ready/review/rework transitions)",
+      "description": "[DL-FLOW-01 | epic:flow-connectors | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:L | M4]\nOutcome: GH-PR-TL-01 connector: ready/draft events, review states/times, thread counts, head movement, via checkpointed incremental collection; feeds observatory + traceability.\nDeps: DL-LIFE-01 | Unlock: lifecycle state machine merged\nPaths: server/connectors/github/prTimeline.ts; checkpoint/coverage tests\nAuthority: G2 approved (GH-PR-01/TL-01); executable never_authorized until activation card; local repo selection required\nProhibited: No bodies/comments/reviewer identity/branch names; timeline incompleteness recorded, not patched\nBehavior: Canonical P7 + connector checkpoint protocol; 100/page; missing pages -> truncated coverage.\nAccept: Recorded invented shapes replay idempotently; ready<->draft, dismissed review, missing page fixtures produce exact facts + coverage.\nProve: npm test -- server/connectors/github/prTimeline.test.ts\nFixtures: Invented GraphQL/REST shapes incl. saturation + permission loss.\nRollback: Capability revocation cascades facts/features.\nDemo: Fact table for fixture PR set.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M4-flow",
+        "epic:flow-connectors",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-FLOW-02 - Checks/statuses connector (attempt-aware)",
+      "description": "[DL-FLOW-02 | epic:flow-connectors | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M4]\nOutcome: GH-CHECK-01 connector keyed by head OID + attempt; >1000-suite truncation and rerun semantics as coverage; no names/annotations.\nDeps: DL-LIFE-01 | Unlock: lifecycle merged\nPaths: server/connectors/github/checks.ts; tests\nAuthority: G2 approved; activation-gated\nProhibited: No check names/URLs/annotation content; latest-only defaults handled explicitly\nBehavior: Attempt-specific records; GH_CHECK_SUITES_1000_CAP limitation on saturation.\nAccept: Rerun/fork-PR/missing-suite fixtures classify exactly; cap fixture records saturation.\nProve: npm test -- server/connectors/github/checks.test.ts\nFixtures: Invented suites incl. 1001-suite saturation.\nRollback: Revocation cascade.\nDemo: Attempt table on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M4-flow",
+        "epic:flow-connectors",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-FLOW-03 - Issues + linkage connector (state/edges, no prose)",
+      "description": "[DL-FLOW-03 | epic:flow-connectors | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M4]\nOutcome: GH-ISSUE-01 connector: IDs, state/reason/type, timestamps, parent/subissue/blocking/closing-PR edges; transfer/reopen/deletion handled as corrections.\nDeps: DL-LIFE-01 | Unlock: lifecycle merged\nPaths: server/connectors/github/issues.ts; tests\nAuthority: G2 approved (issue_taxonomy boundary for labels deferred to its own card)\nProhibited: No titles/bodies/comments/assignees/creators; label names only as local aliases per matrix (not this card)\nBehavior: Closing-PR edges observed-only; ambiguous 404 -> PERMISSION_AMBIGUOUS_404.\nAccept: Transfer/reopen/deletion fixtures produce revisioned upserts + tombstones; edge goldens.\nProve: npm test -- server/connectors/github/issues.test.ts\nFixtures: Invented issue lifecycles incl. partial permission.\nRollback: Revocation cascade.\nDemo: Edge list for fixture issues.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M4-flow",
+        "epic:flow-connectors",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-FLOW-04 - Releases connector + release intervals",
+      "description": "[DL-FLOW-04 | epic:flow-connectors | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:M | M4]\nOutcome: GH-REL-01 connector (IDs, target OID aliases, flags, dates, asset counts) + DL.REL.CHANGE_BATCH facts over first-parent intervals.\nDeps: DL-LIFE-01 | Unlock: lifecycle merged\nPaths: server/connectors/github/releases.ts; server/analysis/releaseIntervals.ts; tests\nAuthority: G2 approved\nProhibited: No release names/bodies/asset names/URLs; releases-are-not-all-tags stated in coverage\nBehavior: Non-ancestor targets -> null + limitation; retag/deleted-release corrections.\nAccept: Golden batch counts on fixture interval sets; retag fixture supersedes cleanly.\nProve: npm test -- server/connectors/github/releases.test.ts\nFixtures: Prerelease, retag, deleted release, non-ancestor target.\nRollback: Revocation cascade.\nDemo: Interval/batch table.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:low",
+        "M4-flow",
+        "epic:flow-connectors",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-TRACE-01 - Typed traceability graph (observed edges only)",
+      "description": "[DL-TRACE-01 | epic:traceability | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M4]\nOutcome: graph_projection traceability.v2 with node kinds issue/pr/commit_alias/release/deployment and provider-observed edges; DL.FLOW.ISSUE_PR_RELEASE_RATIO stays observed-only.\nDeps: DL-FLOW-01, DL-FLOW-03 | Unlock: PR + issue connectors merged\nPaths: server/analysis/traceabilityGraph.ts; tests\nAuthority: G2 approved\nProhibited: No suggested/inferred edges in this card; no causality wording; linked!=completed stated\nBehavior: ADR-11 observed layer; complete-coverage eligibility for ratios.\nAccept: Linked/unlinked/censored/reverted fixture chains produce exact ratios with coverage.\nProve: npm test -- server/analysis/traceabilityGraph.test.ts\nFixtures: Chain fixtures incl. censoring.\nRollback: Projection deletion.\nDemo: Graph stats on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M4-flow",
+        "epic:traceability",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-TRACE-02 - Release/deployment ancestry edges",
+      "description": "[DL-TRACE-02 | epic:traceability | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M4]\nOutcome: First-parent release-ancestry and deployment_of edges join the traceability graph with proof-bearing evidence IDs.\nDeps: DL-FLOW-04, DL-GIT-02 | Unlock: release connector + ancestry proofs merged\nPaths: server/analysis/traceabilityGraph.ts (extend); tests\nAuthority: G2 approved (deployments via G3 standing when that connector lands)\nProhibited: Ancestry never claimed without proof; censored history stays censored\nBehavior: ADR-11; merge OID reachability from release targets within horizon.\nAccept: Ancestor/non-ancestor fixtures classify exactly; censored horizon yields null.\nProve: npm test -- server/analysis/traceability.ancestry.test.ts\nFixtures: Reachable/unreachable merge OIDs; horizon edges.\nRollback: Edge family deletion.\nDemo: Chain walk for one fixture issue->release.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M4-flow",
+        "epic:traceability",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-TRACE-03 - Suggested associations as calibrated hypothesis claims",
+      "description": "[DL-TRACE-03 | epic:traceability | research | RESEARCH | risk:medium | effort:M | M7]\nOutcome: Temporal/topological association suggester emitting hypothesis-layer claims with calibrated uncertainty, alternatives, and falsifiers; never enters deterministic ratios.\nDeps: DL-TRACE-01, DL-WB-01 | Unlock: workbench harness merged (calibration eval)\nPaths: server/research/suggestedLinks.ts; calibration eval; tests\nAuthority: G2 approved; modelled layer only\nProhibited: No history rewriting; provider edge always supersedes suggestion via lineage; no UI outside hypothesis styling\nBehavior: ADR-11 suggested split; preregistered calibration gate on planted fixtures before any UI card.\nAccept: Inferred-link calibration measured separately from explicit-link P/R; below-gate -> feature stays research.\nProve: npm test -- server/research/suggestedLinks.test.ts\nFixtures: Planted true/false association corpora.\nRollback: Registry demotion removes claims automatically.\nDemo: Calibration curve on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C1",
+        "risk:medium",
+        "M7-interpretation",
+        "epic:traceability",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-OBSV-01 - PR transition/rework episode facts",
+      "description": "[DL-OBSV-01 | epic:pr-observatory | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M4]\nOutcome: DL.PR.REWORK_EPISODES + transition-sequence facts (draft/ready cycles, head movement between review states) with censoring records.\nDeps: DL-FLOW-01 | Unlock: PR timeline connector merged\nPaths: server/analysis/prObservatory.ts; tests\nAuthority: G2 approved\nProhibited: No reviewer/author dimension anywhere; latency framed as system/queue property only (copy rule tested)\nBehavior: Dictionary definitions; ECDF/quantiles with eligible/censored counts; no bare means.\nAccept: Golden episodes on fixture timelines; copy-rule test rejects person framings.\nProve: npm test -- server/analysis/prObservatory.test.ts\nFixtures: Multi-episode, repeated-review, missing-timeline fixtures.\nRollback: Feature deletion.\nDemo: Episode distribution chart data.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M4-flow",
+        "epic:pr-observatory",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-OBSV-02 - PR stack/retarget topology observations",
+      "description": "[DL-OBSV-02 | epic:pr-observatory | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M4]\nOutcome: GH-STACK-01 boundary implemented: base-retarget events, opaque PR dependency edges, queue/auto-merge transitions where observable; no universal-stack claims.\nDeps: DL-FLOW-01 | Unlock: PR timeline connector merged\nPaths: server/analysis/prStacks.ts; tests\nAuthority: G2 approved\nProhibited: No branch names/people; no intent inference from same-branch alone (documented U)\nBehavior: Observed transitions only; ambiguous overlap recorded as such.\nAccept: Retarget/deleted-head/queue-cancel fixtures classify exactly.\nProve: npm test -- server/analysis/prStacks.test.ts\nFixtures: Stacked, retargeted, cancelled-queue shapes.\nRollback: Feature deletion.\nDemo: Stack topology stats.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M4-flow",
+        "epic:pr-observatory",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-OBSV-03 - Batch shape + censored-tail treatment",
+      "description": "[DL-OBSV-03 | epic:pr-observatory | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M4]\nOutcome: Batch-shape distributions (PRs per release interval) and explicit open/abandoned-tail censoring records unify observatory rendering.\nDeps: DL-FLOW-04 | Unlock: release intervals merged\nPaths: server/analysis/prObservatory.ts (extend); tests\nAuthority: G2 approved\nProhibited: No mean-only displays; censored counts always shown\nBehavior: Reuses DL.REL.CHANGE_BATCH; tails render as coverage furniture.\nAccept: Golden distributions; censored fixtures render with counts.\nProve: npm test -- server/analysis/prObservatory.batch.test.ts\nFixtures: Long-tail + heavy-censoring windows.\nRollback: Feature deletion.\nDemo: Batch ECDF data.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M4-flow",
+        "epic:pr-observatory",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-CAD-01 - Coarse cadence features + grain floors + prohibited-output rejection",
+      "description": "[DL-CAD-01 | epic:cadence | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M5]\nOutcome: Repository-level cadence distributions (release intervals, integration-shape trends, queue shapes) with ISO-week grain floors; schema-level rejection of calendars/session-boundaries/personal-timeline outputs.\nDeps: DL-FLOW-01, DL-CI-01 | Unlock: flow + CI facts exist\nPaths: server/analysis/cadence.ts; rejection tests\nAuthority: G2 approved; ADR-14 boundary\nProhibited: Nothing finer than ISO week for cadence; no hour/day-of-week personal profiles; no pause/return detection; fast/busy never framed as good\nBehavior: ADR-14; prohibited outputs are schema-rejected with tests, not just absent.\nAccept: Grain-floor property test; prohibited-shape canaries rejected at schema; trend copy descriptive.\nProve: npm test -- server/analysis/cadence.test.ts\nFixtures: Fixtures engineered to tempt fine-grain leakage.\nRollback: Feature deletion.\nDemo: Cadence trend chart data (weekly).",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:high",
+        "M5-feedback-pack",
+        "epic:cadence",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-CAD-02 - Proxy/composition review checklist (programme-wide process)",
+      "description": "[DL-CAD-02 | epic:cadence | process | READY | risk:low | effort:S | M1]\nOutcome: A tracked checklist template every card applies: could this feature or combination reconstruct attendance/schedule/effort/behaviour? -> coarsen/suppress/reject, recorded per card.\nDeps: none | Unlock: -\nPaths: docs/analyser-program/ checklist section (this session); referenced by every implementation card\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No card ships without a recorded review outcome once template lands\nBehavior: ADR-14 programme-wide test incl. composition across features.\nAccept: Template exists; first three applied reviews recorded (SPINE-01, BRIDGE-01, GIT-01).\nProve: npm run verify:context; git diff --check\nFixtures: n/a (process artifact).\nRollback: Docs-only.\nDemo: One completed review record.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:process",
+        "privacy:C0",
+        "risk:low",
+        "M1-spine",
+        "epic:cadence",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-CI-01 - Attempt-aware workflow run/job facts (P8)",
+      "description": "[DL-CI-01 | epic:ci-studio | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:L | M5]\nOutcome: GH-ACT-RUN/JOB-01 connectors: attempt-keyed queue/exec/outcome facts with 1000-run windowing and rerun/recovery transitions; feeds the dictionary CI features.\nDeps: DL-LIFE-01 | Unlock: lifecycle merged\nPaths: server/connectors/github/actions.ts; tests\nAuthority: G2+G3 standing (q-2); executable never_authorized until activation card\nProhibited: No workflow/job/step/runner names, logs, artifacts, caches; rerun never labelled flaky\nBehavior: Canonical P8; partition capped windows; saturation -> GH_ACTIONS_FILTERED_1000_CAP.\nAccept: 1001-run fixture records saturation; attempt semantics golden; negative queue durations become DQ findings.\nProve: npm test -- server/connectors/github/actions.test.ts\nFixtures: Rerun attempts, cancelled concurrency, delayed starts, missing runs.\nRollback: Revocation cascade.\nDemo: Queue/exec distribution data.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:ci-studio",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-CI-02 - Workflow-definition classes (ephemeral YAML parse)",
+      "description": "[DL-CI-02 | epic:ci-studio | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M5]\nOutcome: GH-ACT-DEF-01: trigger/concurrency/path-filter presence and matrix-size classes from data-only YAML parse; context for cancellation/fanout analyses.\nDeps: DL-CI-01 | Unlock: actions connector merged\nPaths: server/connectors/github/workflowDefs.ts; tests\nAuthority: G2+G3 standing\nProhibited: Raw YAML/names/paths/expressions never retained; no expression evaluation ever\nBehavior: Data-only parser in worker; C4 destroyed; configuration-is-not-runtime stated.\nAccept: Alias/expression/malicious-string fixtures parse safely to classes; canaries absent.\nProve: npm test -- server/connectors/github/workflowDefs.test.ts\nFixtures: YAML aliases, expressions, reusable workflows, hostile strings.\nRollback: Class deletion.\nDemo: Class table for fixture workflows.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C4-ephemeral",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:ci-studio",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-CI-03 - Deployment outcomes + release linkage (censoring-aware)",
+      "description": "[DL-CI-03 | epic:ci-studio | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M5]\nOutcome: GH-DEPLOY-01 connector with 90-day status censoring surfaced; deployment_of edges join traceability.\nDeps: DL-CI-01 | Unlock: actions connector merged\nPaths: server/connectors/github/deployments.ts; tests\nAuthority: G2+G3 standing\nProhibited: No environment/ref names/URLs/payloads/reviewers; older-window absence never zero\nBehavior: GH_DEPLOY_STATUS_90D_CENSOR limitation; environment aliases local-only.\nAccept: >90d fixture renders censored; rename fixture keeps stable alias linkage.\nProve: npm test -- server/connectors/github/deployments.test.ts\nFixtures: Old-history, rename, permission-loss fixtures.\nRollback: Revocation cascade + provider-censoring disclosure.\nDemo: Outcome timeline data.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:ci-studio",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-DEP-01 - Dependency ecosystem aggregates + update waves (P9)",
+      "description": "[DL-DEP-01 | epic:ci-studio | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:L | M5]\nOutcome: GH-SBOM-01 ephemeral parse -> ecosystem/license-class/direct-transitive aggregates + pack-scoped dependency aliases; DL.DEP.UPDATE_WAVE facts.\nDeps: DL-LIFE-01 | Unlock: lifecycle merged\nPaths: server/connectors/github/dependencies.ts; tests\nAuthority: G2+G3 standing (q-2)\nProhibited: No package names/versions/PURLs/paths outside C3 isolation; no raw SBOM retention\nBehavior: Canonical P9; aliases isolated; wave features per dictionary.\nAccept: Private-package canaries absent from every sink; malformed SPDX -> coverage not crash.\nProve: npm test -- server/connectors/github/dependencies.test.ts\nFixtures: Canary-laden SBOMs; multi-ecosystem trees.\nRollback: Revocation deletes alias graph + summaries.\nDemo: Wave chart data on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:high",
+        "M5-feedback-pack",
+        "epic:ci-studio",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-SEC-01 - Isolated security-alert lifecycle store design + aggregates",
+      "description": "[DL-SEC-01 | epic:ci-studio | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M5]\nOutcome: The matrix-required isolated storage decision for cap.github.security, then Dependabot/code-scanning aggregate lifecycles (state timing only).\nDeps: DL-LIFE-02 | Unlock: deletion enumeration merged (isolation depends on it)\nPaths: server/connectors/github/security.ts; isolated schema; tests\nAuthority: G2+G3 standing; the isolated schema/storage design is this card's first deliverable per matrix\nProhibited: No secret scanning, no advisories, no locations/rules/dismissal comments; disabled/403/404 distinguished, never zero\nBehavior: Physically isolated C3 store; coarse severity/CWE classes only.\nAccept: Literal-secret canary causes schema failure; disabled-vs-denied fixtures classify exactly.\nProve: npm test -- server/connectors/github/security.test.ts\nFixtures: Alert lifecycles, poison locations, disabled-feature responses.\nRollback: Isolated store deletion is one file.\nDemo: Exposure-window distribution data.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:high",
+        "M5-feedback-pack",
+        "epic:ci-studio",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-PROV-01 - Attestation/provenance coverage",
+      "description": "[DL-PROV-01 | epic:ci-studio | implementation | PARKED | risk:medium | effort:M | M8]\nOutcome: PARKED and OWNER-GATED: subject-digest attestation verification coverage ratios (GH-ATTEST-01). Revisit once CI-01 evidence shows a real decision this would change AND the G-e gate is decided.\nDeps: DL-CI-01 | Unlock: OWNER GATE G-e: GH-ATTEST-01 has NO standing-G3 matrix row — requires a reviewed matrix/registry change or explicit owner decision; plus CI evidence demonstrating a legitimate provenance question\nPaths: server/connectors/github/attestations.ts (future)\nAuthority: gate:owner-decision (G-e, 08_OPEN_QUESTIONS section 1) — NOT covered by q-2 standing G3\nProhibited: No implementation before the G-e gate; existence never rendered as trust; raw bundles/certs/signers never retained\nBehavior: Coverage ratios only, per matrix.\nAccept: n/a until unparked; unpark requires a named decision question.\nProve: n/a (parked)\nFixtures: Invalid-attestation fixture planned.\nRollback: n/a\nDemo: n/a",
+      "columnName": "Proposed",
+      "labels": [
+        "status:parked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M8-story-frontier",
+        "epic:ci-studio",
+        "gate:owner-decision"
+      ]
+    },
+    {
+      "title": "DL-PORT-01 - Repository lifecycle + composition transitions",
+      "description": "[DL-PORT-01 | epic:portfolio | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M5]\nOutcome: Portfolio lifecycle facts (emergence/archive/fork/transfer/visibility) + language-composition JS-distance transitions + DL.PORT.* features over the incremental store.\nDeps: DL-BRIDGE-02 | Unlock: v2 feature serving exists (P4 github.core lane supplies facts per its own ledger cards)\nPaths: server/analysis/portfolio.ts; tests\nAuthority: G2 approved (GH-REPO-01/GH-LANG-01)\nProhibited: No leaderboards; no engagement/importance wording (copy rule tested); names stay vaulted\nBehavior: Dictionary features; transitions vs observability changes separated via coverage.\nAccept: Golden transitions on fixture portfolios; permission-change fixture renders as coverage change not transition.\nProve: npm test -- server/analysis/portfolio.test.ts\nFixtures: Concentrated/even/no-data portfolios; visibility flips.\nRollback: Feature deletion.\nDemo: Transition chart data.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:portfolio",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-PORT-02 - Policy/config evolution aggregates",
+      "description": "[DL-PORT-02 | epic:portfolio | implementation | OWNER_GATED | risk:medium | effort:M | M5]\nOutcome: GH-RULE-01 policy-presence aggregates over time (enforcement/rule-type flags) joining era comparison; policy quality never claimed.\nDeps: DL-LIFE-01 | Unlock: OWNER GATE G-d: GH-RULE-01 (rulesets/branch protection) has NO standing-G3 matrix row and may need administration-read — requires a reviewed capability-matrix/registry change or explicit owner decision BEFORE any implementation; then lifecycle merged\nPaths: server/connectors/github/rulesets.ts; tests\nAuthority: gate:owner-decision (G-d, 08_OPEN_QUESTIONS section 1) — NOT covered by q-2 standing G3; do not build on the DL-LIFE-01 dependency alone\nProhibited: No implementation before the G-d gate; no privilege escalation past read-only least-privilege; no patterns/status names/bypass actors/integrations\nBehavior: Snapshot policy traits; permission denial -> restricted coverage.\nAccept: Layered/disabled/evaluate fixtures classify; denial fixture yields restricted not zero.\nProve: npm test -- server/connectors/github/rulesets.test.ts\nFixtures: Layered rulesets, permission denial.\nRollback: Revocation cascade.\nDemo: Policy-presence timeline data.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:owner-gated",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:portfolio",
+        "gate:owner-decision"
+      ]
+    },
+    {
+      "title": "DL-PORT-03 - Portfolio era comparator view model",
+      "description": "[DL-PORT-03 | epic:portfolio | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:M | M7]\nOutcome: Era-diff view model across repositories combining snapshot diffs, portfolio transitions, and policy evolution, with comparability limitations surfaced.\nDeps: DL-TIME-01, DL-PORT-01 | Unlock: snapshots + transitions exist\nPaths: server/analysis/eraComparator.ts; tests\nAuthority: G2 approved\nProhibited: Descriptive only; banned words top/best/healthiest/mature enforced in copy tests\nBehavior: ADR-16; deterministic diffs + modelled continuity badges.\nAccept: Golden era diffs; banned-copy test green.\nProve: npm test -- server/analysis/eraComparator.test.ts\nFixtures: Two-era fixture portfolios.\nRollback: View-model deletion.\nDemo: Era diff payload for UX-EC.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M7-interpretation",
+        "epic:portfolio",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-GOV-01 - ProjectV2 status snapshots + aggregate transitions",
+      "description": "[DL-GOV-01 | epic:governance | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: GH-PROJV2-01: status-alias snapshots and aggregate transition counts under the approved G3 boundary; planning-delivery coupling context.\nDeps: DL-LIFE-01 | Unlock: lifecycle merged\nPaths: server/connectors/github/projects.ts; tests\nAuthority: G2+G3 standing (q-2)\nProhibited: No custom prose/values/users/teams; no field-history claims where provider has none (documented U)\nBehavior: Approved local taxonomy aliases; unavailable history -> coverage.\nAccept: Status-history/deleted-field/archive fixtures classify; taxonomy aliasing proven.\nProve: npm test -- server/connectors/github/projects.test.ts\nFixtures: Invented ProjectV2 shapes incl. unsupported host schema.\nRollback: Revocation cascade.\nDemo: Transition aggregate table.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:governance",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-GOV-02 - CODEOWNERS repository-level coverage",
+      "description": "[DL-GOV-02 | epic:governance | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: DL.OWN.COVERAGE_RATIO.v1: match/unmatched/error counts from ephemeral CODEOWNERS parse; declared-rule coverage only.\nDeps: DL-LIFE-01, DL-ATLAS-01 | Unlock: lifecycle + worker sandbox merged\nPaths: server/connectors/github/ownership.ts; tests\nAuthority: G2+G3 standing (q-2)\nProhibited: Patterns/paths/handles/emails destroyed; no stewardship/active-ownership wording; no people output\nBehavior: Matrix GH-CODEOWNERS-01; >3MB and invalid-line semantics per provider docs.\nAccept: Multi-location/invalid-line/oversize fixtures produce exact counts; canary handles absent everywhere.\nProve: npm test -- server/connectors/github/ownership.test.ts\nFixtures: Invalid lines, multiple locations, >3MB, base-ref changes.\nRollback: Revocation cascade.\nDemo: Coverage ratio table.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C4-ephemeral",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:governance",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-GOV-03 - Team-coverage aggregates with sparse suppression",
+      "description": "[DL-GOV-03 | epic:governance | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M6]\nOutcome: GH-TEAM-01 aggregate hierarchy/size-band coverage with size-one suppression proven; group context only.\nDeps: DL-GOV-01 | Unlock: projects connector merged\nPaths: server/connectors/github/teams.ts; tests\nAuthority: G2+G3 standing (q-2)\nProhibited: No names/slugs/member lists; sparse output suppressed pre-persistence; no named bus factor ever\nBehavior: Size bands; suppression before any sink.\nAccept: Size-one fixture suppressed everywhere incl. packs; hidden-team fixture -> coverage.\nProve: npm test -- server/connectors/github/teams.test.ts\nFixtures: Hidden/inherited/size-one teams.\nRollback: Revocation cascade.\nDemo: Suppression proof output.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:high",
+        "M6-time-graph-wb",
+        "epic:governance",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-LAB-01 - Residual alerts + false-alert budget (deterministic ladder)",
+      "description": "[DL-LAB-01 | epic:pattern-lab | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: Rolling median/MAD residual alerting over weekly C1 series with preregistered thresholds and a per-year false-alert budget; the deterministic rung under any change-point model.\nDeps: DL-SPINE-04, DL-BRIDGE-02 | Unlock: coverage vector + feature serving exist\nPaths: server/analysis/residualAlerts.ts; tests\nAuthority: G2 approved\nProhibited: No alert without coverage context; seasonal controls in baseline, not model-discovered\nBehavior: ADR-17 rungs 1-2; alerts are claims with alternatives incl. the coverage alternative.\nAccept: Planted-shift fixtures alert within budget; no-change fixtures stay under budget across the year grid.\nProve: npm test -- server/analysis/residualAlerts.test.ts\nFixtures: Planted level/trend shifts; seasonal series; quiet series.\nRollback: Alert family deletion.\nDemo: Alert timeline on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:pattern-lab",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-LAB-02 - Coverage-shift separation for notable changes",
+      "description": "[DL-LAB-02 | epic:pattern-lab | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M6]\nOutcome: Every notable-change evaluation runs jointly on the coverage series: candidates coinciding with coverage/permission/parser shifts classify as coverage_shift_candidate unless surviving fully-covered subwindows.\nDeps: DL-LAB-01 | Unlock: residual alerts merged\nPaths: server/analysis/coverageShiftSeparation.ts; tests\nAuthority: G2 approved\nProhibited: No system-change claim across an unexplained coverage boundary\nBehavior: ADR-17; the coverage alternative is always listed on surviving claims.\nAccept: Planted coverage-shift fixtures classify as coverage candidates; genuine-shift-with-stable-coverage passes.\nProve: npm test -- server/analysis/coverageShiftSeparation.test.ts\nFixtures: Confounded and clean shift pairs.\nRollback: Classifier deletion; alerts remain raw.\nDemo: Separation matrix on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:high",
+        "M6-time-graph-wb",
+        "epic:pattern-lab",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-GRAPH-01 - Typed graph projections + baseline statistics",
+      "description": "[DL-GRAPH-01 | epic:pattern-lab | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: Separate typed projections (module/repository/dependency/traceability/workflow/co-change) with SCC/components/degree/density baselines; people nodes schema-impossible.\nDeps: DL-SPINE-01 | Unlock: claim/graph contracts merged\nPaths: server/analysis/graphProjections.ts; tests\nAuthority: G2 approved; ADR-18\nProhibited: No universal merged graph; no person node kind exists in schema; no community labels without WB gate\nBehavior: Projection registry; baseline stats as deterministic features.\nAccept: Person-node insertion attempt fails at schema; baseline goldens per projection.\nProve: npm test -- server/analysis/graphProjections.test.ts\nFixtures: Small typed graphs per domain.\nRollback: Projection deletion.\nDemo: Baseline stats table.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:pattern-lab",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-WB-01 - Research workbench harness + frozen benchmark format",
+      "description": "[DL-WB-01 | epic:workbench | implementation | READY | risk:medium | effort:M | M6]\nOutcome: Offline research harness (server/research or notebooks per P11) with versioned, checksummed invented benchmark suites; generation parameters are the dataset card.\nDeps: none | Unlock: -\nPaths: server/research/harness.ts; benchmark generators; docs\nAuthority: G2 approved; P11 boundary — research only, no product claim\nProhibited: No real/consented data in this card; no candidate ships from invented benchmarks (promotion ladder rule)\nBehavior: ADR-19: preregistration file format (primary metric, min improvement, availability time, split, holdout); BH false-discovery control across family.\nAccept: Harness replays a benchmark to identical checksums; preregistration file schema enforced; holdout-reuse attempt fails.\nProve: npm test -- server/research/harness.test.ts\nFixtures: Two toy benchmark suites with planted effects.\nRollback: Research tree is removable without touching product.\nDemo: One preregistered toy run end-to-end.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:implementation",
+        "privacy:C0",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:workbench",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-WB-02 - Model registry + promotion mechanics",
+      "description": "[DL-WB-02 | epic:workbench | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: model_registry rows (method@version, cards, gate evidence, promotion state seeded->benchmarked->validated->shipped); UI claims resolve the registry so demotion removes claims automatically.\nDeps: DL-WB-01, DL-SPINE-01 | Unlock: harness + claim tables merged\nPaths: server/research/registry.ts; tests\nAuthority: G2 approved\nProhibited: validated requires separately-authorised consented dataset (owner gate DL-Q-CONSENT); invented benchmarks cap at benchmarked\nBehavior: ADR-19 ladder; every modelled claim FKs a registry row.\nAccept: Demotion fixture removes dependent claims from resolution; promotion without gate evidence fails.\nProve: npm test -- server/research/registry.test.ts\nFixtures: Promotion/demotion sequences.\nRollback: Registry rows are data.\nDemo: Registry state table.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:workbench",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-WB-C1 - Candidate: robust weekly change-points (PELT/BOCPD)",
+      "description": "[DL-WB-C1 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M6]\nOutcome: Change-point candidates evaluated vs the LAB-01 median/MAD baseline on planted benchmarks: false alarms/year, detection delay, interval calibration, seasonality/missingness/coverage-shift controls, no-change controls.\nDeps: DL-WB-01, DL-LAB-01 | Unlock: harness + deterministic rungs merged\nPaths: server/research/changePoints/*; benchmark suite; model card\nAuthority: G2 approved; research only\nProhibited: No UI exposure before promotion gate; no coverage-confounded claims\nBehavior: ADR-17/19; preregistered before tuning; abstain rules explicit.\nAccept: Beats baseline on preregistered gate or is recorded rejected; card + dataset card complete either way.\nProve: Harness run artifacts + registry entry\nFixtures: Planted-shift generator grid (level/trend/variance x noise).\nRollback: Registry demotion.\nDemo: Benchmark scoreboard.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C0",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:workbench",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-WB-C2 - Candidate: change-intent classifier vs rule baseline",
+      "description": "[DL-WB-C2 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M6]\nOutcome: Local classifier candidate vs SEM-01 rules: macro-F1, per-class support, calibration error, selective risk, repo/time/language holdouts, multilingual/unknown behaviour.\nDeps: DL-WB-01, DL-SEM-02 | Unlock: rules + harness merged\nPaths: server/research/intentClassifier/*; owner-labelled invented corpus; model card\nAuthority: G2 approved; C4 ephemeral inputs, C0 benchmark corpus; local model only\nProhibited: No commit-author features; no external model; no persistence of subjects\nBehavior: ADR-10/19; >=500 labelled invented items, >=50/class before any tuning.\nAccept: Gate beaten or rejection recorded; abstention behaviour proven on unknown-language slice.\nProve: Harness artifacts + registry entry\nFixtures: Owner-labelled invented multilingual corpus.\nRollback: Registry demotion; rules remain.\nDemo: Confusion/calibration plots.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C0",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:workbench",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-WB-C3 - Candidate: metadata-only CI failure-family classifier (likely reject)",
+      "description": "[DL-WB-C3 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M6]\nOutcome: Tests whether metadata-only features (outcome/attempt transitions) beat the transition baseline; logs stay prohibited, so an unbeaten baseline records REJECTED rather than requesting logs.\nDeps: DL-WB-01, DL-CI-01 | Unlock: CI facts + harness merged\nPaths: server/research/ciFamilies/*; model card\nAuthority: G2+G3 standing; research only\nProhibited: No logs/step names ever; weak labels documented as such\nBehavior: ADR-19; explicit likely-reject expectation preregistered.\nAccept: Verdict recorded either way; rejection is a successful outcome.\nProve: Harness artifacts + registry entry\nFixtures: Planted family patterns in invented run/attempt sequences.\nRollback: Registry state.\nDemo: Baseline-vs-candidate table.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C0",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:workbench",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-WB-C4 - Candidate: sequence/motif discovery",
+      "description": "[DL-WB-C4 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M6]\nOutcome: Motif mining vs deterministic n-gram/transition counts: time-held-out motif stability, support thresholds, controlled event-code explanations.\nDeps: DL-WB-01, DL-LAB-01 | Unlock: harness merged\nPaths: server/research/motifs/*; model card\nAuthority: G2 approved; research only\nProhibited: No identity features; motifs explained only as controlled event codes\nBehavior: ADR-17/19; bounded suffix-tree mining; fallback transition counts.\nAccept: Stability gate met or rejection recorded.\nProve: Harness artifacts + registry entry\nFixtures: Planted motif corpora with drift.\nRollback: Registry state.\nDemo: Motif stability report.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C0",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:workbench",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-WB-C5 - Candidate: dynamic communities / graph embeddings",
+      "description": "[DL-WB-C5 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M6]\nOutcome: Community detection/embeddings vs SCC/component baseline: planted-partition recovery, seed stability, snapshot sensitivity, sparse suppression; structure never asserts semantics.\nDeps: DL-WB-01, DL-GRAPH-01 | Unlock: projections + harness merged\nPaths: server/research/communities/*; model card\nAuthority: G2 approved; research only\nProhibited: No people nodes (schema-impossible); no semantic labels from structure alone; embeddings inherit input class\nBehavior: ADR-18/19; stability across seeds/snapshots preregistered.\nAccept: Recovery+stability gates met or rejection recorded.\nProve: Harness artifacts + registry entry\nFixtures: Planted-partition graphs; sparse graphs.\nRollback: Registry state.\nDemo: Recovery scoreboard.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C0",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:workbench",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-WB-C6 - Candidate: time-to-event queue analysis (censoring-aware)",
+      "description": "[DL-WB-C6 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M6]\nOutcome: KM baseline (always) and Cox/AFT candidates for integration/queue durations with censoring, time/repo holdouts, PH checks, interval reporting; system wording only.\nDeps: DL-WB-01, DL-OBSV-01 | Unlock: observatory facts + harness merged\nPaths: server/research/timeToEvent/*; model card\nAuthority: G2 approved; research only\nProhibited: No people/identity covariates; no responsiveness framing\nBehavior: ADR-19; >=100 events + >=10/parameter before parametric candidates.\nAccept: Assumption checks pass or candidate confined to KM; wording tests green.\nProve: Harness artifacts + registry entry\nFixtures: Censored duration corpora with planted covariate effects.\nRollback: Registry state; empirical distributions remain.\nDemo: Survival curves with intervals.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C0",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:workbench",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-WB-C7 - Candidate: probabilistic observability model",
+      "description": "[DL-WB-C7 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M6]\nOutcome: Predicts observability (will a probe succeed), never activity; calibration/Brier vs the coverage-ledger baseline over repeated invented probe outcomes.\nDeps: DL-WB-01, DL-LIFE-01 | Unlock: lifecycle + harness merged\nPaths: server/research/observability/*; model card\nAuthority: G2 approved; research only\nProhibited: Never predicts activity from absence; drift on permission/plan changes detected\nBehavior: ADR-19; >=500 outcomes before evaluation.\nAccept: Calibration gate met or rejection recorded.\nProve: Harness artifacts + registry entry\nFixtures: Synthetic probe-outcome histories with regime changes.\nRollback: Registry state; direct coverage remains.\nDemo: Reliability diagram.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C0",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:workbench",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-WB-C8 - Candidate: architecture-change classifier",
+      "description": "[DL-WB-C8 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M6]\nOutcome: Threshold-rule baseline over API/graph deltas vs learned classifier: repo-held-out evaluation, calibration, feature attribution, parser coverage as input.\nDeps: DL-WB-01, DL-TIME-01 | Unlock: snapshots + harness merged\nPaths: server/research/archChange/*; model card\nAuthority: G2+G3 standing; research only\nProhibited: No cross-parser-major training pairs; no design-quality wording\nBehavior: ADR-19; >=500 labelled invented changes across >=10 synthetic systems.\nAccept: Gate beaten or rejection recorded.\nProve: Harness artifacts + registry entry\nFixtures: Planted architectural transitions.\nRollback: Registry state; deterministic deltas remain.\nDemo: Attribution + calibration report.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C0",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:workbench",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-WB-C9 - Candidate: retrieval-ranking ladder (lexical/vector vs structured)",
+      "description": "[DL-WB-C9 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M7]\nOutcome: BM25-over-controlled-templates and local pinned vector candidates vs RAG-01 structured retrieval: Recall@k/nDCG/MRR + counter-evidence recall + privacy canaries; likely outcome is structured suffices.\nDeps: DL-WB-01, DL-RAG-02 | Unlock: retrieval benchmark merged\nPaths: server/research/retrievalLadder/*; model card\nAuthority: G2 approved; local-only; ADR-20 ladder\nProhibited: No prose inputs; no hosted/external embeddings (owner gate); durable index is owner gate DL-Q-INDEX\nBehavior: ADR-20; each rung must beat the previous on the same benchmark.\nAccept: Ladder verdicts recorded; \"vectors not justified\" is a valid success.\nProve: Harness artifacts + registry entry\nFixtures: RAG-02 benchmark suite.\nRollback: Registry state; structured retrieval remains.\nDemo: Ladder scoreboard.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C1",
+        "risk:medium",
+        "M7-interpretation",
+        "epic:workbench",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-RAG-01 - Structured evidence retrieval + counter-evidence quotas",
+      "description": "[DL-RAG-01 | epic:retrieval | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M7]\nOutcome: Default shipped retrieval: SQL filtering over typed C1 pack facts + standardized-distance ranking, with per-claim-family quotas forcing supporting AND contradicting AND coverage AND limitation evidence into every result set.\nDeps: DL-PACK-02 | Unlock: features+claims pack tables merged\nPaths: server/retrieval/structured.ts; field registry gate; tests\nAuthority: G2 approved; local-only; ADR-20 rung 1\nProhibited: No prose/names/C2-C4 inputs; strict field registry before templating; no index persistence beyond task scope\nBehavior: ADR-20; quota shortfalls become limitations on downstream claims; retrieval is evidence-ID-based.\nAccept: Every result set on fixtures satisfies quotas or emits the shortfall limitation; prohibited-field canaries rejected before any read.\nProve: npm test -- server/retrieval/structured.test.ts\nFixtures: Claim families with rich/thin counter-evidence.\nRollback: Module removal; composer falls back to direct feature reads.\nDemo: One retrieval trace showing all four evidence classes.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M7-interpretation",
+        "epic:retrieval",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-RAG-02 - Retrieval benchmark + privacy canary battery",
+      "description": "[DL-RAG-02 | epic:retrieval | evaluation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M7]\nOutcome: Frozen invented retrieval benchmark: Recall@k, nDCG/MRR, citation validity, counter-evidence recall, unsupported-claim rate, deletion proof, stale-index behaviour, membership-inference + uniqueness-leakage probes.\nDeps: DL-RAG-01 | Unlock: structured retrieval merged\nPaths: server/retrieval/benchmark/*; canary suite\nAuthority: G2 approved\nProhibited: Benchmark data all invented; no real pack in evaluation\nBehavior: ADR-20 evaluation battery; deletion proof = index rebuilt-empty after simulated revocation.\nAccept: All metrics computable on the suite; canary battery green on rung 1; suite versioned+checksummed.\nProve: npm test -- server/retrieval/benchmark.test.ts\nFixtures: Invented packs with planted relevance + adversarial rare-code combinations.\nRollback: Benchmark is data.\nDemo: Benchmark scoreboard for rung 1.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:evaluation",
+        "privacy:C0",
+        "risk:medium",
+        "M7-interpretation",
+        "epic:retrieval",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-HYP-01 - Deterministic hypothesis composer + falsifier registry",
+      "description": "[DL-HYP-01 | epic:hypothesis | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M7]\nOutcome: Template-driven claim assembly: statement codes + retrieval-filled evidence slots, closed per-family alternative enums, mandatory what-would-change-this question from a falsifier registry, abstention on gate failure.\nDeps: DL-RAG-01, DL-SPINE-05 | Unlock: retrieval + abstention gates merged\nPaths: server/hypothesis/composer.ts; falsifier registry; tests\nAuthority: G2 approved; deterministic-first per ADR-21; external step stays in the P12 lane\nProhibited: No free-text generation; no evidence IDs outside retrieval results; no statement codes outside enums\nBehavior: ADR-21; composer output is claims (ADR-01) with hypothesis layer + counter-hypotheses.\nAccept: Fixture compositions carry supports+contradicts+alternatives+question; gate-failing inputs produce abstention claims.\nProve: npm test -- server/hypothesis/composer.test.ts\nFixtures: Rich and evidence-thin claim families.\nRollback: Composer removal; deterministic features unaffected.\nDemo: One composed hypothesis card payload.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M7-interpretation",
+        "epic:hypothesis",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-HYP-02 - Coverage-derived confidence bands",
+      "description": "[DL-HYP-02 | epic:hypothesis | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M7]\nOutcome: Hypothesis confidence bands (low/medium/high) derived deterministically from the ADR-02 vector via the family gate table; never a learned or persuasive scalar.\nDeps: DL-HYP-01 | Unlock: composer merged\nPaths: server/hypothesis/confidence.ts; tests\nAuthority: G2 approved\nProhibited: No single-score rendering; band always shown with limiting dimension\nBehavior: ADR-21; monotone in every dimension (property test).\nAccept: Band assignments golden on the degradation grid; monotonicity proven.\nProve: npm test -- server/hypothesis/confidence.test.ts\nFixtures: SPINE-05 degradation grid reuse.\nRollback: Bands are derived data.\nDemo: Band + limiting-dimension display data.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M7-interpretation",
+        "epic:hypothesis",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-PACK-00 - Pack manifest-shape reconciliation (three shapes -> one authority)",
+      "description": "[DL-PACK-00 | epic:analysis-pack | contract | READY | risk:medium | effort:S | M2]\nOutcome: The implemented Zod manifest becomes the sole 1.0.0 authority; docs/analysis-pack/manifest.schema.json and the canonical section-11 example are corrected to match; pack 2.0.0 draft schema published as proposal.\nDeps: none | Unlock: -\nPaths: docs/analysis-pack/manifest.schema.json; canonical section-11 example; docs/analyser-program/schemas/pack-manifest-2.0.0 draft\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No implementation change in this card; no consumer written against unreconciled shapes\nBehavior: ADR-22 grounded constraint; the D5/D6 verified deltas close.\nAccept: JSON schema validates the implemented golden manifest byte-for-byte; canonical example matches; externalModelEvidence removed or explicitly versioned into 2.0.0 proposal.\nProve: npm run verify:context; git diff --check; schema-vs-golden validation script output\nFixtures: Existing implemented golden manifest.\nRollback: Docs revert.\nDemo: Validation output.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:contract",
+        "privacy:C1",
+        "risk:medium",
+        "M2-first-slice",
+        "epic:analysis-pack",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-PACK-01 - Pack 2.0 facts tables (pr_lifecycle, check_attempts, edges, intervals, events)",
+      "description": "[DL-PACK-01 | epic:analysis-pack | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:L | M5]\nOutcome: Appendix-D facts tables land in the pack builder with pack-scoped aliases, per-table schema IDs, checksums, COMPLETE immutability preserved.\nDeps: DL-PACK-00, DL-BRIDGE-02 | Unlock: reconciled manifest + fact serving merged\nPaths: server/analysisPack/* (extend); docs/analysis-pack/schemas/tables/*; tests\nAuthority: G2 approved\nProhibited: No identity vault/raw IDs/OIDs/cursors in packs; C3 excluded from ordinary packs\nBehavior: ADR-22; each table family lands with its producing capability; replay hash-verified.\nAccept: DuckDB replay reproduces checksums; canary IDs absent; pack-scoped aliases non-linkable across packs (test).\nProve: npm test -- server/analysisPack/analysisPack.test.ts\nFixtures: Synthetic store outputs per table family.\nRollback: Packs are generated artifacts; delete.\nDemo: Pack listing + checksum verification.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:analysis-pack",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-PACK-02 - Pack 2.0 features + claims tables",
+      "description": "[DL-PACK-02 | epic:analysis-pack | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M5]\nOutcome: feature_values and claims/insights tables (with evidence-ID closure inside the pack) join the pack; retrieval and Query Lab gain their substrate.\nDeps: DL-PACK-01, DL-SPINE-02 | Unlock: facts tables + claim canonicalisation merged\nPaths: server/analysisPack/* (extend); schemas; tests\nAuthority: G2 approved\nProhibited: Every evidence_id referenced must exist in the same pack (closure test); no dangling claims\nBehavior: ADR-22; claims exported with pack-scoped re-aliasing.\nAccept: Closure test green; replay stable; feature goldens match dictionary.\nProve: npm test -- server/analysisPack/claims.test.ts\nFixtures: Claim chains incl. contradictions.\nRollback: Table family removal.\nDemo: SQL join across facts->features->claims on fixture pack.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:analysis-pack",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-PACK-03 - Pack graph tables + GraphML export",
+      "description": "[DL-PACK-03 | epic:analysis-pack | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: graphs/nodes+edges parquet and the opt-in GraphML artifact with opaque pack-scoped nodes and allowlisted attributes.\nDeps: DL-GRAPH-01, DL-PACK-01 | Unlock: projections + facts tables merged\nPaths: server/analysisPack/graphs.ts; tests\nAuthority: G2 approved\nProhibited: No reverse map to installation aliases; sparse suppression before export\nBehavior: ADR-22; GraphML separately consented artifact per canonical section 11.\nAccept: Round-trip read in DuckDB + GraphML parse; canary node names absent.\nProve: npm test -- server/analysisPack/graphs.test.ts\nFixtures: Typed fixture graphs.\nRollback: Artifact removal.\nDemo: GraphML opened in external tool (screenshot-free description).",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:analysis-pack",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-PACK-04 - Pack dictionary + example SQL + notebook plan generation",
+      "description": "[DL-PACK-04 | epic:analysis-pack | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:M | M5]\nOutcome: Generated data-dictionary, feature/classification indexes, the ten canonical example queries, and a reproducible notebook plan ship inside every pack.\nDeps: DL-PACK-02 | Unlock: features/claims tables merged\nPaths: server/analysisPack/dictionary.ts; queries/ generation; tests\nAuthority: G2 approved\nProhibited: Dictionary generated from registries, never hand-maintained; no private values in examples\nBehavior: ADR-22; canonical Appendix D/E made real.\nAccept: Every example query executes against a fixture pack in DuckDB; dictionary matches registries.\nProve: npm test -- server/analysisPack/dictionary.test.ts\nFixtures: Fixture pack.\nRollback: Generated files.\nDemo: Query outputs on fixture pack.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M5-feedback-pack",
+        "epic:analysis-pack",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-PACK-05 - Pack preview, acknowledgement, sparse suppression",
+      "description": "[DL-PACK-05 | epic:analysis-pack | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M5]\nOutcome: Export preview (schema, fields, rows, bytes, classifications, suppression decisions, checksums) with acknowledgement invalidating on any redaction change; sparse dimensions suppressed pre-preview; structural shape values exported only in coarse bands and exact topology/edge lists never leave C3 (accepted 2026-08-04 fingerprinting rule).\nDeps: DL-PACK-02 | Unlock: features/claims tables merged\nPaths: server/api/v2/export endpoints; server/analysisPack/preview.ts; tests\nAuthority: G2 approved; canonical section-11 API contract\nProhibited: No build without acknowledged preview; changed options invalidate prior checksums\nBehavior: ADR-22 + ADR-03 lifecycle integration (packs enumerated for deletion).\nAccept: Ack invalidation proven; suppression decisions listed in preview; canaries absent.\nProve: npm test -- server/analysisPack/preview.test.ts\nFixtures: Sparse/re-identifiable fixture dimensions.\nRollback: Preview is read-only until build.\nDemo: Preview payload for fixture pack.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:high",
+        "M5-feedback-pack",
+        "epic:analysis-pack",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-QL-01 - Query Lab over completed packs (DuckDB-WASM, no server SQL)",
+      "description": "[DL-QL-01 | epic:analysis-pack | ux | BLOCKED_BY_DEPENDENCY | risk:medium | effort:L | M7]\nOutcome: In-app read-only SQL over a user-selected COMPLETE pack via DuckDB-WASM in the browser; example queries + schema browser; the canonical store gains no SQL endpoint.\nDeps: DL-PACK-04 | Unlock: dictionary/queries generation merged\nPaths: src/components/QueryLab.tsx; pack-open validation; tests\nAuthority: G2 approved; ADR-22 sink-honouring design\nProhibited: No canonical-DB access; refuses packs failing checksum/COMPLETE; no write path\nBehavior: File-picker pack input; example queries from the pack itself.\nAccept: Fixture pack opens, examples run, tampered pack refused; bundle-size budget recorded.\nProve: npm test -- src/components/QueryLab.test.tsx\nFixtures: Valid + tampered fixture packs.\nRollback: Degrade to copyable SQL + external-tool instructions (ADR-22 fallback).\nDemo: Query Lab walkthrough on fixture pack.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:ux",
+        "privacy:C1",
+        "risk:medium",
+        "M7-interpretation",
+        "epic:analysis-pack",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-UX-VG - Visual grammar tokens for the seven evidence statuses",
+      "description": "[DL-UX-VG | epic:ux-atlas | ux | READY | risk:low | effort:M | M2]\nOutcome: One token set (badges, line styles, color-independent encodings) distinguishing fact/derivation/model/hypothesis/contradiction/limitation/question across every surface, accessibility-proven.\nDeps: none | Unlock: -\nPaths: src/ design tokens + V2 components adopt; docs/analyser-program/05 storyboard governs\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No status distinguishable by color alone; no persuasive confidence styling\nBehavior: ADR-23; every number resolves to a claim (drawer affordance token included).\nAccept: Token sheet applied to the existing V2 demo story path without semantic regression; contrast/shape checks pass.\nProve: npm run test:demo:v2; npm run check\nFixtures: Existing C0 demo payload.\nRollback: Token-sheet revert.\nDemo: Demo story path re-rendered with the grammar.",
+      "columnName": "Ready",
+      "labels": [
+        "status:ready",
+        "type:ux",
+        "privacy:C0",
+        "risk:low",
+        "M2-first-slice",
+        "epic:ux-atlas",
+        "gate:G2",
+        "demo:showcase"
+      ]
+    },
+    {
+      "title": "DL-UX-CC - Coverage/Privacy Cockpit (full)",
+      "description": "[DL-UX-CC | epic:ux-atlas | ux | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M2]\nOutcome: The full cockpit: per-capability lifecycle state, retained classes vs retention clocks, coverage vector rendering, deletion preview, provider-held-copy disclosures.\nDeps: DL-BRIDGE-01, DL-LIFE-01 | Unlock: first slice + lifecycle merged\nPaths: src/components/CoverageCockpitV2.tsx (extend); tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No health-score aggregation; absence rendered as coverage furniture\nBehavior: ADR-03 cockpit UX + ADR-02 vector display with limiting reasons.\nAccept: Every lifecycle state renders; deletion preview lists registry-derived descendants on fixtures.\nProve: npm test -- src/components/CoverageCockpitV2.test.tsx\nFixtures: Lifecycle fixture matrix.\nRollback: View-level revert; BRIDGE-01 panel remains.\nDemo: Cockpit walkthrough on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:ux",
+        "privacy:C0",
+        "risk:medium",
+        "M2-first-slice",
+        "epic:ux-atlas",
+        "gate:G2",
+        "demo:showcase"
+      ]
+    },
+    {
+      "title": "DL-UX-ED - Evidence Drawer (universal claim inspector)",
+      "description": "[DL-UX-ED | epic:ux-atlas | ux | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M2]\nOutcome: Every number/claim opens a drawer showing the SPINE-03 walk: supports, contradicts, coverage, limitations, method version, correction lineage, and the falsifying question.\nDeps: DL-SPINE-03, DL-BRIDGE-02 | Unlock: resolver + evidence endpoints merged\nPaths: src/components/EvidenceDrawer.tsx; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No claim without a resolvable drawer; missing links render explicitly\nBehavior: ADR-23; grammar tokens; keyboard accessible.\nAccept: Drawer resolves every fixture claim; unresolvable ID renders an honest error, never blank.\nProve: npm test -- src/components/EvidenceDrawer.test.tsx\nFixtures: Claim walks incl. tombstoned ancestors.\nRollback: Component revert.\nDemo: Drawer walkthrough for one hypothesis.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:ux",
+        "privacy:C0",
+        "risk:medium",
+        "M2-first-slice",
+        "epic:ux-atlas",
+        "gate:G2",
+        "demo:showcase"
+      ]
+    },
+    {
+      "title": "DL-UX-TM - Architecture Time Machine view",
+      "description": "[DL-UX-TM | epic:ux-atlas | ux | BLOCKED_BY_DEPENDENCY | risk:medium | effort:L | M8]\nOutcome: Snapshot/era navigation with comparability furniture: incomparable pairs show why; continuity claims carry modelled badges.\nDeps: DL-TIME-01 | Unlock: snapshot contract merged\nPaths: src/components/TimeMachine.tsx; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No cross-major deltas rendered; no drift claims from parser change\nBehavior: ADR-07/23; storyboard 05 wireframes govern.\nAccept: Fixture eras navigate; incomparable pair shows limitation panel.\nProve: npm test -- src/components/TimeMachine.test.tsx\nFixtures: Era fixture sets.\nRollback: View revert.\nDemo: Era navigation walkthrough.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:ux",
+        "privacy:C0",
+        "risk:medium",
+        "M8-story-frontier",
+        "epic:ux-atlas",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-UX-CR - Change River view",
+      "description": "[DL-UX-CR | epic:ux-atlas | ux | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M8]\nOutcome: Flow of change families (intent mix, coupling waves, radius) over time with coverage bands and abstention gaps rendered honestly.\nDeps: DL-SEM-02, DL-COUP-02 | Unlock: intent + coupling features merged\nPaths: src/components/ChangeRiver.tsx; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: Gaps never interpolated; unknown share always visible\nBehavior: ADR-23; storyboard wireframes.\nAccept: Fixture river renders with gap furniture; grammar tokens applied.\nProve: npm test -- src/components/ChangeRiver.test.tsx\nFixtures: Windows with abstentions.\nRollback: View revert.\nDemo: River walkthrough.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:ux",
+        "privacy:C0",
+        "risk:medium",
+        "M8-story-frontier",
+        "epic:ux-atlas",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-UX-DM - Delivery/Traceability Map view",
+      "description": "[DL-UX-DM | epic:ux-atlas | ux | BLOCKED_BY_DEPENDENCY | risk:medium | effort:L | M8]\nOutcome: Issue->PR->release->deployment map with observed edges solid and suggested associations in hypothesis styling; corrections visible.\nDeps: DL-TRACE-01, DL-OBSV-01 | Unlock: graph + observatory merged\nPaths: src/components/DeliveryMap.tsx; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No causality framing; suggested edges never solid\nBehavior: ADR-11/23.\nAccept: Fixture map distinguishes edge classes; supersession renders.\nProve: npm test -- src/components/DeliveryMap.test.tsx\nFixtures: Chains with suggested + corrected edges.\nRollback: View revert.\nDemo: Map walkthrough.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:ux",
+        "privacy:C0",
+        "risk:medium",
+        "M8-story-frontier",
+        "epic:ux-atlas",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-UX-PL - Pattern Lens view",
+      "description": "[DL-UX-PL | epic:ux-atlas | ux | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M8]\nOutcome: Residual alerts, motifs, and change candidates with the coverage-shift alternative always beside the system-change reading.\nDeps: DL-LAB-02 | Unlock: separation merged\nPaths: src/components/PatternLens.tsx; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No alert without alternatives; no model output without registry state\nBehavior: ADR-17/23.\nAccept: Fixture alerts render both readings; demoted model claims disappear.\nProve: npm test -- src/components/PatternLens.test.tsx\nFixtures: Coverage-confounded alert fixtures.\nRollback: View revert.\nDemo: Lens walkthrough.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:ux",
+        "privacy:C0",
+        "risk:medium",
+        "M8-story-frontier",
+        "epic:ux-atlas",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-UX-EC - Era Comparator view (includes era-diff model)",
+      "description": "[DL-UX-EC | epic:ux-atlas | ux | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M8]\nOutcome: Side-by-side era comparison (\"what materially changed\") from PORT-03 payloads with per-element layer badges.\nDeps: DL-PORT-03 | Unlock: comparator model merged\nPaths: src/components/EraComparator.tsx; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: Descriptive copy only; banned normative words enforced\nBehavior: ADR-07/16/23.\nAccept: Fixture comparison renders diffs + limitations.\nProve: npm test -- src/components/EraComparator.test.tsx\nFixtures: Two-era payloads.\nRollback: View revert.\nDemo: Comparison walkthrough.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:ux",
+        "privacy:C0",
+        "risk:medium",
+        "M8-story-frontier",
+        "epic:ux-atlas",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-UX-SS - Guided System Story (Wrapped successor)",
+      "description": "[DL-UX-SS | epic:ux-atlas | ux | BLOCKED_BY_DEPENDENCY | risk:medium | effort:L | M8]\nOutcome: A guided narrative for one era of one system moving observed -> deterministic -> modelled -> hypothesis -> open question, ending on a question, never a score.\nDeps: DL-UX-ED, DL-LAB-01, DL-OPEN-01 | Unlock: drawer + alerts + questions merged\nPaths: src/components/SystemStory.tsx; narrative beat data; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No prescriptions/scores; every beat cites claims; beats skippable\nBehavior: ADR-23 + storyboard beats; the synthetic twin (DL-DEMO-B1) is its public dataset.\nAccept: Fixture story plays all beats with citations; ends on OPEN question.\nProve: npm test -- src/components/SystemStory.test.tsx\nFixtures: One full synthetic era.\nRollback: View revert; Wrapped remains until its retirement card.\nDemo: Full story walkthrough.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:ux",
+        "privacy:C0",
+        "risk:medium",
+        "M8-story-frontier",
+        "epic:ux-atlas",
+        "gate:G2",
+        "demo:showcase"
+      ]
+    },
+    {
+      "title": "DL-OPEN-01 - Question claim family + generators",
+      "description": "[DL-OPEN-01 | epic:open-questions | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:M | M7]\nOutcome: question claims (evidence_gap/contradiction/untested_alternative/future_source/calibration_check) generated from coverage gaps, contradiction edges, and falsifier registries, each carrying its cheapest-resolving-evidence action.\nDeps: DL-SPINE-01, DL-SPINE-05 | Unlock: claims + gates merged\nPaths: server/analysis/questions.ts; tests\nAuthority: G2 approved; ADR-24\nProhibited: No filler questions; every question FKs its spawning evidence\nBehavior: Generators are deterministic; resolution links answered questions to new claims.\nAccept: Fixture gaps/contradictions yield exactly the expected questions; cheapest-evidence enum validated.\nProve: npm test -- server/analysis/questions.test.ts\nFixtures: Coverage-gap + contradiction fixtures.\nRollback: Family deletion.\nDemo: Question list for fixture store.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M7-interpretation",
+        "epic:open-questions",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-OPEN-02 - Open Questions Observatory + surprise-me exploration",
+      "description": "[DL-OPEN-02 | epic:open-questions | ux | BLOCKED_BY_DEPENDENCY | risk:low | effort:M | M8]\nOutcome: The observatory view: filterable questions, what-each-unlocks, and a deterministic-seed coverage-weighted surprise-me walk over the claim graph.\nDeps: DL-OPEN-01 | Unlock: question family merged\nPaths: src/components/OpenQuestions.tsx; walk module; tests\nAuthority: G2 approved\nProhibited: Walk is reproducible (seeded); no engagement-bait framing\nBehavior: ADR-24; questions exportable in packs.\nAccept: Fixture observatory renders; same seed -> same walk.\nProve: npm test -- src/components/OpenQuestions.test.tsx\nFixtures: Question corpora.\nRollback: View revert.\nDemo: Surprise-me walkthrough.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:ux",
+        "privacy:C0",
+        "risk:low",
+        "M8-story-frontier",
+        "epic:open-questions",
+        "gate:G2",
+        "demo:showcase"
+      ]
+    },
+    {
+      "title": "DL-DEMO-A1 - Future real local Taskdeck dogfood: activation specification",
+      "description": "[DL-DEMO-A1 | epic:demo | spec | OWNER_GATED | risk:high | effort:M | M8]\nOutcome: A complete activation card SPEC for analysing the local Taskdeck checkout: exact immutable refs, public metadata scope, committed-tree scope, C4 ephemeral processing, retained C1/C3 projections, identity handling, deletion, rollback, coverage, resource caps, proving checks. Spec only; no run.\nDeps: DL-GIT-01, DL-XRAY-02, DL-ATLAS-04, DL-LIFE-01 | Unlock: Owner explicitly selects exact refs/scope and approves the activation card (separate from the recorded q-5 selection, which stays confined to its ignored card)\nPaths: docs/analyser-program/06 demo plan section; future ignored local task card\nAuthority: G2+G3 standing cover the capability classes; the specific repository selection + activation remain an explicit owner decision; this session names the subject only\nProhibited: No collection/analysis run now; no q-5 card inspection; no Taskdeck identity in tracked analytical state; no synthetic-twin reuse of real structure\nBehavior: Demo contract A in 06_TASKDECK_DEMO_PLAN.md.\nAccept: Spec names every field the lifecycle requires; a future session could activate without re-deriving scope.\nProve: npm run verify:context; git diff --check\nFixtures: n/a (spec).\nRollback: Spec is docs.\nDemo: The spec itself, walked in the planning demo.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:owner-gated",
+        "type:spec",
+        "privacy:C1-C3",
+        "risk:high",
+        "M8-story-frontier",
+        "epic:demo",
+        "gate:owner-decision"
+      ]
+    },
+    {
+      "title": "DL-DEMO-B1 - Public Taskdeck-shaped synthetic twin: invented dataset generator spec",
+      "description": "[DL-DEMO-B1 | epic:demo | spec | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M8]\nOutcome: Generator spec for an entirely invented C0 board-tool-shaped system (repos, modules, commits, issues, PRs, checks, releases, graphs, change points, evidence gaps) copying NO Taskdeck identifier, path, title, count, timing, structure, or derived fact.\nDeps: DL-BRIDGE-01 | Unlock: first V2 slice exists to consume it\nPaths: docs/analyser-program/06 section; future scripts/exportDemo extension cards\nAuthority: C0 synthetic route (q-4); publication-safe by construction\nProhibited: Zero real-Taskdeck derivation (structural non-derivation checklist in 06); showcase verifier must cover new surfaces\nBehavior: Demo contract B; deterministic generation with fixed seeds.\nAccept: Non-derivation checklist complete; generator parameters justified from invented narrative only.\nProve: npm run verify:context; git diff --check (spec); future: npm run build:showcase\nFixtures: The twin IS the fixture.\nRollback: Docs.\nDemo: Twin narrative outline.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:spec",
+        "privacy:C0",
+        "risk:medium",
+        "M8-story-frontier",
+        "epic:demo",
+        "gate:G2",
+        "demo:showcase"
+      ]
+    },
+    {
+      "title": "DL-DEMO-B2 - Showcase script: 5-8 minute intelligence-platform walkthrough",
+      "description": "[DL-DEMO-B2 | epic:demo | spec | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M8]\nOutcome: The demo script moving real-planning-board -> annotated future UX -> observed -> deterministic -> modelled -> hypothesis -> open question, covering anatomy, evolution, traceability, cadence, a change point, coverage limits, counter-evidence, next question; no productivity/quality score anywhere.\nDeps: DL-DEMO-B1 | Unlock: twin spec accepted\nPaths: docs/analyser-program/06 script section; later docs/SHOWCASE_DEMO.md update card\nAuthority: C0 route\nProhibited: No claim that unimplemented analysis exists; honest claims-to-avoid section\nBehavior: Demo contract B beats.\nAccept: Script timings sum to 5-8 min; every beat names its surface + claim layer.\nProve: npm run verify:context; git diff --check\nFixtures: Twin outline.\nRollback: Docs.\nDemo: The script itself.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:spec",
+        "privacy:C0",
+        "risk:low",
+        "M8-story-frontier",
+        "epic:demo",
+        "gate:G2",
+        "demo:showcase"
+      ]
+    },
+    {
+      "title": "DL-Q-CONSTRAINTS - Upstream constraints: Developer Lens issues #5 #6 #41 #55 #57 #59",
+      "description": "[DL-Q-CONSTRAINTS | epic:open-questions | process | QUESTION | risk:medium | effort:S | M1]\nOutcome: Tracking card linking the six live GitHub issues as constraints: #5 v1 name-domain migration gap (gates real migration; informs BRIDGE-03 fixtures); #6 duplicate-identity/key continuity (gates LIFE-03, real migration); #41 ancient-year range arithmetic (P12 lane); #55 reflection-question hardening (UX polish); #57 two-probe budget floor (P4 lane); #59 failed-key recovery (LIFE-03).\nDeps: none | Unlock: Each issue closes upstream\nPaths: https://github.com/Chris0Jeky/developer-lens/issues/5 6 41 55 57 59\nAuthority: Links to public planning issues are documentation\nProhibited: Do not duplicate or silently close these issues from this board\nBehavior: Constraints referenced by dependent cards; reconcile when issues close.\nAccept: n/a (tracking).\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Open Questions",
+      "labels": [
+        "status:question",
+        "type:process",
+        "privacy:C0",
+        "risk:medium",
+        "M1-spine",
+        "epic:open-questions",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-Q-PROSE - Owner gate: PR/issue prose semantic tier (tier-2 semantics)",
+      "description": "[DL-Q-PROSE | epic:open-questions | process | QUESTION | risk:high | effort:S | M7]\nOutcome: Open owner decision: should any PR/issue prose (titles/bodies) ever enter ephemeral semantic analysis or durable text derivatives? Currently OUTSIDE the charter; ADR-10 tier-1 (commit subjects) is the only text input. Requires a reviewed charter/matrix change; not assumed by any card.\nDeps: none | Unlock: Explicit owner decision + charter revision\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: gate:owner-decision — a new data-class boundary\nProhibited: No design work may assume approval\nBehavior: Recorded with privacy analysis of both outcomes in 08.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Open Questions",
+      "labels": [
+        "status:question",
+        "type:process",
+        "privacy:C1",
+        "risk:high",
+        "M7-interpretation",
+        "epic:open-questions",
+        "gate:owner-decision"
+      ]
+    },
+    {
+      "title": "DL-Q-INDEX - Owner gate: durable retrieval index as a reviewed sink",
+      "description": "[DL-Q-INDEX | epic:open-questions | process | QUESTION | risk:medium | effort:S | M7]\nOutcome: Open owner decision: initial retrieval indexes are task-scoped/process-local/deleted-on-revocation (ADR-20); any DURABLE index is a new sink requiring separate review. Recorded, not assumed.\nDeps: none | Unlock: Explicit owner decision after RAG-02 evidence\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: gate:owner-decision\nProhibited: No durable index before the gate\nBehavior: ADR-20 rung-3 condition.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Open Questions",
+      "labels": [
+        "status:question",
+        "type:process",
+        "privacy:C1",
+        "risk:medium",
+        "M7-interpretation",
+        "epic:open-questions",
+        "gate:owner-decision"
+      ]
+    },
+    {
+      "title": "DL-Q-LOCALMODEL - Owner gate: pinned offline local model option",
+      "description": "[DL-Q-LOCALMODEL | epic:open-questions | process | QUESTION | risk:medium | effort:S | M8]\nOutcome: Open owner decision: a future local model (pinned, licensed, offline, no remote code) for composition/retrieval. Distinct from the approved OpenAI/Luna G4 boundary; requires its own review of weights provenance + resource budget.\nDeps: none | Unlock: Explicit owner decision\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: gate:owner-decision\nProhibited: No local-model dependency added before the gate\nBehavior: ADR-21 future option.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Open Questions",
+      "labels": [
+        "status:question",
+        "type:process",
+        "privacy:C1",
+        "risk:medium",
+        "M8-story-frontier",
+        "epic:open-questions",
+        "gate:owner-decision"
+      ]
+    },
+    {
+      "title": "DL-Q-CONSENT - Owner gate: consented real dataset for ML validation (per candidate)",
+      "description": "[DL-Q-CONSENT | epic:open-questions | process | QUESTION | risk:high | effort:S | M6]\nOutcome: Open owner decision (per WB candidate): promotion past benchmarked requires a separately authorised, representative, consented real dataset with its own dataset card and untouched holdout. No candidate may cross this line on invented data.\nDeps: none | Unlock: Explicit per-candidate owner authorisation\nPaths: docs/analyser-program/08 owner-gate register; 03 promotion ladder\nAuthority: gate:owner-decision\nProhibited: Invented benchmarks never substitute; holdout reuse forbidden\nBehavior: ADR-19 ladder rule.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Open Questions",
+      "labels": [
+        "status:question",
+        "type:process",
+        "privacy:C1",
+        "risk:high",
+        "M6-time-graph-wb",
+        "epic:open-questions",
+        "gate:owner-decision"
+      ]
+    },
+    {
+      "title": "DL-DRIFT-01 - CI declaration-vs-execution drift map (frontier A1)",
+      "description": "[DL-DRIFT-01 | epic:ci-studio | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: Declared workflow surfaces joined to observed run populations: never-observed declared paths and undeclared observed aliases as coverage-gated set differences; alias correspondence across renames is modelled, never observed.\nDeps: DL-CI-01, DL-CI-02 | Unlock: actions + definition-class connectors merged\nPaths: server/analysis/ciDrift.ts; tests\nAuthority: G2+G3 standing (reuses cap.github.actions + cap.source.structure); no new capability\nProhibited: Dormancy never asserted under truncated/restricted coverage; reusable-workflow indirection never read as defect; joint summary is a deletion descendant of BOTH parents\nBehavior: Frontier A1: anti-joins per side + coverage gate; drift counts C1/36m carry their own censoring when C3 sources expire.\nAccept: Rename/reusable/restricted fixture separates renamed vs dormant vs restricted; otherwise ships one-sided coverage-annotated counts only.\nProve: npm test -- server/analysis/ciDrift.test.ts\nFixtures: 4 declared workflows, 3 observed aliases, one rename, one reusable call, one restricted window.\nRollback: Revoking either parent deletes the joint summary.\nDemo: Drift set table on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:ci-studio",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-MIG-01 - Migration-ledger archaeology: append vs rewrite regimes (frontier A3)",
+      "description": "[DL-MIG-01 | epic:xray | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M6]\nOutcome: Monotonicity test over migration-role counts across ordered comparable snapshots; count-decrease events classify as rewrite/squash candidates only after coverage-shift separation; multi-ledger monorepos gate the claim.\nDeps: DL-XRAY-02 | Unlock: role enumeration merged (uses 14-role taxonomy incl. schema_definition)\nPaths: server/analysis/migrationLedger.ts; tests\nAuthority: G2+G3 standing (cap.source.structure)\nProhibited: Rename/role-rule change never read as squash (coverage_shift_candidate); no ledger-quality wording\nBehavior: Frontier A3: window function over snapshot series; DL.MIG.LEDGER_MONOTONICITY.v1 + REGIME_TRANSITION.v1 (proposed).\nAccept: 12-append/1-squash/1-rename/2-ledger fixture classifies exactly or ships as question.\nProve: npm test -- server/analysis/migrationLedger.test.ts\nFixtures: Squash vs directory-rename vs second-package fixtures.\nRollback: Feature deletion.\nDemo: Regime timeline for fixture repo.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M6-time-graph-wb",
+        "epic:xray",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-FIX-01 - Golden-mass ratio + golden-rewrite waves (frontier A4)",
+      "description": "[DL-FIX-01 | epic:xray | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: How much behaviour is pinned by fixture_golden artifacts vs executable assertions, and when golden-rewrite waves occurred; byte-mass and count claims always co-render and disagree via contradiction edges.\nDeps: DL-XRAY-02, DL-COUP-01 | Unlock: role enumeration + diffset mapping merged\nPaths: server/analysis/goldenWaves.ts; tests\nAuthority: G2+G3 standing\nProhibited: Role sniff precision below preregistered floor (~0.9 on labelled corpus) abstains whole family; SRC_ROLE_SNIFF_AMBIGUOUS limitation; no per-author dimension\nBehavior: Frontier A4: role-typed co-change waves reusing COUP-02 machinery; ambiguous files are unknown, never forced.\nAccept: Labelled 200-file corpus precision >= floor; wave detector ignores vendored-data import fixture.\nProve: npm test -- server/analysis/goldenWaves.test.ts\nFixtures: Owner-labelled role corpus + one regeneration wave + one vendored import.\nRollback: Feature deletion.\nDemo: Golden-mass + wave chart data.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:xray",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-BUILD-01 - Declared build/workspace graph + declared-vs-import disagreement (frontier A5)",
+      "description": "[DL-BUILD-01 | epic:atlas | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: HMAC package nodes from manifest-declared internal topology, per-snapshot deltas, and the declared-vs-import set difference at package grain — is a boundary real or nominal?\nDeps: DL-ATLAS-04, DL-XRAY-02 | Unlock: import graph + enumeration merged\nPaths: server/connectors/sourceStructure/declaredGraph.ts; tests\nAuthority: G2+G3 standing; GH-SBOM-01 manifest-parse rules bind (names/versions/PURLs C4-destroyed); offline only\nProhibited: Unresolved path-alias never read as bypassed boundary (MANIFEST_WORKSPACE_UNRESOLVED); one-node graph renders not-applicable; volume-as-effort copy banned; edge lists never exported (banded rule)\nBehavior: Frontier A5: declared SCC/degree stats via GRAPH-01 machinery; package continuity modelled per ADR-07.\nAccept: Split/merge/unused-dep/bypass/alias fixture separates bypassed vs unresolvable, else disagreement claim dropped.\nProve: npm test -- server/connectors/sourceStructure/declaredGraph.test.ts\nFixtures: 5-package monorepo across three snapshots per frontier spec.\nRollback: Revocation cascade.\nDemo: Declared-vs-import diff table.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:atlas",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-REL-01 - Release-train signature vocabulary (frontier A7)",
+      "description": "[DL-REL-01 | epic:portfolio | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:S | M5]\nOutcome: Closed descriptive regime vocabulary {single_shot, irregular, clustered, periodic_candidate, insufficient} over interval regularity + batch shape + flag shares + non-ancestor rate, by preregistered published thresholds.\nDeps: DL-FLOW-04, DL-GIT-02 | Unlock: releases + ancestry merged\nPaths: server/analysis/releaseSignature.ts; tests\nAuthority: G2 approved\nProhibited: No normative pole (periodic is not better); tags-without-releases forces insufficient; pack dates ISO-week-floored; regime-change-at-era claims go through ADR-17 with coverage alternative\nBehavior: Frontier A7: threshold rules only; thresholds preregistered, not tuned.\nAccept: Periodic/bursty/single/tag-only fixture quartet labels correctly and readers name different decisions for periodic vs bursty.\nProve: npm test -- server/analysis/releaseSignature.test.ts\nFixtures: Four invented release histories.\nRollback: Vocabulary is derived data.\nDemo: Regime labels + interval ECDF.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:portfolio",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-EVQ-01 - Adverse-tail counterfactual bounds + tipping fraction (frontier C-01)",
+      "description": "[DL-EVQ-01 | epic:evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M5]\nOutcome: Every censored distribution/ratio claim carries its worst-case/best-case bound pair and the tipping fraction of censored units that would flip its direction — absence-is-never-zero as a number.\nDeps: DL-BRIDGE-02, DL-SPINE-04 | Unlock: served facts + coverage vector merged\nPaths: server/analysis/censoredBounds.ts; tests\nAuthority: G2 approved\nProhibited: Bound never rendered as value (copy rule); no imputation into headline statistics; no survival model here (WB-C6 owns that)\nBehavior: Frontier C-01: for right-censored durations the lower bound imputes each unit at its OWN censoring time (true value >= censoring time — support-min is NOT a bound); upper bound at window/cap boundary; scalar search for tipping fraction.\nAccept: Out-of-support later observation widens bound as DQ finding; kill condition: if realistic censoring never flips any claim on the synthetic corpus, drop the surface.\nProve: npm test -- server/analysis/censoredBounds.test.ts\nFixtures: 40 eligible + 8 censored lifecycles across flip/no-flip regimes.\nRollback: Derived C1; delete.\nDemo: Bound pair + tipping fraction on fixture claim.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M5-feedback-pack",
+        "epic:evidence-quality",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-EVQ-02 - Evidence-degradation fragility profile (frontier C-02)",
+      "description": "[DL-EVQ-02 | epic:evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M5]\nOutcome: Per live claim: the degradation ladder value at which each coverage dimension first downgrades or abstains it — computed on demand from SPINE-05 gates, nothing persisted.\nDeps: DL-SPINE-05 | Unlock: monotone gates merged\nPaths: server/analysis/fragility.ts; tests\nAuthority: G2 approved\nProhibited: Nothing persisted; seeded/reproducible degradation only; an explainer, never a detector claim\nBehavior: Frontier C-02: loop over the gate function with mutated inputs; reuses SPINE-05 harness.\nAccept: Kill condition: if all claims share one dominating gate profile, collapse to limiting-dimension display.\nProve: npm test -- server/analysis/fragility.test.ts\nFixtures: SPINE-05 degraded-fixture suite reuse.\nRollback: On-demand only.\nDemo: Fragility profile for one claim.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M5-feedback-pack",
+        "epic:evidence-quality",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-EVQ-03 - Claim stability across re-collections (frontier C-03; stability key)",
+      "description": "[DL-EVQ-03 | epic:evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: Stability series over the ADR-01 stability key: churn, oscillation, value range, coverage-vs-value attribution share; drift-dimension producer role stays research.\nDeps: DL-SPINE-01, DL-SPINE-02 | Unlock: claim tables + canonicalisation merged (stability key is in the ADR-01 contract)\nPaths: server/analysis/claimStability.ts; tests\nAuthority: G2 approved\nProhibited: Version ordinals + ISO-week grain only — never exact collection timestamps (ADR-14 floor applies to the product's own telemetry-shaped data); method-version churn stratified and disclosed\nBehavior: Frontier C-03: window functions over supersession chains grouped by stability key.\nAccept: Five-job replay with planted late events yields expected churn profiles; static-fixture zero-churn renders honestly.\nProve: npm test -- server/analysis/claimStability.test.ts\nFixtures: Replayed synthetic corpus with late-arriving events.\nRollback: Derived table deletion.\nDemo: Stability profile per claim family.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:evidence-quality",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-EVQ-04 - Calibration scoreboard for past hypotheses (frontier C-04)",
+      "description": "[DL-EVQ-04 | epic:evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M7]\nOutcome: Per (claim family x confidence band): resolved-supported/contradicted/superseded/open counts from answered question rows — the named producer for ADR-02's calibration dimension; a family no better than chance demotes to abstention by policy.\nDeps: DL-OPEN-01, DL-HYP-02 | Unlock: question family + bands merged\nPaths: server/analysis/calibrationScoreboard.ts; tests\nAuthority: G2 approved\nProhibited: Subject is the method, never the user (copy rule); rates abstain below preregistered n (>=20 resolved/family via display-gate process); resolved and unresolved co-rendered\nBehavior: Frontier C-04: group-by over question/claim rows; selection-bias counter-check across re-collection frequency strata.\nAccept: 60-planted-hypothesis fixture recovers planted band ordering, else bands are dropped rather than kept.\nProve: npm test -- server/analysis/calibrationScoreboard.test.ts\nFixtures: Scripted resolution sequences with known ground truth.\nRollback: Scoreboard rows die with claims.\nDemo: Scoreboard table on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M7-interpretation",
+        "epic:evidence-quality",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-EVQ-05 - Replication SQL per claim family in packs (frontier C-05)",
+      "description": "[DL-EVQ-05 | epic:evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:M | M5]\nOutcome: One independent recomputation query per shipped claim family, authored from the dictionary text (not the implementation), shipped in every pack; non-zero delta is a data-quality finding, never a silent correction.\nDeps: DL-PACK-04 | Unlock: dictionary/query generation merged\nPaths: server/analysisPack/replication.ts; queries; tests\nAuthority: G2 approved; runs entirely inside the pack sink\nProhibited: No server SQL endpoint; replication authored by a different session than the implementation and dictionary revision recorded\nBehavior: Frontier C-05: makes principle 7 (reproducible without trust) user-testable.\nAccept: Three planted implementation bugs caught by replication queries, else pack grain flagged too coarse (a PACK-01 finding).\nProve: npm test -- server/analysisPack/replication.test.ts\nFixtures: Bug-planted implementation variants.\nRollback: Queries are pack content.\nDemo: Replication delta report on fixture pack.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M5-feedback-pack",
+        "epic:evidence-quality",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-EVQ-06 - Coverage-horizon calendar (frontier C-06)",
+      "description": "[DL-EVQ-06 | epic:evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M5]\nOutcome: Per capability and claim family: the dates at which provider history becomes unavailable, local retention expires, and the coverage vector falls below its floor — retention arithmetic, not prediction.\nDeps: DL-LIFE-02 | Unlock: registry-derived descendant enumeration merged (reused in reverse)\nPaths: server/analysis/coverageHorizon.ts; tests\nAuthority: G2 approved\nProhibited: No exact collection timestamps in exports (ISO-week floor); the ML version is explicitly rejected (WB-C7 answers a different question)\nBehavior: Frontier C-06: known constants (90d C3, 13m C2, 36m C1, provider censors) walked over row ages.\nAccept: Store aged to straddle every boundary (88/90/92d, 12/13/14m) warns with actionable lead time, else collapses to a coverage note.\nProve: npm test -- server/analysis/coverageHorizon.test.ts\nFixtures: Age-straddling invented store.\nRollback: Derived C1.\nDemo: Horizon calendar for fixture store.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:low",
+        "M5-feedback-pack",
+        "epic:evidence-quality",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-EVQ-07 - Negative space: what the system notably never does (frontier C-07)",
+      "description": "[DL-EVQ-07 | epic:evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:S | M6]\nOutcome: Zero-count slots of observed-layer closed enums, claimable ONLY inside fully-complete coverage windows; everything else renders not-determinable; modelled enums (revert_candidate etc.) excluded by construction.\nDeps: DL-BRIDGE-02 | Unlock: served enums + coverage merged; copy-dictionary absence-is-never-deficiency ban is a blocking dependency\nPaths: server/analysis/negativeSpace.ts; tests\nAuthority: G2 approved\nProhibited: Normative absence framing banned; sparse-suppression before pack export (small-portfolio uniqueness)\nBehavior: Frontier C-07: anti-join enum universe vs observed counts gated on complete coverage.\nAccept: Truncated-coverage corpus abstains completely; occupied-corpus yields empty negative space honestly.\nProve: npm test -- server/analysis/negativeSpace.test.ts\nFixtures: Fully-covered + truncated corpora.\nRollback: Derived C1.\nDemo: Negative-space panel data.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:evidence-quality",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-EVQ-08 - Matched-window era comparison (frontier C-08)",
+      "description": "[DL-EVQ-08 | epic:time-machine | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: Era diffs computed only on instrument-matched sub-windows with the matched fraction as a first-class number and disqualifying-dimension residuals — the accepted ADR-07 middle case.\nDeps: DL-TIME-01 | Unlock: snapshot contract merged\nPaths: server/analysis/matchedWindows.ts; tests\nAuthority: G2 approved\nProhibited: Naive whole-era diff never rendered when it disagrees with the matched diff; tolerances preregistered in the ADR-02 registry, not tuned\nBehavior: Frontier C-08: filter + existing aggregate diff.\nAccept: Identical-systems-across-parser-bump fixture reports no-material-difference with matched fraction, where naive diff reports drift.\nProve: npm test -- server/analysis/matchedWindows.test.ts\nFixtures: Planted instrument-change era pairs.\nRollback: Derived C1.\nDemo: Matched vs naive comparison on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:time-machine",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-EVQ-09 - Policy-transition study: placebo + confounder ledger (frontier C-09)",
+      "description": "[DL-EVQ-09 | epic:pattern-lab | research | RESEARCH | risk:high | effort:M | M7]\nOutcome: Before/after ECDFs around observed policy transitions with a registered confounder ledger and seeded placebo windows; coincidence, never causation; no effect size, uplift, or scalar — ever.\nDeps: DL-PORT-02, DL-CI-01, DL-LAB-02 | Unlock: policy facts + coverage-shift separation merged; mechanism must beat plain side-by-side ECDFs on fixtures to earn a view\nPaths: server/research/policyTransitions.ts; tests\nAuthority: G2+G3 standing; adoption conditions binding: subject is queue/policy never author; faster/improved/healthier banned; no actor dimension; CAD-02 review blocking\nProhibited: DiD/synthetic-control effect sizes rejected as a shape (frontier C-14); coverage-moved windows classify coverage_shift_candidate\nBehavior: Frontier C-09 with all four person-risk mitigations as card conditions.\nAccept: No-change-planted-transition fixture reads null; confounded fixture classifies as coverage candidate.\nProve: npm test -- server/research/policyTransitions.test.ts\nFixtures: Planted transitions with/without underlying change.\nRollback: Research module; deletable.\nDemo: Study panel data on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C1-C3",
+        "risk:high",
+        "M7-interpretation",
+        "epic:pattern-lab",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-EVQ-10 - Wave lead/lag ordering with permutation null (frontier C-10)",
+      "description": "[DL-EVQ-10 | epic:pattern-lab | research | RESEARCH | risk:medium | effort:M | M7]\nOutcome: Within cross-repo waves: pairwise lead counts with seeded permutation null; scheduler-signature check (ordering identical across unrelated aliases) reverses the reading; frequent abstention expected and correct.\nDeps: DL-COUP-03, DL-DEP-01, DL-WB-01 | Unlock: waves + workbench merged\nPaths: server/research/waveLeadLag.ts; tests\nAuthority: G2+G3 standing; research only\nProhibited: Ordering is between repositories, never people; names stay C3; low-power windows abstain\nBehavior: Frontier C-10: counting + seeded permutation test; cross-alias consistency check mandatory.\nAccept: Planted-propagation vs fixed-scheduler portfolios distinguished, else rejected.\nProve: npm test -- server/research/waveLeadLag.test.ts\nFixtures: Two invented portfolios per frontier spec.\nRollback: Registry state.\nDemo: Lead/lag matrix on fixtures.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:research",
+        "type:research",
+        "privacy:C1-C3",
+        "risk:medium",
+        "M7-interpretation",
+        "epic:pattern-lab",
+        "gate:G3-standing"
+      ]
+    },
+    {
+      "title": "DL-Q-XCONTRACT - Owner gate: cross-repository artifact identity key (frontier A11)",
+      "description": "[DL-Q-XCONTRACT | epic:open-questions | process | QUESTION | risk:high | effort:S | M7]\nOutcome: Open owner decision: shared-contract drift mapping needs a cross-repository artifact identity (persisted content hash of C4 bytes = a new linkage primitive the pack-alias design exists to prevent). Run the coincidence fixture BEFORE asking; parked until then.\nDeps: none | Unlock: Coincidence fixture result + explicit owner decision on the identity key\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: gate:owner-decision\nProhibited: No cross-repo content-hash identity before the gate; version-token matching alone is known-insufficient\nBehavior: Frontier A11 park; the four-repo coincidence fixture is the unblocking evidence.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Open Questions",
+      "labels": [
+        "status:question",
+        "type:process",
+        "privacy:C1-C3",
+        "risk:high",
+        "M7-interpretation",
+        "epic:open-questions",
+        "gate:owner-decision"
+      ]
+    },
+    {
+      "title": "DL-Q-AGENTCFG - Owner gate: agent_config role class + adoption-timing suppression (frontier A14)",
+      "description": "[DL-Q-AGENTCFG | epic:open-questions | process | QUESTION | risk:medium | effort:S | M6]\nOutcome: Open owner decision, two parts: (a) may the closed role taxonomy gain agent_config; (b) if yes, portfolio-level adoption timing is suppressed to per-repository presence only (synchronised-adoption week is a personal-timeline proxy). Attach the two-portfolio fixture so the gate is answered with evidence.\nDeps: none | Unlock: Explicit owner decision with fixture evidence attached\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: gate:owner-decision\nProhibited: No content reads ever (presence only); no design work assumes approval\nBehavior: Frontier A14 gate.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Open Questions",
+      "labels": [
+        "status:question",
+        "type:process",
+        "privacy:C1",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:open-questions",
+        "gate:owner-decision"
+      ]
+    },
+    {
+      "title": "DL-CAD-03 - Machine-checkable composition ledger (convergence D-01)",
+      "description": "[DL-CAD-03 | epic:cadence | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M5]\nOutcome: CI-blocking checker over declared per-feature dimension tags (time grain, subject kind, actor-adjacency, uniqueness): flags pairs/triples that jointly reconstruct attendance/schedule/behaviour even when each feature passes CAD-02 alone; also flags already-shipped features needing re-coarsening when a new one lands.\nDeps: DL-CAD-02, DL-SPINE-04 | Unlock: review template + dimension registry merged\nPaths: server/analysis/compositionLedger.ts; CI wiring; tests\nAuthority: G2 approved; enforcement layer for the ADR-14 composition requirement\nProhibited: NEVER a browsable composition-explorer surface (the output is a reconstruction recipe); findings are blocking, not claims\nBehavior: Convergence D-01: registry join + closed rules; flag = CI failure + card-level finding.\nAccept: Known-bad triple fixture (release instants x CI day-grain x week commits, single-owner) flags; safe-pairs fixture clears; both-or-neither = vocabulary defect.\nProve: npm test -- server/analysis/compositionLedger.test.ts\nFixtures: Two fixture feature-sets per critic spec.\nRollback: Checker removal leaves CAD-02 human review.\nDemo: Ledger finding on the planted triple.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:high",
+        "M5-feedback-pack",
+        "epic:cadence",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-PACK-06 - Export distinctiveness measurement at pack build (convergence D-02)",
+      "description": "[DL-PACK-06 | epic:analysis-pack | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M5]\nOutcome: Per exported shape vector: admitted value-space cardinality under current banding + within-corpus equivalence-class sizes, shown in the PACK-05 preview — turns the accepted banding rule from assertion into evidence.\nDeps: DL-PACK-05 | Unlock: preview/suppression merged\nPaths: server/analysisPack/distinctiveness.ts; tests\nAuthority: G2 approved; runs inside the existing export sink\nProhibited: NEVER framed as anonymity/anonymisation (charter claims rule); explicitly models no external adversary; a number + disclaimer, not a guarantee\nBehavior: Convergence D-02: cardinality arithmetic over the pack's own tables at build.\nAccept: Synthetic pack-to-source matching attempt falsification test; kill condition: if every row lands in <=3-value bands the probe reports nothing-to-measure and retires.\nProve: npm test -- server/analysisPack/distinctiveness.test.ts\nFixtures: Fixture packs with distinctive + collapsed vectors.\nRollback: Preview field removal.\nDemo: Distinctiveness column in a fixture preview.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:analysis-pack",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-LIFE-04 - Capability grant preview: cost dossier + producer set (convergence D-03)",
+      "description": "[DL-LIFE-04 | epic:lifecycle | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M5]\nOutcome: At the consent moment on a cold install: which claim families are blocked solely by capability state, plus the exact cost dossier (class ceiling, retention, deletion scope, provider-held-copy caveats) per grant — computed from registries, reading no collected data; the yield PROMISE stays research.\nDeps: DL-LIFE-01, DL-SPINE-04 | Unlock: lifecycle + dimension registry merged\nPaths: server/lifecycle/grantPreview.ts; tests\nAuthority: G2 approved\nProhibited: Never recommends or ranks grants (consent dark-pattern rule); yield and cost render with equal prominence; nothing persisted\nBehavior: Convergence D-03: registry walk; yield prediction demoted to research until predicted-vs-actual gap measured on synthetic installs.\nAccept: Cold-install fixture lists blocked families + dossiers; recommendation-free rendering proven by copy test.\nProve: npm test -- server/lifecycle/grantPreview.test.ts\nFixtures: Synthetic cold + partially-granted installs.\nRollback: On-demand only.\nDemo: Grant preview payload for one capability.",
+      "columnName": "Proposed",
+      "labels": [
+        "status:blocked",
+        "type:implementation",
+        "privacy:C1",
+        "risk:medium",
+        "M5-feedback-pack",
+        "epic:lifecycle",
+        "gate:G2"
+      ]
+    }
+  ]
+}
