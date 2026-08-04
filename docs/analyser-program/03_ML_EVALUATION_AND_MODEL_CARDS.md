@@ -168,8 +168,11 @@ tests"), made concrete:
    preregistered and **never changes** — it cannot be redefined per attempt or per wave, `m ≥` the
    declared family size always, and a candidate submitting alone still carries the family's `m`. A
    promotion wave groups the tests actually *run*: it is a **scheduling unit, never a correction
-   unit**. `q` is a property of the family, not of a wave, and `m` for a family only ever **grows**
-   (item 6) — it never shrinks below the family declaration.
+   unit**. `q` is a property of the family, not of a wave. **What `m` denotes (clarified
+   2026-08-04):** under the item-6(a) preallocation rule the operative BH denominator `m` is the
+   family's **preregistered maximum size, fixed from the first test onward** — the *membership
+   count* grows toward that maximum as successors join, but the denominator never changes and
+   never shrinks below the declaration. A growing denominator is exactly the design item 6 voids.
 3. **Procedure (BH step-up):** order the family's *p*-values ascending; let `i*` be the **largest**
    `i` with `p_(i) ≤ (i/m)·q`; reject H0 for **all tests of rank `1…i*`** (none if no such `i`
    exists); `q = 0.10` at `benchmarked` tier. (Corrected 2026-08-04: rejecting only rank `i*`
@@ -197,8 +200,10 @@ tests"), made concrete:
      its version by enough to justify re-testing produces a new `candidate_id`, a new `prereg_id`,
      and a new sealed holdout — and that successor is **permanently a member of its predecessor's
      family**. Family membership is fixed at first preregistration and carried across every later
-     wave, so the family's `m` counts every predecessor attempt whatever wave it ran in and
-     **only ever grows**. The lineage is recorded in the registry, never re-derived per wave.
+     wave, so every predecessor attempt counts against the family's preallocated size whatever
+     wave it ran in — the **membership count only ever grows toward the preregistered maximum,
+     while the BH denominator stays fixed at that maximum** (see item 2 and the next paragraph).
+     The lineage is recorded in the registry, never re-derived per wave.
      **Adaptive growth voids fixed-family BH (corrected twice, 2026-08-04 review rounds):**
      when a successor is introduced *because* its predecessor failed, the family size and the
      stopping rule depend on observed p-values, and neither the original BH decision **nor a

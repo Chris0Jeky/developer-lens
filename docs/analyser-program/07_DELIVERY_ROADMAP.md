@@ -42,6 +42,7 @@ DL-RECON-01 [done in this PR]
     → DL-VALUE-01 + DL-SPINE-03 + DL-UX-ED   [first analytical value]
     → DL-BRIDGE-03 [parity + V1 retirement matrix]
     → DL-FLOW-01/02/04 → DL-OBSV-01/03
+    → DL-SPINE-05 + DL-BRIDGE-02 → DL-LAB-01 + DL-OPEN-01
     → DL-UX-SS [deterministic System Story]
     → DL-PACK-* + DL-QL-01
     → optional DL-RAG-* / DL-HYP-* / WB
