@@ -53,6 +53,7 @@ export interface GithubCoreRestPageReceipt {
   readonly pageNumber: number
   readonly receiptAlias: string
   readonly unitCount: number
+  readonly unitAliases: readonly string[]
   readonly nextPage: number | null
 }
 
@@ -469,7 +470,7 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
     if (!parsed) return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate)
     const start = Date.parse(card.readBoundary.rangeStart)
     const end = Date.parse(rangeEnd)
-    let pageUnitCount = 0
+    const pageUnitAliases: string[] = []
     for (const item of parsed) {
       const updated = item.updated_at as string
       const updatedMs = Date.parse(updated)
@@ -485,7 +486,7 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
         if (existing === aliasSource) continue
         aliasSources.set(itemAlias, aliasSource)
         units.push(Object.freeze({ alias: itemAlias, kind, updatedAt: updated }))
-        pageUnitCount += 1
+        pageUnitAliases.push(itemAlias)
       } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
     }
     let next: number | null
@@ -506,7 +507,8 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
       if (existing !== undefined && existing !== receiptSource) throw new Error('schema')
       aliasSources.set(receiptAlias, receiptSource)
     } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
-    pages.push(Object.freeze({ pageNumber: page, receiptAlias, unitCount: pageUnitCount, nextPage: next }))
+    const unitAliases = Object.freeze([...pageUnitAliases].sort())
+    pages.push(Object.freeze({ pageNumber: page, receiptAlias, unitCount: unitAliases.length, unitAliases, nextPage: next }))
     if (next === null) return completeResult(repositoryAlias, flags, units, pages, rate)
     page = next
   }
