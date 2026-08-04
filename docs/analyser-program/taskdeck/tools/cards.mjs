@@ -239,7 +239,7 @@ export const CARDS = [
   rollback: 'Additive contract; remove module.',
   demo: 'Three-outcome comparison table on fixtures.' },
 
-{ id: 'DL-VALIDATE-01', title: 'Analytical conformance and counterexample suite', epic: 'analytics-core', type: 'evaluation', status: 'READY', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C0', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-VALIDATE-01', title: 'Analytical conformance and counterexample suite', epic: 'analytics-core', type: 'evaluation', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C0', gate: 'gate:G2', horizon: 'active',
   question: 'Would our fixtures catch a metric that is reproducible, private - and measuring the wrong construct?',
   outcome: 'An analytics-grade fixture suite testing construct validity, not only code correctness: goldens, counterexamples, null/unknown, truncation, right-censoring, alternative windows, alternative cohort definitions, parameter sensitivity, contradiction, source disagreement, and permutation/null baselines for wave-like findings.',
   deps: 'DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01', unlock: 'analytics-core contracts merged',
@@ -252,7 +252,7 @@ export const CARDS = [
   rollback: 'Fixtures only.',
   demo: 'Conformance report for one metric family.' },
 
-{ id: 'DL-VALUE-01', title: 'First deterministic comparative finding (integration shape, matched windows)', epic: 'analytics-core', type: 'implementation', status: 'BLOCKED_BY_DEPENDENCY', risk: 'medium', effort: 'L', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active', demoRelevant: true,
+{ id: 'DL-VALUE-01', title: 'First deterministic comparative finding (integration shape, matched windows)', epic: 'analytics-core', type: 'implementation', status: 'DONE', risk: 'medium', effort: 'L', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active', demoRelevant: true,
   question: 'How did PR integration shape differ between this window and the preceding matched window?',
   outcome: 'First analytical value slice (wave R3) on invented facts via /api/v2 + one comparative Atlas panel + Drawer: cohort = PRs ready-for-review per window, merge event, right-censored open PRs, censoring-aware baseline or abstention, eligible/censored/excluded counts, distribution/tail view, metric-specific coverage, contradicting observation where present, limitations + alternatives, >=1 sensitivity variant.',
   deps: 'DL-BRIDGE-01, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-VALIDATE-01, DL-SPINE-02, DL-SPINE-03, DL-UX-ED', unlock: 'bootstrap + analytics-core contracts + conformance suite + resolver + drawer merged',
