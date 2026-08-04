@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { DataClassSchema } from './privacy.js'
 
-export const CAPABILITY_CONTRACT_VERSION = '1.0.0' as const
+export const CAPABILITY_CONTRACT_VERSION = '1.1.0' as const
 
 export const CAPABILITY_IDS = [
   'github.core',
@@ -77,7 +77,7 @@ export const CAPABILITY_REGISTRY = [
   capability('cap.github.projects', 'PROJECT_STATUS_TRANSITIONS', 'C3', ['G2', 'G3'], 'P10', 'C3_90D', 'DELETE_PROJECT_DESCENDANTS', 'unavailable'),
   capability('cap.github.ownership', 'OWNERSHIP_COVERAGE_COUNTS', 'C4', ['G2', 'G3'], 'P10', 'C4_PROCESS_C3_90D_C1_36M', 'DELETE_OWNERSHIP_DESCENDANTS', 'never_authorized'),
   capability('cap.source.structure', 'OPAQUE_MODULE_GRAPH', 'C4', ['G2', 'G3'], 'P10', 'C4_PROCESS_C3_90D_C1_36M', 'DELETE_STRUCTURE_DESCENDANTS', 'never_authorized'),
-  capability('cap.external.model', 'CONTROLLED_HYPOTHESES', 'C1', ['G2', 'G4'], 'P12', 'OWNER_PROVIDER_DECISION', 'DELETE_MODEL_DESCENDANTS', 'never_authorized'),
+  capability('cap.external.model', 'CONTROLLED_HYPOTHESES', 'C1', ['G2', 'G4'], 'P12', 'OPENAI_STORE_FALSE_DEFAULT_30D', 'DELETE_LOCAL_MODEL_DESCENDANTS', 'never_authorized'),
 ] as const
 
 const capabilityMap = new Map(CAPABILITY_REGISTRY.map((definition) => [definition.id, definition]))

@@ -1,14 +1,15 @@
 # Developer Lens data charter
 
-Version: **1.1.0**
+Version: **1.2.0**
 
 Architecture: [`DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md)
 
 Authority: G1 and G2 are approved 2026-08-03; standing G3 authorization is granted for Actions,
 deployments, dependencies, Dependabot/code-scanning security aggregates, Projects, ownership, and
-source structure within the capability matrix. G4 is open and not approved. These decisions
-authorize bounded implementation, not automatic runtime activation, credential changes, external
-writes, or publication of private output.
+source structure within the capability matrix. G4 is approved 2026-08-04 only for the bounded
+OpenAI `gpt-5.6-luna` contract below. These decisions authorize bounded implementation, not
+automatic runtime activation, credential changes, external writes, or publication of private
+output.
 
 Development posture: the owner selected a demo-first D1-D3 lane on 2026-08-03. This charter gates
 real/private data and later distribution; it does not block invented C0 fixtures or local synthetic
@@ -61,11 +62,65 @@ coverage states, schema versions, and export classifications fail closed.
 | Local API | Resource-specific presentation schemas; C0/C1 and explicitly permitted local C2 | Generic records/files, C3 without endpoint consent, C4/X, unknown fields |
 | Frontend | `PresentationView` only | Canonical/source records and any private field not required by the view |
 | Export | Pre-redacted `ExportView`, pack-scoped IDs, manifest allowlist | Identity vault, raw IDs/OIDs, private paths, operational cursors, C4/X |
-| Model | Controlled evidence codes, values, and existing evidence IDs | Source prose, names, titles, labels, paths, bodies, comments, dependencies, security details, tools |
+| Model | A compact C1 bundle of controlled feature/limitation/coverage codes, bounded numeric values and UTC windows, and request-scoped evidence IDs | Source prose, names, repository IDs or aliases, URLs, titles, labels, paths, bodies, comments, review text, dependencies, security details, tools, and C2/C3/C4/X |
 | Public Pages | C0 constructors and the public-only schema | Every private schema/capability/table and all non-synthetic identifiers |
 
 No runtime may serialize an upstream object wholesale. Classification is attached to registered
 fields, not supplied by an untrusted caller. A field absent from the registry is prohibited.
+
+### G4 OpenAI/Luna provider boundary
+
+The owner approved this exact external boundary on 2026-08-04. Any broader provider, model, API,
+payload class, hosted tool, retention posture, or automated schedule is a new owner decision.
+
+- **Provider and route:** OpenAI only, model ID `gpt-5.6-luna`, one synchronous standard-tier
+  `POST https://api.openai.com/v1/responses` request, and `store: false`. Conversation IDs,
+  `previous_response_id`, background mode, streaming, Batch, Realtime, web/file search, Files,
+  vector stores, embeddings, MCP, code interpreter, hosted shell, skills, and every other tool are
+  outside the initial boundary.
+- **Credential:** read only `Llm__OpenAi__ApiKey` from the process environment at call time. Reject
+  a missing/blank value. Never print, persist, hash, return, or include it in errors, task cards,
+  payloads, telemetry, tests, fixtures, screenshots, or tracked files; do not fall back to another
+  environment-variable name.
+- **Payload:** fixed local instructions plus a schema-validated, user-reviewable compact C1 evidence
+  bundle. It may contain only schema/prompt revisions, request-scoped opaque evidence IDs,
+  registered feature/coverage/limitation codes, controlled units/enums, bounded numeric values,
+  counts, and bounded UTC intervals. C2/C3/C4/X and every denied Model-sink field above reject the
+  whole request before the credential or network transport is used.
+- **Local retrieval / RAG:** retrieval occurs locally over explicitly selected C1 analysis-pack
+  facts. A deterministic or local-only index may rank the smallest relevant evidence set; its
+  entries inherit source retention and deletion. No repository/source bytes are embedded or sent,
+  and no hosted file, vector-store, embedding, retrieval, or web-search object is created.
+- **Output:** require a strict structured schema containing hypotheses, counter-hypotheses or
+  abstentions, controlled statement/limitation codes, confidence bands, and only evidence IDs that
+  appeared in the request. Unknown IDs, unknown fields, free-form source citations, actions, tools,
+  unsupported recommendations, or schema violations reject the entire response. Model output is
+  always a C1 hypothesis, never an observed fact, and reaches no API, frontend, export, or public
+  sink before local validation and a purpose-built presentation mapping.
+- **Provider data handling:** OpenAI's published [API data controls](https://developers.openai.com/api/docs/guides/your-data)
+  say API content is not used to train models unless the customer opts in. Under the ordinary
+  non-ZDR posture approved here, abuse-monitoring logs may include prompts/responses by default for
+  up to 30 days (with documented legal and service-protection exceptions), and encrypted prompt-
+  cache application state may remain on GPU-local storage for up to 24 hours even with
+  `store: false`. `store: false` prevents the ordinary 30-day Responses application state; it is
+  not a Zero Data Retention claim. Revalidate these terms before every runtime task.
+- **Spend and failure:** every activation card fixes one request maximum, no automatic retry,
+  `max_output_tokens <= 2,000`, input UTF-8 bytes `<= 16,000` as a conservative token ceiling, and
+  an estimated price ceiling of USD 0.01. Revalidate the official
+  [model](https://developers.openai.com/api/docs/models/gpt-5.6-luna) and
+  [pricing](https://developers.openai.com/api/docs/pricing) pages before the request. A changed
+  model/price/term, estimated over-budget request, timeout, rate limit, provider error, or malformed
+  response stops without retry; provider response bodies are discarded from error reporting.
+- **Local state and deletion:** the initial runtime keeps prompt, response, and numeric usage in
+  process memory only and creates no request/response cache or telemetry. A later reviewed task may
+  retain only validated C1 output under the existing C1 lifetime. Revocation deletes every local
+  retrieval index, output, receipt, and descendant, but Developer Lens cannot recall provider abuse
+  logs, prompt-cache state, user-copied output, or other provider-held copies.
+
+G4 approval does not flip the capability registry. `cap.external.model` remains
+`never_authorized` until a bounded activation card, invented payload/output canaries, injected
+transport tests, review, and the exact hosted gate prove the implementation. No live request is an
+authority-documentation step.
 
 ## Consent, refusal, and deletion
 
@@ -91,7 +146,8 @@ browser profiles, credentials, real account activity, untracked private inputs, 
 operational datasets outside a named task card that states the exact read boundary, selected local
 scope, purpose, retained fields, rollback/deletion behavior, and proving checks. G2 and the seven
 currently named G3 source decisions are approved; their executable definitions remain
-`never_authorized` until a bounded implementation slice supplies and tests an activation path.
+`never_authorized` until a bounded implementation slice supplies and tests an activation path. The
+same activation rule applies to the approved, provider-specific G4 boundary above.
 
 ## Change control
 
@@ -104,4 +160,5 @@ A future sensitive source may be named without another G3 owner question only th
 capability-registry/matrix change that stays within this charter, uses explicitly selected local
 scope and existing read-only least-privilege access, and does not weaken the rejected-capability or
 prohibited-field list. A new class, sink, external transmission boundary, credential mutation, or
-prohibited surface remains a new owner decision. External-model use remains G4-gated.
+prohibited surface remains a new owner decision. G4 covers only the OpenAI/Luna boundary above;
+expanding it requires a new explicit owner decision.

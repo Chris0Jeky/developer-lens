@@ -172,7 +172,9 @@ historical document.
 
 Owner decisions live only in [`HUMAN_TODO.md`](HUMAN_TODO.md). G1/G2 are approved and G3 has
 standing approval within the named capability boundaries; runtime activation still needs a bounded,
-tested task. G4 remains open and unapproved, so external-model transmission is absent.
+tested task. G4 is approved only for the default-off OpenAI `gpt-5.6-luna` contract in the data
+charter; `cap.external.model` remains `never_authorized`, so external-model transmission is still
+absent until a separate bounded implementation and gate pass.
 
 The durable document roles are deliberately separate:
 

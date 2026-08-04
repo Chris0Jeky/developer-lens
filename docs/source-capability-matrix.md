@@ -1,17 +1,18 @@
 # Source capability and consent matrix
 
-Contract version: **1.0.0**. This is the human-readable companion to the fail-closed registry in
+Contract version: **1.1.0**. This is the human-readable companion to the fail-closed registry in
 `shared/capabilities.ts`. The listed retention values became active owner policy when G2 was
 approved on 2026-08-03. Every executable capability definition still starts `never_authorized`:
 the decisions below authorize bounded implementation, but do not themselves activate collection,
 storage, credentials, or a source query. G2 is satisfied for every listed source. Standing G3
 authorization is also satisfied for Actions, deployments, dependencies, security, Projects,
-ownership, and source structure within the purpose/class/scope limits below.
+ownership, and source structure within the purpose/class/scope limits below. G4 is satisfied only
+for the OpenAI `gpt-5.6-luna` boundary recorded in the external-model row and data charter.
 
 The owner-selected D1-D3 demo lane is synthetic-only and does not depend on any real-source
 activation. The approved G2/G3 decisions apply when a later task card proposes its named
-real/private source. G4 is open and not approved, so external transmission is not an active
-scheduling path.
+real/private source. Approved G4 permits a bounded OpenAI/Luna implementation, but external
+transmission remains default-off and is not active until its own reviewed task card and tests pass.
 
 | Capability ID | Purpose and retained minimum | Class ceiling | Consent / phase | Retention policy | Delete / revoke behavior | Refusal or absence |
 |---|---|---:|---|---|---|---|
@@ -27,7 +28,7 @@ scheduling path.
 | `cap.github.projects` | ProjectV2 status snapshots and aggregate transitions | C3 | **G2 + G3 approved**, P10 | 90d | Delete project/item/field aliases, observations, transitions, and packs | Do not mutate token/scopes; unavailable history remains coverage |
 | `cap.github.ownership` | Repository-level ownership coverage counts only | C4 input → C3 graph/C1 summary | **G2 + G3 approved**, P10 | C4 process only; C3 90d; C1 36m | Destroy CODEOWNERS/team inputs; delete graph and summary descendants | Before implementation make no CODEOWNERS/team reads; never emit people or named bus factor |
 | `cap.source.structure` | Committed-tree composition, opaque module graph, cycles, coupling, and API-surface counts | C4 input → C3 graph/C1 summary | **G2 + G3 approved**, P10; selected immutable refs only | C4 process only; C3 90d; C1 36m | Destroy paths/source/parser diagnostics; delete parser cache, graph, summaries, and packs | Before implementation make no tree/blob read, working-tree scan, repository executable, plugin, or network |
-| `cap.external.model` | Optional hypotheses over a user-reviewed compact evidence bundle | C1 input/output only | **G4 not approved; inactive unless a future provider-specific decision closes the gate** | Not applicable | No request cache or model output may exist | No transport, SDK, initialization, cache, telemetry, or request |
+| `cap.external.model` | Optional structured hypotheses over a user-reviewed, locally retrieved compact evidence bundle | C1 input/output only | **G2 + G4 approved only for OpenAI `gpt-5.6-luna`**, P12; still `never_authorized` until bounded activation | Initial prompt/response process-only; `store: false`; provider abuse logs may remain up to 30d and encrypted prompt-cache state up to 24h under published defaults | Delete local retrieval index, validated output, usage receipt, and descendants; provider-held copies cannot be recalled locally | No credential read or request while inactive/refused; no hosted files/vector stores/tools; failure or changed terms/pricing stops without retry |
 
 ## Rejected capabilities
 
@@ -53,6 +54,10 @@ The registry must not expose an authorization path for these capabilities:
   this matrix. Missing permissions become explicit coverage, not a new owner gate. A future source
   may join this standing authority only through a reviewed registry/matrix change that remains
   inside the charter and rejected-capability boundaries.
-- G4: open and not approved; external-model transport and P12 remain inactive. Closing G4 requires
-  an explicit provider-specific owner decision covering the exact payload, terms, spend and
-  deletion boundary.
+- G4: approved 2026-08-04 only for OpenAI `gpt-5.6-luna`, the stateless Responses API with
+  `store: false`, local-only retrieval, the exact C1 allowlist, structured output, the
+  `Llm__OpenAi__ApiKey` environment credential, one-request/16,000-input-byte/2,000-output-token/USD
+  0.01 ceilings, published ordinary-retention disclosure, and local deletion boundary in the data
+  charter. The executable capability remains `never_authorized` until a bounded implementation and
+  exact-head proving gate pass. Any broader provider/model/payload/tool/retention boundary requires
+  a new owner decision.

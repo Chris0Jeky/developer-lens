@@ -33,14 +33,15 @@ before the demo is usable.
 The only immediate floor is the irreversible boundary inherited from the repository authority:
 do not expose secrets or private/generated data, destroy user work, mutate an external/production
 system, or publish anything outside the chosen q-4 code-only/synthetic route. G2 is approved, and
-all seven named G3 sources have standing authorization for bounded implementation; G4 is open and
-not approved, so P12 remains inactive. These decisions do **not** automatically activate a source,
-and they do not block invented C0 fixtures or a local synthetic demo.
+all seven named G3 sources have standing authorization for bounded implementation. G4 is approved
+only for the OpenAI `gpt-5.6-luna` boundary in the data charter; P12 remains default-off until a
+bounded activation task passes. These decisions do **not** automatically activate a source or
+external request, and they do not block invented C0 fixtures or a local synthetic demo.
 
 ### D1-D3 working-demo lane
 
-This lane runs immediately after P1 and before the P2-P11 post-demo queue. The old P12 path remains
-inactive while G4 is unapproved.
+This lane runs immediately after P1 and before the P2-P11 post-demo queue. P12 may now advance only
+through separately bounded, default-off OpenAI/Luna slices after their dependency and privacy gates.
 
 | Demo slice | Outcome | Acceptance |
 |---|---|---|
@@ -130,7 +131,7 @@ Developer Lens must not become:
 - Do not collect Actions logs, artifact contents, cache contents or keys, source, diffs, patch text, paths, bodies, comments, snippets, symbols, or parser diagnostics.
 - Do not use GitHub search or contribution profiles as complete history.
 - Do not build new Projects Classic ingestion.
-- Defer Projects, security, CODEOWNERS, source structure, and ML work until the data charter, provenance, coverage, retention, deletion, and privacy sink tests exist. External LLM work remains inactive while G4 is unapproved.
+- Defer Projects, security, CODEOWNERS, source structure, and ML work until the data charter, provenance, coverage, retention, deletion, and privacy sink tests exist. External LLM work stays default-off and must follow the approved OpenAI/Luna contract plus a bounded activation gate.
 
 ### Completed foundation slice
 
@@ -405,7 +406,7 @@ identifiers are not anonymous.
 | `cap.github.security` | Code/Dependabot alert lifecycle aggregate | Separate restricted database if implemented; C3 90d | Never silently infer zero from disabled/403/404. |
 | `cap.github.ownership` | Repository-level ownership coverage | C3 graph 90d; C1 summary | No CODEOWNERS/team reads when refused. |
 | `cap.source.structure` | Committed-tree composition/opaque graph | C3 90d; C4 immediate; parser cache deletion | No working-tree scan or repository tooling. |
-| `cap.external.model` | Optional narrative over user-reviewed bundle | Model output until user deletes; provider retention separately disclosed | No network request, model cache or provider initialization when refused. |
+| `cap.external.model` | Optional structured hypotheses over a user-reviewed compact C1 bundle | Initial prompt/output process-only; delete local descendants; disclose provider abuse logs up to 30d and prompt-cache state up to 24h | No credential read or request when inactive/refused; no hosted retrieval or tools. |
 
 Revocation deletes source observations, dependent facts/features, graph projections, caches, model outputs, and application-controlled packs/backups. It leaves only a content-free tombstone. The product cannot promise recall from user-copied exports, filesystem snapshots, SSD remapping, or provider retention.
 
@@ -761,10 +762,11 @@ No model may ship unless it:
 
 ---
 
-## 10. Archived optional LLM/agent architecture — inactive while G4 is unapproved
+## 10. Approved optional LLM architecture — default-off OpenAI/Luna boundary
 
-This section preserves the evaluated design only as future reference. It is not in the current
-roadmap and must not create implementation tasks, SDKs, transports, caches, telemetry, or payloads.
+G4 was approved on 2026-08-04 only for OpenAI `gpt-5.6-luna` within the exact data-charter boundary.
+This design may now produce bounded implementation tasks, but it does not activate a credential,
+payload, request, cache, telemetry path, hosted tool, or persisted model output by itself.
 
 ### Evidence bundle
 
@@ -814,15 +816,26 @@ All evidence IDs must exist in the bundle. Unknown IDs, free-form source citatio
 
 - Off by default; deterministic mode is the complete product.
 - Prefer a local model option.
-- External provider transmission requires `cap.external.model`, explicit preview and G4.
-- No tools, browsing, repository access or agentic actions.
+- The only approved external route is one synchronous standard-tier OpenAI Responses request to
+  `gpt-5.6-luna` with `store: false` and credential `Llm__OpenAi__ApiKey` read at call time.
+- External provider transmission requires `cap.external.model`, an exact payload preview/hash, and
+  a reviewed activation card even though G4 is approved.
+- Retrieval/RAG is local-only over selected C1 analysis-pack facts; no hosted files, vector stores,
+  embeddings, web search, browsing, repository access, tools, or agentic actions.
 - Typed evidence is treated as untrusted data.
-- Cache key: evidence hash + prompt version + model/provider/version + temperature + schema + consent + redaction revision.
-- Record provider/model/prompt/schema/temperature/token counts and response hash.
-- Preflight actual tokenizer count; enforce input/output/batch spending ceilings.
+- The initial path has no local request/response cache or telemetry and uses no conversation state,
+  previous response, background mode, streaming, Batch, or Realtime.
+- Keep only in-process model/prompt/schema revisions and numeric token/cost usage for the initial
+  request; provider identifiers and response bodies never enter logs or errors.
+- Limit each activation card to one request, no retry, at most 16,000 UTF-8 input bytes, at most
+  2,000 output tokens, and an estimated USD 0.01 using freshly verified official pricing.
 - Compare model versions against a frozen invented evaluation suite.
-- Store model output separately and delete it without touching deterministic evidence.
-- No provider-training/non-retention promise without verified contractual terms.
+- Validate the complete structured response before any presentation; initial model output remains
+  process-only. A later reviewed task may store validated C1 output separately and delete it without
+  touching deterministic evidence.
+- OpenAI documents no API training unless opted in, but ordinary non-ZDR abuse-monitoring content
+  may remain up to 30 days and encrypted prompt-cache state up to 24 hours. `store: false` is not a
+  Zero Data Retention claim; revalidate provider terms and pricing before every runtime task.
 
 ### Safe manual separate-chat workflow
 
@@ -1086,9 +1099,10 @@ Revocation tests must prove:
 ### Demo-first sequencing override
 
 D1-D3 in section 0 runs before this table. P2-P11 form the post-demo technical queue, except for a
-narrowly selected piece that is strictly necessary to make the D1-D3 journey work. P12 stays
-inactive while G4 is open and unapproved. Security and resilience acceptance from the active
-phases is tracked, not implemented, until D3 is complete.
+narrowly selected piece that is strictly necessary to make the D1-D3 journey work. P12 may advance
+only as default-off OpenAI/Luna slices after its local evidence, privacy, and activation dependencies.
+Security and resilience acceptance from the active phases is tracked, not implemented, until D3 is
+complete.
 
 | Phase | Goal and exact logical paths | Schema / acceptance / focused checks | Privacy, risk, cost, rollback and deferrals |
 |---|---|---|---|
@@ -1104,7 +1118,7 @@ phases is tracked, not implemented, until D3 is complete.
 | P9 — dependencies/security | Not now: later `server/connectors/github/dependencies.ts`, restricted storage | Standing G3 applies; a bounded task card fixes the schema/database design. Aggregate-only proofs and isolation tests. | Dependabot/code scanning only; secret scanning/advisories remain rejected. |
 | P10 — Projects/ownership/source structure | Not now: connector/worker modules only after P1–P8 evidence | Standing G3 applies; define schema and activation per capability task card, with parser isolation, sparse suppression, and coverage proof. | No working-tree scanning or people graph. |
 | P11 — statistical/ML | Not now: `server/research/*` or offline notebook prototypes | Model card, baseline, held-out evaluation, calibration/drift/abstention gates. | No product claim until gate. Delete without affecting deterministic engine. |
-| P12 — optional LLM | **Inactive while G4 remains unapproved.** | No provider, SDK, transport, cache, telemetry, spend path, or payload. | Activate only after a future explicit owner decision naming the provider and contract. |
+| P12 — optional LLM | OpenAI `gpt-5.6-luna` only; local retrieval over a compact C1 bundle; injected Responses transport and strict structured output | Capability stays `never_authorized` until invented canary, payload/output, budget, failure, deletion and default-off tests pass; one request maximum | `store: false`; no hosted tools/files/vector stores, cache, telemetry, retry or persisted initial output; provider-retention limits disclosed |
 
 ---
 
@@ -1122,7 +1136,7 @@ phases is tracked, not implemented, until D3 is complete.
 | Current analytics contain person-shaped DNA/archetype/streak/cadence elements | **V** |
 | SQLite operational store + Parquet pack + DuckDB query engine | **R** |
 | Identity vault, title removal, coverage vector and explicit evidence layers | **R** |
-| Security/Projects/ownership/source structure authorized after prerequisites; ML deferred; LLM inactive pending G4 | **R** |
+| Security/Projects/ownership/source structure authorized after prerequisites; ML deferred; OpenAI/Luna LLM approved but default-off pending bounded activation | **R** |
 | No search, profile contribution, Projects snapshot or current Git state is treated as complete history | **R**, supported by **D** constraints |
 
 ### Assumptions
@@ -1166,10 +1180,12 @@ phases is tracked, not implemented, until D3 is complete.
 1. **G1 — repository authority: APPROVED 2026-08-03.** Developer Lens is registered as **T2 + `sensitive_data` overlay**.
 2. **G2 — retention and migration: APPROVED 2026-08-03.** C1=36 months, C2=13 months, C3=90 days, and C4=process lifetime. Repository names stay isolated locally, PR titles are absent from canonical analytics, and real migration uses the backup/seven-day-grace/rollback/deletion protocol in `HUMAN_TODO.md`.
 3. **G3 — sensitive source access: APPROVED 2026-08-03.** Standing authorization covers Actions, deployments, dependencies, Dependabot/code-scanning security aggregates, Projects, ownership, and source structure for repositories explicitly selected locally. Least-privilege read access and each matrix boundary still bind; missing permissions become coverage rather than another owner question.
-4. **G4 — external model: OPEN / NOT APPROVED 2026-08-03.** `cap.external.model` stays
-   `never_authorized`, and P12 remains inactive unless a future explicit owner request approves a
-   named provider, exact redacted payload, retention/training terms, spend limit, telemetry/cache
-   behavior, and deletion boundary.
+4. **G4 — external model: APPROVED 2026-08-04 FOR OPENAI GPT-5.6 LUNA ONLY.** The exact contract is
+   the stateless Responses API with `store: false`, local-only retrieval, a compact C1 allowlist,
+   strict structured hypotheses, the `Llm__OpenAi__ApiKey` environment credential, hard one-request/
+   input/output/USD ceilings, ordinary provider-retention disclosure, no hosted tools or local
+   cache/telemetry, and local descendant deletion. `cap.external.model` stays `never_authorized`
+   until a separate bounded activation implementation and proving gate pass.
 
 ---
 
@@ -1498,7 +1514,7 @@ ORDER BY repository_alias, snapshot_at;
 | Source/module graph | Potentially high | Very high | Very high | Research after prerequisites |
 | Security alert aggregates | Narrow | High | Very high | Not now |
 | Statistical/ML layer | Unproven | High | Medium–high | Research only |
-| External LLM layer | Inactive while G4 is unapproved | Not applicable | Not accepted | Activate only by future explicit owner request |
+| External LLM layer | Optional hypotheses after local deterministic evidence | Medium; bounded by strict schema/eval | C1-only external transmission; provider-held retention disclosed | OpenAI/Luna only, default-off, after bounded activation proof |
 | Secret scanning/audit/people graph | Low or invalid | High | Extreme | Reject |
 
 ## Appendix H. Historical P0/P1 implementation handoff
@@ -1517,6 +1533,6 @@ ORDER BY repository_alias, snapshot_at;
 7. Prove those canaries are rejected from every newly introduced persistent, API, export, model and public-schema contract without inspecting private data.
 8. Run the focused privacy-contract test, then `npm run check`; report every unrun check and distinguish pre-existing failures from regressions.
 9. Require a fresh-context review against this specification and show the exact diff, clean Git status, test output and zero new source/retention behavior.
-10. G2 and standing G3 are now approved. Before any later migration or sensitive connector,
-    prove the bounded task stays inside their charter/matrix limits; obtain G4 only if an external
-    model is ever proposed.
+10. G2, standing G3, and the exact OpenAI/Luna G4 boundary are now approved. Before any later
+    migration, sensitive connector, or external request, prove the bounded task stays inside its
+    charter/matrix limits; no approval automatically activates a capability.
