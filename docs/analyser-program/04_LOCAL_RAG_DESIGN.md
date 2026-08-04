@@ -8,6 +8,19 @@ it also depends on ADR-01 (claim graph), ADR-02 (coverage vector / monotone abst
 ADR-03 (lifecycle + revocation cascade), ADR-19 (research governance), ADR-21 (composer),
 ADR-22 (Analysis Pack 2.0).
 
+**Implementation status and critical-path position (2026-08-04 reconciliation).** *Nothing in this
+document is implemented.* Structured retrieval (§1 L1) and every rung above it are **optional
+interpretation**, scheduled in the **M7 interpretation** wave (`DL-RAG-01` → `DL-RAG-02` →
+`DL-HYP-01`, all `BLOCKED_BY_DEPENDENCY`) **V** (07 card index), and they sit **off the
+deterministic product's critical path**: the deterministic analysis product — Atlas, Time Machine,
+Change River, Delivery Map, Coverage Cockpit, Query Lab, and the ADR-21 deterministic-first composer
+— must remain **complete and useful with this entire design unimplemented**. That is a design
+constraint, not a consolation: §10's rollback is the proof obligation, and any change here that
+makes deterministic value depend on retrieval is a defect in *this* document. (07 routes its
+user-visible-value critical path through `DL-RAG-01`; that sequences the *interpretation* surface
+and is not a dependency of the deterministic product.) The only retrieval code that exists today is
+a strictly narrower injected-C1-bundle helper, described under L1 below.
+
 Labels: **V** verified repository fact · **D** documented platform fact · **R** recommendation ·
 **I** inference · **A** assumption (with reversal path) · **REJ** rejected · **G** owner gate.
 
@@ -53,6 +66,31 @@ by ADR-01/ADR-24 to the pack. `tables/graphs/nodes.parquet` and `graphs/edges.pa
 set** under the current design. **R** (Their inclusion would be a separate decision; C3 is excluded
 from ordinary exports and from the Model sink.)
 
+### One immutable snapshot, opened once (no verify-then-reopen)
+
+Verification and reading must target **the same bytes**. The reader therefore:
+
+1. resolves the user-selected pack path **exactly once**;
+2. materialises **one immutable, task-owned byte snapshot** of the pack — either by opening durable
+   handles to every pack file up front and holding them for the task's lifetime, or, wherever the
+   platform cannot guarantee handle-stable reads (Windows rename/replace semantics, network or
+   removable volumes, any writer holding delete/rename rights on the directory), by **copying** the
+   pack into a task-owned location the writer cannot reach;
+3. verifies the `COMPLETE` marker, `pack_schema_version` bounds, `build_id`, and `checksums.sha256`
+   **on that snapshot**, through the same handles or copy that later reads use;
+4. performs **every** subsequent read — manifest, DuckDB attach, every Parquet scan, every re-read —
+   from that same snapshot handle/copy, with **no path re-resolution after verification**;
+5. re-asserts the checksums on the same snapshot at task end. A mismatch means the snapshot was not
+   immutable after all: the task's results are **discarded**, not reported. **R**
+
+**I** The property this buys is that verification is a statement about the bytes actually consumed.
+The flow this replaces — verify `checksums.sha256`, then hand the *paths* to DuckDB — is a TOCTOU
+hole: a concurrent or hostile writer replaces file contents between the checksum pass and the scan,
+and the design is then attesting to bytes nobody read. It is not a race an attacker must win
+reliably; one success is enough, and the pack directory is user-selected, so the attacker may own
+it. "Checked, then re-opened by name" is not a mitigation, and §7's hostile-pack row is written
+accordingly.
+
 ---
 
 ## 1. The retrieval ladder
@@ -61,34 +99,126 @@ Three steps. Each is a strict superset of evidence-access rights of nothing — 
 admissible pack rows. What changes is the *matching mechanism*. A step is adopted only if it beats
 the step below it on the §5 battery under ADR-19 preregistration.
 
-### L1 — Deterministic structured retrieval (default, **shipped**)
+### L1 — Deterministic structured retrieval (planned default/baseline, **not yet implemented**)
 
-**Mechanism.** Filter-then-rank, always in that order.
+**Status.** **Planned deterministic default/baseline — `DL-RAG-01`, not yet implemented.** L1 is the
+*intended* default and the baseline the other rungs are measured against; it is not shipped. No part
+of the pack-SQL filter, the standardized-distance ranker, the counter-evidence quota engine, or the
+limitation emission exists in the repository. `DL-RAG-01` is `BLOCKED_BY_DEPENDENCY` on `DL-PACK-02`
+in the M7 interpretation wave. **V** (07 card index.) Everything below this paragraph describes
+*intended* behaviour and must not be read as implemented.
+
+**What exists today** is a strictly narrower helper: `server/externalModel/localRetrieval.ts`
+exposes `retrieveLocalC1Facts(facts, request)`, which selects over a **caller-injected bundle of
+already-approved C1 facts** (≤ 128 rows supplied as an argument), filters on `feature_id` / `unit` /
+`coverage_status` code sets, sorts on `(feature_id, fact_id)`, and truncates to a requested `limit`.
+It performs **no I/O**: it opens no pack, runs no SQL, computes no distance, applies no quotas,
+emits no limitations, and reads no coverage. It is a bundle-shaping guard on the external-model
+boundary — the input side of §6 — not this design's L1. **V** (file as of 2026-08-04.) The gap
+between that helper and L1 is the whole of `DL-RAG-01`.
+
+**Mechanism (planned).** Filter-then-rank, always in that order.
 
 1. **Filter (SQL/structured).** The claim family under composition resolves, through the
    **feature registry**, to: a set of `feature_id`s, a set of fact families, the coverage dimensions
    its ADR-02 gate reads, and its limitation-code neighbourhood. The filter is a parameterised query
-   over the pack: `feature_id IN (…) AND window OVERLAPS (…) AND scope_alias IN (…) AND
-   support_count >= gate`. Candidate pool is capped (**R** 500 rows) with an explicit
-   `RAG_CANDIDATE_POOL_TRUNCATED` limitation (proposed code) when the cap binds.
+   over the **verified pack snapshot**: `feature_id IN (…) AND window OVERLAPS (…) AND scope_alias
+   IN (…) AND support_count >= gate`. The filter is a **set** predicate: it yields the *eligible
+   set*, and it carries **no `LIMIT`** and no unordered truncation of any kind. **R**
+
+   **Nothing is truncated before ranking.** Every eligible row is ranked (step 2), and the candidate
+   cap (**R** 500 rows) is applied **after** ranking, to the ranked sequence — so the cap removes the
+   *lowest-ranked* rows and never an arbitrary subset. **I** This is what makes step 3's
+   byte-identical claim true rather than merely stated: `LIMIT` without a total `ORDER BY` returns an
+   implementation-chosen subset (DuckDB is free to vary it with row order, parallelism, or scan
+   plan), so a pre-rank cap would let two runs over the same pack admit *different* candidate pools,
+   producing different result sets, different quota fills, and different claims from identical
+   inputs — while §5.2 #4 still passed, because every returned ID would resolve fine.
+
+   **Eligible-set ceiling (resource guard, still deterministic).** If the eligible set exceeds a
+   preregistered working ceiling (**R** 50,000 rows) beyond which ranking every row is impractical,
+   the reader does **not** fall back to an unordered `LIMIT`. It orders the *entire* eligible set by
+   the total pre-cap key `(-support_count, window_start, feature_id, scope_alias, evidence_id)`
+   ascending, and takes the ceiling-sized **prefix** of that order. The key is a **total** order, not
+   a heuristic: `evidence_id` is unique within a pack (**V** canonical dictionary — "every ID must
+   exist in the same pack"; IDs are pack-scoped opaque strings), so it is an absolute final
+   tie-break and no two distinct rows can compare equal. Two runs over the same snapshot therefore
+   take the same prefix, whatever the physical row order. **R**
+
+   **Scope of that guarantee (stated precisely, because it is easy to overclaim).** Pack-uniqueness
+   plus pack immutability gives reproducibility **over the same pack build** — which is what the
+   byte-identical claim in step 3 asserts and all this design needs. It does **not** by itself give
+   reproducibility **across rebuilds** of the same underlying data: if `evidence_id` is assigned by
+   build sequence rather than derived from row content, a rebuild can permute the tie-break and flip
+   the admitted prefix. Making cross-build replay reproducible therefore requires the pack contract
+   to guarantee a **build-stable, content-derived** `evidence_id` — a requirement this design places
+   on `DL-PACK-01/02`, not a property it may assume today (A-RAG-8). Where that guarantee is absent,
+   cross-build comparisons must be treated as a different pack, not as a replay. **R**
+
+   **Truncation is recorded whenever it binds — both kinds.** If the eligible-set ceiling binds, or
+   the post-ranking candidate cap binds, or both, the reader returns a
+   `RAG_CANDIDATE_POOL_TRUNCATED` limitation (proposed code) carrying the eligible-row count, the
+   ranked count, and the admitted count as bounded integers; `completeness` is lowered and the tier
+   gate is re-evaluated (§4.3). A cap that binds silently is a defect, not an optimisation: it is
+   precisely the case where the retrieved set stops being a faithful selection over the pack, and
+   the downstream claim must be told. **R**
 2. **Rank (standardized distance).** For "similar window / similar system" queries: z-score each
-   numeric feature *within its own `feature_id` and unit* across the pack, then rank by Euclidean
-   distance over the registered feature subset for that family. Missing components are **not**
-   imputed to 0 or to the mean — they reduce the compared dimension count and set a
+   numeric feature *within its own `feature_id` and unit* across the pack snapshot, then rank by
+   Euclidean distance over the registered feature subset for that family. Missing components are
+   **not** imputed to 0 or to the mean — they reduce the compared dimension count and set a
    `comparability` penalty in the coverage vector; a candidate with fewer than the family's minimum
    comparable dimensions is dropped rather than scored. **R** (This is the direct expression of
    "absence is never zero" inside the ranking function.)
-3. **Deterministic tie-break.** `(-support_count, window_start, evidence_id)` ascending. Same pack +
-   same query ⇒ byte-identical result set. **R**
+
+   **Degenerate-dimension guard — the standardisation must itself be admissible.** A z-score is
+   defined only where its normalising statistics are. Before a dimension may enter the distance it
+   must pass **both** checks, evaluated per `feature_id` (in its unit) over the snapshot:
+
+   - (a) **normalisation support ≥ 2** — at least two non-null observations, so a sample standard
+     deviation exists at all. (This is the count of observations behind the *normalisation*, a
+     distinct quantity from a row's `support_count` evidence column.)
+   - (b) **variance > ε** — a preregistered, unit-aware, scale-relative epsilon
+     (**R** `sd > ε_rel · max(|mean|, ε_abs)`), so a constant or near-constant column cannot divide
+     by ~0 and turn rounding noise into rank order.
+
+   A dimension failing either check is **dropped from the distance for that query**, exactly like a
+   missing component: it lowers the compared dimension count, adds the same `comparability` penalty,
+   and is **recorded explicitly** — by registered `feature_id`, with which check failed and the
+   observation count — as a `RAG_RANKING_DIMENSION_DEGENERATE` limitation (proposed code). It is
+   never imputed, never scored as 0, never silently retained, and never permitted to yield `NaN` or
+   `±Inf`. If the surviving dimension count falls below the family's minimum, the candidate is
+   dropped and, if that empties the pool, the query abstains through the ordinary §4.3 path. **R**
+
+   **I** A single-observation or constant dimension is the common real case, not an exotic one — a
+   feature present in exactly one window, or a saturated flag — and `0/0` there is the classic way a
+   ranker starts ordering on `NaN`. The guard exists so that "we could not compare on this
+   dimension" is a *recorded limitation on the claim* rather than an invisible arithmetic accident,
+   which is the same principle as "absence is never zero" applied one level up, to the statistics.
+
+   **Non-finite is a defect, not a value.** The ranker never orders on a non-finite scalar. If a
+   distance is non-finite after these guards, the guard is broken: retrieval **aborts** that query
+   and abstains rather than emitting an order, because comparator behaviour with `NaN` present is
+   implementation-defined and would silently void the byte-identical guarantee below. **R**
+3. **Deterministic total order.** Rows are ordered by `(distance, -support_count, window_start,
+   feature_id, scope_alias, evidence_id)` ascending — a **total** order, not merely a tie-break:
+   `evidence_id` is unique within the pack, so no two distinct rows compare equal and the sort
+   algorithm's stability cannot affect the outcome. Distances are accumulated
+   over the registered feature subset **in registered order**, so floating-point summation is
+   reproducible, and rows are compared on the accumulated value rather than re-derived per
+   comparison. Same **snapshot** + same registry/feature versions + same query ⇒ **byte-identical**
+   result set (same-build scope, per step 1). That conclusion now *follows from* the stated procedure — whole eligible set ranked
+   (or a deterministic prefix of a total order taken), no unordered `LIMIT` anywhere, no non-finite
+   scalars, cap applied after ranking — instead of being asserted beside it. §5.2 #14 tests it by
+   replay under permuted physical row order. **R**
 
 **Inputs.** Registered `feature_id`s, numeric values, units, `support_count`, coverage status enums,
 limitation codes, statement codes, controlled dimension enums, pack-scoped aliases, bounded UTC
 window bounds. Nothing else (§3). **All C1.**
 
-**Index lifecycle.** *There is no index.* L1 is a query over the pack files (DuckDB/Parquet or the
-same reader the Query Lab uses). Nothing to build, nothing to delete, nothing to go stale beyond the
-pack itself. **I** This is L1's largest advantage and the reason it is the default: the entire
-"index as a new durable sink" problem does not exist.
+**Index lifecycle.** *There is no index.* L1 is a query over the task-owned pack snapshot
+(DuckDB/Parquet or the same reader the Query Lab uses). Nothing to build, nothing to delete, nothing
+to go stale beyond the pack itself. **I** This is L1's largest advantage and the reason it is the
+planned default: the entire "index as a new durable sink" problem does not exist.
 
 **Evidence that would justify moving up.** L1 is declared insufficient only if, on the frozen
 benchmark (§5), it fails the preregistered **Recall@10 floor for the relevant set** *or* the
@@ -115,8 +245,9 @@ versioned) over that alphabet. **R**
 identifiers outside the pack-scoped alias space.
 
 **Index lifecycle.**
-- **Build:** in-process, from one `COMPLETE`-verified pack, after the §3 registry gate. Build is a
-  pure function of (pack build_id, registry version, template version, tokenizer version).
+- **Build:** in-process, from one `COMPLETE`-verified pack **snapshot** (§0), after the §3 registry
+  gate. Build is a pure function of (pack build_id, registry version, template version, tokenizer
+  version) — which holds only because the snapshot's bytes cannot change under the build.
 - **Task-scope:** an index instance is bound to one composition task and one pack build_id.
 - **Process-local:** held in the analysis worker's memory. **R** No file is written under the default
   design; writing one is **G-RAG-1**.
@@ -132,8 +263,8 @@ identifiers outside the pack-scoped alias space.
 - **Stale behaviour:** every index carries a fingerprint
   `(pack_build_id, pack_schema_version, redaction_revision, consent_revision, feature_versions_hash,
   registry_version, template_version)`. Any mismatch at query time ⇒ **refuse to serve**, fall back
-  to L1, and emit coverage status `stale` with limitation `RAG_INDEX_STALE` (proposed) attached to
-  every claim composed in that task. Never serve-and-warn. **R**
+  to L1, and **return** coverage status `stale` with limitation `RAG_INDEX_STALE` (proposed) for the
+  composer to attach to every claim composed in that task. Never serve-and-warn. **R**
 
 **Evidence that would justify adoption.** BM25 beats L1 on Recall@k *and* nDCG@k *and* does not
 regress counter-evidence recall, on the frozen benchmark, at the preregistered minimum practically
@@ -149,8 +280,11 @@ retention and deletion. Nothing about "it's just an index" reduces its class.
 
 **Mechanism.** A pinned, bundled, offline embedding model over **the same controlled templates as
 L2** (never over prose, never over source, never over raw values), plus exact nearest-neighbour
-search over the candidate pool that L1's filter already produced. Filter-then-rank still binds:
-vectors reorder an SQL-eligible set, they never widen it. **R**
+search over the **eligible set** that L1's filter already produced (the eligible set, not L1's
+post-rank capped pool — otherwise L1's own distance would silently pre-select L3's candidates and
+the ladder comparison in §5 would not be measuring what it claims). Filter-then-rank still binds:
+vectors reorder an SQL-eligible set, they never widen it, and the candidate cap is applied to the
+vector-ranked sequence exactly as in L1 step 1. **R**
 
 **Inputs.** Identical to L2. **The embedding inherits the highest class of every input (C1) and is
 never anonymisation** — principle 6, restated because it is the exact place people forget it.
@@ -178,12 +312,12 @@ shaped index, a pinned model binary, an inversion attack surface) is not.
 
 | Step | Status | Adopt only if | Blocking privacy conditions | New sink? |
 |---|---|---|---|---|
-| L1 structured + standardized distance | **shipped, default** | — (it is the baseline) | none (no index) | no |
+| L1 structured + standardized distance | **planned deterministic default/baseline** — `DL-RAG-01`, **not yet implemented** | — (it is the baseline) | none (no index) | no |
 | L2 BM25 over templates | research | L1 measurably fails Recall@k or counter-evidence recall on the frozen benchmark | prohibited-field canaries clean; uniqueness-leakage gate | no (process-local); file = **G-RAG-1** |
 | L3 local pinned offline vectors | research, **likely-reject** | beats L1 **and** L2 on Recall@k, nDCG@k **and** counter-evidence recall at the preregistered margin | all of L2 **plus** the membership-inference ceiling; reconstruction is a mandatory *disclosure* metric (§5.2 #12 — no pass/fail gate) | no (process-local); file = **G-RAG-1**; model bundle = **G-RAG-3** |
 
-Demotion is symmetric: a shipped step that fails re-evaluation after a registry/feature-version
-change falls back to the step below it **automatically** (the fallback path is a runtime code path,
+Demotion is symmetric: an **adopted** step (none is adopted yet — L1 itself is unbuilt) that fails
+re-evaluation after a registry/feature-version change falls back to the step below it **automatically** (the fallback path is a runtime code path,
 not a manual decision), because ADR-19 requires every model to have a fallback and to disappear from
 claims when demoted.
 
@@ -192,15 +326,23 @@ claims when demoted.
 ## 2. Where retrieval sits in the pipeline
 
 ```
-Analysis Pack (COMPLETE, checksummed, C1, pack-scoped aliases)
+Analysis Pack directory on disk (user-selected — untrusted until verified)
         │
+        ▼  open ONE immutable task-owned snapshot (§0), verify identity + checksums ON that snapshot
+Verified pack snapshot (COMPLETE, checksummed, C1, pack-scoped aliases)
+        │    every read below uses this same handle/copy — no path re-resolution
         ▼  [§3 field-registry gate — reject before any template/index write]
 Admissible row set
         │
-        ▼  L1 filter  → candidate pool (capped)
+        ▼  L1 filter — set predicate, no LIMIT
+Eligible set  (above the working ceiling: deterministic total-order prefix + truncation limitation)
         │
-        ▼  rank (L1 distance | L2 BM25 | L3 vectors)  + §4 counter-evidence quotas
-Retrieval result set (evidence IDs + roles + coverage rows + limitation rows)
+        ▼  rank ALL eligible rows (L1 distance | L2 BM25 | L3 vectors) → total-order ranked sequence
+        │
+        ▼  candidate cap applied to the RANKED sequence (RAG_CANDIDATE_POOL_TRUNCATED if it binds)
+        │
+        ▼  §4 counter-evidence quotas
+Retrieval result set (evidence IDs + roles + coverage rows) + transient RetrievalLimitation[]
         │
         ├──────────────► ADR-21 deterministic composer (local, complete product)
         │
@@ -210,8 +352,13 @@ Retrieval result set (evidence IDs + roles + coverage rows + limitation rows)
 Retrieval hands the composer a **role-tagged result set**, not prose:
 `{evidence_id, role ∈ {supports, contradicts, contextualizes, coverage_basis, limitation_basis},
 layer, feature_id|statement_code, value, unit, support_count, coverage_status, limitation_codes[],
-window}`. Roles map 1:1 onto ADR-01 `claim_evidence_edge.role`, so a composed claim's edges are a
-projection of what retrieval returned — auditable after the fact. **R**
+window}`, **plus** a transient `RetrievalLimitation[]` describing everything that degraded the
+selection (§3 Rule 4a). Roles map 1:1 onto ADR-01 `claim_evidence_edge.role`, so a composed claim's
+edges are a projection of what retrieval returned — auditable after the fact. **R**
+
+**Retrieval is a pure read.** Every arrow above points forward. Retrieval writes to no store: not
+the pack, not the snapshot, not the canonical SQLite store, not a findings table. Its outputs are
+return values, and the **composer** is what persists anything (§3 Rule 4a, §4.3). **R**
 
 ---
 
@@ -243,12 +390,34 @@ field, a registered-but-inadmissible class, an unknown enum value, an unknown `f
 limitation code, or a value outside its registered domain:
 
 1. the **row** is rejected (not sanitised, not truncated, not coerced);
-2. a `data_quality_finding` is written with a stable code and bounded numeric metadata only
-   (no offending value, per the Logs/errors sink contract **D-charter**);
-3. the affected capability/window coverage records the shortfall so downstream claims see it;
-4. if rejections exceed a preregistered share of the candidate pool, the whole retrieval **aborts**
+2. a **transient** `RetrievalLimitation` value is appended to what the reader **returns** to its
+   caller, carrying a stable code (`RAG_FIELD_REGISTRY_REJECT`) and bounded numeric metadata only —
+   counts, never the offending value, per the Logs/errors sink contract **D-charter**;
+3. the **caller** (the ADR-21 composer) lowers the affected coverage dimension from that returned
+   limitation, so downstream claims see the shortfall;
+4. if rejections exceed a preregistered share of the eligible set, the whole retrieval **aborts**
    and the composer abstains — a partially-admissible pack is a data-quality event, not a smaller
    corpus. **R**
+
+**Rule 4a — the reader writes nothing, anywhere.** Retrieval's source is an immutable `COMPLETE`
+pack snapshot, so its findings are **returned, not persisted**. Concretely, the reader **does not**
+write `data_quality_findings` rows, **does not** update `coverage`, **does not** mutate the pack or
+its snapshot, and **does not** open the canonical SQLite store at all. **I** A canonical write from
+a pack-reading component would be an undeclared side effect in a component whose entire contract is
+"a selection function over already-stored evidence" (§0): invisible to the ADR-03 lifecycle that
+governs that store's sinks, unattributable to any ingestion run, and — because the pack is immutable
+and pack-aliased — not even writable back to the thing that was actually wrong. Persistent
+data-quality findings and coverage updates belong **only** to the authorised ingestion and
+pack-build stages, where those writes are declared sinks with a schema, a retention clock, and a
+revocation path. Retrieval discovering invalid rows in a `COMPLETE` pack is evidence that the
+**pack build** admitted them; the fix is at `DL-PACK-01/02`, and having the consumer also record it
+would double-count a build defect as a read defect. **R**
+
+Shape (proposed): `RetrievalLimitation { code, dimension, scope: query | result_set | dimension,
+counts: { … bounded integers }, feature_ids?: registered ids }`, returned as
+`RetrievalLimitation[]` alongside the result set. Every §4.3 code travels this way — registry
+rejections, pool truncation, degenerate ranking dimensions, quota shortfalls, uniqueness
+suppression. **No `RetrievalLimitation` is a row anywhere until the composer binds it to a claim.**
 
 **Rule 5 — order is load-bearing and testable.** The gate runs *before* the template renderer is
 called. The test asserts ordering directly: a canary row is injected, and the template renderer and
@@ -305,13 +474,18 @@ A shortfall is a *first-class output*, never silence:
 | `contradicts` slots unfilled | `RAG_QUOTA_SHORTFALL_CONTRADICTING` | claim tier capped at `hypothesis`; a mandatory alternative `COUNTER_EVIDENCE_NOT_RETRIEVABLE` is added; deterministic-tier rendering is refused |
 | `coverage` slots unfilled | `RAG_QUOTA_SHORTFALL_COVERAGE` | **abstention** — no claim; an ADR-24 `question` of kind `evidence_gap` is generated instead |
 | `limitation` slots unfilled | `RAG_QUOTA_SHORTFALL_LIMITATION` | claim tier lowered one step; limitation copy resolved from the (family × dimension) dictionary |
-| candidate pool truncated | `RAG_CANDIDATE_POOL_TRUNCATED` | `completeness` dimension lowered; tier gate re-evaluated |
+| eligible-set ceiling or candidate cap bound | `RAG_CANDIDATE_POOL_TRUNCATED` | `completeness` dimension lowered; tier gate re-evaluated; eligible/ranked/admitted counts carried as bounded integers (§1 L1 step 1) |
+| ranking dimension dropped (normalisation support < 2, or variance ≤ ε) | `RAG_RANKING_DIMENSION_DEGENERATE` | `comparability` lowered per dropped dimension; below the family's minimum comparable dimensions ⇒ **abstention** (§1 L1 step 2) |
+| registry-gate row rejection | `RAG_FIELD_REGISTRY_REJECT` | `completeness` lowered; rejection storm ⇒ abort + abstain (§3 Rule 4) |
 | index stale / absent | `RAG_INDEX_STALE` / `RAG_INDEX_ABSENT` | fall back to L1; `comparability` lowered; tier re-evaluated |
 | result set fails the uniqueness gate | `RAG_SPARSE_SUPPRESSED` | offending rows removed **and** counted as a shortfall on their slot |
 
-Each emitted limitation becomes a `limitation_instance` row (ADR-01) bound to the claim, with the
-coverage-vector dimension that triggered it. Because ADR-02's rule is monotone, no other dimension
-can compensate a quota shortfall back upward. **R**
+Retrieval **returns** each of these as a transient `RetrievalLimitation` (§3 Rule 4a); the
+**composer** is what persists the corresponding `limitation_instance` row (ADR-01), bound to the
+claim it composes, with the coverage-vector dimension that triggered it. A limitation that never
+reaches a composed claim is never written anywhere — it was a property of a read, not a fact about
+the store. Because ADR-02's rule is monotone, no other dimension can compensate a quota shortfall
+back upward. **R**
 
 **Never inferred:** "no contradicting evidence was retrieved" is rendered as *"counter-evidence for
 this family was not retrievable from this pack"*, with the falsifier channels that were searched
@@ -341,7 +515,8 @@ All fixtures are invented (charter fixture rule **D-charter**). Proposed fixture
 | `FX-RAG-05` uniqueness corpus | code combinations with equivalence-class sizes 1, 2, 4, 5, 20 by construction | uniqueness-leakage gate |
 | `FX-RAG-06` twin-pack corpus | two packs built from the same synthetic store with different pack keys | cross-pack-linkage tests |
 | `FX-RAG-07` revocation corpus | `FX-RAG-01` plus a capability whose rows are individually tagged | deletion proof |
-| `FX-RAG-08` hostile corpus | malformed manifest, wrong checksum, missing `COMPLETE`, unknown schema version, injection-shaped pseudo-codes, adversarial duplicate flooding | §7 threat mitigations |
+| `FX-RAG-08` hostile corpus | malformed manifest, wrong checksum, missing `COMPLETE`, unknown schema version, injection-shaped pseudo-codes, adversarial duplicate flooding, **and a TOCTOU case: a pack whose bytes are replaced by a concurrent writer after checksum verification and before the table scan** | §7 threat mitigations, snapshot immutability |
+| `FX-RAG-09` degeneracy + scale corpus | feature dimensions that are constant, near-constant (`sd` ≤ ε), and single-observation by construction; plus an eligible set built above the working ceiling, and the same rows written in several physical orders | degenerate-dimension guard, non-finite absence, deterministic pre-cap ordering, truncation recording |
 
 ### 5.2 Metric definitions (operational, on the fixtures above)
 
@@ -409,6 +584,30 @@ All fixtures are invented (charter fixture rule **D-charter**). Proposed fixture
     correspondence; preregistered ceiling = chance + margin. (b) Attempt to load postings from two
     `build_id`s into one index: must fail closed. (c) Assert no result set ever contains rows from two
     `build_id`s. (b) and (c) are binary.
+14. **Determinism (byte-identical replay)** — on `FX-RAG-01` and `FX-RAG-09`: run every benchmark
+    query N = 20 times in fresh processes over the same snapshot, and repeat over packs whose
+    Parquet **physical row order is permuted** with contents identical. Assert the serialised result
+    sets — including limitation lists and their ordering — are byte-identical across every run and
+    every permutation. **I** The permutation arm is the load-bearing one: a design that truncates
+    before ranking, or sorts on a non-total key, passes a naive repeat-run test and fails this.
+    Additionally assert (a) no result set was produced from a non-finite distance, (b) every
+    dropped degenerate dimension appears as a `RAG_RANKING_DIMENSION_DEGENERATE` limitation, and
+    (c) every bound cap appears as a `RAG_CANDIDATE_POOL_TRUNCATED` limitation with counts. Binary.
+    **Cross-build arm (reported, not gated, until A-RAG-8 resolves):** rebuild the same corpus into
+    a second pack and report whether result sets still match. A mismatch here is a finding about
+    `evidence_id` stability in the **pack contract**, not a retrieval defect, and must be reported
+    as such rather than silently weakening the same-build gate.
+15. **Snapshot immutability (TOCTOU)** — on `FX-RAG-08`: verify a pack, then have a concurrent
+    writer replace file bytes (and, separately, rename/replace the directory entry) before the table
+    scan. Assert the reader either serves the originally verified bytes or fails closed, and in no
+    case serves post-swap bytes as verified; assert the end-of-task checksum re-assertion catches
+    any snapshot that did prove mutable and that the task's results are discarded. Also assert, by
+    instrumenting path resolution, that the pack path is resolved **exactly once per task**. Binary.
+16. **Read-only proof** — on all corpora: instrument every write path (pack directory, snapshot,
+    canonical SQLite store, findings and coverage tables) for the duration of a retrieval task and
+    assert **zero** writes originate from the retrieval module, including on the rejection-storm and
+    hostile-pack paths where a "record the finding" reflex is most likely. Binary; a write here is a
+    CI-blocking defect, not a metric.
 
 ### 5.3 Reporting
 
@@ -452,9 +651,11 @@ card for `WB-C9`. A step that wins on Recall@k while losing counter-evidence rec
 
 | Threat | Vector | Mitigation | Test |
 |---|---|---|---|
-| **Hostile pack content** | A pack is a directory the user selects; it may be edited, truncated, or supplied from elsewhere | Verify `checksums.sha256`, `COMPLETE` marker, and `pack_schema_version` bounds **before** reading any table; refuse to open on failure (ADR-22 rule, reused verbatim); then apply the §3 registry gate row-by-row | `FX-RAG-08` |
-| **Unknown-code smuggling** | A crafted pack carries plausible-looking but unregistered `feature_id`/`limitation_code`/`statement_code` values | Registry membership is required, not pattern-matched; unknown code ⇒ row rejected + `data_quality_finding` (bounded metadata only); unknown codes are **never** admitted as an `unknown` token, because that would make the corpus attacker-extensible | `FX-RAG-08` |
-| **Index poisoning / ranking flooding** | Thousands of near-duplicate rows crafted to dominate top-*k* and starve counter-evidence | (a) filter-then-rank: ranking can only reorder the SQL-eligible set; (b) per-role quotas are filled from *independent* pools, so flooding the `supports` pool cannot consume `contradicts` slots; (c) support gates and the candidate-pool cap; (d) duplicate collapse on the natural key before ranking | `FX-RAG-08` |
+| **Hostile pack content** | A pack is a directory the user selects; it may be edited, truncated, or supplied from elsewhere | Open **one immutable task-owned snapshot** (held handles, or a copy where handle-stable reads are not guaranteed), then verify `checksums.sha256`, the `COMPLETE` marker, `build_id`, and `pack_schema_version` bounds **on that snapshot**, and serve every later read from the same handle/copy with **no path re-resolution** (§0); refuse to open on failure (ADR-22 rule); re-assert checksums on the same snapshot at task end and discard results on mismatch; then apply the §3 registry gate row-by-row | `FX-RAG-08`, §5.2 #15 |
+| **Byte substitution between verification and read (TOCTOU)** | A concurrent or hostile writer — who may own the user-selected directory — replaces file contents after the checksum pass and before the DuckDB scan | The snapshot **is** the mitigation: verification and every read go through the same bytes, so there is no window to substitute into. **Verify-then-reopen-by-path is explicitly not a mitigation** — it attests to bytes nobody consumed, and the attacker need win the race only once | `FX-RAG-08` TOCTOU case, §5.2 #15 |
+| **Unknown-code smuggling** | A crafted pack carries plausible-looking but unregistered `feature_id`/`limitation_code`/`statement_code` values | Registry membership is required, not pattern-matched; unknown code ⇒ row rejected + a **transient** `RAG_FIELD_REGISTRY_REJECT` limitation returned to the caller (bounded metadata only; the reader writes nothing — §3 Rule 4a); unknown codes are **never** admitted as an `unknown` token, because that would make the corpus attacker-extensible | `FX-RAG-08` |
+| **Hostile pack driving writes into the canonical store** | A crafted pack full of invalid rows induces a reader that "records data-quality findings" to write attacker-shaped volume into the operational store | Retrieval performs **no writes at all** (§3 Rule 4a): findings are return values, persistence belongs to ingestion/pack-build. There is no write path to drive | §5.2 #16 |
+| **Index poisoning / ranking flooding** | Thousands of near-duplicate rows crafted to dominate top-*k* and starve counter-evidence | (a) filter-then-rank: ranking can only reorder the SQL-eligible set; (b) per-role quotas are filled from *independent* pools, so flooding the `supports` pool cannot consume `contradicts` slots; (c) support gates, and a candidate cap applied **to the ranked sequence** — never as a pre-rank `LIMIT`, which would let flooding decide *which* rows an attacker-chosen physical order fed to the ranker; (d) duplicate collapse on the natural key before ranking | `FX-RAG-08` |
 | **Injection through codes** | A code value shaped like an instruction (`IGNORE_PREVIOUS_INSTRUCTIONS`) reaching a prompt | Codes are registry members, so such a value is rejected at §3. Structurally: **codes are never concatenated into prose anywhere in the local pipeline** — the copy dictionary resolves codes to text only at render time in the UI, and the bundle carries codes, not rendered sentences. The composer's statement enums are closed, and model output cannot add evidence IDs or statement codes (ADR-21) | `FX-RAG-08` + existing prompt-injection canaries |
 | **Re-identification via rare code combinations** | Ranking surfaces outliers; a unique (feature, window, coverage, limitation) tuple can identify a system or a specific event | Build-time sparse suppression (ADR-22) **plus** a result-set-level uniqueness gate (§5.2 #11); suppressed rows become quota shortfalls, not silent removals | `FX-RAG-05` |
 | **Cross-pack correlation** | Two packs of the same systems, correlated by behaviour rather than by ID | Pack-scoped alias keys (**V** canonical §6: export IDs use a new pack-scoped key); loader refuses mixed `build_id`; explicit linkage benchmark | `FX-RAG-06` |
@@ -488,7 +689,11 @@ still requires a card-bound, previewed, proving-checks-green transition. **R**
 **Proposed additional cards** (same style, marked proposed):
 
 - `RAG-03` (proposed) — field-registry gate: `retrieval_admissible` flag, pre-write rejection,
+  transient-`RetrievalLimitation` return contract and read-only proof (§3 Rules 4/4a),
   ordering-instrumentation test (§3 Rule 5).
+- `RAG-07` (proposed) — pack snapshot reader: single path resolution, one immutable task-owned
+  snapshot (handles or copy), verification on the snapshot, end-of-task re-assertion, TOCTOU
+  fixture case (§0, §5.2 #15).
 - `RAG-04` (proposed) — quota engine: fill order, shortfall → limitation → ADR-02 tier effect,
   falsifier-channel registry per claim family.
 - `RAG-05` (proposed) — index lifecycle harness (L2/L3 only): fingerprinting, staleness refusal,
@@ -500,7 +705,11 @@ still requires a card-bound, previewed, proving-checks-green transition. **R**
 
 - Limitation codes: `RAG_QUOTA_SHORTFALL_CONTRADICTING`, `RAG_QUOTA_SHORTFALL_COVERAGE`,
   `RAG_QUOTA_SHORTFALL_LIMITATION`, `RAG_CANDIDATE_POOL_TRUNCATED`, `RAG_INDEX_STALE`,
-  `RAG_INDEX_ABSENT`, `RAG_SPARSE_SUPPRESSED`, `RAG_FIELD_REGISTRY_REJECT`.
+  `RAG_INDEX_ABSENT`, `RAG_SPARSE_SUPPRESSED`, `RAG_FIELD_REGISTRY_REJECT`,
+  `RAG_RANKING_DIMENSION_DEGENERATE`. All are carried as **transient** `RetrievalLimitation` values
+  in the reader's return (§3 Rule 4a); they become rows only when the composer binds them to a claim.
+- Transient type (proposed, no schema/table): `RetrievalLimitation` — the reader's return-value
+  shape defined in §3 Rule 4a. Deliberately **not** a persisted entity and **not** a sink.
 - Claim families: `CF.CI_FEEDBACK_SHIFT`, `CF.INTEGRATION_SHAPE`, `CF.FLOW_LINKAGE`,
   `CF.ARCH_EVOLUTION`, `CF.PORTFOLIO_TRANSITION`, `CF.COVERAGE_STATE`.
 - Evaluation feature IDs (benchmark-internal, C1): `DL.RAG.RECALL_AT_K.v1`, `DL.RAG.NDCG_AT_K.v1`,
@@ -510,7 +719,7 @@ still requires a card-bound, previewed, proving-checks-green transition. **R**
 - Rejected capability (proposed addition to the rejected register): `RAG-EXTERNAL-EMBED-X` —
   external/hosted embedding or vector-store retrieval. Reason: outside G4; new external transmission
   boundary; embeddings inherit input class and are not anonymisation.
-- Fixtures: `FX-RAG-01` … `FX-RAG-08`.
+- Fixtures: `FX-RAG-01` … `FX-RAG-09`.
 
 **Dependencies.** `PACK` (ADR-22) → `RAG-01/03` → `RAG-04` → `HYP` (ADR-21). `SPINE` (ADR-01/02) is a
 hard prerequisite for §4's shortfall→tier mechanics. `LIFE` (ADR-03) is a hard prerequisite for
@@ -525,15 +734,28 @@ coverage semantics, benchmark, and claim grammar exist** — L2/L3 cards start i
 
 - **Failure mode: pack unreadable / checksum fail.** Refuse to open; composer abstains; ADR-24
   question of kind `evidence_gap`. No partial read. **R**
-- **Failure mode: registry-gate rejection storm.** Abort retrieval, abstain, emit data-quality
-  findings. Never compose from the admissible remainder. **R**
+- **Failure mode: snapshot proved mutable.** If the end-of-task checksum re-assertion over the same
+  snapshot fails, the snapshot was not immutable and every read taken from it is unattested: the
+  task's results are **discarded**, not degraded and not reported with a limitation. A limitation
+  would imply the output is usable-but-caveated; here nothing about it is known. **R**
+- **Failure mode: registry-gate rejection storm.** Abort retrieval, abstain, and **return** the
+  transient limitation set to the caller — the reader writes no findings (§3 Rule 4a). Never compose
+  from the admissible remainder. **R**
+- **Failure mode: ranking impossible (all dimensions degenerate).** The family drops below its
+  minimum comparable dimensions; retrieval abstains and returns
+  `RAG_RANKING_DIMENSION_DEGENERATE`. It never falls back to an arbitrary or insertion order,
+  because an order nobody can justify is worse than no result. **R**
 - **Failure mode: quota unfillable.** Documented in §4.3 — the claim degrades or abstains; it never
   ships as a deterministic-tier statement. **R**
-- **Rollback.** L1 is removable by deleting the retrieval module: the composer then has no evidence
-  slots to fill and abstains everywhere — the deterministic *analysis* product (Atlas, Time Machine,
-  Change River, Delivery Map, Coverage Cockpit, Query Lab) is untouched, because retrieval feeds only
+- **Rollback.** The current state *is* the rollback state: L1 is unbuilt, and the deterministic
+  product is complete and useful without it (see the status note at the top of this file). Once
+  built, L1 is removable by deleting the retrieval module: the composer then has no evidence slots to
+  fill and abstains everywhere — the deterministic *analysis* product (Atlas, Time Machine, Change
+  River, Delivery Map, Coverage Cockpit, Query Lab) is untouched, because retrieval feeds only
   interpretation. L2/L3 are removable by deleting their index modules; L1 remains the fallback path
-  that is always compiled in. **I** This satisfies principle 2's removability requirement at each rung.
+  that is always compiled in. **I** This satisfies principle 2's removability requirement at each
+  rung, and it is testable today rather than at M7: any deterministic surface that would break if
+  this module never existed is a critical-path violation.
 - **Revisit triggers.** (a) L1 misses the preregistered Recall/counter-evidence floors on the frozen
   benchmark; (b) the registry gains a materially larger controlled vocabulary (making lexical matching
   meaningful); (c) an ADR-10 Tier-2 decision changes what may be templated; (d) a pack-format change
@@ -560,3 +782,22 @@ coverage semantics, benchmark, and claim grammar exist** — L2/L3 cards start i
 - **A-RAG-5.** Ranking-score suppression (never surfacing it) is enough to prevent it being read as
   confidence. *Reason:* it never reaches a `PresentationView`. *Reversible by:* if a UX card ever
   needs an ordering hint, it must be rendered as an ordinal position, not a score.
+- **A-RAG-6.** Holding one immutable task-owned snapshot per retrieval task (open handles, or a copy
+  where handle-stable reads are not guaranteed) is affordable at realistic pack sizes. *Reason:*
+  packs are bounded, per-task, and read once. *Reversible by:* a **measured** pack-size distribution
+  showing snapshot cost dominates — in which case the answer is a stronger handle or locking
+  guarantee, or a content-addressed pack store, and never a return to verify-then-reopen-by-path.
+- **A-RAG-7.** Ranking the whole eligible set is affordable below the working ceiling, and above it
+  the deterministic total-order prefix is an acceptable degradation because it is *recorded*.
+  *Reason:* a recorded, reproducible truncation is auditable; an unordered one is not.
+  *Reversible by:* measured eligible-set sizes on realistic packs — a ceiling that binds routinely
+  is a signal to narrow the filter through the registry, not to raise the ceiling silently.
+- **A-RAG-8.** `evidence_id` is unique within a pack (**V**), which is sufficient for the
+  same-build byte-identical guarantee. Cross-**rebuild** replay additionally needs a build-stable,
+  content-derived `evidence_id`, which is **not** currently a documented property — the canonical
+  dictionary specifies only pack-scoped opaque IDs that must resolve within the same pack.
+  *Reason:* this design needs same-build determinism to be sound; cross-build determinism is a
+  stronger property it would like but must not assume. *Reversible by:* `DL-PACK-01/02` declaring
+  content-derived evidence IDs (as ADR-01 already does for **claim** IDs), at which point §1 L1
+  step 1's caveat and §5.2 #14's cross-build arm are both promoted from "requirement on the pack
+  contract" to **V**.
