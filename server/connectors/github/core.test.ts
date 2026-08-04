@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   GITHUB_CORE_MAX_ATTEMPTS,
-  GITHUB_CORE_MAX_RETRY_DELAY_MS,
+  GITHUB_CORE_MAX_COMPUTED_BACKOFF_MS,
   GITHUB_CORE_QUERY_VERSION,
   GITHUB_CORE_REST_API_VERSION,
   boundedGithubCoreOverlapStart,
@@ -96,10 +96,11 @@ describe('github.core inert protocol foundation', () => {
 
     expect(first.delayMs).toBe(repeated.delayMs)
     expect(first.delayMs).toBeGreaterThanOrEqual(1_000)
+    expect(first.delayMs).toBeLessThanOrEqual(GITHUB_CORE_MAX_COMPUTED_BACKOFF_MS)
     expect(second.delayMs).toBeGreaterThan(first.delayMs!)
     expect(classifyGithubCoreRetry('rate_limited', 1, 90_000)).toMatchObject({
       retry: true,
-      delayMs: GITHUB_CORE_MAX_RETRY_DELAY_MS,
+      delayMs: 90_000,
     })
     expect(classifyGithubCoreRetry('rate_limited', 1, 0).delayMs).toBe(0)
   })
@@ -115,7 +116,18 @@ describe('github.core inert protocol foundation', () => {
       expect(classifyGithubCoreRetry(kind, 1, 50)).toMatchObject({ retryable: false, retry: false, delayMs: null })
     }
     expect(() => classifyGithubCoreRetry('transient', 4)).toThrow('between 1 and 3')
-    expect(() => classifyGithubCoreRetry('transient', 1, -1)).toThrow('finite and nonnegative')
+    for (const unsafeDelay of [-1, 1.5, Number.POSITIVE_INFINITY, Number.MAX_SAFE_INTEGER + 1]) {
+      expect(() => classifyGithubCoreRetry('transient', 1, unsafeDelay)).toThrow('nonnegative safe integer')
+    }
+  })
+
+  it('rejects unrecognized runtime failure kinds before constructing coverage codes', () => {
+    const invalidKind = 'transient_with_untrusted_suffix' as 'transient'
+
+    expect(() => classifyGithubCoreRetry(invalidKind, 1)).toThrow('failure kind is unsupported')
+    expect(() => reconcileGithubCoreReceipts(input({
+      failure: { kind: invalidKind, attempt: 1 },
+    }))).toThrow('failure kind is unsupported')
   })
 
   it('does not fabricate complete zero activity without a terminal page receipt', () => {
@@ -255,6 +267,15 @@ describe('github.core inert protocol foundation', () => {
     expect(() => reconcileGithubCoreReceipts(input({
       checkpoint: checkpoint({ highWatermark: rangeEnd }),
     }))).toThrow('half-open collection range')
+    expect(() => reconcileGithubCoreReceipts(input({
+      checkpoint: checkpoint({ highWatermark: '' }),
+    }))).toThrow('canonical UTC timestamp')
+    expect(() => reconcileGithubCoreReceipts(input({
+      checkpoint: checkpoint({ cursorHint: '' }),
+    }))).toThrow('opaque identifier')
+    expect(() => reconcileGithubCoreReceipts(input({
+      checkpoint: checkpoint({ lastCompleteSnapshotHash: '' }),
+    }))).toThrow('canonical lowercase SHA-256')
   })
 
   it('rejects out-of-range receipt watermarks as failed coverage', () => {
@@ -272,6 +293,37 @@ describe('github.core inert protocol foundation', () => {
 
     expect(result).toMatchObject({ status: 'failed', coverage: { limitationCode: 'RECEIPT_VALIDATION_FAILED' } })
     expect(result.checkpoint).toBe(previous)
+  })
+
+  it('validates provided receipt watermarks and snapshot hashes even when empty', () => {
+    const invalidReceipt = reconcileGithubCoreReceipts(input({
+      receipts: [{ receiptId: 'receipt-01', pageNumber: 1, unitIds: [], highWatermark: '', nextCursor: null }],
+    }))
+
+    expect(invalidReceipt).toMatchObject({
+      status: 'failed',
+      coverage: { limitationCode: 'RECEIPT_VALIDATION_FAILED' },
+    })
+    for (const invalidHash of ['', 'A'.repeat(64), 'a'.repeat(63)]) {
+      expect(() => reconcileGithubCoreReceipts(input({ snapshotHash: invalidHash }))).toThrow(
+        'canonical lowercase SHA-256',
+      )
+    }
+
+    const snapshotHash = 'a'.repeat(64)
+    expect(reconcileGithubCoreReceipts(input({ snapshotHash }))).toMatchObject({
+      status: 'complete',
+      checkpoint: { lastCompleteSnapshotHash: snapshotHash },
+    })
+  })
+
+  it('rejects opaque identifiers longer than the conservative contract bound', () => {
+    expect(() => reconcileGithubCoreReceipts(input({ scopeAlias: 'a'.repeat(129) }))).toThrow(
+      'at most 128 characters',
+    )
+    expect(reconcileGithubCoreReceipts(input({
+      receipts: [{ receiptId: 'r'.repeat(129), pageNumber: 1, unitIds: [], nextCursor: null }],
+    }))).toMatchObject({ status: 'failed', coverage: { limitationCode: 'RECEIPT_VALIDATION_FAILED' } })
   })
 
   it('keeps the checkpoint untouched when collection fails', () => {

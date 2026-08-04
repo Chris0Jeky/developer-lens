@@ -6,10 +6,12 @@ export const GITHUB_CORE_QUERY_VERSION = 'github.core.v1' as const
 export const GITHUB_CORE_MAX_ATTEMPTS = 3 as const
 export const GITHUB_CORE_OVERLAP_MS = 86_400_000 as const
 export const GITHUB_CORE_RETRY_BASE_DELAY_MS = 1_000 as const
-export const GITHUB_CORE_MAX_RETRY_DELAY_MS = 60_000 as const
+export const GITHUB_CORE_MAX_COMPUTED_BACKOFF_MS = 60_000 as const
+export const GITHUB_CORE_MAX_OPAQUE_ID_LENGTH = 128 as const
 
 const OPAQUE_ID = /^[A-Za-z0-9:._-]+$/
 const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+const LOWERCASE_SHA_256 = /^[0-9a-f]{64}$/
 
 export interface GithubCoreCheckpoint {
   readonly capabilityId: 'github.core'
@@ -50,13 +52,15 @@ export interface GithubCoreReceipt {
   readonly nextCursor: string | null
 }
 
-export type GithubCoreFailureKind =
-  | 'rate_limited'
-  | 'transient'
-  | 'permission'
-  | 'unsupported'
-  | 'schema'
-  | 'unknown'
+export const GITHUB_CORE_FAILURE_KINDS = [
+  'rate_limited',
+  'transient',
+  'permission',
+  'unsupported',
+  'schema',
+  'unknown',
+] as const
+export type GithubCoreFailureKind = typeof GITHUB_CORE_FAILURE_KINDS[number]
 
 export interface GithubCoreRetryClassification {
   readonly kind: GithubCoreFailureKind
@@ -94,9 +98,26 @@ export interface GithubCoreCheckpointTransition {
 }
 
 function assertOpaqueId(value: string, field: string): void {
-  if (typeof value !== 'string' || !OPAQUE_ID.test(value)) {
-    throw new Error(`${field} must be an opaque identifier`)
+  if (
+    typeof value !== 'string' ||
+    value.length > GITHUB_CORE_MAX_OPAQUE_ID_LENGTH ||
+    !OPAQUE_ID.test(value)
+  ) {
+    throw new Error(`${field} must be an opaque identifier of at most ${GITHUB_CORE_MAX_OPAQUE_ID_LENGTH} characters`)
   }
+}
+
+function assertLowercaseSha256(value: string, field: string): void {
+  if (typeof value !== 'string' || !LOWERCASE_SHA_256.test(value)) {
+    throw new Error(`${field} must be a canonical lowercase SHA-256`)
+  }
+}
+
+function parseFailureKind(value: unknown): GithubCoreFailureKind {
+  if (typeof value !== 'string' || !(GITHUB_CORE_FAILURE_KINDS as readonly string[]).includes(value)) {
+    throw new Error('failure kind is unsupported')
+  }
+  return value as GithubCoreFailureKind
 }
 
 function parseCanonicalTimestamp(value: string, field: string): Date {
@@ -142,17 +163,30 @@ function assertCompatibleCheckpoint(
   if (checkpoint.queryVersion !== GITHUB_CORE_QUERY_VERSION || checkpoint.sourceApiVersion !== GITHUB_CORE_REST_API_VERSION) {
     throw new Error('CHECKPOINT_VERSION_MISMATCH')
   }
-  if (checkpoint.cursorHint) assertOpaqueId(checkpoint.cursorHint, 'checkpoint.cursorHint')
+  if (Object.hasOwn(checkpoint, 'cursorHint')) {
+    assertOpaqueId(checkpoint.cursorHint as string, 'checkpoint.cursorHint')
+  }
+  if (Object.hasOwn(checkpoint, 'lastCompleteSnapshotHash')) {
+    assertLowercaseSha256(
+      checkpoint.lastCompleteSnapshotHash as string,
+      'checkpoint.lastCompleteSnapshotHash',
+    )
+  }
   const overlapStart = parseCanonicalTimestamp(checkpoint.boundedOverlapStart, 'checkpoint.boundedOverlapStart')
-  const highWatermark = checkpoint.highWatermark
-    ? parseCanonicalTimestamp(checkpoint.highWatermark, 'checkpoint.highWatermark')
+  const highWatermark = Object.hasOwn(checkpoint, 'highWatermark')
+    ? parseCanonicalTimestamp(checkpoint.highWatermark as string, 'checkpoint.highWatermark')
     : undefined
   if (highWatermark && overlapStart > highWatermark) throw new Error('CHECKPOINT_WINDOW_INVERTED')
   if (!expected) return
   if (checkpoint.scopeAlias !== expected.scopeAlias) throw new Error('CHECKPOINT_SCOPE_MISMATCH')
   if (checkpoint.consentRevision !== expected.consentRevision) throw new Error('CHECKPOINT_CONSENT_MISMATCH')
-  if (checkpoint.highWatermark) {
-    assertWatermarkInRange(checkpoint.highWatermark, expected.rangeStart, expected.rangeEnd, 'checkpoint.highWatermark')
+  if (highWatermark) {
+    assertWatermarkInRange(
+      highWatermark.toISOString(),
+      expected.rangeStart,
+      expected.rangeEnd,
+      'checkpoint.highWatermark',
+    )
   }
 }
 
@@ -244,32 +278,35 @@ export function classifyGithubCoreRetry(
   attempt: number,
   retryAfterMs?: number,
 ): GithubCoreRetryClassification {
+  const parsedKind = parseFailureKind(kind)
   if (!Number.isInteger(attempt) || attempt < 1 || attempt > GITHUB_CORE_MAX_ATTEMPTS) {
     throw new Error(`attempt must be between 1 and ${GITHUB_CORE_MAX_ATTEMPTS}`)
   }
-  if (retryAfterMs !== undefined && (!Number.isFinite(retryAfterMs) || retryAfterMs < 0)) {
-    throw new Error('retryAfterMs must be finite and nonnegative')
+  if (retryAfterMs !== undefined && (!Number.isSafeInteger(retryAfterMs) || retryAfterMs < 0)) {
+    throw new Error('retryAfterMs must be a nonnegative safe integer')
   }
-  const retryable = kind === 'rate_limited' || kind === 'transient'
+  const retryable = parsedKind === 'rate_limited' || parsedKind === 'transient'
   const retry = retryable && attempt < GITHUB_CORE_MAX_ATTEMPTS
   let delayMs: number | null = null
   if (retry) {
     if (retryAfterMs !== undefined) {
-      delayMs = Math.min(Math.ceil(retryAfterMs), GITHUB_CORE_MAX_RETRY_DELAY_MS)
+      delayMs = retryAfterMs
     } else {
       const exponential = Math.min(
         GITHUB_CORE_RETRY_BASE_DELAY_MS * (2 ** (attempt - 1)),
-        GITHUB_CORE_MAX_RETRY_DELAY_MS,
+        GITHUB_CORE_MAX_COMPUTED_BACKOFF_MS,
       )
       let hash = 2_166_136_261
-      for (const character of `${kind}:${attempt}`) hash = Math.imul(hash ^ character.charCodeAt(0), 16_777_619)
+      for (const character of `${parsedKind}:${attempt}`) {
+        hash = Math.imul(hash ^ character.charCodeAt(0), 16_777_619)
+      }
       const jitterWindow = Math.max(1, Math.floor(exponential / 4))
       const jitter = (hash >>> 0) % jitterWindow
-      delayMs = Math.min(exponential + jitter, GITHUB_CORE_MAX_RETRY_DELAY_MS)
+      delayMs = Math.min(exponential + jitter, GITHUB_CORE_MAX_COMPUTED_BACKOFF_MS)
     }
   }
   return {
-    kind,
+    kind: parsedKind,
     attempt,
     retryable,
     retry,
@@ -299,8 +336,13 @@ function normalizedReceipts(
     if (!Array.isArray(receipt.unitIds)) throw new Error('receipt.unitIds must be an array')
     if (new Set(receipt.unitIds).size !== receipt.unitIds.length) throw new Error('receipt.unitIds must be unique within a page')
     for (const unitId of receipt.unitIds) assertOpaqueId(unitId, 'receipt.unitId')
-    if (receipt.highWatermark) {
-      assertWatermarkInRange(receipt.highWatermark, rangeStart, rangeEnd, 'receipt.highWatermark')
+    if (Object.hasOwn(receipt, 'highWatermark')) {
+      assertWatermarkInRange(
+        receipt.highWatermark as string,
+        rangeStart,
+        rangeEnd,
+        'receipt.highWatermark',
+      )
     }
     if (receipt.nextCursor !== null) assertOpaqueId(receipt.nextCursor, 'receipt.nextCursor')
     const existing = accepted.get(receipt.receiptId)
@@ -338,11 +380,15 @@ function latestWatermark(receipts: readonly GithubCoreReceipt[], previous?: stri
  * not read a provider, persist anything, or bypass the denied collection plan.
  */
 export function reconcileGithubCoreReceipts(input: GithubCoreReconciliationInput): GithubCoreCheckpointTransition {
+  assertOpaqueId(input.scopeAlias, 'scopeAlias')
   assertOpaqueId(input.jobId, 'jobId')
   assertOpaqueId(input.consentRevision, 'consentRevision')
   if (!Number.isInteger(input.pageCap) || input.pageCap < 1) throw new Error('pageCap must be a positive integer')
   assertRange(input.rangeStart, input.rangeEnd)
   parseCanonicalTimestamp(input.observedAt, 'observedAt')
+  if (Object.hasOwn(input, 'snapshotHash')) {
+    assertLowercaseSha256(input.snapshotHash as string, 'snapshotHash')
+  }
   if (input.checkpoint) {
     assertCompatibleCheckpoint(input.checkpoint, input)
   }
@@ -351,7 +397,7 @@ export function reconcileGithubCoreReceipts(input: GithubCoreReconciliationInput
     const retry = classifyGithubCoreRetry(input.failure.kind, input.failure.attempt, input.failure.retryAfterMs)
     return {
       status: 'failed',
-      coverage: coverage(input, 'failed', null, 0, null, `FAILURE_${input.failure.kind.toUpperCase()}`, retry.retry),
+      coverage: coverage(input, 'failed', null, 0, null, `FAILURE_${retry.kind.toUpperCase()}`, retry.retry),
       checkpoint: input.checkpoint,
       appliedReceiptIds: [],
     }
@@ -413,7 +459,7 @@ export function reconcileGithubCoreReceipts(input: GithubCoreReconciliationInput
     sourceApiVersion: GITHUB_CORE_REST_API_VERSION,
     ...(highWatermark ? { highWatermark } : {}),
     boundedOverlapStart: boundedGithubCoreOverlapStart(input.rangeStart, input.rangeEnd, overlapCheckpoint),
-    ...(input.snapshotHash ? { lastCompleteSnapshotHash: input.snapshotHash } : {}),
+    ...(Object.hasOwn(input, 'snapshotHash') ? { lastCompleteSnapshotHash: input.snapshotHash } : {}),
     consentRevision: input.consentRevision,
     committedJobId: input.jobId,
   }
