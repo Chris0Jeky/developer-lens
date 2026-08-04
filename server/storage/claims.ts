@@ -1,12 +1,17 @@
+import { randomBytes } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { z } from 'zod'
 import {
   CLAIM_EDGE_ROLES,
   CLAIM_EDGE_ROLE_TARGET_KIND,
+  CLAIM_ID_MATERIAL_VERSION,
+  CLAIM_ID_MATERIAL_VERSIONS,
   CLAIM_LAYERS,
   CLAIM_LIMITATION_CODES,
   CLAIM_LIMITATION_DIMENSIONS,
   CLAIM_SCHEMA_VERSION,
+  CLAIM_SCOPE_ID_ENTROPY_BYTES,
+  CLAIM_SCOPE_ID_PREFIX,
   CLAIM_STATEMENT_CODES,
   CLAIM_ABSTENTION_STATEMENT_CODE,
   CanonicalTimestampSchema,
@@ -14,7 +19,7 @@ import {
   ClaimIdSchema,
   ClaimLayerSchema,
   ClaimRecordSchema,
-  ClaimScopeSchema,
+  ClaimScopeIdSchema,
   ClaimStatementCodeSchema,
   CoverageTargetSchema,
   EvidenceAnchorSchema,
@@ -23,10 +28,13 @@ import {
   LINEAGE_EVENT_KINDS,
   MethodVersionSchema,
   OpaqueTokenSchema,
+  claimMayCiteLayer,
   claimStabilityKey,
   claimStabilityKeyToken,
   computeClaimId,
+  type CitableLayer,
   type ClaimEvidenceEdge,
+  type ClaimLayer,
   type ClaimRecord,
 } from '../../shared/claims.js'
 import { EVIDENCE_LAYERS, CANONICAL_ENVELOPE_SCHEMA_VERSION } from '../../shared/provenance.js'
@@ -62,6 +70,16 @@ const canonicalTimestamp = (column: string): string =>
   `length(${column}) = 24 AND ${column} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'`
 const claimIdentifier = (column: string): string =>
   `length(${column}) = 67 AND ${column} GLOB 'cl_*' AND substr(${column}, 4) NOT GLOB '*[^0-9a-f]*'`
+/**
+ * The minted C1 scope surrogate: `scope-` plus 64 lowercase hex digits. The CHECK is what
+ * makes "the C2 alias value can never become the scope_id" a table-level property rather
+ * than a convention — an alias is an opaque token of arbitrary shape and cannot satisfy it
+ * unless it is itself already a surrogate, and the writer never copies an alias here.
+ */
+const claimScopeIdentifier = (column: string): string =>
+  `length(${column}) = ${CLAIM_SCOPE_ID_PREFIX.length + CLAIM_SCOPE_ID_ENTROPY_BYTES * 2}`
+  + ` AND ${column} GLOB '${CLAIM_SCOPE_ID_PREFIX}*'`
+  + ` AND substr(${column}, ${CLAIM_SCOPE_ID_PREFIX.length + 1}) NOT GLOB '*[^0-9a-f]*'`
 
 const EVIDENCE_ROLES = CLAIM_EDGE_ROLES.filter(
   (role) => CLAIM_EDGE_ROLE_TARGET_KIND[role] === 'evidence',
@@ -85,10 +103,12 @@ const CLAIM_GRAPH_STATEMENTS: readonly string[] = [
       REFERENCES ${CLAIM_GRAPH_COVERAGE_TABLE}(coverage_id, range_start, job_id)
   ) STRICT`,
   `CREATE TABLE IF NOT EXISTS claim_scope (
-    scope_id TEXT PRIMARY KEY NOT NULL CHECK (${opaque('scope_id')}),
+    scope_id TEXT PRIMARY KEY NOT NULL CHECK (${claimScopeIdentifier('scope_id')}),
     scope_alias TEXT CHECK (scope_alias IS NULL OR (${opaque('scope_alias')})),
     linked_at TEXT NOT NULL CHECK (${canonicalTimestamp('linked_at')})
   ) STRICT`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS claim_scope_alias ON claim_scope (scope_alias)
+    WHERE scope_alias IS NOT NULL`,
   `CREATE TABLE IF NOT EXISTS claim (
     claim_id TEXT PRIMARY KEY NOT NULL CHECK (${claimIdentifier('claim_id')}),
     layer TEXT NOT NULL CHECK (layer IN (${quoted(CLAIM_LAYERS)})),
@@ -97,8 +117,12 @@ const CLAIM_GRAPH_STATEMENTS: readonly string[] = [
     method_version TEXT NOT NULL CHECK (length(method_version) BETWEEN 1 AND 64 AND method_version NOT GLOB '*[^0-9A-Za-z.-]*'),
     window_start TEXT NOT NULL CHECK (${canonicalTimestamp('window_start')}),
     window_end TEXT NOT NULL CHECK (${canonicalTimestamp('window_end')}),
-    scope_id TEXT NOT NULL REFERENCES claim_scope(scope_id),
+    scope_id TEXT NOT NULL REFERENCES claim_scope(scope_id) CHECK (${claimScopeIdentifier('scope_id')}),
     schema_version TEXT NOT NULL CHECK (schema_version = '${CLAIM_SCHEMA_VERSION}'),
+    -- Every STORABLE version, not only the one this writer emits. Pinning a single value would
+    -- make a v3 rollout a table rebuild and leave the replay version check tautological.
+    -- (No apostrophes in this DDL: see the note on normalizeSchemaSql.)
+    claim_id_material_version TEXT NOT NULL CHECK (claim_id_material_version IN (${quoted(CLAIM_ID_MATERIAL_VERSIONS)})),
     created_at TEXT NOT NULL CHECK (${canonicalTimestamp('created_at')}),
     superseded_by TEXT REFERENCES claim(claim_id),
     CHECK (window_start < window_end),
@@ -160,9 +184,26 @@ export type ClaimStorageErrorCode =
   | 'CLAIM_GRAPH_CHECK_FAILED'
   | 'CLAIM_GRAPH_CONSTRAINT_FAILED'
   | 'CLAIM_CONTRACT_INVALID'
+  /** ADR-01 failure clause: one canonicalisation version reproduced an ID over different content. */
   | 'CLAIM_ID_COLLISION'
+  /**
+   * A stored row was derived under a different canonicalisation version than the current
+   * writer's. Its content is not comparable and must not be acted on. Unreachable while
+   * `CLAIM_ID_MATERIAL_VERSIONS` has one entry; reachable the day a v3 is appended.
+   */
+  | 'CLAIM_ID_MATERIAL_VERSION_MISMATCH'
+  /** A minted scope surrogate collided with the C2 alias it was minted for. */
+  | 'CLAIM_SCOPE_SURROGATE_COLLISION'
   | 'CLAIM_UNKNOWN'
+  /** A claim cited a target weaker than its own layer (ADR-26 relabelling guard). */
+  | 'CLAIM_LAYER_ORDER_VIOLATION'
+  /** The same evidence ID was re-registered with different anchor content. */
+  | 'CLAIM_EVIDENCE_ANCHOR_CONFLICT'
   | 'CLAIM_SUPERSESSION_SERIES_MISMATCH'
+  /** The claim already points at a different successor; supersession is never re-pointed. */
+  | 'CLAIM_SUPERSESSION_CONFLICT'
+  /** The link would close a cycle in the supersession chain. */
+  | 'CLAIM_SUPERSESSION_CYCLE'
 
 /**
  * Errors carry a code and nothing else. Claim fields are caller-supplied, so an error
@@ -206,13 +247,36 @@ function parseSchemaObjects(statements: readonly string[]): SchemaObject[] {
   })
 }
 
+/**
+ * Keyword case and whitespace are insignificant to SQLite; the contents of a string literal
+ * are not. `layer IN ('deterministic')` and `layer IN ('DETERMINISTIC')` are different
+ * constraints, so lowercasing the whole statement would let a store whose CHECK literals
+ * differ in case pass the shape comparison. Only the spans *outside* single-quoted literals
+ * are normalized; literal spans are compared byte-for-byte.
+ *
+ * The scanner tracks single quotes only. An apostrophe inside a `--` comment would desync it and
+ * mis-classify the remainder of the statement as literal text. The DDL above contains no such
+ * apostrophe and must keep containing none — that is a constraint on this file, not a claim
+ * about SQL in general.
+ */
 function normalizeSchemaSql(sql: string): string {
-  return sql
-    .replace(/\bIF\s+NOT\s+EXISTS\b/gi, '')
-    .replace(/;\s*$/, '')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .toLowerCase()
+  const trimmed = sql.replace(/;\s*$/, '')
+  const parts: string[] = []
+  let index = 0
+  while (index < trimmed.length) {
+    const quote = trimmed.indexOf("'", index)
+    const outside = quote === -1 ? trimmed.slice(index) : trimmed.slice(index, quote)
+    parts.push(outside.replace(/\bIF\s+NOT\s+EXISTS\b/gi, '').replace(/\s+/g, ' ').toLowerCase())
+    if (quote === -1) break
+    let end = quote + 1
+    while (end < trimmed.length && (trimmed[end] !== "'" || trimmed[end + 1] === "'")) {
+      end += trimmed[end] === "'" ? 2 : 1
+    }
+    if (end >= trimmed.length) throw new ClaimStorageError('CLAIM_GRAPH_SCHEMA_MISMATCH')
+    parts.push(trimmed.slice(quote, end + 1))
+    index = end + 1
+  }
+  return parts.join('').replace(/^ | $/g, '')
 }
 
 const CLAIM_GRAPH_SCHEMA_OBJECTS = parseSchemaObjects(CLAIM_GRAPH_STATEMENTS)
@@ -316,24 +380,113 @@ function write<T>(operation: () => T): T {
   }
 }
 
-/**
- * C2 write path. The alias VALUE is stored only here, keyed by the content-free
- * surrogate the C1 `claim` row carries. `linked_at` records when the link was first
- * established and is NOT advanced by a later re-registration: first link wins, so the
- * charter's 13-month alias-link boundary is computed from the true link time.
- */
-export function registerClaimScope(db: Database.Database, value: unknown): void {
-  const scope = parseOrThrow(ClaimScopeSchema, value)
-  write(() => {
-    db.prepare(
-      'INSERT INTO claim_scope (scope_id, scope_alias, linked_at) VALUES (?, ?, ?) ON CONFLICT(scope_id) DO UPDATE SET scope_alias = excluded.scope_alias',
-    ).run(scope.scopeId, scope.scopeAlias, scope.linkedAt)
-  })
+export const RegisterClaimScopeInputSchema = z
+  .object({ scopeAlias: OpaqueTokenSchema, linkedAt: CanonicalTimestampSchema })
+  .strict()
+export type RegisterClaimScopeInput = z.infer<typeof RegisterClaimScopeInputSchema>
+
+export interface ClaimScopeRegistration {
+  /** The C1 surrogate to put on claims. Minted here; never supplied by the caller. */
+  readonly scopeId: string
+  /** The first link time for this alias, which a later re-registration does not advance. */
+  readonly linkedAt: string
+  readonly minted: boolean
 }
+
+type EntropySource = (size: number) => Buffer
+
+/**
+ * The surrogate is 32 random bytes, not a digest of anything. Two reasons, and neither is a
+ * claim that a keyed digest would be linkable across installations — an installation-keyed
+ * HMAC is not, and this repo already uses exactly that construction for its provider aliases
+ * (`server/storage/installationAliases.ts`):
+ *
+ * 1. **Classification.** A digest of a C2 value is a *function of* a C2 value, and the
+ *    evidence catalog already classifies HMAC-derived stable IDs as C2 (13-month). A derived
+ *    surrogate could not honestly be stored as C1 and hashed into C1 claim IDs.
+ * 2. **Erasure, which alone decides the design.** A derivation stays computable after the
+ *    alias is cleared, so the link could be re-established from the alias at any later date —
+ *    the 13-month boundary would erase a row, not a capability. Random-and-looked-up means
+ *    that once `scope_alias` is NULL, no function reproduces the link.
+ */
+function mintClaimScopeId(entropy: EntropySource): string {
+  const bytes = entropy(CLAIM_SCOPE_ID_ENTROPY_BYTES)
+  if (!Buffer.isBuffer(bytes) || bytes.length !== CLAIM_SCOPE_ID_ENTROPY_BYTES) {
+    throw new ClaimStorageError('CLAIM_GRAPH_CONSTRAINT_FAILED')
+  }
+  return parseOrThrow(ClaimScopeIdSchema, `${CLAIM_SCOPE_ID_PREFIX}${bytes.toString('hex')}`)
+}
+
+/**
+ * C2 write path. The caller supplies only the alias VALUE; the content-free `scope_id` the
+ * C1 `claim` row carries is minted here and returned. Re-registering the same alias is
+ * idempotent — it returns the existing surrogate and does NOT advance `linked_at`, so the
+ * charter's 13-month alias-link boundary is computed from the true first-link time, and
+ * replay reproduces identical claim IDs because the scope component is unchanged.
+ *
+ * After `clearClaimScopeAlias`, re-registering the same alias mints a NEW surrogate: the
+ * erased link is not silently re-established, and the new claims form a new series.
+ */
+function registerClaimScopeCore(
+  db: Database.Database,
+  value: unknown,
+  entropy: EntropySource,
+): ClaimScopeRegistration {
+  const input = parseOrThrow(RegisterClaimScopeInputSchema, value)
+  const apply = db.transaction((): ClaimScopeRegistration => {
+    const existing = db.prepare(
+      'SELECT scope_id, linked_at FROM claim_scope WHERE scope_alias = ?',
+    ).get(input.scopeAlias) as { scope_id: string; linked_at: string } | undefined
+    if (existing) {
+      return {
+        scopeId: parseOrThrow(ClaimScopeIdSchema, existing.scope_id),
+        linkedAt: parseOrThrow(CanonicalTimestampSchema, existing.linked_at),
+        minted: false,
+      }
+    }
+    const scopeId = mintClaimScopeId(entropy)
+    /**
+     * The C1 surrogate is never the C2 alias value. Random minting makes this overwhelmingly
+     * likely but not structural — an alias may itself be `scope-` + 64 hex, and an entropy
+     * source can be chosen — so it is enforced rather than assumed.
+     */
+    if (scopeId === input.scopeAlias) {
+      throw new ClaimStorageError('CLAIM_SCOPE_SURROGATE_COLLISION')
+    }
+    db.prepare('INSERT INTO claim_scope (scope_id, scope_alias, linked_at) VALUES (?, ?, ?)')
+      .run(scopeId, input.scopeAlias, input.linkedAt)
+    return { scopeId, linkedAt: input.linkedAt, minted: true }
+  })
+  return write(apply)
+}
+
+export function registerClaimScope(db: Database.Database, value: unknown): ClaimScopeRegistration {
+  return registerClaimScopeCore(db, value, randomBytes)
+}
+
+/**
+ * @internal Invented-fixture seams only.
+ *
+ * The seam injects the ENTROPY, not the surrogate — the result is still `scope-` + hex of
+ * those bytes. That constrains the SHAPE but not the value: chosen bytes make a surrogate
+ * predictable, which real minting never is, and could even reproduce an alias that happens to
+ * be `scope-` + 64 hex. The alias-equals-surrogate case is refused by the writer itself
+ * (`CLAIM_SCOPE_SURROGATE_COLLISION`), so that one cannot be reached through the seam either;
+ * predictability is the residual, and it is why this stays test-only.
+ */
+export const claimScopeTestSeams = Object.freeze({
+  registerWithEntropy(
+    db: Database.Database,
+    value: unknown,
+    entropy: EntropySource,
+  ): ClaimScopeRegistration {
+    return registerClaimScopeCore(db, value, entropy)
+  },
+})
 
 /** C2 read path, deliberately separate: no C1 claim read ever returns the alias value. */
 export function readClaimScopeAlias(db: Database.Database, scopeId: string): string | null {
-  const scope = parseOrThrow(OpaqueTokenSchema, scopeId)
+  const scope = parseOrThrow(ClaimScopeIdSchema, scopeId)
   const row = db.prepare('SELECT scope_alias FROM claim_scope WHERE scope_id = ?')
     .pluck().get(scope) as string | null | undefined
   return row ?? null
@@ -346,20 +499,50 @@ export function readClaimScopeAlias(db: Database.Database, scopeId: string): str
  * (issue #80).
  */
 export function clearClaimScopeAlias(db: Database.Database, scopeId: string): number {
-  const scope = parseOrThrow(OpaqueTokenSchema, scopeId)
+  const scope = parseOrThrow(ClaimScopeIdSchema, scopeId)
   return write(() =>
     db.prepare('UPDATE claim_scope SET scope_alias = NULL WHERE scope_id = ?').run(scope).changes,
   )
+}
+
+export interface RegisterEvidenceAnchorResult {
+  readonly applied: boolean
 }
 
 /**
  * Registers the evidence anchor an edge resolves to: identity, layer, and the composite
  * key of the existing `coverage_ledger` row, which completes the ADR-01 walk
  * evidence -> coverage -> capability -> consent revision.
+ *
+ * Idempotent, like every other writer here: re-registering identical content is a no-op
+ * (`applied: false`) so a replay does not have to know what a previous run already wrote.
+ * Re-registering the same evidence ID with *different* content is content drift and fails
+ * with its own code rather than a generic constraint failure.
  */
-export function registerEvidenceAnchor(db: Database.Database, value: unknown): void {
+export function registerEvidenceAnchor(
+  db: Database.Database,
+  value: unknown,
+): RegisterEvidenceAnchorResult {
   const anchor = parseOrThrow(EvidenceAnchorSchema, value)
-  write(() => {
+  const apply = db.transaction((): RegisterEvidenceAnchorResult => {
+    const existing = db.prepare(
+      'SELECT layer, schema_version, coverage_id, coverage_range_start, coverage_job_id FROM evidence WHERE evidence_id = ?',
+    ).get(anchor.evidenceId) as {
+      layer: string
+      schema_version: string
+      coverage_id: string
+      coverage_range_start: string
+      coverage_job_id: string
+    } | undefined
+    if (existing) {
+      const same = existing.layer === anchor.layer
+        && existing.schema_version === CANONICAL_ENVELOPE_SCHEMA_VERSION
+        && existing.coverage_id === anchor.coverage.coverageId
+        && existing.coverage_range_start === anchor.coverage.rangeStart
+        && existing.coverage_job_id === anchor.coverage.jobId
+      if (!same) throw new ClaimStorageError('CLAIM_EVIDENCE_ANCHOR_CONFLICT')
+      return { applied: false }
+    }
     db.prepare(
       'INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)',
     ).run(
@@ -370,7 +553,9 @@ export function registerEvidenceAnchor(db: Database.Database, value: unknown): v
       anchor.coverage.rangeStart,
       anchor.coverage.jobId,
     )
+    return { applied: true }
   })
+  return write(apply)
 }
 
 export const RegisterClaimInputSchema = z
@@ -381,9 +566,18 @@ export const RegisterClaimInputSchema = z
     methodVersion: MethodVersionSchema,
     windowStart: CanonicalTimestampSchema,
     windowEnd: CanonicalTimestampSchema,
-    scopeId: OpaqueTokenSchema,
+    scopeId: ClaimScopeIdSchema,
     createdAt: CanonicalTimestampSchema,
-    edges: z.array(ClaimEvidenceEdgeSchema),
+    /**
+     * At least one typed basis edge: an unsupported statement has no walk and cannot enter.
+     *
+     * Contract-only, and deliberately so — "this claim has >= 1 row in another table" is a
+     * cross-row cardinality constraint that a SQLite row CHECK cannot express. A claim inserted
+     * by raw SQL with no edges is therefore representable in the table; it surfaces downstream
+     * as a claim whose evidence walk returns nothing rather than as a write failure. Accepted
+     * residual: every writer in this module goes through this schema.
+     */
+    edges: z.array(ClaimEvidenceEdgeSchema).min(1),
     limitations: z.array(LimitationInstanceSchema),
   })
   .strict()
@@ -456,9 +650,13 @@ interface ClaimRow {
   window_end: string
   scope_id: string
   schema_version: string
+  claim_id_material_version: string
   created_at: string
   superseded_by: string | null
 }
+
+const CLAIM_COLUMNS =
+  'claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, claim_id_material_version, created_at, superseded_by'
 
 function toClaimRecord(row: ClaimRow): ClaimRecord {
   return ClaimRecordSchema.parse({
@@ -471,6 +669,7 @@ function toClaimRecord(row: ClaimRow): ClaimRecord {
     windowEnd: row.window_end,
     scopeId: row.scope_id,
     schemaVersion: row.schema_version,
+    claimIdMaterialVersion: row.claim_id_material_version,
     createdAt: row.created_at,
     supersededBy: row.superseded_by,
   })
@@ -480,9 +679,59 @@ function toClaimRecord(row: ClaimRow): ClaimRecord {
 export function readClaim(db: Database.Database, claimId: string): ClaimRecord | null {
   const parsedId = parseOrThrow(ClaimIdSchema, claimId)
   const row = db.prepare(
-    'SELECT claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, created_at, superseded_by FROM claim WHERE claim_id = ?',
+    `SELECT ${CLAIM_COLUMNS} FROM claim WHERE claim_id = ?`,
   ).get(parsedId) as ClaimRow | undefined
   return row ? toClaimRecord(row) : null
+}
+
+/**
+ * Refuses to ACT on a row derived under a canonicalisation version other than this writer's.
+ * A missing row is not a mismatch — a first write has nothing to disagree with.
+ *
+ * Reads the column directly instead of going through `readClaim`, deliberately: the row
+ * contract admits only versions this build knows about, so a writer that met a row from a
+ * NEWER build would fail to parse it and report a contract error instead of the honest
+ * version mismatch. The gate must not depend on the gated row satisfying the current contract.
+ *
+ * Equally deliberately not applied inside `readClaim` itself: reading is how a mismatch gets
+ * discovered, and a resolver must still be able to display a claim it is not allowed to
+ * rewrite. Every path that COMPARES or MUTATES a stored row calls this.
+ */
+function assertCurrentMaterialVersion(db: Database.Database, claimId: string): void {
+  const stored = db.prepare(
+    'SELECT claim_id_material_version FROM claim WHERE claim_id = ?',
+  ).pluck().get(claimId) as string | undefined
+  if (stored !== undefined && stored !== CLAIM_ID_MATERIAL_VERSION) {
+    throw new ClaimStorageError('CLAIM_ID_MATERIAL_VERSION_MISMATCH')
+  }
+}
+
+/**
+ * Resolves the layer of every edge target and enforces the dependency order. A missing
+ * target is reported as the same constraint failure the FK would raise, so the check
+ * cannot be used to probe which IDs exist by error code alone.
+ *
+ * Coverage targets are `coverage_ledger` rows — deterministic ledger facts at the
+ * `observed` end of the ladder — so they satisfy the rule for every citing layer; their
+ * existence stays an FK concern.
+ */
+function assertLayerDependencyOrder(
+  db: Database.Database,
+  layer: ClaimLayer,
+  edges: readonly EdgeColumns[],
+): void {
+  const evidenceLayer = db.prepare('SELECT layer FROM evidence WHERE evidence_id = ?').pluck()
+  const claimLayer = db.prepare('SELECT layer FROM claim WHERE claim_id = ?').pluck()
+  for (const edge of edges) {
+    const target = edge.targetEvidenceId !== null
+      ? evidenceLayer.get(edge.targetEvidenceId)
+      : edge.targetClaimId !== null ? claimLayer.get(edge.targetClaimId) : null
+    if (target === null) continue
+    if (typeof target !== 'string') throw new ClaimStorageError('CLAIM_GRAPH_CONSTRAINT_FAILED')
+    if (!claimMayCiteLayer(layer, target as CitableLayer)) {
+      throw new ClaimStorageError('CLAIM_LAYER_ORDER_VIOLATION')
+    }
+  }
 }
 
 function readEdgeTokens(db: Database.Database, claimId: string): string[] {
@@ -520,17 +769,33 @@ function readLimitationTokens(db: Database.Database, claimId: string): string[] 
  */
 export function registerClaim(db: Database.Database, value: unknown): RegisterClaimResult {
   const input = parseOrThrow(RegisterClaimInputSchema, value)
-  const edges = input.edges.map(edgeColumns)
-  const evidenceIds = edges
-    .map((edge) => edge.targetEvidenceId)
-    .filter((id): id is string => id !== null)
+
+  /**
+   * Duplicate-bearing input is valid input: the same basis edge or limitation supplied twice
+   * describes the same fact twice. Dedup once, here, and use the deduped sets for BOTH the
+   * insert and the replay comparison — inserting the raw array while comparing the deduped
+   * set is what made a legal duplicate hard-fail on the unique index.
+   */
+  const edges = [...new Map(input.edges.map((edge) => {
+    const columns = edgeColumns(edge)
+    return [edgeToken(columns), columns] as const
+  })).values()]
+  const edgeTokens = edges.map(edgeToken).sort()
+  const limitations = [...new Map(input.limitations.map((limitation) => [
+    [limitation.limitationCode, limitation.dimension, limitation.copyKey].join('|'),
+    limitation,
+  ] as const)).values()]
+  const limitationTokens = limitations.map((limitation) =>
+    [limitation.limitationCode, limitation.dimension, limitation.copyKey].join('|'),
+  ).sort()
 
   const claim = parseOrThrow(ClaimRecordSchema, {
     claimId: computeClaimId({
+      layer: input.layer,
       statementCode: input.statementCode,
       methodId: input.methodId,
       methodVersion: input.methodVersion,
-      evidenceIds,
+      basis: input.edges,
       windowStart: input.windowStart,
       windowEnd: input.windowEnd,
       scopeId: input.scopeId,
@@ -544,20 +809,30 @@ export function registerClaim(db: Database.Database, value: unknown): RegisterCl
     windowEnd: input.windowEnd,
     scopeId: input.scopeId,
     schemaVersion: CLAIM_SCHEMA_VERSION,
+    claimIdMaterialVersion: CLAIM_ID_MATERIAL_VERSION,
     createdAt: input.createdAt,
     supersededBy: null,
   })
 
-  const edgeTokens = [...new Set(edges.map(edgeToken))].sort()
-  const limitationTokens = [
-    ...new Set(input.limitations.map((limitation) =>
-      [limitation.limitationCode, limitation.dimension, limitation.copyKey].join('|'),
-    )),
-  ].sort()
-
   const apply = db.transaction((): boolean => {
+    /**
+     * Version first, ahead of the read and separately from the content comparison.
+     * `CLAIM_ID_COLLISION` means drift under ONE canonicalisation version; if the stored row
+     * was derived under a different version, its fields are not comparable to ours at all and
+     * the honest answer is a distinct error, not a collision verdict. This is the branch that
+     * stops being dead the day a v3 is appended to `CLAIM_ID_MATERIAL_VERSIONS`.
+     */
+    assertCurrentMaterialVersion(db, claim.claimId)
     const existing = readClaim(db, claim.claimId)
     if (existing) {
+      /**
+       * `createdAt` is deliberately absent from this comparison. It is not ID material, so a
+       * genuine replay of identical inputs at a later wall-clock must be a no-op, not a
+       * collision. First write wins: the stored `created_at` is never rewritten. What remains
+       * comparable is the content that is NOT ID material — limitations above all — so
+       * `CLAIM_ID_COLLISION` now means exactly "content drift under one canonicalisation
+       * version" (ADR-01's failure clause), never "the clock moved".
+       */
       const sameClaim = existing.layer === claim.layer
         && existing.statementCode === claim.statementCode
         && existing.methodId === claim.methodId
@@ -566,7 +841,6 @@ export function registerClaim(db: Database.Database, value: unknown): RegisterCl
         && existing.windowEnd === claim.windowEnd
         && existing.scopeId === claim.scopeId
         && existing.schemaVersion === claim.schemaVersion
-        && existing.createdAt === claim.createdAt
       const sameEdges = readEdgeTokens(db, claim.claimId).join('\n') === edgeTokens.join('\n')
       const sameLimitations =
         readLimitationTokens(db, claim.claimId).join('\n') === limitationTokens.join('\n')
@@ -576,8 +850,10 @@ export function registerClaim(db: Database.Database, value: unknown): RegisterCl
       return false
     }
 
+    assertLayerDependencyOrder(db, claim.layer, edges)
+
     db.prepare(
-      'INSERT INTO claim (claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, created_at, superseded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)',
+      `INSERT INTO claim (${CLAIM_COLUMNS}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
     ).run(
       claim.claimId,
       claim.layer,
@@ -588,6 +864,7 @@ export function registerClaim(db: Database.Database, value: unknown): RegisterCl
       claim.windowEnd,
       claim.scopeId,
       claim.schemaVersion,
+      claim.claimIdMaterialVersion,
       claim.createdAt,
     )
 
@@ -609,7 +886,7 @@ export function registerClaim(db: Database.Database, value: unknown): RegisterCl
     const insertLimitation = db.prepare(
       'INSERT INTO limitation_instance (claim_id, limitation_code, dimension, copy_key) VALUES (?, ?, ?, ?)',
     )
-    for (const limitation of input.limitations) {
+    for (const limitation of limitations) {
       insertLimitation.run(
         claim.claimId,
         limitation.limitationCode,
@@ -628,23 +905,63 @@ const SupersedeClaimInputSchema = z
   .strict()
 
 /**
- * Links a claim to its successor. Both claims must share a stability key: a supersession
- * chain is a series within one statement/method/window/scope, never across scopes.
+ * Bound on the forward walk. The visited set already makes the walk terminate on any cyclic
+ * store — including a cycle that does NOT contain the claim being linked, which is the case a
+ * "does the chain reach me?" check alone would miss. This is the second, independent bound: an
+ * acyclic but pathologically long chain cannot hold the transaction open either. Both refusals
+ * report `CLAIM_SUPERSESSION_CYCLE`, since from the writer's side an unwalkable chain and a
+ * cyclic one are the same refusal.
+ */
+const SUPERSESSION_WALK_LIMIT = 4096
+
+/**
+ * Links a claim to its successor. A supersession chain is a series within one
+ * statement/method/window/scope — and within one layer: relabelling a modelled claim as its
+ * hypothesis "successor" is the ADR-26 violation the layer equality closes, even though the
+ * indexed stability tuple follows ADR-01 and does not carry `layer`.
+ *
+ * Three invariants make the chain a DAG that DL-SPINE-03's walk can terminate on:
+ * - a claim is never re-pointed once superseded (re-pointing the SAME successor is an
+ *   idempotent no-op, so a replayed correction does not fail);
+ * - the successor chain is walked forward before the write, and a link that would reach the
+ *   claim again is refused;
+ * - the walk itself is bounded twice, by a visited set and by a step limit, so it terminates
+ *   even on a store that was made cyclic out of band.
  */
 export function supersedeClaim(db: Database.Database, value: unknown): void {
   const input = parseOrThrow(SupersedeClaimInputSchema, value)
   if (input.claimId === input.supersededBy) throw new ClaimStorageError('CLAIM_CONTRACT_INVALID')
 
   const apply = db.transaction(() => {
+    // Linking two claims whose IDs were derived under different rules is exactly the
+    // cross-version mutation the version stamp exists to refuse.
+    assertCurrentMaterialVersion(db, input.claimId)
+    assertCurrentMaterialVersion(db, input.supersededBy)
     const claim = readClaim(db, input.claimId)
     const successor = readClaim(db, input.supersededBy)
     if (!claim || !successor) throw new ClaimStorageError('CLAIM_UNKNOWN')
     if (
+      claim.layer !== successor.layer ||
       claimStabilityKeyToken(claimStabilityKey(claim)) !==
       claimStabilityKeyToken(claimStabilityKey(successor))
     ) {
       throw new ClaimStorageError('CLAIM_SUPERSESSION_SERIES_MISMATCH')
     }
+    if (claim.supersededBy !== null) {
+      if (claim.supersededBy === input.supersededBy) return
+      throw new ClaimStorageError('CLAIM_SUPERSESSION_CONFLICT')
+    }
+
+    const nextInChain = db.prepare('SELECT superseded_by FROM claim WHERE claim_id = ?').pluck()
+    const visited = new Set<string>([claim.claimId])
+    let cursor: string | null = successor.claimId
+    for (let step = 0; cursor !== null; step += 1) {
+      if (visited.has(cursor)) throw new ClaimStorageError('CLAIM_SUPERSESSION_CYCLE')
+      if (step >= SUPERSESSION_WALK_LIMIT) throw new ClaimStorageError('CLAIM_SUPERSESSION_CYCLE')
+      visited.add(cursor)
+      cursor = (nextInChain.get(cursor) as string | null | undefined) ?? null
+    }
+
     db.prepare('UPDATE claim SET superseded_by = ? WHERE claim_id = ?')
       .run(input.supersededBy, input.claimId)
   })

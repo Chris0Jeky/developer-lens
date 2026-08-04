@@ -108,6 +108,15 @@ Open <http://127.0.0.1:5173/?demo=v2>. To run its focused smoke coverage without
 npm run test:demo:v2
 ```
 
+### Try the V2 coverage cockpit
+
+Run `npm run seed:v2` to write the invented coverage fixtures into
+`.developer-lens-synthetic/` (a gitignored directory kept separate from the private
+`.developer-lens/` runtime data), then export the same value as `DEVELOPER_LENS_V2_TOKEN` and
+`VITE_DEVELOPER_LENS_V2_TOKEN`, start `npm run dev`, and open
+<http://127.0.0.1:5173/?view=cockpit-v2>; without both variables the cockpit reports that it holds
+no bearer instead of rendering an empty panel.
+
 For a prepared 3-5 minute walkthrough, use the
 [`showcase demo runbook`](docs/SHOWCASE_DEMO.md). It gives the exact hosted and local routes, a short
 talk track, the privacy boundary to state aloud, and the unfinished activation paths that must not

@@ -1,8 +1,14 @@
 # Claim graph v1 — table proposal (DL-SPINE-01/02)
 
-Status: proposal only. STRICT SQLite tables, FK-bound, additive to the P2 store.
+Status: **implemented by DL-SPINE-01** (PR #74, merge `75e7c39`) with the deltas marked below.
+This file stays design history, not a second source of truth — `shared/claims.ts` and
+`server/storage/claims.ts` are authoritative for the shipped shape.
 Revised 2026-08-04 (reconciliation): typed edge targets with real FKs; C2 scope reference split
 out of the C1 claim row; pack projection re-mints pack-local claim IDs.
+Shipped deltas: an `evidence` anchor table exists because the P2 store had no evidence table, so
+evidence-typed edges had nothing to reference; coverage-typed edges carry a **composite** FK into
+`coverage_ledger`'s `(coverage_id, range_start, job_id)` primary key, which no single-column FK
+could express; `claim_scope` also carries `linked_at` (first-link-wins).
 
 ```sql
 -- proposal, non-executable illustration
@@ -37,9 +43,13 @@ CREATE TABLE claim_evidence_edge (
   claim_id TEXT NOT NULL REFERENCES claim(claim_id),
   -- typed targets: exactly one non-null, all real FKs (unconstrained polymorphic text is
   -- prohibited — SQLite must reject dangling targets)
+  -- as shipped: `evidence` is the minimal anchor table SPINE-01 adds (the P2 store had none)
   target_evidence_id TEXT REFERENCES evidence(evidence_id),
   target_claim_id TEXT REFERENCES claim(claim_id),        -- derives_from
-  target_coverage_id TEXT REFERENCES coverage(coverage_id),
+  -- as shipped: coverage targets are a COMPOSITE FK into coverage_ledger's real key
+  target_coverage_id TEXT, target_coverage_range_start TEXT, target_coverage_job_id TEXT,
+  FOREIGN KEY (target_coverage_id, target_coverage_range_start, target_coverage_job_id)
+    REFERENCES coverage_ledger(coverage_id, range_start, job_id),
   role TEXT NOT NULL CHECK (role IN
     ('supports','contradicts','contextualizes','derives_from','coverage_basis','limitation_basis')),
   CHECK ((target_evidence_id IS NOT NULL) + (target_claim_id IS NOT NULL)
@@ -85,7 +95,8 @@ Example claim row (invented):
   "edges": [
     {"target_evidence_id": "ev_det_4", "role": "supports"},
     {"target_evidence_id": "ev_det_5", "role": "contradicts"},
-    {"target_coverage_id": "cov_112", "role": "coverage_basis"}
+    {"target_coverage_id": "cov_112", "target_coverage_range_start": "2026-01-05T00:00:00Z",
+     "target_coverage_job_id": "job_31", "role": "coverage_basis"}
   ],
   "limitations": [
     {"limitation_code": "GH_ACTIONS_FILTERED_1000_CAP", "dimension": "completeness", "copy_key": "hyp.ci_shift.truncated"}

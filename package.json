@@ -10,6 +10,7 @@
     "collect": "tsx scripts/collect.ts",
     "analyze": "tsx scripts/analyze.ts",
     "export:demo": "tsx scripts/exportDemo.ts",
+    "seed:v2": "tsx server/api/v2/syntheticImporter.ts",
     "render:social": "tsx scripts/renderSocialCard.ts",
     "build": "tsc -b && vite build",
     "build:showcase": "npm run export:demo && npm run render:social && tsc -b && vite build --base=/developer-lens/ --mode showcase && npm run verify:showcase",

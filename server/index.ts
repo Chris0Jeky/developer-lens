@@ -51,6 +51,8 @@ app.get('/api/status', async (_request, response, next) => {
   }
 })
 
+app.use('/api/v2', await import('./api/v2/mount.js').then((module) => module.mountV2()))
+
 if (production) {
   const currentDirectory = fileURLToPath(new URL('.', import.meta.url))
   const dist = join(currentDirectory, '..', 'dist')
