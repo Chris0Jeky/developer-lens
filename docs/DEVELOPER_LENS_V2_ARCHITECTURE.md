@@ -59,7 +59,9 @@ review, and proceeds to D3 when the acceptance above is met.
 #### Exact D1 task card
 
 - **Journey:** run `npm run dev:web`, open `http://127.0.0.1:5173/?demo=v2`, filter Observed,
-  Derived, and Hypothesis signals, and inspect evidence/caveat text. No API server is required.
+  Derived, and Hypothesis signals, inspect evidence/caveat and confidence text, and end on the
+  hypothesis card's question about what evidence could change the interpretation. No API server is
+  required.
 - **Owned paths:** add `shared/v2Demo.ts` and `src/components/V2Demo.tsx`; modify `src/App.tsx`
   and `src/App.test.tsx` only.
 - **Boundary:** `App` selects the V2 demo before `useDashboard` mounts. The fixture module registers
@@ -70,7 +72,8 @@ review, and proceeds to D3 when the acceptance above is met.
 - **Non-goals:** no edits to `server/demo.ts`, `server/dataStore.ts`, `server/index.ts`,
   `scripts/exportDemo.ts`, collection, storage, network, migration, or public-showcase generation.
 - **Proof:** `npm test -- src/App.test.tsx`, then `npm run check`. The focused test proves all three
-  evidence levels render and filter, registered fixture classes are C0, and `fetch` is never called.
+  evidence levels render and filter, the question remains in the strict C0 fixture/presentation
+  seam, registered fixture classes are C0, and `fetch` is never called.
 - **Known limitation:** D1 proves a visible C0 presentation seam, not canonical-envelope,
   provenance, coverage, persistence, or real-data integration. Those do not block the demo.
 

@@ -45,10 +45,12 @@ cross-binds the task ID and strict current-time parser, builds one exact credent
 preview, and binds the reviewed bundle ID plus SHA-256 digests of its exact UTF-8 bundle JSON and
 request body. Published P12 adds the first authorization-bearing HTTP adapter: a genuine
 bound preview is revalidated before the one named environment lookup, one finite-timeout fetch, and
-strict body/output/usage projection. It remains uncalled and default-off. The current D1 candidate
+strict body/output/usage projection. It remains uncalled and default-off. Published D1
 adds one static, sink-validated question to carry forward on the invented hypothesis card so the
 story ends with evidence that could change the interpretation rather than a score or prescribed
-action. The external-
+action. The closeout documentation links a 3-5 minute synthetic walkthrough, exact local/hosted
+routes, achieved foundations, and explicit claims to avoid; it changes no product or activation
+behavior. The external-
 model capability is still
 `never_authorized`; there is no task-card/runtime caller, actual environment read, network/provider
 execution, cache, telemetry, persistence, export, or presentation path**.
@@ -79,8 +81,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current D1 reflection-question candidate:
-  `origin/main` merge `4566448035d5359b671db2edc937823341941009`.
+- Published product baseline before this documentation-only closeout:
+  `origin/main` merge `57eef928a64f5c99e17eba1390dbe95d5878391a`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -710,7 +712,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- The current D1 reflection-question candidate keeps its only new copy inside the registered C0
+- D1 reflection-question [PR #56](https://github.com/Chris0Jeky/developer-lens/pull/56) keeps its
+  only new copy inside the registered C0
   public-demo payload and renders it as a static, accessible complementary region on the hypothesis
   card. The focused InsightStack/App suites passed 2 files / 6 tests; `npm run test:demo:v2` passed
   1 file / 5 tests. After rebasing onto key-continuity merge `4566448`, `npm run check` passed
@@ -719,10 +722,13 @@ unresolved review threads outrank it whenever they disagree.
   export generation, social rendering, the showcase build, synthetic identity/export-boundary
   verification, and secret/path scans; `git diff --check` passed. In-app browser inspection at the
   normal desktop viewport and 390 x 844 found the question visible, readable, filter-preserving, and
-  free of horizontal document overflow. Fresh-context review found no CRITICAL/HIGH correctness,
+  free of horizontal document overflow. Fresh exact-base review found no CRITICAL/HIGH correctness,
   public-sink, humane-copy, accessibility, responsive, or missing-test defect. Its nonblocking
   schema-layer coupling and unusually small-copy observations are tracked in
-  [#55](https://github.com/Chris0Jeky/developer-lens/issues/55) rather than expanding this slice.
+  [#55](https://github.com/Chris0Jeky/developer-lens/issues/55) rather than expanding this slice. The
+  PR merged with commit preservation at `57eef92`; exact-merge hosted Pages run `30897542519`
+  passed the full gate, synthetic showcase privacy verifier, artifact upload, and deployment. Both
+  job annotation lists and the post-merge review sweep were empty.
 - P4 key-continuity [PR #60](https://github.com/Chris0Jeky/developer-lens/pull/60) published logic
   commit `73c9e03` and evidence commit `0e90548` on activation-runner merge `cdae7c1`. The focused
   key suite passed 1 file / 12 tests. `npm run check` passed Oxlint, context
@@ -1308,16 +1314,19 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current D1 reflection-
-   question candidate is merge `4566448035d5359b671db2edc937823341941009`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published product baseline before this documentation-
+   only closeout is merge `57eef928a64f5c99e17eba1390dbe95d5878391a`; live evidence still outranks
    this checkpoint.
-2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
+2. The owner ended the autonomous continuation after the documentation/demo closeout. Do not start
+   backup/restore, a real selected-repository read, or an OpenAI/Luna request without a new owner
+   request.
+3. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
    activated hostile-writer claim without an immutable snapshot or equivalent boundary.
-3. G2 and standing G3 are approved, but no real path is automatically active. Reconcile issue #6's
+4. G2 and standing G3 are approved, but no real path is automatically active. Reconcile issue #6's
    duplicate-identity/key-continuity acceptance and issue #5's local-name/identity-vault boundary
    before a real v1 migration. Use invented fixtures and a new bounded task card first.
-4. The exact repository is owner-selected in an ignored local task card; its parser, confined
+5. The exact repository is owner-selected in an ignored local task card; its parser, confined
    descriptor-bound loader, and injected public-unauthenticated transport expose no identity or
    operational values in tracked state. The shared alias factory now preserves existing repository
    identities and defines closed unit/page domains; the opt-in store preserves restricted
@@ -1334,7 +1343,7 @@ unresolved review threads outrank it whenever they disagree.
    task-owned database through a durable reviewed report, then add backup/restore, scoped deletion/
    tombstone, revocation/re-consent, and caller-clock proof. Keep runtime default-off and make no
    real request until those controls, focused failure tests, review, and exact hosted gates pass.
-5. G4 is approved only for the exact OpenAI/Luna contract, but `cap.external.model` remains
+6. G4 is approved only for the exact OpenAI/Luna contract, but `cap.external.model` remains
    `never_authorized`. The strict C1 payload/output and deterministic local-retrieval foundation is
    present, and the credentialless request boundary now enforces native strict output, standard
    service tier, serialized byte/cost ceilings, `store:false`, and one call/no retry. The published
