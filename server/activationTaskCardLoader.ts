@@ -121,7 +121,8 @@ function scanJsonArray(text: string, start: number): number {
   throw new Error('unterminated JSON array')
 }
 
-function parseJsonWithoutDuplicateKeys(text: string): unknown {
+/** @internal Strict JSON parser shared by confined response/card boundaries. */
+export function parseJsonWithoutDuplicateKeys(text: string): unknown {
   const end = scanJsonValue(text, 0)
   if (skipWhitespace(text, end) !== text.length) throw new Error('trailing JSON value')
   return JSON.parse(text)

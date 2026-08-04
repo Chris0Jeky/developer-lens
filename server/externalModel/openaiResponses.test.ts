@@ -7,7 +7,6 @@ import {
   OpenAiLunaPriceQuoteSchema,
   OpenAiLunaRequestError,
   buildOpenAiLunaRequest,
-  sendOpenAiLunaRequest,
 } from './openaiResponses.js'
 import type { C1EvidenceBundle } from './c1Contract.js'
 
@@ -23,15 +22,6 @@ const bundle = {
     value: 0.08, unit: 'ratio', coverage: { status: 'complete', sample: 75 }, limitation_code: 'RERUN_NOT_FLAKE',
   }],
 } as unknown as C1EvidenceBundle
-
-const output = {
-  schema_version: '1.0.0', request_id: bundle.bundle_id,
-  claims: [{
-    claim_id: 'claim_01', kind: 'hypothesis', statement_code: 'CI_RERUN_PATTERN',
-    evidence_ids: ['ev_001'], contradicting_evidence_ids: [], alternative_codes: ['SEASONALITY'],
-    confidence_band: 'low', limitation_codes: ['RERUN_NOT_FLAKE'],
-  }],
-}
 
 const priceQuote = {
   model: 'gpt-5.6-luna' as const,
@@ -49,7 +39,7 @@ function expectCode(action: () => unknown, code: string): void {
   expect(action).toThrowError(new OpenAiLunaRequestError(code as never))
 }
 
-describe('injected OpenAI/Luna Responses boundary', () => {
+describe('credentialless OpenAI/Luna Responses request boundary', () => {
   it('builds an exact credentialless descriptor with a closed body allowlist', () => {
     const request = buildOpenAiLunaRequest({ bundle, priceQuote, now })
     expect(request).toMatchObject({ method: 'POST', url: OPENAI_LUNA_ENDPOINT })
@@ -138,50 +128,4 @@ describe('injected OpenAI/Luna Responses boundary', () => {
     expectCode(() => buildOpenAiLunaRequest({ bundle: nearLimit, priceQuote, now }), 'OPENAI_LUNA_INPUT_TOO_LARGE')
   })
 
-  it('calls exactly once, never retries, and returns only validated structured output', async () => {
-    let calls = 0
-    const result = await sendOpenAiLunaRequest({
-      bundle, priceQuote, now,
-      call: async (request) => {
-        calls += 1
-        expect(request.url).toBe(OPENAI_LUNA_ENDPOINT)
-        return { status: 200, structuredOutput: output }
-      },
-    })
-    expect(calls).toBe(1)
-    expect(result).toEqual(output)
-
-    calls = 0
-    await expect(sendOpenAiLunaRequest({
-      bundle, priceQuote, now,
-      call: async () => { calls += 1; throw new Error('SECRET_PROVIDER_BODY') },
-    })).rejects.toThrow('OPENAI_LUNA_CALL_FAILED')
-    expect(calls).toBe(1)
-  })
-
-  it('rejects non-2xx, raw provider fields, and invalid output without leaking content', async () => {
-    await expect(sendOpenAiLunaRequest({
-      bundle, priceQuote, now,
-      call: async () => ({ status: 503, structuredOutput: { provider_id: 'SECRET_PROVIDER_ID' } }),
-    })).rejects.toThrow('OPENAI_LUNA_PROVIDER_STATUS')
-
-    await expect(sendOpenAiLunaRequest({
-      bundle, priceQuote, now,
-      call: async () => ({ status: 200, structuredOutput: { ...output, claims: [{ ...output.claims[0], evidence_ids: ['ev_999'] }] } }),
-    })).rejects.toThrow('OPENAI_LUNA_OUTPUT_INVALID')
-
-    await expect(sendOpenAiLunaRequest({
-      bundle, priceQuote, now,
-      call: async () => ({ status: 200, structuredOutput: output, body: 'SECRET_PROVIDER_BODY' } as never),
-    })).rejects.toThrow('OPENAI_LUNA_CALL_FAILED')
-    try {
-      await sendOpenAiLunaRequest({
-        bundle, priceQuote, now,
-        call: async () => { throw new Error('SECRET_PROVIDER_BODY') },
-      })
-    } catch (error) {
-      expect((error as Error).message).not.toContain('SECRET_PROVIDER_BODY')
-      expect((error as Error).message).not.toContain('SECRET_PROVIDER_ID')
-    }
-  })
 })

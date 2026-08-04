@@ -37,16 +37,18 @@ only. Published P4 feeds only those reviewed complete/noncomplete composition ou
 store and proves replay, per-job snapshot identity, and checkpoint preservation with invented in-
 memory fixtures. Published P4 accepts the coherent post-metadata zero-page truncation that occurs
 when the request budget or rate limit is exhausted before the first unit page, while preserving
-noncomplete coverage with no cursor, snapshot, or checkpoint movement. The current P4 candidate
-cross-checks every supplied failure kind against one canonical limitation code before retry
+noncomplete coverage with no cursor, snapshot, or checkpoint movement. Published P4 cross-checks
+every supplied failure kind against one canonical limitation code before retry
 classification. Published P12
 extracts the proven confined activation-card reader,
 cross-binds the task ID and strict current-time parser, builds one exact credentialless request
 preview, and binds the reviewed bundle ID plus SHA-256 digests of its exact UTF-8 bundle JSON and
-request body. The external-
+request body. The current P12 candidate adds the first authorization-bearing HTTP adapter: a genuine
+bound preview is revalidated before the one named environment lookup, one finite-timeout fetch, and
+strict body/output/usage projection. It remains uncalled and default-off. The external-
 model capability is still
-`never_authorized`; there is no environment read, authorization-bearing transport, network/provider
-execution, raw response, cache, telemetry, persistence, or presentation path**.
+`never_authorized`; there is no task-card/runtime caller, actual environment read, network/provider
+execution, cache, telemetry, persistence, export, or presentation path**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -54,8 +56,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current P4 failure-pairing candidate:
-  `origin/main` merge `fa4e19482fa46f4cf067563e29fe7d24f0501359`.
+- Published implementation baseline before the current P12 HTTP-adapter candidate:
+  `origin/main` merge `8ca3a626be4f33003a9303bb09e6b67b4560cc56`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -664,15 +666,44 @@ unresolved review threads outrank it whenever they disagree.
   or binding failure to one content-free code. It adds no filesystem, card read, environment,
   credential, network, provider, send callback, cache, telemetry, persistence, log, runtime caller,
   export, or presentation surface.
-- This foundation does not activate `cap.external.model` and includes no environment read,
-  credential/Authorization surface, SDK, HTTP implementation, provider response parser/body/ID,
-  timeout, cache, telemetry, persistence, presentation, export, or public path. A later activation
-  slice must bind a separately reviewed task card, freshly revalidated model/price/data terms, the
-  one named environment credential, a body-discarding transport, and a user-reviewable exact payload
-  preview before any real request.
+- The current candidate brands every bound preview with one module-private symbol plus process-local
+  WeakSet membership, deep-freezes it, and revalidates card freshness, all three payload bindings,
+  canonical bundle bytes, and the exact credentialless request immediately before credential access.
+  The former exported callback sender is removed, so an unbound caller can no longer reach a send
+  surface through `openaiResponses.ts`.
+- `openaiHttpAdapter.ts` caps the complete response at 256 KiB, covers fetch and streamed body parsing
+  with the reviewed finite timeout, disables redirects, performs exactly one fetch with no retry,
+  requires a 2xx `application/json` terminal `completed` Luna response with one completed assistant
+  `output_text`, and rejects refusal, nonterminal, duplicate-key, malformed UTF-8, oversize, unknown-
+  output, invalid evidence, usage, or cost shapes with stable content-free errors. Raw bodies,
+  provider IDs, metadata, errors, and the credential remain process-lifetime only; the frozen return
+  contains only validated `ModelOutput` and four allowlisted numeric usage/cost fields.
+- The production wrapper reads only `Llm__OpenAi__ApiKey` at invocation and uses global fetch. Its
+  injected `@internal` proof seam still requires the genuine reviewed binding and passes only that
+  exact credential identifier to the fake accessor. Tests use invented responses and a fake accessor;
+  no real environment value, network, provider, cache, telemetry, persistence, log, export, or
+  presentation path is touched. `cap.external.model` remains `never_authorized`, and there is no
+  loader/task-card/runtime caller.
 
 ## Verification
 
+- The current P12 HTTP-adapter candidate was rebased onto failure-pairing merge `8ca3a62`;
+  `server/connectors/github/activationTaskLoader.test.ts`, the OpenAI card-loader, request, preview,
+  and HTTP-adapter suites passed 5 files / 32 tests.
+  `npm run check` passed Oxlint, context verification, 40 test files / 221 tests, TypeScript project
+  builds, and the production Vite build; `git diff --check` passed. Tests injected only invented
+  credentials/responses and never referenced the real process environment variable. Exact rebased-
+  head adversarial review found no CRITICAL/HIGH credential, request-byte, timeout, response-shape,
+  usage/cost, raw-discard, or API-surface defect.
+- P4 failure-pairing [PR #53](https://github.com/Chris0Jeky/developer-lens/pull/53) merged as `8ca3a62`
+  after rebasing onto zero-page merge `fa4e194`; it maps `rate_limited` only to `RATE_LIMITED` and
+  every other closed failure kind only to `FAILURE_<KIND>`. Mismatches reject before a transition;
+  the REST composer canonicalizes provider-facing `TRANSIENT` to `FAILURE_TRANSIENT` while preserving
+  retry classification. The focused suites passed 4 files / 56 tests and `npm run check` passed 39
+  files / 214 tests, Oxlint, context, TypeScript, and Vite; `git diff --check` passed. Exact review
+  found no CRITICAL/HIGH defect. Exact-merge hosted Pages run `30891660795` passed the full gate,
+  privacy verification, artifact upload, and deployment, closing
+  [#42](https://github.com/Chris0Jeky/developer-lens/issues/42).
 - Pages Node 24 actions [PR #51](https://github.com/Chris0Jeky/developer-lens/pull/51) merged as
   `97498b2` and advances `configure-pages` from v5 to v6,
   `upload-pages-artifact` from v4 to v5, and `deploy-pages` from v4 to v5. Their official releases
@@ -693,13 +724,6 @@ unresolved review threads outrank it whenever they disagree.
   invented in-memory persistence and write-free replay of the new outcome. Exact-merge hosted Pages
   run `30891084948` passed the full gate, privacy verification, artifact upload, and deployment; its
   post-merge sweep was empty, closing [#46](https://github.com/Chris0Jeky/developer-lens/issues/46).
-- The current P4 failure-pairing candidate maps `rate_limited` only to `RATE_LIMITED` and every other
-  closed failure kind only to `FAILURE_<KIND>`. Mismatches reject before a transition; the REST
-  composer canonicalizes its provider-facing `TRANSIENT` code to `FAILURE_TRANSIENT` while preserving
-  retry classification. The focused core, REST transport/composition, and storage-composition suites
-  passed 4 files / 56 tests, including all six valid pairs and their invented mismatches. `npm run
-  check` passed Oxlint, context verification, 39 test files / 214 tests, TypeScript project builds,
-  and the production Vite build; `git diff --check` passed.
 - P4 storage-replay [PR #50](https://github.com/Chris0Jeky/developer-lens/pull/50) merged as `41df4fc`
   after rebasing onto payload-preview merge `2d4cdc7`; the focused core,
   REST composition, incremental storage, and cross-seam storage suites passed 4 files / 64 tests.
@@ -1065,9 +1089,9 @@ unresolved review threads outrank it whenever they disagree.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
 - G2/G3 runtime behavior is not verified merely by approval: no real-data migration, retention
   cleanup, backup, deletion, or named sensitive connector ran in this slice. G4 is now approved
-  only for the recorded OpenAI/Luna boundary; the C1, local-retrieval, and credentialless request
-  foundations remain process-local and no credential-bearing adapter, external transport, or real
-  provider request has run.
+  only for the recorded OpenAI/Luna boundary. The C1/retrieval/request/adapter candidate remains
+  process-local and default-off; no production wrapper, real environment value, external request, or
+  provider response has run.
 - The story-uncertainty slice was inspected in normal desktop and 390 x 844 viewport screenshots,
   but CSS-disabled and print rendering were not separately verified. Caveat text remains available in
   accessible names and the existing insight cards if the decorative rail cue is unavailable.
@@ -1095,12 +1119,17 @@ unresolved review threads outrank it whenever they disagree.
   replayed file again before accepting it. Completed packs remain immutable by contract; an
   activated hostile-writer claim would still need an immutable snapshot or an equivalent stronger
   boundary to exclude an adversarial replace-read-restore sequence.
-- The P12 request seam, activation-card parser, and current confined loader validate caller-injected
+- The P12 request seam, activation-card parser, and confined loader validate caller-injected
   canonical pricing/evidence timestamps, freshness, and review chronology but cannot authenticate
-  page content. The published pure preview recomputes and requires the reviewed bundle/body bindings,
-  but deliberately has no credential reader,
-  HTTP timeout/body parser, usage receipt, output retention, or presentation path; those remain
+  page content. The published pure preview recomputes and requires the reviewed bundle/body bindings.
+  The candidate adapter adds credential/HTTP/output handling but deliberately has no card loader or
+  runtime caller, provider request proof, output persistence, or presentation path; those remain
   separate reviewed boundaries before a real call.
+- The exported `@internal` adapter core permits invented credential/fetch injection solely so tests
+  never inspect the real process environment. It has no production import; the production wrapper
+  alone reads the approved variable and native fetch. A malicious injected body could ignore
+  `AbortSignal` and continue after the caller receives a timeout, so the future runtime runner must
+  import only the production wrapper and must not expose injected dependencies as activation input.
 - The shared reader returns mutable parsed `unknown` before domain validation. Its only production
   wrappers immediately parse and return deeply frozen GitHub/OpenAI cards; no generic value has a
   runtime consumer, and widening that surface would require a separate review.
@@ -1136,10 +1165,9 @@ unresolved review threads outrank it whenever they disagree.
   calendar fields. JavaScript's legacy year `0000`-`0099` arithmetic can still weaken the three-year
   cap for ancient ranges; current-era behavior is unaffected and the residual remains separately
   tracked in [#41](https://github.com/Chris0Jeky/developer-lens/issues/41).
-- The current candidate cross-checks every caller-provided failure kind and limitation code as a
-  closed semantic pair, with mismatch regressions for
-  [#42](https://github.com/Chris0Jeky/developer-lens/issues/42); the issue remains open until exact
-  merge proof.
+- Published noncomplete reconciliation cross-checks every caller-provided failure kind and limitation
+  code as a closed semantic pair; exact merge proof closed
+  [#42](https://github.com/Chris0Jeky/developer-lens/issues/42).
 - An invalid repository-alias callback remains an explicitly unbound pre-request failure even after
   range syntax was validated. It performs no request or observation and cannot be composed; the
   exact state-boundary choice remains tracked in
@@ -1181,8 +1209,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current P4 failure-pairing
-   candidate is merge `fa4e19482fa46f4cf067563e29fe7d24f0501359`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P12 HTTP-adapter
+   candidate is merge `8ca3a626be4f33003a9303bb09e6b67b4560cc56`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -1200,8 +1228,8 @@ unresolved review threads outrank it whenever they disagree.
    outcomes and produces frozen, checkpoint-preserving transitions without snapshot material. The
    published storage seam proves complete/noncomplete composition-to-storage and same-job/distinct-
    job replay with invented in-memory fixtures. Published composition closes the zero-page post-
-   metadata gap. The current candidate closes failure-kind/limitation pairing in issue #42. Next add
-   the bounded real runner and hostile-provider two-read stability classification before issue
+   metadata gap and failure-kind/limitation pairing. Next add the bounded real runner and hostile-
+   provider two-read stability classification before issue
    #6 key-
    lifecycle/mismatch enforcement,
    backup/restore, scoped deletion/tombstone, re-consent, and snapshot-stability proof. Keep runtime
@@ -1213,7 +1241,8 @@ unresolved review threads outrank it whenever they disagree.
    service tier, serialized byte/cost ceilings, `store:false`, and one call/no retry. The published
    activation slice adds the strict reviewed-card parser and confined task-ID-bound loader.
    The published preview authenticates the exact credentialless bundle/body against all three
-   reviewed payload bindings. Next add an authorization-bearing
-   transport that reads only the approved environment variable at call time, applies a finite timeout,
-   extracts only structured output, and discards raw provider bodies/IDs. Make no live request until
-   those implementations, reviews, exact hosted gates, and task-card authorization pass.
+   reviewed payload bindings. The current adapter candidate reads only the approved environment
+   variable at call time, applies a whole-response timeout, extracts only validated structured output
+   plus numeric usage, and discards raw provider bodies/IDs. Next bind the confined card loader to one
+   runtime invocation with an explicit user-reviewable preview. Make no live request until this
+   adapter's review/exact hosted gate and that runtime task-card authorization pass.
