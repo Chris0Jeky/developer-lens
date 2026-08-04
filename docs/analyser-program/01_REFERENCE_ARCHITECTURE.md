@@ -95,7 +95,9 @@ store.
   index_deleted}, `caused_by`, `occurred_at`.
 
 Claim IDs are deterministic: `cl_` + SHA-256 over (`statement_code`, `method_id@version`,
-canonical-ordered input evidence IDs, window, scope alias, schema version). Replay of the same
+canonical-ordered input evidence IDs, window, the content-free `scope_id` surrogate, schema
+version) — the C2 `scope_alias` value is never hashed into a C1 identifier (corrected 2026-08-04
+review round). Replay of the same
 inputs reproduces identical claim IDs; a changed input set produces a new claim and a
 `superseded_by` link. "Why am I seeing this?" resolves UI element → claim → edges → evidence →
 coverage → capability → consent revision in one deterministic walk.
@@ -120,7 +122,8 @@ IDs, windows) is C1, but the installation-scoped `scope_alias` reference is **C2
 charter's alias-link classification (13-month local-only boundary): the local scope reference
 lives in a C2 partition and never inherits C1's 36-month retention or C1-only retrieval/export
 paths. Pack projection emits a fresh **pack-scoped C1 alias** in its place. Additionally, because
-canonical claim IDs are derived from installation-scoped evidence IDs and `scope_alias`, copying
+canonical claim IDs are derived from installation-scoped evidence IDs and the content-free
+`scope_id` surrogate (corrected 2026-08-04 review round; never the C2 alias value), copying
 them into packs would create a stable cross-pack linkage key: the pack builder **re-mints
 pack-local claim IDs** from the pack-scoped evidence/scope identifiers and transactionally
 rewrites every edge, lineage, and `superseded_by` reference during projection. No new class or
