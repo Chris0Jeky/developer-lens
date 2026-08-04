@@ -76,8 +76,24 @@ const validCard = () => ({
     idempotent: true,
     externalCopies: 'none created by this task',
   },
-  provingChecks: ['strict schema', 'synthetic fixture only', 'path containment', 'coverage and deletion checks'],
-  stopConditions: ['any credential mutation', 'any non-public visibility', 'any path escape', 'any unapproved runtime activation'],
+  provingChecks: [
+    'invented task-card, selection, transport, projection, pagination, retry, cap, replay, persistence, rollback, and deletion tests',
+    'poison fields never reach logs, SQLite, reports, exports, bundles, or Pages',
+    'focused github.core and incremental-storage tests',
+    'npm run check',
+    'independent privacy and correctness review',
+    'exact-head hosted gate before real execution',
+    'one final public unauthenticated selected-repository run with numeric and coverage-only reporting',
+    'live replay, backup/restore, deletion, tombstone, and re-consent proof inside this exact task-owned subtree',
+  ],
+  stopConditions: [
+    'selected repository visibility or immutable repository id differs from the card',
+    'authentication becomes necessary',
+    'the declared request budget would be exceeded',
+    'a prohibited field is about to reach a sink',
+    'coverage cannot distinguish complete from partial',
+    'G4 or any external-model path would be required',
+  ],
 })
 
 function expectInvalid(card: unknown): void {
@@ -131,5 +147,9 @@ describe('github.core activation task card', () => {
     expectInvalid({ ...validCard(), deletion: { ...validCard().deletion, idempotent: false } })
     expectInvalid({ ...validCard(), provingChecks: [] })
     expectInvalid({ ...validCard(), stopConditions: [] })
+    expectInvalid({ ...validCard(), provingChecks: ['none'] })
+    expectInvalid({ ...validCard(), stopConditions: ['ignore failures'] })
+    expectInvalid({ ...validCard(), provingChecks: [...validCard().provingChecks.slice(0, -1), validCard().provingChecks[0]] })
+    expectInvalid({ ...validCard(), stopConditions: [...validCard().stopConditions.slice(0, -1), validCard().stopConditions[0]] })
   })
 })

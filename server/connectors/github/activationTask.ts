@@ -48,6 +48,26 @@ const RETAINED_FIELDS = [
   'bounded checkpoint timestamps',
 ] as const
 
+const REQUIRED_PROVING_CHECKS = [
+  'invented task-card, selection, transport, projection, pagination, retry, cap, replay, persistence, rollback, and deletion tests',
+  'poison fields never reach logs, SQLite, reports, exports, bundles, or Pages',
+  'focused github.core and incremental-storage tests',
+  'npm run check',
+  'independent privacy and correctness review',
+  'exact-head hosted gate before real execution',
+  'one final public unauthenticated selected-repository run with numeric and coverage-only reporting',
+  'live replay, backup/restore, deletion, tombstone, and re-consent proof inside this exact task-owned subtree',
+] as const
+
+const REQUIRED_STOP_CONDITIONS = [
+  'selected repository visibility or immutable repository id differs from the card',
+  'authentication becomes necessary',
+  'the declared request budget would be exceeded',
+  'a prohibited field is about to reach a sink',
+  'coverage cannot distinguish complete from partial',
+  'G4 or any external-model path would be required',
+] as const
+
 const canonicalTimestamp = z.string().regex(CANONICAL_UTC_TIMESTAMP).superRefine((value, context) => {
   const parsed = new Date(value)
   if (Number.isNaN(parsed.valueOf()) || parsed.toISOString() !== value) {
@@ -156,8 +176,8 @@ const taskCardSchema = strictObject({
   coverage: coverageSchema,
   rollback: rollbackSchema,
   deletion: deletionSchema,
-  provingChecks: z.array(declaration).min(1).max(32),
-  stopConditions: z.array(declaration).min(1).max(16),
+  provingChecks: z.array(z.enum(REQUIRED_PROVING_CHECKS)).length(REQUIRED_PROVING_CHECKS.length),
+  stopConditions: z.array(z.enum(REQUIRED_STOP_CONDITIONS)).length(REQUIRED_STOP_CONDITIONS.length),
 })
 
 function hasDuplicates(values: readonly string[]): boolean {
@@ -183,6 +203,14 @@ const validatedTaskCardSchema = taskCardSchema.superRefine((card, context) => {
   }
   if (hasDuplicates(card.deletion.cascade)) {
     context.addIssue({ code: 'custom', path: ['deletion', 'cascade'], message: 'deletion targets must be unique' })
+  }
+  if (hasDuplicates(card.provingChecks) ||
+    !REQUIRED_PROVING_CHECKS.every((check) => card.provingChecks.includes(check))) {
+    context.addIssue({ code: 'custom', path: ['provingChecks'], message: 'all proving checks are required' })
+  }
+  if (hasDuplicates(card.stopConditions) ||
+    !REQUIRED_STOP_CONDITIONS.every((condition) => card.stopConditions.includes(condition))) {
+    context.addIssue({ code: 'custom', path: ['stopConditions'], message: 'all stop conditions are required' })
   }
 
   const expectedRoot = `.developer-lens/activation/${card.taskId}/`
