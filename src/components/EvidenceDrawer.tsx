@@ -34,8 +34,13 @@ import type {
  * Server-code discipline (mandatory): every import from `whyResolver.js` is `import type`.
  * That module type-imports `better-sqlite3`, so a runtime import would drag a native binding
  * into the showcase bundle; here the types are erased at build and runtime data arrives only
- * through the `resolve` prop. `npm run build:showcase` plus the native-dep scan of `dist`
- * prove the discipline held.
+ * through the `resolve` prop. Two AUTOMATED nets hold this — not a manual scan:
+ * 1. `tsc -b` under `verbatimModuleSyntax` (tsconfig.app.json): turning any of these into a
+ *    value import of server code is a compile error, because a name used only as a type cannot
+ *    be value-imported — so the native module can never even reach the bundler.
+ * 2. `scripts/verifyShowcase.ts` (run by `npm run build:showcase`) fails the build if a
+ *    native-dependency marker (`better-sqlite3`, `better_sqlite3`, `duckdb`, `node-gyp`) appears
+ *    in any emitted `dist` asset — the backstop for anything that slips past net 1.
  *
  * Two house rules inherited from the Coverage Cockpit and the resolver contract:
  * - Absence is furniture, never silence or a numeric zero: every empty edge group states the
