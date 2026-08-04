@@ -194,7 +194,13 @@ function validateReceipt(value: unknown, request: GithubCoreSyntheticPageRequest
   for (const unitId of receipt.unitIds) opaque(unitId, 'receipt.unitId')
   if (Object.hasOwn(receipt, 'highWatermark')) timestamp(receipt.highWatermark, 'receipt.highWatermark')
   if (receipt.nextCursor !== null) opaque(receipt.nextCursor, 'receipt.nextCursor')
-  return receipt as unknown as GithubCoreReceipt
+  return Object.freeze({
+    receiptId: receipt.receiptId as string,
+    pageNumber: receipt.pageNumber as number,
+    unitIds: Object.freeze([...(receipt.unitIds as string[])]),
+    ...(Object.hasOwn(receipt, 'highWatermark') ? { highWatermark: receipt.highWatermark as string } : {}),
+    nextCursor: receipt.nextCursor as string | null,
+  })
 }
 
 function validateFailure(value: unknown): GithubCoreSyntheticFailure['failure'] {

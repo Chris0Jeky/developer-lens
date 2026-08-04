@@ -112,6 +112,25 @@ describe('github.core invented page adapter', () => {
     expect(result.checkpoint?.scopeAlias).toBe('scope-01')
   })
 
+  it('snapshots accepted receipts before later callback mutation', async () => {
+    let firstPage: ReturnType<typeof page> | undefined
+    const result = await collectSyntheticGithubCorePages(input(), async (request) => {
+      if (request.pageNumber === 1) {
+        firstPage = page(request, 'receipt-01', 'cursor-02')
+        return firstPage
+      }
+      if (!firstPage) throw new Error('first page missing')
+      firstPage.receipt.receiptId = 'privateAlpha'
+      firstPage.receipt.unitIds[0] = 'privateAlpha'
+      firstPage.receipt.nextCursor = 'privateCursor'
+      return page(request, 'receipt-02', null)
+    })
+
+    expect(result.status).toBe('complete')
+    expect(result.appliedReceiptIds).toEqual(['receipt-01', 'receipt-02'])
+    expect(result.coverage.observedUnits).toBe(2)
+  })
+
   it('accepts no receipt when a page echo or nested receipt is hostile', async () => {
     const previous = checkpoint()
     const result = await collectSyntheticGithubCorePages(input({ checkpoint: previous }), async (request) => ({
