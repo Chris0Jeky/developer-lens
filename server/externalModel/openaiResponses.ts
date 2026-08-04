@@ -2,10 +2,8 @@ import { Buffer } from 'node:buffer'
 import { z } from 'zod'
 import {
   parseC1EvidenceBundle,
-  parseModelOutput,
   type C1EvidenceBundle,
   ModelOutputSchema,
-  type ModelOutput,
 } from './c1Contract.js'
 
 export const OPENAI_LUNA_ENDPOINT = 'https://api.openai.com/v1/responses' as const
@@ -56,11 +54,6 @@ const PriceQuoteSchema = z.object({
   verifiedAt: UtcTimestampSchema,
 }).strict()
 export const OpenAiLunaPriceQuoteSchema = PriceQuoteSchema
-const CallResultSchema = z.object({
-  status: z.number().int().min(100).max(599),
-  structuredOutput: z.unknown(),
-}).strict()
-
 export type OpenAiLunaPriceQuote = z.infer<typeof PriceQuoteSchema>
 
 export type OpenAiLunaRequestDescriptor = Readonly<{
@@ -73,8 +66,6 @@ export type OpenAiLunaRequestDescriptor = Readonly<{
   body: string
 }>
 
-export type OpenAiLunaCallResult = z.infer<typeof CallResultSchema>
-export type OpenAiLunaCall = (request: OpenAiLunaRequestDescriptor) => Promise<OpenAiLunaCallResult>
 export type OpenAiLunaRequestInput = {
   bundle: unknown
   priceQuote: unknown
@@ -101,9 +92,6 @@ export type OpenAiLunaRequestErrorCode =
   | 'OPENAI_LUNA_PRICE_INVALID'
   | 'OPENAI_LUNA_INPUT_TOO_LARGE'
   | 'OPENAI_LUNA_COST_LIMIT'
-  | 'OPENAI_LUNA_CALL_FAILED'
-  | 'OPENAI_LUNA_PROVIDER_STATUS'
-  | 'OPENAI_LUNA_OUTPUT_INVALID'
   | 'OPENAI_LUNA_SCHEMA_INVALID'
 
 function fail(code: OpenAiLunaRequestErrorCode): never {
@@ -276,39 +264,4 @@ function estimateUsd(bodyBytes: number, maxOutputTokens: number, price: OpenAiLu
 /** Build a fixed, credentialless descriptor; no filesystem/network/env access occurs. */
 export function buildOpenAiLunaRequest(input: OpenAiLunaRequestInput): OpenAiLunaRequestDescriptor {
   return buildOpenAiLunaRequestPreview(input).request
-}
-
-/** Invoke one injected call and validate only its structured output; never retry. */
-export async function sendOpenAiLunaRequest(input: {
-  bundle: unknown
-  priceQuote: unknown
-  now: string
-  call: OpenAiLunaCall
-}): Promise<ModelOutput> {
-  let bundle: C1EvidenceBundle
-  let request: OpenAiLunaRequestDescriptor
-  try {
-    bundle = parseC1EvidenceBundle(input.bundle)
-    request = buildOpenAiLunaRequest({ bundle, priceQuote: input.priceQuote, now: input.now })
-  } catch (error) {
-    if (error instanceof OpenAiLunaRequestError) throw error
-    fail('OPENAI_LUNA_REQUEST_INVALID')
-  }
-
-  let result: unknown
-  try {
-    result = await input.call(request)
-  } catch {
-    fail('OPENAI_LUNA_CALL_FAILED')
-  }
-  const parsedResult = CallResultSchema.safeParse(result)
-  if (!parsedResult.success) fail('OPENAI_LUNA_CALL_FAILED')
-  if (parsedResult.data.status < 200 || parsedResult.data.status >= 300) {
-    fail('OPENAI_LUNA_PROVIDER_STATUS')
-  }
-  try {
-    return parseModelOutput(bundle, parsedResult.data.structuredOutput)
-  } catch {
-    fail('OPENAI_LUNA_OUTPUT_INVALID')
-  }
 }
