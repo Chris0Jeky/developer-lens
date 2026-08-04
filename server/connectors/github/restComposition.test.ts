@@ -246,6 +246,13 @@ describe('pure noncomplete REST composition', () => {
         rateLimit: { remaining: null, reset: null }, rangeStart, rangeEnd,
       },
     })
+    const transient = composeGithubCoreRestNoncomplete({
+      ...nonCompleteContext,
+      result: {
+        kind: 'failed', status: 'failed', code: 'TRANSIENT', repositoryAlias: 'repo-alias',
+        rateLimit: { remaining: null, reset: null }, rangeStart, rangeEnd,
+      },
+    })
     const metadataOnly = composeGithubCoreRestNoncomplete({
       ...nonCompleteContext,
       result: nonCompleteResult({ repositoryFlags: null, units: null, pages: null, observedUnitCount: null, observedPageCount: null }),
@@ -268,6 +275,10 @@ describe('pure noncomplete REST composition', () => {
     const partial = composeGithubCoreRestNoncomplete({ ...nonCompleteContext, result: nonCompleteResult() })
     expect(restricted.transition).toMatchObject({ status: 'restricted', checkpoint: null, appliedReceiptIds: [] })
     expect(failed.transition).toMatchObject({ status: 'failed', checkpoint: null, appliedReceiptIds: [] })
+    expect(transient.transition).toMatchObject({
+      status: 'failed', checkpoint: null, appliedReceiptIds: [],
+      coverage: { limitationCode: 'FAILURE_TRANSIENT', retryable: true },
+    })
     expect(metadataOnly.transition).toMatchObject({ status: 'truncated', checkpoint: null, appliedReceiptIds: [] })
     expect(postMetadataBudget.transition).toMatchObject({
       status: 'truncated', checkpoint: null, appliedReceiptIds: [], coverage: { limitationCode: 'REQUEST_BUDGET_EXHAUSTED' },
@@ -278,7 +289,9 @@ describe('pure noncomplete REST composition', () => {
     expect(postMetadataBudget.transition).not.toHaveProperty('cursorHint')
     expect(postMetadataRateLimit.transition).not.toHaveProperty('cursorHint')
     expect(partial.transition).toMatchObject({ status: 'truncated', appliedReceiptIds: ['page-1'], cursorHint: '2' })
-    for (const result of [restricted, failed, metadataOnly, postMetadataBudget, postMetadataRateLimit, partial]) {
+    for (const result of [
+      restricted, failed, transient, metadataOnly, postMetadataBudget, postMetadataRateLimit, partial,
+    ]) {
       expect(Object.keys(result)).toEqual(['transition'])
       expect(Object.isFrozen(result)).toBe(true)
       expect(Object.isFrozen(result.transition)).toBe(true)

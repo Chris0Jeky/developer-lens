@@ -436,6 +436,11 @@ function assertLimitationCode(value: unknown, field: string): asserts value is s
   if (typeof value !== 'string' || !/^[A-Z0-9_]+$/.test(value)) throw new Error(`${field} is invalid`)
 }
 
+function assertFailureLimitationPair(kind: GithubCoreFailureKind, limitationCode: string): void {
+  const expected = kind === 'rate_limited' ? 'RATE_LIMITED' : `FAILURE_${kind.toUpperCase()}`
+  if (limitationCode !== expected) throw new Error('failure kind and limitationCode do not match')
+}
+
 /**
  * Reconciles a restricted, failed, or truncated attempt without accepting terminal receipts.
  * The prior checkpoint is copied and frozen; no snapshot hash, snapshot ID, or completion path is
@@ -493,6 +498,7 @@ export function reconcileGithubCoreNonComplete(
   let retryable = input.retryable ?? (status === 'truncated')
   if (input.failure) {
     const retry = classifyGithubCoreRetry(input.failure.kind, input.failure.attempt, input.failure.retryAfterMs)
+    assertFailureLimitationPair(retry.kind, input.limitationCode)
     retryable = retry.retry
     // A rate-limit outcome is a bounded truncation, even when a caller supplied a generic failed
     // status. It must never be represented as terminal failure.
