@@ -30,13 +30,15 @@ strict, review-chronology-bound activation-card parser without reading its futur
 follow-up now rejects calendar-invalid pricing timestamps that JavaScript would otherwise normalize
 into a different date. Published P12 now applies the same calendar-component boundary to C1
 bundle ranges while preserving supported fractional UTC forms and half-open range limits. The
-Published P4 now range-binds every composable noncomplete REST outcome, adds a pure core
-transition that preserves the prior checkpoint without terminal-receipt, snapshot, or completion
-fiction, and validates/composes restricted, failed, and truncated results into frozen noncomplete
-transitions only. Published P12 extracts the proven confined activation-card reader and adds an
-OpenAI/Luna wrapper that cross-binds the task ID and strict current-time parser. The current P12
-candidate builds one exact credentialless request preview and binds the reviewed bundle ID plus
-SHA-256 digests of its exact UTF-8 bundle JSON and request body. The external-
+Published P4 now range-binds every composable noncomplete REST outcome, adds a pure core transition
+that preserves the prior checkpoint without terminal-receipt, snapshot, or completion fiction, and
+validates/composes restricted, failed, and truncated results into frozen noncomplete transitions
+only. The current P4 candidate feeds only those reviewed complete/noncomplete composition outputs
+into the opt-in store and proves replay, per-job snapshot identity, and checkpoint preservation with
+invented in-memory fixtures. Published P12 extracts the proven confined activation-card reader,
+cross-binds the task ID and strict current-time parser, builds one exact credentialless request
+preview, and binds the reviewed bundle ID plus SHA-256 digests of its exact UTF-8 bundle JSON and
+request body. The external-
 model capability is still
 `never_authorized`; there is no environment read, authorization-bearing transport, network/provider
 execution, raw response, cache, telemetry, persistence, or presentation path**.
@@ -47,8 +49,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current P12 payload-preview candidate:
-  `origin/main` merge `277e2c38ae851140e0d5a90152d8c055ccc6ebfd`.
+- Published implementation baseline before the current P4 storage-replay candidate:
+  `origin/main` merge `2d4cdc73f8cfc44cfa268957a5ad9400d2df565a`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -485,6 +487,13 @@ unresolved review threads outrank it whenever they disagree.
   cursor hint to the core noncomplete reconciler. Its frozen result contains only `{ transition }`:
   no content hash, source-snapshot ID, complete receipt fiction, checkpoint movement, filesystem,
   database, network, environment, scheduler, logger, export, or presentation path.
+- The current storage-replay candidate widens only the exported checkpoint-transition type to accept
+  the already-validated noncomplete core union; SQL, schema version/fingerprint, and persistence
+  runtime statements are unchanged. Invented in-memory composition tests feed complete and
+  noncomplete REST composer outputs directly into the existing store. They prove same-job write-free
+  replay, content-stable hashes with distinct job-bound snapshot IDs, complete checkpoint advance,
+  and restricted/failed/metadata-only/partial truncation with no snapshot or checkpoint movement.
+  Transition-local truncation cursors remain nondurable.
 - `server/storage/installationAliases.ts` snapshots one caller-injected installation key of at
   least 32 bytes and exposes only closed repository, issue, pull-request, and page alias methods.
   The existing repository provider and analytical HMAC byte streams, domains, and `repo-` prefix
@@ -644,7 +653,7 @@ unresolved review threads outrank it whenever they disagree.
   in the Responses body's `input` field with the same frozen credentialless descriptor, and is now
   the only implementation path used by `buildOpenAiLunaRequest`. This prevents the reviewed preview
   and eventual send descriptor from silently diverging.
-- The current pure payload binder reparses the untrusted card at the supplied current time, builds
+- The published pure payload binder reparses the untrusted card at the supplied current time, builds
   the preview from its fresh price quote, hashes the exact UTF-8 bundle JSON and exact descriptor
   body, and requires the parsed bundle ID plus both lowercase SHA-256 values to equal the reviewed
   card. It returns one deeply frozen bound card/preview value and maps every parse, budget, freshness,
@@ -660,12 +669,21 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- P12 payload-preview candidate was rebased onto confined-card-loader merge `277e2c3`; the focused
-  C1, request, activation-card, and preview suites passed 4 files / 21 tests. `npm run check` passed
-  Oxlint, context verification, 38 test files / 211 tests, TypeScript project builds, and the
-  production Vite build; `git diff --check` passed. Exact rebased-head review found no CRITICAL/HIGH
-  serialization-drift, UTF-8 hash, three-binding, freshness, freeze, error-content, or credential/
-  network-surface defect.
+- P4 storage-replay candidate was rebased onto payload-preview merge `2d4cdc7`; the focused core,
+  REST composition, incremental storage, and cross-seam storage suites passed 4 files / 64 tests.
+  `npm run check` passed Oxlint, context verification, 39 test files / 213 tests, TypeScript project
+  builds, and the production Vite build; `git diff --check` passed. The pre-rebase exact-range review
+  found no CRITICAL/HIGH replay, snapshot-identity, checkpoint, cursor-durability, or storage-boundary
+  defect. Exact rebased-head interaction review likewise found no CRITICAL/HIGH correctness, privacy,
+  data-loss, payload-preview interaction, or persistence-invariant defect.
+- P12 payload-preview [PR #49](https://github.com/Chris0Jeky/developer-lens/pull/49) merged as
+  `2d4cdc7` after rebasing onto confined-card-loader merge `277e2c3`; the focused C1, request,
+  activation-card, and preview suites passed 4 files / 21 tests. `npm run check` passed Oxlint,
+  context verification, 38 test files / 211 tests, TypeScript project builds, and the production Vite
+  build; `git diff --check` passed. Exact rebased-head review found no CRITICAL/HIGH serialization-
+  drift, UTF-8 hash, three-binding, freshness, freeze, error-content, or credential/network-surface
+  defect. Exact-merge hosted Pages run `30888766166` completed successfully; its post-merge sweep
+  contained no finding.
 - P12 confined-card-loader [PR #48](https://github.com/Chris0Jeky/developer-lens/pull/48)
   merged as `277e2c3` after rebasing onto noncomplete-composition merge `7b97d31`; the
   focused GitHub loader, activation parser, and OpenAI loader suites passed 3 files / 20 tests. `npm
@@ -1004,9 +1022,10 @@ unresolved review threads outrank it whenever they disagree.
 - CLI, `dataStore`, collector, API, export, or Pages activation of SQLite; real/private JSON
   migration and the now-approved backup/grace/deletion protocol remain deliberately unexercised.
   Issues #5/#6 and a bounded migration task still precede a real read or reader switch.
-- No REST result is written into the incremental store. Complete canonical and current noncomplete
-  composition are proved only in process with invented input; two-run storage replay/stability, the
-  real task card, Taskdeck scope, network, and task-owned database remain unread or unimplemented.
+- No real REST result is written into the incremental store. Complete and noncomplete
+  composition-to-storage plus same-job/distinct-job replay are proved only with invented in-memory
+  input; hostile-provider two-read stability, the real task card, Taskdeck scope, network, and task-
+  owned database remain unread or unimplemented.
 - Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
   synthetic route and showcase verifier.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
@@ -1044,10 +1063,8 @@ unresolved review threads outrank it whenever they disagree.
   boundary to exclude an adversarial replace-read-restore sequence.
 - The P12 request seam, activation-card parser, and current confined loader validate caller-injected
   canonical pricing/evidence timestamps, freshness, and review chronology but cannot authenticate
-  page content or
-  recompute the card's
-  bundle/body hashes. The current pure preview candidate recomputes and requires those bindings, but
-  deliberately has no credential reader,
+  page content. The published pure preview recomputes and requires the reviewed bundle/body bindings,
+  but deliberately has no credential reader,
   HTTP timeout/body parser, usage receipt, output retention, or presentation path; those remain
   separate reviewed boundaries before a real call.
 - The shared reader returns mutable parsed `unknown` before domain validation. Its only production
@@ -1131,8 +1148,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current P12 payload-preview
-   candidate is merge `277e2c38ae851140e0d5a90152d8c055ccc6ebfd`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P4 storage-replay
+   candidate is merge `2d4cdc73f8cfc44cfa268957a5ad9400d2df565a`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -1143,13 +1160,14 @@ unresolved review threads outrank it whenever they disagree.
 4. The exact repository is owner-selected in an ignored local task card; its parser, confined
    descriptor-bound loader, and injected public-unauthenticated transport expose no identity or
    operational values in tracked state. The shared alias factory now preserves existing repository
-   identities and defines closed unit/page domains; the opt-in store now preserves restricted
+   identities and defines closed unit/page domains; the opt-in store preserves restricted
    coverage without a snapshot or checkpoint advance, and published page receipts now expose frozen
    alias-only membership. Published complete composition now emits canonical hashes,
-   receipts, and checkpoint proposals. The current candidate range-binds noncomplete transport
-   outcomes and produces checkpoint-preserving core transitions without snapshot material. The
-   current candidate strictly composes those outcomes into frozen transition-only results. Next
-   integrate complete and noncomplete paths with two-run storage replay/stability proof before issue
+   receipts, and checkpoint proposals. Published noncomplete composition range-binds transport
+   outcomes and produces frozen, checkpoint-preserving transitions without snapshot material. The
+   current candidate proves complete/noncomplete composition-to-storage and same-job/distinct-job
+   replay with invented in-memory fixtures. Next add the bounded real runner and hostile-provider
+   two-read stability classification before issue
    #6 key-
    lifecycle/mismatch enforcement,
    backup/restore, scoped deletion/tombstone, re-consent, and snapshot-stability proof. Keep runtime
@@ -1158,9 +1176,9 @@ unresolved review threads outrank it whenever they disagree.
 5. G4 is approved only for the exact OpenAI/Luna contract, but `cap.external.model` remains
    `never_authorized`. The strict C1 payload/output and deterministic local-retrieval foundation is
    present, and the credentialless request boundary now enforces native strict output, standard
-   service tier, serialized byte/cost ceilings, `store:false`, and one call/no retry. The current
-   published activation slice adds the strict reviewed-card parser and confined task-ID-bound loader.
-   The current candidate authenticates the exact credentialless bundle/body preview against all three
+   service tier, serialized byte/cost ceilings, `store:false`, and one call/no retry. The published
+   activation slice adds the strict reviewed-card parser and confined task-ID-bound loader.
+   The published preview authenticates the exact credentialless bundle/body against all three
    reviewed payload bindings. Next add an authorization-bearing
    transport that reads only the approved environment variable at call time, applies a finite timeout,
    extracts only structured output, and discards raw provider bodies/IDs. Make no live request until
