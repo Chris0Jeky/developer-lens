@@ -9,6 +9,7 @@ import {
   V2CoverageResponseSchema,
 } from './contract.js'
 import { V2Error, v2ErrorBody } from './errors.js'
+import { registerEvidenceRoutes } from './evidence.js'
 import { assertV2Request } from './guard.js'
 import { readSyntheticCoverageStore } from './store.js'
 
@@ -70,6 +71,10 @@ export function createV2Router(config: V2RuntimeConfig): express.Router {
       next(error)
     }
   })
+
+  // DL-VALUE-01: the minimal evidence endpoint. Native-dependency free and presentation-safe; it
+  // inherits the guard middleware registered above.
+  registerEvidenceRoutes(router)
 
   router.use((_request, _response, next) => {
     next(new V2Error('V2_NOT_FOUND'))

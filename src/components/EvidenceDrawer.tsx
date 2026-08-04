@@ -21,6 +21,7 @@ import type {
   WhyWalk,
   WhyWalkStep,
 } from '../../server/storage/whyResolver.js'
+import type { AnalyticReference } from '../../shared/findings.js'
 
 /**
  * Evidence Drawer — the universal claim inspector (card DL-UX-ED).
@@ -52,24 +53,19 @@ import type {
  */
 
 /**
- * The reference the drawer accepts, mirroring ADR-26's `AnalyticReference =
- * ObservationReference | ClaimReference` by name. Raw allowed facts are addressed by an
- * observation/evidence id; derived numbers (counts, ratios, quantiles, deltas) are claims
- * addressed by a claim id.
- *
- * RECONCILIATION: DL-FINDING-01 is defining the canonical union in `shared/findings.ts` on a
- * parallel, unmerged lane. This local shape is deliberately NOT imported from there; when both
- * land, collapse this definition onto the shared one (same field names, same discriminant).
+ * The reference the drawer accepts. RECONCILED (issue #87): this now IS `shared/findings.ts`'s
+ * `AnalyticReference = ObservationReference | ClaimReference` — same field names, same discriminant
+ * — re-exported type-only so the findings/claims value graph (and its `node:crypto` import) never
+ * reaches the browser bundle. Raw allowed facts are addressed by an observation/evidence id;
+ * derived numbers (counts, ratios, quantiles, deltas) are claims addressed by a claim id. The
+ * shared `ClaimReference` carries `claimLayer`, so a reference records the layer of the claim it
+ * resolves to (the #87 post-merge triage item), decidable from the finding alone.
  */
-export interface ObservationReference {
-  readonly kind: 'observation'
-  readonly evidenceId: string
-}
-export interface ClaimReference {
-  readonly kind: 'claim'
-  readonly claimId: string
-}
-export type AnalyticReference = ObservationReference | ClaimReference
+export type {
+  AnalyticReference,
+  ClaimReference,
+  ObservationReference,
+} from '../../shared/findings.js'
 
 /**
  * What `resolve` returns, reusing the resolver's own node types so a `WhyEvidenceNode` renders

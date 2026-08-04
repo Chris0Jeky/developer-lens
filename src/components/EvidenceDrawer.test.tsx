@@ -238,7 +238,7 @@ describe('EvidenceDrawer — unresolvable references render honest errors, never
   })
 
   it('shows revocation lineage for an unknown-but-revoked claim', () => {
-    renderDrawer({ kind: 'claim', claimId: 'cl_unknown_revoked' })
+    renderDrawer({ kind: 'claim', claimId: 'cl_unknown_revoked', claimLayer: 'deterministic' })
     expect(screen.getByText('cl_unknown_revoked')).toBeInTheDocument()
     expect(screen.getByText('tombstone_cascade')).toBeInTheDocument()
   })

@@ -1,0 +1,140 @@
+.atlas-route__main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 4rem;
+}
+
+.atlas-route__brand {
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+.atlas-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: rgba(20, 22, 34, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.atlas-panel__eyebrow {
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #8fb7ff;
+}
+
+.atlas-panel__observation {
+  font-size: 1.15rem;
+  line-height: 1.5;
+  margin: 0.5rem 0 0.75rem;
+}
+
+.atlas-panel__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.75rem;
+  align-items: center;
+  font-size: 0.82rem;
+}
+
+.atlas-outcome {
+  padding: 0.15rem 0.6rem;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  font-weight: 600;
+}
+.atlas-outcome[data-outcome='FULL'] { color: #5be5bb; }
+.atlas-outcome[data-outcome='MATCHED_PARTIAL'] { color: #ffd166; }
+.atlas-outcome[data-outcome='INCOMPARABLE'] { color: #ff91a4; }
+
+.atlas-scope { color: #9aa4c0; }
+.atlas-golden[data-golden='true'] { color: #5be5bb; }
+.atlas-golden[data-golden='false'] { color: #ff6b6b; font-weight: 700; }
+
+.atlas-stage {
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  padding-top: 1rem;
+}
+.atlas-stage__kicker {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #8fb7ff;
+}
+.atlas-stage h3 { margin: 0.15rem 0 0.6rem; font-size: 1.02rem; }
+.atlas-stage h4 { margin: 0.8rem 0 0.35rem; font-size: 0.9rem; color: #cdd6f4; }
+.atlas-stage p { margin: 0 0 0.5rem; line-height: 1.55; color: #d5dcf0; }
+
+.atlas-mark {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 8px;
+  border: 1px solid rgba(143, 183, 255, 0.4);
+  background: rgba(143, 183, 255, 0.08);
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+.atlas-mark:hover, .atlas-mark:focus-visible { background: rgba(143, 183, 255, 0.2); }
+.atlas-mark__hint { font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: #8fb7ff; }
+
+.atlas-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+.atlas-table caption { text-align: left; color: #9aa4c0; padding-bottom: 0.4rem; font-size: 0.8rem; }
+.atlas-table th, .atlas-table td { text-align: left; padding: 0.4rem 0.55rem; border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.atlas-table thead th { color: #9aa4c0; font-weight: 600; }
+.atlas-table tfoot td { color: #9aa4c0; font-size: 0.78rem; }
+.atlas-table td[data-reversed='true'] { color: #ff91a4; font-weight: 700; }
+
+.atlas-outcome-detail td { border-bottom: 1px solid rgba(255, 255, 255, 0.06); }
+.atlas-outcome-honesty {
+  display: flex; flex-direction: column; gap: 0.45rem;
+  padding: 0.55rem 0.65rem; border-radius: 8px;
+  background: rgba(255, 255, 255, 0.03);
+  font-size: 0.8rem;
+}
+.atlas-outcome-basis { margin: 0; color: #9aa4c0; }
+.atlas-outcome-basis[data-arithmetic-basis='matched_subwindows_only'] { color: #ffd166; }
+.atlas-outcome-limitations, .atlas-outcome-residual {
+  margin: 0; padding-left: 1.1rem;
+  display: flex; flex-direction: column; gap: 0.25rem;
+  line-height: 1.5; color: #c3cbe4;
+}
+.atlas-outcome-residual li { color: #ff91a4; }
+
+.atlas-facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 0.75rem; margin: 0; }
+.atlas-facts dt { font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.08em; color: #9aa4c0; }
+.atlas-facts dd { margin: 0.2rem 0 0; font-size: 1.05rem; }
+.atlas-delta { font-size: 0.8rem; color: #9aa4c0; }
+.atlas-inline-list { list-style: none; margin: 0; padding: 0; font-size: 0.9rem; }
+
+.atlas-coverage { display: flex; flex-wrap: wrap; gap: 0.5rem; list-style: none; margin: 0; padding: 0; }
+.atlas-coverage li {
+  display: flex; gap: 0.4rem; align-items: baseline;
+  padding: 0.2rem 0.55rem; border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+.atlas-coverage li[data-limited='true'] { border-color: rgba(255, 209, 102, 0.5); }
+.atlas-coverage__dim { color: #9aa4c0; font-size: 0.78rem; }
+.atlas-coverage__val { font-weight: 700; }
+.atlas-coverage__reason { color: #ffd166; font-size: 0.72rem; }
+
+.atlas-list { margin: 0; padding-left: 1.1rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.atlas-list li { line-height: 1.5; }
+.atlas-discriminating { margin-top: 0.6rem; color: #d5dcf0; }
+.atlas-empty, .atlas-never { margin-top: 0.9rem; padding: 0.75rem; border-radius: 10px; background: rgba(255, 255, 255, 0.04); }
+.atlas-note { color: #9aa4c0; }
+
+@media (prefers-color-scheme: light) {
+  .atlas-panel { background: rgba(255, 255, 255, 0.82); border-color: rgba(0, 0, 0, 0.08); }
+  .atlas-stage p, .atlas-stage h4 { color: #1c2333; }
+}
