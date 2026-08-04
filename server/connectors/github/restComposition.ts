@@ -119,7 +119,7 @@ function validatePage(value: unknown): GithubCoreRestPageReceipt {
 function validateCompleteResult(input: GithubCoreRestCompleteCompositionInput): ValidatedProjection {
   const result = assertPlainRecord(input.result)
   assertKeys(result, [
-    'kind', 'status', 'total', 'repositoryAlias', 'rateLimit', 'repositoryFlags', 'units', 'pages',
+    'kind', 'status', 'total', 'rangeStart', 'rangeEnd', 'repositoryAlias', 'rateLimit', 'repositoryFlags', 'units', 'pages',
     'observedUnitCount', 'observedPageCount',
   ])
   if (result.kind !== 'complete' || result.status !== 'complete') fail()
@@ -130,6 +130,7 @@ function validateCompleteResult(input: GithubCoreRestCompleteCompositionInput): 
   const rangeStart = assertCanonicalTimestamp(input.rangeStart)
   const rangeEnd = assertCanonicalTimestamp(input.rangeEnd)
   if (rangeStart >= rangeEnd) fail()
+  if (result.rangeStart !== input.rangeStart || result.rangeEnd !== input.rangeEnd) fail()
   assertCanonicalTimestamp(input.observedAt)
   if (!Number.isSafeInteger(input.pageCap) || input.pageCap < 1) fail()
   if (input.checkpoint !== null) {
@@ -157,7 +158,7 @@ function validateCompleteResult(input: GithubCoreRestCompleteCompositionInput): 
 
   const unitByAlias = new Map<string, GithubCoreRestUnit>()
   for (const unit of units) {
-    if (unitByAlias.has(unit.alias)) fail()
+    if (unit.alias === input.scopeAlias || unitByAlias.has(unit.alias)) fail()
     unitByAlias.set(unit.alias, unit)
   }
   const receiptAliases = new Set<string>()

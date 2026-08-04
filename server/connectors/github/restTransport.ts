@@ -79,6 +79,8 @@ export interface GithubCoreRestCompleteResult extends GithubCoreRestBase, Github
   readonly kind: 'complete'
   readonly status: 'complete'
   readonly total: number
+  readonly rangeStart: string
+  readonly rangeEnd: string
 }
 
 export interface GithubCoreRestTruncatedResult extends GithubCoreRestBase {
@@ -264,6 +266,8 @@ function truncatedResult(
 
 function completeResult(
   repositoryAlias: string,
+  rangeStart: string,
+  rangeEnd: string,
   metadata: { archived: boolean; disabled: boolean; fork: boolean },
   units: readonly GithubCoreRestUnit[],
   pages: readonly GithubCoreRestPageReceipt[],
@@ -274,6 +278,8 @@ function completeResult(
     kind: 'complete',
     status: 'complete',
     total: units.length,
+    rangeStart,
+    rangeEnd,
     repositoryAlias,
     rateLimit: rate,
   }) as GithubCoreRestCompleteResult
@@ -509,7 +515,17 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
     } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
     const unitAliases = Object.freeze([...pageUnitAliases].sort())
     pages.push(Object.freeze({ pageNumber: page, receiptAlias, unitCount: unitAliases.length, unitAliases, nextPage: next }))
-    if (next === null) return completeResult(repositoryAlias, flags, units, pages, rate)
+    if (next === null) {
+      return completeResult(
+        repositoryAlias,
+        card.readBoundary.rangeStart,
+        rangeEnd,
+        flags,
+        units,
+        pages,
+        rate,
+      )
+    }
     page = next
   }
 }

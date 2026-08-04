@@ -24,6 +24,8 @@ function completeResult(overrides: Partial<GithubCoreRestCompleteResult> = {}): 
     kind: 'complete',
     status: 'complete',
     total: 3,
+    rangeStart,
+    rangeEnd,
     repositoryAlias: 'repo-alias',
     rateLimit: { remaining: 17, reset: 1234 },
     repositoryFlags: { public: true, archived: true, disabled: false, fork: false },
@@ -126,6 +128,8 @@ describe('pure complete REST composition', () => {
 
   it.each([
     ['scope mismatch', { repositoryAlias: 'other-scope' }],
+    ['range start mismatch', { rangeStart: '2026-07-02T00:00:00.000Z' }],
+    ['range end mismatch', { rangeEnd: '2026-07-31T00:00:00.000Z' }],
     ['total mismatch', { total: 2 }],
     ['unit count mismatch', { observedUnitCount: 2 }],
     ['page count mismatch', { observedPageCount: 1 }],
@@ -137,6 +141,10 @@ describe('pure complete REST composition', () => {
     ['duplicate unit alias', { pages: [{ pageNumber: 1, receiptAlias: 'page-1', unitCount: 3, unitAliases: ['issue-a', 'issue-a', 'issue-z'], nextPage: 2 }, completeResult().pages[1]!] }],
     ['out-of-range timestamp', { units: [{ alias: 'issue-a', kind: 'issue', updatedAt: '2026-08-01T00:00:00.000Z' }, completeResult().units[1]!, completeResult().units[2]!] }],
     ['invalid alias', { units: [{ alias: 'raw/provider/id', kind: 'issue', updatedAt: '2026-07-03T00:00:00.000Z' }, completeResult().units[1]!, completeResult().units[2]!] }],
+    ['repository-unit alias collision', {
+      units: [{ alias: 'repo-alias', kind: 'issue', updatedAt: '2026-07-03T00:00:00.000Z' }, completeResult().units[1]!, completeResult().units[2]!],
+      pages: [{ pageNumber: 1, receiptAlias: 'page-1', unitCount: 2, unitAliases: ['repo-alias', 'issue-z'], nextPage: 2 }, completeResult().pages[1]!],
+    }],
   ] as const)('rejects %s', (_label, override) => {
     expect(() => composeGithubCoreRestComplete({ ...context, result: completeResult(override) })).toThrow(
       'REST_COMPLETE_COMPOSITION_INVALID',
