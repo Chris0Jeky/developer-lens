@@ -43,7 +43,22 @@ remains open and is not approved. q-4's synthetic-only publication route remains
   artifact. Any separate registry reconciliation follows the matching public Developer Lens
   authority/policy commit and its own normal gates; do not copy private registry metadata here.
 
+- [x] **q-5 — First bounded `github.core` repository selected.** On 2026-08-04 the owner
+  explicitly selected one public repository and authorized end-to-end completion within the
+  existing G2 product boundary. The exact repository identity, provider ID, task path, and runtime
+  values stay only in an ignored local task card. The approved read boundary is public,
+  unauthenticated, GET-only repository lifecycle metadata plus open issue/pull-request lifecycle
+  units in a bounded time range and pagination/rate-limit headers. It does not authorize a token,
+  credential mutation, local checkout/database/working-tree inspection, prose or people fields,
+  private output publication, or G4. Runtime activation still requires the reviewed parser,
+  transport, projection, storage, rollback, deletion, and exact-head proving checks named by that
+  private card.
+
 ## Changelog
+
+- 2026-08-04: the owner selected the first real public repository for a bounded `github.core`
+  activation and delegated end-to-end execution. q-5 records only the public policy boundary; the
+  selected identity and operational values remain in the ignored local task card.
 
 - 2026-08-03: the owner explicitly approved real migration/retention and every named sensitive
   source, delegating reasonable details. q-1 adopts the existing conservative retention/migration

@@ -95,11 +95,11 @@ const strictProjectionSchema = strictObject({
 
 const localBoundarySchema = strictObject({
   root: z.string().min(1).max(256),
-  taskCard: z.string().min(1).max(512),
-  database: z.string().min(1).max(512),
-  installationKey: z.string().min(1).max(512),
-  backupDirectory: z.string().min(1).max(512),
-  report: z.string().min(1).max(512),
+  taskCard: z.literal('task-card.json'),
+  database: z.literal('github-core.sqlite'),
+  installationKey: z.literal('installation-key.bin'),
+  backupDirectory: z.literal('backup/'),
+  report: z.literal('last-run-report.json'),
   trackedOrPublished: z.literal(false),
 })
 
@@ -164,18 +164,6 @@ function hasDuplicates(values: readonly string[]): boolean {
   return new Set(values).size !== values.length
 }
 
-function isContainedPath(value: string, root: string): boolean {
-  if (!value.startsWith(root) || value === root) return false
-  if (value.includes('\\') || value.includes('//') || value.includes(':')) return false
-  if (value.startsWith('/') || value.startsWith('./') || value.includes('%')) return false
-  let relative = value.slice(root.length)
-  if (relative.endsWith('/')) relative = relative.slice(0, -1)
-  if (!relative || relative.split('/').some((segment) => segment === '' || segment === '.' || segment === '..')) {
-    return false
-  }
-  return true
-}
-
 const validatedTaskCardSchema = taskCardSchema.superRefine((card, context) => {
   if (hasDuplicates(card.readBoundary.allowedResources)) {
     context.addIssue({ code: 'custom', path: ['readBoundary', 'allowedResources'], message: 'resources must be unique' })
@@ -200,13 +188,6 @@ const validatedTaskCardSchema = taskCardSchema.superRefine((card, context) => {
   const expectedRoot = `.developer-lens/activation/${card.taskId}/`
   if (card.localBoundary.root !== expectedRoot) {
     context.addIssue({ code: 'custom', path: ['localBoundary', 'root'], message: 'root does not match task id' })
-    return
-  }
-  for (const field of ['taskCard', 'database', 'installationKey', 'backupDirectory', 'report'] as const) {
-    const child = card.localBoundary[field]
-    if (child.startsWith('.') || child.startsWith('/') || !isContainedPath(`${expectedRoot}${child}`, expectedRoot)) {
-      context.addIssue({ code: 'custom', path: ['localBoundary', field], message: 'path escapes local root' })
-    }
   }
 })
 
