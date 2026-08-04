@@ -75,8 +75,8 @@ PowerShell and quote paths; prefer explicit Vitest paths over shell globs.
 - `shared/`: closed privacy, capability, coverage, provenance and presentation contracts.
 - `src/`: dashboard, Wrapped story and offline V2 demo.
 - Vitest always loads `src/test/setup.ts`; a Node-only environment directive breaks that setup.
-- Pull requests have no dedicated CI workflow. `main` pushes run the full gate, showcase privacy
-  verification and Pages deployment through `.github/workflows/pages.yml`.
+- PRs run the hosted gate `.github/workflows/pr-gate.yml`, advisory until HUMAN_TODO q-7 marks it
+  required. `main` pushes still run the full gate and Pages deploy via `.github/workflows/pages.yml`.
 - `COMPLETE` packs are immutable by contract. A future activated reader must address the recorded
   concurrent-mutation snapshot risk before claiming hostile local-writer integrity.
 

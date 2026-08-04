@@ -189,26 +189,26 @@ source, never this table. Horizon: A = active queue, F = frozen until DL-VALUE-0
 
 | ID | Title | Epic | Type | Status | Hz | Blocked by | Milestone | Risk/Effort |
 |---|---|---|---|---|---|---|---|---|
-| DL-SPINE-01 | Evidence claim graph table contracts | spine | contract | READY | A | none | M1 | medium/M |
-| DL-SPINE-02 | Deterministic claim canonicalisation and replay proof | spine | implementation | BLOCKED_BY_DEPENDENCY | A | DL-SPINE-01 | M1 | medium/M |
-| DL-SPINE-03 | Why-am-I-seeing-this resolver | spine | implementation | BLOCKED_BY_DEPENDENCY | A | DL-SPINE-01 | M2 | low/S |
-| DL-SPINE-04 | Coverage-vector dimension registry v2 | spine | contract | READY | A | none | M1 | medium/M |
-| DL-SPINE-05 | Monotone abstention gates with degraded-fixture proof | spine | implementation | BLOCKED_BY_DEPENDENCY |  | DL-SPINE-04 | M1 | medium/M |
+| DL-SPINE-01 | Evidence claim graph table contracts | spine | contract | DONE | A | none | M1 | medium/M |
+| DL-SPINE-02 | Deterministic claim canonicalisation and replay proof | spine | implementation | READY | A | DL-SPINE-01 | M1 | medium/M |
+| DL-SPINE-03 | Why-am-I-seeing-this resolver | spine | implementation | READY | A | DL-SPINE-01 | M2 | low/S |
+| DL-SPINE-04 | Coverage-vector dimension registry v2 | spine | contract | DONE | A | none | M1 | medium/M |
+| DL-SPINE-05 | Monotone abstention gates with degraded-fixture proof | spine | implementation | READY |  | DL-SPINE-04 | M1 | medium/M |
 | DL-LIFE-01 | Capability lifecycle state machine + approval-never-activates invariant | lifecycle | contract | READY |  | none | M1 | high/M |
 | DL-LIFE-02 | Deletion enumeration from schema registry + cascade proof | lifecycle | implementation | BLOCKED_BY_DEPENDENCY |  | DL-LIFE-01 | M1 | high/M |
 | DL-LIFE-03 | Backup/restore with tombstone replay | lifecycle | implementation | BLOCKED_BY_DEPENDENCY |  | DL-LIFE-02 | M3 | high/M |
-| DL-BRIDGE-01 | V2 bootstrap slice: /api/v2 coverage+capabilities over synthetic store + Coverage Cockpit panel | bridge | implementation | READY | A | none | M2 | medium/M |
+| DL-BRIDGE-01 | V2 bootstrap slice: /api/v2 coverage+capabilities over synthetic store + Coverage Cockpit panel | bridge | implementation | DONE | A | none | M2 | medium/M |
 | DL-BRIDGE-02 | V2 features + evidence endpoints with claim links | bridge | implementation | BLOCKED_BY_DEPENDENCY |  | DL-BRIDGE-01, DL-SPINE-01, DL-SPINE-02 | M2 | medium/M |
-| DL-BRIDGE-03 | V1->V2 parity fixtures + person-shape-absence proof | bridge | evaluation | BLOCKED_BY_DEPENDENCY |  | DL-BRIDGE-01 | M2 | medium/M |
+| DL-BRIDGE-03 | V1->V2 parity fixtures + person-shape-absence proof | bridge | evaluation | READY |  | DL-BRIDGE-01 | M2 | medium/M |
 | DL-BRIDGE-04 | Legacy view retirement ladder (DNA/archetype first) | bridge | implementation | BLOCKED_BY_DEPENDENCY |  | DL-BRIDGE-03, DL-UX-CC, DL-UX-ED | M5 | medium/M |
 | DL-BRIDGE-05 | Exporter migration to ExportView-fed builders | bridge | implementation | BLOCKED_BY_DEPENDENCY |  | DL-PACK-05 | M5 | high/M |
 | DL-RECON-01 | PR #62 planning reconciliation and implementation handoff | analytics-core | process | DONE |  | none | M1 | low/M |
-| DL-METRIC-01 | Versioned metric-definition registry | analytics-core | contract | READY | A | none | M2 | medium/M |
-| DL-FINDING-01 | Finding contract: alternatives, contradiction, robustness, AnalyticReference | analytics-core | contract | BLOCKED_BY_DEPENDENCY | A | DL-METRIC-01, DL-SPINE-01 | M2 | medium/M |
-| DL-COMPARE-01 | Matched-period comparison and censoring semantics | analytics-core | contract | BLOCKED_BY_DEPENDENCY | A | DL-METRIC-01 | M2 | medium/M |
+| DL-METRIC-01 | Versioned metric-definition registry | analytics-core | contract | DONE | A | none | M2 | medium/M |
+| DL-FINDING-01 | Finding contract: alternatives, contradiction, robustness, AnalyticReference | analytics-core | contract | READY | A | DL-METRIC-01, DL-SPINE-01 | M2 | medium/M |
+| DL-COMPARE-01 | Matched-period comparison and censoring semantics | analytics-core | contract | READY | A | DL-METRIC-01 | M2 | medium/M |
 | DL-VALIDATE-01 | Analytical conformance and counterexample suite | analytics-core | evaluation | BLOCKED_BY_DEPENDENCY | A | DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01 | M2 | medium/M |
 | DL-VALUE-01 | First deterministic comparative finding (integration shape, matched windows) | analytics-core | implementation | BLOCKED_BY_DEPENDENCY | A | DL-BRIDGE-01, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-VALIDATE-01, DL-SPINE-02, DL-SPINE-03, DL-UX-ED | M2 | medium/L |
-| DL-OPS-CI-01 | Hosted pull-request CI gate before broad autonomous merging | analytics-core | implementation | READY | A | none | M1 | low/M |
+| DL-OPS-CI-01 | Hosted pull-request CI gate before broad autonomous merging | analytics-core | implementation | DONE | A | none | M1 | low/M |
 | DL-CONTEXT-01 | Compact machine-readable current state and active horizon | analytics-core | process | DONE |  | none | M1 | low/S |
 | DL-GIT-01 | Hardened explicit-ref extraction + coverage semantics | git-topology | implementation | BLOCKED_BY_DEPENDENCY |  | DL-LIFE-02 | M3 | high/M |
 | DL-GIT-02 | Ref movement + first-parent release ancestry | git-topology | implementation | BLOCKED_BY_DEPENDENCY |  | DL-GIT-01 | M3 | medium/M |
@@ -288,7 +288,7 @@ source, never this table. Horizon: A = active queue, F = frozen until DL-VALUE-0
 | DL-OPEN-01 | Question claim family + generators | open-questions | implementation | BLOCKED_BY_DEPENDENCY |  | DL-SPINE-01, DL-SPINE-05 | M7 | low/M |
 | DL-OPEN-02 | Open Questions Observatory + surprise-me exploration | open-questions | ux | BLOCKED_BY_DEPENDENCY |  | DL-OPEN-01 | M8 | low/M |
 | DL-DEMO-A1 | Future real local Taskdeck dogfood: activation specification | demo | spec | OWNER_GATED |  | DL-GIT-01, DL-XRAY-02, DL-ATLAS-04, DL-LIFE-01 | M8 | high/M |
-| DL-DEMO-B1 | Public Taskdeck-shaped synthetic twin: invented dataset generator spec | demo | spec | BLOCKED_BY_DEPENDENCY |  | DL-BRIDGE-01 | M8 | medium/M |
+| DL-DEMO-B1 | Public Taskdeck-shaped synthetic twin: invented dataset generator spec | demo | spec | READY |  | DL-BRIDGE-01 | M8 | medium/M |
 | DL-DEMO-B2 | Showcase script: 5-8 minute intelligence-platform walkthrough | demo | spec | BLOCKED_BY_DEPENDENCY |  | DL-DEMO-B1 | M8 | low/S |
 | DL-Q-CONSTRAINTS | Upstream constraints: Developer Lens issues #5 #6 #41 #55 #57 #59 | open-questions | process | QUESTION |  | none | M1 | medium/S |
 | DL-Q-PROSE | Owner gate: PR/issue prose semantic tier (tier-2 semantics) | open-questions | process | QUESTION |  | none | M7 | high/S |

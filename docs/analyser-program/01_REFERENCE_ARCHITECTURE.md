@@ -103,13 +103,15 @@ Claim IDs are deterministic: `cl_` + SHA-256 over the canonicalisation material,
 itself versioned (`CLAIM_ID_MATERIAL_VERSION`, recorded on every claim row). Material **v2**
 (implemented 2026-08-04, DL-SPINE-02) is (`layer`, `statement_code`, `method_id@version`, the
 canonical-ordered set of *all* typed basis edges — evidence, claim, and coverage targets alike —
-window, opaque `scope_id`, schema version). Hashing only the evidence targets, as v1 did, made a
-re-derived successor collide with its own predecessor, so a `derives_from` correction could not be
-expressed; and `layer` belongs in the material because a modelled and a hypothesis claim over
-identical inputs are different claims. `created_at` is deliberately excluded: replay of the same
-inputs at a later wall-clock reproduces identical claim IDs and is a no-op. A changed input set
-produces a new claim and a `superseded_by` link. "Why am I seeing this?" resolves UI element →
-claim → edges → evidence → coverage → capability → consent revision in one deterministic walk.
+window, the content-free `scope_id` surrogate, schema version) — the C2 `scope_alias` value is
+never hashed into a C1 identifier (corrected 2026-08-04 review round). Hashing only the evidence
+targets, as v1 did, made a re-derived successor collide with its own predecessor, so a
+`derives_from` correction could not be expressed; and `layer` belongs in the material because a
+modelled and a hypothesis claim over identical inputs are different claims. `created_at` is
+deliberately excluded: replay of the same inputs at a later wall-clock reproduces identical claim
+IDs and is a no-op. A changed input set produces a new claim and a `superseded_by` link. "Why am I
+seeing this?" resolves UI element → claim → edges → evidence → coverage → capability → consent
+revision in one deterministic walk.
 
 **Stability key (accepted 2026-08-04, frontier finding C-03).** Because any new evidence mints a
 new claim ID, claim *history* cannot be grouped by `claim_id`. Every claim additionally carries a
@@ -131,9 +133,9 @@ IDs, windows) is C1, but the installation-scoped `scope_alias` reference is **C2
 charter's alias-link classification (13-month local-only boundary): the local scope reference
 lives in a C2 partition and never inherits C1's 36-month retention or C1-only retrieval/export
 paths. Pack projection emits a fresh **pack-scoped C1 alias** in its place. Additionally, because
-canonical claim IDs are derived from installation-scoped evidence IDs and the store-local
-`scope_id`, copying them into packs would create a stable cross-pack linkage key: the pack builder
-**re-mints
+canonical claim IDs are derived from installation-scoped evidence IDs and the content-free,
+store-local `scope_id` surrogate (corrected 2026-08-04 review round; never the C2 alias value),
+copying them into packs would create a stable cross-pack linkage key: the pack builder **re-mints
 pack-local claim IDs** from the pack-scoped evidence/scope identifiers and transactionally
 rewrites every edge, lineage, and `superseded_by` reference during projection. No new class or
 sink.
