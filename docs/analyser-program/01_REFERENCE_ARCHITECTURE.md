@@ -80,7 +80,12 @@ store.
   enum), `method_id`+`method_version`, `window`, opaque `scope_id`, `schema_version`,
   `created_at`, `superseded_by`. The C2 `scope_alias` *value* never sits in the C1 claim row: it
   lives in the adjacent `claim_scope` table keyed by the content-free `scope_id` surrogate
-  (corrected 2026-08-04 review round).
+  (corrected 2026-08-04 review round). The surrogate is **minted by the writer from 32 random
+  bytes and looked up by alias**, never derived from the alias by hash: a digest — even a keyed
+  one — is a function of a C2 value and would map one alias to one surrogate in every
+  installation, which is the cross-installation linkage key this ADR forbids in packs. Random
+  minting also makes erasure real: once `scope_alias` is cleared, no function reproduces the link
+  (DL-SPINE-02, 2026-08-04).
 - `claim_evidence_edge` — `claim_id`, exactly one typed target, `role` ∈
   {supports, contradicts, contextualizes, derives_from, coverage_basis, limitation_basis}.
   Targets are **typed nullable FK columns** (`target_evidence_id REFERENCES evidence`,
@@ -94,11 +99,17 @@ store.
   `event_kind` ∈ {correction, tombstone_cascade, export_included, reconsent, index_built,
   index_deleted}, `caused_by`, `occurred_at`.
 
-Claim IDs are deterministic: `cl_` + SHA-256 over (`statement_code`, `method_id@version`,
-canonical-ordered input evidence IDs, window, scope alias, schema version). Replay of the same
-inputs reproduces identical claim IDs; a changed input set produces a new claim and a
-`superseded_by` link. "Why am I seeing this?" resolves UI element → claim → edges → evidence →
-coverage → capability → consent revision in one deterministic walk.
+Claim IDs are deterministic: `cl_` + SHA-256 over the canonicalisation material, whose format is
+itself versioned (`CLAIM_ID_MATERIAL_VERSION`, recorded on every claim row). Material **v2**
+(implemented 2026-08-04, DL-SPINE-02) is (`layer`, `statement_code`, `method_id@version`, the
+canonical-ordered set of *all* typed basis edges — evidence, claim, and coverage targets alike —
+window, opaque `scope_id`, schema version). Hashing only the evidence targets, as v1 did, made a
+re-derived successor collide with its own predecessor, so a `derives_from` correction could not be
+expressed; and `layer` belongs in the material because a modelled and a hypothesis claim over
+identical inputs are different claims. `created_at` is deliberately excluded: replay of the same
+inputs at a later wall-clock reproduces identical claim IDs and is a no-op. A changed input set
+produces a new claim and a `superseded_by` link. "Why am I seeing this?" resolves UI element →
+claim → edges → evidence → coverage → capability → consent revision in one deterministic walk.
 
 **Stability key (accepted 2026-08-04, frontier finding C-03).** Because any new evidence mints a
 new claim ID, claim *history* cannot be grouped by `claim_id`. Every claim additionally carries a
@@ -120,8 +131,9 @@ IDs, windows) is C1, but the installation-scoped `scope_alias` reference is **C2
 charter's alias-link classification (13-month local-only boundary): the local scope reference
 lives in a C2 partition and never inherits C1's 36-month retention or C1-only retrieval/export
 paths. Pack projection emits a fresh **pack-scoped C1 alias** in its place. Additionally, because
-canonical claim IDs are derived from installation-scoped evidence IDs and `scope_alias`, copying
-them into packs would create a stable cross-pack linkage key: the pack builder **re-mints
+canonical claim IDs are derived from installation-scoped evidence IDs and the store-local
+`scope_id`, copying them into packs would create a stable cross-pack linkage key: the pack builder
+**re-mints
 pack-local claim IDs** from the pack-scoped evidence/scope identifiers and transactionally
 rewrites every edge, lineage, and `superseded_by` reference during projection. No new class or
 sink.
