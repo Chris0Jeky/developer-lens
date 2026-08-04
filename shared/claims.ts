@@ -141,13 +141,19 @@ export const CanonicalTimestampSchema = z.string().regex(CANONICAL_TIMESTAMP_PAT
 
 /**
  * C2 partition. The installation-scoped alias VALUE lives here, never in the C1 claim
- * row: it carries the charter's 13-month alias-link boundary and is cleared on its own
- * retention clock, which leaves the C1 `scope_id` series grouping intact.
+ * row. `linkedAt` records when the alias link was first established, which is the input
+ * a sweeper needs to compute the charter's 13-month alias-link boundary; re-registering
+ * a scope keeps the original link time (first link wins).
+ *
+ * No sweeper exists yet — the retention mechanism itself is future work, tracked as
+ * issue #80. What is proven today is only that clearing the alias leaves every C1 claim
+ * row and its `scope_id` series grouping intact.
  */
 export const ClaimScopeSchema = z
   .object({
     scopeId: OpaqueTokenSchema,
     scopeAlias: OpaqueTokenSchema.nullable(),
+    linkedAt: CanonicalTimestampSchema,
   })
   .strict()
 export type ClaimScope = z.infer<typeof ClaimScopeSchema>

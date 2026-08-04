@@ -37,6 +37,8 @@ const databases: Database.Database[] = []
 const windowStart = '2026-01-05T00:00:00.000Z'
 const windowEnd = '2026-04-06T00:00:00.000Z'
 const createdAt = '2026-04-06T12:00:00.000Z'
+const firstLinkedAt = '2026-01-05T00:00:00.000Z'
+const laterLinkedAt = '2026-06-01T00:00:00.000Z'
 
 /** Every value below is invented. No real, private, or generated-data read happens here. */
 const ALPHA_SCOPE = 'sc-alpha'
@@ -95,8 +97,8 @@ function claimGraphDatabase(): { db: Database.Database; coverage: CoverageTarget
   const coverage = db.prepare(
     'SELECT coverage_id, range_start, job_id FROM coverage_ledger',
   ).get() as CoverageTargetRow
-  registerClaimScope(db, { scopeId: ALPHA_SCOPE, scopeAlias: 'repo-a7' })
-  registerClaimScope(db, { scopeId: BETA_SCOPE, scopeAlias: 'repo-b3' })
+  registerClaimScope(db, { scopeId: ALPHA_SCOPE, scopeAlias: 'repo-a7', linkedAt: firstLinkedAt })
+  registerClaimScope(db, { scopeId: BETA_SCOPE, scopeAlias: 'repo-b3', linkedAt: firstLinkedAt })
   for (const evidenceId of ['ev-det-4', 'ev-det-5', 'ev-det-6']) {
     registerEvidenceAnchor(db, {
       evidenceId,
@@ -196,6 +198,13 @@ describe('claim graph installation', () => {
     const db = bareDatabase()
     installIncrementalGithubCoreStorage(db)
     db.exec('CREATE TABLE evidence (sentinel TEXT NOT NULL) STRICT;')
+    expect(errorCode(() => installClaimGraphStorage(db))).toBe('CLAIM_GRAPH_SCHEMA_MISMATCH')
+  })
+
+  it('fails closed when a TEMP table shadows a claim-graph name', () => {
+    const db = bareDatabase()
+    installIncrementalGithubCoreStorage(db)
+    db.exec('CREATE TEMP TABLE evidence (sentinel TEXT NOT NULL) STRICT;')
     expect(errorCode(() => installClaimGraphStorage(db))).toBe('CLAIM_GRAPH_SCHEMA_MISMATCH')
   })
 })
@@ -338,10 +347,15 @@ describe('canary rejection', () => {
   it('rejects canaries from the scope, evidence, and lineage contracts too', () => {
     const { db, coverage } = claimGraphDatabase()
     for (const canary of CANARIES) {
-      expect(errorCode(() => registerClaimScope(db, { scopeId: canary, scopeAlias: 'repo-a7' })))
-        .toBe('CLAIM_CONTRACT_INVALID')
-      expect(errorCode(() => registerClaimScope(db, { scopeId: ALPHA_SCOPE, scopeAlias: canary })))
-        .toBe('CLAIM_CONTRACT_INVALID')
+      expect(errorCode(() => registerClaimScope(db, {
+        scopeId: canary, scopeAlias: 'repo-a7', linkedAt: firstLinkedAt,
+      }))).toBe('CLAIM_CONTRACT_INVALID')
+      expect(errorCode(() => registerClaimScope(db, {
+        scopeId: ALPHA_SCOPE, scopeAlias: canary, linkedAt: firstLinkedAt,
+      }))).toBe('CLAIM_CONTRACT_INVALID')
+      expect(errorCode(() => registerClaimScope(db, {
+        scopeId: ALPHA_SCOPE, scopeAlias: 'repo-a7', linkedAt: canary,
+      }))).toBe('CLAIM_CONTRACT_INVALID')
       expect(errorCode(() => registerEvidenceAnchor(db, {
         evidenceId: canary,
         layer: 'deterministic',
@@ -545,7 +559,7 @@ describe('privacy partition', () => {
     expect(readClaimScopeAlias(db, ALPHA_SCOPE)).toBe('repo-a7')
   })
 
-  it('survives the C2 retention clock with the C1 series grouping intact', () => {
+  it('preserves the C1 series when the C2 alias is cleared', () => {
     const { db } = claimGraphDatabase()
     const { claimId } = registerClaim(db, claimInput())
     const before = claimStabilityKeyToken(claimStabilityKey(readClaim(db, claimId)!))
@@ -554,5 +568,16 @@ describe('privacy partition', () => {
     expect(readClaimScopeAlias(db, ALPHA_SCOPE)).toBeNull()
     expect(claimStabilityKeyToken(claimStabilityKey(readClaim(db, claimId)!))).toBe(before)
     expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+  })
+
+  it('records the alias link time and keeps the first link on re-registration', () => {
+    const { db } = claimGraphDatabase()
+    const linkedAt = (): unknown =>
+      db.prepare('SELECT linked_at FROM claim_scope WHERE scope_id = ?').pluck().get(ALPHA_SCOPE)
+    expect(linkedAt()).toBe(firstLinkedAt)
+
+    registerClaimScope(db, { scopeId: ALPHA_SCOPE, scopeAlias: 'repo-a9', linkedAt: laterLinkedAt })
+    expect(linkedAt()).toBe(firstLinkedAt)
+    expect(readClaimScopeAlias(db, ALPHA_SCOPE)).toBe('repo-a9')
   })
 })

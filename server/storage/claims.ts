@@ -14,6 +14,7 @@ import {
   ClaimIdSchema,
   ClaimLayerSchema,
   ClaimRecordSchema,
+  ClaimScopeSchema,
   ClaimStatementCodeSchema,
   CoverageTargetSchema,
   EvidenceAnchorSchema,
@@ -79,12 +80,14 @@ const CLAIM_GRAPH_STATEMENTS: readonly string[] = [
     coverage_id TEXT NOT NULL CHECK (${longOpaque('coverage_id')}),
     coverage_range_start TEXT NOT NULL CHECK (${canonicalTimestamp('coverage_range_start')}),
     coverage_job_id TEXT NOT NULL CHECK (${opaque('coverage_job_id')}),
+    -- deliberate NO ACTION: deletion order and tombstone cascade deferred to DL-LIFE-02 (issue #80)
     FOREIGN KEY (coverage_id, coverage_range_start, coverage_job_id)
       REFERENCES ${CLAIM_GRAPH_COVERAGE_TABLE}(coverage_id, range_start, job_id)
   ) STRICT`,
   `CREATE TABLE IF NOT EXISTS claim_scope (
     scope_id TEXT PRIMARY KEY NOT NULL CHECK (${opaque('scope_id')}),
-    scope_alias TEXT CHECK (scope_alias IS NULL OR (${opaque('scope_alias')}))
+    scope_alias TEXT CHECK (scope_alias IS NULL OR (${opaque('scope_alias')})),
+    linked_at TEXT NOT NULL CHECK (${canonicalTimestamp('linked_at')})
   ) STRICT`,
   `CREATE TABLE IF NOT EXISTS claim (
     claim_id TEXT PRIMARY KEY NOT NULL CHECK (${claimIdentifier('claim_id')}),
@@ -113,6 +116,7 @@ const CLAIM_GRAPH_STATEMENTS: readonly string[] = [
     target_coverage_id TEXT,
     target_coverage_range_start TEXT,
     target_coverage_job_id TEXT,
+    -- deliberate NO ACTION: deletion order and tombstone cascade deferred to DL-LIFE-02 (issue #80)
     FOREIGN KEY (target_coverage_id, target_coverage_range_start, target_coverage_job_id)
       REFERENCES ${CLAIM_GRAPH_COVERAGE_TABLE}(coverage_id, range_start, job_id),
     CHECK ((target_evidence_id IS NOT NULL) + (target_claim_id IS NOT NULL) + (target_coverage_id IS NOT NULL) = 1),
@@ -214,11 +218,14 @@ function normalizeSchemaSql(sql: string): string {
 const CLAIM_GRAPH_SCHEMA_OBJECTS = parseSchemaObjects(CLAIM_GRAPH_STATEMENTS)
 const CLAIM_GRAPH_OBJECT_NAMES = CLAIM_GRAPH_SCHEMA_OBJECTS.map(({ name }) => name)
 
-function readOwnedSchemaRows(db: Database.Database): SchemaRow[] {
+function readRelevantSchemaRows(
+  db: Database.Database,
+  catalog: 'sqlite_schema' | 'sqlite_temp_schema',
+): SchemaRow[] {
   const namePlaceholders = CLAIM_GRAPH_OBJECT_NAMES.map(() => '?').join(', ')
   const tablePlaceholders = CLAIM_GRAPH_TABLES.map(() => '?').join(', ')
   return db.prepare(
-    `SELECT type, name, tbl_name, sql FROM sqlite_schema
+    `SELECT type, name, tbl_name, sql FROM ${catalog}
      WHERE name IN (${namePlaceholders})
         OR (
           tbl_name IN (${tablePlaceholders})
@@ -226,6 +233,18 @@ function readOwnedSchemaRows(db: Database.Database): SchemaRow[] {
           AND name NOT GLOB 'sqlite_autoindex_*'
         )`,
   ).all(...CLAIM_GRAPH_OBJECT_NAMES, ...CLAIM_GRAPH_TABLES) as SchemaRow[]
+}
+
+/**
+ * Both catalogs are read. A TEMP object shadows a main-schema one for every unqualified
+ * statement, so checking `sqlite_schema` alone would let the installer report success on
+ * a store where the module's own INSERTs resolve to the wrong table.
+ */
+function readOwnedSchemaRows(db: Database.Database): SchemaRow[] {
+  return [
+    ...readRelevantSchemaRows(db, 'sqlite_schema'),
+    ...readRelevantSchemaRows(db, 'sqlite_temp_schema'),
+  ]
 }
 
 function hasExpectedSchema(rows: readonly SchemaRow[]): boolean {
@@ -297,20 +316,18 @@ function write<T>(operation: () => T): T {
   }
 }
 
-const ClaimScopeInputSchema = z
-  .object({ scopeId: OpaqueTokenSchema, scopeAlias: OpaqueTokenSchema.nullable() })
-  .strict()
-
 /**
  * C2 write path. The alias VALUE is stored only here, keyed by the content-free
- * surrogate the C1 `claim` row carries.
+ * surrogate the C1 `claim` row carries. `linked_at` records when the link was first
+ * established and is NOT advanced by a later re-registration: first link wins, so the
+ * charter's 13-month alias-link boundary is computed from the true link time.
  */
 export function registerClaimScope(db: Database.Database, value: unknown): void {
-  const scope = parseOrThrow(ClaimScopeInputSchema, value)
+  const scope = parseOrThrow(ClaimScopeSchema, value)
   write(() => {
     db.prepare(
-      'INSERT INTO claim_scope (scope_id, scope_alias) VALUES (?, ?) ON CONFLICT(scope_id) DO UPDATE SET scope_alias = excluded.scope_alias',
-    ).run(scope.scopeId, scope.scopeAlias)
+      'INSERT INTO claim_scope (scope_id, scope_alias, linked_at) VALUES (?, ?, ?) ON CONFLICT(scope_id) DO UPDATE SET scope_alias = excluded.scope_alias',
+    ).run(scope.scopeId, scope.scopeAlias, scope.linkedAt)
   })
 }
 
@@ -323,8 +340,10 @@ export function readClaimScopeAlias(db: Database.Database, scopeId: string): str
 }
 
 /**
- * The 13-month alias-link retention clock: clearing the C2 value leaves every C1 claim
- * row and its stability-key series intact.
+ * Clears the C2 alias value, leaving every C1 claim row and its stability-key series
+ * intact. This is the erase step a retention sweeper would call; the sweeper that reads
+ * `linked_at` and decides when the 13-month boundary has passed is future work
+ * (issue #80).
  */
 export function clearClaimScopeAlias(db: Database.Database, scopeId: string): number {
   const scope = parseOrThrow(OpaqueTokenSchema, scopeId)
