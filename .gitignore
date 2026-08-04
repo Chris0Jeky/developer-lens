@@ -15,6 +15,9 @@ dist-ssr
 # Developer Lens private runtime data. Never commit this directory.
 .developer-lens/
 
+# Local synthetic V2 bridge store. Invented C0 fixtures, rebuilt by npm run seed:v2.
+.developer-lens-synthetic/
+
 # Optional local environment configuration.
 .env
 .env.*
