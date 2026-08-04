@@ -2,12 +2,20 @@ import { createHash } from 'node:crypto'
 import {
   GITHUB_CORE_QUERY_VERSION,
   GITHUB_CORE_REST_API_VERSION,
+  reconcileGithubCoreNonComplete,
   reconcileGithubCoreReceipts,
   type GithubCoreCheckpointTransition,
+  type GithubCoreNonCompleteCheckpointTransition,
+  type GithubCoreNonCompleteReconciliationInput,
   type GithubCoreReceipt,
   type GithubCoreReconciliationInput,
 } from './core.js'
-import type { GithubCoreRestCompleteResult, GithubCoreRestPageReceipt, GithubCoreRestUnit } from './restTransport.js'
+import type {
+  GithubCoreRestCompleteResult,
+  GithubCoreRestPageReceipt,
+  GithubCoreRestUnit,
+  GithubCoreRestNonCompleteResult,
+} from './restTransport.js'
 
 const SNAPSHOT_MARKER = 'developer-lens/github-core/rest-complete/v1' as const
 const SNAPSHOT_ID_MARKER = 'developer-lens/github-core/source-snapshot-id/v1' as const
@@ -28,6 +36,16 @@ export interface GithubCoreRestCompleteCompositionResult {
   readonly receipts: readonly GithubCoreReceipt[]
   readonly snapshotHash: string
   readonly sourceSnapshotId: string
+}
+
+export interface GithubCoreRestNonCompleteCompositionInput extends GithubCoreRestCompositionContext {
+  readonly result: GithubCoreRestNonCompleteResult
+  readonly attempt: number
+  readonly retryAfterMs?: number
+}
+
+export interface GithubCoreRestNonCompleteCompositionResult {
+  readonly transition: GithubCoreNonCompleteCheckpointTransition
 }
 
 interface ValidatedProjection {
@@ -75,6 +93,14 @@ function assertRateLimit(value: unknown): void {
     const candidate = rateLimit[field]
     if (candidate !== null && (!Number.isSafeInteger(candidate) || (candidate as number) < 0)) fail()
   }
+}
+
+function assertAttempt(value: unknown): asserts value is number {
+  if (!Number.isInteger(value) || (value as number) < 1 || (value as number) > 3) fail()
+}
+
+function assertRetryAfter(value: unknown): asserts value is number | undefined {
+  if (value !== undefined && (!Number.isSafeInteger(value) || (value as number) < 0)) fail()
 }
 
 function compareText(left: string, right: string): number {
@@ -218,6 +244,136 @@ function validateCompleteResult(input: GithubCoreRestCompleteCompositionInput): 
   return { receipts, canonicalSnapshot }
 }
 
+interface ValidatedNonCompleteFacts {
+  readonly status: 'restricted' | 'failed' | 'truncated'
+  readonly observedUnits: number
+  readonly appliedReceiptAliases: readonly string[]
+  readonly limitationCode: string
+  readonly saturationReason?: string
+  readonly failureKind?: 'rate_limited' | 'transient'
+  readonly cursorHint?: string
+}
+
+function validateNonCompleteResult(
+  input: GithubCoreRestNonCompleteCompositionInput,
+): ValidatedNonCompleteFacts {
+  const context = assertPlainRecord(input)
+  assertKeys(context, [
+    'checkpoint', 'scopeAlias', 'rangeStart', 'rangeEnd', 'observedAt', 'jobId', 'consentRevision',
+    'pageCap', 'result', 'attempt', 'retryAfterMs',
+  ])
+  assertOpaque(input.scopeAlias)
+  assertOpaque(input.jobId)
+  assertOpaque(input.consentRevision)
+  const rangeStart = assertCanonicalTimestamp(input.rangeStart)
+  const rangeEnd = assertCanonicalTimestamp(input.rangeEnd)
+  if (rangeStart >= rangeEnd) fail()
+  assertCanonicalTimestamp(input.observedAt)
+  if (!Number.isSafeInteger(input.pageCap) || input.pageCap < 1) fail()
+  assertAttempt(input.attempt)
+  assertRetryAfter(input.retryAfterMs)
+  if (input.checkpoint !== null) {
+    const checkpoint = assertPlainRecord(input.checkpoint)
+    assertKeys(checkpoint, [
+      'capabilityId', 'scopeAlias', 'queryVersion', 'sourceApiVersion', 'highWatermark',
+      'cursorHint', 'boundedOverlapStart', 'lastCompleteSnapshotHash', 'consentRevision', 'committedJobId',
+    ])
+  }
+
+  const result = assertPlainRecord(input.result)
+  const status = result.kind
+  if (status !== 'restricted' && status !== 'failed' && status !== 'truncated') fail()
+  if (result.status !== status) fail()
+  const expectedKeys = status === 'truncated'
+    ? [
+        'kind', 'status', 'total', 'code', 'repositoryAlias', 'rateLimit', 'repositoryFlags', 'units', 'pages',
+        'observedUnitCount', 'observedPageCount', 'rangeStart', 'rangeEnd',
+      ]
+    : ['kind', 'status', 'code', 'repositoryAlias', 'rateLimit', 'rangeStart', 'rangeEnd']
+  assertKeys(result, expectedKeys)
+  assertOpaque(result.repositoryAlias)
+  if (result.repositoryAlias !== input.scopeAlias) fail()
+  assertRateLimit(result.rateLimit)
+  if (result.rangeStart !== input.rangeStart || result.rangeEnd !== input.rangeEnd) fail()
+  if (result.rangeStart === null || result.rangeEnd === null) fail()
+
+  const code = result.code
+  if (status === 'restricted') {
+    if (!['REPOSITORY_ID_MISMATCH', 'REPOSITORY_NOT_PUBLIC', 'PERMISSION_DENIED', 'NOT_FOUND'].includes(code as string)) fail()
+    return { status, observedUnits: 0, appliedReceiptAliases: [], limitationCode: code as string }
+  }
+  if (status === 'failed') {
+    if (!['SCHEMA_INVALID', 'TRANSIENT', 'UNSUPPORTED'].includes(code as string)) fail()
+    return {
+      status,
+      observedUnits: 0,
+      appliedReceiptAliases: [],
+      limitationCode: code as string,
+      ...(code === 'TRANSIENT' ? { failureKind: 'transient' as const } : {}),
+    }
+  }
+  if (!['REQUEST_BUDGET_EXHAUSTED', 'RATE_LIMITED'].includes(code as string)) fail()
+  if (result.total !== null) fail()
+  const flags = result.repositoryFlags
+  const unitsValue = result.units
+  const pagesValue = result.pages
+  const observedUnitCount = result.observedUnitCount
+  const observedPageCount = result.observedPageCount
+  const metadataOnly = flags === null && unitsValue === null && pagesValue === null && observedUnitCount === null && observedPageCount === null
+  if (metadataOnly) {
+    return {
+      status,
+      observedUnits: 0,
+      appliedReceiptAliases: [],
+      limitationCode: code as string,
+      saturationReason: code as string,
+      ...(code === 'RATE_LIMITED' ? { failureKind: 'rate_limited' as const } : {}),
+    }
+  }
+  if (flags === null || unitsValue === null || pagesValue === null || observedUnitCount === null || observedPageCount === null) fail()
+  if (!Array.isArray(unitsValue) || !Array.isArray(pagesValue)) fail()
+  const repositoryFlags = assertPlainRecord(flags)
+  assertKeys(repositoryFlags, ['public', 'archived', 'disabled', 'fork'])
+  if (repositoryFlags.public !== true) fail()
+  assertBoolean(repositoryFlags.archived)
+  assertBoolean(repositoryFlags.disabled)
+  assertBoolean(repositoryFlags.fork)
+  assertSafeCount(observedUnitCount)
+  assertSafeCount(observedPageCount)
+  if (pagesValue.length < 1 || pagesValue.length > input.pageCap || observedPageCount !== pagesValue.length) fail()
+  if (observedUnitCount !== unitsValue.length) fail()
+  const units = unitsValue.map((unit) => validateUnit(unit, rangeStart, rangeEnd))
+  const pages = pagesValue.map(validatePage)
+  const unitByAlias = new Map<string, GithubCoreRestUnit>()
+  for (const unit of units) {
+    if (unit.alias === input.scopeAlias || unitByAlias.has(unit.alias)) fail()
+    unitByAlias.set(unit.alias, unit)
+  }
+  const receiptAliases = new Set<string>()
+  const memberships = new Map<string, number>()
+  const pageByNumber = [...pages].sort((left, right) => left.pageNumber - right.pageNumber)
+  for (const [index, page] of pageByNumber.entries()) {
+    if (page.pageNumber !== index + 1 || receiptAliases.has(page.receiptAlias)) fail()
+    if (page.receiptAlias === input.scopeAlias || unitByAlias.has(page.receiptAlias)) fail()
+    receiptAliases.add(page.receiptAlias)
+    if (page.nextPage !== page.pageNumber + 1) fail()
+    for (const alias of page.unitAliases) {
+      if (!unitByAlias.has(alias)) fail()
+      memberships.set(alias, (memberships.get(alias) ?? 0) + 1)
+    }
+  }
+  if (memberships.size !== unitByAlias.size || [...unitByAlias.keys()].some((alias) => memberships.get(alias) !== 1)) fail()
+  return {
+    status,
+    observedUnits: observedUnitCount,
+    appliedReceiptAliases: pageByNumber.map((page) => page.receiptAlias),
+    limitationCode: code as string,
+    saturationReason: code as string,
+    ...(code === 'RATE_LIMITED' ? { failureKind: 'rate_limited' as const } : {}),
+    cursorHint: String(pageByNumber.at(-1)!.nextPage),
+  }
+}
+
 function freezeDeep<T>(value: T): T {
   if (value && typeof value === 'object' && !Object.isFrozen(value)) {
     Object.freeze(value)
@@ -256,3 +412,43 @@ export function composeGithubCoreRestComplete(
     throw new Error('REST_COMPLETE_COMPOSITION_INVALID')
   }
 }
+
+/** Pure noncomplete REST composition. It never creates receipts, hashes, snapshots, or checkpoint movement. */
+export function composeGithubCoreRestNoncomplete(
+  input: GithubCoreRestNonCompleteCompositionInput,
+): GithubCoreRestNonCompleteCompositionResult {
+  try {
+    const facts = validateNonCompleteResult(input)
+    const failure = facts.failureKind
+      ? {
+          kind: facts.failureKind,
+          attempt: input.attempt,
+          ...(input.retryAfterMs !== undefined ? { retryAfterMs: input.retryAfterMs } : {}),
+        }
+      : undefined
+    const transitionInput: GithubCoreNonCompleteReconciliationInput = {
+      checkpoint: input.checkpoint,
+      scopeAlias: input.scopeAlias,
+      rangeStart: input.rangeStart,
+      rangeEnd: input.rangeEnd,
+      observedAt: input.observedAt,
+      jobId: input.jobId,
+      consentRevision: input.consentRevision,
+      status: facts.status,
+      expectedUnits: null,
+      observedUnits: facts.observedUnits,
+      omittedUnits: null,
+      appliedReceiptAliases: facts.appliedReceiptAliases,
+      limitationCode: facts.limitationCode,
+      ...(facts.saturationReason ? { saturationReason: facts.saturationReason } : {}),
+      ...(failure ? { failure } : {}),
+      ...(facts.cursorHint ? { cursorHint: facts.cursorHint } : {}),
+    }
+    const transition = reconcileGithubCoreNonComplete(transitionInput)
+    return freezeDeep({ transition })
+  } catch {
+    throw new Error('REST_NONCOMPLETE_COMPOSITION_INVALID')
+  }
+}
+
+export const composeGithubCoreRestNonComplete = composeGithubCoreRestNoncomplete
