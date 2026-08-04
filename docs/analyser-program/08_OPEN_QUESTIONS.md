@@ -18,8 +18,15 @@ Each gate exists as a QUESTION card on the seeded Taskdeck board. None blocks th
 | DL-Q-XCONTRACT | May a cross-repository artifact identity key (content hash of C4 bytes) exist for shared-contract drift? | A new linkage primitive with two-way deletion cascade, reviewed as its own sink | Shared-contract drift stays parked (A11); co-change lift (COUP-03) remains the only cross-repo signal | The four-repo coincidence fixture: can alias-only matching exclude coincidental version tokens? |
 | DL-Q-AGENTCFG | (a) May the role taxonomy gain `agent_config`? (b) If yes, is portfolio-level adoption timing suppressed to per-repository presence? | Presence-only role lands; portfolio timing suppressed per (b) | Taxonomy stays at 14 roles; agent-config surfaces stay invisible | The two-portfolio fixture: can a reader name the adoption week from aggregate output? |
 
+| G-d (registry rows) | May the capability matrix gain rows for `GH-RULE-01` (rulesets/branch protection — may need administration-read), `GH-ATTEST-01` (attestations), or `GH-DISCUSS-01` (discussion metadata)? These are in the canonical §3 catalog but NOT in the q-2 standing-G3 set. | Reviewed matrix/registry change per source; DL-PORT-02 and DL-PROV-01 unblock | Policy-evolution and provenance-coverage features stay ungated-off; the programme is complete without them | The specific decision question each source would answer, from CI/portfolio evidence |
+| G-e (artifact metadata) | May artifact/cache **metadata-only** counts (`GH-ACT-ART-X` is "not now") ever be collected? | A reviewed matrix row with its own class/retention | Stays rejected-for-now | A demonstrated disk/cost decision it would change |
+
 Also open (pre-existing, reaffirmed): the six GitHub issues in DL-Q-CONSTRAINTS gate real
 migration (#5, #6, #59), the P12 lane (#41, #57), and UX polish (#55).
+
+**2026-08-04 review correction:** DL-PORT-02 and DL-PROV-01 originally carried standing-G3
+authority lines on the board; both are now OWNER_GATED/PARKED behind G-d, and `02` §0's
+"no ungated dependency" sentence was corrected accordingly.
 
 ## 2. Frontier decision ledger (31 candidates, 3 passes)
 
@@ -69,6 +76,7 @@ are recorded here durably.
 | A11 | Cross-repo shared-contract drift | Coincidence fixture + DL-Q-XCONTRACT owner gate |
 | C-11 | Seasonality atlas | Only the machine-subject-only slice may return, and only if LAB-01's baseline genuinely needs an explicit seasonal producer; human-initiated families are schema-rejected, not coarsened |
 | C-12 | Deliberate mutability probe | Fold measurement into the checkpoint protocol's existing bounded-overlap re-reads (accepted); revisit only if overlap-derived mutability is too sparse |
+| A14 | Agent-config presence role (owner-gated, not parked) | DL-Q-AGENTCFG owner decision with the two-portfolio fixture attached — listed here so all 31 candidates have a §2 disposition row |
 
 ### Rejected (recorded so they are not re-proposed under new names)
 

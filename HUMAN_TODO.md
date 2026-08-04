@@ -68,7 +68,10 @@ publication route remains active.
   Taskdeck board: (a) PR/issue prose semantic tier; (b) durable retrieval index as a reviewed
   sink; (c) pinned offline local model option; (d) per-candidate consented real datasets for ML
   validation; (e) cross-repository artifact identity key; (f) `agent_config` role class +
-  adoption-timing suppression. Additionally, the future real local Taskdeck dogfood analysis
+  adoption-timing suppression; (g) capability-matrix rows for rulesets/attestations/discussions
+  (G-d) and artifact metadata-only counts (G-e) — the affected cards (DL-PORT-02, DL-PROV-01) are
+  owner-gated on the board and must not be implemented before a reviewed matrix change or your
+  decision. Additionally, the future real local Taskdeck dogfood analysis
   (spec: `docs/analyser-program/06_TASKDECK_DEMO_PLAN.md` §2) still needs your explicit selection
   of exact immutable refs and approval of its activation card before any run. Nothing on the
   implementation critical path depends on any of these; refusing all of them leaves a complete

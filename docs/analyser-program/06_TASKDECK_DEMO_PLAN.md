@@ -31,7 +31,8 @@ Taskdeck is used for real as the programme's planning control plane. State achie
   server message "Review and approve in Taskdeck to create the card."; `list_proposals` shows it
   pending. **No MCP approve/apply/execute tool exists** — approval and execution are deliberately
   left to the explicit Taskdeck user in the product UI. The proposal is safe to dismiss.
-- **Browser walkthrough:** signed in as the local-only `dl-planner` user; the Home surface shows
+- **Browser walkthrough:** signed in as the local-only planning user (its handle and credentials
+  live only in the untracked runbook); the Home surface shows
   the board and the one pending proposal; the board route renders all columns, cards, and labels
   (verified textually via the in-app browser; the unattended pane could not composite screenshots).
 - **Export:** `GET /api/export/boards/{id}/json` saved beside the database (398 KB; 118 cards).
@@ -69,9 +70,9 @@ The future activation card must specify, and this plan seeds:
 - **Processing:** all paths/manifests/AST C4-ephemeral inside the isolated worker; retained
   projections only C1 composition/role/graph summaries + C3 opaque graphs (90d) under
   installation aliases; Taskdeck's name lives only in the identity vault.
-- **Identity handling:** `is_self` attribution only; no author dimensions; the 23 `codex-*`
-  worktrees are **out of scope** (worktree heads need explicit inclusion per canonical identity
-  rules — none is granted).
+- **Identity handling:** `is_self` attribution only; no author dimensions; existing local
+  worktree heads are **out of scope** (worktree heads need explicit inclusion per canonical
+  identity rules — none is granted).
 - **Deletion/rollback:** full ADR-03 cascade on revocation; the activation card's consentRevision
   is its SHA-256 per the existing idiom; proving checks named per capability card.
 - **Resource caps:** worker defaults; repository is ~medium; one run, no schedule.

@@ -132,6 +132,11 @@ train on `[t0, o_k)`, evaluate on `[o_k + embargo, o_k + embargo + h)`. Origins 
 step; folds never shuffle; no fold ever trains on data later than its evaluation window. Minimum
 5 outer folds, or the candidate is not evaluable and stays `seeded`.
 
+**R1.3a — Baseline-tuning symmetry (2026-08-04 correction).** Any free parameter of the
+deterministic baseline (e.g. WB-C1's median/MAD alert threshold) receives **identical** nested
+selection to the candidate's — otherwise the comparison confounds "better method" with "more
+tuning budget". A baseline with no free parameters runs as preregistered.
+
 **R1.3 — Inner loop: nested rolling origin.** Hyperparameter and threshold selection happens *only*
 inside each training prefix, using its own rolling-origin sub-folds. No selection statistic is ever
 computed on an outer evaluation window. A single global threshold chosen from the whole series is a
@@ -157,10 +162,15 @@ Exactly as ADR-19 states ("Benjamini–Hochberg across the family's primary test
 
 1. **One primary test per candidate per promotion attempt.** Secondary metrics are reported but are
    never inputs to promotion. This is what keeps the family small enough to control.
-2. **The family is the promotion wave**: the set of primary tests submitted together for gate
-   decisions. Wave membership is declared in the preregistration, before results.
-3. **Procedure:** order the wave's *p*-values ascending; reject H0 for the largest `i` with
-   `p_(i) ≤ (i/m)·q`; `q = 0.10` at `benchmarked` tier.
+2. **The family is the candidate-family, fixed at first preregistration** (2026-08-04 review
+   correction): wave membership is the declared set of candidates in the family — it cannot be
+   redefined per attempt, `m ≥` the declared family size always, and a candidate submitting alone
+   still carries the family's `m`. A promotion wave groups the tests actually run, but `m` never
+   shrinks below the family declaration.
+3. **Procedure (BH step-up):** order the wave's *p*-values ascending; let `i*` be the **largest**
+   `i` with `p_(i) ≤ (i/m)·q`; reject H0 for **all tests of rank `1…i*`** (none if no such `i`
+   exists); `q = 0.10` at `benchmarked` tier. (Corrected 2026-08-04: rejecting only rank `i*`
+   inverts promotion ordering.)
 4. **A rejected null is necessary but not sufficient**: the MMI on the point estimate must also be
    met. A statistically detectable improvement smaller than the MMI is **not** a promotion.
 5. **Dependence.** Invented benchmark suites share generators, so the wave's tests are positively
@@ -170,9 +180,14 @@ Exactly as ADR-19 states ("Benjamini–Hochberg across the family's primary test
    use **Benjamini–Yekutieli** at q = 0.10 (valid under arbitrary dependence) — the conservatism is
    the point. *Reversal path:* if a wave's dependence structure is measured and shown PRDS, a
    reviewed change may drop back to BH for that wave.
-6. **Re-tests count.** A second promotion attempt for the same candidate enters the wave as a new
-   test and inflates `m`; it does not get a fresh q. This is the statistical form of law 11's
-   "every gate loop terminates".
+6. **Re-tests count across preregistrations.** A re-attempt necessarily carries a new
+   preregistration and holdout (§1.5), so `m` is carried forward **per `candidate_id`**: attempt
+   `k` for a candidate enters its wave with `m` inflated by all `k−1` prior attempts across every
+   earlier preregistration of that candidate, recorded in the registry. Attempts are capped at
+   **three** per candidate per tier (law 11); the third failure records `rejected_for_now` and
+   only a reviewed new-evidence decision reopens it. (Corrected 2026-08-04: without cross-prereg
+   carry-forward and a cap, per-attempt waves would reset `m` and void both the FDR control and
+   the termination guarantee.)
 7. **Never** apply FDR control to secondary/exploratory metrics and then report the survivors as
    findings. Exploratory output is labelled exploratory and cannot enter a card's evidence section.
 
@@ -549,8 +564,11 @@ the frozen suite and re-preregister". All benchmark data is **C0 invented** (ADR
   activity predictor.
 - **Metrics.** *Primary:* **Brier score** for next-probe completeness against the coverage-ledger
   baseline. *Secondary:* calibration (reliability curve, ECE), per-limitation-code breakdown,
-  capability/time holdouts, and a **decoy test**: predicted observability must not be usable to
-  reconstruct the planted activity process above a preregistered ceiling.
+  capability/time holdouts, and a **decoy test** with a concrete preregistered ceiling
+  (2026-08-04 correction — a reject criterion must be able to fail): an adversary given the
+  model's observability predictions must not reconstruct the planted activity process better than
+  **AUC ≤ 0.55 at N = 1,000 probe windows** (same form as `04` §5.2 #10); above the ceiling the
+  candidate is rejected outright.
 - **Abstention rule.** Abstain when probe history is below floor or when a capability's consent state
   changed inside the window (state change ⇒ new regime).
 - **Drift.** Permission/plan drift (canonical §9), connector version, provider API version.
@@ -610,7 +628,9 @@ the frozen suite and re-preregister". All benchmark data is **C0 invented** (ADR
   lexically similar but semantically irrelevant; coverage rows that must appear; **uniqueness
   canaries** — deliberately rare evidence rows used as membership-inference probes; and prohibited-
   field canaries (charter §Fixture rule) that must never appear in an index, a template, or a result.
-- **Metrics (mission-specified).** *Primary:* **counter-evidence recall@k** — because the product's
+- **Metrics (mission-specified).** *Primary:* **counter-evidence recall@k**, as defined
+  canonically in `04_LOCAL_RAG_DESIGN.md` §5.2 #5 (pre-quota top-k, planted falsifier denominator;
+  the post-quota delivered value is a separate quota-engine check) — because the product's
   failure mode is a persuasive one-sided story, not a missed nice-to-have. *Secondary:* **Recall@k**,
   **nDCG**, **MRR**, **citation validity** (every returned evidence ID resolves to a stored record in
   the same pack — must be 100%, a hard gate not a metric), unsupported-claim rate downstream,
@@ -780,7 +800,7 @@ prevents the sunk-cost drift that turns "research" into "shipping because we bui
 | **G-ML-1** | Any **consented real research dataset** for gate B, per candidate. | ADR-19: `validated` requires "a separately authorised, representative, consented dataset with its own card". No such authority exists under G1–G4. |
 | **G-ML-2** | Any **durable index** (lexical or vector) built by WB-C9. | ADR-20: "any durable index is a separately reviewed sink (owner gate)". |
 | **G-ML-3** | ADR-10 **Tier-2 semantics** (PR/issue prose, durable text embeddings) as an input to WB-C2. | ADR-10 records this as an explicit owner-gated policy proposal; **no card here assumes it**. |
-| **G-ML-4** | Adding **WB-C10** to the ADR-19 candidate register. | The register is frozen at C1…C9 in an accepted ADR; extending it is the coordinator's call, not this document's. |
+| **G-ML-4** | Adding **WB-C10** to the ADR-19 candidate register. | **Adjudicated 2026-08-04 (08 §4.8): accepted as DL-TRACE-03's evaluation specification, not a separate register entry or board card.** The register stays C1…C9. |
 | **G-ML-5** | Any **local model weight** shipped or downloaded for WB-C2/C9. | Must be pinned, licensed, offline, non-executing-remote-code (ADR-21). Licensing and distribution are owner questions. |
 | **G-ML-6** | Raising any §1.8 **resource budget** above the defaults. | Cost is a product boundary here; a raised budget needs the decision it changes. |
 | **G-ML-7** | Storing **model outputs** durably (`model_output` table population). | Canonical §10: initial model output is process-only; "a later reviewed task may store validated C1 output separately". |

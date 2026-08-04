@@ -137,10 +137,22 @@ from ever being *upgraded* by missing evidence, plus claim-specific limitation c
 dimension set with claim-tier gating; (c) collapse to a single score with explanations (REJ —
 violates principle 7).
 
-**Decision.** (b). The coverage vector becomes a **registered, versioned dimension set**:
-`permission, completeness, freshness, censoring, conflict, sample, source_diversity,
-parser_coverage, comparability, drift, calibration` — each `number | null` with a
-`limiting_reason` code. Claim families declare **minimum vector requirements per claim tier**
+**Decision.** (b). The coverage vector becomes a **registered, versioned dimension set** of
+twelve dimensions:
+`permission, completeness, eligibility, freshness, censoring_freedom, consistency, sample,
+source_diversity, parser_coverage, comparability, drift_stability, calibration` — each
+`number | null` with a `limiting_reason` code and a registered **`direction`**, which is
+`higher_is_better` for every dimension (corrected 2026-08-04 review round: an implementer must
+never have to guess polarity, or monotone abstention inverts). Explicit mapping from the canonical
+`EvidenceConfidence` (not 1:1): `freshness→freshness`, `sample→sample`,
+`eligibility→eligibility`, `sourceDiversity→source_diversity`,
+`consistency→consistency` (canonical formula `1 − conflicts/comparisons`, name kept so the value
+reads higher-is-better), `completeness→completeness`; new dimensions `permission`,
+`censoring_freedom` (1 = no censoring), `parser_coverage`, `comparability`, `drift_stability`
+(1 = stable across re-collections), `calibration` have no v1 counterpart and start `null` with
+limiting reasons. Cold-start rule: while `calibration` has no producer output yet
+(DL-EVQ-04 needs resolved questions), modelled claims render at most at deterministic tier —
+fail-closed over-abstention is the intended behaviour. Claim families declare **minimum vector requirements per claim tier**
 (e.g. a modelled change-point claim requires `completeness ≥ 0.8`, `comparability = 1`,
 `calibration ≠ null`). Degrading any dimension can only hold or lower the claim tier
 (**monotone abstention**); no combination of other dimensions can compensate below a floor.
@@ -151,8 +163,9 @@ so the same truncation produces claim-appropriate language everywhere.
 version of "absence is never zero" for claims; per-family gates make abstention preregistrable and
 testable on degraded fixtures.
 
-**Privacy effect.** None; all C1. **Compatibility.** `EvidenceConfidence` fields map 1:1 into the
-extended set; existing UI copy keys continue to resolve. **Failure/rollback.** A missing dimension
+**Privacy effect.** None; all C1. **Compatibility.** every `EvidenceConfidence` field has a named
+target in the mapping above (six carried, six new-null); copy keys for the six carried dimensions
+continue to resolve, the six new dimensions get new keys. **Failure/rollback.** A missing dimension
 value is `null` + limiting reason, never a default 1.0; rollback = ignore new dimensions.
 **Revisit.** If per-family gates prove too coarse, add per-claim overrides through the same
 registry, never ad-hoc code. **Cards.** SPINE-04 (dimension registry), SPINE-05 (monotone gate +
@@ -346,7 +359,10 @@ the matched-sub-window comparison — eras compare only on sub-windows where the
 (equal parser major, equal config revision, coverage within preregistered tolerances), the
 **matched fraction** of each era is a first-class number, and the unmatched residual names its
 disqualifying dimension; the naive whole-era diff is never rendered when the matched diff disagrees
-with it. **Eras** are labeled
+with it beyond a preregistered per-aggregate disagreement tolerance (registered beside the matching
+tolerances, not tuned). Named limitation: matched sub-windows are a non-random subsample (coverage
+quality correlates with activity volume), so every matched-window claim carries a selection-bias
+limitation code alongside the matched fraction. **Eras** are labeled
 intervals derived from accepted change-points (ADR-17), policy/CI transitions, or user annotation;
 "what materially changed between eras" is a deterministic diff of snapshot aggregates plus
 modelled continuity, each element carrying its layer badge.

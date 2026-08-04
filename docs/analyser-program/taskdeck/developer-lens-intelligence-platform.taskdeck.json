@@ -316,7 +316,7 @@
     },
     {
       "title": "DL-SPINE-04 - Coverage-vector dimension registry v2",
-      "description": "[DL-SPINE-04 | epic:spine | contract | READY | risk:medium | effort:M | M1]\nOutcome: Registered closed dimension set (permission, completeness, freshness, censoring, conflict, sample, source_diversity, parser_coverage, comparability, drift, calibration) with per-dimension limiting-reason codes.\nDeps: none | Unlock: -\nPaths: shared/coverage.ts (extend, versioned); tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; never collapse to a single scalar\nBehavior: ADR-02: existing EvidenceConfidence maps 1:1 into the set; unknown dimensions fail closed; null carries a limiting reason, never a default value.\nAccept: Unknown dimension/limiting-code rejected; existing six components round-trip; null-with-reason enforced by schema.\nProve: npm test -- shared/coverage.test.ts; npm run check\nFixtures: Vectors with each dimension null/degraded; hostile unknown-dimension payloads.\nRollback: New dimensions ignored by readers pinned to v1.\nDemo: Fixture vector rendering with limiting reasons in test snapshot.",
+      "description": "[DL-SPINE-04 | epic:spine | contract | READY | risk:medium | effort:M | M1]\nOutcome: Registered closed 12-dimension set (permission, completeness, eligibility, freshness, censoring_freedom, consistency, sample, source_diversity, parser_coverage, comparability, drift_stability, calibration), every dimension direction=higher_is_better, per-dimension limiting-reason codes, and the explicit EvidenceConfidence mapping (six carried, six new-null) per ADR-02 as corrected 2026-08-04.\nDeps: none | Unlock: -\nPaths: shared/coverage.ts (extend, versioned); tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; never collapse to a single scalar\nBehavior: ADR-02: existing EvidenceConfidence maps 1:1 into the set; unknown dimensions fail closed; null carries a limiting reason, never a default value.\nAccept: Unknown dimension/limiting-code rejected; existing six components round-trip; null-with-reason enforced by schema.\nProve: npm test -- shared/coverage.test.ts; npm run check\nFixtures: Vectors with each dimension null/degraded; hostile unknown-dimension payloads.\nRollback: New dimensions ignored by readers pinned to v1.\nDemo: Fixture vector rendering with limiting reasons in test snapshot.",
       "columnName": "Ready",
       "labels": [
         "status:ready",
@@ -933,7 +933,7 @@
     },
     {
       "title": "DL-PROV-01 - Attestation/provenance coverage",
-      "description": "[DL-PROV-01 | epic:ci-studio | implementation | PARKED | risk:medium | effort:M | M8]\nOutcome: PARKED: subject-digest attestation verification coverage ratios (GH-ATTEST-01). Revisit once CI-01 evidence shows a real decision this would change.\nDeps: DL-CI-01 | Unlock: CI evidence demonstrates a legitimate provenance question\nPaths: server/connectors/github/attestations.ts (future)\nAuthority: G2+G3 standing\nProhibited: Existence never rendered as trust; raw bundles/certs/signers never retained\nBehavior: Coverage ratios only, per matrix.\nAccept: n/a until unparked; unpark requires a named decision question.\nProve: n/a (parked)\nFixtures: Invalid-attestation fixture planned.\nRollback: n/a\nDemo: n/a",
+      "description": "[DL-PROV-01 | epic:ci-studio | implementation | PARKED | risk:medium | effort:M | M8]\nOutcome: PARKED and OWNER-GATED: subject-digest attestation verification coverage ratios (GH-ATTEST-01). Revisit once CI-01 evidence shows a real decision this would change AND the G-e gate is decided.\nDeps: DL-CI-01 | Unlock: OWNER GATE G-e: GH-ATTEST-01 has NO standing-G3 matrix row — requires a reviewed matrix/registry change or explicit owner decision; plus CI evidence demonstrating a legitimate provenance question\nPaths: server/connectors/github/attestations.ts (future)\nAuthority: gate:owner-decision (G-e, 08_OPEN_QUESTIONS section 1) — NOT covered by q-2 standing G3\nProhibited: No implementation before the G-e gate; existence never rendered as trust; raw bundles/certs/signers never retained\nBehavior: Coverage ratios only, per matrix.\nAccept: n/a until unparked; unpark requires a named decision question.\nProve: n/a (parked)\nFixtures: Invalid-attestation fixture planned.\nRollback: n/a\nDemo: n/a",
       "columnName": "Proposed",
       "labels": [
         "status:parked",
@@ -942,7 +942,7 @@
         "risk:medium",
         "M8-story-frontier",
         "epic:ci-studio",
-        "gate:G3-standing"
+        "gate:owner-decision"
       ]
     },
     {
@@ -961,16 +961,16 @@
     },
     {
       "title": "DL-PORT-02 - Policy/config evolution aggregates",
-      "description": "[DL-PORT-02 | epic:portfolio | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M5]\nOutcome: GH-RULE-01 policy-presence aggregates over time (enforcement/rule-type flags) joining era comparison; policy quality never claimed.\nDeps: DL-LIFE-01 | Unlock: lifecycle merged\nPaths: server/connectors/github/rulesets.ts; tests\nAuthority: G2+G3-adjacent (admin-read may be required -> coverage when absent)\nProhibited: No patterns/status names/bypass actors/integrations\nBehavior: Snapshot policy traits; permission denial -> restricted coverage.\nAccept: Layered/disabled/evaluate fixtures classify; denial fixture yields restricted not zero.\nProve: npm test -- server/connectors/github/rulesets.test.ts\nFixtures: Layered rulesets, permission denial.\nRollback: Revocation cascade.\nDemo: Policy-presence timeline data.",
+      "description": "[DL-PORT-02 | epic:portfolio | implementation | OWNER_GATED | risk:medium | effort:M | M5]\nOutcome: GH-RULE-01 policy-presence aggregates over time (enforcement/rule-type flags) joining era comparison; policy quality never claimed.\nDeps: DL-LIFE-01 | Unlock: OWNER GATE G-d: GH-RULE-01 (rulesets/branch protection) has NO standing-G3 matrix row and may need administration-read — requires a reviewed capability-matrix/registry change or explicit owner decision BEFORE any implementation; then lifecycle merged\nPaths: server/connectors/github/rulesets.ts; tests\nAuthority: gate:owner-decision (G-d, 08_OPEN_QUESTIONS section 1) — NOT covered by q-2 standing G3; do not build on the DL-LIFE-01 dependency alone\nProhibited: No implementation before the G-d gate; no privilege escalation past read-only least-privilege; no patterns/status names/bypass actors/integrations\nBehavior: Snapshot policy traits; permission denial -> restricted coverage.\nAccept: Layered/disabled/evaluate fixtures classify; denial fixture yields restricted not zero.\nProve: npm test -- server/connectors/github/rulesets.test.ts\nFixtures: Layered rulesets, permission denial.\nRollback: Revocation cascade.\nDemo: Policy-presence timeline data.",
       "columnName": "Proposed",
       "labels": [
-        "status:blocked",
+        "status:owner-gated",
         "type:implementation",
         "privacy:C1-C3",
         "risk:medium",
         "M5-feedback-pack",
         "epic:portfolio",
-        "gate:G3-standing"
+        "gate:owner-decision"
       ]
     },
     {
@@ -1724,7 +1724,7 @@
     },
     {
       "title": "DL-EVQ-01 - Adverse-tail counterfactual bounds + tipping fraction (frontier C-01)",
-      "description": "[DL-EVQ-01 | epic:evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M5]\nOutcome: Every censored distribution/ratio claim carries its worst-case/best-case bound pair and the tipping fraction of censored units that would flip its direction — absence-is-never-zero as a number.\nDeps: DL-BRIDGE-02, DL-SPINE-04 | Unlock: served facts + coverage vector merged\nPaths: server/analysis/censoredBounds.ts; tests\nAuthority: G2 approved\nProhibited: Bound never rendered as value (copy rule); no imputation into headline statistics; no survival model here (WB-C6 owns that)\nBehavior: Frontier C-01: impute censored units at support min/max (or cap boundary), scalar search for tipping fraction.\nAccept: Out-of-support later observation widens bound as DQ finding; kill condition: if realistic censoring never flips any claim on the synthetic corpus, drop the surface.\nProve: npm test -- server/analysis/censoredBounds.test.ts\nFixtures: 40 eligible + 8 censored lifecycles across flip/no-flip regimes.\nRollback: Derived C1; delete.\nDemo: Bound pair + tipping fraction on fixture claim.",
+      "description": "[DL-EVQ-01 | epic:evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | risk:low | effort:S | M5]\nOutcome: Every censored distribution/ratio claim carries its worst-case/best-case bound pair and the tipping fraction of censored units that would flip its direction — absence-is-never-zero as a number.\nDeps: DL-BRIDGE-02, DL-SPINE-04 | Unlock: served facts + coverage vector merged\nPaths: server/analysis/censoredBounds.ts; tests\nAuthority: G2 approved\nProhibited: Bound never rendered as value (copy rule); no imputation into headline statistics; no survival model here (WB-C6 owns that)\nBehavior: Frontier C-01: for right-censored durations the lower bound imputes each unit at its OWN censoring time (true value >= censoring time — support-min is NOT a bound); upper bound at window/cap boundary; scalar search for tipping fraction.\nAccept: Out-of-support later observation widens bound as DQ finding; kill condition: if realistic censoring never flips any claim on the synthetic corpus, drop the surface.\nProve: npm test -- server/analysis/censoredBounds.test.ts\nFixtures: 40 eligible + 8 censored lifecycles across flip/no-flip regimes.\nRollback: Derived C1; delete.\nDemo: Bound pair + tipping fraction on fixture claim.",
       "columnName": "Proposed",
       "labels": [
         "status:blocked",

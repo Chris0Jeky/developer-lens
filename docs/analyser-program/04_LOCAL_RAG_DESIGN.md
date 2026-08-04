@@ -180,7 +180,7 @@ shaped index, a pinned model binary, an inversion attack surface) is not.
 |---|---|---|---|---|
 | L1 structured + standardized distance | **shipped, default** | — (it is the baseline) | none (no index) | no |
 | L2 BM25 over templates | research | L1 measurably fails Recall@k or counter-evidence recall on the frozen benchmark | prohibited-field canaries clean; uniqueness-leakage gate | no (process-local); file = **G-RAG-1** |
-| L3 local pinned offline vectors | research, **likely-reject** | beats L1 **and** L2 on Recall@k, nDCG@k **and** counter-evidence recall at the preregistered margin | all of L2 **plus** membership-inference and reconstruction ceilings | no (process-local); file = **G-RAG-1**; model bundle = **G-RAG-3** |
+| L3 local pinned offline vectors | research, **likely-reject** | beats L1 **and** L2 on Recall@k, nDCG@k **and** counter-evidence recall at the preregistered margin | all of L2 **plus** the membership-inference ceiling; reconstruction is a mandatory *disclosure* metric (§5.2 #12 — no pass/fail gate) | no (process-local); file = **G-RAG-1**; model bundle = **G-RAG-3** |
 
 Demotion is symmetric: a shipped step that fails re-evaluation after a registry/feature-version
 change falls back to the step below it **automatically** (the fallback path is a runtime code path,
@@ -356,9 +356,14 @@ All fixtures are invented (charter fixture rule **D-charter**). Proposed fixture
 4. **Citation validity** — over every returned result set: fraction of returned evidence IDs that
    resolve to a row **in the same pack build_id**. Gate: **1.000, exact**; any value < 1 is a
    CI-blocking defect, not a metric. Corpus: all.
-5. **Counter-evidence recall** — for each query in `FX-RAG-02` with planted falsifier set *F(q)*:
-   `|S(q) ∩ F(q)| / |F(q)|`, computed over the **delivered result set after quota filling**, not the
-   raw ranking. Reported separately from Recall@k and never averaged into it.
+5. **Counter-evidence recall — THE canonical definition (2026-08-04 review correction; 02 and 03
+   reference this verbatim, never restate).** For each query in `FX-RAG-02` with planted falsifier
+   set *F(q)*: `|topK(q) ∩ F(q)| / |F(q)|`, computed over the **pre-quota top-k ranking** — this is
+   the number that discriminates rungs L1/L2/L3, because the quota engine would otherwise compress
+   it toward a constant (`contradicts_min` fills from an independent pool). The post-quota
+   delivered-set value `|S(q) ∩ F(q)| / |F(q)|` is **also** reported, separately, as a
+   quota-engine correctness check only, never as the ladder metric. `limitation` rows are never
+   pooled into either number. Reported separately from Recall@k and never averaged into it.
 6. **Unsupported-claim rate (downstream)** — run the ADR-21 composer over the retrieval output on
    `FX-RAG-02`/`FX-RAG-03`. A composed claim is **unsupported** if any of: (a) it cites an evidence ID
    absent from the delivered result set; (b) its family's ADR-02 vector gate was not met by the

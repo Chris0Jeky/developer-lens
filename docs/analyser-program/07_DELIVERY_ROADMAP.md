@@ -168,7 +168,7 @@ The roadmap ends in alternatives, not one inevitable architecture:
 | DL-SEC-01 | Isolated security-alert lifecycle store design + aggregates | ci-studio | implementation | BLOCKED_BY_DEPENDENCY | DL-LIFE-02 | M5 | high/M |
 | DL-PROV-01 | Attestation/provenance coverage | ci-studio | implementation | PARKED | DL-CI-01 | M8 | medium/M |
 | DL-PORT-01 | Repository lifecycle + composition transitions | portfolio | implementation | BLOCKED_BY_DEPENDENCY | DL-BRIDGE-02 | M5 | medium/M |
-| DL-PORT-02 | Policy/config evolution aggregates | portfolio | implementation | BLOCKED_BY_DEPENDENCY | DL-LIFE-01 | M5 | medium/M |
+| DL-PORT-02 | Policy/config evolution aggregates | portfolio | implementation | OWNER_GATED | DL-LIFE-01 | M5 | medium/M |
 | DL-PORT-03 | Portfolio era comparator view model | portfolio | implementation | BLOCKED_BY_DEPENDENCY | DL-TIME-01, DL-PORT-01 | M7 | low/M |
 | DL-GOV-01 | ProjectV2 status snapshots + aggregate transitions | governance | implementation | BLOCKED_BY_DEPENDENCY | DL-LIFE-01 | M6 | medium/M |
 | DL-GOV-02 | CODEOWNERS repository-level coverage | governance | implementation | BLOCKED_BY_DEPENDENCY | DL-LIFE-01, DL-ATLAS-01 | M6 | medium/M |
@@ -217,3 +217,23 @@ The roadmap ends in alternatives, not one inevitable architecture:
 | DL-Q-INDEX | Owner gate: durable retrieval index as a reviewed sink | open-questions | process | QUESTION | none | M7 | medium/S |
 | DL-Q-LOCALMODEL | Owner gate: pinned offline local model option | open-questions | process | QUESTION | none | M8 | medium/S |
 | DL-Q-CONSENT | Owner gate: consented real dataset for ML validation (per candidate) | open-questions | process | QUESTION | none | M6 | high/S |
+| DL-DRIFT-01 | CI declaration-vs-execution drift map (frontier A1) | ci-studio | implementation | BLOCKED_BY_DEPENDENCY | DL-CI-01, DL-CI-02 | M6 | medium/M |
+| DL-MIG-01 | Migration-ledger archaeology: append vs rewrite regimes (frontier A3) | xray | implementation | BLOCKED_BY_DEPENDENCY | DL-XRAY-02 | M6 | low/S |
+| DL-FIX-01 | Golden-mass ratio + golden-rewrite waves (frontier A4) | xray | implementation | BLOCKED_BY_DEPENDENCY | DL-XRAY-02, DL-COUP-01 | M6 | medium/M |
+| DL-BUILD-01 | Declared build/workspace graph + declared-vs-import disagreement (frontier A5) | atlas | implementation | BLOCKED_BY_DEPENDENCY | DL-ATLAS-04, DL-XRAY-02 | M6 | medium/M |
+| DL-REL-01 | Release-train signature vocabulary (frontier A7) | portfolio | implementation | BLOCKED_BY_DEPENDENCY | DL-FLOW-04, DL-GIT-02 | M5 | medium/S |
+| DL-EVQ-01 | Adverse-tail counterfactual bounds + tipping fraction (frontier C-01) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | DL-BRIDGE-02, DL-SPINE-04 | M5 | low/S |
+| DL-EVQ-02 | Evidence-degradation fragility profile (frontier C-02) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | DL-SPINE-05 | M5 | low/S |
+| DL-EVQ-03 | Claim stability across re-collections (frontier C-03; stability key) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | DL-SPINE-01, DL-SPINE-02 | M6 | medium/M |
+| DL-EVQ-04 | Calibration scoreboard for past hypotheses (frontier C-04) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | DL-OPEN-01, DL-HYP-02 | M7 | medium/M |
+| DL-EVQ-05 | Replication SQL per claim family in packs (frontier C-05) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | DL-PACK-04 | M5 | low/M |
+| DL-EVQ-06 | Coverage-horizon calendar (frontier C-06) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | DL-LIFE-02 | M5 | low/S |
+| DL-EVQ-07 | Negative space: what the system notably never does (frontier C-07) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | DL-BRIDGE-02 | M6 | medium/S |
+| DL-EVQ-08 | Matched-window era comparison (frontier C-08) | time-machine | implementation | BLOCKED_BY_DEPENDENCY | DL-TIME-01 | M6 | medium/M |
+| DL-EVQ-09 | Policy-transition study: placebo + confounder ledger (frontier C-09) | pattern-lab | research | RESEARCH | DL-PORT-02, DL-CI-01, DL-LAB-02 | M7 | high/M |
+| DL-EVQ-10 | Wave lead/lag ordering with permutation null (frontier C-10) | pattern-lab | research | RESEARCH | DL-COUP-03, DL-DEP-01, DL-WB-01 | M7 | medium/M |
+| DL-Q-XCONTRACT | Owner gate: cross-repository artifact identity key (frontier A11) | open-questions | process | QUESTION | none | M7 | high/S |
+| DL-Q-AGENTCFG | Owner gate: agent_config role class + adoption-timing suppression (frontier A14) | open-questions | process | QUESTION | none | M6 | medium/S |
+| DL-CAD-03 | Machine-checkable composition ledger (convergence D-01) | cadence | implementation | BLOCKED_BY_DEPENDENCY | DL-CAD-02, DL-SPINE-04 | M5 | high/M |
+| DL-PACK-06 | Export distinctiveness measurement at pack build (convergence D-02) | analysis-pack | implementation | BLOCKED_BY_DEPENDENCY | DL-PACK-05 | M5 | medium/M |
+| DL-LIFE-04 | Capability grant preview: cost dossier + producer set (convergence D-03) | lifecycle | implementation | BLOCKED_BY_DEPENDENCY | DL-LIFE-01, DL-SPINE-04 | M5 | medium/M |

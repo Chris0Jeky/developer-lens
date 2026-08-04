@@ -1557,11 +1557,14 @@ this document plus the charter and matrix, those win. Live evidence and the resu
    content-derived claim IDs and a **stability key**
    (`statement_code`, `method_id@version`, `window`, `scope_alias`, `schema_version`) so
    supersession chains group into series. Landing cards DL-SPINE-01/02 (ADR-01).
-2. **Coverage vector 2.0.** The confidence components become a registered closed dimension set
-   (adds `parser_coverage`, `comparability`, `drift`, `calibration`) with per-claim-family minimum
+2. **Coverage vector 2.0.** The confidence components become a registered closed twelve-dimension
+   set (carries all six `EvidenceConfidence` components incl. `eligibility` and `consistency`;
+   adds `permission`, `censoring_freedom`, `parser_coverage`, `comparability`, `drift_stability`,
+   `calibration`), every dimension registered `higher_is_better`, with per-claim-family minimum
    requirements and **monotone abstention** (degrading any dimension can only hold or lower a
-   claim tier). Producers: `calibration` from the calibration scoreboard; `drift` from the
-   claim-stability series (research role). Cards DL-SPINE-04/05 (ADR-02).
+   claim tier). Producers: `calibration` from the calibration scoreboard (cold-start: modelled
+   claims cap at deterministic tier until it produces); `drift_stability` from the claim-stability
+   series (research role). Cards DL-SPINE-04/05 (ADR-02).
 3. **Capability lifecycle.** One typed state machine
    (`never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked`) for every
    capability, with the invariant "gate approval performs no transition" tested by registry

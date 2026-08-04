@@ -66,7 +66,11 @@ on consented real data, per candidate; **G-d** capability-registry rows that the
 describes but `source-capability-matrix.md` does not yet carry (`GH-RULE-01` policy aggregates,
 `GH-ATTEST-01` attestation coverage, `GH-TAXONOMY-01` topics/licence/custom properties,
 `GH-DISCUSS-01` discussion metadata); **G-e** artifact/cache **metadata-only** counts
-(`GH-ACT-ART-X` is "not now", not approved). Nothing below designs a dependency on an ungated item.
+(`GH-ACT-ART-X` is "not now", not approved). No card below **proceeds** on an ungated item
+(2026-08-04 review correction): two entries source G-d capabilities — CAT-PRT-01's ruleset feed
+(DL-PORT-02) and the attestation entry (DL-PROV-01) — and both are therefore OWNER_GATED/PARKED
+on the board and in `07_DELIVERY_ROADMAP.md`, with G-d/G-e recorded in `08_OPEN_QUESTIONS.md` §1
+and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-control violation.
 
 ---
 
@@ -1113,7 +1117,8 @@ describes but `source-capability-matrix.md` does not yet carry (`GH-RULE-01` pol
   reviewed sink — owner gate G-b**.
 - **Canonical objects** — `DL.RAG.CITATION_VALIDITY.v1` (P) — returned IDs that resolve / returned
   IDs (must be 1.0); `DL.RAG.COUNTER_EVIDENCE_RECALL.v1` (P) — contradicting/limitation evidence
-  returned / available, the metric that makes cherry-picking measurable; `INDEX_STALE` (P) as its
+  returned (canonical definition: `04_LOCAL_RAG_DESIGN.md` §5.2 #5 — pre-quota top-k over the
+  planted falsifier set; never restated here), the metric that makes cherry-picking measurable; `INDEX_STALE` (P) as its
   limitation code.
 - **Baseline / modelled** — Three-step ladder, each step must **beat the previous on the retrieval
   benchmark before adoption** (ADR-20): (1) **deterministic structured retrieval — default,
