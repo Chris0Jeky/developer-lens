@@ -13,8 +13,9 @@ invented-fixture page adapter, closed activation-card parser, injected public-un
 transport with immediate projection, closed-world incremental-schema validation, and a confined
 ignored-card loader. It remains default-off and adds no credential, live read, storage composition,
 legacy-collector switch, or public/private output path. G4 is now provider-specifically approved,
-while the external-model capability remains `never_authorized` pending a separate default-off
-implementation and gate**.
+while a strict C1 evidence/output contract and deterministic local-retrieval foundation remain
+default-off. The external-model capability is still `never_authorized`; there is no credential,
+provider request, response, cache, telemetry, persistence, or presentation path**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -22,8 +23,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current story-path milestone: `origin/main` merge
-  `1d655cf64e91e6910fd79712f48d1abd64c61cdb`.
+- Published implementation baseline before the current C1 contract/retrieval milestone:
+  `origin/main` merge `523899db4a975524316fc63707e52ec81ec4f3ba`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -196,8 +197,9 @@ unresolved review threads outrank it whenever they disagree.
 - Priority: working local demo, speed/effectiveness/productivity, owner feedback, and focused tests.
 - Sequence: D1 visible synthetic vertical slice, D2 feedback iteration, D3 repeatable local demo,
   the first synthetic P2 SQLite/importer proof, and the bounded P3 foundation are complete locally.
-  P4-P11 remain unactivated. P12 is provider-specifically approved but remains absent/default-off
-  until its bounded implementation and gate. For future work,
+  P4-P11 remain unactivated. P12 is provider-specifically approved and now has a default-off C1
+  contract/local-retrieval foundation, but no request adapter, transport, credential read, or
+  activation path. For future work,
   Sol performs bounded browser/visual passes when needed, records subjective assumptions and
   next-day questions, and proceeds rather than waiting.
 - Hardening rule: security, privacy hardening, resilience, and distribution concerns are recorded in
@@ -481,8 +483,37 @@ unresolved review threads outrank it whenever they disagree.
   retaining literal `never_authorized`. This authority slice adds no provider SDK, request code,
   credential read, payload, response, external call, local cache, telemetry, or model-output data.
 
+## P12 default-off C1 contract and local retrieval foundation
+
+- `server/externalModel/c1Contract.ts` accepts only four scalar ratio features from the architecture,
+  request-scoped numeric evidence/claim IDs, the fixed consent/redaction revisions, exact V2
+  coverage states, bounded UTC ranges, a 16,000-byte bundle ceiling, and closed statement,
+  alternative, limitation, confidence, and unit vocabularies. Repository aliases/IDs, names, grain
+  IDs, prose, paths, C2 values, actions, unknown fields/codes, and semantic identifiers fail closed.
+- Feature-specific sample floors and complete coverage are required for a numeric value. Missing,
+  restricted, censored, stale, or under-sampled facts carry `null`, never zero, and can support only
+  a low-confidence `ABSTAIN_LOW_COVERAGE` claim. Non-abstaining claims must cite usable evidence of
+  the exact feature associated with their statement code and may name only limitations present on
+  that cited evidence.
+- `server/externalModel/localRetrieval.ts` is a deterministic pure selector over caller-injected,
+  already-approved C1 facts. It accepts only closed code filters plus a finite limit, rejects prose,
+  unknown/duplicate IDs and oversized input, and sorts by feature then numeric opaque fact ID. It
+  performs no filesystem, database, network, credential, environment, embedding, vector-store,
+  hosted-tool, cache, telemetry, persistence, UI, export, or model operation.
+- This foundation does not activate `cap.external.model` and does not construct a provider request.
+  A later bounded slice must generate request-scoped IDs, project the smallest retrieved facts into
+  the validated bundle, build the complete prompt/request within the byte/cost gate, and inject a
+  no-retry Responses transport without letting provider IDs/bodies enter logs or state.
+
 ## Verification
 
+- P12 C1 contract/retrieval proof after rebasing onto synthetic story merge `523899d`: the two
+  focused suites passed 2 files / 7 tests; `npm run check` passed Oxlint, context verification,
+  32 test files / 144 tests, TypeScript project builds, and the production Vite build; and
+  `git diff --check` passed. The fix round added direct canaries for opaque IDs, forbidden identity/
+  prose fields, exact V2 coverage, null-not-zero evidence, sample floors, mandatory abstention,
+  statement/feature and limitation/evidence compatibility, byte budget, duplicate IDs, stable
+  errors, deterministic permutations, and closed retrieval filters.
 - D1 story-path proof after rebasing onto loader merge `1d655cf`: `npm run test:demo:v2` passed
   1 file / 5 tests; the focused story/App/insight suite passed 3 files / 8 tests; `npm run check` and
   `npm run build:showcase` passed; and `git diff --check` passed. Browser inspection covered the
@@ -709,7 +740,8 @@ unresolved review threads outrank it whenever they disagree.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
 - G2/G3 runtime behavior is not verified merely by approval: no real-data migration, retention
   cleanup, backup, deletion, or named sensitive connector ran in this slice. G4 is now approved
-  only for the recorded OpenAI/Luna boundary, but no external-model path or request has run.
+  only for the recorded OpenAI/Luna boundary; the C1 contract/local-retrieval foundation remains
+  process-local and no credential, provider adapter, external transport, or request has run.
 
 ## Residual risk
 
@@ -789,8 +821,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current loader milestone is
-   merge `94f00ae67e5c72c388698872ec5a706e9265f898`; live evidence still outranks this checkpoint.
+1. Refresh Git/GitHub before mutation. The published baseline before the current C1 foundation is
+   merge `523899db4a975524316fc63707e52ec81ec4f3ba`; live evidence still outranks this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
    activated hostile-writer claim without an immutable snapshot or equivalent boundary.
@@ -805,7 +837,9 @@ unresolved review threads outrank it whenever they disagree.
    make no real request until that composition, focused failure tests, review, and the exact hosted
    gate pass.
 5. G4 is approved only for the exact OpenAI/Luna contract, but `cap.external.model` remains
-   `never_authorized`. A parallel bounded P12 slice may implement the injected default-off request,
-   strict C1 payload/output schemas, local retrieval, budget/error/deletion controls, and invented
-   canaries. Make no live request until that implementation, review, exact hosted gate, and an exact
-   payload-preview/task-card authorization pass.
+   `never_authorized`. The strict C1 payload/output and deterministic local-retrieval foundation is
+   present. Next add a separately reviewed injected request builder/transport with freshly minted
+   request IDs, full serialized byte/cost enforcement, `store:false`, one request/no retry, stable
+   content-free errors, process-only validated output, and invented transport canaries. Make no live
+   request until that implementation, review, exact hosted gate, and an exact payload-preview/task-
+   card authorization pass.
