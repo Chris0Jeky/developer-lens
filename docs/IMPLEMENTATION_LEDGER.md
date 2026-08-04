@@ -12,8 +12,8 @@ path over its existing validated C0 insight payload. The published P4 foundation
 protocol, opt-in incremental storage bridge, invented-fixture page adapter, closed activation-card
 parser, injected public-unauthenticated GET transport with immediate projection, closed-world
 incremental-schema validation, and a confined descriptor-bound, duplicate-key-rejecting, 64 KiB
-ignored-card loader. The current publication candidate adds frozen alias-only membership to every
-accepted REST page receipt. A shared installation-
+ignored-card loader plus frozen alias-only membership on every accepted REST page receipt. A shared
+installation-
 scoped alias factory now preserves the existing migration identities and adds closed, domain-
 separated repository, issue, pull-request, and page aliases. The opt-in store now records restricted
 coverage as explicitly noncomplete without advancing a checkpoint or creating a snapshot. P4
@@ -21,7 +21,9 @@ remains default-off and
 adds no credential, live read, storage composition,
 legacy-collector switch, or public/private output path. G4 is now provider-specifically approved,
 while a strict C1 evidence/output contract, deterministic local retrieval, and a credentialless
-OpenAI Responses request boundary remain default-off. The external-model capability is still
+OpenAI Responses request boundary remain default-off. The current P12 publication candidate adds a
+strict, review-chronology-bound activation-card parser without reading its future card. The external-
+model capability is still
 `never_authorized`; there is no environment read, authorization-bearing transport, network/provider
 execution, raw response, cache, telemetry, persistence, or presentation path**.
 
@@ -531,7 +533,8 @@ unresolved review threads outrank it whenever they disagree.
 - The approved request is synchronous Responses API, standard tier, `store: false`, one request,
   no retry, at most 16,000 UTF-8 input bytes, at most 2,000 output tokens, and estimated cost at or
   below USD 0.01 after a fresh terms/pricing check. No hosted file/vector/embedding/search/tool,
-  stateful conversation, background job, cache, telemetry, or initially persisted output is allowed.
+  stateful conversation, background job, local cache, telemetry, or initially persisted output is
+  allowed.
 - Retrieval/RAG stays local over explicitly selected C1 analysis-pack facts. Only controlled codes,
   numeric values, bounded UTC intervals, coverage/limitation metadata, and request-scoped evidence
   IDs may cross the boundary. The provider response is a schema-validated C1 hypothesis and cannot
@@ -573,6 +576,17 @@ unresolved review threads outrank it whenever they disagree.
   above USD 0.01 reject before the callback. The callback runs exactly once with no retry and may
   return only status plus structured output; all other fields, non-2xx status, unknown evidence, or
   semantic output mismatch fail with stable content-free errors.
+- `server/externalModel/openaiActivationTask.ts` accepts only the owner-approved OpenAI/Luna
+  boundary, named environment-variable identifier, standard tier, `store:false`, one request/no
+  retry, finite timeout, exact byte/token/USD caps, strict output descriptor, and reviewed payload
+  hash shapes. Model, pricing, data-control, and structured-output evidence must form one closed
+  official-URL set, remain no more than 24 hours old, predate the exact review, and bind the price
+  quote timestamp to the pricing evidence timestamp. Authorization must predate review; all accepted
+  data is deeply frozen and every failure is content-free.
+- The card explicitly distinguishes no local cache/telemetry/persistence from OpenAI's acknowledged
+  provider-retention boundary. It authorizes no conversation/background mode, hosted tool/file/
+  vector-store path, repository/source bytes, presentation, export, or public sink. Its bundle/body
+  hashes are syntax-bound only until the next pure preview seam recomputes them.
 - This foundation does not activate `cap.external.model` and includes no environment read,
   credential/Authorization surface, SDK, HTTP implementation, provider response parser/body/ID,
   timeout, cache, telemetry, persistence, presentation, export, or public path. A later activation
@@ -582,12 +596,19 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- P4 page-membership candidate [PR #35](https://github.com/Chris0Jeky/developer-lens/pull/35)
-  was rebased onto restricted-storage merge `e0ed726`; the focused REST suite passed 1 file / 9
-  tests. `npm run check` passed Oxlint, context verification, 34 test files / 163 tests, TypeScript
+- P12 activation-card candidate was rebased onto page-membership merge `5b19f28`; the activation and
+  request suites passed 2 files / 10 tests. `npm run check` passed Oxlint, context verification, 35
+  test files / 168 tests, TypeScript project builds, and the production Vite build; `git diff --check`
+  passed. Exact final fresh-context review after the bounded provider-retention wording correction
+  found no CRITICAL/HIGH authority, chronology, evidence, closed-set, privacy, freezing, error-
+  content, or request-regression defect.
+- P4 page-membership [PR #35](https://github.com/Chris0Jeky/developer-lens/pull/35)
+  merged as `5b19f28` after rebasing onto restricted-storage merge `e0ed726`; the focused REST suite
+  passed 1 file / 9 tests. `npm run check` passed Oxlint, context verification, 34 test files / 163 tests, TypeScript
   project builds, and the production Vite build; `git diff --check` passed. A fresh-context review
   found no CRITICAL/HIGH range-filtering, deduplication, alias-only membership, determinism, or
-  mutation-safety defect.
+  mutation-safety defect. Exact-merge hosted Pages run `30881810351` completed successfully; its
+  late automated review contained no finding.
 - P4 restricted-storage [PR #34](https://github.com/Chris0Jeky/developer-lens/pull/34)
   merged as `e0ed726` after rebasing onto OpenAI request merge `4ee986e`; the focused incremental
   storage suite passed 1 file / 19 tests. `npm run check` passed Oxlint, context verification, 34 test files / 163 tests,
@@ -888,10 +909,11 @@ unresolved review threads outrank it whenever they disagree.
   replayed file again before accepting it. Completed packs remain immutable by contract; an
   activated hostile-writer claim would still need an immutable snapshot or an equivalent stronger
   boundary to exclude an adversarial replace-read-restore sequence.
-- The P12 request seam validates caller-injected pricing shape and freshness but cannot authenticate
-  that the caller actually rechecked the official pages. It deliberately has no credential reader,
-  HTTP timeout/body parser, usage receipt, activation card, output retention, or presentation path;
-  those remain separate reviewed boundaries before a real call.
+- The P12 request seam and activation-card parser validate caller-injected pricing/evidence shape,
+  freshness, and review chronology but cannot authenticate page content or recompute the card's
+  bundle/body hashes. They deliberately have no card loader, exact preview binder, credential reader,
+  HTTP timeout/body parser, usage receipt, output retention, or presentation path; those remain
+  separate reviewed boundaries before a real call.
 - The P4 synthetic adapter and public REST transport are both injected seams with no runtime call
   site. The loader reads only the canonical task-owned card but no production caller composes it
   with transport or the opt-in storage bridge. Application-controlled backup/restore, installation-
@@ -952,8 +974,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current page-membership
-   candidate is merge `e0ed72656fbf900b21620ac5a442e12c1d5415a0`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P12 activation-card
+   candidate is merge `5b19f284f2fbb4af617a4883d348e340edc1db5f`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -965,8 +987,9 @@ unresolved review threads outrank it whenever they disagree.
    descriptor-bound loader, and injected public-unauthenticated transport expose no identity or
    operational values in tracked state. The shared alias factory now preserves existing repository
    identities and defines closed unit/page domains; the opt-in store now preserves restricted
-   coverage without a snapshot or checkpoint advance. Page-local alias membership is the current
-   publication candidate. Next add pure canonical alias/hash/replay composition, then issue #6 key-
+   coverage without a snapshot or checkpoint advance, and published page receipts now expose frozen
+   alias-only membership. Next publish the pure canonical alias/hash/replay composition, then issue
+   #6 key-
    lifecycle/mismatch enforcement,
    backup/restore, scoped deletion/tombstone, re-consent, and snapshot-stability proof. Keep runtime
    default-off and make no real request until that composition, focused failure tests, review, and
@@ -974,8 +997,9 @@ unresolved review threads outrank it whenever they disagree.
 5. G4 is approved only for the exact OpenAI/Luna contract, but `cap.external.model` remains
    `never_authorized`. The strict C1 payload/output and deterministic local-retrieval foundation is
    present, and the credentialless request boundary now enforces native strict output, standard
-   service tier, serialized byte/cost ceilings, `store:false`, and one call/no retry. Next add a
-   separately reviewed task card and exact payload preview plus an authorization-bearing transport
-   that reads only the approved environment variable at call time, applies a finite timeout,
+   service tier, serialized byte/cost ceilings, `store:false`, and one call/no retry. The current
+   candidate adds the strict reviewed-card parser but does not load a card or authenticate its hashes.
+   Next add a confined loader and pure exact payload-preview/hash binder, then an authorization-bearing
+   transport that reads only the approved environment variable at call time, applies a finite timeout,
    extracts only structured output, and discards raw provider bodies/IDs. Make no live request until
-   that implementation, review, exact hosted gate, and task-card authorization pass.
+   those implementations, reviews, exact hosted gates, and task-card authorization pass.
