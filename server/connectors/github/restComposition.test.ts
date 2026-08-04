@@ -64,7 +64,6 @@ describe('pure complete REST composition', () => {
       },
     ])
     expect(result.transition.checkpoint?.lastCompleteSnapshotHash).toBe(result.snapshotHash)
-    expect(result.sourceSnapshotId).toBe(`ghcore_${result.snapshotHash}`)
     expect(result.sourceSnapshotId).toMatch(/^ghcore_[a-f0-9]{64}$/)
     expect(Object.isFrozen(result)).toBe(true)
     expect(Object.isFrozen(result.receipts)).toBe(true)
@@ -108,6 +107,21 @@ describe('pure complete REST composition', () => {
 
     expect(right.snapshotHash).toBe(left.snapshotHash)
     expect(right.receipts).toEqual(left.receipts)
+  })
+
+  it('keeps content hashes replay-stable while assigning distinct snapshot rows to distinct jobs', () => {
+    const first = composeGithubCoreRestComplete({ ...context, result: completeResult() })
+    const replay = composeGithubCoreRestComplete({
+      ...context,
+      jobId: 'job-composition-2',
+      observedAt: '2026-08-04T01:00:00.000Z',
+      result: completeResult(),
+    })
+
+    expect(replay.snapshotHash).toBe(first.snapshotHash)
+    expect(replay.sourceSnapshotId).not.toBe(first.sourceSnapshotId)
+    expect(composeGithubCoreRestComplete({ ...context, result: completeResult() }).sourceSnapshotId)
+      .toBe(first.sourceSnapshotId)
   })
 
   it.each([

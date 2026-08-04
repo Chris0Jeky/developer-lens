@@ -10,6 +10,7 @@ import {
 import type { GithubCoreRestCompleteResult, GithubCoreRestPageReceipt, GithubCoreRestUnit } from './restTransport.js'
 
 const SNAPSHOT_MARKER = 'developer-lens/github-core/rest-complete/v1' as const
+const SNAPSHOT_ID_MARKER = 'developer-lens/github-core/source-snapshot-id/v1' as const
 const OPAQUE_ID = /^[A-Za-z0-9:._-]{1,128}$/
 const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 
@@ -230,6 +231,13 @@ export function composeGithubCoreRestComplete(
   try {
     const { receipts, canonicalSnapshot } = validateCompleteResult(input)
     const snapshotHash = createHash('sha256').update(JSON.stringify(canonicalSnapshot), 'utf8').digest('hex')
+    const sourceSnapshotIdHash = createHash('sha256')
+      .update(SNAPSHOT_ID_MARKER, 'utf8')
+      .update('\0', 'utf8')
+      .update(snapshotHash, 'utf8')
+      .update('\0', 'utf8')
+      .update(input.jobId, 'utf8')
+      .digest('hex')
     const { result: _result, ...context } = input
     const transition = reconcileGithubCoreReceipts({
       ...context,
@@ -241,7 +249,7 @@ export function composeGithubCoreRestComplete(
       transition,
       receipts,
       snapshotHash,
-      sourceSnapshotId: `ghcore_${snapshotHash}`,
+      sourceSnapshotId: `ghcore_${sourceSnapshotIdHash}`,
     })
   } catch {
     throw new Error('REST_COMPLETE_COMPOSITION_INVALID')
