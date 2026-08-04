@@ -97,6 +97,43 @@ export interface GithubCoreCheckpointTransition {
   readonly cursorHint?: string
 }
 
+export interface GithubCoreNonCompleteCheckpointTransition
+  extends Omit<GithubCoreCheckpointTransition, 'status'> {
+  readonly status: GithubCoreNonCompleteStatus
+}
+
+export type GithubCoreNonCompleteStatus = 'restricted' | 'failed' | 'truncated'
+
+/**
+ * Caller-owned, non-terminal observations. These are facts about a bounded attempt, not page
+ * receipts and not snapshot material. Receipt aliases are accepted under either the historical
+ * `appliedReceiptIds` name or the more explicit `appliedReceiptAliases` name.
+ */
+export interface GithubCoreNonCompleteReconciliationInput {
+  readonly checkpoint: GithubCoreCheckpoint | null
+  readonly scopeAlias: string
+  readonly rangeStart: string
+  readonly rangeEnd: string
+  readonly observedAt: string
+  readonly jobId: string
+  readonly consentRevision: string
+  readonly status: GithubCoreNonCompleteStatus
+  readonly expectedUnits?: number | null
+  readonly observedUnits: number
+  readonly omittedUnits?: number | null
+  readonly appliedReceiptIds?: readonly string[]
+  readonly appliedReceiptAliases?: readonly string[]
+  readonly limitationCode: string
+  readonly saturationReason?: string
+  readonly retryable?: boolean
+  readonly failure?: {
+    readonly kind: GithubCoreFailureKind
+    readonly attempt: number
+    readonly retryAfterMs?: number
+  }
+  readonly cursorHint?: string
+}
+
 function assertOpaqueId(value: string, field: string): void {
   if (
     typeof value !== 'string' ||
@@ -111,6 +148,14 @@ function assertLowercaseSha256(value: string, field: string): void {
   if (typeof value !== 'string' || !LOWERCASE_SHA_256.test(value)) {
     throw new Error(`${field} must be a canonical lowercase SHA-256`)
   }
+}
+
+function freezeDeep<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value)
+    for (const child of Object.values(value as Record<string, unknown>)) freezeDeep(child)
+  }
+  return value
 }
 
 function parseFailureKind(value: unknown): GithubCoreFailureKind {
@@ -375,6 +420,111 @@ function latestWatermark(receipts: readonly GithubCoreReceipt[], previous?: stri
   }
   return latest
 }
+
+function cloneCheckpoint(checkpoint: GithubCoreCheckpoint | null): GithubCoreCheckpoint | null {
+  return checkpoint ? freezeDeep({ ...checkpoint }) : null
+}
+
+function assertNonnegativeCount(value: unknown, field: string, nullable = false): asserts value is number | null {
+  if (nullable && value === null) return
+  if (!Number.isSafeInteger(value) || (value as number) < 0) {
+    throw new Error(`${field} must be a nonnegative safe integer${nullable ? ' or null' : ''}`)
+  }
+}
+
+function assertLimitationCode(value: unknown, field: string): asserts value is string {
+  if (typeof value !== 'string' || !/^[A-Z0-9_]+$/.test(value)) throw new Error(`${field} is invalid`)
+}
+
+/**
+ * Reconciles a restricted, failed, or truncated attempt without accepting terminal receipts.
+ * The prior checkpoint is copied and frozen; no snapshot hash, snapshot ID, or completion path is
+ * available from this function.
+ */
+export function reconcileGithubCoreNonComplete(
+  input: GithubCoreNonCompleteReconciliationInput,
+): GithubCoreNonCompleteCheckpointTransition {
+  assertOpaqueId(input.scopeAlias, 'scopeAlias')
+  assertOpaqueId(input.jobId, 'jobId')
+  assertOpaqueId(input.consentRevision, 'consentRevision')
+  assertRange(input.rangeStart, input.rangeEnd)
+  parseCanonicalTimestamp(input.observedAt, 'observedAt')
+  if (!['restricted', 'failed', 'truncated'].includes(input.status)) throw new Error('status is noncomplete only')
+  if (Object.hasOwn(input as object, 'snapshotHash') || Object.hasOwn(input as object, 'snapshotId')) {
+    throw new Error('snapshot material is not accepted for noncomplete reconciliation')
+  }
+  if (input.checkpoint) assertCompatibleCheckpoint(input.checkpoint, input)
+
+  const expectedUnits = input.expectedUnits ?? null
+  const omittedUnits = input.omittedUnits ?? null
+  assertNonnegativeCount(input.observedUnits, 'observedUnits')
+  assertNonnegativeCount(expectedUnits, 'expectedUnits', true)
+  assertNonnegativeCount(omittedUnits, 'omittedUnits', true)
+  if (expectedUnits !== null && input.observedUnits > expectedUnits) throw new Error('observedUnits cannot exceed expectedUnits')
+  if (expectedUnits !== null && omittedUnits !== null && input.observedUnits + omittedUnits !== expectedUnits) {
+    throw new Error('observed and omitted units must account for expected units')
+  }
+  assertLimitationCode(input.limitationCode, 'limitationCode')
+  if (input.saturationReason !== undefined) assertLimitationCode(input.saturationReason, 'saturationReason')
+  if (input.status === 'truncated' && input.saturationReason === undefined) {
+    throw new Error('truncated coverage requires saturationReason')
+  }
+  const rateLimitFailure = input.failure?.kind === 'rate_limited'
+  if (input.status !== 'truncated' && input.saturationReason !== undefined && !rateLimitFailure) {
+    throw new Error('only truncated coverage may have saturationReason')
+  }
+  if (input.retryable !== undefined && typeof input.retryable !== 'boolean') throw new Error('retryable must be boolean')
+
+  const aliases = input.appliedReceiptAliases ?? input.appliedReceiptIds ?? []
+  if (input.appliedReceiptAliases !== undefined && input.appliedReceiptIds !== undefined) {
+    throw new Error('provide one applied receipt alias list')
+  }
+  if (!Array.isArray(aliases)) throw new Error('applied receipt aliases must be an array')
+  const appliedReceiptIds = [...aliases]
+  if (new Set(appliedReceiptIds).size !== appliedReceiptIds.length) throw new Error('applied receipt aliases must be unique')
+  for (const receiptId of appliedReceiptIds) assertOpaqueId(receiptId, 'appliedReceiptAlias')
+
+  if (input.cursorHint !== undefined) {
+    assertOpaqueId(input.cursorHint, 'cursorHint')
+    if (input.status !== 'truncated') throw new Error('cursorHint is only valid for truncated coverage')
+  }
+
+  let status: GithubCoreNonCompleteStatus = input.status
+  let retryable = input.retryable ?? (status === 'truncated')
+  if (input.failure) {
+    const retry = classifyGithubCoreRetry(input.failure.kind, input.failure.attempt, input.failure.retryAfterMs)
+    retryable = retry.retry
+    // A rate-limit outcome is a bounded truncation, even when a caller supplied a generic failed
+    // status. It must never be represented as terminal failure.
+    if (retry.kind === 'rate_limited') status = 'truncated'
+  }
+  if (status === 'truncated' && input.saturationReason === undefined) {
+    throw new Error('truncated coverage requires saturationReason')
+  }
+
+  const transition = {
+    status,
+    coverage: coverage(
+      input,
+      status,
+      expectedUnits,
+      input.observedUnits,
+      omittedUnits,
+      input.limitationCode,
+      retryable,
+      input.saturationReason,
+    ),
+    checkpoint: cloneCheckpoint(input.checkpoint),
+    appliedReceiptIds: Object.freeze(appliedReceiptIds),
+    ...(input.cursorHint !== undefined ? { cursorHint: input.cursorHint } : {}),
+  }
+  return freezeDeep(transition)
+}
+
+// Spelling aliases keep the closed foundation discoverable without introducing a second semantic
+// path.
+export const reconcileGithubCoreNoncomplete = reconcileGithubCoreNonComplete
+export const reconcileGithubCoreNonCompleteOutcome = reconcileGithubCoreNonComplete
 
 /**
  * Pure synthetic reconciliation model. It accepts caller-supplied opaque receipts only; it does

@@ -64,7 +64,7 @@ describe('github.core REST transport projection', () => {
     } as unknown as GithubCoreActivationTaskCard
     const fixture = fetchFixture([])
     const result = await collectGithubCoreRest({ card: forged, rangeEnd, fetch: fixture.fetch, alias: aliasFixture })
-    expect(result).toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID', repositoryAlias: 'invalid' })
+    expect(result).toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID', repositoryAlias: 'invalid', rangeStart: null, rangeEnd: null })
     expect(fixture.calls).toHaveLength(0)
   })
 
@@ -227,6 +227,7 @@ describe('github.core REST transport projection', () => {
       const fetch = outcome instanceof Error ? (async () => { throw outcome }) as GithubCoreRestFetch : fixture.fetch
       const result = await collectGithubCoreRest({ card: card(), rangeEnd, fetch, alias: () => 'repo-alias' })
       expect(result).toMatchObject({ kind: code === 'RATE_LIMITED' ? 'truncated' : code === 'PERMISSION_DENIED' || code === 'NOT_FOUND' ? 'restricted' : 'failed', code })
+      if (result.kind !== 'complete') expect(result).toMatchObject({ rangeStart, rangeEnd })
       expect(JSON.stringify(result)).not.toContain('SECRET_NETWORK_DETAIL')
       if (result.kind === 'truncated') {
         expect(result).toMatchObject({ repositoryFlags: null, observedUnitCount: null, observedPageCount: null, total: null })
@@ -234,5 +235,19 @@ describe('github.core REST transport projection', () => {
         expect(result).not.toHaveProperty('observedUnitCount')
       }
     }
+  })
+
+  it('binds every live noncomplete outcome to the exact canonical collection range', async () => {
+    const cases: Array<{ response: GithubCoreRestResponse; kind: 'truncated' | 'restricted' | 'failed'; code: string }> = [
+      { response: response(429, {}, { 'x-ratelimit-remaining': '0' }), kind: 'truncated', code: 'RATE_LIMITED' },
+      { response: response(404, {}), kind: 'restricted', code: 'NOT_FOUND' },
+      { response: response(503, {}), kind: 'failed', code: 'TRANSIENT' },
+    ]
+    for (const fixtureCase of cases) {
+      const result = await collectGithubCoreRest({ card: card(), rangeEnd, fetch: fetchFixture([fixtureCase.response]).fetch, alias: aliasFixture })
+      expect(result).toMatchObject({ kind: fixtureCase.kind, code: fixtureCase.code, rangeStart, rangeEnd })
+    }
+    const early = await collectGithubCoreRest({ card: card(), rangeEnd: 'not-a-range', fetch: fetchFixture([]).fetch, alias: aliasFixture })
+    expect(early).toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID', rangeStart: null, rangeEnd: null })
   })
 })
