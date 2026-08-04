@@ -5,6 +5,7 @@ import type Database from 'better-sqlite3'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   CLAIM_ID_MATERIAL_VERSION,
+  CLAIM_ID_MATERIAL_VERSIONS,
   CLAIM_SCHEMA_VERSION,
   CLAIM_SCOPE_ID_ENTROPY_BYTES,
   CLAIM_SCOPE_ID_PREFIX,
@@ -368,6 +369,18 @@ describe('canonicalisation is locale-, float-, and timezone-free', () => {
     expect(String(-0)).toBe(String(0))
   })
 
+  /** Local hour of `windowStart` under the given zone, restoring the ambient zone afterwards. */
+  function localHourUnder(zone: string): number {
+    const originalTz = process.env.TZ
+    try {
+      process.env.TZ = zone
+      return new Date(windowStart).getHours()
+    } finally {
+      if (originalTz === undefined) delete process.env.TZ
+      else process.env.TZ = originalTz
+    }
+  }
+
   it('canonicalises identically under any ambient timezone', () => {
     const originalTz = process.env.TZ
     const expected = computeClaimId(BASE_IDENTITY)
@@ -382,6 +395,25 @@ describe('canonicalisation is locale-, float-, and timezone-free', () => {
       if (originalTz === undefined) delete process.env.TZ
       else process.env.TZ = originalTz
     }
+  })
+
+  /**
+   * Control for the test above. Without this, a runtime that ignores `process.env.TZ` — Node
+   * caches the zone on some platforms — would make the invariance assertions vacuously true and
+   * the suite would report a timezone proof it had not performed. Kiritimati is UTC+14 and Niue
+   * UTC-11, so the same instant falls on different local hours wherever the switch takes effect.
+   */
+  it('confirms the ambient timezone switch actually takes effect', (context) => {
+    const kiritimati = localHourUnder('Pacific/Kiritimati')
+    const niue = localHourUnder('Pacific/Niue')
+    if (kiritimati === niue) {
+      context.skip(
+        'this runtime ignores process.env.TZ, so the timezone test above is not discriminating; '
+        + 'the load-bearing evidence remains the local-time API scan',
+      )
+      return
+    }
+    expect(kiritimati).not.toBe(niue)
   })
 
   it('accepts only canonical UTC windows, so an offset form cannot reach the digest', () => {
@@ -445,6 +477,33 @@ describe('replay against the store', () => {
     expect(db.prepare('SELECT COUNT(*) FROM claim_evidence_edge').pluck().get()).toBe(3)
   })
 
+  it('bounds the method version at the same 64 characters as the storage CHECK', () => {
+    const { db } = replayStore()
+    // Semver-shaped either way; only the length differs, which is the seam being aligned.
+    const atLimit = `1.0.0-${'a'.repeat(58)}`
+    const overLimit = `1.0.0-${'a'.repeat(59)}`
+    expect(atLimit).toHaveLength(64)
+    expect(overLimit).toHaveLength(65)
+
+    expect(registerClaim(db, claimInput({ methodVersion: atLimit })).applied).toBe(true)
+    expect(errorCode(() => registerClaim(db, claimInput({ methodVersion: overLimit }))))
+      .toBe('CLAIM_CONTRACT_INVALID')
+    // The contract and the table agree: neither alone is the boundary.
+    expect(() =>
+      db.prepare(
+        `INSERT INTO claim (${[
+          'claim_id', 'layer', 'statement_code', 'method_id', 'method_version', 'window_start',
+          'window_end', 'scope_id', 'schema_version', 'claim_id_material_version', 'created_at',
+          'superseded_by',
+        ].join(', ')}) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+      ).run(
+        `cl_${'c'.repeat(64)}`, 'deterministic', 'CI_RERUN_PATTERN', 'det.rerun_ratio', overLimit,
+        windowStart, windowEnd, ALPHA_SCOPE, CLAIM_SCHEMA_VERSION, CLAIM_ID_MATERIAL_VERSION,
+        createdAt,
+      ),
+    ).toThrow(/CHECK constraint failed/)
+  })
+
   it('deduplicates a duplicate-bearing limitation set instead of failing the insert', () => {
     const { db } = replayStore()
     const limitation = {
@@ -469,6 +528,65 @@ describe('replay against the store', () => {
     expect(db.prepare('SELECT COUNT(*) FROM limitation_instance').pluck().get()).toBe(1)
     expect(db.prepare('SELECT limitation_code FROM limitation_instance').pluck().get())
       .toBe('RERUN_NOT_FLAKE')
+  })
+
+  /**
+   * The version stamp only means something if a row at another version is reachable. The list
+   * `CLAIM_ID_MATERIAL_VERSIONS` holds one entry today, so the row is forged the only honest
+   * way available: `PRAGMA ignore_check_constraints` suspends the CHECK for this connection
+   * long enough to stamp a hypothetical future version onto a real, otherwise-valid row —
+   * exactly the store a v3 build would meet. Nothing fake enters the shipped version list, and
+   * the writer is exercised through its normal public path.
+   */
+  function stampMaterialVersion(db: Database.Database, claimId: string, version: string): void {
+    db.pragma('ignore_check_constraints = ON')
+    try {
+      db.prepare('UPDATE claim SET claim_id_material_version = ? WHERE claim_id = ?')
+        .run(version, claimId)
+    } finally {
+      db.pragma('ignore_check_constraints = OFF')
+    }
+  }
+
+  it('refuses to replay or supersede a row derived under another canonicalisation version', () => {
+    const { db } = replayStore()
+    const first = registerClaim(db, claimInput())
+    const successor = registerClaim(db, claimInput({
+      edges: [{ role: 'supports', targetEvidenceId: 'ev-det-6' }],
+    }))
+    stampMaterialVersion(db, first.claimId, 'claim-id.v3')
+
+    // Content is not comparable across canonicalisation versions, so this is NOT a collision.
+    expect(errorCode(() => registerClaim(db, claimInput())))
+      .toBe('CLAIM_ID_MATERIAL_VERSION_MISMATCH')
+    expect(errorCode(() => supersedeClaim(db, {
+      claimId: first.claimId, supersededBy: successor.claimId,
+    }))).toBe('CLAIM_ID_MATERIAL_VERSION_MISMATCH')
+    expect(errorCode(() => supersedeClaim(db, {
+      claimId: successor.claimId, supersededBy: first.claimId,
+    }))).toBe('CLAIM_ID_MATERIAL_VERSION_MISMATCH')
+
+    // Nothing was rewritten, and a claim at the current version still replays normally.
+    expect(db.prepare('SELECT claim_id_material_version FROM claim WHERE claim_id = ?')
+      .pluck().get(first.claimId)).toBe('claim-id.v3')
+    expect(registerClaim(db, claimInput({
+      edges: [{ role: 'supports', targetEvidenceId: 'ev-det-6' }],
+    })).applied).toBe(false)
+  })
+
+  it('keeps the storable-version list append-only and generated into the table CHECK', () => {
+    const { db } = replayStore()
+    expect([...CLAIM_ID_MATERIAL_VERSIONS]).toContain(CLAIM_ID_MATERIAL_VERSION)
+    const ddl = db.prepare("SELECT sql FROM sqlite_schema WHERE name = 'claim'").pluck().get()
+    for (const version of CLAIM_ID_MATERIAL_VERSIONS) {
+      expect(ddl).toContain(`'${version}'`)
+    }
+    // An unlisted version is refused by the table, not merely by the contract.
+    const { claimId } = registerClaim(db, claimInput())
+    expect(() =>
+      db.prepare('UPDATE claim SET claim_id_material_version = ? WHERE claim_id = ?')
+        .run('claim-id.v3', claimId),
+    ).toThrow(/CHECK constraint failed/)
   })
 
   it('registers an evidence anchor idempotently and reports content drift distinctly', () => {
@@ -603,6 +721,42 @@ describe('changed inputs mint a new claim and a lineage link', () => {
     expect(readClaim(db, c.claimId)?.supersededBy).toBeNull()
   })
 
+  /**
+   * The cycle the previous test builds always contains the claim being linked, so a naive
+   * "does the chain reach me?" check would pass it. This one does not: the cycle is B -> C -> B,
+   * forged by raw SQL as an out-of-band corruption, and the claim under test (A) is outside it.
+   * Only the visited set terminates this walk.
+   *
+   * `SUPERSESSION_WALK_LIMIT` (4096) is the second, independent bound and is deliberately NOT
+   * exercised here: reaching it needs a 4097-claim acyclic chain, and every claim needs a
+   * distinct evidence basis to get a distinct ID, so the fixture would cost more than the bound
+   * is worth. Its behaviour is the same refusal — `CLAIM_SUPERSESSION_CYCLE` — on the grounds
+   * that a chain the writer cannot finish walking is a chain it must not extend. Accepted
+   * residual: the limit is reasoned, not measured.
+   */
+  it('terminates on an out-of-band cycle that does not contain the claim being linked', () => {
+    const { db } = replayStore()
+    const a = registerClaim(db, claimInput())
+    const b = registerClaim(db, claimInput({
+      edges: [{ role: 'supports', targetEvidenceId: 'ev-det-6' }],
+    }))
+    const c = registerClaim(db, claimInput({
+      edges: [{ role: 'contradicts', targetEvidenceId: 'ev-det-6' }],
+    }))
+
+    // Raw SQL: supersedeClaim itself would refuse the second of these.
+    const link = db.prepare('UPDATE claim SET superseded_by = ? WHERE claim_id = ?')
+    link.run(c.claimId, b.claimId)
+    link.run(b.claimId, c.claimId)
+    expect(readClaim(db, b.claimId)?.supersededBy).toBe(c.claimId)
+    expect(readClaim(db, c.claimId)?.supersededBy).toBe(b.claimId)
+
+    expect(errorCode(() => supersedeClaim(db, { claimId: a.claimId, supersededBy: b.claimId })))
+      .toBe('CLAIM_SUPERSESSION_CYCLE')
+    // The refusal wrote nothing: A is still a live head.
+    expect(readClaim(db, a.claimId)?.supersededBy).toBeNull()
+  })
+
   it('refuses to supersede across layers, which would relabel a claim', () => {
     const { db } = replayStore()
     const modelled = registerClaim(db, claimInput({ layer: 'modelled' }))
@@ -693,6 +847,21 @@ describe('the C1 scope surrogate is minted, never supplied', () => {
     expect(JSON.stringify(record)).not.toContain(aliasShapedLikeASurrogate)
     expect(claimIdMaterial({ ...BASE_IDENTITY, scopeId: minted.scopeId }))
       .not.toContain(aliasShapedLikeASurrogate)
+  })
+
+  it('refuses a minted surrogate that equals the alias it was minted for', () => {
+    const { db } = replayStore()
+    // The one case random minting cannot rule out on its own: an alias that is itself shaped
+    // like a surrogate, plus an entropy source that reproduces it. The seam can arrange exactly
+    // that, which is why the writer enforces the inequality rather than assuming it.
+    const collidingAlias = `${CLAIM_SCOPE_ID_PREFIX}${'c3'.repeat(CLAIM_SCOPE_ID_ENTROPY_BYTES)}`
+    expect(errorCode(() => claimScopeTestSeams.registerWithEntropy(
+      db,
+      { scopeAlias: collidingAlias, linkedAt },
+      () => Buffer.from('c3'.repeat(CLAIM_SCOPE_ID_ENTROPY_BYTES), 'hex'),
+    ))).toBe('CLAIM_SCOPE_SURROGATE_COLLISION')
+    expect(db.prepare('SELECT COUNT(*) FROM claim_scope WHERE scope_alias = ?')
+      .pluck().get(collidingAlias)).toBe(0)
   })
 
   it('returns the same surrogate for the same alias so replay reproduces the same claim IDs', () => {

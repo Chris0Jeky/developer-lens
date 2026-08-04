@@ -8,16 +8,29 @@ export const CLAIM_CONTRACT_VERSION = '1.0.0' as const
 export const CLAIM_SCHEMA_VERSION = '1.0.0' as const
 
 /**
- * Version of the claim-ID canonicalisation function (ADR-01 failure clause: the function is
+ * Every canonicalisation version this schema can STORE, append-only and never reordered. The
+ * storage CHECK and the row contract are both generated from this list, so the day a v3 lands
+ * the two v-values coexist in one table by construction rather than by migration.
+ *
+ * v1 (DL-SPINE-01) hashed only evidence target IDs and is absent deliberately: it was never
+ * released, so no store contains v1 rows and admitting the value would only invite one.
+ */
+export const CLAIM_ID_MATERIAL_VERSIONS = ['claim-id.v2'] as const
+export const ClaimIdMaterialVersionSchema = z.enum(CLAIM_ID_MATERIAL_VERSIONS)
+export type ClaimIdMaterialVersion = z.infer<typeof ClaimIdMaterialVersionSchema>
+
+/**
+ * The version the CURRENT writer derives IDs under (ADR-01 failure clause: the function is
  * versioned so a cross-platform instability is a migration, never a silent re-identification).
  * Every `claim` row records the version its ID was derived under, so a replay that reproduces
- * an ID can be compared against the same rule that produced it.
+ * an ID is only comparable against a row derived under the same rule — a row at any other
+ * listed version is a typed mismatch, never a content comparison.
  *
- * v1 (DL-SPINE-01) hashed only evidence target IDs; v2 (DL-SPINE-02) adds `layer` and the
- * canonical-ordered set of *all* typed basis edges, so a claim differing only in what it
- * derives from — or only in its layer — is a different claim rather than a collision.
+ * v2 (DL-SPINE-02) adds `layer` and the canonical-ordered set of *all* typed basis edges, so a
+ * claim differing only in what it derives from — or only in its layer — is a different claim
+ * rather than a collision.
  */
-export const CLAIM_ID_MATERIAL_VERSION = 'claim-id.v2' as const
+export const CLAIM_ID_MATERIAL_VERSION: ClaimIdMaterialVersion = 'claim-id.v2'
 
 /** ADR-01: claims live at one of four layers above `observed`. */
 export const CLAIM_LAYERS = ['deterministic', 'modelled', 'hypothesis', 'abstention'] as const
@@ -193,7 +206,12 @@ export const ClaimRecordSchema = z
     windowEnd: CanonicalTimestampSchema,
     scopeId: ClaimScopeIdSchema,
     schemaVersion: z.literal(CLAIM_SCHEMA_VERSION),
-    claimIdMaterialVersion: z.literal(CLAIM_ID_MATERIAL_VERSION),
+    /**
+     * Any storable version, not just the current writer's — a row derived under an older listed
+     * version must still PARSE, or a v3 writer could not even read a v2 row to report the
+     * mismatch. Acting on a non-current row is what the writer refuses, not reading it.
+     */
+    claimIdMaterialVersion: ClaimIdMaterialVersionSchema,
     createdAt: CanonicalTimestampSchema,
     supersededBy: ClaimIdSchema.nullable(),
   })

@@ -20,6 +20,7 @@ import {
   persistIncrementalGithubCoreTransition,
 } from './incremental.js'
 import {
+  CLAIM_GRAPH_STORAGE_SQL,
   CLAIM_GRAPH_TABLES,
   ClaimStorageError,
   claimScopeTestSeams,
@@ -228,6 +229,36 @@ describe('claim graph installation', () => {
     installIncrementalGithubCoreStorage(db)
     db.exec('CREATE TEMP TABLE evidence (sentinel TEXT NOT NULL) STRICT;')
     expect(errorCode(() => installClaimGraphStorage(db))).toBe('CLAIM_GRAPH_SCHEMA_MISMATCH')
+  })
+
+  /**
+   * The shape comparison normalizes keyword case and whitespace but NOT the contents of string
+   * literals. These two cases are what discriminate that rule: reverting the normalizer to a
+   * whole-statement `toLowerCase()` makes the first one pass, which is the bug it would hide.
+   */
+  function preinstalled(mutate: (sql: string) => string): Database.Database {
+    const db = bareDatabase()
+    installIncrementalGithubCoreStorage(db)
+    db.exec(mutate(CLAIM_GRAPH_STORAGE_SQL))
+    return db
+  }
+
+  it('fails closed when a CHECK literal differs only in case', () => {
+    const db = preinstalled((sql) => sql.replaceAll("'deterministic'", "'DETERMINISTIC'"))
+    // The store really was built, and really does carry the wrong-cased literal.
+    expect(db.prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'claim'")
+      .pluck().get()).toBe(1)
+    expect(db.prepare("SELECT sql FROM sqlite_schema WHERE name = 'claim'").pluck().get())
+      .toContain("'DETERMINISTIC'")
+    expect(errorCode(() => installClaimGraphStorage(db))).toBe('CLAIM_GRAPH_SCHEMA_MISMATCH')
+  })
+
+  it('accepts a store that differs only in keyword case and whitespace', () => {
+    const db = preinstalled((sql) =>
+      sql.replaceAll('NOT NULL', 'not    null').replaceAll(') STRICT', ')\n  strict'))
+    expect(db.prepare("SELECT sql FROM sqlite_schema WHERE name = 'claim'").pluck().get())
+      .toContain('not    null')
+    expect(() => installClaimGraphStorage(db)).not.toThrow()
   })
 })
 
