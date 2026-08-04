@@ -83,7 +83,8 @@ interface CoverageRow {
   readonly observed_units: number
   readonly omitted_units: number | null
   readonly saturation_reason: string | null
-  readonly retryable: number
+  /** Untrusted: a store whose CHECK was lost can hold anything here. */
+  readonly retryable: number | string | null
   readonly observed_at: string
   readonly limitation_code: string
 }
@@ -135,6 +136,13 @@ export function readCoverageRecords(db: Database.Database): CoverageRecord[] {
   }
 
   return rows.map((row) => {
+    // `retryable` is a boolean carried as an integer. A store whose schema lost
+    // its CHECK constraint could hold 2, NULL, or text; converting that with a
+    // truthiness test would silently invent a value, so anything other than
+    // exactly 0 or 1 takes the fail-closed path.
+    if (row.retryable !== 0 && row.retryable !== 1) {
+      throw new V2Error('V2_RESPONSE_CONTRACT_VIOLATION')
+    }
     const parsed = CoverageRecordSchema.safeParse({
       coverageId: row.coverage_id,
       capabilityId: row.capability_id,
@@ -184,13 +192,23 @@ export interface V2StoreReadResult {
   readonly coverage: CoverageRecord[]
 }
 
-/** Opens the store read-only, proves its provenance, then reads and closes. */
+/**
+ * Opens the store read-only, proves its provenance, then reads and closes.
+ *
+ * The provenance proof and the rows it authorises are read inside ONE deferred
+ * read transaction, so they come from a single SQLite snapshot: a concurrent
+ * local writer cannot swap synthetic provenance in front of the first SELECT
+ * and different rows behind the second. This closes the read race; it does not
+ * change the honest guarantee above about a writer who already holds the file.
+ */
 export function readSyntheticCoverageStore(path: string): V2StoreReadResult {
   const db = openReadOnlyStore(path)
   try {
-    const provenance = readStoreProvenance(db)
-    assertServableProvenance(provenance)
-    return { provenance, coverage: readCoverageRecords(db) }
+    return db.transaction((): V2StoreReadResult => {
+      const provenance = readStoreProvenance(db)
+      assertServableProvenance(provenance)
+      return { provenance, coverage: readCoverageRecords(db) }
+    })()
   } finally {
     db.close()
   }

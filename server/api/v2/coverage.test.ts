@@ -305,6 +305,54 @@ describe('V2 bridge store provenance gate', () => {
     expect(response.body).toEqual({ error: { code: 'V2_RESPONSE_CONTRACT_VIOLATION' } })
   })
 
+  it('refuses a retryable value that is not exactly 0 or 1', async () => {
+    const path = await storeIn('retryable')
+    seedSyntheticCoverageStore(path)
+    mutateStore(path, (db) => {
+      // Rebuild the row table without its retryable CHECK, simulating a store
+      // whose constraint was lost, then write a value that a truthiness
+      // conversion would silently read as `false`.
+      db.exec('DROP TABLE v2_coverage_record')
+      db.exec(
+        `CREATE TABLE v2_coverage_record (
+          coverage_id TEXT PRIMARY KEY NOT NULL,
+          capability_id TEXT NOT NULL,
+          scope_alias TEXT NOT NULL,
+          range_start TEXT NOT NULL,
+          range_end TEXT NOT NULL,
+          status TEXT NOT NULL,
+          expected_units INTEGER,
+          observed_units INTEGER NOT NULL,
+          omitted_units INTEGER,
+          saturation_reason TEXT,
+          retryable INTEGER NOT NULL,
+          observed_at TEXT NOT NULL,
+          limitation_code TEXT NOT NULL
+        ) STRICT`,
+      )
+      db.prepare(
+        'INSERT INTO v2_coverage_record VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+      ).run(
+        'synthetic-coverage-bad-retryable',
+        'github.core',
+        'synthetic-scope-alpha',
+        '2026-01-01T00:00:00.000Z',
+        '2026-04-01T00:00:00.000Z',
+        'failed',
+        null,
+        0,
+        null,
+        null,
+        2,
+        '2026-04-01T00:00:00.000Z',
+        'TRANSPORT_FAILURE',
+      )
+    })
+
+    const response = await authorized(appFor(path), '/api/v2/coverage').expect(500)
+    expect(response.body).toEqual({ error: { code: 'V2_RESPONSE_CONTRACT_VIOLATION' } })
+  })
+
   it('refuses a stored row that violates the shared coverage contract', async () => {
     const path = await storeIn('malformed')
     seedSyntheticCoverageStore(path)

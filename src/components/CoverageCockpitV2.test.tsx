@@ -6,6 +6,7 @@ import {
   SYNTHETIC_STORE_PROVENANCE,
 } from '../../server/api/v2/syntheticCoverageFixtures'
 import { COVERAGE_STATUSES } from '../../shared/coverage'
+import { cockpitStateForStatus, isoWeekLabel } from '../lib/coverageCockpit'
 import { CoverageCockpitV2, CoverageCockpitV2Route } from './CoverageCockpitV2'
 
 const capabilities = buildCapabilityViews()
@@ -134,11 +135,97 @@ describe('Coverage Cockpit V2', () => {
   })
 
   it('surfaces a typed refusal code instead of an empty result', () => {
-    render(<CoverageCockpitV2 state={{ kind: 'refused', code: 'V2_STORE_PROVENANCE_REFUSED' }} />)
+    render(
+      <CoverageCockpitV2 state={{ kind: 'provenance-refused', code: 'V2_STORE_PROVENANCE_REFUSED' }} />,
+    )
 
     expect(screen.getByTestId('cockpit-refusal-code')).toHaveTextContent(
       'V2_STORE_PROVENANCE_REFUSED',
     )
+    expect(screen.getByRole('heading', { name: /declined to serve this store/i })).toBeInTheDocument()
+  })
+
+  it('maps each failure to the state whose remediation actually fixes it', () => {
+    expect(cockpitStateForStatus(401, 'V2_UNAUTHORIZED')).toEqual({
+      kind: 'unauthorized',
+      code: 'V2_UNAUTHORIZED',
+    })
+    expect(cockpitStateForStatus(403, 'V2_HOST_NOT_ALLOWED')).toEqual({
+      kind: 'guard-refused',
+      code: 'V2_HOST_NOT_ALLOWED',
+    })
+    expect(cockpitStateForStatus(409, 'V2_STORE_PROVENANCE_REFUSED')).toEqual({
+      kind: 'provenance-refused',
+      code: 'V2_STORE_PROVENANCE_REFUSED',
+    })
+    expect(cockpitStateForStatus(503, 'V2_STORE_UNAVAILABLE')).toEqual({
+      kind: 'store-unavailable',
+      code: 'V2_STORE_UNAVAILABLE',
+    })
+    expect(cockpitStateForStatus(418, 'V2_UNAVAILABLE')).toEqual({
+      kind: 'error',
+      code: 'V2_UNAVAILABLE',
+    })
+  })
+
+  it('tells a rejected bearer to restart, not to inspect the store', () => {
+    render(<CoverageCockpitV2 state={{ kind: 'unauthorized', code: 'V2_UNAUTHORIZED' }} />)
+
+    expect(screen.getByRole('heading', { name: /bearer the bridge refused/i })).toBeInTheDocument()
+    expect(screen.getByText(/mints a new bearer on every launch/i)).toBeInTheDocument()
+    expect(screen.getByTestId('cockpit-refusal-code')).toHaveTextContent('V2_UNAUTHORIZED')
+    expect(screen.queryByText(/synthetic provenance/i)).not.toBeInTheDocument()
+  })
+
+  it('tells a rejected origin about the host allowlist, not about provenance', () => {
+    render(<CoverageCockpitV2 state={{ kind: 'guard-refused', code: 'V2_ORIGIN_NOT_ALLOWED' }} />)
+
+    expect(
+      screen.getByRole('heading', { name: /did not recognise this request/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/exact Host and Origin allowlist/i)).toBeInTheDocument()
+    expect(screen.getByTestId('cockpit-refusal-code')).toHaveTextContent('V2_ORIGIN_NOT_ALLOWED')
+  })
+
+  it('separates a missing store and an unreachable service', () => {
+    render(<CoverageCockpitV2 state={{ kind: 'store-unavailable', code: 'V2_STORE_UNAVAILABLE' }} />)
+    expect(screen.getByText(/npm run seed:v2/i)).toBeInTheDocument()
+    cleanup()
+
+    render(<CoverageCockpitV2 state={{ kind: 'transport-error' }} />)
+    expect(screen.getByRole('heading', { name: /not responding/i })).toBeInTheDocument()
+    expect(screen.getByText(/an unanswered request is not an empty result/i)).toBeInTheDocument()
+    expect(screen.queryByTestId('cockpit-refusal-code')).not.toBeInTheDocument()
+  })
+
+  it('derives ISO weeks from the UTC calendar date, not the viewer timezone', () => {
+    // 2026-08-03T00:00:00Z is a Monday in UTC and 2026-08-02 (the previous ISO
+    // week) in every negative-offset zone. Both ends of the UTC day must agree.
+    expect(isoWeekLabel('2026-08-03T00:00:00.000Z')).toBe('2026-W32')
+    expect(isoWeekLabel('2026-08-03T23:59:59.999Z')).toBe('2026-W32')
+    expect(isoWeekLabel('2026-08-02T23:59:59.999Z')).toBe('2026-W31')
+    // ISO year boundary: 2026-01-01 belongs to ISO week 1 of 2026.
+    expect(isoWeekLabel('2026-01-01T00:00:00.000Z')).toBe('2026-W01')
+    expect(isoWeekLabel('not-a-timestamp')).toBe('unknown')
+
+    const originalTimezone = process.env.TZ
+    try {
+      for (const timezone of ['UTC', 'America/Los_Angeles', 'Pacific/Kiritimati']) {
+        process.env.TZ = timezone
+        expect(isoWeekLabel('2026-08-03T00:00:00.000Z')).toBe('2026-W32')
+      }
+    } finally {
+      if (originalTimezone === undefined) delete process.env.TZ
+      else process.env.TZ = originalTimezone
+    }
+  })
+
+  it('renders the stale row observed before the window it describes', () => {
+    renderReady()
+
+    const stale = SYNTHETIC_COVERAGE_RECORDS.find((record) => record.status === 'stale')
+    expect(stale).toBeDefined()
+    expect(Date.parse(stale!.observedAt)).toBeLessThan(Date.parse(stale!.rangeStart))
   })
 
   it('never calls the API without a configured launch bearer', async () => {

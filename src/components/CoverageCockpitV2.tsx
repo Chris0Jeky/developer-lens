@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { getISOWeek, getISOWeekYear, parseISO } from 'date-fns'
-import { CircleDashed, Lock, ShieldCheck, Sparkles } from 'lucide-react'
+import { CircleDashed, Lock, Sparkles } from 'lucide-react'
 import {
   completeObservedUnits,
   type CoverageRecord,
@@ -8,10 +7,16 @@ import {
 } from '../../shared/coverage'
 import type {
   V2CapabilitiesResponse,
-  V2CapabilityView,
   V2CoverageResponse,
-  V2StoreProvenance,
 } from '../../server/api/v2/contract'
+import {
+  cockpitStateForStatus,
+  isoWeekLabel,
+  omittedLabel,
+  refusalCode,
+  type CoverageCockpitProblemKind,
+  type CoverageCockpitState,
+} from '../lib/coverageCockpit'
 import { LensLogo } from './LensLogo'
 
 /**
@@ -71,29 +76,122 @@ const STATUS_PRESENTATION: Readonly<Record<CoverageStatus, StatusPresentation>> 
   },
 }
 
-/** Operational timestamps render at ISO-week grain or coarser (Appendix I.1). */
-function isoWeekLabel(timestamp: string): string {
-  const parsed = parseISO(timestamp)
-  if (Number.isNaN(parsed.getTime())) return 'unknown'
-  return `${getISOWeekYear(parsed)}-W${String(getISOWeek(parsed)).padStart(2, '0')}`
+interface ProblemView {
+  readonly banner: string
+  readonly eyebrow: string
+  readonly heading: string
+  readonly body: ReactNode
 }
 
-function omittedLabel(omittedUnits: number | null): string {
-  if (omittedUnits === null) return 'unknown'
-  if (omittedUnits === 0) return 'none'
-  return `${omittedUnits.toLocaleString('en-GB')} units`
+const PROBLEM_VIEWS: Readonly<Record<CoverageCockpitProblemKind, ProblemView>> = {
+  unconfigured: {
+    banner: 'The V2 bridge is mounted but this page holds no launch bearer.',
+    eyebrow: 'Coverage cockpit · no bearer',
+    heading: 'This page cannot see the V2 store yet.',
+    body: (
+      <p>
+        The API generates a bearer secret once per launch and prints it on the local launch banner.
+        Set the same value as <code>DEVELOPER_LENS_V2_TOKEN</code> and{' '}
+        <code>VITE_DEVELOPER_LENS_V2_TOKEN</code> to let this surface read it. Until then the
+        cockpit reports its own blindness rather than an empty result.
+      </p>
+    ),
+  },
+  unauthorized: {
+    banner: 'The V2 bridge did not accept this page’s bearer.',
+    eyebrow: 'Coverage cockpit · bearer rejected',
+    heading: 'This page holds a bearer the bridge refused.',
+    body: (
+      <p>
+        The API mints a new bearer on every launch, so a page loaded against an earlier one goes
+        stale as soon as the server restarts. Set <code>DEVELOPER_LENS_V2_TOKEN</code> and{' '}
+        <code>VITE_DEVELOPER_LENS_V2_TOKEN</code> to the same fixed value, restart{' '}
+        <code>npm run dev</code>, and reload this page.
+      </p>
+    ),
+  },
+  'guard-refused': {
+    banner: 'The V2 bridge rejected where this request came from.',
+    eyebrow: 'Coverage cockpit · origin refused',
+    heading: 'The bridge did not recognise this request’s host or origin.',
+    body: (
+      <p>
+        The V2 endpoints answer only on loopback, against an exact Host and Origin allowlist with no
+        CORS. Reach the cockpit through <code>http://127.0.0.1:5173</code> or the API’s own origin,
+        not through another hostname, alias, or tunnel.
+      </p>
+    ),
+  },
+  'provenance-refused': {
+    banner: 'The V2 bridge refused this store.',
+    eyebrow: 'Coverage cockpit · store refused',
+    heading: 'The bridge declined to serve this store.',
+    body: (
+      <p>
+        The V2 read path serves only a store carrying explicit synthetic provenance, and it fails
+        closed rather than guessing. Reseed it with <code>npm run seed:v2</code>.
+      </p>
+    ),
+  },
+  'store-unavailable': {
+    banner: 'The V2 bridge found no store to read.',
+    eyebrow: 'Coverage cockpit · no store',
+    heading: 'There is no synthetic store here yet.',
+    body: (
+      <p>
+        Run <code>npm run seed:v2</code> to write the invented coverage fixtures, then reload. The
+        bridge serves nothing rather than inventing a store to fill the page.
+      </p>
+    ),
+  },
+  'transport-error': {
+    banner: 'The local API did not answer.',
+    eyebrow: 'Coverage cockpit · service unreachable',
+    heading: 'The local service is not responding.',
+    body: (
+      <p>
+        Start it with <code>npm run dev</code>. Nothing is claimed about coverage while the service
+        is unreachable — an unanswered request is not an empty result.
+      </p>
+    ),
+  },
+  error: {
+    banner: 'The V2 bridge returned an unexpected outcome.',
+    eyebrow: 'Coverage cockpit · unexpected outcome',
+    heading: 'The bridge returned an outcome this page does not model.',
+    body: (
+      <p>
+        This is reported rather than absorbed, so the surface never shows a confident empty state it
+        cannot justify.
+      </p>
+    ),
+  },
 }
 
-export type CoverageCockpitState =
-  | { readonly kind: 'loading' }
-  | { readonly kind: 'unconfigured' }
-  | { readonly kind: 'refused'; readonly code: string }
-  | {
-      readonly kind: 'ready'
-      readonly provenance: V2StoreProvenance
-      readonly coverage: readonly CoverageRecord[]
-      readonly capabilities: readonly V2CapabilityView[]
-    }
+function CockpitProblem({ view, code }: { view: ProblemView; code?: string }) {
+  const headingId = 'cockpit-problem-heading'
+  return (
+    <CockpitShell
+      banner={
+        <>
+          <CircleDashed size={15} aria-hidden="true" />
+          <span>{view.banner}</span>
+        </>
+      }
+    >
+      <section className="section-block" aria-labelledby={headingId}>
+        <span className="eyebrow">{view.eyebrow}</span>
+        <h1 id={headingId}>{view.heading}</h1>
+        {view.body}
+        {code !== undefined && (
+          <p>
+            Refusal code: <strong data-testid="cockpit-refusal-code">{code}</strong>
+          </p>
+        )}
+      </section>
+    </CockpitShell>
+  )
+}
 
 function CoverageRow({ record }: { record: CoverageRecord }) {
   const presentation = STATUS_PRESENTATION[record.status]
@@ -185,50 +283,12 @@ export function CoverageCockpitV2({ state }: { state: CoverageCockpitState }) {
     )
   }
 
-  if (state.kind === 'unconfigured') {
+  if (state.kind !== 'ready') {
     return (
-      <CockpitShell
-        banner={
-          <>
-            <ShieldCheck size={15} aria-hidden="true" />
-            <span>The V2 bridge is mounted but this page holds no launch bearer.</span>
-          </>
-        }
-      >
-        <section className="section-block" aria-labelledby="cockpit-unconfigured">
-          <span className="eyebrow">Coverage cockpit · not authorized</span>
-          <h1 id="cockpit-unconfigured">This page cannot see the V2 store yet.</h1>
-          <p>
-            The API generates a bearer secret once per launch and prints it on the local launch
-            banner. Set the same value as <code>DEVELOPER_LENS_V2_TOKEN</code> and{' '}
-            <code>VITE_DEVELOPER_LENS_V2_TOKEN</code> to let this surface read it. Until then the
-            cockpit reports its own blindness rather than an empty result.
-          </p>
-        </section>
-      </CockpitShell>
-    )
-  }
-
-  if (state.kind === 'refused') {
-    return (
-      <CockpitShell
-        banner={
-          <>
-            <CircleDashed size={15} aria-hidden="true" />
-            <span>The V2 bridge refused this request.</span>
-          </>
-        }
-      >
-        <section className="section-block" aria-labelledby="cockpit-refused">
-          <span className="eyebrow">Coverage cockpit · refused</span>
-          <h1 id="cockpit-refused">The bridge declined to serve this store.</h1>
-          <p>
-            Refusal code: <strong data-testid="cockpit-refusal-code">{state.code}</strong>. The V2
-            read path serves only a store carrying explicit synthetic provenance, and it fails
-            closed rather than guessing.
-          </p>
-        </section>
-      </CockpitShell>
+      <CockpitProblem
+        view={PROBLEM_VIEWS[state.kind]}
+        code={'code' in state ? state.code : undefined}
+      />
     )
   }
 
@@ -301,11 +361,6 @@ export function CoverageCockpitV2({ state }: { state: CoverageCockpitState }) {
   )
 }
 
-function refusalCode(body: unknown): string {
-  const code = (body as { error?: { code?: unknown } } | null)?.error?.code
-  return typeof code === 'string' ? code : 'V2_UNAVAILABLE'
-}
-
 export function CoverageCockpitV2Route() {
   const [state, setState] = useState<CoverageCockpitState>({ kind: 'loading' })
 
@@ -330,7 +385,8 @@ export function CoverageCockpitV2Route() {
             ? capabilitiesResponse
             : null
         if (failed) {
-          setState({ kind: 'refused', code: refusalCode(await failed.json().catch(() => null)) })
+          const code = refusalCode(await failed.json().catch(() => null))
+          setState(cockpitStateForStatus(failed.status, code))
           return
         }
         const coverage = (await coverageResponse.json()) as V2CoverageResponse
@@ -344,7 +400,9 @@ export function CoverageCockpitV2Route() {
       })
       .catch((error: Error) => {
         if (error.name === 'AbortError') return
-        setState({ kind: 'refused', code: 'V2_UNAVAILABLE' })
+        // The request never produced a response at all — that is a transport
+        // failure, not a refusal the bridge issued.
+        setState({ kind: 'transport-error' })
       })
 
     return () => controller.abort()

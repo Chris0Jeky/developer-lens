@@ -26,6 +26,13 @@ export const SYNTHETIC_STORE_PROVENANCE: V2StoreProvenance = V2StoreProvenanceSc
 const RANGE_START = '2026-01-01T00:00:00.000Z'
 const RANGE_END = '2026-04-01T00:00:00.000Z'
 const OBSERVED_AT = '2026-04-01T00:00:00.000Z'
+/**
+ * A `stale` row means the last observation predates the window it describes, so
+ * its observedAt must sit clearly before RANGE_START. Sharing the common
+ * end-of-window observedAt would have made the shipped demo contradict its own
+ * CHECKPOINT_OLDER_THAN_WINDOW limitation code.
+ */
+const STALE_OBSERVED_AT = '2025-11-17T00:00:00.000Z'
 
 const RAW_SYNTHETIC_COVERAGE_RECORDS = [
   {
@@ -93,6 +100,7 @@ const RAW_SYNTHETIC_COVERAGE_RECORDS = [
     observedUnits: 64,
     omittedUnits: 0,
     retryable: true,
+    observedAt: STALE_OBSERVED_AT,
     limitationCode: 'CHECKPOINT_OLDER_THAN_WINDOW',
   },
   {
@@ -147,7 +155,7 @@ export const SYNTHETIC_COVERAGE_RECORDS: readonly CoverageRecord[] =
       ...record,
       rangeStart: RANGE_START,
       rangeEnd: RANGE_END,
-      observedAt: OBSERVED_AT,
+      observedAt: 'observedAt' in record ? record.observedAt : OBSERVED_AT,
     }),
   )
 
