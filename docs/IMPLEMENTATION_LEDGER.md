@@ -1363,7 +1363,7 @@ unresolved review threads outrank it whenever they disagree.
 
 ## 2026-08-04 — R1 wave 1 (autonomous execution run)
 
-Four active-horizon cards merged in one wave. Per-card evidence below; the compact live pointer is
+Five active-horizon cards merged in one wave. Per-card evidence below; the compact live pointer is
 `docs/analyser-program/CURRENT_STATE.md`.
 
 - **DL-OPS-CI-01 — hosted PR gate.** [PR #70](https://github.com/Chris0Jeky/developer-lens/pull/70),
@@ -1413,21 +1413,34 @@ Four active-horizon cards merged in one wave. Per-card evidence below; the compa
   bearer channel, no token or path logging, port-drift-proof allowlist — binds before any real-data
   surface) and [#79](https://github.com/Chris0Jeky/developer-lens/issues/79) (BRIDGE-02 must serve a
   PresentationView, not the canonical record shape).
+- **DL-METRIC-01 — versioned metric-definition registry.**
+  [PR #75](https://github.com/Chris0Jeky/developer-lens/pull/75), merge `d1e29dd`, final head
+  `81f8441`. 32 focused tests; full `npm run check` 415/415 at the fix head. Review lens:
+  analytical validity — and unlike the other four cards it returned **eight blocking findings**
+  (risk-set cohorts, the `becameReadyAt` construct, three separate #67 holes, proportion bounds,
+  person-path scan closure, kind-keyed support gates). All eight were fixed in a single round and
+  independently CONFIRMED-CLOSED by a verification pass scoped to the fix diff. Canonical
+  coverage-dimension aliasing to `shared/coverage.ts` landed with it, so the dimension set stays
+  single-sourced rather than re-declared per contract. Remaining hardening is tracked on
+  [#82](https://github.com/Chris0Jeky/developer-lens/issues/82).
 - Carried from the PR #65 late-review triage: issue
-  [#67](https://github.com/Chris0Jeky/developer-lens/issues/67) (typed empty cohorts) is an active
-  constraint being implemented in DL-METRIC-01's PR #75;
+  [#67](https://github.com/Chris0Jeky/developer-lens/issues/67) (typed empty cohorts) had its
+  registry-side semantics land with DL-METRIC-01's PR #75, and stays an active constraint on
+  DL-COMPARE-01/DL-VALIDATE-01/DL-VALUE-01;
   [#68](https://github.com/Chris0Jeky/developer-lens/issues/68) and
   [#69](https://github.com/Chris0Jeky/developer-lens/issues/69) stay frozen;
   [#82](https://github.com/Chris0Jeky/developer-lens/issues/82) tracks metric-result hardening for
   DL-VALIDATE-01/DL-VALUE-01.
-- In flight at the time of writing and not complete: DL-METRIC-01 (PR #75, blocking-fix round),
-  DL-SPINE-02 (lane open, bound by the constraints in #81), DL-SPINE-03 (lane open).
+- In flight at the time of writing and not complete: DL-SPINE-02 (PR #84 open, carrying the #81
+  constraints), DL-SPINE-03 (lane open), and the DL-FINDING-01/DL-COMPARE-01 lanes now unblocked by
+  the DL-METRIC-01 merge.
 
 ## Exact resume point
 
-**Superseded 2026-08-04 (R1 wave 1).** DL-BRIDGE-01 merged, so item 0's pointer below is history.
-The live resume point is the analytics-core kernel — DL-METRIC-01 (PR #75), DL-SPINE-02, DL-SPINE-03
-— per `docs/analyser-program/CURRENT_STATE.md` and the wave-1 section above. Items 1–6 stay valid.
+**Superseded 2026-08-04 (R1 wave 1).** DL-BRIDGE-01 and DL-METRIC-01 merged, so item 0's pointer
+below is history. The live resume point is the rest of the analytics-core kernel — DL-SPINE-02
+(PR #84), DL-SPINE-03, and the newly unblocked DL-FINDING-01/DL-COMPARE-01 — per
+`docs/analyser-program/CURRENT_STATE.md` and the wave-1 section above. Items 1–6 stay valid.
 
 0. **Next implementation slice (2026-08-04, reconciled): card DL-BRIDGE-01** — the V2
    **bootstrap** slice (authenticated lazy `/api/v2` coverage+capabilities over the synthetic

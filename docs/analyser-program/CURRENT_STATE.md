@@ -9,10 +9,10 @@ updated: 2026-08-04
 phase: R1-in-progress (bootstrap + spine/metric foundations landing)
 head: see `git log -1 origin/main` — live Git outranks the merge SHAs recorded below
 merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
-  'DL-SPINE-01 #74/75e7c39', 'DL-BRIDGE-01 #72/a6fcae1']
-active_slice: 'DL-METRIC-01 (PR #75 fix round) + DL-SPINE-02 (#81-bound) + DL-SPINE-03 — in flight'
-next_task: complete the analytics-core kernel (METRIC -> FINDING/COMPARE -> VALIDATE -> UX-ED ->
-  VALUE-01)
+  'DL-SPINE-01 #74/75e7c39', 'DL-BRIDGE-01 #72/a6fcae1', 'DL-METRIC-01 #75/d1e29dd']
+active_slice: 'DL-SPINE-02 (PR #84 open, carrying the #81 constraints) + the DL-SPINE-03 lane +
+  the DL-FINDING-01 and DL-COMPARE-01 lanes starting'
+next_task: complete the analytics-core kernel (FINDING/COMPARE -> VALIDATE -> UX-ED -> VALUE-01)
 next_value_slice: DL-VALUE-01 (first deterministic comparative finding; the point of the programme)
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-BRIDGE-01, DL-SPINE-01, DL-SPINE-02, DL-SPINE-03, DL-SPINE-04, DL-METRIC-01,
@@ -38,7 +38,12 @@ residual_risks:
      allowlist) binds before any real-data surface'
   - '#79 BRIDGE-02 must serve a PresentationView, not the canonical record shape'
   - '#80 / #81 carry binding constraints on DL-LIFE-02 / DL-SPINE-02'
-  - '#67 typed empty cohorts is an active constraint landing in PR #75'
+  - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,
+     producer-absence limiting codes, canonical coverage-code registration'
+  - '#67 typed empty cohorts: the registry-side semantics landed with PR #75; COMPARE, VALIDATE and
+     VALUE still owe their side'
+  - '#82 metric-result hardening, including the N1 sample-dimension-on-empty-cohort question, is to
+     be settled before DL-VALUE-01'
   - '#71 pages.yml Node 22->24 alignment'
-  - 'frozen or tracked-only: #68, #69, #76, #82'
+  - 'frozen or tracked-only: #68, #69'
 ```

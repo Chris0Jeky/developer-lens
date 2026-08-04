@@ -81,7 +81,8 @@ export const CARDS = [
   prove: 'npm test -- server/storage/abstentionGates.test.ts',
   fixtures: 'Degradation grid per dimension x family; adversarial compensation attempts.',
   rollback: 'Gates are data; revert registry rows.',
-  demo: 'Grid output table in test snapshot.' },
+  demo: 'Grid output table in test snapshot.',
+  constraints: 'DL#76 binds: source_diversity clamp decision; producer-absence limiting codes; canonical coverage-code registration' },
 
 // ============ EP-LIFE ============
 { id: 'DL-LIFE-01', title: 'Capability lifecycle state machine + approval-never-activates invariant', epic: 'lifecycle', type: 'contract', status: 'READY', risk: 'high', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2',
@@ -199,7 +200,7 @@ export const CARDS = [
   rollback: 'Docs revert.',
   demo: 'The reconciliation PR itself.' },
 
-{ id: 'DL-METRIC-01', title: 'Versioned metric-definition registry', epic: 'analytics-core', type: 'contract', status: 'READY', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-METRIC-01', title: 'Versioned metric-definition registry', epic: 'analytics-core', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
   question: 'What exactly was measured, on which cohort, under which assumptions - and what must never be inferred from it?',
   outcome: 'A closed, versioned metric-definition registry: metric_id@version, question answered, analytical subject, unit, window/asOf semantics, required capabilities+fields, eligibility/cohort, event + censoring definition, missingness/truncation handling, deterministic formula, minimum support gates, comparison requirements, sensitivity variants, known confounders, prohibited interpretations, coverage dimensions consumed, fixture suite, render/export policy, supersession path. Undocumented metrics become impossible to expose through V2 APIs.',
   deps: 'none', unlock: '',
@@ -212,7 +213,7 @@ export const CARDS = [
   rollback: 'Additive contract; remove module.',
   demo: 'One registered metric rendered with its full definition card.' },
 
-{ id: 'DL-FINDING-01', title: 'Finding contract: alternatives, contradiction, robustness, AnalyticReference', epic: 'analytics-core', type: 'contract', status: 'BLOCKED_BY_DEPENDENCY', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-FINDING-01', title: 'Finding contract: alternatives, contradiction, robustness, AnalyticReference', epic: 'analytics-core', type: 'contract', status: 'READY', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
   question: 'What does the system claim, what contradicts it, what else could explain it, and how stable is it?',
   outcome: 'One versioned finding contract for deterministic/modelled/hypothesis/abstention findings: metric result refs, evidence + counter-evidence IDs, alternative explanations, limitations, sample/eligibility/censoring summary, metric-specific coverage, robustness status + checks, discriminating-evidence statement, presentation eligibility. Plus the typed AnalyticReference union (ObservationReference | ClaimReference) every rendered analytic mark resolves through - derived counts are deterministic claims, never OBS.',
   deps: 'DL-METRIC-01, DL-SPINE-01', unlock: 'metric registry + claim tables merged',
@@ -225,7 +226,7 @@ export const CARDS = [
   rollback: 'Additive contract; remove module.',
   demo: 'One finding payload with full evidence walk on fixtures.' },
 
-{ id: 'DL-COMPARE-01', title: 'Matched-period comparison and censoring semantics', epic: 'analytics-core', type: 'contract', status: 'BLOCKED_BY_DEPENDENCY', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-COMPARE-01', title: 'Matched-period comparison and censoring semantics', epic: 'analytics-core', type: 'contract', status: 'READY', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
   question: 'Did this window genuinely differ from the matched baseline window, or only in what we could observe?',
   outcome: 'One reusable comparison contract: canonical injected asOf, equal-duration half-open UTC windows, instrument-matched subwindows with three outcomes (FULL / MATCHED_PARTIAL / INCOMPARABLE), matched fraction as a first-class number, right-censoring at window boundaries, explicit cohort choice, and explicit no-comparison outcomes. A failed comparison is never a zero delta.',
   deps: 'DL-METRIC-01', unlock: 'metric registry merged',
@@ -1248,7 +1249,7 @@ export const CARDS = [
   rollback: 'Spec is docs.',
   demo: 'The spec itself, walked in the planning demo.' },
 
-{ id: 'DL-DEMO-B1', title: 'Public Taskdeck-shaped synthetic twin: invented dataset generator spec', epic: 'demo', type: 'spec', status: 'BLOCKED_BY_DEPENDENCY', risk: 'medium', effort: 'M', milestone: 'M8', privacy: 'C0', gate: 'gate:G2', demoRelevant: true,
+{ id: 'DL-DEMO-B1', title: 'Public Taskdeck-shaped synthetic twin: invented dataset generator spec', epic: 'demo', type: 'spec', status: 'READY', risk: 'medium', effort: 'M', milestone: 'M8', privacy: 'C0', gate: 'gate:G2', demoRelevant: true,
   outcome: 'Generator spec for an entirely invented C0 board-tool-shaped system (repos, modules, commits, issues, PRs, checks, releases, graphs, change points, evidence gaps) copying NO Taskdeck identifier, path, title, count, timing, structure, or derived fact.',
   deps: 'DL-BRIDGE-01', unlock: 'first V2 slice exists to consume it',
   paths: 'docs/analyser-program/06 section; future scripts/exportDemo extension cards',

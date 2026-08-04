@@ -203,9 +203,9 @@ source, never this table. Horizon: A = active queue, F = frozen until DL-VALUE-0
 | DL-BRIDGE-04 | Legacy view retirement ladder (DNA/archetype first) | bridge | implementation | BLOCKED_BY_DEPENDENCY |  | DL-BRIDGE-03, DL-UX-CC, DL-UX-ED | M5 | medium/M |
 | DL-BRIDGE-05 | Exporter migration to ExportView-fed builders | bridge | implementation | BLOCKED_BY_DEPENDENCY |  | DL-PACK-05 | M5 | high/M |
 | DL-RECON-01 | PR #62 planning reconciliation and implementation handoff | analytics-core | process | DONE |  | none | M1 | low/M |
-| DL-METRIC-01 | Versioned metric-definition registry | analytics-core | contract | READY | A | none | M2 | medium/M |
-| DL-FINDING-01 | Finding contract: alternatives, contradiction, robustness, AnalyticReference | analytics-core | contract | BLOCKED_BY_DEPENDENCY | A | DL-METRIC-01, DL-SPINE-01 | M2 | medium/M |
-| DL-COMPARE-01 | Matched-period comparison and censoring semantics | analytics-core | contract | BLOCKED_BY_DEPENDENCY | A | DL-METRIC-01 | M2 | medium/M |
+| DL-METRIC-01 | Versioned metric-definition registry | analytics-core | contract | DONE | A | none | M2 | medium/M |
+| DL-FINDING-01 | Finding contract: alternatives, contradiction, robustness, AnalyticReference | analytics-core | contract | READY | A | DL-METRIC-01, DL-SPINE-01 | M2 | medium/M |
+| DL-COMPARE-01 | Matched-period comparison and censoring semantics | analytics-core | contract | READY | A | DL-METRIC-01 | M2 | medium/M |
 | DL-VALIDATE-01 | Analytical conformance and counterexample suite | analytics-core | evaluation | BLOCKED_BY_DEPENDENCY | A | DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01 | M2 | medium/M |
 | DL-VALUE-01 | First deterministic comparative finding (integration shape, matched windows) | analytics-core | implementation | BLOCKED_BY_DEPENDENCY | A | DL-BRIDGE-01, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-VALIDATE-01, DL-SPINE-02, DL-SPINE-03, DL-UX-ED | M2 | medium/L |
 | DL-OPS-CI-01 | Hosted pull-request CI gate before broad autonomous merging | analytics-core | implementation | DONE | A | none | M1 | low/M |
@@ -288,7 +288,7 @@ source, never this table. Horizon: A = active queue, F = frozen until DL-VALUE-0
 | DL-OPEN-01 | Question claim family + generators | open-questions | implementation | BLOCKED_BY_DEPENDENCY |  | DL-SPINE-01, DL-SPINE-05 | M7 | low/M |
 | DL-OPEN-02 | Open Questions Observatory + surprise-me exploration | open-questions | ux | BLOCKED_BY_DEPENDENCY |  | DL-OPEN-01 | M8 | low/M |
 | DL-DEMO-A1 | Future real local Taskdeck dogfood: activation specification | demo | spec | OWNER_GATED |  | DL-GIT-01, DL-XRAY-02, DL-ATLAS-04, DL-LIFE-01 | M8 | high/M |
-| DL-DEMO-B1 | Public Taskdeck-shaped synthetic twin: invented dataset generator spec | demo | spec | BLOCKED_BY_DEPENDENCY |  | DL-BRIDGE-01 | M8 | medium/M |
+| DL-DEMO-B1 | Public Taskdeck-shaped synthetic twin: invented dataset generator spec | demo | spec | READY |  | DL-BRIDGE-01 | M8 | medium/M |
 | DL-DEMO-B2 | Showcase script: 5-8 minute intelligence-platform walkthrough | demo | spec | BLOCKED_BY_DEPENDENCY |  | DL-DEMO-B1 | M8 | low/S |
 | DL-Q-CONSTRAINTS | Upstream constraints: Developer Lens issues #5 #6 #41 #55 #57 #59 | open-questions | process | QUESTION |  | none | M1 | medium/S |
 | DL-Q-PROSE | Owner gate: PR/issue prose semantic tier (tier-2 semantics) | open-questions | process | QUESTION |  | none | M7 | high/S |
