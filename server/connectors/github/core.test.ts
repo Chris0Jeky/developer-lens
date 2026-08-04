@@ -9,8 +9,10 @@ import {
   githubCoreManifest,
   planGithubCoreCollection,
   reconcileGithubCoreReceipts,
+  reconcileGithubCoreNonComplete,
   type GithubCoreCheckpoint,
   type GithubCoreReceipt,
+  type GithubCoreNonCompleteReconciliationInput,
 } from './core.js'
 
 const rangeStart = '2026-01-01T00:00:00.000Z'
@@ -32,6 +34,7 @@ function checkpoint(overrides: Partial<GithubCoreCheckpoint> = {}): GithubCoreCh
 }
 
 type ReconciliationInput = Parameters<typeof reconcileGithubCoreReceipts>[0]
+type NonCompleteInput = GithubCoreNonCompleteReconciliationInput
 
 function input(overrides: Partial<ReconciliationInput> = {}): ReconciliationInput {
   return {
@@ -50,6 +53,26 @@ function input(overrides: Partial<ReconciliationInput> = {}): ReconciliationInpu
 
 function unsafeCheckpoint(overrides: Record<string, unknown>): GithubCoreCheckpoint {
   return { ...checkpoint(), ...overrides } as unknown as GithubCoreCheckpoint
+}
+
+function nonCompleteInput(overrides: Partial<NonCompleteInput> = {}): NonCompleteInput {
+  return {
+    checkpoint: checkpoint(),
+    scopeAlias: 'scope-01',
+    rangeStart,
+    rangeEnd,
+    observedAt,
+    jobId: 'job-02',
+    consentRevision: 'consent-01',
+    status: 'truncated',
+    expectedUnits: null,
+    observedUnits: 2,
+    omittedUnits: null,
+    appliedReceiptAliases: ['receipt-01'],
+    limitationCode: 'RATE_LIMITED',
+    saturationReason: 'RATE_LIMIT',
+    ...overrides,
+  }
 }
 
 describe('github.core inert protocol foundation', () => {
@@ -338,5 +361,67 @@ describe('github.core inert protocol foundation', () => {
       coverage: { status: 'failed', retryable: true, limitationCode: 'FAILURE_TRANSIENT' },
     })
     expect(result.checkpoint).toBe(previous)
+  })
+
+  it('reconciles restricted, failed, and truncated facts without receipts or snapshots', () => {
+    for (const status of ['restricted', 'failed', 'truncated'] as const) {
+      const previous = checkpoint()
+      const result = reconcileGithubCoreNonComplete(nonCompleteInput({
+        checkpoint: previous,
+        status,
+        limitationCode: status === 'restricted' ? 'NOT_FOUND' : status === 'failed' ? 'SCHEMA_INVALID' : 'RATE_LIMITED',
+        ...(status === 'truncated' ? { saturationReason: 'RATE_LIMIT' } : { saturationReason: undefined }),
+      }))
+      expect(result.status).toBe(status)
+      expect(result.coverage.status).toBe(status)
+      expect(result.checkpoint).toEqual(previous)
+      expect(result.checkpoint).not.toBe(previous)
+      expect(result).not.toHaveProperty('snapshotHash')
+      expect(result).not.toHaveProperty('sourceSnapshotId')
+    }
+  })
+
+  it('classifies retry attempts and keeps rate limits truncated', () => {
+    const first = reconcileGithubCoreNonComplete(nonCompleteInput({
+      status: 'failed',
+      limitationCode: 'FAILURE_TRANSIENT',
+      failure: { kind: 'transient', attempt: 1, retryAfterMs: 50 },
+      saturationReason: undefined,
+    }))
+    expect(first.status).toBe('failed')
+    expect(first.coverage.retryable).toBe(true)
+    const final = reconcileGithubCoreNonComplete(nonCompleteInput({
+      status: 'failed',
+      limitationCode: 'FAILURE_TRANSIENT',
+      failure: { kind: 'transient', attempt: 3 },
+      saturationReason: undefined,
+    }))
+    expect(final.coverage.retryable).toBe(false)
+    const limited = reconcileGithubCoreNonComplete(nonCompleteInput({
+      status: 'failed',
+      limitationCode: 'RATE_LIMITED',
+      saturationReason: 'RATE_LIMIT',
+      failure: { kind: 'rate_limited', attempt: 1 },
+    }))
+    expect(limited.status).toBe('truncated')
+    expect(limited.coverage.status).toBe('truncated')
+  })
+
+  it('rejects malformed noncomplete facts and snapshots caller state', () => {
+    expect(() => reconcileGithubCoreNonComplete(nonCompleteInput({ observedUnits: -1 }))).toThrow('observedUnits')
+    expect(() => reconcileGithubCoreNonComplete(nonCompleteInput({ status: 'truncated', saturationReason: undefined }))).toThrow('saturationReason')
+    expect(() => reconcileGithubCoreNonComplete(nonCompleteInput({ appliedReceiptAliases: ['receipt-01', 'receipt-01'] }))).toThrow('unique')
+    expect(() => reconcileGithubCoreNonComplete(nonCompleteInput({ cursorHint: 'cursor-1', status: 'failed', saturationReason: undefined }))).toThrow('cursorHint')
+    const aliases = ['receipt-01']
+    const previous = checkpoint()
+    const result = reconcileGithubCoreNonComplete(nonCompleteInput({ appliedReceiptAliases: aliases, checkpoint: previous }))
+    expect(Object.isFrozen(result)).toBe(true)
+    expect(Object.isFrozen(result.appliedReceiptIds)).toBe(true)
+    expect(Object.isFrozen(result.checkpoint)).toBe(true)
+    aliases.push('receipt-02')
+    ;(previous as { highWatermark?: string }).highWatermark = '2026-01-01T13:00:00.000Z'
+    expect(result.appliedReceiptIds).toEqual(['receipt-01'])
+    expect(result.checkpoint?.highWatermark).toBe('2026-01-01T12:00:00.000Z')
+    expect(Object.isFrozen(previous)).toBe(false)
   })
 })

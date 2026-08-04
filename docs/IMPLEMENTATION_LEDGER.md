@@ -28,9 +28,11 @@ while a strict C1 evidence/output contract, deterministic local retrieval, and a
 OpenAI Responses request boundary remain default-off. The published P12 activation slice adds a
 strict, review-chronology-bound activation-card parser without reading its future card. A bounded
 follow-up now rejects calendar-invalid pricing timestamps that JavaScript would otherwise normalize
-into a different date. The current P12 candidate applies the same calendar-component boundary to C1
+into a different date. Published P12 now applies the same calendar-component boundary to C1
 bundle ranges while preserving supported fractional UTC forms and half-open range limits. The
-external-model capability is still
+current P4 candidate range-binds every composable noncomplete REST outcome and adds a pure core
+transition that preserves the prior checkpoint without terminal-receipt, snapshot, or completion
+fiction. The external-model capability is still
 `never_authorized`; there is no environment read, authorization-bearing transport, network/provider
 execution, raw response, cache, telemetry, persistence, or presentation path**.
 
@@ -40,8 +42,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current P12 C1-range-date candidate:
-  `origin/main` merge `9cbfd1d8d7f02afbcf1325a687aca4c77ed221cb`.
+- Published implementation baseline before the current P4 noncomplete-foundation candidate:
+  `origin/main` merge `e239fedf0765286141bb9b46254d36fe2b719006`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -623,11 +625,20 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- P12 C1-range-date candidate was rebased onto story-uncertainty merge `9cbfd1d`; the focused C1,
+- P4 noncomplete-foundation candidate was rebased onto C1-range-date merge `e239fed`; the focused
+  core/REST transport suites passed 2 files / 28 tests. `npm run check` passed Oxlint, context
+  verification, 36 test files / 197 tests, TypeScript project builds, and the production Vite build;
+  `git diff --check` passed. Exact rebased-head fresh-context review found no CRITICAL/HIGH bound/
+  unbound range, rate-limit, retry, checkpoint-preservation, mutation, or false-completion/snapshot
+  defect.
+- P12 C1-range-date [PR #43](https://github.com/Chris0Jeky/developer-lens/pull/43)
+  merged as `e239fed` after rebasing onto story-uncertainty merge `9cbfd1d`; the focused C1,
   request, and activation suites passed 3 files / 16 tests. `npm run check` passed Oxlint, context
   verification, 36 test files / 193 tests, TypeScript project builds, and the production Vite build;
   `git diff --check` passed. Exact rebased-head fresh-context review found no CRITICAL/HIGH calendar-
-  validity, supported-format, range-limit, content-free-error, or request-integration defect.
+  validity, supported-format, range-limit, content-free-error, or request-integration defect. Exact-
+  merge hosted Pages run `30886154361` completed successfully; its post-merge sweep contained no
+  finding.
 - D1 story-uncertainty [PR #40](https://github.com/Chris0Jeky/developer-lens/pull/40)
   merged as `9cbfd1d` after rebasing onto complete-composition merge `581cd58`; the focused
   story suite passed 1 file / 3 tests and `npm run test:demo:v2` passed 1 file / 5 tests. `npm run
@@ -1004,11 +1015,19 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Tracked non-blocking review findings
 
-- The current C1 range-date candidate closes
+- The published C1 range-date repair closed
   [#37](https://github.com/Chris0Jeky/developer-lens/issues/37) by component-checking parsed UTC
   calendar fields. JavaScript's legacy year `0000`-`0099` arithmetic can still weaken the three-year
   cap for ancient ranges; current-era behavior is unaffected and the residual remains separately
   tracked in [#41](https://github.com/Chris0Jeky/developer-lens/issues/41).
+- The pure noncomplete transition keeps every mismatched caller fact safely noncomplete, but its
+  caller-provided failure kind and limitation code are not yet cross-checked as a semantic pair.
+  Closed mapping and mismatch regressions remain tracked in
+  [#42](https://github.com/Chris0Jeky/developer-lens/issues/42) before runtime integration.
+- An invalid repository-alias callback remains an explicitly unbound pre-request failure even after
+  range syntax was validated. It performs no request or observation and cannot be composed; the
+  exact state-boundary choice remains tracked in
+  [#44](https://github.com/Chris0Jeky/developer-lens/issues/44).
 - P6 must compare verified owner email only ephemerally, emit only `is_self`, and never retain
   identity or per-person output.
 - P2 deletion tests must enumerate collection jobs/checkpoints, source snapshots, coverage,
@@ -1043,8 +1062,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current P12 C1-range-date
-   candidate is merge `9cbfd1d8d7f02afbcf1325a687aca4c77ed221cb`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P4 noncomplete-
+   foundation candidate is merge `e239fedf0765286141bb9b46254d36fe2b719006`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -1058,8 +1077,10 @@ unresolved review threads outrank it whenever they disagree.
    identities and defines closed unit/page domains; the opt-in store now preserves restricted
    coverage without a snapshot or checkpoint advance, and published page receipts now expose frozen
    alias-only membership. Published complete composition now emits canonical hashes,
-   receipts, and checkpoint proposals. Next publish the pure noncomplete transition mapping and then
-   integrate both paths with two-run storage replay/stability proof before issue
+   receipts, and checkpoint proposals. The current candidate range-binds noncomplete transport
+   outcomes and produces checkpoint-preserving core transitions without snapshot material. Next
+   publish strict REST noncomplete composition, then integrate both paths with two-run storage replay/
+   stability proof before issue
    #6 key-
    lifecycle/mismatch enforcement,
    backup/restore, scoped deletion/tombstone, re-consent, and snapshot-stability proof. Keep runtime

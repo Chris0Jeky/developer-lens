@@ -93,19 +93,40 @@ export interface GithubCoreRestTruncatedResult extends GithubCoreRestBase {
   readonly pages: GithubCoreRestObserved['pages'] | null
   readonly observedUnitCount: number | null
   readonly observedPageCount: number | null
+  /** Non-null only after the transport has validated the collection range. */
+  readonly rangeStart: string | null
+  readonly rangeEnd: string | null
 }
 
 export interface GithubCoreRestRestrictedResult extends GithubCoreRestBase {
   readonly kind: 'restricted'
   readonly status: 'restricted'
   readonly code: 'REPOSITORY_ID_MISMATCH' | 'REPOSITORY_NOT_PUBLIC' | 'PERMISSION_DENIED' | 'NOT_FOUND'
+  readonly rangeStart: string | null
+  readonly rangeEnd: string | null
 }
 
 export interface GithubCoreRestFailedResult extends GithubCoreRestBase {
   readonly kind: 'failed'
   readonly status: 'failed'
   readonly code: 'SCHEMA_INVALID' | 'TRANSIENT' | 'UNSUPPORTED' | 'RATE_LIMITED'
+  readonly rangeStart: string | null
+  readonly rangeEnd: string | null
 }
+
+export type GithubCoreRestBoundNonCompleteResult =
+  | (GithubCoreRestTruncatedResult & { readonly rangeStart: string; readonly rangeEnd: string })
+  | (GithubCoreRestRestrictedResult & { readonly rangeStart: string; readonly rangeEnd: string })
+  | (GithubCoreRestFailedResult & { readonly rangeStart: string; readonly rangeEnd: string })
+
+export type GithubCoreRestUnboundResult =
+  | (GithubCoreRestTruncatedResult & { readonly rangeStart: null; readonly rangeEnd: null })
+  | (GithubCoreRestRestrictedResult & { readonly rangeStart: null; readonly rangeEnd: null })
+  | (GithubCoreRestFailedResult & { readonly rangeStart: null; readonly rangeEnd: null })
+
+export type GithubCoreRestNonCompleteResult =
+  | GithubCoreRestBoundNonCompleteResult
+  | GithubCoreRestUnboundResult
 
 export type GithubCoreRestTransportResult =
   | GithubCoreRestCompleteResult
@@ -215,6 +236,7 @@ function restrictedResult(
   repositoryAlias: string,
   code: GithubCoreRestRestrictedResult['code'],
   rate: GithubCoreRestRateLimit,
+  range: { readonly rangeStart: string; readonly rangeEnd: string } | null = null,
 ): GithubCoreRestRestrictedResult {
   return freezeDeep({
     kind: 'restricted',
@@ -222,6 +244,8 @@ function restrictedResult(
     code,
     repositoryAlias,
     rateLimit: rate,
+    rangeStart: range?.rangeStart ?? null,
+    rangeEnd: range?.rangeEnd ?? null,
   }) as GithubCoreRestRestrictedResult
 }
 
@@ -229,6 +253,7 @@ function failedResult(
   repositoryAlias: string,
   code: GithubCoreRestFailedResult['code'],
   rate: GithubCoreRestRateLimit,
+  range: { readonly rangeStart: string; readonly rangeEnd: string } | null = null,
 ): GithubCoreRestFailedResult {
   return freezeDeep({
     kind: 'failed',
@@ -236,6 +261,8 @@ function failedResult(
     code,
     repositoryAlias,
     rateLimit: rate,
+    rangeStart: range?.rangeStart ?? null,
+    rangeEnd: range?.rangeEnd ?? null,
   }) as GithubCoreRestFailedResult
 }
 
@@ -246,6 +273,7 @@ function truncatedResult(
   units: readonly GithubCoreRestUnit[] | null,
   pages: readonly GithubCoreRestPageReceipt[] | null,
   rate: GithubCoreRestRateLimit,
+  range: { readonly rangeStart: string; readonly rangeEnd: string } | null = null,
 ): GithubCoreRestTruncatedResult {
   return freezeDeep({
     kind: 'truncated',
@@ -261,6 +289,8 @@ function truncatedResult(
     pages: pages ? Object.freeze([...pages]) : null,
     observedUnitCount: units?.length ?? null,
     observedPageCount: pages?.length ?? null,
+    rangeStart: range?.rangeStart ?? null,
+    rangeEnd: range?.rangeEnd ?? null,
   }) as GithubCoreRestTruncatedResult
 }
 
@@ -422,8 +452,8 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
   } catch {
     return failedResult('invalid', 'SCHEMA_INVALID', { remaining: null, reset: null })
   }
-  const { rangeEnd, fetch, alias } = input
-  if (!rangeIsValid(card, rangeEnd) || !SAFE_OWNER.test(card.selectedRepository.owner) || !SAFE_REPOSITORY.test(card.selectedRepository.name) || typeof fetch !== 'function' || typeof alias !== 'function') {
+  const { rangeEnd, fetch, alias } = (input ?? {}) as Partial<GithubCoreRestTransportInput>
+  if (typeof rangeEnd !== 'string' || !rangeIsValid(card, rangeEnd) || !SAFE_OWNER.test(card.selectedRepository.owner) || !SAFE_REPOSITORY.test(card.selectedRepository.name) || typeof fetch !== 'function' || typeof alias !== 'function') {
     return failedResult('invalid', 'SCHEMA_INVALID', { remaining: null, reset: null })
   }
   let repositoryAlias: string
@@ -433,6 +463,7 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
   } catch {
     return failedResult('invalid', 'SCHEMA_INVALID', { remaining: null, reset: null })
   }
+  const range = Object.freeze({ rangeStart: card.readBoundary.rangeStart, rangeEnd })
   const aliasSources = new Map<string, string>([[
     repositoryAlias,
     `repository\0${card.selectedRepository.providerRepositoryId}`,
@@ -441,39 +472,39 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
   try {
     metadataResponse = await fetch(safeRequestUrl(card, 'metadata'), { method: 'GET', headers: FIXED_HEADERS, redirect: 'error' })
   } catch {
-    return failedResult(repositoryAlias, 'TRANSIENT', { remaining: null, reset: null })
+    return failedResult(repositoryAlias, 'TRANSIENT', { remaining: null, reset: null }, range)
   }
   let rate = rateLimit(metadataResponse)
   if (metadataResponse.status !== 200) {
     const code = classifyHttp(metadataResponse)
-    if (isRateLimited(code)) return truncatedResult(repositoryAlias, 'RATE_LIMITED', null, null, null, rate)
-    if (code === 'PERMISSION_DENIED' || code === 'NOT_FOUND') return restrictedResult(repositoryAlias, code, rate)
-    return failedResult(repositoryAlias, code === 'TRANSIENT' ? 'TRANSIENT' : code === 'UNSUPPORTED' ? 'UNSUPPORTED' : 'SCHEMA_INVALID', rate)
+    if (isRateLimited(code)) return truncatedResult(repositoryAlias, 'RATE_LIMITED', null, null, null, rate, range)
+    if (code === 'PERMISSION_DENIED' || code === 'NOT_FOUND') return restrictedResult(repositoryAlias, code, rate, range)
+    return failedResult(repositoryAlias, code === 'TRANSIENT' ? 'TRANSIENT' : code === 'UNSUPPORTED' ? 'UNSUPPORTED' : 'SCHEMA_INVALID', rate, range)
   }
   let metadata: ReturnType<typeof parseRepositoryMetadata>
-  try { metadata = parseRepositoryMetadata(await readJson(metadataResponse)) } catch (error) { return failedResult(repositoryAlias, error instanceof Error && error.message === 'transient' ? 'TRANSIENT' : 'SCHEMA_INVALID', rate) }
-  if (!metadata) return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate)
-  if (metadata.id !== card.selectedRepository.providerRepositoryId) return restrictedResult(repositoryAlias, 'REPOSITORY_ID_MISMATCH', rate)
-  if (metadata.private) return restrictedResult(repositoryAlias, 'REPOSITORY_NOT_PUBLIC', rate)
+  try { metadata = parseRepositoryMetadata(await readJson(metadataResponse)) } catch (error) { return failedResult(repositoryAlias, error instanceof Error && error.message === 'transient' ? 'TRANSIENT' : 'SCHEMA_INVALID', rate, range) }
+  if (!metadata) return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate, range)
+  if (metadata.id !== card.selectedRepository.providerRepositoryId) return restrictedResult(repositoryAlias, 'REPOSITORY_ID_MISMATCH', rate, range)
+  if (metadata.private) return restrictedResult(repositoryAlias, 'REPOSITORY_NOT_PUBLIC', rate, range)
   const flags = { archived: metadata.archived, disabled: metadata.disabled, fork: metadata.fork }
   const units: GithubCoreRestUnit[] = []
   const pages: GithubCoreRestPageReceipt[] = []
   let page = 1
   for (;;) {
-    if (pages.length + 1 >= card.readBoundary.maximumRequests) return truncatedResult(repositoryAlias, 'REQUEST_BUDGET_EXHAUSTED', flags, units, pages, rate)
+    if (pages.length + 1 >= card.readBoundary.maximumRequests) return truncatedResult(repositoryAlias, 'REQUEST_BUDGET_EXHAUSTED', flags, units, pages, rate, range)
     const requestUrl = safeRequestUrl(card, 'issues', page)
     let response: GithubCoreRestResponse
-    try { response = await fetch(requestUrl, { method: 'GET', headers: FIXED_HEADERS, redirect: 'error' }) } catch { return failedResult(repositoryAlias, 'TRANSIENT', rate) }
+    try { response = await fetch(requestUrl, { method: 'GET', headers: FIXED_HEADERS, redirect: 'error' }) } catch { return failedResult(repositoryAlias, 'TRANSIENT', rate, range) }
     rate = rateLimit(response)
     if (response.status !== 200) {
       const code = classifyHttp(response)
-      if (isRateLimited(code)) return truncatedResult(repositoryAlias, 'RATE_LIMITED', flags, units, pages, rate)
-      if (code === 'PERMISSION_DENIED' || code === 'NOT_FOUND') return restrictedResult(repositoryAlias, code, rate)
-      return failedResult(repositoryAlias, code === 'TRANSIENT' ? 'TRANSIENT' : code === 'UNSUPPORTED' ? 'UNSUPPORTED' : 'SCHEMA_INVALID', rate)
+      if (isRateLimited(code)) return truncatedResult(repositoryAlias, 'RATE_LIMITED', flags, units, pages, rate, range)
+      if (code === 'PERMISSION_DENIED' || code === 'NOT_FOUND') return restrictedResult(repositoryAlias, code, rate, range)
+      return failedResult(repositoryAlias, code === 'TRANSIENT' ? 'TRANSIENT' : code === 'UNSUPPORTED' ? 'UNSUPPORTED' : 'SCHEMA_INVALID', rate, range)
     }
     let parsed: readonly Record<string, unknown>[] | null
-    try { parsed = parseIssues(await readJson(response)) } catch (error) { return failedResult(repositoryAlias, error instanceof Error && error.message === 'transient' ? 'TRANSIENT' : 'SCHEMA_INVALID', rate) }
-    if (!parsed) return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate)
+    try { parsed = parseIssues(await readJson(response)) } catch (error) { return failedResult(repositoryAlias, error instanceof Error && error.message === 'transient' ? 'TRANSIENT' : 'SCHEMA_INVALID', rate, range) }
+    if (!parsed) return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate, range)
     const start = Date.parse(card.readBoundary.rangeStart)
     const end = Date.parse(rangeEnd)
     const pageUnitAliases: string[] = []
@@ -493,7 +524,7 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
         aliasSources.set(itemAlias, aliasSource)
         units.push(Object.freeze({ alias: itemAlias, kind, updatedAt: updated }))
         pageUnitAliases.push(itemAlias)
-      } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
+      } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate, range) }
     }
     let next: number | null
     try {
@@ -503,7 +534,7 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
         requestUrl,
         card.selectedRepository.providerRepositoryId,
       )
-    } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
+    } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate, range) }
     let receiptAlias: string
     try {
       receiptAlias = alias('page', `${card.selectedRepository.providerRepositoryId}:${page}`)
@@ -512,7 +543,7 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
       const existing = aliasSources.get(receiptAlias)
       if (existing !== undefined && existing !== receiptSource) throw new Error('schema')
       aliasSources.set(receiptAlias, receiptSource)
-    } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
+    } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate, range) }
     const unitAliases = Object.freeze([...pageUnitAliases].sort())
     pages.push(Object.freeze({ pageNumber: page, receiptAlias, unitCount: unitAliases.length, unitAliases, nextPage: next }))
     if (next === null) {
