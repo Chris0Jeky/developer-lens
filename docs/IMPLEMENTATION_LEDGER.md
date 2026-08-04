@@ -7,9 +7,11 @@ evidence/design version 2026-08-03.
 
 Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
-The current P4 milestone adds a strictly injected, invented-fixture page adapter over the inert
-`github.core` protocol. It remains `never_authorized` and adds no transport, credential, real-read,
-storage composition, legacy-collector, or activation path**.
+The published P4 foundation now includes an inert protocol, opt-in incremental storage bridge, and
+strictly injected invented-fixture page adapter. The current bounded milestone adds a closed parser
+for an ignored, owner-selected public-repository activation card. It remains default-off and adds
+no loader, transport, credential, real read, storage composition, legacy-collector switch, or
+public/private output path**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -17,15 +19,16 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current adapter milestone: `origin/main` merge
-  `daf318067cc6b9984e2bdf7a5601b4d5b7f3e198`.
+- Published implementation baseline before the current activation-card milestone: `origin/main`
+  merge `3a0d6bd1a564f09a661a1638960152dd368186ed`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
   `1171a42b988aae01121d74ce5f412b1a00fd4fc9`
   with the three migration repairs, installation-HMAC blocker fix, and exact ledger correction.
-- Worktrees: one registered Developer Lens worktree, the primary checkout; it was tracked-clean
-  before this ledger edit. Refresh cleanliness and occupancy from Git before any further mutation.
+- Worktrees are live coordinator state rather than a durable count. Refresh registration,
+  cleanliness, ignored output, and occupancy from Git before mutation or removal; never force
+  cleanup of an uncertain tree.
 - Follow-up commits: `bb2a0d5` repairs producer coverage/local repository-ID compatibility and
   transactional replacement; `9c8c3e9` adds the explicit installation-scoped HMAC key contract;
   `739e371` narrows the repository-identity persistence claim to its exact C2 boundary.
@@ -58,6 +61,14 @@ unresolved review threads outrank it whenever they disagree.
   SQLite bridge at merge `daf318067cc6b9984e2bdf7a5601b4d5b7f3e198`. Exact-merge Pages run
   [30869532164](https://github.com/Chris0Jeky/developer-lens/actions/runs/30869532164) passed the full
   gate, synthetic showcase privacy verification, artifact upload, and deployment.
+- [PR #18](https://github.com/Chris0Jeky/developer-lens/pull/18) publishes the strictly injected,
+  invented-fixture `github.core` page adapter at merge
+  `3a0d6bd1a564f09a661a1638960152dd368186ed`. Exact-merge Pages run
+  [30871009468](https://github.com/Chris0Jeky/developer-lens/actions/runs/30871009468) passed the full
+  gate, synthetic showcase privacy verification, artifact upload, and deployment.
+- [PR #19](https://github.com/Chris0Jeky/developer-lens/pull/19) is the current activation-card
+  parser milestone. It publishes only the closed schema, invented tests, and abstract authority
+  state; the selected repository and operational card remain ignored and local.
 
 ## Authority and owner gates
 
@@ -83,6 +94,10 @@ unresolved review threads outrank it whenever they disagree.
   executable definition remains `never_authorized` until a task selects exact local scope, uses
   existing read-only least-privilege access, and proves collection, coverage, retention, deletion,
   rollback, and failure behavior.
+- The owner has now selected the first public repository through an ignored local task card. Public
+  tracked state records only its abstract read/privacy boundary; repository identity, provider ID,
+  task path, and runtime values remain local and untracked. The card authorizes public
+  unauthenticated reads only and does not itself enable a network or persistence path.
 - G4 remains open and unapproved. `cap.external.model` stays `never_authorized`; no provider, SDK,
   transport, payload, cache, telemetry, or spend path is scheduled.
 
@@ -296,6 +311,16 @@ unresolved review threads outrank it whenever they disagree.
   marker/shape/checkpoint refusal, sequential pagination, terminal/cap behavior, closed failure
   classification, request/input/receipt mutation resistance, duplicate/cycle refusal, and no retry
   scheduling or callback-error leakage.
+- `server/connectors/github/activationTask.ts` is the first task-scoped activation boundary. Its
+  strict schema accepts one public repository, public unauthenticated access, three exact lifecycle
+  resource classes, a 20-request ceiling, the charter lifetimes, explicit failure coverage,
+  application-controlled rollback/deletion declarations, and task-owned ignored paths. Unknown or
+  weakened fields fail with one stable content-free error; the parsed result is deeply frozen.
+- The tracked parser contains no selected repository value, task path, provider response, token,
+  network call, filesystem loader, database opener, or activation switch. Invented tests prove
+  hostile extras, credentials, private visibility, unsafe budgets/timestamps/identifiers, path
+  traversal, and weakened retention/coverage/rollback/deletion are rejected. The actual task card
+  remains ignored and local.
 
 ## Durable continuation foundation
 
@@ -597,10 +622,12 @@ unresolved review threads outrank it whenever they disagree.
   replayed file again before accepting it. Completed packs remain immutable by contract; an
   activated hostile-writer claim would still need an immutable snapshot or an equivalent stronger
   boundary to exclude an adversarial replace-read-restore sequence.
-- The P4 adapter has only an injected invented-fixture acquisition callback and no runtime call site.
-  It is not composed with the opt-in synthetic storage bridge. Selected-repository consent,
-  credentials, real page acquisition, backup/grace behavior, observation facts, parity/fallback,
-  durable deletion, and legacy collector compatibility remain future reviewed activation seams.
+- The P4 adapter has only an injected invented-fixture acquisition callback and no runtime call
+  site. The activation-card parser validates selection and boundaries but does not read the card
+  from disk or compose it with a transport or the opt-in storage bridge. Real page acquisition,
+  application-controlled backup/restore, key continuity, observation facts, parity/fallback,
+  tombstoned deletion/re-consent, and legacy collector compatibility remain reviewed activation
+  seams.
 - The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
   this bounded importer accepts only the registered ASCII repository-reference alphabet; that P2
   compatibility gap remains tracked in
@@ -643,17 +670,17 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before this adapter milestone is merge
-   `daf318067cc6b9984e2bdf7a5601b4d5b7f3e198`; live evidence still outranks this checkpoint.
+1. Refresh Git/GitHub before mutation. The published baseline before the activation-card milestone
+   is merge `3a0d6bd1a564f09a661a1638960152dd368186ed`; live evidence still outranks this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
    activated hostile-writer claim without an immutable snapshot or equivalent boundary.
 3. G2 and standing G3 are approved, but no real path is automatically active. Reconcile issue #6's
    duplicate-identity/key-continuity acceptance and issue #5's local-name/identity-vault boundary
    before a real v1 migration. Use invented fixtures and a new bounded task card first.
-4. The inert protocol, opt-in synthetic storage bridge, and invented-fixture page adapter now close
-   the dependency-ready contract-only P4 queue. Do not invent another foundation slice. Real
-   activation is the next boundary and requires a new exact selected-repository task card, existing
-   read-only credentials, retention/deletion/rollback behavior, parity/fallback proof, and focused
-   failure tests before any read. Keep `github.core` `never_authorized` until that bounded task is
-   explicitly selected and proved. G4 remains required for any external-model work.
+4. The exact repository is owner-selected in an ignored local task card, and the current milestone
+   supplies its closed parser without exposing identity or operational values. Next implement the
+   injected public-unauthenticated GET transport and strict immediate projection using invented
+   fixtures only. Keep runtime default-off and make no real request until transport, storage
+   composition, backup/rollback, deletion/tombstone, parity/fallback, failure tests, review, and the
+   exact hosted gate all pass. G4 remains required for any external-model work.
