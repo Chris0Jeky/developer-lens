@@ -18,7 +18,33 @@ export const OPENAI_LUNA_OUTPUT_SCHEMA_NAME = 'developer_lens_c1_output' as cons
 
 const FIXED_INSTRUCTIONS =
   'Use only the supplied deterministic C1 evidence. Return schema-valid hypotheses, counter-hypotheses, or abstentions; never invent evidence or include source text.'
-const UtcTimestampSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/)
+const UTC_TIMESTAMP_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/
+
+function parseCanonicalUtc(value: string): number | null {
+  const match = UTC_TIMESTAMP_PATTERN.exec(value)
+  if (!match) return null
+  const parsed = Date.parse(value)
+  if (!Number.isFinite(parsed)) return null
+  const date = new Date(parsed)
+  const milliseconds = Number((match[7] ?? '').padEnd(3, '0') || '0')
+  if (
+    date.getUTCFullYear() !== Number(match[1]) ||
+    date.getUTCMonth() + 1 !== Number(match[2]) ||
+    date.getUTCDate() !== Number(match[3]) ||
+    date.getUTCHours() !== Number(match[4]) ||
+    date.getUTCMinutes() !== Number(match[5]) ||
+    date.getUTCSeconds() !== Number(match[6]) ||
+    date.getUTCMilliseconds() !== milliseconds
+  ) return null
+  return parsed
+}
+
+const UtcTimestampSchema = z.string().superRefine((value, context) => {
+  if (parseCanonicalUtc(value) === null) {
+    context.addIssue({ code: 'custom', message: 'timestamp is not canonical' })
+  }
+})
 const PriceQuoteSchema = z.object({
   model: z.literal(OPENAI_LUNA_MODEL),
   serviceTier: z.literal('default'),
@@ -139,9 +165,7 @@ function buildModelOutputJsonSchema(): Record<string, unknown> {
 const modelOutputJsonSchema = buildModelOutputJsonSchema()
 
 function canonicalUtc(value: string): number | null {
-  if (!UtcTimestampSchema.safeParse(value).success) return null
-  const parsed = Date.parse(value)
-  return Number.isFinite(parsed) ? parsed : null
+  return parseCanonicalUtc(value)
 }
 
 export function parseOpenAiLunaPriceQuote(priceQuote: unknown, now: string): OpenAiLunaPriceQuote {
