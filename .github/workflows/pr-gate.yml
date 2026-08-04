@@ -27,8 +27,8 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Set up Node.js
-        # One Node major everywhere: better-sqlite3 is ABI-specific and the locked local major
-        # used for the proving commands is 24.
+        # Matches the locked local proving runtime (Node 24; better-sqlite3 is ABI-specific).
+        # NOTE: pages.yml still deploys on Node 22 — alignment tracked as a separate issue.
         uses: actions/setup-node@v6
         with:
           node-version: 24
