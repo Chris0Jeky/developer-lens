@@ -11,7 +11,8 @@ The public synthetic V2 demo now includes an accessible observed-to-derived-to-h
 path over its existing validated C0 insight payload. The published P4 foundation includes an inert protocol, opt-in incremental storage bridge,
 invented-fixture page adapter, closed activation-card parser, injected public-unauthenticated GET
 transport with immediate projection, closed-world incremental-schema validation, and a confined
-ignored-card loader. It remains default-off and adds no credential, live read, storage composition,
+descriptor-bound, duplicate-key-rejecting, 64 KiB ignored-card loader. It remains default-off and
+adds no credential, live read, storage composition,
 legacy-collector switch, or public/private output path. G4 is now provider-specifically approved,
 while a strict C1 evidence/output contract and deterministic local-retrieval foundation remain
 default-off. The external-model capability is still `never_authorized`; there is no credential,
@@ -23,8 +24,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current C1 contract/retrieval milestone:
-  `origin/main` merge `523899db4a975524316fc63707e52ec81ec4f3ba`.
+- Published implementation baseline before the current loader-hardening milestone:
+  `origin/main` merge `6032394302f43717a8b0d9087aa0c5bbd4b20c49`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -111,6 +112,15 @@ unresolved review threads outrank it whenever they disagree.
   [30877836995](https://github.com/Chris0Jeky/developer-lens/actions/runs/30877836995) passed the full
   gate, synthetic-showcase privacy verification, artifact upload, and deployment. It contains no
   tracked card identity/value, network, database, credential, runtime switch, or output path.
+- [PR #27](https://github.com/Chris0Jeky/developer-lens/pull/27) publishes the accessible synthetic
+  evidence-story path at merge `523899db4a975524316fc63707e52ec81ec4f3ba`; exact-merge Pages run
+  [30878869800](https://github.com/Chris0Jeky/developer-lens/actions/runs/30878869800) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment.
+- [PR #29](https://github.com/Chris0Jeky/developer-lens/pull/29) publishes the default-off C1
+  contract/local-retrieval foundation at merge `6032394302f43717a8b0d9087aa0c5bbd4b20c49`;
+  exact-merge Pages run
+  [30879165749](https://github.com/Chris0Jeky/developer-lens/actions/runs/30879165749) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment.
 
 ## Authority and owner gates
 
@@ -367,12 +377,19 @@ unresolved review threads outrank it whenever they disagree.
   hostile extras, credentials, private visibility, unsafe budgets/timestamps/identifiers, path
   traversal, and weakened retention/coverage/rollback/deletion are rejected. The actual task card
   remains ignored and local.
-- `server/connectors/github/activationTaskLoader.ts` accepts only an absolute workspace root and
-  opaque task ID, derives the one canonical ignored `task-card.json` path, resolves filesystem
-  metadata before reading, rejects static symlink/junction or alternate-root escape, delegates to
-  the strict parser, and collapses failures to one content-free code. Invented temporary fixtures
-  prove the accepted path plus malformed/schema, closed-input, traversal, wrong-root and symlink
-  refusals. No production caller imports the loader.
+- `server/connectors/github/activationTaskLoader.ts` accepts only snapshotted own data properties for
+  an absolute workspace root and opaque task ID, derives the one canonical ignored `task-card.json`
+  path, rejects static and raced symlink/junction or alternate-root escape, and binds path/ancestor
+  rechecks plus portable device/inode identity to the same opened handle it reads. Accessors and
+  caller mutation across awaits cannot redirect the task.
+- The handle is nonblocking, must remain a regular file with stable size, and is read through a
+  64 KiB ceiling before fatal UTF-8 decode. A bounded JSON scanner rejects duplicate object keys at
+  every depth, including escape-equivalent keys, before ordinary parsing; all failures retain one
+  content-free code and the strict parser still deep-freezes the card. Invented temporary fixtures
+  prove accepted loading, accessor/mutation resistance, duplicate-key refusal, oversized/invalid-
+  UTF-8 refusal, malformed/schema, traversal, wrong-root, and symlink cases. No production caller
+  imports the loader, and no real ignored card was read. This is the bounded follow-up tracked by
+  [#28](https://github.com/Chris0Jeky/developer-lens/issues/28).
 - `server/connectors/github/restTransport.ts` is an injected public-unauthenticated GET-only seam.
   It constructs only the selected repository metadata and open issue/pull-request lifecycle URLs,
   fixes the API version, `Accept`, and non-identifying user-agent headers, disables redirects, and
@@ -507,6 +524,13 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
+- P4 loader-hardening proof after rebasing onto C1 merge `6032394`: the focused loader suite passed
+  1 file / 9 tests; `npm run check` passed Oxlint, context verification, 32 test files / 149 tests,
+  TypeScript project builds, and the production Vite build; and `git diff --check` passed. Direct
+  regressions cover snapshotted data properties, getter refusal, caller mutation across the first
+  await, top-level/nested/escape-equivalent duplicate keys, the 64 KiB ceiling, fatal UTF-8 decode,
+  canonical path confinement, unavailable/mismatched opened-file identity, and stable content-free
+  errors.
 - P12 C1 contract/retrieval proof after rebasing onto synthetic story merge `523899d`: the two
   focused suites passed 2 files / 7 tests; `npm run check` passed Oxlint, context verification,
   32 test files / 144 tests, TypeScript project builds, and the production Vite build; and
@@ -770,8 +794,10 @@ unresolved review threads outrank it whenever they disagree.
   site. The loader reads only the canonical task-owned card but no production caller composes it
   with transport or the opt-in storage bridge. Application-controlled backup/restore, installation-
   key continuity, snapshot stability, parity/fallback, tombstoned deletion/re-consent, and legacy
-  collector compatibility remain reviewed activation seams. Static realpath checks do not claim
-  hostile concurrent local-writer integrity; a composed snapshot must close or disclose that race.
+  collector compatibility remain reviewed activation seams. The opened-handle proof closes path-
+  replacement redirection, but same-size in-place card writes can still race content bytes; a
+  composed runner must bind an owner-reviewed payload hash/snapshot rather than claiming hostile
+  concurrent-writer content integrity from this loader alone.
 - The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
   this bounded importer accepts only the registered ASCII repository-reference alphabet; that P2
   compatibility gap remains tracked in
@@ -821,8 +847,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current C1 foundation is
-   merge `523899db4a975524316fc63707e52ec81ec4f3ba`; live evidence still outranks this checkpoint.
+1. Refresh Git/GitHub before mutation. The published baseline before the current loader hardening is
+   merge `6032394302f43717a8b0d9087aa0c5bbd4b20c49`; live evidence still outranks this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
    activated hostile-writer claim without an immutable snapshot or equivalent boundary.
@@ -830,8 +856,8 @@ unresolved review threads outrank it whenever they disagree.
    duplicate-identity/key-continuity acceptance and issue #5's local-name/identity-vault boundary
    before a real v1 migration. Use invented fixtures and a new bounded task card first.
 4. The exact repository is owner-selected in an ignored local task card; its parser, confined
-   loader, and injected public-unauthenticated transport expose no identity or operational values in
-   tracked state. Next add installation-key continuity and additive transport/projection/storage
+   descriptor-bound loader, and injected public-unauthenticated transport expose no identity or
+   operational values in tracked state. Next add installation-key continuity and additive transport/projection/storage
    composition, including schema mismatch rollback, backup/restore, scoped deletion/tombstone,
    re-consent, replay/stability, and non-complete coverage persistence. Keep runtime default-off and
    make no real request until that composition, focused failure tests, review, and the exact hosted
