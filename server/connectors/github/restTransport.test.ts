@@ -4,6 +4,7 @@ import {
   collectGithubCoreRest,
   type GithubCoreRestFetch,
   type GithubCoreRestResponse,
+  type GithubCoreRestUnit,
 } from './restTransport.js'
 
 const rangeStart = '2026-07-01T00:00:00.000Z'
@@ -45,6 +46,10 @@ describe('github.core REST transport projection', () => {
     expect(result.kind).toBe('complete')
     expect(result).toMatchObject({ repositoryAlias: 'repository-alias-101', repositoryFlags: { public: true, archived: true, disabled: false, fork: false }, observedUnitCount: 1, rateLimit: { remaining: null, reset: null } })
     expect(result.units).toEqual([{ alias: 'pull_request-alias-raw___1', kind: 'pull_request', updatedAt: '2026-07-02T00:00:00.000Z' }])
+    expect(Object.isFrozen(result)).toBe(true)
+    expect(Object.isFrozen(result.units)).toBe(true)
+    expect(Object.isFrozen(result.units[0])).toBe(true)
+    expect(() => { (result.units as GithubCoreRestUnit[]).push({ alias: 'mutated', kind: 'issue', updatedAt: rangeStart }) }).toThrow()
     expect(JSON.stringify(result)).not.toContain('POISON')
     expect(JSON.stringify(result)).not.toContain('raw+/=1')
     expect(aliases).toEqual(['repository:101', 'pull_request:raw+/=1'])
@@ -63,6 +68,8 @@ describe('github.core REST transport projection', () => {
   it('rejects metadata mismatches and distinguishes terminal pagination from hostile links', async () => {
     const mismatch = fetchFixture([response(200, { ...metadata, id: 999 })])
     await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: mismatch.fetch, alias: () => 'repo-alias' })).resolves.toMatchObject({ kind: 'restricted', code: 'REPOSITORY_ID_MISMATCH' })
+    const privateRepo = fetchFixture([response(200, { ...metadata, private: true })])
+    await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: privateRepo.fetch, alias: () => 'repo-alias' })).resolves.toMatchObject({ kind: 'restricted', code: 'REPOSITORY_NOT_PUBLIC' })
     const hostile = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }], { link: '<https://evil.invalid/repos/fixture-owner/fixture-repository/issues?page=2>; rel="next"' })])
     await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: hostile.fetch, alias: () => 'repo-alias' })).resolves.toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
     const terminal = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }])])
