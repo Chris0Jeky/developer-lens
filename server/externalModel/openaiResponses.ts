@@ -75,6 +75,16 @@ export type OpenAiLunaRequestDescriptor = Readonly<{
 
 export type OpenAiLunaCallResult = z.infer<typeof CallResultSchema>
 export type OpenAiLunaCall = (request: OpenAiLunaRequestDescriptor) => Promise<OpenAiLunaCallResult>
+export type OpenAiLunaRequestInput = {
+  bundle: unknown
+  priceQuote: unknown
+  now: string
+}
+export type OpenAiLunaRequestPreview = Readonly<{
+  bundleId: C1EvidenceBundle['bundle_id']
+  bundleJson: string
+  request: OpenAiLunaRequestDescriptor
+}>
 
 export class OpenAiLunaRequestError extends Error {
   readonly code: OpenAiLunaRequestErrorCode
@@ -181,16 +191,16 @@ export function parseOpenAiLunaPriceQuote(priceQuote: unknown, now: string): Ope
 
 function bodyForBundle(bundle: C1EvidenceBundle): {
   body: string
-  inputBytes: number
+  bundleJson: string
   bodyBytes: number
 } {
-  let evidenceInput: string
+  let bundleJson: string
   try {
-    evidenceInput = JSON.stringify(bundle)
+    bundleJson = JSON.stringify(bundle)
   } catch {
     fail('OPENAI_LUNA_REQUEST_INVALID')
   }
-  const inputBytes = Buffer.byteLength(evidenceInput, 'utf8')
+  const inputBytes = Buffer.byteLength(bundleJson, 'utf8')
   if (inputBytes > OPENAI_LUNA_MAX_INPUT_BYTES) fail('OPENAI_LUNA_INPUT_TOO_LARGE')
   const bodyObject = {
     model: OPENAI_LUNA_MODEL,
@@ -198,7 +208,7 @@ function bodyForBundle(bundle: C1EvidenceBundle): {
     store: false,
     max_output_tokens: bundle.budget.max_output_tokens,
     instructions: FIXED_INSTRUCTIONS,
-    input: evidenceInput,
+    input: bundleJson,
     text: {
       format: {
         type: 'json_schema',
@@ -211,7 +221,38 @@ function bodyForBundle(bundle: C1EvidenceBundle): {
   const body = JSON.stringify(bodyObject)
   const bodyBytes = Buffer.byteLength(body, 'utf8')
   if (bodyBytes > OPENAI_LUNA_MAX_INPUT_BYTES) fail('OPENAI_LUNA_INPUT_TOO_LARGE')
-  return { body, inputBytes, bodyBytes }
+  return { body, bundleJson, bodyBytes }
+}
+
+function freezeDeep<T>(value: T): T {
+  if (value && typeof value === 'object' && !Object.isFrozen(value)) {
+    Object.freeze(value)
+    for (const child of Object.values(value as Record<string, unknown>)) freezeDeep(child)
+  }
+  return value
+}
+
+/** Build the exact credentialless request preview used by the request boundary. */
+export function buildOpenAiLunaRequestPreview(input: OpenAiLunaRequestInput): OpenAiLunaRequestPreview {
+  let bundle: C1EvidenceBundle
+  try {
+    bundle = parseC1EvidenceBundle(input.bundle)
+  } catch {
+    fail('OPENAI_LUNA_REQUEST_INVALID')
+  }
+  const price = parseOpenAiLunaPriceQuote(input.priceQuote, input.now)
+  const { body, bundleJson, bodyBytes } = bodyForBundle(bundle)
+  estimateUsd(bodyBytes, bundle.budget.max_output_tokens, price)
+  return freezeDeep({
+    bundleId: bundle.bundle_id,
+    bundleJson,
+    request: {
+      method: 'POST',
+      url: OPENAI_LUNA_ENDPOINT,
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body,
+    },
+  }) as OpenAiLunaRequestPreview
 }
 
 function estimateUsd(bodyBytes: number, maxOutputTokens: number, price: OpenAiLunaPriceQuote): number {
@@ -233,26 +274,8 @@ function estimateUsd(bodyBytes: number, maxOutputTokens: number, price: OpenAiLu
 }
 
 /** Build a fixed, credentialless descriptor; no filesystem/network/env access occurs. */
-export function buildOpenAiLunaRequest(input: {
-  bundle: unknown
-  priceQuote: unknown
-  now: string
-}): OpenAiLunaRequestDescriptor {
-  let bundle: C1EvidenceBundle
-  try {
-    bundle = parseC1EvidenceBundle(input.bundle)
-  } catch {
-    fail('OPENAI_LUNA_REQUEST_INVALID')
-  }
-  const price = parseOpenAiLunaPriceQuote(input.priceQuote, input.now)
-  const { body, bodyBytes } = bodyForBundle(bundle)
-  estimateUsd(bodyBytes, bundle.budget.max_output_tokens, price)
-  return Object.freeze({
-    method: 'POST',
-    url: OPENAI_LUNA_ENDPOINT,
-    headers: Object.freeze({ Accept: 'application/json', 'Content-Type': 'application/json' }),
-    body,
-  })
+export function buildOpenAiLunaRequest(input: OpenAiLunaRequestInput): OpenAiLunaRequestDescriptor {
+  return buildOpenAiLunaRequestPreview(input).request
 }
 
 /** Invoke one injected call and validate only its structured output; never retry. */

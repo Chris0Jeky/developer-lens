@@ -33,8 +33,10 @@ bundle ranges while preserving supported fractional UTC forms and half-open rang
 Published P4 now range-binds every composable noncomplete REST outcome, adds a pure core
 transition that preserves the prior checkpoint without terminal-receipt, snapshot, or completion
 fiction, and validates/composes restricted, failed, and truncated results into frozen noncomplete
-transitions only. The current P12 candidate extracts the proven confined activation-card reader and
-adds an OpenAI/Luna wrapper that cross-binds the task ID and strict current-time parser. The external-
+transitions only. Published P12 extracts the proven confined activation-card reader and adds an
+OpenAI/Luna wrapper that cross-binds the task ID and strict current-time parser. The current P12
+candidate builds one exact credentialless request preview and binds the reviewed bundle ID plus
+SHA-256 digests of its exact UTF-8 bundle JSON and request body. The external-
 model capability is still
 `never_authorized`; there is no environment read, authorization-bearing transport, network/provider
 execution, raw response, cache, telemetry, persistence, or presentation path**.
@@ -45,8 +47,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current P12 confined-card-loader candidate:
-  `origin/main` merge `7b97d3169a4f72f41f01c8e1bb5dc5dd7fd3d8eb`.
+- Published implementation baseline before the current P12 payload-preview candidate:
+  `origin/main` merge `277e2c38ae851140e0d5a90152d8c055ccc6ebfd`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -633,11 +635,22 @@ unresolved review threads outrank it whenever they disagree.
   file no larger than 64 KiB, decodes UTF-8 fatally, rejects duplicate keys at every depth, and maps
   all failures to one content-free generic code. The GitHub wrapper preserves its existing API,
   local-boundary path, parser, freeze, error, and portable-identity export.
-- The current `openaiActivationTaskLoader.ts` candidate uses only that confined reader, the strict
+- The published `openaiActivationTaskLoader.ts` uses only that confined reader, the strict
   current-time OpenAI/Luna parser, and an exact `card.taskId` to requested-path cross-bind. It returns
   only the parser-frozen domain card and maps filesystem, JSON, schema, chronology, or task mismatch
   to one content-free OpenAI load error. It adds no arbitrary path, caller, environment, credential,
   network, provider, payload, cache, telemetry, persistence, log, export, or presentation surface.
+- `buildOpenAiLunaRequestPreview` validates the C1 bundle once, returns the exact JSON string placed
+  in the Responses body's `input` field with the same frozen credentialless descriptor, and is now
+  the only implementation path used by `buildOpenAiLunaRequest`. This prevents the reviewed preview
+  and eventual send descriptor from silently diverging.
+- The current pure payload binder reparses the untrusted card at the supplied current time, builds
+  the preview from its fresh price quote, hashes the exact UTF-8 bundle JSON and exact descriptor
+  body, and requires the parsed bundle ID plus both lowercase SHA-256 values to equal the reviewed
+  card. It returns one deeply frozen bound card/preview value and maps every parse, budget, freshness,
+  or binding failure to one content-free code. It adds no filesystem, card read, environment,
+  credential, network, provider, send callback, cache, telemetry, persistence, log, runtime caller,
+  export, or presentation surface.
 - This foundation does not activate `cap.external.model` and includes no environment read,
   credential/Authorization surface, SDK, HTTP implementation, provider response parser/body/ID,
   timeout, cache, telemetry, persistence, presentation, export, or public path. A later activation
@@ -647,12 +660,20 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- P12 confined-card-loader candidate was rebased onto noncomplete-composition merge `7b97d31`; the
+- P12 payload-preview candidate was rebased onto confined-card-loader merge `277e2c3`; the focused
+  C1, request, activation-card, and preview suites passed 4 files / 21 tests. `npm run check` passed
+  Oxlint, context verification, 38 test files / 211 tests, TypeScript project builds, and the
+  production Vite build; `git diff --check` passed. Exact rebased-head review found no CRITICAL/HIGH
+  serialization-drift, UTF-8 hash, three-binding, freshness, freeze, error-content, or credential/
+  network-surface defect.
+- P12 confined-card-loader [PR #48](https://github.com/Chris0Jeky/developer-lens/pull/48)
+  merged as `277e2c3` after rebasing onto noncomplete-composition merge `7b97d31`; the
   focused GitHub loader, activation parser, and OpenAI loader suites passed 3 files / 20 tests. `npm
   run check` passed Oxlint, context verification, 37 test files / 206 tests, TypeScript project builds,
   and the production Vite build; `git diff --check` passed. Prior and exact-base fresh-context reviews
   found no CRITICAL/HIGH path-confinement, opened-handle, duplicate-key, task-cross-bind, freeze,
-  error-content, or GitHub-compatibility defect.
+  error-content, or GitHub-compatibility defect. Exact-merge hosted Pages run `30887985029` completed
+  successfully; its post-merge sweep contained no finding.
 - P4 noncomplete-composition [PR #47](https://github.com/Chris0Jeky/developer-lens/pull/47)
   merged as `7b97d31` after rebasing onto noncomplete-foundation merge `2dcab1b`; the
   focused core/REST transport/composition suites passed 3 files / 53 tests. A first full check run
@@ -1025,7 +1046,8 @@ unresolved review threads outrank it whenever they disagree.
   canonical pricing/evidence timestamps, freshness, and review chronology but cannot authenticate
   page content or
   recompute the card's
-  bundle/body hashes. They deliberately have no exact preview binder, credential reader,
+  bundle/body hashes. The current pure preview candidate recomputes and requires those bindings, but
+  deliberately has no credential reader,
   HTTP timeout/body parser, usage receipt, output retention, or presentation path; those remain
   separate reviewed boundaries before a real call.
 - The shared reader returns mutable parsed `unknown` before domain validation. Its only production
@@ -1109,8 +1131,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current P12 confined-card-
-   loader candidate is merge `7b97d3169a4f72f41f01c8e1bb5dc5dd7fd3d8eb`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P12 payload-preview
+   candidate is merge `277e2c38ae851140e0d5a90152d8c055ccc6ebfd`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -1137,9 +1159,9 @@ unresolved review threads outrank it whenever they disagree.
    `never_authorized`. The strict C1 payload/output and deterministic local-retrieval foundation is
    present, and the credentialless request boundary now enforces native strict output, standard
    service tier, serialized byte/cost ceilings, `store:false`, and one call/no retry. The current
-   published activation slice adds the strict reviewed-card parser. The current candidate adds a
-   confined task-ID-bound loader but does not authenticate its payload hashes. Next add the pure exact
-   payload-preview/hash binder, then an authorization-bearing
+   published activation slice adds the strict reviewed-card parser and confined task-ID-bound loader.
+   The current candidate authenticates the exact credentialless bundle/body preview against all three
+   reviewed payload bindings. Next add an authorization-bearing
    transport that reads only the approved environment variable at call time, applies a finite timeout,
    extracts only structured output, and discards raw provider bodies/IDs. Make no live request until
    those implementations, reviews, exact hosted gates, and task-card authorization pass.
