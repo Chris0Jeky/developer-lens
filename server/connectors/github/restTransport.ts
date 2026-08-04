@@ -327,6 +327,10 @@ function parseNextPage(
 }
 
 async function readJson(response: GithubCoreRestResponse): Promise<unknown> {
+  const declaredBytes = numericHeader(response, 'content-length')
+  if (declaredBytes !== null && declaredBytes > GITHUB_CORE_REST_MAX_RESPONSE_BYTES) {
+    throw new Error('schema')
+  }
   let text: string
   try {
     text = await response.text()
@@ -343,7 +347,13 @@ async function readJson(response: GithubCoreRestResponse): Promise<unknown> {
 
 function classifyHttp(response: GithubCoreRestResponse): GithubCoreRestFailedResult['code'] | GithubCoreRestRestrictedResult['code'] | GithubCoreRestTruncatedResult['code'] {
   if (response.status === 429) return 'RATE_LIMITED'
-  if (response.status === 403) return numericHeader(response, 'x-ratelimit-remaining') === 0 ? 'RATE_LIMITED' : 'PERMISSION_DENIED'
+  if (response.status === 401) return 'PERMISSION_DENIED'
+  if (response.status === 403) {
+    return numericHeader(response, 'x-ratelimit-remaining') === 0 ||
+      numericHeader(response, 'retry-after') !== null
+      ? 'RATE_LIMITED'
+      : 'PERMISSION_DENIED'
+  }
   if (response.status === 404) return 'NOT_FOUND'
   if (response.status >= 500 && response.status <= 599) return 'TRANSIENT'
   if (response.status >= 400 && response.status <= 499) return 'UNSUPPORTED'
@@ -365,6 +375,10 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
   } catch {
     return failedResult('invalid', 'SCHEMA_INVALID', { remaining: null, reset: null })
   }
+  const aliasSources = new Map<string, string>([[
+    repositoryAlias,
+    `repository\0${card.selectedRepository.providerRepositoryId}`,
+  ]])
   let metadataResponse: GithubCoreRestResponse
   try {
     metadataResponse = await fetch(safeRequestUrl(card, 'metadata'), { method: 'GET', headers: FIXED_HEADERS, redirect: 'error' })
@@ -386,7 +400,6 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
   const flags = { archived: metadata.archived, disabled: metadata.disabled, fork: metadata.fork }
   const units: GithubCoreRestUnit[] = []
   const pages: GithubCoreRestPageReceipt[] = []
-  const unitAliases = new Map<string, string>()
   let page = 1
   for (;;) {
     if (pages.length + 1 >= card.readBoundary.maximumRequests) return truncatedResult(repositoryAlias, 'REQUEST_BUDGET_EXHAUSTED', flags, units, pages, rate)
@@ -416,10 +429,10 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
         const itemAlias = alias(kind, rawProviderId)
         if (!opaqueAlias(itemAlias)) throw new Error('schema')
         const aliasSource = `${kind}\0${rawProviderId}`
-        const existing = unitAliases.get(itemAlias)
+        const existing = aliasSources.get(itemAlias)
         if (existing !== undefined && existing !== aliasSource) throw new Error('schema')
         if (existing === aliasSource) continue
-        unitAliases.set(itemAlias, aliasSource)
+        aliasSources.set(itemAlias, aliasSource)
         units.push(Object.freeze({ alias: itemAlias, kind, updatedAt: updated }))
         pageUnitCount += 1
       } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
@@ -437,6 +450,10 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
     try {
       receiptAlias = alias('page', `${card.selectedRepository.providerRepositoryId}:${page}`)
       if (!opaqueAlias(receiptAlias)) throw new Error('schema')
+      const receiptSource = `page\0${card.selectedRepository.providerRepositoryId}:${page}`
+      const existing = aliasSources.get(receiptAlias)
+      if (existing !== undefined && existing !== receiptSource) throw new Error('schema')
+      aliasSources.set(receiptAlias, receiptSource)
     } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
     pages.push(Object.freeze({ pageNumber: page, receiptAlias, unitCount: pageUnitCount, nextPage: next }))
     if (next === null) return completeResult(repositoryAlias, flags, units, pages, rate)

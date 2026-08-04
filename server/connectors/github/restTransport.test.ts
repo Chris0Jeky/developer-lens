@@ -21,7 +21,25 @@ function card(overrides: { maximumRequests?: number } = {}): GithubCoreActivatio
     retention: { c1Aggregates: '36 rolling months', c2AliasesAndExactTimestamps: '13 months', c4SourceBytes: 'process lifetime only', rawResponses: 'never persisted', packsOrExports: 'none authorized' },
     coverage: { terminalPaginationRequiredForComplete: true, missingRestrictedFailedStaleOrTruncatedNeverMeansZero: true, rateOrRequestBudgetExhaustion: 'truncated', permissionOrVisibilityMismatch: 'restricted', schemaMismatch: 'failed' },
     rollback: { legacyCollectorAndJson: 'untouched', runtimeDefault: 'off', failedJob: 'retain auditable failed coverage and leave the prior checkpoint unchanged', repeatRun: 'create an application-controlled SQLite backup before replacing retained state', restore: 'close the database, restore the task-owned backup, and re-open with integrity checks', migrationGracePeriod: 'not applicable because this task does not migrate or switch the legacy reader' },
-    deletion: { scope: 'the selected repository alias only', cascade: ['collection jobs', 'checkpoints', 'source snapshots', 'coverage', 'dependent facts, features, aliases, caches, packs, and backups if later introduced'], tombstone: 'retain only capability id, opaque scope alias, revocation time, and content-free reason code', idempotent: true, externalCopies: 'none created by this task' }, provingChecks: ['synthetic fixture'], stopConditions: ['any credential mutation'],
+    deletion: { scope: 'the selected repository alias only', cascade: ['collection jobs', 'checkpoints', 'source snapshots', 'coverage', 'dependent facts, features, aliases, caches, packs, and backups if later introduced'], tombstone: 'retain only capability id, opaque scope alias, revocation time, and content-free reason code', idempotent: true, externalCopies: 'none created by this task' },
+    provingChecks: [
+      'invented task-card, selection, transport, projection, pagination, retry, cap, replay, persistence, rollback, and deletion tests',
+      'poison fields never reach logs, SQLite, reports, exports, bundles, or Pages',
+      'focused github.core and incremental-storage tests',
+      'npm run check',
+      'independent privacy and correctness review',
+      'exact-head hosted gate before real execution',
+      'one final public unauthenticated selected-repository run with numeric and coverage-only reporting',
+      'live replay, backup/restore, deletion, tombstone, and re-consent proof inside this exact task-owned subtree',
+    ],
+    stopConditions: [
+      'selected repository visibility or immutable repository id differs from the card',
+      'authentication becomes necessary',
+      'the declared request budget would be exceeded',
+      'a prohibited field is about to reach a sink',
+      'coverage cannot distinguish complete from partial',
+      'G4 or any external-model path would be required',
+    ],
   })
 }
 
@@ -35,6 +53,7 @@ function fetchFixture(responses: GithubCoreRestResponse[]): { fetch: GithubCoreR
 }
 
 const metadata = { id: 101, private: false, archived: true, disabled: false, fork: false, owner: { login: 'POISON_OWNER' }, name: 'POISON_NAME', html_url: 'https://poison.invalid' }
+const aliasFixture = (domain: string, raw: string) => `${domain}-${raw.replaceAll(/[^A-Za-z0-9._-]/g, '-')}`
 
 describe('github.core REST transport projection', () => {
   it('uses fixed unauthenticated GET requests and projects only allowlisted fields', async () => {
@@ -78,14 +97,14 @@ describe('github.core REST transport projection', () => {
     expect(privateResult).toMatchObject({ kind: 'restricted', code: 'REPOSITORY_NOT_PUBLIC' })
     expect(privateResult).not.toHaveProperty('repositoryFlags')
     const hostile = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }], { link: '<https://evil.invalid/repos/fixture-owner/fixture-repository/issues?page=2>; rel="next"' })])
-    await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: hostile.fetch, alias: () => 'repo-alias' })).resolves.toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
+    await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: hostile.fetch, alias: aliasFixture })).resolves.toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
     const terminal = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }])])
-    await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: terminal.fetch, alias: () => 'repo-alias' })).resolves.toMatchObject({ kind: 'complete', observedPageCount: 1 })
+    await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: terminal.fetch, alias: aliasFixture })).resolves.toMatchObject({ kind: 'complete', observedPageCount: 1 })
   })
 
   it('truncates before a non-terminal page when the request cap is exhausted', async () => {
     const fixture = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }], { link: '<https://api.github.com/repos/fixture-owner/fixture-repository/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=2&sort=updated&direction=asc>; rel="next"' })])
-    await expect(collectGithubCoreRest({ card: card({ maximumRequests: 2 }), rangeEnd, fetch: fixture.fetch, alias: () => 'repo-alias' })).resolves.toMatchObject({ kind: 'truncated', code: 'REQUEST_BUDGET_EXHAUSTED', total: null })
+    await expect(collectGithubCoreRest({ card: card({ maximumRequests: 2 }), rangeEnd, fetch: fixture.fetch, alias: aliasFixture })).resolves.toMatchObject({ kind: 'truncated', code: 'REQUEST_BUDGET_EXHAUSTED', total: null })
     expect(fixture.calls).toHaveLength(2)
   })
 
@@ -160,7 +179,11 @@ describe('github.core REST transport projection', () => {
       const result = await collectGithubCoreRest({ card: card(), rangeEnd, fetch, alias: () => 'repo-alias' })
       expect(result).toMatchObject({ kind: code === 'RATE_LIMITED' ? 'truncated' : code === 'PERMISSION_DENIED' || code === 'NOT_FOUND' ? 'restricted' : 'failed', code })
       expect(JSON.stringify(result)).not.toContain('SECRET_NETWORK_DETAIL')
-      if (result.kind !== 'truncated') expect(result).not.toHaveProperty('observedUnitCount')
+      if (result.kind === 'truncated') {
+        expect(result).toMatchObject({ repositoryFlags: null, observedUnitCount: null, observedPageCount: null, total: null })
+      } else {
+        expect(result).not.toHaveProperty('observedUnitCount')
+      }
     }
   })
 })
