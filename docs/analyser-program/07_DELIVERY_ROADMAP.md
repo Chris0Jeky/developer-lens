@@ -190,23 +190,23 @@ source, never this table. Horizon: A = active queue, F = frozen until DL-VALUE-0
 | ID | Title | Epic | Type | Status | Hz | Blocked by | Milestone | Risk/Effort |
 |---|---|---|---|---|---|---|---|---|
 | DL-SPINE-01 | Evidence claim graph table contracts | spine | contract | DONE | A | none | M1 | medium/M |
-| DL-SPINE-02 | Deterministic claim canonicalisation and replay proof | spine | implementation | READY | A | DL-SPINE-01 | M1 | medium/M |
-| DL-SPINE-03 | Why-am-I-seeing-this resolver | spine | implementation | READY | A | DL-SPINE-01 | M2 | low/S |
+| DL-SPINE-02 | Deterministic claim canonicalisation and replay proof | spine | implementation | DONE | A | DL-SPINE-01 | M1 | medium/M |
+| DL-SPINE-03 | Why-am-I-seeing-this resolver | spine | implementation | DONE | A | DL-SPINE-01 | M2 | low/S |
 | DL-SPINE-04 | Coverage-vector dimension registry v2 | spine | contract | DONE | A | none | M1 | medium/M |
 | DL-SPINE-05 | Monotone abstention gates with degraded-fixture proof | spine | implementation | READY |  | DL-SPINE-04 | M1 | medium/M |
 | DL-LIFE-01 | Capability lifecycle state machine + approval-never-activates invariant | lifecycle | contract | READY |  | none | M1 | high/M |
 | DL-LIFE-02 | Deletion enumeration from schema registry + cascade proof | lifecycle | implementation | BLOCKED_BY_DEPENDENCY |  | DL-LIFE-01 | M1 | high/M |
 | DL-LIFE-03 | Backup/restore with tombstone replay | lifecycle | implementation | BLOCKED_BY_DEPENDENCY |  | DL-LIFE-02 | M3 | high/M |
 | DL-BRIDGE-01 | V2 bootstrap slice: /api/v2 coverage+capabilities over synthetic store + Coverage Cockpit panel | bridge | implementation | DONE | A | none | M2 | medium/M |
-| DL-BRIDGE-02 | V2 features + evidence endpoints with claim links | bridge | implementation | BLOCKED_BY_DEPENDENCY |  | DL-BRIDGE-01, DL-SPINE-01, DL-SPINE-02 | M2 | medium/M |
+| DL-BRIDGE-02 | V2 features + evidence endpoints with claim links | bridge | implementation | READY |  | DL-BRIDGE-01, DL-SPINE-01, DL-SPINE-02 | M2 | medium/M |
 | DL-BRIDGE-03 | V1->V2 parity fixtures + person-shape-absence proof | bridge | evaluation | READY |  | DL-BRIDGE-01 | M2 | medium/M |
 | DL-BRIDGE-04 | Legacy view retirement ladder (DNA/archetype first) | bridge | implementation | BLOCKED_BY_DEPENDENCY |  | DL-BRIDGE-03, DL-UX-CC, DL-UX-ED | M5 | medium/M |
 | DL-BRIDGE-05 | Exporter migration to ExportView-fed builders | bridge | implementation | BLOCKED_BY_DEPENDENCY |  | DL-PACK-05 | M5 | high/M |
 | DL-RECON-01 | PR #62 planning reconciliation and implementation handoff | analytics-core | process | DONE |  | none | M1 | low/M |
 | DL-METRIC-01 | Versioned metric-definition registry | analytics-core | contract | DONE | A | none | M2 | medium/M |
-| DL-FINDING-01 | Finding contract: alternatives, contradiction, robustness, AnalyticReference | analytics-core | contract | READY | A | DL-METRIC-01, DL-SPINE-01 | M2 | medium/M |
-| DL-COMPARE-01 | Matched-period comparison and censoring semantics | analytics-core | contract | READY | A | DL-METRIC-01 | M2 | medium/M |
-| DL-VALIDATE-01 | Analytical conformance and counterexample suite | analytics-core | evaluation | BLOCKED_BY_DEPENDENCY | A | DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01 | M2 | medium/M |
+| DL-FINDING-01 | Finding contract: alternatives, contradiction, robustness, AnalyticReference | analytics-core | contract | DONE | A | DL-METRIC-01, DL-SPINE-01 | M2 | medium/M |
+| DL-COMPARE-01 | Matched-period comparison and censoring semantics | analytics-core | contract | DONE | A | DL-METRIC-01 | M2 | medium/M |
+| DL-VALIDATE-01 | Analytical conformance and counterexample suite | analytics-core | evaluation | READY | A | DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01 | M2 | medium/M |
 | DL-VALUE-01 | First deterministic comparative finding (integration shape, matched windows) | analytics-core | implementation | BLOCKED_BY_DEPENDENCY | A | DL-BRIDGE-01, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-VALIDATE-01, DL-SPINE-02, DL-SPINE-03, DL-UX-ED | M2 | medium/L |
 | DL-OPS-CI-01 | Hosted pull-request CI gate before broad autonomous merging | analytics-core | implementation | DONE | A | none | M1 | low/M |
 | DL-CONTEXT-01 | Compact machine-readable current state and active horizon | analytics-core | process | DONE |  | none | M1 | low/S |
@@ -278,7 +278,7 @@ source, never this table. Horizon: A = active queue, F = frozen until DL-VALUE-0
 | DL-QL-01 | Query Lab over PackPresentationView relations (DuckDB-WASM, no server SQL) | analysis-pack | ux | BLOCKED_BY_DEPENDENCY |  | DL-PACK-04, DL-PACK-05 | M7 | medium/L |
 | DL-UX-VG | Visual grammar tokens for the seven evidence statuses | ux-atlas | ux | READY |  | none | M2 | low/M |
 | DL-UX-CC | Coverage/Privacy Cockpit (full) | ux-atlas | ux | BLOCKED_BY_DEPENDENCY |  | DL-BRIDGE-01, DL-LIFE-01 | M2 | medium/M |
-| DL-UX-ED | Evidence Drawer (universal claim inspector) | ux-atlas | ux | BLOCKED_BY_DEPENDENCY | A | DL-SPINE-03 | M2 | medium/M |
+| DL-UX-ED | Evidence Drawer (universal claim inspector) | ux-atlas | ux | DONE | A | DL-SPINE-03 | M2 | medium/M |
 | DL-UX-TM | Architecture Time Machine view | ux-atlas | ux | BLOCKED_BY_DEPENDENCY |  | DL-TIME-01 | M8 | medium/L |
 | DL-UX-CR | Change River view | ux-atlas | ux | BLOCKED_BY_DEPENDENCY |  | DL-SEM-02, DL-COUP-02 | M8 | medium/M |
 | DL-UX-DM | Delivery/Traceability Map view | ux-atlas | ux | BLOCKED_BY_DEPENDENCY |  | DL-TRACE-01, DL-OBSV-01 | M8 | medium/L |
