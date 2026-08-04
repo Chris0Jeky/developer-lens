@@ -66,6 +66,9 @@ unresolved review threads outrank it whenever they disagree.
   `3a0d6bd1a564f09a661a1638960152dd368186ed`. Exact-merge Pages run
   [30871009468](https://github.com/Chris0Jeky/developer-lens/actions/runs/30871009468) passed the full
   gate, synthetic showcase privacy verification, artifact upload, and deployment.
+- [PR #19](https://github.com/Chris0Jeky/developer-lens/pull/19) is the current activation-card
+  parser milestone. It publishes only the closed schema, invented tests, and abstract authority
+  state; the selected repository and operational card remain ignored and local.
 
 ## Authority and owner gates
 
