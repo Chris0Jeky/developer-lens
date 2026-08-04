@@ -4,6 +4,7 @@ import {
   CLAIM_EDGE_ROLES,
   CLAIM_EDGE_ROLE_TARGET_KIND,
   CLAIM_EVIDENCE_EDGE_ROLES,
+  CLAIM_ID_MATERIAL_VERSION,
   CLAIM_LIMITATION_CODES,
   CLAIM_SCHEMA_VERSION,
   CLAIM_STATEMENT_CODES,
@@ -21,6 +22,7 @@ import {
 import {
   CLAIM_GRAPH_TABLES,
   ClaimStorageError,
+  claimScopeTestSeams,
   clearClaimScopeAlias,
   installClaimGraphStorage,
   readClaim,
@@ -40,9 +42,18 @@ const createdAt = '2026-04-06T12:00:00.000Z'
 const firstLinkedAt = '2026-01-05T00:00:00.000Z'
 const laterLinkedAt = '2026-06-01T00:00:00.000Z'
 
-/** Every value below is invented. No real, private, or generated-data read happens here. */
-const ALPHA_SCOPE = 'sc-alpha'
-const BETA_SCOPE = 'sc-beta'
+/**
+ * Every value below is invented. No real, private, or generated-data read happens here.
+ *
+ * The scope surrogate is minted by the writer from 32 random bytes, so these fixtures inject
+ * fixed entropy through the `@internal` seam to keep the expected surrogates constant. The
+ * seam supplies BYTES, never the surrogate itself, so the C2 alias still cannot become the
+ * C1 `scope_id` even here.
+ */
+const ALPHA_ENTROPY = Buffer.from('a1'.repeat(32), 'hex')
+const BETA_ENTROPY = Buffer.from('b2'.repeat(32), 'hex')
+const ALPHA_SCOPE = `scope-${'a1'.repeat(32)}`
+const BETA_SCOPE = `scope-${'b2'.repeat(32)}`
 const CANARIES = [
   'the repository was renamed last April',
   'C:/Users/jekyt/Desktop/Printer Config/secret.txt',
@@ -97,8 +108,12 @@ function claimGraphDatabase(): { db: Database.Database; coverage: CoverageTarget
   const coverage = db.prepare(
     'SELECT coverage_id, range_start, job_id FROM coverage_ledger',
   ).get() as CoverageTargetRow
-  registerClaimScope(db, { scopeId: ALPHA_SCOPE, scopeAlias: 'repo-a7', linkedAt: firstLinkedAt })
-  registerClaimScope(db, { scopeId: BETA_SCOPE, scopeAlias: 'repo-b3', linkedAt: firstLinkedAt })
+  claimScopeTestSeams.registerWithEntropy(
+    db, { scopeAlias: 'repo-a7', linkedAt: firstLinkedAt }, () => ALPHA_ENTROPY,
+  )
+  claimScopeTestSeams.registerWithEntropy(
+    db, { scopeAlias: 'repo-b3', linkedAt: firstLinkedAt }, () => BETA_ENTROPY,
+  )
   for (const evidenceId of ['ev-det-4', 'ev-det-5', 'ev-det-6']) {
     registerEvidenceAnchor(db, {
       evidenceId,
@@ -160,10 +175,14 @@ describe('claim graph contracts', () => {
 
   it('derives a stable claim ID that is order-insensitive and input-sensitive', () => {
     const identity = {
+      layer: 'hypothesis',
       statementCode: 'CI_RERUN_PATTERN',
       methodId: 'hyp.composer',
       methodVersion: '1.0.0',
-      evidenceIds: ['ev-det-4', 'ev-det-5'],
+      basis: [
+        { role: 'supports', targetEvidenceId: 'ev-det-4' },
+        { role: 'contradicts', targetEvidenceId: 'ev-det-5' },
+      ],
       windowStart,
       windowEnd,
       scopeId: ALPHA_SCOPE,
@@ -171,10 +190,13 @@ describe('claim graph contracts', () => {
     } as const
     const claimId = computeClaimId(identity)
     expect(claimId).toMatch(/^cl_[0-9a-f]{64}$/)
-    expect(computeClaimId({ ...identity, evidenceIds: ['ev-det-5', 'ev-det-4'] })).toBe(claimId)
-    expect(computeClaimId({ ...identity, evidenceIds: ['ev-det-4', 'ev-det-5', 'ev-det-6'] }))
-      .not.toBe(claimId)
+    expect(computeClaimId({ ...identity, basis: [...identity.basis].reverse() })).toBe(claimId)
+    expect(computeClaimId({
+      ...identity,
+      basis: [...identity.basis, { role: 'supports', targetEvidenceId: 'ev-det-6' }],
+    })).not.toBe(claimId)
     expect(computeClaimId({ ...identity, scopeId: BETA_SCOPE })).not.toBe(claimId)
+    expect(computeClaimId({ ...identity, layer: 'modelled' })).not.toBe(claimId)
   })
 })
 
@@ -216,10 +238,11 @@ describe('claim registration fails closed', () => {
       .toBe('CLAIM_CONTRACT_INVALID')
     expect(() =>
       db.prepare(
-        'INSERT INTO claim (claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, created_at, superseded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)',
+        'INSERT INTO claim (claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, claim_id_material_version, created_at, superseded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)',
       ).run(
         `cl_${'a'.repeat(64)}`, 'hypothesis', 'MADE_UP_CODE', 'hyp.composer', '1.0.0',
-        windowStart, windowEnd, ALPHA_SCOPE, CLAIM_SCHEMA_VERSION, createdAt,
+        windowStart, windowEnd, ALPHA_SCOPE, CLAIM_SCHEMA_VERSION, CLAIM_ID_MATERIAL_VERSION,
+        createdAt,
       ),
     ).toThrow(/CHECK constraint failed/)
   })
@@ -289,12 +312,20 @@ describe('claim registration fails closed', () => {
       .toBe('CLAIM_CONTRACT_INVALID')
     expect(() =>
       db.prepare(
-        'INSERT INTO claim (claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, created_at, superseded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)',
+        'INSERT INTO claim (claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, claim_id_material_version, created_at, superseded_by) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)',
       ).run(
         `cl_${'b'.repeat(64)}`, 'abstention', 'CI_RERUN_PATTERN', 'hyp.composer', '1.0.0',
-        windowStart, windowEnd, ALPHA_SCOPE, CLAIM_SCHEMA_VERSION, createdAt,
+        windowStart, windowEnd, ALPHA_SCOPE, CLAIM_SCHEMA_VERSION, CLAIM_ID_MATERIAL_VERSION,
+        createdAt,
       ),
     ).toThrow(/CHECK constraint failed/)
+  })
+
+  it('rejects a claim with no basis edge at all', () => {
+    const { db } = claimGraphDatabase()
+    expect(errorCode(() => registerClaim(db, claimInput({ edges: [] }))))
+      .toBe('CLAIM_CONTRACT_INVALID')
+    expect(db.prepare('SELECT COUNT(*) FROM claim').pluck().get()).toBe(0)
   })
 
   it('rejects a second claim that collides on a derived ID with different content', () => {
@@ -302,8 +333,13 @@ describe('claim registration fails closed', () => {
     const first = registerClaim(db, claimInput())
     expect(first.applied).toBe(true)
     expect(registerClaim(db, claimInput()).applied).toBe(false)
-    expect(errorCode(() => registerClaim(db, claimInput({ layer: 'modelled' }))))
-      .toBe('CLAIM_ID_COLLISION')
+    // Limitations are not ID material, so they are the surface on which one canonicalisation
+    // version can reproduce an ID over different content — ADR-01's data-quality finding.
+    expect(errorCode(() => registerClaim(db, claimInput({
+      limitations: [
+        { limitationCode: 'SAMPLE_TOO_SMALL', dimension: 'sample', copyKey: 'hyp.ci_shift.small' },
+      ],
+    })))).toBe('CLAIM_ID_COLLISION')
   })
 })
 
@@ -346,15 +382,16 @@ describe('canary rejection', () => {
 
   it('rejects canaries from the scope, evidence, and lineage contracts too', () => {
     const { db, coverage } = claimGraphDatabase()
+    // A caller cannot supply the surrogate at all: the input contract is alias + link time.
+    expect(errorCode(() => registerClaimScope(db, {
+      scopeId: ALPHA_SCOPE, scopeAlias: 'repo-a7', linkedAt: firstLinkedAt,
+    }))).toBe('CLAIM_CONTRACT_INVALID')
     for (const canary of CANARIES) {
       expect(errorCode(() => registerClaimScope(db, {
-        scopeId: canary, scopeAlias: 'repo-a7', linkedAt: firstLinkedAt,
+        scopeAlias: canary, linkedAt: firstLinkedAt,
       }))).toBe('CLAIM_CONTRACT_INVALID')
       expect(errorCode(() => registerClaimScope(db, {
-        scopeId: ALPHA_SCOPE, scopeAlias: canary, linkedAt: firstLinkedAt,
-      }))).toBe('CLAIM_CONTRACT_INVALID')
-      expect(errorCode(() => registerClaimScope(db, {
-        scopeId: ALPHA_SCOPE, scopeAlias: 'repo-a7', linkedAt: canary,
+        scopeAlias: 'repo-a7', linkedAt: canary,
       }))).toBe('CLAIM_CONTRACT_INVALID')
       expect(errorCode(() => registerEvidenceAnchor(db, {
         evidenceId: canary,
@@ -434,7 +471,11 @@ describe('claim resolution', () => {
 
   it('resolves a rendered statement to its full evidence, coverage, limitation, and lineage walk', () => {
     const { db, coverage } = claimGraphDatabase()
+    // The base claim is DETERMINISTIC and the derived claim MODELLED: a claim may only rest on
+    // inputs at least as strong as itself, so the walk fixture runs up the ladder, never down.
     const base = registerClaim(db, claimInput({
+      layer: 'deterministic',
+      methodId: 'det.rerun_ratio',
       edges: [
         { role: 'supports', targetEvidenceId: 'ev-det-4' },
         { role: 'contradicts', targetEvidenceId: 'ev-det-5' },
@@ -450,7 +491,7 @@ describe('claim resolution', () => {
     }))
     const derived = registerClaim(db, claimInput({
       layer: 'modelled',
-      methodId: 'det.rerun_ratio',
+      methodId: 'mod.rerun_shift',
       edges: [{ role: 'derives_from', targetClaimId: base.claimId }],
       limitations: [
         { limitationCode: 'SAMPLE_TOO_SMALL', dimension: 'sample', copyKey: 'det.rerun.sample' },
@@ -576,8 +617,14 @@ describe('privacy partition', () => {
       db.prepare('SELECT linked_at FROM claim_scope WHERE scope_id = ?').pluck().get(ALPHA_SCOPE)
     expect(linkedAt()).toBe(firstLinkedAt)
 
-    registerClaimScope(db, { scopeId: ALPHA_SCOPE, scopeAlias: 'repo-a9', linkedAt: laterLinkedAt })
+    const again = registerClaimScope(db, { scopeAlias: 'repo-a7', linkedAt: laterLinkedAt })
+    expect(again).toEqual({ scopeId: ALPHA_SCOPE, linkedAt: firstLinkedAt, minted: false })
     expect(linkedAt()).toBe(firstLinkedAt)
-    expect(readClaimScopeAlias(db, ALPHA_SCOPE)).toBe('repo-a9')
+    expect(readClaimScopeAlias(db, ALPHA_SCOPE)).toBe('repo-a7')
+
+    const other = registerClaimScope(db, { scopeAlias: 'repo-a9', linkedAt: laterLinkedAt })
+    expect(other.minted).toBe(true)
+    expect(other.scopeId).not.toBe(ALPHA_SCOPE)
+    expect(other.linkedAt).toBe(laterLinkedAt)
   })
 })
