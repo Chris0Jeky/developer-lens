@@ -81,10 +81,19 @@ store.
   `created_at`, `superseded_by`. The C2 `scope_alias` *value* never sits in the C1 claim row: it
   lives in the adjacent `claim_scope` table keyed by the content-free `scope_id` surrogate
   (corrected 2026-08-04 review round). The surrogate is **minted by the writer from 32 random
-  bytes and looked up by alias**, never derived from the alias by hash: a digest — even a keyed
-  one — is a function of a C2 value and would map one alias to one surrogate in every
-  installation, which is the cross-installation linkage key this ADR forbids in packs. Random
-  minting also makes erasure real: once `scope_alias` is cleared, no function reproduces the link
+  bytes and looked up by alias**, never derived from the alias by hash. Two reasons, and
+  cross-installation linkage is *not* one of them — an installation-keyed HMAC is installation-
+  local, and this product already uses that construction for its provider aliases. First,
+  classification: a digest of a C2 value is a function of a C2 value, and the evidence catalog
+  classifies HMAC-derived stable keys as C2, so a derived surrogate could not honestly be stored
+  as C1 and hashed into C1 claim IDs. Second, and decisive on its own, **erasure**: a derivation
+  stays computable after the alias is cleared, so the link could be re-established from the alias
+  at any later date — the 13-month boundary would erase a row rather than a capability. Random
+  minting means that once `scope_alias` is NULL, no function reproduces the link.
+  **The cost is deliberate and accepted:** a cleared alias link cannot be re-established. A
+  re-registered alias mints a *new* surrogate and therefore starts a new stability-key series,
+  so history before and after an erasure does not rejoin. Whether a sweeper should ever preserve
+  continuity across that boundary is tracked with the retention sweeper itself (issue #80)
   (DL-SPINE-02, 2026-08-04).
 - `claim_evidence_edge` — `claim_id`, exactly one typed target, `role` ∈
   {supports, contradicts, contextualizes, derives_from, coverage_basis, limitation_basis}.
@@ -92,7 +101,15 @@ store.
   `target_claim_id REFERENCES claim`, `target_coverage_id REFERENCES coverage`) with an
   exactly-one-target `CHECK`; a polymorphic unconstrained `target_id TEXT` is prohibited —
   SQLite must reject dangling targets, or the resolver cannot guarantee a complete evidence walk
-  (corrected 2026-08-04 review round).
+  (corrected 2026-08-04 review round). **Layer dependency order (DL-SPINE-02, 2026-08-04):** a
+  claim may only rest on inputs at least as strong as itself along `observed < deterministic <
+  modelled < hypothesis`, so a deterministic claim citing modelled evidence or deriving from a
+  hypothesis claim is refused at registration with `CLAIM_LAYER_ORDER_VIOLATION` — without that
+  rule a weaker input could be rendered with stronger styling, the ADR-26 relabelling failure.
+  Abstention is special-cased in both directions: an abstention claim asserts nothing its inputs
+  could strengthen and may cite any layer, while nothing except another abstention may derive
+  *from* an abstention, because turning "we do not know" into a positive claim is that same
+  relabelling by another route.
 - `limitation_instance` — `claim_id`, `limitation_code` (existing dictionary), `dimension`
   (coverage-vector dimension that triggered it), `copy_key`.
 - `lineage_event` — corrections, revocation cascades, export inclusion: `subject_id`,
@@ -142,6 +159,13 @@ sink.
 
 **Compatibility/migration.** Additive tables in the P2 store; existing P3 pack remains valid. V1
 insights are not imported as claims; the bridge (ADR-04) generates claims only from V2 analyses.
+There is **no migration from a pre-v2 claim store**: a store installed by the v1 writer fails
+closed at install with `CLAIM_GRAPH_SCHEMA_MISMATCH` rather than being upgraded in place. This is
+safe only because the v1 writer was never released — no such store exists outside a development
+checkout, and the remedy is to drop the claim-graph tables and reinstall. Future material
+versions do not inherit that freedom: `CLAIM_ID_MATERIAL_VERSIONS` is append-only precisely so a
+v3 can be added without rebuilding the table, and rows at different material versions coexist,
+with any cross-version compare or mutate refused as `CLAIM_ID_MATERIAL_VERSION_MISMATCH`.
 
 **Failure/rollback.** If deterministic IDs prove unstable across platforms (float formatting,
 locale), the canonicalisation function is versioned; a failed replay is a data-quality finding,
