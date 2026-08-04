@@ -35,9 +35,11 @@ that preserves the prior checkpoint without terminal-receipt, snapshot, or compl
 validates/composes restricted, failed, and truncated results into frozen noncomplete transitions
 only. Published P4 feeds only those reviewed complete/noncomplete composition outputs into the opt-in
 store and proves replay, per-job snapshot identity, and checkpoint preservation with invented in-
-memory fixtures. The current P4 candidate accepts the coherent post-metadata zero-page truncation
-that occurs when the request budget or rate limit is exhausted before the first unit page, while
-preserving noncomplete coverage with no cursor, snapshot, or checkpoint movement. Published P12
+memory fixtures. Published P4 accepts the coherent post-metadata zero-page truncation that occurs
+when the request budget or rate limit is exhausted before the first unit page, while preserving
+noncomplete coverage with no cursor, snapshot, or checkpoint movement. The current P4 candidate
+cross-checks every supplied failure kind against one canonical limitation code before retry
+classification. Published P12
 extracts the proven confined activation-card reader,
 cross-binds the task ID and strict current-time parser, builds one exact credentialless request
 preview, and binds the reviewed bundle ID plus SHA-256 digests of its exact UTF-8 bundle JSON and
@@ -52,8 +54,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current P4 zero-page truncation candidate:
-  `origin/main` merge `97498b20f54f2a58d865beab918bcbea50df7e43`.
+- Published implementation baseline before the current P4 failure-pairing candidate:
+  `origin/main` merge `fa4e19482fa46f4cf067563e29fe7d24f0501359`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -682,12 +684,22 @@ unresolved review threads outrank it whenever they disagree.
   run `30890398493` passed the full gate, privacy verification, artifact upload, and deployment. Both
   hosted job annotation lists were empty, directly closing
   [#31](https://github.com/Chris0Jeky/developer-lens/issues/31).
-- The current P4 zero-page candidate accepts only a fully observed public repository-metadata shape
+- P4 zero-page truncation [PR #52](https://github.com/Chris0Jeky/developer-lens/pull/52) merged as
+  `fa4e194` and accepts only a fully observed public repository-metadata shape
   with empty unit/page arrays and exact zero counts after request-budget or rate-limit truncation.
   It produces frozen noncomplete coverage with no applied receipt, cursor, snapshot, or checkpoint
   movement; incoherent empty-page/count/unit combinations still fail closed. The focused core, REST
   transport/composition, and composition-to-storage suites passed 4 files / 55 tests, including
-  invented in-memory persistence and write-free replay of the new outcome.
+  invented in-memory persistence and write-free replay of the new outcome. Exact-merge hosted Pages
+  run `30891084948` passed the full gate, privacy verification, artifact upload, and deployment; its
+  post-merge sweep was empty, closing [#46](https://github.com/Chris0Jeky/developer-lens/issues/46).
+- The current P4 failure-pairing candidate maps `rate_limited` only to `RATE_LIMITED` and every other
+  closed failure kind only to `FAILURE_<KIND>`. Mismatches reject before a transition; the REST
+  composer canonicalizes its provider-facing `TRANSIENT` code to `FAILURE_TRANSIENT` while preserving
+  retry classification. The focused core, REST transport/composition, and storage-composition suites
+  passed 4 files / 56 tests, including all six valid pairs and their invented mismatches. `npm run
+  check` passed Oxlint, context verification, 39 test files / 214 tests, TypeScript project builds,
+  and the production Vite build; `git diff --check` passed.
 - P4 storage-replay [PR #50](https://github.com/Chris0Jeky/developer-lens/pull/50) merged as `41df4fc`
   after rebasing onto payload-preview merge `2d4cdc7`; the focused core,
   REST composition, incremental storage, and cross-seam storage suites passed 4 files / 64 tests.
@@ -1124,18 +1136,17 @@ unresolved review threads outrank it whenever they disagree.
   calendar fields. JavaScript's legacy year `0000`-`0099` arithmetic can still weaken the three-year
   cap for ancient ranges; current-era behavior is unaffected and the residual remains separately
   tracked in [#41](https://github.com/Chris0Jeky/developer-lens/issues/41).
-- The pure noncomplete transition keeps every mismatched caller fact safely noncomplete, but its
-  caller-provided failure kind and limitation code are not yet cross-checked as a semantic pair.
-  Closed mapping and mismatch regressions remain tracked in
-  [#42](https://github.com/Chris0Jeky/developer-lens/issues/42) before runtime integration.
+- The current candidate cross-checks every caller-provided failure kind and limitation code as a
+  closed semantic pair, with mismatch regressions for
+  [#42](https://github.com/Chris0Jeky/developer-lens/issues/42); the issue remains open until exact
+  merge proof.
 - An invalid repository-alias callback remains an explicitly unbound pre-request failure even after
   range syntax was validated. It performs no request or observation and cannot be composed; the
   exact state-boundary choice remains tracked in
   [#44](https://github.com/Chris0Jeky/developer-lens/issues/44).
 - A valid rate-limit or request-budget truncation can occur after repository metadata but before the
-  first unit page. The current candidate accepts only the coherent zero-page shape and adds direct
-  composition/storage regressions for [#46](https://github.com/Chris0Jeky/developer-lens/issues/46);
-  the issue remains open until exact merge proof.
+  first unit page. Published composition accepts only that coherent zero-page shape and its direct
+  composition/storage regressions closed [#46](https://github.com/Chris0Jeky/developer-lens/issues/46).
 - P6 must compare verified owner email only ephemerally, emit only `is_self`, and never retain
   identity or per-person output.
 - P2 deletion tests must enumerate collection jobs/checkpoints, source snapshots, coverage,
@@ -1170,8 +1181,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current P4 zero-page
-   truncation candidate is merge `97498b20f54f2a58d865beab918bcbea50df7e43`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P4 failure-pairing
+   candidate is merge `fa4e19482fa46f4cf067563e29fe7d24f0501359`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -1188,9 +1199,9 @@ unresolved review threads outrank it whenever they disagree.
    receipts, and checkpoint proposals. Published noncomplete composition range-binds transport
    outcomes and produces frozen, checkpoint-preserving transitions without snapshot material. The
    published storage seam proves complete/noncomplete composition-to-storage and same-job/distinct-
-   job replay with invented in-memory fixtures. The current candidate closes the zero-page post-
-   metadata composition gap. Next close the failure-kind/limitation pairing in issue #42, then add the
-   bounded real runner and hostile-provider two-read stability classification before issue
+   job replay with invented in-memory fixtures. Published composition closes the zero-page post-
+   metadata gap. The current candidate closes failure-kind/limitation pairing in issue #42. Next add
+   the bounded real runner and hostile-provider two-read stability classification before issue
    #6 key-
    lifecycle/mismatch enforcement,
    backup/restore, scoped deletion/tombstone, re-consent, and snapshot-stability proof. Keep runtime
