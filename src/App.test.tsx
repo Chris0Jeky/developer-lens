@@ -120,6 +120,15 @@ describe('Developer Lens app', () => {
     expect(screen.getByRole('heading', { name: /short, repeatable waves/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /small batches keep/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /optimized for deliberate coordination/i })).toBeInTheDocument()
+    const storySteps = screen.getAllByRole('listitem')
+    expect(storySteps.slice(0, 3).map((step) => step.textContent)).toEqual([
+      expect.stringContaining('Observed'),
+      expect.stringContaining('Derived'),
+      expect.stringContaining('Hypothesis'),
+    ])
+    expect(screen.getByRole('region', { name: /story path/i })).toHaveTextContent(
+      /3 active windows in the synthetic timeline/i,
+    )
     expect(screen.getByText(/synthetic timestamps describe/i)).toBeInTheDocument()
     expect(Object.values(V2_DEMO_REGISTRATION.fieldClasses).every((fieldClass) => fieldClass === 'C0')).toBe(true)
     expect(() => V2_DEMO_REGISTRATION.schema.parse({ ...V2_DEMO_PAYLOAD, unexpected: true })).toThrow()

@@ -7,7 +7,8 @@ evidence/design version 2026-08-03.
 
 Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
-The published P4 foundation includes an inert protocol, opt-in incremental storage bridge,
+The public synthetic V2 demo now includes an accessible observed-to-derived-to-hypothesis story
+path over its existing validated C0 insight payload. The published P4 foundation includes an inert protocol, opt-in incremental storage bridge,
 invented-fixture page adapter, closed activation-card parser, injected public-unauthenticated GET
 transport with immediate projection, closed-world incremental-schema validation, and a confined
 ignored-card loader. It remains default-off and adds no credential, live read, storage composition,
@@ -21,8 +22,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current loader milestone: `origin/main` merge
-  `94f00ae67e5c72c388698872ec5a706e9265f898`.
+- Published implementation baseline before the current story-path milestone: `origin/main` merge
+  `1d655cf64e91e6910fd79712f48d1abd64c61cdb`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -104,9 +105,11 @@ unresolved review threads outrank it whenever they disagree.
   gate, synthetic-showcase privacy verification, artifact upload, and deployment. Late review
   comments against its pre-fix head were reconciled once; all direct boundary findings were already
   closed in the merged head and the remaining retention-code naming ambiguity was non-blocking.
-- [PR #26](https://github.com/Chris0Jeky/developer-lens/pull/26) is the current confined ignored-card
-  loader milestone. It contains no tracked card identity/value, network, database, credential,
-  runtime switch, or output path.
+- [PR #26](https://github.com/Chris0Jeky/developer-lens/pull/26) publishes the confined ignored-card
+  loader at merge `1d655cf64e91e6910fd79712f48d1abd64c61cdb`; exact-merge Pages run
+  [30877836995](https://github.com/Chris0Jeky/developer-lens/actions/runs/30877836995) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment. It contains no
+  tracked card identity/value, network, database, credential, runtime switch, or output path.
 
 ## Authority and owner gates
 
@@ -390,6 +393,18 @@ unresolved review threads outrank it whenever they disagree.
   proof, request-cap and rate truncation, deduplication/collision refusal, response-size/schema and
   HTTP/network classification, content-free failures, and frozen result mutation resistance.
 
+## D1 synthetic evidence-story path
+
+- `src/components/V2StoryPath.tsx` maps the existing validated C0 insight array into one accessible
+  ordered rail: observed, deterministic derived, then bounded hypothesis. Missing validated layers
+  disappear instead of being invented, and each step repeats only its registered evidence headline.
+- The rail adds no schema field, fetch, account/repository input, local-history read, model output,
+  persistence, export, or generated dataset. `V2Demo` remains the only caller and keeps the existing
+  public synthetic boundary copy visible above the story.
+- Desktop and 390 px in-app browser inspection found no horizontal overflow; the rail changes from
+  three columns to a vertical connected path. The existing Observed filter remained keyboard/ARIA
+  addressable and changed the live status from 3/3 to 1/3 with exactly one visible insight card.
+
 ## Durable continuation foundation
 
 - `AGENTS.md` is the bounded cold-start contract: repository identity, source-of-truth map, current
@@ -468,6 +483,11 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
+- D1 story-path proof after rebasing onto loader merge `1d655cf`: `npm run test:demo:v2` passed
+  1 file / 5 tests; the focused story/App/insight suite passed 3 files / 8 tests; `npm run check` and
+  `npm run build:showcase` passed; and `git diff --check` passed. Browser inspection covered the
+  default desktop layout, a 390 x 844 responsive viewport, zero horizontal overflow, accessible
+  observed/derived/hypothesis ordering, and the Observed filter's 1-of-3 result state.
 - P4 protocol proof on the published PR #16 candidate: the focused invented-receipt suite passed
   1 file / 15 tests; `npm run check` passed Oxlint, context verification, 24 test files / 92 tests,
   TypeScript project builds, and the production Vite build after merging the current published
