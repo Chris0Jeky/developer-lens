@@ -61,7 +61,8 @@ delivery roadmap with 118 dependency-complete cards, open-questions/frontier led
 proposals, and a validated Taskdeck starter pack), appended the accepted stable deltas as
 Appendix I of the canonical architecture, and seeded a real local Taskdeck planning board
 ("Developer Lens — Intelligence Platform", 118 cards / 58 labels / 6 columns) in a fresh dedicated
-database at `C:\Users\jekyt\TaskdeckDogfood\developer-lens-intelligence-platform\` using only the
+database in a workstation-local dogfood folder outside both repositories (exact path and restart
+runbook only in the untracked `RESUME.md` beside the database) using only the
 already-built Taskdeck Release binary run from a scratchpad copy (validate → dry-run → apply all
 green, zero blocking conflicts; idempotent re-apply proven; one MCP-created card proposal left
 honestly `PendingReview` for the human; lossy board export + local credentials kept outside Git).
@@ -1330,9 +1331,9 @@ unresolved review threads outrank it whenever they disagree.
 0. **Next implementation slice (2026-08-04): card DL-BRIDGE-01** — the first V2 vertical slice
    (lazy `/api/v2` coverage+capabilities over the synthetic store + Coverage Cockpit panel).
    Start from `docs/analyser-program/09_IMPLEMENTATION_LAUNCHER.md`; the full card contract lives
-   in the tracked starter pack and on the seeded local Taskdeck board (board and DB paths in
-   `docs/analyser-program/06_TASKDECK_DEMO_PLAN.md` §1; DB, exports, and credentials stay outside
-   Git). Twelve READY cards exist for parallel lanes; the dependency graph is
+   in the tracked starter pack and on the seeded local Taskdeck board (state summary in
+   `docs/analyser-program/06_TASKDECK_DEMO_PLAN.md` §1; exact location, credentials, and restart
+   runbook only in the untracked `RESUME.md` beside the database, outside Git). Twelve READY cards exist for parallel lanes; the dependency graph is
    `07_DELIVERY_ROADMAP.md`. New owner gates are consolidated in `HUMAN_TODO.md` q-6 and
    `08_OPEN_QUESTIONS.md` §1. Items 1–6 below remain valid for the P4/P12 lanes.
 1. Refresh Git/GitHub before mutation. The published product baseline before this documentation-

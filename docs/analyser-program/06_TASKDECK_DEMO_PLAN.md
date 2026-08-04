@@ -9,9 +9,11 @@ analysed by Developer Lens; it has not.
 Taskdeck is used for real as the programme's planning control plane. State achieved this session:
 
 - **Board:** "Developer Lens — Intelligence Platform" in a **fresh, dedicated database** created
-  this session at `C:\Users\jekyt\TaskdeckDogfood\developer-lens-intelligence-platform\taskdeck-dogfood-2026-08-04.db`
-  (path predeclared; creation failed-closed had the file existed). No pre-existing Taskdeck
-  database was opened, inspected, or modified.
+  this session in a dedicated workstation-local dogfood folder outside both repositories (exact
+  path, credentials, IDs, and restart commands live only in the untracked `RESUME.md` beside the
+  database; the path was predeclared and creation failed-closed had the file existed). No
+  pre-existing Taskdeck database was opened, inspected, or modified. Tracked docs carry no local
+  absolute paths (q-4 boundary).
 - **Runtime:** the already-built Taskdeck Release binary (built 2026-07-27) and prebuilt frontend
   `dist` were **copied to a session scratchpad** and run from the copy, so the Taskdeck checkout
   was never modified (its FirstRun bootstrapper writes `appsettings.local.json` beside the exe —
@@ -43,16 +45,16 @@ Taskdeck is used for real as the programme's planning control plane. State achie
   2026-02/04 and behaved exactly as the HEAD contracts describe; a future session preferring HEAD
   behaviour should build Taskdeck itself (out of scope for this session's no-build rule).
 
-**Resume/restart (exact human step):** run the copied (or freshly copied) Release
-`Taskdeck.Api.dll` with `ConnectionStrings__DefaultConnection` pointing at the absolute DB path
-above, `ASPNETCORE_URLS=http://localhost:5000`, and a valid Base64 `Connectors__EncryptionKey`
-(one is stored beside the DB); sign in with the `dl-planner` credentials in
-`board-owner-note.txt`; the pending MCP proposal awaits your approve/dismiss decision in Review.
+**Resume/restart (exact human step):** follow the untracked `RESUME.md` beside the database — it
+carries the exact absolute DB path, environment values, restart commands, sign-in note, and the
+pending MCP proposal ID awaiting your approve/dismiss decision in Review. (An absolute
+`Data Source` path is required; relative paths are silently rewritten to AppData by Taskdeck's
+FirstRun bootstrapper.)
 
 ## 2. Demo contract A — future real local Taskdeck dogfood analysis (OWNER-GATED, not run)
 
-Card DL-DEMO-A1. Taskdeck (the local checkout at `C:\Users\jekyt\source\Taskdeck`) is the **named
-future source-structure/code-analysis dogfood subject** — named by the owner in this session's
+Card DL-DEMO-A1. Taskdeck (the workstation-local checkout registered in the estate registry) is
+the **named future source-structure/code-analysis dogfood subject** — named by the owner in this session's
 initiating request, and entirely separate from the recorded q-5 `github.core` selection, whose
 identity stays confined to its ignored local task card (not inspected by this session).
 
