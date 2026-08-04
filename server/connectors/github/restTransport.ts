@@ -1,4 +1,7 @@
-import type { GithubCoreActivationTaskCard } from './activationTask.js'
+import {
+  parseGithubCoreActivationTaskCard,
+  type GithubCoreActivationTaskCard,
+} from './activationTask.js'
 
 export const GITHUB_CORE_REST_USER_AGENT = 'developer-lens-public-transport/1' as const
 export const GITHUB_CORE_REST_MAX_RESPONSE_BYTES = 2_097_152 as const
@@ -296,7 +299,7 @@ function parseNextPage(
   for (const segment of segments) {
     const match = /^<([^>]+)>\s*;\s*rel="([^"]+)"$/.exec(segment)
     if (!match) throw new Error('schema')
-    if (match[2] !== 'next') continue
+    if (!match[2].split(/\s+/).includes('next')) continue
     if (next !== null) throw new Error('schema')
     let candidate: URL
     try {
@@ -364,7 +367,13 @@ function isRateLimited(code: string): boolean { return code === 'RATE_LIMITED' }
 
 /** Public, unauthenticated, GET-only transport. It is inert until explicitly called by a caller. */
 export async function collectGithubCoreRest(input: GithubCoreRestTransportInput): Promise<GithubCoreRestTransportResult> {
-  const { card, rangeEnd, fetch, alias } = input
+  let card: GithubCoreActivationTaskCard
+  try {
+    card = parseGithubCoreActivationTaskCard(input?.card)
+  } catch {
+    return failedResult('invalid', 'SCHEMA_INVALID', { remaining: null, reset: null })
+  }
+  const { rangeEnd, fetch, alias } = input
   if (!rangeIsValid(card, rangeEnd) || !SAFE_OWNER.test(card.selectedRepository.owner) || !SAFE_REPOSITORY.test(card.selectedRepository.name) || typeof fetch !== 'function' || typeof alias !== 'function') {
     return failedResult('invalid', 'SCHEMA_INVALID', { remaining: null, reset: null })
   }

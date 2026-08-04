@@ -56,6 +56,18 @@ const metadata = { id: 101, private: false, archived: true, disabled: false, for
 const aliasFixture = (domain: string, raw: string) => `${domain}-${raw.replaceAll(/[^A-Za-z0-9._-]/g, '-')}`
 
 describe('github.core REST transport projection', () => {
+  it('revalidates forged card objects before any request', async () => {
+    const valid = card()
+    const forged = {
+      ...valid,
+      readBoundary: { ...valid.readBoundary, credentialMode: 'token' },
+    } as unknown as GithubCoreActivationTaskCard
+    const fixture = fetchFixture([])
+    const result = await collectGithubCoreRest({ card: forged, rangeEnd, fetch: fixture.fetch, alias: aliasFixture })
+    expect(result).toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID', repositoryAlias: 'invalid' })
+    expect(fixture.calls).toHaveLength(0)
+  })
+
   it('uses fixed unauthenticated GET requests and projects only allowlisted fields', async () => {
     const fixture = fetchFixture([
       response(200, metadata, { 'x-ratelimit-remaining': '17', 'x-ratelimit-reset': '1234' }),
