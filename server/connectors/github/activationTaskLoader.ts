@@ -1,6 +1,8 @@
 import {
+  loadHashBoundActivationTaskCard,
   loadActivationTaskCard,
   type ActivationTaskCardLoadInput,
+  type HashBoundActivationTaskCardLoadInput,
 } from '../../activationTaskCardLoader.js'
 import {
   parseGithubCoreActivationTaskCard,
@@ -20,6 +22,7 @@ export class GithubCoreActivationTaskCardLoadError extends Error {
 }
 
 export type GithubCoreActivationTaskCardLoadInput = ActivationTaskCardLoadInput
+export type GithubCoreHashBoundActivationTaskCardLoadInput = HashBoundActivationTaskCardLoadInput
 
 function invalidLoad(): never {
   throw new GithubCoreActivationTaskCardLoadError()
@@ -36,6 +39,21 @@ export async function loadGithubCoreActivationTaskCard(
 ): Promise<GithubCoreActivationTaskCard> {
   try {
     const loaded = await loadActivationTaskCard(input)
+    const card = parseGithubCoreActivationTaskCard(loaded.parsed)
+    if (card.localBoundary.root !== `.developer-lens/activation/${loaded.taskId}/`) invalidLoad()
+    return card
+  } catch (error) {
+    if (error instanceof GithubCoreActivationTaskCardLoadError) throw error
+    invalidLoad()
+  }
+}
+
+/** Load and validate the card only when its exact opened bytes match the reviewed SHA-256. */
+export async function loadHashBoundGithubCoreActivationTaskCard(
+  input: GithubCoreHashBoundActivationTaskCardLoadInput,
+): Promise<GithubCoreActivationTaskCard> {
+  try {
+    const loaded = await loadHashBoundActivationTaskCard(input)
     const card = parseGithubCoreActivationTaskCard(loaded.parsed)
     if (card.localBoundary.root !== `.developer-lens/activation/${loaded.taskId}/`) invalidLoad()
     return card

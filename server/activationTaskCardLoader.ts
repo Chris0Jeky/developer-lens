@@ -1,5 +1,6 @@
 import { constants } from 'node:fs'
 import { lstat, open, realpath, type FileHandle } from 'node:fs/promises'
+import { createHash } from 'node:crypto'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { TextDecoder } from 'node:util'
 
@@ -7,6 +8,7 @@ export const ACTIVATION_TASK_CARD_LOAD_ERROR_CODE =
   'INVALID_ACTIVATION_TASK_CARD_LOAD' as const
 
 const TASK_ID = /^[A-Za-z0-9_-]{1,128}$/
+const LOWERCASE_SHA_256 = /^[0-9a-f]{64}$/
 const MAX_TASK_CARD_BYTES = 64 * 1024
 const NON_BLOCKING_READ_FLAG = constants.O_NONBLOCK ?? 0
 
@@ -22,6 +24,12 @@ export class ActivationTaskCardLoadError extends Error {
 export type ActivationTaskCardLoadInput = Readonly<{
   workspaceRoot: string
   taskId: string
+}>
+
+export type HashBoundActivationTaskCardLoadInput = Readonly<{
+  workspaceRoot: string
+  taskId: string
+  expectedSha256: string
 }>
 
 export type LoadedActivationTaskCard = Readonly<{
@@ -47,6 +55,35 @@ function snapshotClosedInput(value: unknown): ActivationTaskCardLoadInput {
   const taskId = taskDescriptor.value
   if (typeof workspaceRoot !== 'string' || typeof taskId !== 'string') invalidLoad()
   return { workspaceRoot, taskId }
+}
+
+function snapshotHashBoundClosedInput(value: unknown): HashBoundActivationTaskCardLoadInput {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) invalidLoad()
+  const keys = Reflect.ownKeys(value)
+  if (
+    keys.length !== 3 ||
+    !keys.includes('workspaceRoot') ||
+    !keys.includes('taskId') ||
+    !keys.includes('expectedSha256')
+  ) invalidLoad()
+  const workspaceDescriptor = Object.getOwnPropertyDescriptor(value, 'workspaceRoot')
+  const taskDescriptor = Object.getOwnPropertyDescriptor(value, 'taskId')
+  const hashDescriptor = Object.getOwnPropertyDescriptor(value, 'expectedSha256')
+  if (
+    !workspaceDescriptor || !Object.hasOwn(workspaceDescriptor, 'value') ||
+    !taskDescriptor || !Object.hasOwn(taskDescriptor, 'value') ||
+    !hashDescriptor || !Object.hasOwn(hashDescriptor, 'value')
+  ) invalidLoad()
+  const workspaceRoot = workspaceDescriptor.value
+  const taskId = taskDescriptor.value
+  const expectedSha256 = hashDescriptor.value
+  if (
+    typeof workspaceRoot !== 'string' ||
+    typeof taskId !== 'string' ||
+    typeof expectedSha256 !== 'string' ||
+    !LOWERCASE_SHA_256.test(expectedSha256)
+  ) invalidLoad()
+  return { workspaceRoot, taskId, expectedSha256 }
 }
 
 function parseJsonString(text: string, start: number): { value: string; next: number } {
@@ -165,7 +202,7 @@ export function portableFileIdentityMatches(
     handleIdentity.dev === pathIdentity.dev && handleIdentity.ino === pathIdentity.ino
 }
 
-async function readBoundedCard(handle: FileHandle): Promise<string> {
+async function readBoundedCard(handle: FileHandle): Promise<{ readonly text: string; readonly sha256: string }> {
   const initial = await handle.stat()
   if (!initial.isFile() || initial.size > MAX_TASK_CARD_BYTES) invalidLoad()
   const bytes = Buffer.alloc(initial.size)
@@ -178,11 +215,52 @@ async function readBoundedCard(handle: FileHandle): Promise<string> {
   const final = await handle.stat()
   if (!final.isFile() || final.size !== initial.size || final.size > MAX_TASK_CARD_BYTES) invalidLoad()
   const decoder = new TextDecoder('utf-8', { fatal: true })
-  return decoder.decode(bytes)
+  return {
+    text: decoder.decode(bytes),
+    sha256: createHash('sha256').update(bytes).digest('hex'),
+  }
 }
 
 function assertSafeTaskId(taskId: string): void {
   if (!TASK_ID.test(taskId) || taskId === '.' || taskId === '..') invalidLoad()
+}
+
+async function loadActivationTaskCardSnapshot(
+  snapshot: ActivationTaskCardLoadInput,
+  expectedSha256?: string,
+): Promise<LoadedActivationTaskCard> {
+  if (snapshot.workspaceRoot.length === 0 || !isAbsolute(snapshot.workspaceRoot)) invalidLoad()
+  assertSafeTaskId(snapshot.taskId)
+
+  const canonicalWorkspaceRoot = await realpath(resolve(snapshot.workspaceRoot))
+  if (!(await lstat(canonicalWorkspaceRoot)).isDirectory()) invalidLoad()
+
+  const expectedRelativeRoot = join('.developer-lens', 'activation', snapshot.taskId)
+  const expectedPath = join(canonicalWorkspaceRoot, expectedRelativeRoot, 'task-card.json')
+  const canonicalCardPath = await realpath(expectedPath)
+  const cardRelativePath = relative(canonicalWorkspaceRoot, canonicalCardPath)
+  if (
+    isAbsolute(cardRelativePath) ||
+    cardRelativePath === '..' ||
+    cardRelativePath.startsWith(`..${sep}`) ||
+    cardRelativePath !== join(expectedRelativeRoot, 'task-card.json') ||
+    canonicalCardPath !== expectedPath ||
+    !(await lstat(canonicalCardPath)).isFile()
+  ) {
+    invalidLoad()
+  }
+
+  await assertCanonicalCardPath(canonicalWorkspaceRoot, expectedRelativeRoot, expectedPath)
+  const handle = await open(canonicalCardPath, constants.O_RDONLY | NON_BLOCKING_READ_FLAG)
+  try {
+    await assertCanonicalCardPath(canonicalWorkspaceRoot, expectedRelativeRoot, expectedPath)
+    await assertHandleMatchesPath(handle, canonicalCardPath)
+    const card = await readBoundedCard(handle)
+    if (expectedSha256 !== undefined && card.sha256 !== expectedSha256) invalidLoad()
+    return { taskId: snapshot.taskId, parsed: parseJsonWithoutDuplicateKeys(card.text) }
+  } finally {
+    await handle.close()
+  }
 }
 
 /** Read one canonical, confined activation card without parsing or echoing its content. */
@@ -190,37 +268,20 @@ export async function loadActivationTaskCard(
   input: ActivationTaskCardLoadInput,
 ): Promise<LoadedActivationTaskCard> {
   try {
-    const snapshot = snapshotClosedInput(input)
-    if (snapshot.workspaceRoot.length === 0 || !isAbsolute(snapshot.workspaceRoot)) invalidLoad()
-    assertSafeTaskId(snapshot.taskId)
+    return await loadActivationTaskCardSnapshot(snapshotClosedInput(input))
+  } catch (error) {
+    if (error instanceof ActivationTaskCardLoadError) throw error
+    invalidLoad()
+  }
+}
 
-    const canonicalWorkspaceRoot = await realpath(resolve(snapshot.workspaceRoot))
-    if (!(await lstat(canonicalWorkspaceRoot)).isDirectory()) invalidLoad()
-
-    const expectedRelativeRoot = join('.developer-lens', 'activation', snapshot.taskId)
-    const expectedPath = join(canonicalWorkspaceRoot, expectedRelativeRoot, 'task-card.json')
-    const canonicalCardPath = await realpath(expectedPath)
-    const cardRelativePath = relative(canonicalWorkspaceRoot, canonicalCardPath)
-    if (
-      isAbsolute(cardRelativePath) ||
-      cardRelativePath === '..' ||
-      cardRelativePath.startsWith(`..${sep}`) ||
-      cardRelativePath !== join(expectedRelativeRoot, 'task-card.json') ||
-      canonicalCardPath !== expectedPath ||
-      !(await lstat(canonicalCardPath)).isFile()
-    ) {
-      invalidLoad()
-    }
-
-    await assertCanonicalCardPath(canonicalWorkspaceRoot, expectedRelativeRoot, expectedPath)
-    const handle = await open(canonicalCardPath, constants.O_RDONLY | NON_BLOCKING_READ_FLAG)
-    try {
-      await assertCanonicalCardPath(canonicalWorkspaceRoot, expectedRelativeRoot, expectedPath)
-      await assertHandleMatchesPath(handle, canonicalCardPath)
-      return { taskId: snapshot.taskId, parsed: parseJsonWithoutDuplicateKeys(await readBoundedCard(handle)) }
-    } finally {
-      await handle.close()
-    }
+/** Read one canonical card and bind its exact opened bytes to a reviewed lowercase SHA-256. */
+export async function loadHashBoundActivationTaskCard(
+  input: HashBoundActivationTaskCardLoadInput,
+): Promise<LoadedActivationTaskCard> {
+  try {
+    const snapshot = snapshotHashBoundClosedInput(input)
+    return await loadActivationTaskCardSnapshot(snapshot, snapshot.expectedSha256)
   } catch (error) {
     if (error instanceof ActivationTaskCardLoadError) throw error
     invalidLoad()

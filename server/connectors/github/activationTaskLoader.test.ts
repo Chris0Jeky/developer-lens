@@ -1,9 +1,11 @@
+import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
   GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD_ERROR_CODE,
+  loadHashBoundGithubCoreActivationTaskCard,
   loadGithubCoreActivationTaskCard,
   portableFileIdentityMatches,
 } from './activationTaskLoader.js'
@@ -114,6 +116,13 @@ async function expectInvalid(input: unknown): Promise<void> {
   })
 }
 
+async function expectInvalidHashBound(input: unknown): Promise<void> {
+  await expect(loadHashBoundGithubCoreActivationTaskCard(input as never)).rejects.toMatchObject({
+    code: GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD_ERROR_CODE,
+    message: GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD_ERROR_CODE,
+  })
+}
+
 describe('github.core activation task card loader', () => {
   it('fails closed when portable opened-file identity is absent or mismatched', () => {
     expect(portableFileIdentityMatches({ dev: 0, ino: 0 }, { dev: 0, ino: 0 })).toBe(false)
@@ -128,6 +137,21 @@ describe('github.core activation task card loader', () => {
     expect(card.localBoundary.root).toBe(`.developer-lens/activation/${taskId}/`)
     expect(Object.isFrozen(card)).toBe(true)
     expect(Object.isFrozen(card.localBoundary)).toBe(true)
+  })
+
+  it('binds exact opened-handle bytes to a lowercase SHA-256', async () => {
+    const root = await fixtureRoot()
+    const cardPath = join(root, '.developer-lens', 'activation', taskId, 'task-card.json')
+    const originalBytes = await readFile(cardPath)
+    const expectedSha256 = createHash('sha256').update(originalBytes).digest('hex')
+
+    await expect(loadHashBoundGithubCoreActivationTaskCard({ workspaceRoot: root, taskId, expectedSha256 }))
+      .resolves.toMatchObject({ taskId })
+    await expectInvalidHashBound({ workspaceRoot: root, taskId, expectedSha256: expectedSha256.toUpperCase() })
+    await expectInvalidHashBound({ workspaceRoot: root, taskId, expectedSha256: '0'.repeat(64) })
+
+    await writeFile(cardPath, Buffer.concat([originalBytes, Buffer.from('\n')]))
+    await expectInvalidHashBound({ workspaceRoot: root, taskId, expectedSha256 })
   })
 
   it('rejects malformed JSON, schema errors, and a wrong filename without leaking values', async () => {
