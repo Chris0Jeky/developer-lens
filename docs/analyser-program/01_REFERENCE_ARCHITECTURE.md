@@ -77,8 +77,10 @@ store.
 
 - `claim` — one row per rendered analytical statement at any layer above observed:
   `claim_id`, `layer` (deterministic|modelled|hypothesis|abstention), `statement_code` (closed
-  enum), `method_id`+`method_version`, `window`, `scope_alias`, `schema_version`, `created_at`,
-  `superseded_by`.
+  enum), `method_id`+`method_version`, `window`, opaque `scope_id`, `schema_version`,
+  `created_at`, `superseded_by`. The C2 `scope_alias` *value* never sits in the C1 claim row: it
+  lives in the adjacent `claim_scope` table keyed by the content-free `scope_id` surrogate
+  (corrected 2026-08-04 review round).
 - `claim_evidence_edge` — `claim_id`, exactly one typed target, `role` ∈
   {supports, contradicts, contextualizes, derives_from, coverage_basis, limitation_basis}.
   Targets are **typed nullable FK columns** (`target_evidence_id REFERENCES evidence`,
@@ -100,9 +102,11 @@ coverage → capability → consent revision in one deterministic walk.
 
 **Stability key (accepted 2026-08-04, frontier finding C-03).** Because any new evidence mints a
 new claim ID, claim *history* cannot be grouped by `claim_id`. Every claim additionally carries a
-**stability key** — the tuple (`statement_code`, `method_id@method_version`, `window`,
-`scope_alias`, `schema_version`) — as an indexed column set, so supersession chains are groupable
-into series. This key is what claim-stability, calibration-scoreboard, and drift surfaces
+**stability key** — the tuple (`statement_code`, `method_id@method_version`, `window`, scope,
+`schema_version`) — as an indexed column set, so supersession chains are groupable into series.
+The scope component is realized as the opaque `scope_id` surrogate (so the index keeps per-scope
+series separate without placing the C2 alias value in the C1 row — series must never merge across
+repository scopes). This key is what claim-stability, calibration-scoreboard, and drift surfaces
 (DL-EVQ-03/04) aggregate over. Grain rule: any surface derived from claim-version or collection
 timing renders at ISO-week grain or coarser — the product's own operational timestamps fall under
 the ADR-14 floor on a single-owner installation.
@@ -153,9 +157,10 @@ violates principle 7).
 twelve dimensions:
 `permission, completeness, eligibility, freshness, censoring_freedom, consistency, sample,
 source_diversity, parser_coverage, comparability, drift_stability, calibration` — every dimension
-value uses **one canonical shape** `{ value: number | null, limitingReason: code | null }`
-(a bare number or bare null is not a valid dimension encoding — corrected 2026-08-04 review
-round) and a registered **`direction`**, which is
+value uses **one canonical shape** `{ value: number | null, limiting_reason: code | null }`
+(a bare number or bare null is not a valid dimension encoding, and `limiting_reason` is the one
+canonical spelling on every wire/SQL surface — corrected 2026-08-04 review round) and a
+registered **`direction`**, which is
 `higher_is_better` for every dimension (corrected 2026-08-04 review round: an implementer must
 never have to guess polarity, or monotone abstention inverts). Explicit mapping from the canonical
 `EvidenceConfidence` (not 1:1): `freshness→freshness`, `sample→sample`,
@@ -334,7 +339,8 @@ recursion without its own consent, and **no file-body reads of any kind under
 `cap.source.structure` alone** — role sniffing uses closed extension/manifest-**name** tables
 only, so a `dependency_manifest` file may be counted and role-classified by name and nothing
 more. Parsing manifest **bodies** (declared dependencies, workspace topology, SBOM-adjacent
-content) requires `cap.github.dependencies` (or its declared local-manifest equivalent) to be
+content) requires `cap.github.dependencies` (a future local-manifest capability would first need
+its own reviewed matrix row — none exists today) to be
 separately **active** with an explicit card dependency; consent is never piggybacked from the
 source-structure capability.
 
@@ -771,7 +777,8 @@ exposing arbitrary pack records to browser code. The pack build therefore genera
 registry-allowlisted **PackPresentationView** relations (plus the example queries rewritten
 against them), and the in-app Query Lab (DuckDB-WASM, in-browser, no new API endpoint, no server
 SQL surface) opens ONE immutable checksum-verified snapshot of a user-selected COMPLETE pack and
-exposes only those views in its schema browser. Raw pack SQL remains an **external expert
+registers, exposes, and permits queries against only those relations (the schema browser lists
+nothing else, and a query naming any other pack table is refused). Raw pack SQL remains an **external expert
 workflow** (DuckDB/Python over the user's own exported artifact, under the export's existing
 disclosure) — the charter is not weakened in this pass. Notebook plans reference the same pack.
 Pack projection also **re-mints pack-local claim IDs** and rewrites edge/lineage/`superseded_by`

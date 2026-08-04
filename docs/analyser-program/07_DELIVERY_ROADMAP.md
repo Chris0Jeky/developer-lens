@@ -252,7 +252,7 @@ source, never this table. Horizon: A = active queue, F = frozen until DL-VALUE-0
 | DL-GOV-03 | Team-coverage aggregates with sparse suppression | governance | implementation | BLOCKED_BY_DEPENDENCY | F | DL-GOV-01 | M6 | high/M |
 | DL-LAB-01 | Residual alerts + false-alert budget (deterministic ladder) | pattern-lab | implementation | BLOCKED_BY_DEPENDENCY |  | DL-SPINE-04, DL-BRIDGE-02 | M6 | medium/M |
 | DL-LAB-02 | Coverage-shift separation for notable changes | pattern-lab | implementation | BLOCKED_BY_DEPENDENCY |  | DL-LAB-01 | M6 | high/M |
-| DL-GRAPH-01 | Typed graph projections + baseline statistics | pattern-lab | implementation | BLOCKED_BY_DEPENDENCY |  | DL-SPINE-01 | M6 | medium/M |
+| DL-GRAPH-01 | Typed graph projections + baseline statistics | pattern-lab | implementation | BLOCKED_BY_DEPENDENCY |  | DL-SPINE-01, DL-LIFE-02 | M6 | medium/M |
 | DL-WB-01 | Research workbench harness + frozen benchmark format | workbench | implementation | READY |  | none | M6 | medium/M |
 | DL-WB-02 | Model registry + promotion mechanics | workbench | implementation | BLOCKED_BY_DEPENDENCY |  | DL-WB-01, DL-SPINE-01 | M6 | medium/M |
 | DL-WB-C1 | Candidate: robust weekly change-points (PELT/BOCPD) | workbench | research | RESEARCH | F | DL-WB-01, DL-LAB-01 | M6 | medium/M |

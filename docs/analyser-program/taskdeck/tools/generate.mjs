@@ -183,7 +183,11 @@ for (const c of CARDS) {
 const roadmap = readFileSync(ROADMAP, 'utf8');
 const cut = roadmap.indexOf(INDEX_MARKER);
 if (cut < 0) { console.error(`marker not found in ${ROADMAP}`); process.exit(1); }
-writeFileSync(ROADMAP, roadmap.slice(0, cut) + md);
+// preserve any section added AFTER the generated index block (next '## ' heading past the marker)
+const afterMarker = roadmap.slice(cut + INDEX_MARKER.length);
+const tailAt = afterMarker.indexOf('\n## ');
+const tail = tailAt >= 0 ? afterMarker.slice(tailAt + 1) : '';
+writeFileSync(ROADMAP, roadmap.slice(0, cut) + md + (tail ? '\n' + tail : ''));
 
 console.log(`OK: ${cardsOut.length} cards, ${LABELS.length} labels, ${COLUMNS.length} columns -> ${OUT_JSON}`);
 console.log(`index: ${CARDS.length} rows -> ${ROADMAP}`);

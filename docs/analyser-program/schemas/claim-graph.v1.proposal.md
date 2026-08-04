@@ -13,21 +13,25 @@ CREATE TABLE claim (
   method_id TEXT NOT NULL,
   method_version TEXT NOT NULL,
   window_start TEXT NOT NULL, window_end TEXT NOT NULL,   -- half-open UTC
+  scope_id TEXT NOT NULL REFERENCES claim_scope(scope_id), -- opaque content-free surrogate
   schema_version TEXT NOT NULL,
   created_at TEXT NOT NULL,
   superseded_by TEXT REFERENCES claim(claim_id)
 ) STRICT;
--- C2 partition: the installation-scoped alias link lives beside, not inside, the C1 claim row
+-- C2 partition: the installation-scoped alias VALUE lives beside, not inside, the C1 claim row
 -- (charter alias-link classification: C2, 13-month local-only; pack projection emits a fresh
--- pack-scoped C1 alias and never copies this reference)
+-- pack-scoped C1 alias and never copies this value). The scope_id surrogate carries no alias
+-- content, so the C1 claim row can group per-scope series without holding C2 data; clearing
+-- scope_alias on its retention clock leaves series grouping intact.
 CREATE TABLE claim_scope (
-  claim_id TEXT PRIMARY KEY REFERENCES claim(claim_id),
-  scope_alias TEXT NOT NULL             -- C2; deleted on its own retention clock
+  scope_id TEXT PRIMARY KEY,            -- opaque surrogate, content-free
+  scope_alias TEXT                      -- C2 value; cleared on its own retention clock
 ) STRICT;
--- stability key (accepted 2026-08-04): groupable claim series
+-- stability key (accepted 2026-08-04): groupable per-scope claim series — series must never
+-- merge across repository scopes, hence scope_id in the index
 CREATE INDEX claim_stability_key
   ON claim (statement_code, method_id, method_version, window_start, window_end,
-            schema_version);
+            scope_id, schema_version);
 
 CREATE TABLE claim_evidence_edge (
   claim_id TEXT NOT NULL REFERENCES claim(claim_id),
@@ -67,11 +71,12 @@ Example claim row (invented):
   "statement_code": "CI_SHIFT_MAY_ALIGN_WITH_WORKFLOW_CHANGE",
   "method_id": "hyp.composer", "method_version": "1.0.0",
   "window_start": "2026-01-05T00:00:00Z", "window_end": "2026-04-06T00:00:00Z",
-  "scope_alias": "repo_a7", "schema_version": "1.0.0",
+  "scope_id": "sc_01", "schema_version": "1.0.0",
+  "scope_note": "C2 alias value ('repo_a7') lives only in claim_scope, joined on demand",
   "edges": [
-    {"target_id": "ev_det_4", "role": "supports"},
-    {"target_id": "ev_det_5", "role": "contradicts"},
-    {"target_id": "cov_112", "role": "coverage_basis"}
+    {"target_evidence_id": "ev_det_4", "role": "supports"},
+    {"target_evidence_id": "ev_det_5", "role": "contradicts"},
+    {"target_coverage_id": "cov_112", "role": "coverage_basis"}
   ],
   "limitations": [
     {"limitation_code": "GH_ACTIONS_FILTERED_1000_CAP", "dimension": "censoring_freedom", "copy_key": "hyp.ci_shift.censored"}

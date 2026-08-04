@@ -139,7 +139,7 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   is recorded as one of the ten canonical `CoverageStatus` values, never as zero units.
 - **Canonical objects** — Existing `DL.COV.COMPLETE_RATIO.v1`, `DL.COV.FRESHNESS_AGE_H.v1`,
   `DL.DQ.CONFLICT_RATIO.v1` (canonical §4 — unchanged). Programme deltas:
-  `DL.COV.DIMENSION_VECTOR.v1` (P) — the registered eleven-dimension vector with a `limiting_reason`
+  `DL.COV.DIMENSION_VECTOR.v1` (P) — the registered twelve-dimension vector with a `limiting_reason`
   per dimension; `DL.COV.ABSTENTION_RATIO.v1` (P) — claims abstained / claims attempted per family ×
   window; `DL.COV.PARSER_COVERAGE.v1` (P) — admitted files or bytes / eligible, per language ×
   parser tier; `DL.COV.COMPARABILITY.v1` (P) — snapshot pairs with equal parser major and config
@@ -241,7 +241,8 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   `cap.source.structure` alone permits filename/extension/presence classification, so a
   `dependency_manifest` file may be **counted and role-classified by its name** and nothing more.
   Reading or parsing a manifest **body** — declared dependencies, workspace topology, SBOM-adjacent
-  content — requires `cap.github.dependencies` (or its declared local-manifest equivalent) to be
+  content — requires `cap.github.dependencies` (a future local-manifest capability would first
+  need its own reviewed matrix row — none exists today) to be
   **separately active with its own explicit card dependency**; consent is never piggybacked on
   `cap.source.structure`, and `GH-SBOM-01` rules (`B16`) govern bodies only inside that capability.
 - **Classes / prohibited / posture** — Input **C4** (paths, names, file lists, modes) destroyed

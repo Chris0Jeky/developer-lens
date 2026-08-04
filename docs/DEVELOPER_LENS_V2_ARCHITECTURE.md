@@ -1562,9 +1562,10 @@ this document plus the charter and matrix, those win. Live evidence and the resu
    adds `permission`, `censoring_freedom`, `parser_coverage`, `comparability`, `drift_stability`,
    `calibration`), every dimension registered `higher_is_better`, with per-claim-family minimum
    requirements and **monotone abstention** (degrading any dimension can only hold or lower a
-   claim tier). Producers: `calibration` from the calibration scoreboard (cold-start: modelled
-   claims cap at deterministic tier until it produces); `drift_stability` from the claim-stability
-   series (research role). Cards DL-SPINE-04/05 (ADR-02).
+   claim tier). Producers: `calibration` from the calibration scoreboard (cold-start, corrected
+   by I.4 item 3: modelled claims **abstain** until it produces — any deterministic reading is a
+   separately defined deterministic claim, never a restyled model output); `drift_stability` from
+   the claim-stability series (research role). Cards DL-SPINE-04/05 (ADR-02).
 3. **Capability lifecycle.** One typed state machine
    (`never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked`) for every
    capability, with the invariant "gate approval performs no transition" tested by registry
@@ -1680,7 +1681,11 @@ corrected reading.
    (DL-LIFE-02) before becoming schedulable.
 8. **Exact graphs stay home.** Ordinary packs carry banded C1 structural summaries only; exact
    node/edge tables and GraphML are removed from packs entirely (a C3-local graph workspace would
-   be a separate owner-reviewed sink).
+   be a separate owner-reviewed sink). **This supersedes the pack-layout material in this
+   document's body**: the Appendix-D-style layout entries `graphs/nodes.parquet`,
+   `graphs/edges.parquet`, and `graph-exchange/graph.graphml`, the GraphML row of the storage
+   format table, and the `graphs/nodes.node_id` C3 field-classification row are historical and no
+   longer specify ordinary-pack content.
 9. **V1 analytical primitives retire explicitly.** The weighted engagement blend must not survive
    as a shared analytical primitive: it never determines V2 importance, momentum, concentration,
    effective repo count, language activity, private share, focus, finding selection, or narrative
@@ -1707,7 +1712,7 @@ corrected reading.
     product and never infers productivity, seniority, quality, effort, or completeness. All three
     are parked until after the first value slice and flow observatories.
 12. **Bounded execution.** The active horizon is ≤ 12 dependency-closed cards
-    (`horizon:active`); the §16 freeze list (`horizon:frozen`) parks external models, generic ML
+    (`horizon:active`); the freeze list (`horizon:frozen`, 07 §0a) parks external models, generic ML
     promotion, vector retrieval, Projects/security/rulesets/attestation sources, and broad parser
     rollout until DL-VALUE-01 is accepted. Backlog expansion is closed for this planning cycle;
     new analytical ideas enter through evidence-backed questions after the value slice is

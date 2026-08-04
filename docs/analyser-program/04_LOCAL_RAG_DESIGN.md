@@ -61,10 +61,9 @@ re-open all three questions and is therefore **REJ** for this design; changing i
 Admissible pack tables: `tables/coverage.parquet`, `tables/quality/data_quality_findings.parquet`,
 `tables/features/feature_values.parquet`, `tables/facts/*.parquet`,
 `tables/insights/deterministic.parquet`, and — when present — claim/limitation/question tables added
-by ADR-01/ADR-24 to the pack. `tables/graphs/nodes.parquet` and `graphs/edges.parquet` are **C3**
-(Appendix D dictionary) and are therefore **excluded from every retrieval index and every result
-set** under the current design. **R** (Their inclusion would be a separate decision; C3 is excluded
-from ordinary exports and from the Model sink.)
+by ADR-01/ADR-24 to the pack. Exact graph node/edge tables are **not present in ordinary packs at
+all** (ADR-22 as reconciled 2026-08-04: packs carry banded C1 structural summaries only; exact
+topology/edge lists never leave C3), so they cannot enter any retrieval index or result set.
 
 ### One immutable snapshot, opened once (no verify-then-reopen)
 
