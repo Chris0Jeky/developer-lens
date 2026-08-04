@@ -50,14 +50,25 @@ model capability is still
 `never_authorized`; there is no task-card/runtime caller, actual environment read, network/provider
 execution, cache, telemetry, persistence, export, or presentation path**.
 
+The current P4 candidate adds an inert, no-caller composition runner. It binds the exact opened task-
+card bytes to a caller-reviewed lowercase SHA-256, derives the repository alias before any request,
+splits the declared request ceiling across two independent probes, persists only an actual
+noncomplete outcome or two hash-equal complete observations, and records fixed noncomplete coverage
+when two complete observations disagree. It returns only frozen stability, coverage, and numeric
+request facts. No production module imports it; every verification call used only invented cards,
+keys, in-memory databases, and injected responses, with no real network or protected-output read. A
+trusted card/report anchor, task-owned key fingerprint and database,
+backup/restore, revocation/re-consent, and caller-clock binding remain mandatory before any future
+real caller or GET.
+
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
 
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current P12 HTTP-adapter candidate:
-  `origin/main` merge `8ca3a626be4f33003a9303bb09e6b67b4560cc56`.
+- Published implementation baseline before the current P4 activation-runner candidate:
+  `origin/main` merge `1f170950b8833194410214c8a601c70d25d7cd98`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -687,6 +698,20 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
+- The current P4 activation-runner candidate is commit `59e0a2a` on published HTTP-adapter merge
+  `1f17095`. The focused hash-bound loader/runner suites passed 2 files / 16 tests. `npm run check`
+  passed Oxlint, context verification, 41 test files / 228 tests, TypeScript project builds, and the
+  production Vite build; `git diff --check origin/main..HEAD` passed. Direct regressions cover exact
+  opened-byte card-hash mismatch, zero-fetch closed-input/alias/card/budget failures, odd request-
+  ceiling splits, honest first/second noncomplete persistence, two-read stable completion, unequal-
+  hash `SNAPSHOT_UNSTABLE`, checkpoint preservation, and prior card-consent mismatch. Fresh-context
+  read-only review found no current CRITICAL/HIGH defect in the inert no-production-caller
+  foundation. It classified trusted approval/hash anchoring, task-owned DB/key continuity, backup/
+  report/restore, revocation/re-consent, and caller-clock binding as mandatory blockers before a
+  future bound caller or first GET. The valid-card request-budget edge below four requests remains
+  honestly truncated and capped; a future caller must either reject it before GET or document that
+  it cannot support two metadata-plus-page probes. That nonblocking runtime-contract edge is tracked
+  in [#57](https://github.com/Chris0Jeky/developer-lens/issues/57) rather than expanding this slice.
 - The current P12 HTTP-adapter candidate was rebased onto failure-pairing merge `8ca3a62`;
   `server/connectors/github/activationTaskLoader.test.ts`, the OpenAI card-loader, request, preview,
   and HTTP-adapter suites passed 5 files / 32 tests.
@@ -984,6 +1009,12 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Failures and workarounds
 
+- The isolated runner worktree initially had no local dependencies. The worker used a temporary
+  ignored `node_modules` junction only after proving the package-lock hash and Node major matched the
+  primary checkout. PowerShell junction removal then raised a `NullReferenceException`; the
+  coordinator verified the exact worktree-local reparse point and its expected target, removed only
+  the junction with nonrecursive .NET directory deletion, and proved the primary dependency target
+  remained present. Generated `dist/` remains ignored until normal post-merge worktree cleanup.
 - Pre-publication inspection found that the first request draft omitted native Structured Outputs
   and an explicit standard service tier, and estimated input tokens as bytes divided by four. The
   fix adds the closed `text.format` JSON Schema, `service_tier: default`, cache-write pricing, and a
@@ -1209,8 +1240,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current P12 HTTP-adapter
-   candidate is merge `8ca3a626be4f33003a9303bb09e6b67b4560cc56`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P4 activation-
+   runner candidate is merge `1f170950b8833194410214c8a601c70d25d7cd98`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
