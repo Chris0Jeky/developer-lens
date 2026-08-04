@@ -7,8 +7,8 @@ evidence/design version 2026-08-03.
 
 Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
-P4 is the next architecture phase; the current milestone upgrades the launcher and routing policy
-for maximum useful parallel continuation without weakening checkout or privacy ownership**.
+The current P4 milestone implements an inert synthetic `github.core` collection protocol behind
+`never_authorized`; it adds no transport, credential, persistence, real-read, or activation path**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -16,11 +16,12 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published P3 implementation baseline: `origin/main` merge
-  `cc08a2ecaa480660bda68bb40f4d2d2a02d5bbaf`.
+- Published implementation baseline before the current P4 milestone: `origin/main` merge
+  `ebb600852f409e29182c85b9a8d9c136b5e42890`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
-  [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at the published baseline above
+  [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
+  `1171a42b988aae01121d74ce5f412b1a00fd4fc9`
   with the three migration repairs, installation-HMAC blocker fix, and exact ledger correction.
 - Worktrees: one registered Developer Lens worktree, the primary checkout; it was tracked-clean
   before this ledger edit. Refresh cleanliness and occupancy from Git before any further mutation.
@@ -31,9 +32,22 @@ unresolved review threads outrank it whenever they disagree.
   DuckDB Node dependency and the synthetic analysis-pack producer/replay seam;
   `5acba15db7ee24bc73f291510908494d82995eba` derives the opaque pack ID from safe pack facts after
   review. [PR #8](https://github.com/Chris0Jeky/developer-lens/pull/8) merged with commit
-  preservation at the published baseline; exact-merge Pages run
+  preservation at `cc08a2ecaa480660bda68bb40f4d2d2a02d5bbaf`; exact-merge Pages run
   [30858237376](https://github.com/Chris0Jeky/developer-lens/actions/runs/30858237376) passed the full
   gate, showcase privacy verification, artifact upload, and deployment.
+- [PR #12](https://github.com/Chris0Jeky/developer-lens/pull/12) adds post-replay Parquet
+  verification at `6eac3b3719ed6c4872fa72521bbc81fd23019055`; it merged with commit preservation at
+  `218c2373ad8dc697b8c0a1e2575915de37a47160`. Exact-merge Pages run
+  [30865334329](https://github.com/Chris0Jeky/developer-lens/actions/runs/30865334329) passed the full
+  gate, showcase privacy verification, artifact upload, and deployment.
+- [PR #13](https://github.com/Chris0Jeky/developer-lens/pull/13) scopes ignored-output cleanup to
+  the task-card-owned boundary and parks uncertain worktrees at
+  `bf582263895e2c82e844074316484911386bebc4`; it merged after a current-base refresh at the
+  published baseline above. Exact-merge Pages run
+  [30865702054](https://github.com/Chris0Jeky/developer-lens/actions/runs/30865702054) passed both the
+  full build/privacy gate and deployment. Late review follow-ups are tracked in
+  [#14](https://github.com/Chris0Jeky/developer-lens/issues/14) and
+  [#15](https://github.com/Chris0Jeky/developer-lens/issues/15).
 
 ## Authority and owner gates
 
@@ -221,6 +235,28 @@ unresolved review threads outrank it whenever they disagree.
   The source database remains byte-identical in the deterministic proof.
 - Scope: no CLI, `dataStore`, collector, migration, API, UI, exporter, Pages path, notebook, query
   directory, external model, real input, or production activation was added.
+- PR #12 rehashes the Parquet table after DuckDB replay and fails if the replayed file no longer
+  matches the manifest checksum. The invented replacement regression swaps in a different valid
+  Parquet file during replay; replay completes, the second hash detects the mutation, and the reader
+  fails closed.
+
+## P4 inert GitHub core protocol foundation
+
+- `server/connectors/github/core.ts` is a pure protocol seam for `github.core`. Its manifest pins
+  REST `2026-03-10`, query contract `github.core.v1`, a 24-hour watermark overlap, and three retry
+  attempts. The plan reads the executable capability registry and returns `never_authorized`; it
+  cannot execute a request or turn G2/G3 approval into runtime consent.
+- Strict runtime inputs bind checkpoints to capability, opaque scope, consent revision, query/API
+  versions, canonical timestamps, and lowercase SHA-256 snapshot hashes. Opaque IDs are bounded,
+  failure kinds are closed, explicit optional fields cannot bypass validation, exact `Retry-After`
+  values are honored, and computed retry delay is deterministically capped.
+- Synthetic page receipts prove pagination and terminal-page completeness. Equivalent receipt IDs
+  replay idempotently; conflicting reuse fails closed. A complete bounded run alone advances the
+  checkpoint. Failure, missing terminal proof, or page-cap truncation preserves the prior checkpoint;
+  a truncation cursor remains a non-durable hint and unknown totals remain unknown.
+- `server/connectors/github/core.test.ts` uses invented opaque scopes, jobs, pages, units, hashes,
+  failures, and caps only. This foundation adds no `fetch`, `gh`, subprocess, token, credential,
+  selected-repository, SQLite, API, legacy-collector, public-data, or external-model wiring.
 
 ## Durable continuation foundation
 
@@ -276,6 +312,10 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
+- P4 protocol proof on the current publication candidate: the focused invented-receipt suite passed
+  1 file / 15 tests; `npm run check` passed Oxlint, context verification, 24 test files / 92 tests,
+  TypeScript project builds, and the production Vite build after merging the current published
+  baseline. `git diff --check` passed. Vite emitted only the existing >500 kB chunk-size advisory.
 - Dynamic-swarm/context proof on `codex/sol-ultra-swarm-prompt`: both the tracked continuation skill
   and the updated user-global routing skill passed the official skill validator;
   `npm run verify:context` passed 12 Markdown files / 10 required files, including the new swarm
@@ -496,9 +536,13 @@ unresolved review threads outrank it whenever they disagree.
   accepts only the two closed P2 capability IDs; future facts/tables need a separately reviewed
   class ceiling and schema. Native deployment must retain the platform binding/DLL selected by the
   optional dependency.
-- A concurrent local writer can replace a completed Parquet file between checksum and DuckDB read.
-  Completed packs are immutable by contract today; any activated hostile-writer integrity claim
-  needs an immutable snapshot or post-read hash proof.
+- PR #12 now detects a completed Parquet replacement that persists through replay by hashing the
+  replayed file again before accepting it. Completed packs remain immutable by contract; an
+  activated hostile-writer claim would still need an immutable snapshot or an equivalent stronger
+  boundary to exclude an adversarial replace-read-restore sequence.
+- The P4 protocol foundation is pure and inert. Cursor/request binding, typed page acquisition,
+  transactional staging/storage, deletion, rollback, selected-repository consent, and compatibility
+  with the legacy collector remain future reviewed seams; none can be inferred from receipt tests.
 - The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
   this bounded importer accepts only the registered ASCII repository-reference alphabet; that P2
   compatibility gap remains tracked in
@@ -528,20 +572,20 @@ unresolved review threads outrank it whenever they disagree.
   installation HMAC aliases remove the raw local-alias collision path for the bounded producer.
   Duplicate repository identity rejection and installation-key continuity are tracked in
   [#6](https://github.com/Chris0Jeky/developer-lens/issues/6) before real migration.
-- A future activated analysis-pack reader must query the same immutable Parquet snapshot it hashes,
-  or verify the hash again after replay, before claiming concurrent local-mutation resistance.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published P3 baseline is merge
-   `cc08a2ecaa480660bda68bb40f4d2d2a02d5bbaf`; live evidence still outranks this checkpoint.
+1. Refresh Git/GitHub before mutation. The published baseline before this P4 milestone is merge
+   `ebb600852f409e29182c85b9a8d9c136b5e42890`; live evidence still outranks this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
-   pack. Treat the concurrent-mutation snapshot finding as a concrete optional P3 hardening slice,
-   not a prerequisite for unrelated deterministic product work.
+   pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
+   activated hostile-writer claim without an immutable snapshot or equivalent boundary.
 3. G2 and standing G3 are approved, but no real path is automatically active. Reconcile issue #6's
    duplicate-identity/key-continuity acceptance and issue #5's local-name/identity-vault boundary
    before a real v1 migration. Use invented fixtures and a new bounded task card first.
-4. P4 incremental GitHub core is the next architecture phase. Start with its synthetic connector,
-   checkpoint, idempotency and coverage contract behind `never_authorized`; activate only after the
-   exact selected-repository scope, existing read-only credentials, deletion/rollback behavior and
-   focused tests are recorded. G4 is still required for any external-model work.
+4. Continue P4 from the inert synthetic `github.core` protocol foundation. The next dependency-ready
+   slice is the invented transactional storage bridge for canonical collection jobs, checkpoints,
+   source snapshots, and coverage, with failure rollback and no checkpoint advance proved before any
+   transport or legacy-reader integration. Keep the capability `never_authorized`; activation still
+   requires exact selected-repository scope, existing read-only credentials, deletion/rollback
+   behavior, and focused tests. G4 is still required for any external-model work.
