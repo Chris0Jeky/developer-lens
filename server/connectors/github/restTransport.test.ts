@@ -82,10 +82,14 @@ describe('github.core REST transport projection', () => {
     expect(Object.isFrozen(result)).toBe(true)
     expect(Object.isFrozen(result.units)).toBe(true)
     expect(Object.isFrozen(result.units[0])).toBe(true)
+    expect(Object.isFrozen(result.pages)).toBe(true)
+    expect(Object.isFrozen(result.pages[0])).toBe(true)
+    expect(Object.isFrozen(result.pages[0]!.unitAliases)).toBe(true)
     expect(() => { (result.units as GithubCoreRestUnit[]).push({ alias: 'mutated', kind: 'issue', updatedAt: rangeStart }) }).toThrow()
+    expect(() => { (result.pages[0]!.unitAliases as string[]).push('mutated') }).toThrow()
     expect(JSON.stringify(result)).not.toContain('POISON')
     expect(JSON.stringify(result)).not.toContain('raw+/=1')
-    expect(result.pages).toEqual([{ pageNumber: 1, receiptAlias: 'page-alias-101_1', unitCount: 1, nextPage: null }])
+    expect(result.pages).toEqual([{ pageNumber: 1, receiptAlias: 'page-alias-101_1', unitCount: 1, unitAliases: ['pull_request-alias-raw___1'], nextPage: null }])
     expect(aliases).toEqual(['repository:101', 'pull_request:raw+/=1', 'page:101:1'])
     expect(fixture.calls).toHaveLength(2)
     expect(fixture.calls[0]!.url).toBe('https://api.github.com/repos/fixture-owner/fixture-repository')
@@ -128,8 +132,10 @@ describe('github.core REST transport projection', () => {
     const fixture = fetchFixture([
       response(200, metadata),
       response(200, [
-        { node_id: 'node-1', updated_at: '2026-07-02T00:00:00.000Z' },
-        { node_id: 'node-1', updated_at: '2026-07-02T00:00:00.000Z' },
+        { node_id: 'node-z', updated_at: '2026-07-02T00:00:00.000Z' },
+        { node_id: 'node-a', updated_at: '2026-07-03T00:00:00.000Z' },
+        { node_id: 'node-z', updated_at: '2026-07-02T00:00:00.000Z' },
+        { node_id: 'node-out', updated_at: rangeEnd },
       ], { link: '<https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=2&sort=updated&direction=asc>; rel="next", <https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=2&sort=updated&direction=asc>; rel="last"' }),
       response(200, [{ node_id: 'node-2', updated_at: '2026-07-03T00:00:00.000Z' }], { link: '<https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=1&sort=updated&direction=asc>; rel="prev", <https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=1&sort=updated&direction=asc>; rel="first"' }),
     ])
@@ -141,13 +147,17 @@ describe('github.core REST transport projection', () => {
     })
     expect(result).toMatchObject({
       kind: 'complete',
-      observedUnitCount: 2,
+      observedUnitCount: 3,
       observedPageCount: 2,
       pages: [
-        { pageNumber: 1, unitCount: 1, nextPage: 2 },
-        { pageNumber: 2, unitCount: 1, nextPage: null },
+        { pageNumber: 1, unitCount: 2, unitAliases: ['issue-node-a', 'issue-node-z'], nextPage: 2 },
+        { pageNumber: 2, unitCount: 1, unitAliases: ['issue-node-2'], nextPage: null },
       ],
     })
+    if (result.kind !== 'complete') throw new Error('expected complete fixture result')
+    expect(result.pages[0]!.unitAliases).not.toContain('node-out')
+    expect(result.pages[0]!.unitAliases.every((alias) => typeof alias === 'string')).toBe(true)
+    expect(JSON.stringify(result.pages[0]!.unitAliases)).not.toContain('node_id')
     expect(fixture.calls[2]!.url).toContain('/repos/fixture-owner/fixture-repository/issues?')
     expect(new URL(fixture.calls[2]!.url).searchParams.get('page')).toBe('2')
   })
