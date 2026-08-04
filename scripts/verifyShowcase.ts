@@ -15,12 +15,34 @@ import {
 const publicData = resolve('public', 'data')
 const dist = resolve('dist')
 const textExtensions = new Set(['.css', '.html', '.js', '.json', '.map', '.svg', '.txt'])
-const forbiddenPatterns = [
+const forbiddenPatterns: { label: string; pattern: RegExp }[] = [
   { label: 'GitHub token prefix', pattern: /\b(?:github_pat_|gh[pousr]_)\w+/i },
   { label: 'private key material', pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
   { label: 'Windows user path', pattern: /[A-Z]:\\Users\\/i },
   { label: 'local file URL', pattern: /file:\/\/\/[A-Z]:\//i },
+  { label: 'V2 bridge bearer variable', pattern: /(?:VITE_)?DEVELOPER_LENS_V2_TOKEN/ },
 ]
+
+/**
+ * Vite inlines `import.meta.env.VITE_*` at build time, so a showcase built on a
+ * machine that has the V2 bridge bearer exported would ship the literal token
+ * in its JavaScript. When such a value is present in this environment, its
+ * exact text becomes a forbidden pattern too — the name-based rule above cannot
+ * catch an inlined value, because the name is what the inlining removes.
+ */
+function escapeForRegExp(value: string): string {
+  return value.replaceAll(/[.*+?^${}()|[\]\\-]/g, '\\$&')
+}
+
+for (const variable of ['VITE_DEVELOPER_LENS_V2_TOKEN', 'DEVELOPER_LENS_V2_TOKEN'] as const) {
+  const value = process.env[variable]
+  if (value && value.length >= 8) {
+    forbiddenPatterns.push({
+      label: `${variable} value`,
+      pattern: new RegExp(escapeForRegExp(value)),
+    })
+  }
+}
 
 async function filesBelow(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true })
