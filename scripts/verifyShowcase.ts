@@ -24,6 +24,19 @@ const forbiddenPatterns: { label: string; pattern: RegExp }[] = [
     label: 'V2 bridge bearer environment object',
     pattern: /["'`]?(?:VITE_)?DEVELOPER_LENS_V2_TOKEN["'`]?\s*[:=]/,
   },
+  // Native-dependency markers. The showcase bundle must stay native-free: server storage loads
+  // `better-sqlite3` (and, in adjacent work, DuckDB) native bindings, and the client is meant to
+  // import server code TYPE-ONLY so those never reach the browser bundle. If any of these strings
+  // reach an emitted `dist` asset, a value-import of native server code slipped past `tsc -b`, and
+  // this check fails the showcase build. Only literal package/binding/tool identifiers are used —
+  // `better-sqlite3` (npm id), `better_sqlite3` (the compiled `.node` binding name), `duckdb`, and
+  // `node-gyp` — none of which can legitimately appear in this app's emitted output. Deliberately
+  // NOT included: generic words like `bindings` or `prebuild`, which risk false positives against
+  // minified third-party JS in the bundle.
+  { label: 'better-sqlite3 native driver', pattern: /better-sqlite3/i },
+  { label: 'better_sqlite3 native binding', pattern: /better_sqlite3/i },
+  { label: 'duckdb native driver', pattern: /duckdb/i },
+  { label: 'node-gyp native build', pattern: /node-gyp/i },
 ]
 
 /**
