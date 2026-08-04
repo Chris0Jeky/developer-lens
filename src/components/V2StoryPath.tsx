@@ -42,13 +42,17 @@ export function V2StoryPath({ insights }: { insights: Insight[] }) {
         <h3 id="v2-story-path-heading">Story path: read the signal in three careful moves.</h3>
         <p>
           Move from what is visible, through a reproducible connection, to a question worth holding
-          open. The rail is a map, not another conclusion.
+          open. Confidence describes the fit of the available evidence—not a score about a person.
         </p>
       </div>
       <ol aria-label="Evidence story path" className="v2-story-path__rail">
         {steps.map(({ Icon, insight, label, order, orientation }, index) => (
           <li
-            aria-label={`${String(order).padStart(2, '0')} ${label}: ${orientation}`}
+            aria-label={[
+              `${String(order).padStart(2, '0')} ${label}: ${orientation}`,
+              `${insight.confidence} confidence · evidence fit`,
+              insight.caveat ? `Lens limit · ${insight.caveat}` : undefined,
+            ].filter(Boolean).join('. ')}
             className={`v2-story-path__step v2-story-path__step--${order}`}
             key={order}
           >
@@ -59,10 +63,20 @@ export function V2StoryPath({ insights }: { insights: Insight[] }) {
             <div className="v2-story-path__copy">
               <span className="v2-story-path__label">{label}</span>
               <strong>{orientation}</strong>
+              <span className={`v2-story-path__confidence v2-story-path__confidence--${insight.confidence}`}>
+                {insight.confidence} confidence · evidence fit
+              </span>
               <span className="v2-story-path__evidence">
                 <ArrowRight size={12} aria-hidden="true" />
                 <span>Evidence headline · {insight.evidence[0]}</span>
               </span>
+              {insight.caveat && (
+                <span
+                  aria-hidden="true"
+                  className="v2-story-path__limit"
+                  data-limit={`Lens limit · ${insight.caveat}`}
+                />
+              )}
             </div>
             {index < steps.length - 1 && <span className="v2-story-path__connector" aria-hidden="true" />}
           </li>

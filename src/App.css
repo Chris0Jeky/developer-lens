@@ -2271,6 +2271,18 @@ button.heatmap__cell[aria-pressed="true"] {
   line-height: 1.4;
 }
 
+.v2-story-path__confidence {
+  color: #9ca4b6;
+  font-size: 8px;
+  font-weight: 650;
+  line-height: 1.4;
+  text-transform: capitalize;
+}
+
+.v2-story-path__confidence--high { color: #6ac6ad; }
+.v2-story-path__confidence--medium { color: #c4aa69; }
+.v2-story-path__confidence--low { color: #d58a9b; }
+
 .v2-story-path__evidence {
   display: flex;
   min-width: 0;
@@ -2282,6 +2294,15 @@ button.heatmap__cell[aria-pressed="true"] {
 }
 
 .v2-story-path__evidence svg { flex: 0 0 auto; margin-top: 1px; color: #746390; }
+
+.v2-story-path__limit {
+  display: block;
+  color: #737d91;
+  font-size: 8px;
+  line-height: 1.45;
+}
+
+.v2-story-path__limit::before { content: attr(data-limit); }
 
 .v2-story-path__connector {
   position: absolute;
