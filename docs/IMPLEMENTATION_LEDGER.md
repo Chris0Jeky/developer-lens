@@ -1495,7 +1495,92 @@ after it. Per-card evidence below; the compact live pointer stays
   DL-VALIDATE-01's remit; [#68](https://github.com/Chris0Jeky/developer-lens/issues/68) and
   [#69](https://github.com/Chris0Jeky/developer-lens/issues/69) stay frozen.
 
+## 2026-08-04 — R1 wave 3 (conformance instrument + first analytical value slice)
+
+The final two active-horizon cards merged in a third autonomous wave, **completing the bounded
+R1–R3 active horizon — 12 of 12 active-horizon cards are DONE.** DL-VALIDATE-01 supplied the
+analytical conformance instrument; DL-VALUE-01 proved the product thesis with the first
+deterministic comparative finding. Full suite: **884 tests green at the lane head.** Per-card
+evidence below; the compact live pointer stays `docs/analyser-program/CURRENT_STATE.md`.
+
+- **DL-VALIDATE-01 — analytical conformance and counterexample suite.**
+  [PR #92](https://github.com/Chris0Jeky/developer-lens/pull/92), merge `df59bbc`. The
+  analytics-grade fixture corpus (goldens, counterexamples, null/unknown, truncation,
+  right-censoring, alternative windows, alternative cohort definitions, parameter sensitivity,
+  contradiction, source disagreement, and permutation/null baselines) that the analytical-review
+  lane uses as its instrument. It landed the three
+  [#82](https://github.com/Chris0Jeky/developer-lens/issues/82) metric-result-hardening items
+  **M-a / M-b / M-c**, **settled N1** (sample=1 is vacuously complete on empty cohorts), registered
+  a real withdrawn-metric fixture, and hardened `findings.ts` with a coverage-dimension cross-check,
+  a truncated-completeness cross-check, and the robustness-check causal scan that closes
+  [#91](https://github.com/Chris0Jeky/developer-lens/issues/91). Review lens: one independent
+  analytical review, round 1 **MERGEABLE-WITH-TRACKED-ISSUES** — both conformance goldens were
+  hand-recomputed and confirmed, and two non-blocking vacuous-test findings were tracked as issue
+  [#93](https://github.com/Chris0Jeky/developer-lens/issues/93) rather than fixed in-loop.
+- **DL-VALUE-01 — first deterministic comparative finding (integration shape, matched windows).**
+  [PR #94](https://github.com/Chris0Jeky/developer-lens/pull/94), merge `c632093`. The active
+  horizon's exit slice and the point of the programme. Review lens: **dual independent reviews.**
+  The implementation/security review returned **MERGEABLE** — guard coverage complete, the
+  alias / `coverage_id` leak boundary held under active probing, presentation projections only,
+  bundle separation clean. The analytical review **BLOCKED on one HIGH**: MATCHED_PARTIAL's
+  mandatory selection-bias limitation and its residual were never rendered while its headline number
+  equalled FULL's. Fixed in one bounded round (commit `4843753` — per-outcome-row limitations,
+  residual, and arithmetic-basis disclosure); scoped verification **VERIFIED** with hand-recomputed
+  limitation sets. The analytical review hand-recomputed every headline number and confirmed them
+  exact. The full walkthrough evidence — the horizon's exit proof — is recorded under **PRODUCT
+  PROOF** below.
+- **Issue closures.** [#67](https://github.com/Chris0Jeky/developer-lens/issues/67) (typed empty
+  cohorts) is **CLOSED** with a four-part disposition spanning the waves: registry-side semantics in
+  PR #75, the comparison half in PR #89, conformance exemplars in PR #92, and visible
+  eligible/censored/excluded counts in PR #94.
+  [#82](https://github.com/Chris0Jeky/developer-lens/issues/82) (metric-result hardening — the N1
+  sample-dimension-on-empty-cohort question and the M-a/M-b/M-c items) is **CLOSED** by PR #92.
+  [#91](https://github.com/Chris0Jeky/developer-lens/issues/91) (robustness-check statements exempt
+  from the causal-copy scan) is **CLOSED** by PR #92's causal scan.
+  [#93](https://github.com/Chris0Jeky/developer-lens/issues/93) (conformance-suite hygiene — the two
+  vacuous self-verification tests) remains **OPEN** and non-blocking.
+
+### PRODUCT PROOF — DL-VALUE-01 walkthrough evidence (R1–R3 horizon exit)
+
+The first deterministic comparative finding, proven end-to-end on invented facts through `/api/v2`,
+one comparative Atlas panel, and the Evidence Drawer. This block is the horizon's exit evidence.
+
+- **Question.** "How did PR integration shape differ between this window and the preceding matched
+  window?"
+- **Risk-set metric.** `pull_request.integration_interval@1.1.0`.
+- **Cohort entry.** `becameReadyAt = readyForReviewAt ?? createdAt`.
+- **Event.** merge.
+- **Censoring.** open PRs are right-censored — 3 of 10 eligible on the current side.
+- **Competing outcome.** close-without-merge is a competing outcome: in the eligible set, out of the
+  sample, and explicitly not censored.
+- **Exclusions.** typed.
+- **Windows.** equal 28-day windows, complete at the injected `asOf`.
+- **Headline (FULL).** p50 -2.0d / p75 -3.0d / p90 -5.0d — quantiles, never a bare mean.
+- **MATCHED_PARTIAL.** matched fraction 0.857, with the selection-bias limitation, the residual, and
+  the matched-subwindows-only arithmetic basis rendered **per outcome row** (the one-HIGH fix).
+- **INCOMPARABLE.** rendered as its reason, never as a zero delta.
+- **Empty-cohort variant.** 0 vs 8, rendered as an observed zero.
+- **Coverage.** the seven-dimension metric coverage vector is visible.
+- **Alternatives + contradiction.** three alternative explanations, discriminating evidence, and a
+  contradicting open-tail mark.
+- **Sensitivity.** the `OPEN_TREATED_AS_CENSORED` variant reverses the p90 sign (+2.0d) — robustness
+  is honestly reported as fragile.
+- **Abstention variant.** rendered under support gating.
+- **Evidence Drawer.** resolves every mark: claim -> supports/contradicts -> coverage -> collection
+  job -> `github.core` capability -> consent revision.
+- **Tests.** a ten-stage walkthrough is asserted by tests; the full suite is 884 green at the lane
+  head; the alias->surrogate strip at the finding boundary is enforced with a leak guard.
+
 ## Exact resume point
+
+**Superseded 2026-08-04 (R1 wave 3 — active horizon COMPLETE).** DL-VALIDATE-01 (`df59bbc`, PR #92)
+and DL-VALUE-01 (`c632093`, PR #94) have merged, completing all 12 active-horizon cards. There is no
+next active-horizon implementation slice; the live resume point is the **roadmap reassessment** that
+decides whether the R4 stretch opens — standing preference DL-LIFE-01 (capability lifecycle state
+machine), then DL-LIFE-02 (deletion cascade, closes most of
+[#80](https://github.com/Chris0Jeky/developer-lens/issues/80)) — and only after the reassessment
+confirms capacity. R7/R8 stay frozen. See `docs/analyser-program/09_IMPLEMENTATION_LAUNCHER.md` and
+`docs/analyser-program/CURRENT_STATE.md`. Items 1–6 below stay valid for the dormant P4/P12 lanes.
 
 **Superseded 2026-08-04 (R1 wave 2).** DL-SPINE-02 (`b52c458`), DL-SPINE-03 (`610188c`), DL-UX-ED
 (`4c3f476`), DL-FINDING-01 (`2208fcf`) and DL-COMPARE-01 (`d407cb1`) have all merged, so the wave-1
