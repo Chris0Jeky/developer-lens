@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { parseGithubCoreActivationTaskCard, type GithubCoreActivationTaskCard } from './activationTask.js'
 import {
+  GITHUB_CORE_REST_MAX_RESPONSE_BYTES,
   collectGithubCoreRest,
   type GithubCoreRestFetch,
   type GithubCoreRestResponse,
@@ -44,6 +45,7 @@ describe('github.core REST transport projection', () => {
     const aliases: string[] = []
     const result = await collectGithubCoreRest({ card: card(), rangeEnd, fetch: fixture.fetch, alias: (domain, id) => { aliases.push(`${domain}:${id}`); return `${domain}-alias-${id.replaceAll(/[^A-Za-z0-9_-]/g, '_')}` } })
     expect(result.kind).toBe('complete')
+    if (result.kind !== 'complete') throw new Error('expected complete fixture result')
     expect(result).toMatchObject({ repositoryAlias: 'repository-alias-101', repositoryFlags: { public: true, archived: true, disabled: false, fork: false }, observedUnitCount: 1, rateLimit: { remaining: null, reset: null } })
     expect(result.units).toEqual([{ alias: 'pull_request-alias-raw___1', kind: 'pull_request', updatedAt: '2026-07-02T00:00:00.000Z' }])
     expect(Object.isFrozen(result)).toBe(true)
@@ -52,7 +54,8 @@ describe('github.core REST transport projection', () => {
     expect(() => { (result.units as GithubCoreRestUnit[]).push({ alias: 'mutated', kind: 'issue', updatedAt: rangeStart }) }).toThrow()
     expect(JSON.stringify(result)).not.toContain('POISON')
     expect(JSON.stringify(result)).not.toContain('raw+/=1')
-    expect(aliases).toEqual(['repository:101', 'pull_request:raw+/=1'])
+    expect(result.pages).toEqual([{ pageNumber: 1, receiptAlias: 'page-alias-101_1', unitCount: 1, nextPage: null }])
+    expect(aliases).toEqual(['repository:101', 'pull_request:raw+/=1', 'page:101:1'])
     expect(fixture.calls).toHaveLength(2)
     expect(fixture.calls[0]!.url).toBe('https://api.github.com/repos/fixture-owner/fixture-repository')
     const query = new URL(fixture.calls[1]!.url).searchParams
@@ -67,9 +70,13 @@ describe('github.core REST transport projection', () => {
 
   it('rejects metadata mismatches and distinguishes terminal pagination from hostile links', async () => {
     const mismatch = fetchFixture([response(200, { ...metadata, id: 999 })])
-    await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: mismatch.fetch, alias: () => 'repo-alias' })).resolves.toMatchObject({ kind: 'restricted', code: 'REPOSITORY_ID_MISMATCH' })
+    const mismatchResult = await collectGithubCoreRest({ card: card(), rangeEnd, fetch: mismatch.fetch, alias: () => 'repo-alias' })
+    expect(mismatchResult).toMatchObject({ kind: 'restricted', code: 'REPOSITORY_ID_MISMATCH' })
+    expect(mismatchResult).not.toHaveProperty('observedUnitCount')
     const privateRepo = fetchFixture([response(200, { ...metadata, private: true })])
-    await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: privateRepo.fetch, alias: () => 'repo-alias' })).resolves.toMatchObject({ kind: 'restricted', code: 'REPOSITORY_NOT_PUBLIC' })
+    const privateResult = await collectGithubCoreRest({ card: card(), rangeEnd, fetch: privateRepo.fetch, alias: () => 'repo-alias' })
+    expect(privateResult).toMatchObject({ kind: 'restricted', code: 'REPOSITORY_NOT_PUBLIC' })
+    expect(privateResult).not.toHaveProperty('repositoryFlags')
     const hostile = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }], { link: '<https://evil.invalid/repos/fixture-owner/fixture-repository/issues?page=2>; rel="next"' })])
     await expect(collectGithubCoreRest({ card: card(), rangeEnd, fetch: hostile.fetch, alias: () => 'repo-alias' })).resolves.toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
     const terminal = fetchFixture([response(200, metadata), response(200, [{ node_id: 'n1', updated_at: '2026-07-02T00:00:00.000Z' }])])
@@ -82,14 +89,78 @@ describe('github.core REST transport projection', () => {
     expect(fixture.calls).toHaveLength(2)
   })
 
+  it('accepts GitHub canonical pagination links, constructs its own next request, and deduplicates units', async () => {
+    const fixture = fetchFixture([
+      response(200, metadata),
+      response(200, [
+        { node_id: 'node-1', updated_at: '2026-07-02T00:00:00.000Z' },
+        { node_id: 'node-1', updated_at: '2026-07-02T00:00:00.000Z' },
+      ], { link: '<https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=2&sort=updated&direction=asc>; rel="next", <https://api.github.com/repositories/101/issues?state=open&since=2026-07-01T00%3A00%3A00.000Z&per_page=2&page=2&sort=updated&direction=asc>; rel="last"' }),
+      response(200, [{ node_id: 'node-2', updated_at: '2026-07-03T00:00:00.000Z' }]),
+    ])
+    const result = await collectGithubCoreRest({
+      card: card(),
+      rangeEnd,
+      fetch: fixture.fetch,
+      alias: (domain, raw) => `${domain}-${raw.replaceAll(':', '-')}`,
+    })
+    expect(result).toMatchObject({
+      kind: 'complete',
+      observedUnitCount: 2,
+      observedPageCount: 2,
+      pages: [
+        { pageNumber: 1, unitCount: 1, nextPage: 2 },
+        { pageNumber: 2, unitCount: 1, nextPage: null },
+      ],
+    })
+    expect(fixture.calls[2]!.url).toContain('/repos/fixture-owner/fixture-repository/issues?')
+    expect(new URL(fixture.calls[2]!.url).searchParams.get('page')).toBe('2')
+  })
+
+  it('rejects oversized bodies, malformed JSON, and alias collisions with content-free failures', async () => {
+    const oversized: GithubCoreRestResponse = {
+      status: 200,
+      headers: { get: () => undefined },
+      text: async () => 'x'.repeat(GITHUB_CORE_REST_MAX_RESPONSE_BYTES + 1),
+    }
+    const malformed: GithubCoreRestResponse = {
+      status: 200,
+      headers: { get: () => undefined },
+      text: async () => '{POISON_PARSE_DETAIL',
+    }
+    for (const unsafe of [oversized, malformed]) {
+      const result = await collectGithubCoreRest({ card: card(), rangeEnd, fetch: fetchFixture([unsafe]).fetch, alias: () => 'repo-alias' })
+      expect(result).toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
+      expect(JSON.stringify(result)).not.toContain('POISON_PARSE_DETAIL')
+    }
+
+    const collision = fetchFixture([
+      response(200, metadata),
+      response(200, [
+        { node_id: 'raw-a', updated_at: '2026-07-02T00:00:00.000Z' },
+        { node_id: 'raw-b', updated_at: '2026-07-03T00:00:00.000Z' },
+      ]),
+    ])
+    const result = await collectGithubCoreRest({
+      card: card(),
+      rangeEnd,
+      fetch: collision.fetch,
+      alias: (domain) => domain === 'repository' ? 'repo-alias' : 'colliding-alias',
+    })
+    expect(result).toMatchObject({ kind: 'failed', code: 'SCHEMA_INVALID' })
+    expect(JSON.stringify(result)).not.toContain('raw-a')
+    expect(JSON.stringify(result)).not.toContain('raw-b')
+  })
+
   it('classifies rate, permission, not-found, server, network, and malformed responses without leaking messages', async () => {
     const cases: Array<[GithubCoreRestResponse | Error, string]> = [[response(429, {}, { 'x-ratelimit-remaining': '0' }), 'RATE_LIMITED'], [response(403, {}), 'PERMISSION_DENIED'], [response(404, {}), 'NOT_FOUND'], [response(503, {}), 'TRANSIENT'], [new Error('SECRET_NETWORK_DETAIL'), 'TRANSIENT']]
     for (const [outcome, code] of cases) {
       const fixture = fetchFixture(outcome instanceof Error ? [] : [outcome])
       const fetch = outcome instanceof Error ? (async () => { throw outcome }) as GithubCoreRestFetch : fixture.fetch
       const result = await collectGithubCoreRest({ card: card(), rangeEnd, fetch, alias: () => 'repo-alias' })
-      expect(result).toMatchObject({ kind: code === 'RATE_LIMITED' ? 'failed' : code === 'PERMISSION_DENIED' || code === 'NOT_FOUND' ? 'restricted' : 'failed', code: code === 'RATE_LIMITED' ? 'RATE_LIMITED' : code })
+      expect(result).toMatchObject({ kind: code === 'RATE_LIMITED' ? 'truncated' : code === 'PERMISSION_DENIED' || code === 'NOT_FOUND' ? 'restricted' : 'failed', code })
       expect(JSON.stringify(result)).not.toContain('SECRET_NETWORK_DETAIL')
+      if (result.kind !== 'truncated') expect(result).not.toHaveProperty('observedUnitCount')
     }
   })
 })

@@ -53,9 +53,12 @@ export interface GithubCoreRestPageReceipt {
   readonly nextPage: number | null
 }
 
-interface GithubCoreRestCommon {
-  readonly kind: 'complete' | 'truncated' | 'restricted' | 'failed'
+interface GithubCoreRestBase {
   readonly repositoryAlias: string
+  readonly rateLimit: GithubCoreRestRateLimit
+}
+
+interface GithubCoreRestObserved {
   readonly repositoryFlags: {
     readonly public: true
     readonly archived: boolean
@@ -66,29 +69,33 @@ interface GithubCoreRestCommon {
   readonly pages: readonly GithubCoreRestPageReceipt[]
   readonly observedUnitCount: number
   readonly observedPageCount: number
-  readonly rateLimit: GithubCoreRestRateLimit
 }
 
-export interface GithubCoreRestCompleteResult extends GithubCoreRestCommon {
+export interface GithubCoreRestCompleteResult extends GithubCoreRestBase, GithubCoreRestObserved {
   readonly kind: 'complete'
   readonly status: 'complete'
   readonly total: number
 }
 
-export interface GithubCoreRestTruncatedResult extends GithubCoreRestCommon {
+export interface GithubCoreRestTruncatedResult extends GithubCoreRestBase {
   readonly kind: 'truncated'
   readonly status: 'truncated'
   readonly total: null
   readonly code: 'REQUEST_BUDGET_EXHAUSTED' | 'RATE_LIMITED'
+  readonly repositoryFlags: GithubCoreRestObserved['repositoryFlags'] | null
+  readonly units: GithubCoreRestObserved['units'] | null
+  readonly pages: GithubCoreRestObserved['pages'] | null
+  readonly observedUnitCount: number | null
+  readonly observedPageCount: number | null
 }
 
-export interface GithubCoreRestRestrictedResult extends GithubCoreRestCommon {
+export interface GithubCoreRestRestrictedResult extends GithubCoreRestBase {
   readonly kind: 'restricted'
   readonly status: 'restricted'
   readonly code: 'REPOSITORY_ID_MISMATCH' | 'REPOSITORY_NOT_PUBLIC' | 'PERMISSION_DENIED' | 'NOT_FOUND'
 }
 
-export interface GithubCoreRestFailedResult extends GithubCoreRestCommon {
+export interface GithubCoreRestFailedResult extends GithubCoreRestBase {
   readonly kind: 'failed'
   readonly status: 'failed'
   readonly code: 'SCHEMA_INVALID' | 'TRANSIENT' | 'UNSUPPORTED' | 'RATE_LIMITED'
@@ -172,22 +179,17 @@ function safeRequestUrl(card: GithubCoreActivationTaskCard, resource: 'metadata'
   return `${base}/issues?${query.toString()}`
 }
 
-function baseProjection(
-  repositoryAlias: string,
+function observedProjection(
   metadata: { archived: boolean; disabled: boolean; fork: boolean },
   units: readonly GithubCoreRestUnit[],
   pages: readonly GithubCoreRestPageReceipt[],
-  rate: GithubCoreRestRateLimit,
-): GithubCoreRestCommon {
+): GithubCoreRestObserved {
   return {
-    kind: 'complete',
-    repositoryAlias,
     repositoryFlags: Object.freeze({ public: true, archived: metadata.archived, disabled: metadata.disabled, fork: metadata.fork }),
     units: Object.freeze([...units]),
     pages: Object.freeze([...pages]),
     observedUnitCount: units.length,
     observedPageCount: pages.length,
-    rateLimit: rate,
   }
 }
 
@@ -197,10 +199,11 @@ function restrictedResult(
   rate: GithubCoreRestRateLimit,
 ): GithubCoreRestRestrictedResult {
   return freezeDeep({
-    ...baseProjection(repositoryAlias, { archived: false, disabled: false, fork: false }, [], [], rate),
     kind: 'restricted',
     status: 'restricted',
     code,
+    repositoryAlias,
+    rateLimit: rate,
   }) as GithubCoreRestRestrictedResult
 }
 
@@ -210,27 +213,36 @@ function failedResult(
   rate: GithubCoreRestRateLimit,
 ): GithubCoreRestFailedResult {
   return freezeDeep({
-    ...baseProjection(repositoryAlias, { archived: false, disabled: false, fork: false }, [], [], rate),
     kind: 'failed',
     status: 'failed',
     code,
+    repositoryAlias,
+    rateLimit: rate,
   }) as GithubCoreRestFailedResult
 }
 
 function truncatedResult(
   repositoryAlias: string,
   code: GithubCoreRestTruncatedResult['code'],
-  metadata: { archived: boolean; disabled: boolean; fork: boolean },
-  units: readonly GithubCoreRestUnit[],
-  pages: readonly GithubCoreRestPageReceipt[],
+  metadata: { archived: boolean; disabled: boolean; fork: boolean } | null,
+  units: readonly GithubCoreRestUnit[] | null,
+  pages: readonly GithubCoreRestPageReceipt[] | null,
   rate: GithubCoreRestRateLimit,
 ): GithubCoreRestTruncatedResult {
   return freezeDeep({
-    ...baseProjection(repositoryAlias, metadata, units, pages, rate),
     kind: 'truncated',
     status: 'truncated',
     total: null,
     code,
+    repositoryAlias,
+    rateLimit: rate,
+    repositoryFlags: metadata
+      ? Object.freeze({ public: true as const, archived: metadata.archived, disabled: metadata.disabled, fork: metadata.fork })
+      : null,
+    units: units ? Object.freeze([...units]) : null,
+    pages: pages ? Object.freeze([...pages]) : null,
+    observedUnitCount: units?.length ?? null,
+    observedPageCount: pages?.length ?? null,
   }) as GithubCoreRestTruncatedResult
 }
 
@@ -242,10 +254,12 @@ function completeResult(
   rate: GithubCoreRestRateLimit,
 ): GithubCoreRestCompleteResult {
   return freezeDeep({
-    ...baseProjection(repositoryAlias, metadata, units, pages, rate),
+    ...observedProjection(metadata, units, pages),
     kind: 'complete',
     status: 'complete',
     total: units.length,
+    repositoryAlias,
+    rateLimit: rate,
   }) as GithubCoreRestCompleteResult
 }
 
@@ -270,7 +284,12 @@ function parseIssues(value: unknown): readonly Record<string, unknown>[] | null 
   return result
 }
 
-function parseNextPage(link: string | undefined, currentPage: number, expectedUrl: string): number | null {
+function parseNextPage(
+  link: string | undefined,
+  currentPage: number,
+  expectedUrl: string,
+  providerRepositoryId: string,
+): number | null {
   if (!link) return null
   const segments = link.split(',').map((segment) => segment.trim()).filter(Boolean)
   let next: number | null = null
@@ -286,7 +305,11 @@ function parseNextPage(link: string | undefined, currentPage: number, expectedUr
       throw new Error('schema')
     }
     const expected = new URL(expectedUrl)
-    if (candidate.origin !== expected.origin || candidate.pathname !== expected.pathname) throw new Error('schema')
+    const canonicalRepositoryPath = `/repositories/${providerRepositoryId}/issues`
+    if (
+      candidate.origin !== expected.origin ||
+      (candidate.pathname !== expected.pathname && candidate.pathname !== canonicalRepositoryPath)
+    ) throw new Error('schema')
     const candidateParams = [...candidate.searchParams.entries()]
     const expectedParams = [...expected.searchParams.entries()]
     const page = Number(candidate.searchParams.get('page'))
@@ -351,7 +374,7 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
   let rate = rateLimit(metadataResponse)
   if (metadataResponse.status !== 200) {
     const code = classifyHttp(metadataResponse)
-    if (isRateLimited(code)) return failedResult(repositoryAlias, 'RATE_LIMITED', rate)
+    if (isRateLimited(code)) return truncatedResult(repositoryAlias, 'RATE_LIMITED', null, null, null, rate)
     if (code === 'PERMISSION_DENIED' || code === 'NOT_FOUND') return restrictedResult(repositoryAlias, code, rate)
     return failedResult(repositoryAlias, code === 'TRANSIENT' ? 'TRANSIENT' : code === 'UNSUPPORTED' ? 'UNSUPPORTED' : 'SCHEMA_INVALID', rate)
   }
@@ -363,6 +386,7 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
   const flags = { archived: metadata.archived, disabled: metadata.disabled, fork: metadata.fork }
   const units: GithubCoreRestUnit[] = []
   const pages: GithubCoreRestPageReceipt[] = []
+  const unitAliases = new Map<string, string>()
   let page = 1
   for (;;) {
     if (pages.length + 1 >= card.readBoundary.maximumRequests) return truncatedResult(repositoryAlias, 'REQUEST_BUDGET_EXHAUSTED', flags, units, pages, rate)
@@ -381,22 +405,40 @@ export async function collectGithubCoreRest(input: GithubCoreRestTransportInput)
     if (!parsed) return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate)
     const start = Date.parse(card.readBoundary.rangeStart)
     const end = Date.parse(rangeEnd)
+    let pageUnitCount = 0
     for (const item of parsed) {
       const updated = item.updated_at as string
       const updatedMs = Date.parse(updated)
       if (updatedMs < start || updatedMs >= end) continue
       const kind = Object.hasOwn(item, 'pull_request') ? 'pull_request' : 'issue'
       try {
-        const itemAlias = alias(kind, item.node_id as string)
+        const rawProviderId = item.node_id as string
+        const itemAlias = alias(kind, rawProviderId)
         if (!opaqueAlias(itemAlias)) throw new Error('schema')
+        const aliasSource = `${kind}\0${rawProviderId}`
+        const existing = unitAliases.get(itemAlias)
+        if (existing !== undefined && existing !== aliasSource) throw new Error('schema')
+        if (existing === aliasSource) continue
+        unitAliases.set(itemAlias, aliasSource)
         units.push(Object.freeze({ alias: itemAlias, kind, updatedAt: updated }))
+        pageUnitCount += 1
       } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
     }
     let next: number | null
-    try { next = parseNextPage(responseHeader(response, 'link'), page, requestUrl) } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
-    const receiptAlias = `${repositoryAlias}:page:${page}`
-    if (!opaqueAlias(receiptAlias)) return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate)
-    pages.push(Object.freeze({ pageNumber: page, receiptAlias, unitCount: parsed.length, nextPage: next }))
+    try {
+      next = parseNextPage(
+        responseHeader(response, 'link'),
+        page,
+        requestUrl,
+        card.selectedRepository.providerRepositoryId,
+      )
+    } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
+    let receiptAlias: string
+    try {
+      receiptAlias = alias('page', `${card.selectedRepository.providerRepositoryId}:${page}`)
+      if (!opaqueAlias(receiptAlias)) throw new Error('schema')
+    } catch { return failedResult(repositoryAlias, 'SCHEMA_INVALID', rate) }
+    pages.push(Object.freeze({ pageNumber: page, receiptAlias, unitCount: pageUnitCount, nextPage: next }))
     if (next === null) return completeResult(repositoryAlias, flags, units, pages, rate)
     page = next
   }
