@@ -509,17 +509,17 @@ export function resolveFixture(reference: AnalyticReference): EvidenceResolution
 
 // --- Reference constants + catalogues for tests ----------------------------------------------
 
-export const HYPOTHESIS_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_demo_hypothesis' }
-export const DETERMINISTIC_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_deterministic_flow' }
-export const TOMBSTONED_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_tombstoned_subject' }
-export const CYCLE_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_cycle_subject' }
-export const DEPTH_LIMITED_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_depth_subject' }
-export const DEEP_ANCESTRY_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_deep_ancestry' }
+export const HYPOTHESIS_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_demo_hypothesis', claimLayer: 'hypothesis' }
+export const DETERMINISTIC_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_deterministic_flow', claimLayer: 'deterministic' }
+export const TOMBSTONED_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_tombstoned_subject', claimLayer: 'modelled' }
+export const CYCLE_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_cycle_subject', claimLayer: 'modelled' }
+export const DEPTH_LIMITED_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_depth_subject', claimLayer: 'deterministic' }
+export const DEEP_ANCESTRY_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_deep_ancestry', claimLayer: 'deterministic' }
 
-export const UNKNOWN_CLAIM_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_unknown_revoked' }
-export const STORAGE_UNAVAILABLE_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_storage_probe' }
-export const INVALID_REQUEST_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_invalid_request_probe' }
-export const MALFORMED_REFERENCE: ClaimReference = { kind: 'claim', claimId: MALFORMED_CLAIM_REFERENCE_ID }
+export const UNKNOWN_CLAIM_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_unknown_revoked', claimLayer: 'deterministic' }
+export const STORAGE_UNAVAILABLE_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_storage_probe', claimLayer: 'deterministic' }
+export const INVALID_REQUEST_REFERENCE: ClaimReference = { kind: 'claim', claimId: 'cl_invalid_request_probe', claimLayer: 'deterministic' }
+export const MALFORMED_REFERENCE: ClaimReference = { kind: 'claim', claimId: MALFORMED_CLAIM_REFERENCE_ID, claimLayer: 'deterministic' }
 
 export const OBSERVATION_ANCHOR_REFERENCE: ObservationReference = { kind: 'observation', evidenceId: 'ev_observation_anchor' }
 export const OBSERVATION_TOMBSTONED_REFERENCE: ObservationReference = { kind: 'observation', evidenceId: 'ev_observation_tombstoned' }
