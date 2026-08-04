@@ -215,11 +215,14 @@ const INCREMENTAL_GITHUB_CORE_SCHEMA_TABLE_NAMES = INCREMENTAL_GITHUB_CORE_SCHEM
   .filter(({ type }) => type === 'table')
   .map(({ name }) => name)
 
-function readOwnedSchemaRows(db: Database.Database): IncrementalSchemaRow[] {
+function readRelevantSchemaRows(
+  db: Database.Database,
+  catalog: 'sqlite_schema' | 'sqlite_temp_schema',
+): IncrementalSchemaRow[] {
   const namePlaceholders = INCREMENTAL_GITHUB_CORE_SCHEMA_NAMES.map(() => '?').join(', ')
   const tablePlaceholders = INCREMENTAL_GITHUB_CORE_SCHEMA_TABLE_NAMES.map(() => '?').join(', ')
   return db.prepare(
-    `SELECT type, name, tbl_name, sql FROM sqlite_schema
+    `SELECT type, name, tbl_name, sql FROM ${catalog}
      WHERE name IN (${namePlaceholders})
         OR (
           tbl_name IN (${tablePlaceholders})
@@ -230,6 +233,13 @@ function readOwnedSchemaRows(db: Database.Database): IncrementalSchemaRow[] {
     ...INCREMENTAL_GITHUB_CORE_SCHEMA_NAMES,
     ...INCREMENTAL_GITHUB_CORE_SCHEMA_TABLE_NAMES,
   ) as IncrementalSchemaRow[]
+}
+
+function readOwnedSchemaRows(db: Database.Database): IncrementalSchemaRow[] {
+  return [
+    ...readRelevantSchemaRows(db, 'sqlite_schema'),
+    ...readRelevantSchemaRows(db, 'sqlite_temp_schema'),
+  ]
 }
 
 function hasExpectedSchema(rows: readonly IncrementalSchemaRow[]): boolean {

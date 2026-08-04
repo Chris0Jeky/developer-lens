@@ -273,6 +273,35 @@ describe('P4 opt-in incremental github.core storage', () => {
     )
   })
 
+  it('rejects temporary objects that shadow or mutate owned tables', () => {
+    const dbWithShadow = database()
+    installIncrementalGithubCoreStorage(dbWithShadow)
+    dbWithShadow.exec('CREATE TEMP TABLE collection_job (sentinel TEXT NOT NULL);')
+
+    expect(() => installIncrementalGithubCoreStorage(dbWithShadow)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+    expect(dbWithShadow.prepare(
+      "SELECT name FROM sqlite_temp_schema WHERE type = 'table' AND name = 'collection_job'",
+    ).pluck().get()).toBe('collection_job')
+    expect(readIncrementalGithubCoreStorageSchemaFingerprint(dbWithShadow)).not.toBe(
+      INCREMENTAL_GITHUB_CORE_STORAGE_SCHEMA_FINGERPRINT,
+    )
+
+    const dbWithTrigger = database()
+    installIncrementalGithubCoreStorage(dbWithTrigger)
+    dbWithTrigger.exec([
+      'CREATE TEMP TRIGGER unexpected_temp_checkpoint_insert',
+      'AFTER INSERT ON main.collection_checkpoint',
+      'BEGIN',
+      '  DELETE FROM collection_job WHERE job_id = NEW.committed_job_id;',
+      'END;',
+    ].join('\n'))
+    expect(() => installIncrementalGithubCoreStorage(dbWithTrigger)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+  })
+
   it('atomically stores an empty complete snapshot and a checkpoint without a watermark', () => {
     const db = database()
     installIncrementalGithubCoreStorage(db)
