@@ -318,6 +318,11 @@ describe('V2 bridge store provenance gate', () => {
   })
 })
 
+// These two load real module graphs (the whole local API, then the native
+// storage driver behind the lazy mount), which can exceed the default 5s
+// budget when the full suite runs under constrained workers.
+const MODULE_GRAPH_TIMEOUT_MS = 30_000
+
 describe('V2 bridge mount', () => {
   it('mounts on the local API without touching the legacy surface', async () => {
     const { app } = await import('../../index.js')
@@ -329,7 +334,7 @@ describe('V2 bridge mount', () => {
       .set('Origin', WEB_ORIGIN)
       .expect(401)
     expect(rejected.body).toEqual({ error: { code: 'V2_UNAUTHORIZED' } })
-  })
+  }, MODULE_GRAPH_TIMEOUT_MS)
 
   it('serves both resources through the real lazy mount', async () => {
     const path = await storeIn('mounted')
@@ -374,7 +379,7 @@ describe('V2 bridge mount', () => {
       if (previousStore === undefined) delete process.env.DEVELOPER_LENS_V2_STORE
       else process.env.DEVELOPER_LENS_V2_STORE = previousStore
     }
-  })
+  }, MODULE_GRAPH_TIMEOUT_MS)
 
   it('keeps the native storage driver behind a dynamic import', async () => {
     const repositoryRoot = process.cwd()

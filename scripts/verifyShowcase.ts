@@ -20,15 +20,21 @@ const forbiddenPatterns: { label: string; pattern: RegExp }[] = [
   { label: 'private key material', pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
   { label: 'Windows user path', pattern: /[A-Z]:\\Users\\/i },
   { label: 'local file URL', pattern: /file:\/\/\/[A-Z]:\//i },
-  { label: 'V2 bridge bearer variable', pattern: /(?:VITE_)?DEVELOPER_LENS_V2_TOKEN/ },
+  {
+    label: 'V2 bridge bearer environment object',
+    pattern: /["'`]?(?:VITE_)?DEVELOPER_LENS_V2_TOKEN["'`]?\s*[:=]/,
+  },
 ]
 
 /**
  * Vite inlines `import.meta.env.VITE_*` at build time, so a showcase built on a
- * machine that has the V2 bridge bearer exported would ship the literal token
- * in its JavaScript. When such a value is present in this environment, its
- * exact text becomes a forbidden pattern too — the name-based rule above cannot
- * catch an inlined value, because the name is what the inlining removes.
+ * machine that has the V2 bridge bearer exported ships the literal token inside
+ * its JavaScript — measured: the value lands in the request headers, and the
+ * variable name never survives. A bare name pattern would therefore detect
+ * nothing while falsely matching the cockpit's own instructional copy, which
+ * names both variables on screen; the rule above only matches an emitted env
+ * object, and the real detector is the value itself. When a bearer is present
+ * in this environment, its exact text becomes a forbidden pattern too.
  */
 function escapeForRegExp(value: string): string {
   return value.replaceAll(/[.*+?^${}()|[\]\\-]/g, '\\$&')
