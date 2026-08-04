@@ -17,6 +17,7 @@ describe('project context validation', () => {
     expect(extractMarkdownLinkTargets('[architecture\nnotes](docs/architecture.md)')).toEqual([
       'docs/architecture.md',
     ])
+    expect(extractMarkdownLinkTargets('[architecture\n\nnotes](docs/architecture.md)')).toEqual([])
   })
 
   it('rejects local paths outside the checkout before filesystem access', () => {
@@ -69,11 +70,15 @@ describe('project context validation', () => {
     expect(parseSkillFrontmatter(valid.replace('Resume Developer Lens safely.', '"unterminated')).errors).toContain(
       'unterminated quoted scalar: "unterminated',
     )
-    for (const typedScalar of ['[]', '{}', 'true', '42', '2026-08-04']) {
+    for (const typedScalar of ['[]', '{}', 'true', '42', '.5', '2026-08-04', '? foo']) {
       expect(
         parseSkillFrontmatter(valid.replace('Resume Developer Lens safely.', typedScalar)).errors,
       ).toContain(`plain scalar must remain a string: ${typedScalar}`)
     }
+    expect(parseSkillFrontmatter(valid.replace('Resume Developer Lens safely.', '2026-08-04 release workflow'))).toEqual({
+      value: { name: 'developer-lens-continuation', description: '2026-08-04 release workflow' },
+      errors: [],
+    })
   })
 
   it('detects drift in security and publication authority', () => {
