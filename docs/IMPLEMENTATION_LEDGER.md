@@ -30,9 +30,10 @@ strict, review-chronology-bound activation-card parser without reading its futur
 follow-up now rejects calendar-invalid pricing timestamps that JavaScript would otherwise normalize
 into a different date. Published P12 now applies the same calendar-component boundary to C1
 bundle ranges while preserving supported fractional UTC forms and half-open range limits. The
-current P4 candidate range-binds every composable noncomplete REST outcome and adds a pure core
+Published P4 now range-binds every composable noncomplete REST outcome and adds a pure core
 transition that preserves the prior checkpoint without terminal-receipt, snapshot, or completion
-fiction. The external-model capability is still
+fiction. The current P4 candidate validates and composes those restricted, failed, and truncated
+results into frozen noncomplete transitions only. The external-model capability is still
 `never_authorized`; there is no environment read, authorization-bearing transport, network/provider
 execution, raw response, cache, telemetry, persistence, or presentation path**.
 
@@ -42,8 +43,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current P4 noncomplete-foundation candidate:
-  `origin/main` merge `e239fedf0765286141bb9b46254d36fe2b719006`.
+- Published implementation baseline before the current P4 noncomplete-composition candidate:
+  `origin/main` merge `2dcab1b1634296441636ef82c2b473e045b5f75b`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -470,8 +471,16 @@ unresolved review threads outrank it whenever they disagree.
   checkpoint cursor.
 - Restricted, failed, truncated, rate-limited, or otherwise noncomplete REST results fail this seam
   closed. It performs no filesystem, network, environment, credential, database, scheduler, logging,
-  export, or presentation action; noncomplete transition composition and storage replay remain the
-  next separate boundaries.
+  export, or presentation action; complete and noncomplete entry points remain separate.
+- The current pure noncomplete composer accepts only bound restricted, failed, metadata-only
+  truncated, or coherent partial-page truncated results. Partial pages must be contiguous from one,
+  partition every observed unit exactly once, and finish nonterminal with a real next-page alias;
+  terminal pages, unbound failures, scope/range drift, count/member collisions, unknown facts, and
+  out-of-range timestamps fail closed.
+- It delegates only validated observations, actual page aliases, retry facts, and a transition-local
+  cursor hint to the core noncomplete reconciler. Its frozen result contains only `{ transition }`:
+  no content hash, source-snapshot ID, complete receipt fiction, checkpoint movement, filesystem,
+  database, network, environment, scheduler, logger, export, or presentation path.
 - `server/storage/installationAliases.ts` snapshots one caller-injected installation key of at
   least 32 bytes and exposes only closed repository, issue, pull-request, and page alias methods.
   The existing repository provider and analytical HMAC byte streams, domains, and `repo-` prefix
@@ -625,12 +634,22 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- P4 noncomplete-foundation candidate was rebased onto C1-range-date merge `e239fed`; the focused
+- P4 noncomplete-composition candidate was rebased onto noncomplete-foundation merge `2dcab1b`; the
+  focused core/REST transport/composition suites passed 3 files / 53 tests. A first full check run
+  concurrently with another repository-wide suite timed out only the unchanged DuckDB analysis-pack
+  test at 5 seconds. The failed seam then passed alone in 529 ms (1 file / 5 tests), and the sequential
+  `npm run check` passed Oxlint, context verification, 36 test files / 200 tests, TypeScript project
+  builds, and the production Vite build; `git diff --check` passed. Exact rebased-head review found
+  no CRITICAL/HIGH bound-result, outcome, pagination, membership, mutation, or false-snapshot/
+  checkpoint defect.
+- P4 noncomplete-foundation [PR #45](https://github.com/Chris0Jeky/developer-lens/pull/45)
+  merged as `2dcab1b` after rebasing onto C1-range-date merge `e239fed`; the focused
   core/REST transport suites passed 2 files / 28 tests. `npm run check` passed Oxlint, context
   verification, 36 test files / 197 tests, TypeScript project builds, and the production Vite build;
   `git diff --check` passed. Exact rebased-head fresh-context review found no CRITICAL/HIGH bound/
   unbound range, rate-limit, retry, checkpoint-preservation, mutation, or false-completion/snapshot
-  defect.
+  defect. Exact-merge hosted Pages run `30887030243` completed successfully; its post-merge sweep
+  contained no finding.
 - P12 C1-range-date [PR #43](https://github.com/Chris0Jeky/developer-lens/pull/43)
   merged as `e239fed` after rebasing onto story-uncertainty merge `9cbfd1d`; the focused C1,
   request, and activation suites passed 3 files / 16 tests. `npm run check` passed Oxlint, context
@@ -943,10 +962,9 @@ unresolved review threads outrank it whenever they disagree.
 - CLI, `dataStore`, collector, API, export, or Pages activation of SQLite; real/private JSON
   migration and the now-approved backup/grace/deletion protocol remain deliberately unexercised.
   Issues #5/#6 and a bounded migration task still precede a real read or reader switch.
-- No REST result is written into the incremental store. Complete canonical composition and page-
-  local membership are proved only in process with invented input; noncomplete transition
-  composition, two-run storage replay/stability, the real task card, Taskdeck scope, network, and
-  task-owned database remain unread or unimplemented.
+- No REST result is written into the incremental store. Complete canonical and current noncomplete
+  composition are proved only in process with invented input; two-run storage replay/stability, the
+  real task card, Taskdeck scope, network, and task-owned database remain unread or unimplemented.
 - Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
   synthetic route and showcase verifier.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
@@ -1028,6 +1046,10 @@ unresolved review threads outrank it whenever they disagree.
   range syntax was validated. It performs no request or observation and cannot be composed; the
   exact state-boundary choice remains tracked in
   [#44](https://github.com/Chris0Jeky/developer-lens/issues/44).
+- A valid rate-limit or request-budget truncation can occur after repository metadata but before the
+  first unit page. The current composer rejects that coherent zero-page shape safely; support and
+  direct regressions remain tracked in
+  [#46](https://github.com/Chris0Jeky/developer-lens/issues/46) before storage/runtime integration.
 - P6 must compare verified owner email only ephemerally, emit only `is_self`, and never retain
   identity or per-person output.
 - P2 deletion tests must enumerate collection jobs/checkpoints, source snapshots, coverage,
@@ -1063,7 +1085,7 @@ unresolved review threads outrank it whenever they disagree.
 ## Exact resume point
 
 1. Refresh Git/GitHub before mutation. The published baseline before the current P4 noncomplete-
-   foundation candidate is merge `e239fedf0765286141bb9b46254d36fe2b719006`; live evidence still outranks
+   composition candidate is merge `2dcab1b1634296441636ef82c2b473e045b5f75b`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -1078,9 +1100,9 @@ unresolved review threads outrank it whenever they disagree.
    coverage without a snapshot or checkpoint advance, and published page receipts now expose frozen
    alias-only membership. Published complete composition now emits canonical hashes,
    receipts, and checkpoint proposals. The current candidate range-binds noncomplete transport
-   outcomes and produces checkpoint-preserving core transitions without snapshot material. Next
-   publish strict REST noncomplete composition, then integrate both paths with two-run storage replay/
-   stability proof before issue
+   outcomes and produces checkpoint-preserving core transitions without snapshot material. The
+   current candidate strictly composes those outcomes into frozen transition-only results. Next
+   integrate complete and noncomplete paths with two-run storage replay/stability proof before issue
    #6 key-
    lifecycle/mismatch enforcement,
    backup/restore, scoped deletion/tombstone, re-consent, and snapshot-stability proof. Keep runtime
