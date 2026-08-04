@@ -1,5 +1,12 @@
 import { z } from 'zod'
 import { CapabilityIdSchema } from './capabilities.js'
+import {
+  COVERAGE_DIMENSIONS,
+  CoverageDimensionSchema,
+  CoverageLimitingReasonSchema,
+  isLimitingReasonRegistered,
+  type CoverageDimension,
+} from './coverage.js'
 
 /**
  * ADR-25 — versioned metric-definition registry (analytical core).
@@ -11,7 +18,7 @@ import { CapabilityIdSchema } from './capabilities.js'
  * The registry answers, for every analytic number the product may expose: what exactly was
  * measured, on which cohort, under which assumptions — and what must never be inferred from it.
  */
-export const METRIC_CONTRACT_VERSION = '1.0.0' as const
+export const METRIC_CONTRACT_VERSION = '1.1.0' as const
 
 /** Registry entries carry no identifying content; the whole module is a C1 definition surface. */
 export const METRIC_DEFINITION_DATA_CLASS = 'C1' as const
@@ -25,6 +32,7 @@ export class MetricRegistryError extends Error {
 
 const CodeSchema = z.string().regex(/^[A-Z][A-Z0-9_]*$/)
 const IdentifierSchema = z.string().regex(/^[a-z][a-z0-9_]*(\.[a-z][a-z0-9_]*)*$/)
+const FieldPathSchema = z.string().regex(/^[a-z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*$/)
 const VersionSchema = z.string().regex(/^\d+\.\d+\.\d+$/)
 const StatementSchema = z.string().min(12)
 const UtcTimestampSchema = z.string().datetime({ offset: true })
@@ -34,8 +42,7 @@ const UnitIntervalSchema = z.number().min(0).max(1)
 /**
  * Blended-construct terms. ADR-25 forbids any metric that leans on an undocumented shared
  * "engagement/importance/activity/health/maturity/confidence" scalar, and the product boundary
- * forbids person scoring outright. These lists back the explicit forbidden-construct validation
- * that runs alongside the closed enums below.
+ * forbids person scoring outright.
  */
 export const FORBIDDEN_CONSTRUCT_TERMS = [
   'engagement',
@@ -78,20 +85,75 @@ export const FORBIDDEN_PERSON_SUBJECT_TERMS = [
 ] as const
 
 /**
- * Returns the first forbidden term contained in `value`, or null.
- *
- * Deliberately NOT applied to `prohibitedInterpretations`, `limitations`, or confounder
- * statements: those fields exist precisely so an author can write "this is not an engagement
- * signal", and scanning them would make the required warning impossible to express.
+ * Person-identifying path segments. Applied to field paths and distinct-count keys, where a
+ * person metric hides most easily: a `distinct_count` over `pullRequest.author.login` has a
+ * legal subject, unit, category, and formula kind, and is caught only here.
  */
-export function findForbiddenConstructTerm(value: string): string | null {
-  const haystack = value.toLowerCase()
-  for (const term of [...FORBIDDEN_CONSTRUCT_TERMS, ...FORBIDDEN_PERSON_SUBJECT_TERMS]) {
-    if (haystack.includes(term)) {
+export const FORBIDDEN_PERSON_PATH_TERMS = [
+  'author',
+  'login',
+  'user',
+  'actor',
+  'assignee',
+  'committer',
+  'reviewer',
+  'requester',
+  'member',
+  'team',
+  'email',
+  'name',
+  'handle',
+  'avatar',
+  'profile',
+  'identity',
+  'owner',
+] as const
+
+/**
+ * Token-aware matching. Substring matching produced false rejections that would have forced
+ * real metrics out of the registry — `dependency.upgrade_lag` is not a "grade", `inactivity`
+ * is not `activity`, and `integrating` is not a `rating`. Identifiers split on separators and
+ * camelCase humps; prose splits on word boundaries.
+ */
+function tokenize(value: string): string[] {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .toLowerCase()
+    .split(/[^a-z0-9]+/)
+    .filter((token) => token.length > 0)
+}
+
+function matchesTerm(tokens: readonly string[], term: string): boolean {
+  if (!term.includes('_')) {
+    return tokens.includes(term)
+  }
+  return `_${tokens.join('_')}_`.includes(`_${term}_`)
+}
+
+function findTerm(value: string, terms: readonly string[]): string | null {
+  const tokens = tokenize(value)
+  for (const term of terms) {
+    if (matchesTerm(tokens, term)) {
       return term
     }
   }
   return null
+}
+
+/**
+ * Returns the first forbidden term contained in `value`, or null.
+ *
+ * Deliberately NOT applied to `prohibitedInterpretations`, `knownConfounders`, or limitation
+ * statements: those fields exist precisely so an author can write "this is not an engagement
+ * signal", and scanning them would make the required warning impossible to express.
+ */
+export function findForbiddenConstructTerm(value: string): string | null {
+  return findTerm(value, [...FORBIDDEN_CONSTRUCT_TERMS, ...FORBIDDEN_PERSON_SUBJECT_TERMS])
+}
+
+/** The construct scan plus the person-path denylist, for field paths and distinct-count keys. */
+export function findForbiddenPathTerm(value: string): string | null {
+  return findTerm(value, [...FORBIDDEN_PERSON_PATH_TERMS]) ?? findForbiddenConstructTerm(value)
 }
 
 /**
@@ -148,32 +210,17 @@ export const METRIC_CLOCK_SOURCES = ['injected_as_of'] as const
 export const MetricClockSourceSchema = z.enum(METRIC_CLOCK_SOURCES)
 
 /**
- * ADR-02's twelve coverage dimensions, referenced by NAME.
+ * The coverage dimension set is `shared/coverage.ts`'s v2 registry (DL-SPINE-04), not a local
+ * copy. These are aliases so metric-side consumers have a stable name; the canonical list, its
+ * direction registry, and its per-dimension limiting-reason registration all live there.
  *
- * DL-SPINE-04 is extending `shared/coverage.ts` into a versioned v2 dimension registry in a
- * parallel lane. This module therefore keeps a local string enum of the same twelve names
- * instead of importing new v2 symbols, so the two changes do not collide. When the v2 registry
- * lands, this constant becomes an alias of it.
+ * A metric result carries a SUBSET vector — only the dimensions its definition declares it
+ * consumes — so it uses the canonical per-dimension value shape rather than
+ * `CoverageVectorV2Schema`, which requires all twelve.
  */
-export const METRIC_COVERAGE_DIMENSIONS = [
-  'permission',
-  'completeness',
-  'eligibility',
-  'freshness',
-  'censoring_freedom',
-  'consistency',
-  'sample',
-  'source_diversity',
-  'parser_coverage',
-  'comparability',
-  'drift_stability',
-  'calibration',
-] as const
-export const MetricCoverageDimensionSchema = z.enum(METRIC_COVERAGE_DIMENSIONS)
-export type MetricCoverageDimension = z.infer<typeof MetricCoverageDimensionSchema>
-
-/** ADR-02: every dimension is registered `higher_is_better`; polarity is never guessed. */
-export const METRIC_COVERAGE_DIMENSION_DIRECTION = 'higher_is_better' as const
+export const METRIC_COVERAGE_DIMENSIONS = COVERAGE_DIMENSIONS
+export const MetricCoverageDimensionSchema = CoverageDimensionSchema
+export type MetricCoverageDimension = CoverageDimension
 
 /** Missingness — closed. There is no imputation or zero-fill member. */
 export const METRIC_MISSINGNESS_POLICIES = [
@@ -235,7 +282,7 @@ export type MetricReference = z.infer<typeof MetricReferenceSchema>
 
 const RequiredFieldSchema = z
   .object({
-    fieldPath: z.string().regex(/^[a-z][a-zA-Z0-9_]*(\.[a-zA-Z0-9_]+)*$/),
+    fieldPath: FieldPathSchema,
     /** `X` is not a member: an X-class field can never be a metric input. */
     dataClass: z.enum(['C0', 'C1', 'C2', 'C3', 'C4']),
     nullable: z.boolean(),
@@ -275,12 +322,25 @@ const MissingnessSchema = z
 const QuantileListSchema = z.array(z.number().gt(0).lt(1)).min(1)
 
 /**
+ * How a proportion's denominator relates to the reported counts. A censored unit has no
+ * outcome, so counting it in the denominator would silently score "still running" as "did not
+ * pass" — exactly the censoring bias this contract exists to prevent.
+ */
+export const METRIC_DENOMINATOR_BASES = ['eligible', 'eligible_minus_censored'] as const
+export const MetricDenominatorBasisSchema = z.enum(METRIC_DENOMINATOR_BASES)
+export type MetricDenominatorBasis = z.infer<typeof MetricDenominatorBasisSchema>
+
+/**
  * Deterministic formula — a closed discriminated union.
  *
- * There is deliberately no `weighted_composite`, `blended_index`, or `scalar_rollup` member:
+ * There is deliberately no `weighted_composite`, `blended_index`, or `scalar_rollup` member, so
  * a blended engagement/importance/activity/health/maturity/confidence scalar has no
- * representable formula here, so such a registration is schema-rejected by construction rather
- * than by a hand-written guard.
+ * representable formula and is rejected at registration.
+ *
+ * This closes the DECLARATION, not the implementation. `procedureId` is an opaque handle, and
+ * nothing here can prove the code behind it computes what the entry claims — a procedure
+ * registered as `event_count` could compute a weighted blend and this schema would not know.
+ * Binding a procedure to its declared formula is DL-VALIDATE-01's conformance job.
  */
 const MetricFormulaSchema = z.discriminatedUnion('kind', [
   z
@@ -294,7 +354,7 @@ const MetricFormulaSchema = z.discriminatedUnion('kind', [
     .object({
       kind: z.literal('distinct_count'),
       procedureId: IdentifierSchema,
-      keyFieldPath: z.string().min(1),
+      keyFieldPath: FieldPathSchema,
     })
     .strict(),
   z
@@ -303,6 +363,7 @@ const MetricFormulaSchema = z.discriminatedUnion('kind', [
       procedureId: IdentifierSchema,
       numeratorEventCode: CodeSchema,
       denominatorCohortId: IdentifierSchema,
+      denominatorBasis: MetricDenominatorBasisSchema,
     })
     .strict(),
   z
@@ -419,6 +480,57 @@ function compareVersions(left: string, right: string): number {
   return 0
 }
 
+interface ScannableDefinition {
+  metricId: string
+  label: string
+  questionAnswered: string
+  eligibility: z.infer<typeof EligibilitySchema>
+  event: z.infer<typeof EventDefinitionSchema>
+  missingness: z.infer<typeof MissingnessSchema>
+  formula: MetricFormula
+}
+
+/** Identifier and prose fields scanned for blended and person-scoring constructs. */
+function constructScanTargets(definition: ScannableDefinition): Array<readonly [string, string]> {
+  const targets: Array<readonly [string, string]> = [
+    ['metricId', definition.metricId],
+    ['label', definition.label],
+    ['questionAnswered', definition.questionAnswered],
+    ['eligibility.cohortId', definition.eligibility.cohortId],
+    ['eligibility.statement', definition.eligibility.statement],
+    ['event.eventCode', definition.event.eventCode],
+    ['event.statement', definition.event.statement],
+    ['event.censoringStatement', definition.event.censoringStatement],
+    ['missingness.statement', definition.missingness.statement],
+    ['formula.procedureId', definition.formula.procedureId],
+  ]
+  definition.eligibility.inclusionRules.forEach((rule, index) => {
+    targets.push([`eligibility.inclusionRules.${index}.ruleCode`, rule.ruleCode])
+    targets.push([`eligibility.inclusionRules.${index}.statement`, rule.statement])
+  })
+  definition.eligibility.exclusionRules.forEach((rule, index) => {
+    targets.push([`eligibility.exclusionRules.${index}.ruleCode`, rule.ruleCode])
+    targets.push([`eligibility.exclusionRules.${index}.statement`, rule.statement])
+  })
+  switch (definition.formula.kind) {
+    case 'event_count':
+    case 'inter_event_interval_quantiles':
+      targets.push(['formula.eventCode', definition.formula.eventCode])
+      break
+    case 'duration_quantiles':
+      targets.push(['formula.startEventCode', definition.formula.startEventCode])
+      targets.push(['formula.endEventCode', definition.formula.endEventCode])
+      break
+    case 'proportion_of_cohort':
+      targets.push(['formula.numeratorEventCode', definition.formula.numeratorEventCode])
+      targets.push(['formula.denominatorCohortId', definition.formula.denominatorCohortId])
+      break
+    case 'distinct_count':
+      break
+  }
+  return targets
+}
+
 export const MetricDefinitionSchema = z
   .object({
     metricId: IdentifierSchema,
@@ -451,20 +563,34 @@ export const MetricDefinitionSchema = z
   })
   .strict()
   .superRefine((definition, context) => {
-    for (const [field, value] of [
-      ['metricId', definition.metricId],
-      ['label', definition.label],
-      ['questionAnswered', definition.questionAnswered],
-      ['eligibility.cohortId', definition.eligibility.cohortId],
-      ['formula.procedureId', definition.formula.procedureId],
-      ['event.eventCode', definition.event.eventCode],
-    ] as const) {
+    for (const [field, value] of constructScanTargets(definition)) {
       const term = findForbiddenConstructTerm(value)
       if (term) {
         context.addIssue({
           code: 'custom',
           message: `Forbidden construct term "${term}" in ${field}: blended and person-scoring metrics cannot be registered`,
           path: field.split('.'),
+        })
+      }
+    }
+
+    definition.requiredFields.forEach((field, index) => {
+      const term = findForbiddenPathTerm(field.fieldPath)
+      if (term) {
+        context.addIssue({
+          code: 'custom',
+          message: `Forbidden person-identifying path segment "${term}" in requiredFields.${index}.fieldPath`,
+          path: ['requiredFields', index, 'fieldPath'],
+        })
+      }
+    })
+    if (definition.formula.kind === 'distinct_count') {
+      const term = findForbiddenPathTerm(definition.formula.keyFieldPath)
+      if (term) {
+        context.addIssue({
+          code: 'custom',
+          message: `Forbidden person-identifying path segment "${term}" in formula.keyFieldPath: counting distinct people is a person metric`,
+          path: ['formula', 'keyFieldPath'],
         })
       }
     }
@@ -492,6 +618,23 @@ export const MetricDefinitionSchema = z
       })
     }
 
+    if (definition.formula.kind === 'proportion_of_cohort') {
+      if (definition.formula.denominatorCohortId !== definition.eligibility.cohortId) {
+        context.addIssue({
+          code: 'custom',
+          message: 'A proportion denominator must be the metric\'s own eligibility cohort',
+          path: ['formula', 'denominatorCohortId'],
+        })
+      }
+      if (definition.event.censoringRule !== 'no_censoring_possible' && definition.formula.denominatorBasis === 'eligible') {
+        context.addIssue({
+          code: 'custom',
+          message: 'A censorable proportion must exclude censored units from its denominator; a censored unit has no outcome to classify',
+          path: ['formula', 'denominatorBasis'],
+        })
+      }
+    }
+
     const dimensions = new Set(definition.coverageDimensions)
     if (dimensions.size !== definition.coverageDimensions.length) {
       context.addIssue({ code: 'custom', message: 'Coverage dimensions must be unique', path: ['coverageDimensions'] })
@@ -505,10 +648,10 @@ export const MetricDefinitionSchema = z
         })
       }
     }
-    if (isDistributionFormula(definition.formula) && !dimensions.has('censoring_freedom')) {
+    if (definition.event.censoringRule !== 'no_censoring_possible' && !dimensions.has('censoring_freedom')) {
       context.addIssue({
         code: 'custom',
-        message: 'A duration or interval metric must consume the censoring_freedom coverage dimension',
+        message: 'A metric that can right-censor must consume the censoring_freedom coverage dimension',
         path: ['coverageDimensions'],
       })
     }
@@ -611,8 +754,8 @@ export type MetricDefinition = z.infer<typeof MetricDefinitionSchema>
  * Result states — closed and mutually exclusive.
  *
  * `empty_eligible_cohort` (issue #67) is a fully covered period that genuinely contained zero
- * eligible events. It is a distinct state from `unavailable`, `truncated`, `censored_only`, and
- * `coverage_failed`, so a quiet week can never be conflated with a coverage gap.
+ * eligible units. It is a distinct state from `unavailable`, `truncated`, `censored_only`, and
+ * `coverage_failed`, so a quiet window can never be conflated with a coverage gap.
  */
 export const METRIC_RESULT_STATES = [
   'observed',
@@ -660,6 +803,111 @@ export const MetricValueSchema = z.discriminatedUnion('kind', [
 ])
 export type MetricValue = z.infer<typeof MetricValueSchema>
 
+/**
+ * The one place value-versus-state consistency is decided, applied to the result's own value AND
+ * to every sensitivity entry's value against that entry's own state.
+ *
+ * Keeping it in one function is the point: the first version of this contract enforced these
+ * rules only on the top-level value, so a sensitivity variant could carry a fabricated
+ * zero-duration distribution, or a numerator larger than its denominator, and pass.
+ */
+function checkValueAgainstState(
+  state: MetricResultState,
+  value: MetricValue,
+  path: Array<string | number>,
+  context: z.RefinementCtx,
+): void {
+  if (value.kind === 'quantiles') {
+    if ((value.sampleSize === 0) !== (value.quantiles === null)) {
+      context.addIssue({
+        code: 'custom',
+        message: 'An empty sample has a null distribution; a non-empty sample has quantiles. Zero-duration values are never fabricated',
+        path: [...path, 'quantiles'],
+      })
+    }
+    if (value.quantiles) {
+      const sorted = [...value.quantiles].sort((left, right) => left.quantile - right.quantile)
+      const quantiles = sorted.map((entry) => entry.quantile)
+      if (new Set(quantiles).size !== quantiles.length) {
+        context.addIssue({ code: 'custom', message: 'Quantiles must be distinct', path: [...path, 'quantiles'] })
+      }
+      for (let index = 1; index < sorted.length; index += 1) {
+        if (sorted[index].value < sorted[index - 1].value) {
+          context.addIssue({
+            code: 'custom',
+            message: 'Quantile values must be non-decreasing in the quantile; a distribution cannot run backwards',
+            path: [...path, 'quantiles'],
+          })
+          break
+        }
+      }
+    }
+  }
+
+  if (value.kind === 'proportion' && value.numerator > value.denominator) {
+    context.addIssue({
+      code: 'custom',
+      message: 'A proportion numerator cannot exceed its denominator',
+      path: [...path, 'numerator'],
+    })
+  }
+
+  switch (state) {
+    case 'observed': {
+      if (value.kind === 'no_value') {
+        context.addIssue({ code: 'custom', message: 'An observed result carries a value', path })
+      }
+      break
+    }
+    case 'empty_eligible_cohort': {
+      if (value.kind === 'count' && value.observedCount !== 0) {
+        context.addIssue({ code: 'custom', message: 'An empty eligible cohort counts an observed zero', path: [...path, 'observedCount'] })
+      }
+      if (value.kind === 'quantiles' && (value.sampleSize !== 0 || value.quantiles !== null)) {
+        context.addIssue({ code: 'custom', message: 'An empty eligible cohort has a null distribution and a zero sample', path })
+      }
+      if (value.kind === 'proportion') {
+        context.addIssue({
+          code: 'custom',
+          message: 'A proportion over an empty cohort is not computable; use no_value with the empty-cohort reason code',
+          path,
+        })
+      }
+      if (value.kind === 'no_value' && value.reasonCode !== EMPTY_ELIGIBLE_COHORT_REASON_CODE) {
+        context.addIssue({ code: 'custom', message: 'An empty eligible cohort names the empty-cohort reason code', path: [...path, 'reasonCode'] })
+      }
+      break
+    }
+    case 'censored_only': {
+      if (value.kind !== 'no_value' || value.reasonCode !== CENSORED_ONLY_REASON_CODE) {
+        context.addIssue({ code: 'custom', message: `A censored-only result carries no_value with ${CENSORED_ONLY_REASON_CODE}`, path })
+      }
+      break
+    }
+    case 'truncated': {
+      /**
+       * Zero is the one count indistinguishable from "could not look": under truncation a
+       * reported 0 cannot be told apart from a source that stopped returning rows.
+       */
+      if (value.kind === 'count' && value.observedCount === 0) {
+        context.addIssue({
+          code: 'custom',
+          message: 'A truncated result cannot report an observed zero; use no_value, or a state that says what was not seen',
+          path: [...path, 'observedCount'],
+        })
+      }
+      break
+    }
+    case 'unavailable':
+    case 'coverage_failed': {
+      if (value.kind !== 'no_value') {
+        context.addIssue({ code: 'custom', message: 'An unavailable or failed result never carries a numeric value', path })
+      }
+      break
+    }
+  }
+}
+
 const ExcludedCountSchema = z
   .object({ reasonCode: CodeSchema, count: z.number().int().positive() })
   .strict()
@@ -681,24 +929,35 @@ const MetricCountsSchema = z
     }
   })
 
-/** ADR-02 canonical dimension shape. The wire/SQL spelling of `limitingReason` is `limiting_reason`. */
+/**
+ * One dimension of a result's coverage vector, in `shared/coverage.ts`'s canonical shape:
+ * `{ value, limiting_reason }`, snake_case on every surface, with the limiting reason drawn
+ * from the v2 closed registry and checked against the dimension that cites it.
+ */
 const MetricCoverageEntrySchema = z
   .object({
     dimension: MetricCoverageDimensionSchema,
     value: UnitIntervalSchema.nullable(),
-    limitingReason: CodeSchema.nullable(),
+    limiting_reason: CoverageLimitingReasonSchema.nullable(),
   })
   .strict()
+  .superRefine((entry, context) => {
+    if (entry.value === null && entry.limiting_reason === null) {
+      context.addIssue({
+        code: 'custom',
+        message: 'A null dimension value must carry a limiting reason; absence is never a default',
+        path: ['limiting_reason'],
+      })
+    }
+    if (entry.limiting_reason !== null && !isLimitingReasonRegistered(entry.dimension, entry.limiting_reason)) {
+      context.addIssue({
+        code: 'custom',
+        message: `Limiting reason ${entry.limiting_reason} is not registered for the ${entry.dimension} dimension`,
+        path: ['limiting_reason'],
+      })
+    }
+  })
 export type MetricCoverageEntry = z.infer<typeof MetricCoverageEntrySchema>
-
-/** The one canonical wire/SQL spelling required by ADR-02, emitted from the camelCase TS shape. */
-export function toCoverageWireEntry(entry: MetricCoverageEntry): {
-  dimension: MetricCoverageDimension
-  value: number | null
-  limiting_reason: string | null
-} {
-  return { dimension: entry.dimension, value: entry.value, limiting_reason: entry.limitingReason }
-}
 
 const SensitivityResultSchema = z
   .object({
@@ -755,13 +1014,11 @@ export const MetricResultSchema = z
       })
     }
 
-    if (result.value.kind === 'quantiles' && (result.value.sampleSize === 0) !== (result.value.quantiles === null)) {
-      context.addIssue({
-        code: 'custom',
-        message: 'An empty sample has a null distribution; a non-empty sample has quantiles. Zero-duration values are never fabricated',
-        path: ['value', 'quantiles'],
-      })
-    }
+    checkValueAgainstState(result.state, result.value, ['value'], context)
+    result.sensitivity.forEach((entry, index) => {
+      checkValueAgainstState(entry.state, entry.value, ['sensitivity', index, 'value'], context)
+    })
+
     if (result.value.kind === 'count' && result.value.observedCount > 0 && result.counts.eligible === 0) {
       context.addIssue({
         code: 'custom',
@@ -769,16 +1026,18 @@ export const MetricResultSchema = z
         path: ['value', 'observedCount'],
       })
     }
-
-    const completeness = result.coverage.find((entry) => entry.dimension === 'completeness')
+    if (result.value.kind === 'quantiles' && result.value.sampleSize !== result.counts.eligible - result.counts.censored) {
+      context.addIssue({
+        code: 'custom',
+        message: 'A distribution samples exactly the eligible units that were not censored',
+        path: ['value', 'sampleSize'],
+      })
+    }
 
     switch (result.state) {
       case 'observed': {
         if (result.counts.eligible === 0) {
           context.addIssue({ code: 'custom', message: 'An observed result has a non-empty eligible cohort; use empty_eligible_cohort', path: ['counts', 'eligible'] })
-        }
-        if (result.value.kind === 'no_value') {
-          context.addIssue({ code: 'custom', message: 'An observed result carries a value', path: ['value'] })
         }
         if (asOf < windowEnd) {
           context.addIssue({ code: 'custom', message: 'An observed result requires a completed window (asOf at or after window end)', path: ['asOf'] })
@@ -792,28 +1051,20 @@ export const MetricResultSchema = z
         if (asOf < windowEnd) {
           context.addIssue({ code: 'custom', message: 'An empty eligible cohort requires a completed window (asOf at or after window end)', path: ['asOf'] })
         }
-        if (!completeness || completeness.value !== 1 || completeness.limitingReason !== null) {
-          context.addIssue({
-            code: 'custom',
-            message: 'An empty eligible cohort is only claimable under complete coverage; otherwise the state is unavailable or truncated',
-            path: ['coverage'],
-          })
-        }
-        if (result.value.kind === 'count' && result.value.observedCount !== 0) {
-          context.addIssue({ code: 'custom', message: 'An empty eligible cohort counts an observed zero', path: ['value', 'observedCount'] })
-        }
-        if (result.value.kind === 'quantiles' && (result.value.sampleSize !== 0 || result.value.quantiles !== null)) {
-          context.addIssue({ code: 'custom', message: 'An empty eligible cohort has a null distribution and a zero sample', path: ['value'] })
-        }
-        if (result.value.kind === 'proportion') {
-          context.addIssue({
-            code: 'custom',
-            message: 'A proportion over an empty cohort is not computable; use no_value with the empty-cohort reason code',
-            path: ['value'],
-          })
-        }
-        if (result.value.kind === 'no_value' && result.value.reasonCode !== EMPTY_ELIGIBLE_COHORT_REASON_CODE) {
-          context.addIssue({ code: 'custom', message: 'An empty eligible cohort names the empty-cohort reason code', path: ['value', 'reasonCode'] })
+        /**
+         * Complete on EVERY declared dimension, not merely completeness. A window with full
+         * completeness but degraded freshness, permission, or parser coverage has not been
+         * observed well enough to claim that nothing happened in it.
+         */
+        for (const entry of result.coverage) {
+          if (entry.value !== 1 || entry.limiting_reason !== null) {
+            context.addIssue({
+              code: 'custom',
+              message: `An empty eligible cohort is only claimable under complete coverage on every declared dimension; ${entry.dimension} is limited`,
+              path: ['coverage'],
+            })
+            break
+          }
         }
         break
       }
@@ -821,22 +1072,17 @@ export const MetricResultSchema = z
         if (result.counts.eligible === 0 || result.counts.censored !== result.counts.eligible) {
           context.addIssue({ code: 'custom', message: 'A censored-only result has every eligible unit censored', path: ['counts'] })
         }
-        if (result.value.kind !== 'no_value' || result.value.reasonCode !== CENSORED_ONLY_REASON_CODE) {
-          context.addIssue({ code: 'custom', message: `A censored-only result carries no_value with ${CENSORED_ONLY_REASON_CODE}`, path: ['value'] })
-        }
         break
       }
       case 'truncated': {
-        if (!completeness || completeness.limitingReason === null) {
+        const completeness = result.coverage.find((entry) => entry.dimension === 'completeness')
+        if (!completeness || completeness.limiting_reason === null) {
           context.addIssue({ code: 'custom', message: 'A truncated result names a limiting reason on completeness', path: ['coverage'] })
         }
         break
       }
       case 'unavailable':
       case 'coverage_failed': {
-        if (result.value.kind !== 'no_value') {
-          context.addIssue({ code: 'custom', message: 'An unavailable or failed result never carries a numeric value', path: ['value'] })
-        }
         if (result.counts.eligible !== 0) {
           context.addIssue({ code: 'custom', message: 'An unavailable or failed result has no measured eligible cohort', path: ['counts', 'eligible'] })
         }
@@ -882,11 +1128,6 @@ const PR_INTEGRATION_INTERVAL_SHARED = {
   windowSemantics: 'matched_half_open_windows',
   clockSource: 'injected_as_of',
   requiredCapabilities: ['github.core'],
-  requiredFields: [
-    { fieldPath: 'pullRequest.readyForReviewAt', dataClass: 'C1', nullable: true },
-    { fieldPath: 'pullRequest.mergedAt', dataClass: 'C1', nullable: true },
-    { fieldPath: 'pullRequest.closedAt', dataClass: 'C1', nullable: true },
-  ],
   supportGates: {
     minimumEligible: 5,
     appliesTo: 'display_eligibility',
@@ -902,13 +1143,14 @@ const PR_INTEGRATION_INTERVAL_SHARED = {
   knownConfounders: [
     { code: 'RELEASE_FREEZE', statement: 'A release freeze lengthens intervals without any change in how work is done.' },
     { code: 'BATCHED_REVIEW', statement: 'Batched review sessions cluster merges and shorten the observed tail.' },
-    { code: 'WINDOW_LENGTH', statement: 'Short windows admit fewer long-lived pull requests and bias the tail downwards.' },
+    { code: 'WINDOW_LENGTH', statement: 'A short window admits fewer long-lived pull requests, so the observed tail is bounded by the window itself.' },
   ],
   prohibitedInterpretations: [
     { code: 'NOT_PERSON_MEASURE', statement: 'This is a property of a pull-request cohort and must never be read as a measure of any individual person or their productivity.' },
     { code: 'NOT_CAUSAL', statement: 'A shorter interval does not establish that any process change caused it.' },
     { code: 'NOT_QUALITY', statement: 'Integration speed says nothing about the quality or the value of what was merged.' },
     { code: 'NOT_TARGET', statement: 'This must never be used as a target, a threshold, or an input to a performance review.' },
+    { code: 'NOT_COMPLETED_CASES_ONLY', statement: 'The distribution covers merged units only; the censored count is part of the reading and must be shown beside it, never dropped.' },
   ],
   coverageDimensions: [
     'permission', 'completeness', 'eligibility', 'freshness', 'censoring_freedom', 'sample', 'comparability',
@@ -925,6 +1167,11 @@ const PR_INTEGRATION_INTERVAL_SHARED = {
 /**
  * The registered metrics. Every entry is an invented, product-boundary-safe system metric:
  * cohorts of pull requests, check runs, and windows — never a person.
+ *
+ * Cohorts are RISK SETS. Membership is decided by entry into the risk set, never by the terminal
+ * event: conditioning on the terminal event would make the declared right-censoring
+ * unrepresentable (`censored` would be structurally zero) and would bake completed-cases
+ * survivorship bias into every duration and share reading.
  */
 export const METRIC_REGISTRY: readonly MetricDefinition[] = [
   defineMetric({
@@ -932,27 +1179,31 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
     version: '1.0.0',
     status: 'superseded',
     label: 'Pull-request integration interval (v1)',
-    questionAnswered: 'How long did merged pull requests take from opening to merge inside the window?',
+    questionAnswered: 'Among pull requests opened inside the window, how long did they take to reach merge?',
+    requiredFields: [
+      { fieldPath: 'pullRequest.createdAt', dataClass: 'C1', nullable: false },
+      { fieldPath: 'pullRequest.mergedAt', dataClass: 'C1', nullable: true },
+    ],
     eligibility: {
-      cohortId: 'pull_request.merged_in_window',
-      statement: 'Pull requests whose merge event falls inside the half-open window.',
+      cohortId: 'pull_request.opened_in_window',
+      statement: 'Pull requests opened inside the half-open window, whether or not they have since merged.',
       inclusionRules: [
-        { ruleCode: 'MERGED_IN_WINDOW', statement: 'The merge timestamp falls inside the half-open window.' },
+        { ruleCode: 'OPENED_IN_WINDOW', statement: 'The opening timestamp falls inside the half-open window.' },
       ],
       exclusionRules: [
-        { ruleCode: 'MISSING_OPEN_TIMESTAMP', statement: 'The opening timestamp is absent, so no interval can be computed.' },
+        { ruleCode: 'MISSING_OPEN_TIMESTAMP', statement: 'The opening timestamp is absent, so the cohort entry point cannot be placed.' },
       ],
     },
     event: {
       eventCode: 'PULL_REQUEST_MERGED',
-      statement: 'The merge event recorded by the forge for a pull request.',
+      statement: 'The merge event recorded by the forge. It is the terminal event of the interval and never a cohort condition.',
       censoringRule: 'right_censor_at_window_end',
-      censoringStatement: 'Pull requests still open at the window end are right-censored and excluded from the distribution.',
+      censoringStatement: 'An eligible pull request with no merge event by the window end is right-censored at the boundary and counted in the censored total.',
     },
     missingness: {
       policy: 'exclude_from_eligible_cohort',
       truncationPolicy: 'abstain_when_truncated',
-      statement: 'A pull request missing either endpoint leaves the eligible cohort and is counted under its exclusion reason.',
+      statement: 'A pull request whose cohort entry point cannot be placed leaves the eligible set under its named exclusion reason.',
     },
     formula: {
       kind: 'duration_quantiles',
@@ -962,7 +1213,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
       quantiles: [0.5, 0.75, 0.9],
     },
     sensitivityVariants: [
-      { variantId: 'EXCLUDE_LONG_TAIL', statement: 'Recompute without pull requests older than the window length.', parameterChange: 'Drop eligible units whose start precedes the window start.' },
+      { variantId: 'EXCLUDE_LONG_TAIL', statement: 'Recompute without pull requests older than the window length.', parameterChange: 'Drop eligible units whose entry point precedes the window start.' },
     ],
     fixtureClasses: ['eligibility', 'missingness', 'censoring', 'boundary_dates', 'empty_eligible_cohort', 'version_supersession'],
     supersession: {
@@ -976,40 +1227,51 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
     version: '1.1.0',
     status: 'active',
     label: 'Pull-request integration interval',
-    questionAnswered: 'How long did pull requests take from ready-for-review to merge inside the window?',
+    questionAnswered: 'Among pull requests that became ready for review inside the window, how long did they take to reach merge?',
+    requiredFields: [
+      { fieldPath: 'pullRequest.readyForReviewAt', dataClass: 'C1', nullable: true },
+      { fieldPath: 'pullRequest.createdAt', dataClass: 'C1', nullable: false },
+      { fieldPath: 'pullRequest.mergedAt', dataClass: 'C1', nullable: true },
+    ],
     eligibility: {
-      cohortId: 'pull_request.ready_and_merged_in_window',
-      statement: 'Pull requests that became ready for review before the window end and merged inside the half-open window.',
+      cohortId: 'pull_request.became_ready_in_window',
+      statement: 'Pull requests whose canonical becameReadyAt fact falls inside the half-open window, whether or not they have since merged. Membership never depends on the merge.',
       inclusionRules: [
-        { ruleCode: 'READY_BEFORE_WINDOW_END', statement: 'The ready-for-review event precedes the window end.' },
-        { ruleCode: 'MERGED_IN_WINDOW', statement: 'The merge timestamp falls inside the half-open window.' },
+        {
+          ruleCode: 'BECAME_READY_IN_WINDOW',
+          statement: 'The canonical becameReadyAt fact — readyForReviewAt when the pull request left draft, otherwise createdAt — falls inside the half-open window.',
+        },
       ],
       exclusionRules: [
-        { ruleCode: 'NEVER_READY_FOR_REVIEW', statement: 'The pull request never left draft, so the cohort start event never occurred.' },
-        { ruleCode: 'MISSING_READY_TIMESTAMP', statement: 'The ready-for-review timestamp is absent for a pull request that did leave draft.' },
+        { ruleCode: 'BECAME_READY_OUTSIDE_WINDOW', statement: 'The becameReadyAt fact falls outside the half-open window, so the unit belongs to another window.' },
+        { ruleCode: 'MISSING_CREATION_TIMESTAMP', statement: 'Neither a draft transition nor a creation timestamp is recorded, so becameReadyAt cannot be derived.' },
       ],
     },
     event: {
       eventCode: 'PULL_REQUEST_MERGED',
-      statement: 'The merge event recorded by the forge for a pull request that was ready for review.',
+      statement: 'The merge event recorded by the forge. It is the terminal event of the interval and never a cohort condition.',
       censoringRule: 'right_censor_at_window_end',
-      censoringStatement: 'Pull requests ready for review but not merged by the window end are right-censored and reported separately.',
+      censoringStatement: 'An eligible pull request with no merge event by the window end is right-censored at the boundary and counted in the censored total, never dropped and never treated as merged.',
     },
     missingness: {
       policy: 'exclude_from_eligible_cohort',
       truncationPolicy: 'report_with_truncation_limitation',
-      statement: 'A pull request missing the ready-for-review endpoint leaves the eligible cohort under a named exclusion reason and is never imputed.',
+      statement: 'A pull request whose becameReadyAt fact cannot be derived leaves the cohort under a named exclusion reason; no timestamp is ever imputed.',
     },
     formula: {
       kind: 'duration_quantiles',
       procedureId: 'pull_request.interval_quantiles_v2',
-      startEventCode: 'PULL_REQUEST_READY_FOR_REVIEW',
+      startEventCode: 'PULL_REQUEST_BECAME_READY',
       endEventCode: 'PULL_REQUEST_MERGED',
       quantiles: [0.5, 0.75, 0.9],
     },
     sensitivityVariants: [
-      { variantId: 'EXCLUDE_LONG_TAIL', statement: 'Recompute without pull requests whose start precedes the window.', parameterChange: 'Drop eligible units whose ready-for-review event precedes the window start.' },
-      { variantId: 'OPEN_TREATED_AS_CENSORED', statement: 'Recompute treating still-open pull requests as censored at the window end.', parameterChange: 'Move right-censored units into the reported censored count instead of the exclusion list.' },
+      { variantId: 'EXCLUDE_LONG_TAIL', statement: 'Recompute without pull requests whose entry point precedes the window.', parameterChange: 'Drop eligible units whose becameReadyAt fact precedes the window start.' },
+      {
+        variantId: 'OPEN_TREATED_AS_CENSORED',
+        statement: 'Recompute with the right-censored units included at their observed lower bound instead of omitted from the distribution.',
+        parameterChange: 'Add each censored unit at the window end minus its becameReadyAt fact, rather than restricting the sample to merged units.',
+      },
     ],
     fixtureClasses: ['eligibility', 'missingness', 'censoring', 'boundary_dates', 'empty_eligible_cohort', 'truncation', 'sensitivity_variant', 'version_supersession'],
     supersession: { supersededBy: null, supersededAt: null, reasonCode: null },
@@ -1018,43 +1280,51 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
     metricId: 'pull_request.ready_event_count',
     version: '1.0.0',
     status: 'active',
-    label: 'Pull requests made ready for review',
+    label: 'Pull requests that became ready for review',
     questionAnswered: 'How many pull requests became ready for review inside the window?',
     analyticalSubject: 'pull_request_cohort',
-    unit: 'event_count',
+    unit: 'count_of_distinct',
     semanticCategory: 'event_count',
     windowSemantics: 'half_open_utc_window',
     clockSource: 'injected_as_of',
     requiredCapabilities: ['github.core'],
-    requiredFields: [{ fieldPath: 'pullRequest.readyForReviewAt', dataClass: 'C1', nullable: true }],
+    requiredFields: [
+      { fieldPath: 'pullRequest.opaqueId', dataClass: 'C1', nullable: false },
+      { fieldPath: 'pullRequest.readyForReviewAt', dataClass: 'C1', nullable: true },
+      { fieldPath: 'pullRequest.createdAt', dataClass: 'C1', nullable: false },
+    ],
     eligibility: {
-      cohortId: 'pull_request.ready_in_window',
-      statement: 'Pull requests whose ready-for-review event falls inside the half-open window.',
+      cohortId: 'pull_request.became_ready_in_window',
+      statement: 'Pull requests whose canonical becameReadyAt fact falls inside the half-open window. A repository that never uses drafts still has a populated cohort, because a pull request opened outside draft becomes ready at creation.',
       inclusionRules: [
-        { ruleCode: 'READY_IN_WINDOW', statement: 'The ready-for-review event falls inside the half-open window.' },
+        {
+          ruleCode: 'BECAME_READY_IN_WINDOW',
+          statement: 'The canonical becameReadyAt fact — readyForReviewAt when present, otherwise createdAt — falls inside the half-open window.',
+        },
       ],
       exclusionRules: [
-        { ruleCode: 'NEVER_READY_FOR_REVIEW', statement: 'The pull request never left draft inside the window.' },
+        { ruleCode: 'BECAME_READY_OUTSIDE_WINDOW', statement: 'The becameReadyAt fact falls outside the half-open window, so the unit belongs to another window.' },
+        { ruleCode: 'MISSING_CREATION_TIMESTAMP', statement: 'Neither a draft transition nor a creation timestamp is recorded, so becameReadyAt cannot be derived.' },
       ],
     },
     event: {
-      eventCode: 'PULL_REQUEST_READY_FOR_REVIEW',
-      statement: 'The transition of a pull request out of draft state.',
+      eventCode: 'PULL_REQUEST_BECAME_READY',
+      statement: 'A pull request entering the ready-for-review state: the draft transition where one exists, and creation where the pull request was never a draft.',
       censoringRule: 'no_censoring_possible',
-      censoringStatement: 'A point event inside a completed window cannot be censored; only coverage can be missing.',
+      censoringStatement: 'A point fact inside a completed window cannot be censored; only coverage can be missing, and that is a different state.',
     },
     missingness: {
       policy: 'exclude_from_eligible_cohort',
       truncationPolicy: 'report_with_truncation_limitation',
-      statement: 'A pull request without a ready-for-review timestamp is excluded under a named reason and never counted as zero.',
+      statement: 'A pull request with no derivable becameReadyAt fact is excluded under a named reason and never counted as a zero.',
     },
     formula: {
-      kind: 'event_count',
+      kind: 'distinct_count',
       procedureId: 'pull_request.ready_count_v1',
-      eventCode: 'PULL_REQUEST_READY_FOR_REVIEW',
+      keyFieldPath: 'pullRequest.opaqueId',
     },
     supportGates: {
-      minimumEligible: 0,
+      minimumEligible: 3,
       appliesTo: 'display_eligibility',
       emptyCohortExempt: true,
       belowGateBehaviour: 'suppress_display',
@@ -1067,17 +1337,27 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
     },
     sensitivityVariants: [
       { variantId: 'CALENDAR_WEEK_ALIGNED', statement: 'Recompute on calendar-week-aligned windows.', parameterChange: 'Shift the window start to the preceding Monday boundary.' },
+      { variantId: 'DRAFT_TRANSITION_ONLY', statement: 'Recompute counting only pull requests that actually left draft.', parameterChange: 'Drop the createdAt fallback from the becameReadyAt rule.' },
     ],
     knownConfounders: [
-      { code: 'RELEASE_FREEZE', statement: 'A release freeze suppresses ready-for-review events without any change in intent.' },
+      { code: 'RELEASE_FREEZE', statement: 'A release freeze suppresses these transitions without any change in intent.' },
       { code: 'HOLIDAY_PERIOD', statement: 'A holiday period produces genuinely quiet windows that are complete, not missing.' },
+      {
+        code: 'DRAFT_WORKFLOW_ADOPTION',
+        statement: 'Adopting or abandoning the draft workflow moves where becameReadyAt falls without changing how much work was proposed, so counts spanning such a change are not comparable.',
+      },
+      {
+        code: 'TEAM_SIZE_ONE',
+        statement: 'A single-maintainer repository often skips the draft step entirely, so its counts reflect a different workflow rather than a different amount of work.',
+      },
     ],
     prohibitedInterpretations: [
-      { code: 'NOT_PERSON_MEASURE', statement: 'A count of events must never be attributed to, or read as a measure of, any individual person.' },
-      { code: 'NOT_OUTPUT', statement: 'This counts transitions out of draft, not delivered value or effort spent.' },
-      { code: 'ZERO_IS_NOT_ABSENCE', statement: 'A complete window with zero events is an observed quiet period; it is not missing data and must not be read as one.' },
+      { code: 'NOT_PERSON_MEASURE', statement: 'A count of pull requests must never be attributed to, or read as a measure of, any individual person.' },
+      { code: 'NOT_OUTPUT', statement: 'This counts pull requests entering review, not delivered value or effort spent.' },
+      { code: 'ZERO_IS_NOT_ABSENCE', statement: 'A complete window with zero eligible pull requests is an observed quiet period; it is not missing data and must not be rendered as one.' },
+      { code: 'NOT_COMPARABLE_ACROSS_WORKFLOWS', statement: 'Counts spanning a change in draft-workflow adoption are not comparable, because the cohort entry point moved.' },
     ],
-    coverageDimensions: ['permission', 'completeness', 'eligibility', 'freshness', 'comparability'],
+    coverageDimensions: ['permission', 'completeness', 'eligibility', 'freshness', 'sample', 'comparability'],
     fixtureClasses: ['eligibility', 'missingness', 'censoring', 'boundary_dates', 'empty_eligible_cohort', 'truncation'],
     renderPolicy: {
       surfaces: ['atlas', 'story', 'evidence_drawer', 'api_v2'],
@@ -1093,7 +1373,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
     version: '1.0.0',
     status: 'active',
     label: 'First-attempt check-run pass share',
-    questionAnswered: 'What share of check-run series passed on their first attempt inside the window?',
+    questionAnswered: 'Among check-run series whose first attempt started inside the window, what share of the concluded first attempts passed?',
     analyticalSubject: 'check_run_cohort',
     unit: 'proportion',
     semanticCategory: 'proportion_of_cohort',
@@ -1101,37 +1381,39 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
     clockSource: 'injected_as_of',
     requiredCapabilities: ['cap.github.actions'],
     requiredFields: [
+      { fieldPath: 'checkRun.startedAt', dataClass: 'C3', nullable: false },
       { fieldPath: 'checkRun.attemptNumber', dataClass: 'C3', nullable: false },
       { fieldPath: 'checkRun.conclusion', dataClass: 'C3', nullable: true },
       { fieldPath: 'checkRun.completedAt', dataClass: 'C3', nullable: true },
     ],
     eligibility: {
-      cohortId: 'check_run.series_completed_in_window',
-      statement: 'Check-run series whose first attempt completed inside the half-open window.',
+      cohortId: 'check_run.first_attempt_started_in_window',
+      statement: 'Check-run series whose first attempt started inside the half-open window, whether or not that attempt has concluded.',
       inclusionRules: [
-        { ruleCode: 'FIRST_ATTEMPT_COMPLETED_IN_WINDOW', statement: 'The first attempt of the series completed inside the half-open window.' },
+        { ruleCode: 'FIRST_ATTEMPT_STARTED_IN_WINDOW', statement: 'The start timestamp of the first attempt falls inside the half-open window.' },
       ],
       exclusionRules: [
-        { ruleCode: 'CANCELLED_BEFORE_CONCLUSION', statement: 'The series was cancelled before reaching any conclusion.' },
-        { ruleCode: 'MISSING_CONCLUSION', statement: 'No conclusion was recorded for the first attempt.' },
+        { ruleCode: 'CANCELLED_BEFORE_CONCLUSION', statement: 'The series was cancelled before reaching any conclusion, so no outcome exists to classify.' },
+        { ruleCode: 'MISSING_CONCLUSION', statement: 'No conclusion field was recorded for a first attempt that did finish.' },
       ],
     },
     event: {
       eventCode: 'CHECK_RUN_FIRST_ATTEMPT_CONCLUDED',
-      statement: 'The conclusion of the first attempt of a check-run series.',
+      statement: 'The conclusion of the first attempt of a check-run series. It is the outcome event and never a cohort condition.',
       censoringRule: 'right_censor_at_window_end',
-      censoringStatement: 'A series whose first attempt is still running at the window end is right-censored, not counted as a failure.',
+      censoringStatement: 'A series whose first attempt is still running at the window end is right-censored, counted in the censored total, and left out of the denominator — never scored as a failure.',
     },
     missingness: {
       policy: 'retain_as_unknown_and_report',
       truncationPolicy: 'abstain_when_truncated',
-      statement: 'A series without a recorded conclusion is retained as unknown and reported, never folded into the failing side.',
+      statement: 'A series with no recorded conclusion is retained as unknown and reported, never folded into the failing side of the share.',
     },
     formula: {
       kind: 'proportion_of_cohort',
       procedureId: 'check_run.first_attempt_pass_share_v1',
       numeratorEventCode: 'CHECK_RUN_FIRST_ATTEMPT_PASSED',
-      denominatorCohortId: 'check_run.series_completed_in_window',
+      denominatorCohortId: 'check_run.first_attempt_started_in_window',
+      denominatorBasis: 'eligible_minus_censored',
     },
     supportGates: {
       minimumEligible: 10,
@@ -1158,7 +1440,7 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
       { code: 'NOT_COMPARABLE_ACROSS_WORKFLOWS', statement: 'Shares from differently configured workflows are not comparable without a matched-instrument check.' },
     ],
     coverageDimensions: [
-      'permission', 'completeness', 'eligibility', 'freshness', 'consistency', 'sample', 'parser_coverage', 'comparability',
+      'permission', 'completeness', 'eligibility', 'freshness', 'censoring_freedom', 'consistency', 'sample', 'parser_coverage', 'comparability',
     ],
     fixtureClasses: ['eligibility', 'missingness', 'censoring', 'boundary_dates', 'empty_eligible_cohort', 'truncation', 'counterexample'],
     renderPolicy: {
@@ -1199,6 +1481,25 @@ if (registryByReference.size !== METRIC_REGISTRY.length) {
   throw new MetricRegistryError('The metric registry contains a duplicate metric_id@version')
 }
 
+/**
+ * At most one ACTIVE version per metric id. Two active versions would leave "which definition
+ * does a new result use?" undecidable, and because results pin exact versions the ambiguity
+ * would be invisible downstream.
+ */
+const activeByMetricId = new Map<string, MetricDefinition>()
+for (const definition of METRIC_REGISTRY) {
+  if (definition.status !== 'active') {
+    continue
+  }
+  const existing = activeByMetricId.get(definition.metricId)
+  if (existing) {
+    throw new MetricRegistryError(
+      `Metric ${definition.metricId} has two active versions (${existing.version} and ${definition.version}); exactly one may be active`,
+    )
+  }
+  activeByMetricId.set(definition.metricId, definition)
+}
+
 for (const definition of METRIC_REGISTRY) {
   const successor = definition.supersession.supersededBy
   if (successor && !registryByReference.has(formatMetricReference(successor))) {
@@ -1221,7 +1522,16 @@ export function getMetricDefinition(reference: string): MetricDefinition {
   return definition
 }
 
-/** New results may only be computed from an active definition; supersession points at the successor. */
+/** The single active definition for a metric id. */
+export function resolveLatestActive(metricId: string): MetricDefinition {
+  const definition = activeByMetricId.get(metricId)
+  if (!definition) {
+    throw new MetricRegistryError(`Metric ${metricId} has no active version`)
+  }
+  return definition
+}
+
+/** New results may only be computed from an active definition; supersession names the successor. */
 export function resolveMetricForComputation(reference: string): MetricDefinition {
   const definition = getMetricDefinition(reference)
   if (definition.status === 'superseded') {
@@ -1325,6 +1635,32 @@ export function validateMetricResult(candidate: unknown): {
     throw new MetricRegistryError(`${formatMetricReference(definition)} declares that censoring is impossible, but the result reports censored units`)
   }
 
+  /** The reported distribution must answer the quantiles the definition declares — no more, no fewer. */
+  if ('quantiles' in definition.formula && result.value.kind === 'quantiles' && result.value.quantiles) {
+    const declaredQuantiles = [...definition.formula.quantiles].sort()
+    const reportedQuantiles = result.value.quantiles.map((entry) => entry.quantile).sort()
+    if (declaredQuantiles.join(',') !== reportedQuantiles.join(',')) {
+      throw new MetricRegistryError(
+        `Result reports quantiles [${reportedQuantiles.join(', ')}] but ${formatMetricReference(definition)} declares [${declaredQuantiles.join(', ')}]`,
+      )
+    }
+  }
+
+  /**
+   * The declared denominator relation, checked against the reported counts. A sensitivity
+   * variant may legitimately redefine the denominator, so this binds the top-level value only.
+   */
+  if (definition.formula.kind === 'proportion_of_cohort' && result.value.kind === 'proportion') {
+    const expected = definition.formula.denominatorBasis === 'eligible'
+      ? result.counts.eligible
+      : result.counts.eligible - result.counts.censored
+    if (result.value.denominator !== expected) {
+      throw new MetricRegistryError(
+        `Result denominator ${result.value.denominator} contradicts the declared ${definition.formula.denominatorBasis} basis (expected ${expected})`,
+      )
+    }
+  }
+
   return { result, definition }
 }
 
@@ -1332,6 +1668,25 @@ export interface MetricDisplayEligibility {
   display: boolean
   reasonCode: string
   belowGateBehaviour: MetricDefinition['supportGates']['belowGateBehaviour'] | null
+}
+
+/**
+ * The number a support gate must actually gate, per value kind. Gating a quantile distribution
+ * on the eligible count would let three quantiles drawn from a single observation pass a gate of
+ * five, and gating a proportion on the eligible count would ignore that censored units are not
+ * in its denominator.
+ */
+function supportUnits(result: MetricResult): number | null {
+  switch (result.value.kind) {
+    case 'quantiles':
+      return result.value.sampleSize
+    case 'proportion':
+      return result.value.denominator
+    case 'count':
+      return result.counts.eligible
+    case 'no_value':
+      return null
+  }
 }
 
 /**
@@ -1346,8 +1701,9 @@ export function evaluateDisplayEligibility(
   switch (result.state) {
     case 'empty_eligible_cohort':
       return { display: true, reasonCode: 'EMPTY_ELIGIBLE_COHORT_EXEMPT', belowGateBehaviour: null }
-    case 'observed':
-      if (result.counts.eligible < definition.supportGates.minimumEligible) {
+    case 'observed': {
+      const measured = supportUnits(result)
+      if (measured !== null && measured < definition.supportGates.minimumEligible) {
         return {
           display: definition.supportGates.belowGateBehaviour === 'render_as_range_only',
           reasonCode: 'BELOW_MINIMUM_SUPPORT',
@@ -1355,6 +1711,7 @@ export function evaluateDisplayEligibility(
         }
       }
       return { display: true, reasonCode: 'SUPPORT_GATE_MET', belowGateBehaviour: null }
+    }
     case 'truncated':
       return {
         display: definition.missingness.truncationPolicy === 'report_with_truncation_limitation',
@@ -1469,7 +1826,7 @@ export function buildMetricDefinitionCard(reference: string): MetricDefinitionCa
       {
         heading: 'Support and comparison',
         lines: [
-          `Minimum eligible for display: ${definition.supportGates.minimumEligible} (${definition.supportGates.appliesTo}; empty cohorts exempt)`,
+          `Minimum support for display: ${definition.supportGates.minimumEligible} (${definition.supportGates.appliesTo}; empty cohorts exempt)`,
           `Matched window required: ${definition.comparisonRequirements.requiresMatchedWindow}, minimum matched fraction ${definition.comparisonRequirements.minimumMatchedFraction}`,
           `Incomparable outcome: ${definition.comparisonRequirements.incomparableOutcome}; empty cohort outcome: ${definition.comparisonRequirements.emptyCohortOutcome}`,
         ],
