@@ -42,8 +42,8 @@ residual_risks:
   - '#80 carries binding constraints on DL-LIFE-02 (open); the #81 DL-SPINE-02 constraints landed with PR #84/b52c458'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,
      producer-absence limiting codes, canonical coverage-code registration'
-  - '#67 typed empty cohorts: the registry-side semantics landed with PR #75; COMPARE, VALIDATE and
-     VALUE still owe their side'
+  - '#67 typed empty cohorts: the registry-side semantics landed with PR #75 and the comparison
+     half with PR #89; VALIDATE (exemplars) and VALUE (visible counts) still owe their side'
   - '#82 metric-result hardening, including the N1 sample-dimension-on-empty-cohort question, is to
      be settled before DL-VALUE-01'
   - '#71 pages.yml Node 22->24 alignment'
