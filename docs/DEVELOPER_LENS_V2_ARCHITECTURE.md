@@ -1539,3 +1539,90 @@ ORDER BY repository_alias, snapshot_at;
 10. G2, standing G3, and the exact OpenAI/Luna G4 boundary are now approved. Before any later
     migration, sensitive connector, or external request, prove the bounded task stays inside its
     charter/matrix limits; no approval automatically activates a capability.
+
+---
+
+## Appendix I. 2026-08-04 intelligence-platform planning addendum (accepted stable deltas)
+
+Evidence date: **2026-08-04**. This addendum records the stable design and dependency decisions
+accepted by the intelligence-platform planning session. The working elaboration lives in
+`docs/analyser-program/` (a non-authoritative proposal space); where that folder disagrees with
+this document plus the charter and matrix, those win. Live evidence and the resume point remain in
+`docs/IMPLEMENTATION_LEDGER.md`.
+
+### I.1 Accepted design deltas (bind future implementation cards)
+
+1. **Evidence claim graph (Spine 2.0).** Four additive STRICT table families
+   (`claim`, `claim_evidence_edge`, `limitation_instance`, `lineage_event`) with deterministic
+   content-derived claim IDs and a **stability key**
+   (`statement_code`, `method_id@version`, `window`, `scope_alias`, `schema_version`) so
+   supersession chains group into series. Landing cards DL-SPINE-01/02 (ADR-01).
+2. **Coverage vector 2.0.** The confidence components become a registered closed dimension set
+   (adds `parser_coverage`, `comparability`, `drift`, `calibration`) with per-claim-family minimum
+   requirements and **monotone abstention** (degrading any dimension can only hold or lower a
+   claim tier). Producers: `calibration` from the calibration scoreboard; `drift` from the
+   claim-stability series (research role). Cards DL-SPINE-04/05 (ADR-02).
+3. **Capability lifecycle.** One typed state machine
+   (`never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked`) for every
+   capability, with the invariant "gate approval performs no transition" tested by registry
+   snapshot, and descendant deletion **generated from the schema registry**, never hand lists.
+   Cards DL-LIFE-01..04 (ADR-03).
+4. **P5 migration bridge order.** Strangler order with V1 frozen (also protecting the
+   Pages/showcase CI, which reads `DashboardData`): person-shaped views retire first, scalar
+   confidence second, legacy insight stack, exporters, collector last; `/api/v2/*` mounts behind
+   lazy dynamic import with per-launch bearer + Host/Origin from birth; V2 read paths refuse
+   stores that are neither synthetic-marked nor activation-card-bound. First user-visible slice:
+   coverage cockpit + capabilities over the synthetic importer store (card DL-BRIDGE-01; ADR-04).
+5. **Source-structure roles.** The committed-tree role taxonomy is **14 closed roles** — the
+   2026-08-03 set plus `schema_definition`, `fixture_golden`, `snapshot_artifact` — enabling
+   golden/fixture and migration-ledger archaeology (ADR-05; frontier A3/A4).
+6. **Architecture Time Machine comparability.** Snapshots key on (repo alias, ref OID, parser
+   bundle version, config revision); cross-parser-major deltas are never rendered; module
+   continuity/split/merge is modelled with reported confidence; and the accepted **matched-window
+   middle case** compares eras only on instrument-matched sub-windows with the matched fraction as
+   a first-class number (ADR-07; frontier C-08).
+7. **Pack authority ruling.** The implemented Zod manifest is the sole authority for pack
+   `1.0.0`; the wider `docs/analysis-pack/manifest.schema.json` and the section-11 snake_case
+   example are divergent and must not gain consumers; card DL-PACK-00 reconciles all three into a
+   `2.0.0` schema (draft in `docs/analyser-program/schemas/`).
+8. **Banded structural exports.** Structural shape vectors (role byte shares, graph topology,
+   declaration-count series) are repository fingerprints: packs export them only in coarse bands,
+   exact topology/edge lists never leave C3, and release instants export ISO-week-floored. The
+   pack build measures residual distinctiveness (card DL-PACK-06) without ever claiming anonymity.
+9. **Grain floor extension.** The product's **own operational timestamps** (collection runs,
+   claim versions) fall under the existing cadence grain floor: ISO-week or coarser in any surface
+   or export, because on a single-owner installation they are an attendance proxy.
+10. **Query Lab sink ruling.** In-app SQL runs only over a user-selected, checksum-verified
+    COMPLETE analysis pack via DuckDB-WASM in the browser — the canonical store gains no SQL
+    endpoint (ADR-22).
+
+### I.2 Dependency-order deltas
+
+The P0-P12 phase list stands; the un-started phases regroup into milestones M1-M8
+(`docs/analyser-program/07_DELIVERY_ROADMAP.md`) with the invariant: no high-sensitivity
+connector, parser, ML feature, retrieval index, or model narrative schedules before its contracts,
+deletion path, coverage semantics, benchmark, and UI claim grammar exist. The P4 github.core
+activation lane and the P12 OpenAI/Luna lane continue unchanged under their existing ledger cards.
+
+### I.3 Documentation corrections (verified against code 2026-08-04)
+
+- Section 6's TypeScript `DataClass` illustration omits `"X"`; the implemented `shared/privacy.ts`
+  and this document's own section-5 table include it — the snippet is illustrative, code binds.
+- Section 5's consent-registry table lists 12 capabilities; the implemented registry has 13
+  (adds `github.core`).
+- `shared/types.ts` line anchors in section 2 drifted by one after `reflectionQuestion` landed
+  (`:175 -> 176`, `:208 -> 209`, `:223 -> 224`, `:247 -> 248`, `:271 -> 272`); ShareStudio anchors
+  are now `:92`/`:90`.
+- Section 15's open risk "No repository tier declaration or human-action file currently exists" is
+  resolved: both exist and are CI-enforced by `npm run verify:context`.
+- Section 14's P2/P3 path lists name planned outputs (`server/storage/migrations/*`,
+  `scripts/migrateV1ToV2.ts`, `docs/analysis-pack/schemas/*`, `queries/*`,
+  `notebooks/analysis.ipynb`) that are future card outputs, not delivered structure; the delivered
+  P2/P3 file set is narrower and lives under `server/storage/` and `server/analysisPack/`.
+- Section 14 P4's "adapt `server/github.ts` behind a feature flag" is superseded: the published P4
+  foundation is a structurally separate injected public-unauthenticated transport with reviewed
+  activation cards; the legacy authenticated `gh`-CLI collector remains untouched until the bridge
+  retirement ladder reaches it.
+- The current-state map (section 2) predates the `?demo=v2` seam, the P2/P3/P4/P12 subtrees, and
+  `npm run verify:context`; the code map in `docs/analyser-program/` and the ledger carry the
+  current inventory.

@@ -55,6 +55,19 @@ model capability is still
 `never_authorized`; there is no task-card/runtime caller, actual environment read, network/provider
 execution, cache, telemetry, persistence, export, or presentation path**.
 
+**2026-08-04 planning session:** the intelligence-platform planning-and-seeding session published
+`docs/analyser-program/` (product brief, 24 ADRs, feature/ML/RAG/UX catalogs, Taskdeck demo plan,
+delivery roadmap with 118 dependency-complete cards, open-questions/frontier ledger, schema
+proposals, and a validated Taskdeck starter pack), appended the accepted stable deltas as
+Appendix I of the canonical architecture, and seeded a real local Taskdeck planning board
+("Developer Lens — Intelligence Platform", 118 cards / 58 labels / 6 columns) in a fresh dedicated
+database at `C:\Users\jekyt\TaskdeckDogfood\developer-lens-intelligence-platform\` using only the
+already-built Taskdeck Release binary run from a scratchpad copy (validate → dry-run → apply all
+green, zero blocking conflicts; idempotent re-apply proven; one MCP-created card proposal left
+honestly `PendingReview` for the human; lossy board export + local credentials kept outside Git).
+No product implementation, real collection, external model call, or capability activation
+occurred; `cap.external.model` and every other executable capability remain `never_authorized`.
+
 Published P4 adds an inert, no-caller composition runner. It binds the exact opened task-
 card bytes to a caller-reviewed lowercase SHA-256, derives the repository alias before any request,
 splits the declared request ceiling across two independent probes, persists only an actual
@@ -1314,6 +1327,14 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
+0. **Next implementation slice (2026-08-04): card DL-BRIDGE-01** — the first V2 vertical slice
+   (lazy `/api/v2` coverage+capabilities over the synthetic store + Coverage Cockpit panel).
+   Start from `docs/analyser-program/09_IMPLEMENTATION_LAUNCHER.md`; the full card contract lives
+   in the tracked starter pack and on the seeded local Taskdeck board (board and DB paths in
+   `docs/analyser-program/06_TASKDECK_DEMO_PLAN.md` §1; DB, exports, and credentials stay outside
+   Git). Twelve READY cards exist for parallel lanes; the dependency graph is
+   `07_DELIVERY_ROADMAP.md`. New owner gates are consolidated in `HUMAN_TODO.md` q-6 and
+   `08_OPEN_QUESTIONS.md` §1. Items 1–6 below remain valid for the P4/P12 lanes.
 1. Refresh Git/GitHub before mutation. The published product baseline before this documentation-
    only closeout is merge `57eef928a64f5c99e17eba1390dbe95d5878391a`; live evidence still outranks
    this checkpoint.
