@@ -35,6 +35,7 @@ const output = {
 const priceQuote = {
   model: 'gpt-5.6-luna' as const,
   serviceTier: 'default' as const,
+  contextBand: 'short' as const,
   unit: 'USD_PER_MILLION_TOKENS' as const,
   inputUsdPerMillionTokens: 0.2,
   cacheWriteUsdPerMillionTokens: 0.25,
