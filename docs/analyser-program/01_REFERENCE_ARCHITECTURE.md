@@ -244,6 +244,24 @@ view card carries its own revert. **Revisit.** If parity reveals V1 aggregates t
 reproduced from V2 facts (e.g. search-enriched counts), the delta is recorded as a coverage
 limitation, not patched with V1 data. **Cards.** BRIDGE-01…05, UX-CC, UX-ED.
 
+**Grounded constraints (verified against code, 2026-08-04).** (V) The V1↔V2 production contact is
+exactly one seam (`shared/v2Demo.ts` → `V2Demo.tsx` behind `?demo=v2`); the P1/P2/P3/P4/P12
+subsystems have **zero production callers** — their current safety proof *is* having no caller, so
+every bridge card is a "first production caller" event and carries a fresh adversarial review.
+(V) `scripts/exportDemo.ts` mutates `DashboardData` in place and `scripts/verifyShowcase.ts` reads
+it as `DashboardData`; the Pages workflow is the repository's only CI — therefore the V1 freeze in
+step 1 is also CI protection, and any intentional `DashboardData` change is its own card with a
+showcase-gate proof. (V) `better-sqlite3`/DuckDB are ABI-specific and the repo has no dynamic
+`import()`; **decision:** V2 API/storage mount behind lazy dynamic import so demo and showcase
+paths never load native modules. (V) The V1 path has no runtime schema validation (unchecked `as
+DashboardData` casts); **decision:** every `/api/v2/*` response is schema-validated at the
+boundary from day one, and the new endpoints ship with the per-launch bearer + exact Host/Origin
+allowlist from birth (legacy endpoints unchanged until their retirement cards). **Decision —
+provenance of served data:** the bridge slice serves only stores populated by the synthetic
+importer under an explicit synthetic-mode marker; the V2 read path refuses stores whose provenance
+is neither synthetic-marked nor bound to a reviewed activation card, so the bridge cannot silently
+become a real-data path.
+
 ---
 
 ## ADR-05 — Repository X-Ray (committed-tree composition)
@@ -667,9 +685,20 @@ explorable in-product. Notebook plans reference the same pack (external DuckDB/P
 
 **Failure/rollback.** A pack that fails checksum/COMPLETE refuses to open; Query Lab has no write
 path. **Revisit.** If DuckDB-WASM bundle cost is unacceptable, Query Lab degrades to copyable SQL
-+ external-tool instructions (still no server SQL endpoint). **Cards.** PACK-01…04 (tables per
-producing domain), PACK-05 (preview/acknowledgement/suppression), QL-01 (DuckDB-WASM lab), QL-02
-(example-query + dictionary generation).
++ external-tool instructions (still no server SQL endpoint). **Cards.** PACK-00 (manifest
+reconciliation), PACK-01…04 (tables per producing domain), PACK-05
+(preview/acknowledgement/suppression), QL-01 (DuckDB-WASM lab), QL-02 (example-query + dictionary
+generation).
+
+**Grounded constraint — three disagreeing manifest shapes (V, 2026-08-04).** The repo currently
+holds (a) the implemented Zod pack manifest in `server/analysisPack/analysisPack.ts`
+(`manifestVersion 1.0.0`, one coverage table, strict — canary-rejects unknown fields), (b) a
+materially wider `docs/analysis-pack/manifest.schema.json` (18-path artifact list, 13-capability
+enum, an `externalModelEvidence` field the implementation rejects), and (c) the canonical §11
+snake_case example with a third field set. **Decision:** the implemented Zod schema is the sole
+authority for pack `1.0.0`; Pack 2.0 defines `pack_schema_version 2.0.0` reconciling all three
+shapes, and PACK-00 updates the JSON schema + canonical example to match before any new table
+lands. Until PACK-00, no consumer may be written against shapes (b) or (c).
 
 ---
 
