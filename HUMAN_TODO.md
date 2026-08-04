@@ -84,8 +84,23 @@ publication route remains active.
   implementation critical path depends on any of these; refusing all of them leaves a complete
   deterministic product.
 
+- [ ] **q-7 — Make the `PR gate / Prove the pull request` check required in branch protection.**
+  `.github/workflows/pr-gate.yml` now runs the proving commands (context verification, generated
+  planning-artifact drift check, lint, unit tests, type-check/build, and the synthetic showcase
+  privacy canary) on every pull request targeting `main`. A red run is visible on the pull request
+  but does **not** block merging until an admin marks the check required: GitHub repository
+  settings -> Branches -> the `main` protection rule -> "Require status checks to pass before
+  merging" -> add `Prove the pull request`. Marking a check required is a repository-administration
+  action; agents must never self-perform it. Until you do, the gate is advisory only — DL-OPS-CI-01's
+  "no human babysitter" outcome is only half-delivered. Add the check after at least one run has
+  reported, so the name is selectable in the settings picker.
+
 ## Changelog
 
+- 2026-08-04: DL-OPS-CI-01 landed the hosted pull-request gate `.github/workflows/pr-gate.yml` and
+  recorded q-7, the admin-only step of marking that check required in `main` branch protection. No
+  owner approval was inferred and no capability was activated; the workflow uses no secrets and no
+  real data.
 - 2026-08-04 (reconciliation): the post-PR #62 reconciliation added q-6 item (h)
   (freshness-age display grain) surfaced by the review pass, and changed no other human action.
   The directive's resolved design choices were integrated into docs/cards directly, not turned

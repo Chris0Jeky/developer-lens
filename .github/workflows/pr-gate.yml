@@ -1,0 +1,63 @@
+name: PR gate
+
+# Hosted proving gate for pull requests. Every step mirrors a local proving command from
+# AGENTS.md "Run and prove"; a failure here is meant to block the merge. Read-only by design:
+# no secrets, no real data, no capability activation — the showcase build is the synthetic
+# privacy canary (`verify:showcase` runs at the end of `npm run build:showcase`).
+# `main` pushes keep their own gate in `pages.yml`, so this workflow has no push trigger.
+
+on:
+  pull_request:
+    branches: [main]
+    # `edited` covers base-branch retargets; the job-level guard below skips the
+    # title/body edits that share the same activity type.
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  gate:
+    name: Prove the pull request
+    # On `edited` events, run only when the base branch changed (a retarget moves the
+    # merge base, so the previous green no longer proves this PR against its new base).
+    if: github.event.action != 'edited' || github.event.changes.base
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the pull request
+        uses: actions/checkout@v6
+
+      - name: Set up Node.js
+        # Matches the locked local proving runtime (Node 24; better-sqlite3 is ABI-specific).
+        # NOTE: pages.yml still deploys on Node 22 — alignment tracked as a separate issue.
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify project context
+        run: npm run verify:context
+
+      - name: Check generated planning artifacts for drift
+        # A cards.mjs edit must not leave the committed Taskdeck manifest or the 07 card index
+        # stale; --check is non-mutating and fails on drift.
+        run: node docs/analyser-program/taskdeck/tools/generate.mjs --check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Type-check and build
+        run: npm run build
+
+      - name: Build and privacy-check the synthetic showcase
+        run: npm run build:showcase
