@@ -20,6 +20,7 @@ import type { PullRequestMetric, RangeKey } from '../shared/types'
 import './App.css'
 import { ActivityHeatmap } from './components/ActivityHeatmap'
 import { CoverageCockpitV2Route } from './components/CoverageCockpitV2'
+import { IntegrationShapeAtlasRoute } from './components/IntegrationShapeAtlas'
 import { CoveragePanel } from './components/CoveragePanel'
 import { DnaPanel } from './components/DnaPanel'
 import { InsightStack } from './components/InsightStack'
@@ -506,6 +507,7 @@ function App() {
   const route = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search)
   if (route?.get('demo') === 'v2') return <V2Demo />
   if (route?.get('view') === 'cockpit-v2') return <CoverageCockpitV2Route />
+  if (route?.get('view') === 'integration-shape') return <IntegrationShapeAtlasRoute />
   return <DashboardApp />
 }
 
