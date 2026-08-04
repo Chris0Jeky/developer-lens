@@ -15,12 +15,40 @@ import {
 const publicData = resolve('public', 'data')
 const dist = resolve('dist')
 const textExtensions = new Set(['.css', '.html', '.js', '.json', '.map', '.svg', '.txt'])
-const forbiddenPatterns = [
+const forbiddenPatterns: { label: string; pattern: RegExp }[] = [
   { label: 'GitHub token prefix', pattern: /\b(?:github_pat_|gh[pousr]_)\w+/i },
   { label: 'private key material', pattern: /-----BEGIN [A-Z ]*PRIVATE KEY-----/ },
   { label: 'Windows user path', pattern: /[A-Z]:\\Users\\/i },
   { label: 'local file URL', pattern: /file:\/\/\/[A-Z]:\//i },
+  {
+    label: 'V2 bridge bearer environment object',
+    pattern: /["'`]?(?:VITE_)?DEVELOPER_LENS_V2_TOKEN["'`]?\s*[:=]/,
+  },
 ]
+
+/**
+ * Vite inlines `import.meta.env.VITE_*` at build time, so a showcase built on a
+ * machine that has the V2 bridge bearer exported ships the literal token inside
+ * its JavaScript — measured: the value lands in the request headers, and the
+ * variable name never survives. A bare name pattern would therefore detect
+ * nothing while falsely matching the cockpit's own instructional copy, which
+ * names both variables on screen; the rule above only matches an emitted env
+ * object, and the real detector is the value itself. When a bearer is present
+ * in this environment, its exact text becomes a forbidden pattern too.
+ */
+function escapeForRegExp(value: string): string {
+  return value.replaceAll(/[.*+?^${}()|[\]\\-]/g, '\\$&')
+}
+
+for (const variable of ['VITE_DEVELOPER_LENS_V2_TOKEN', 'DEVELOPER_LENS_V2_TOKEN'] as const) {
+  const value = process.env[variable]
+  if (value && value.length >= 8) {
+    forbiddenPatterns.push({
+      label: `${variable} value`,
+      pattern: new RegExp(escapeForRegExp(value)),
+    })
+  }
+}
 
 async function filesBelow(directory: string): Promise<string[]> {
   const entries = await readdir(directory, { withFileTypes: true })
