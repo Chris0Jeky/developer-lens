@@ -8,6 +8,7 @@ import {
   persistIncrementalGithubCoreTransition,
 } from './incremental.js'
 import {
+  claimScopeTestSeams,
   clearClaimScopeAlias,
   installClaimGraphStorage,
   registerClaim,
@@ -38,8 +39,14 @@ const CREATED_AT = '2026-04-06T12:00:00.000Z'
 const LINKED_AT = '2026-01-05T00:00:00.000Z'
 const REVOKED_AT = '2026-05-01T00:00:00.000Z'
 
-const ALPHA_SCOPE = 'sc-alpha'
-const GAMMA_SCOPE = 'sc-gamma'
+/**
+ * Post-#84 the writer MINTS the C1 surrogate (`scope-` + 64 hex) from entropy and returns
+ * it; a caller can no longer choose one. These hold whatever the current fixture minted,
+ * assigned by `whyFixture()` before any claim is registered, and are also returned on the
+ * fixture so a test never has to reach for module state.
+ */
+let ALPHA_SCOPE = ''
+let GAMMA_SCOPE = ''
 
 /** C2 alias VALUES held in `claim_scope`. The contract: neither ever reaches a tree. */
 const ALPHA_ALIAS = 'repo-a7'
@@ -49,9 +56,15 @@ const GAMMA_ALIAS = 'repo-g2'
  * The OTHER alias namespace: `collection_job.scope_alias` / `coverage_ledger.scope_alias`.
  * Deliberately different values from the two above, because a canary set that only knew
  * the `claim_scope` aliases was blind to the connector baking these into `coverage_id`
- * (issue #86). Both namespaces are now pinned.
+ * (issue #86). Both namespaces are pinned.
+ *
+ * These were `scope-a` / `-b` / `-c` until #84 landed. They cannot be, any more: the
+ * writer now mints surrogates as `scope-` + 64 hex, so a minted `scope-a1b2…` CONTAINS
+ * the literal `scope-a` — a one-in-sixteen chance per scope of a false canary hit on a
+ * value that is not an alias at all. The prefix is now unambiguous, which keeps the pin
+ * exactly as strong while removing an accidental collision with an unrelated identifier.
  */
-const COVERAGE_SCOPE_ALIASES = ['scope-a', 'scope-b', 'scope-c'] as const
+const COVERAGE_SCOPE_ALIASES = ['alias-alpha', 'alias-beta', 'alias-gamma'] as const
 
 /** Prose, paths, and names a caller might hand the resolver as a claim id. */
 const CANARIES = [
@@ -152,7 +165,9 @@ function claimInput(overrides: Record<string, unknown> = {}): Record<string, unk
     windowEnd: WINDOW_END,
     scopeId: ALPHA_SCOPE,
     createdAt: CREATED_AT,
-    edges: [],
+    // #84 enforces edges.min(1) — an unsupported statement has no walk and cannot enter.
+    // Every fixture overrides this, but the default must be legal on its own.
+    edges: [{ role: 'supports', targetEvidenceId: 'ev-a1' }],
     limitations: [],
     ...overrides,
   }
@@ -171,6 +186,9 @@ interface Fixture {
   readonly coverageA: CoverageKey
   readonly coverageB: CoverageKey
   readonly coverageC: CoverageKey
+  /** Minted by the writer, not chosen — see ALPHA_SCOPE/GAMMA_SCOPE above. */
+  readonly alphaScopeId: string
+  readonly gammaScopeId: string
   /** hypothesis claim carrying supports + contradicts + coverage_basis + limitation */
   readonly demoClaimId: string
   readonly tombstonedEvidenceClaimId: string
@@ -193,22 +211,24 @@ interface Fixture {
 function whyFixture(): Fixture {
   const db = bareDatabase()
   installIncrementalGithubCoreStorage(db)
+  const [aliasAlpha, aliasBeta, aliasGamma] = COVERAGE_SCOPE_ALIASES
   const coverageA = persistJob(
-    db, 'job-a1', 'scope-a', 'consent-a',
+    db, 'job-a1', aliasAlpha, 'consent-a',
     '2026-01-05T00:00:00.000Z', '2026-01-06T00:00:00.000Z', 'a',
   )
   const coverageB = persistJob(
-    db, 'job-b1', 'scope-b', 'consent-b',
+    db, 'job-b1', aliasBeta, 'consent-b',
     '2026-01-05T00:00:00.000Z', '2026-01-07T00:00:00.000Z', 'b',
   )
   const coverageC = persistJob(
-    db, 'job-c1', 'scope-c', 'consent-c',
+    db, 'job-c1', aliasGamma, 'consent-c',
     '2026-01-05T00:00:00.000Z', '2026-01-08T00:00:00.000Z', 'c',
   )
   installClaimGraphStorage(db)
 
-  registerClaimScope(db, { scopeId: ALPHA_SCOPE, scopeAlias: ALPHA_ALIAS, linkedAt: LINKED_AT })
-  registerClaimScope(db, { scopeId: GAMMA_SCOPE, scopeAlias: GAMMA_ALIAS, linkedAt: LINKED_AT })
+  // The surrogate is minted and returned; the caller supplies only the alias.
+  ALPHA_SCOPE = registerClaimScope(db, { scopeAlias: ALPHA_ALIAS, linkedAt: LINKED_AT }).scopeId
+  GAMMA_SCOPE = registerClaimScope(db, { scopeAlias: GAMMA_ALIAS, linkedAt: LINKED_AT }).scopeId
 
   const anchor = (evidenceId: string, coverage: CoverageKey): void => {
     registerEvidenceAnchor(db, { evidenceId, layer: 'deterministic', coverage })
@@ -342,6 +362,8 @@ function whyFixture(): Fixture {
     coverageA,
     coverageB,
     coverageC,
+    alphaScopeId: ALPHA_SCOPE,
+    gammaScopeId: GAMMA_SCOPE,
     demoClaimId: demo.claimId,
     tombstonedEvidenceClaimId: tombstoned.claimId,
     missingEvidenceClaimId: missingEvidence.claimId,
@@ -542,39 +564,61 @@ describe('why resolver — determinism', () => {
   })
 
   it('is insensitive to the order the edges were written in', () => {
-    const forward = whyFixture()
-    const reversed = bareDatabase()
-    installIncrementalGithubCoreStorage(reversed)
-    const coverage = persistJob(
-      reversed, 'job-a1', 'scope-a', 'consent-a',
-      '2026-01-05T00:00:00.000Z', '2026-01-06T00:00:00.000Z', 'a',
-    )
-    installClaimGraphStorage(reversed)
-    registerClaimScope(reversed, {
-      scopeId: ALPHA_SCOPE, scopeAlias: ALPHA_ALIAS, linkedAt: LINKED_AT,
-    })
-    for (const evidenceId of ['ev-a1', 'ev-a2']) {
-      registerEvidenceAnchor(reversed, { evidenceId, layer: 'deterministic', coverage })
+    // Both stores must mint the SAME surrogate, or the two claim IDs cannot match: #84
+    // hashes the scope component into the claim ID, and the surrogate is now random. The
+    // writer's own invented-fixture seam injects the entropy, which is the only supported
+    // way to make two independent stores agree — and it constrains the shape, not the
+    // value, so the surrogate is still a real `scope-` + 64 hex minted from those bytes.
+    const fixedEntropy = (size: number): Buffer => Buffer.alloc(size, 0x2a)
+    const buildStore = (edges: readonly Record<string, unknown>[]): {
+      db: Database.Database
+      claimId: string
+    } => {
+      const db = bareDatabase()
+      installIncrementalGithubCoreStorage(db)
+      const coverage = persistJob(
+        db, 'job-a1', COVERAGE_SCOPE_ALIASES[0], 'consent-a',
+        '2026-01-05T00:00:00.000Z', '2026-01-06T00:00:00.000Z', 'a',
+      )
+      installClaimGraphStorage(db)
+      const scope = claimScopeTestSeams.registerWithEntropy(
+        db, { scopeAlias: ALPHA_ALIAS, linkedAt: LINKED_AT }, fixedEntropy,
+      )
+      for (const evidenceId of ['ev-a1', 'ev-a2']) {
+        registerEvidenceAnchor(db, { evidenceId, layer: 'deterministic', coverage })
+      }
+      const registered = registerClaim(db, claimInput({
+        layer: 'hypothesis',
+        statementCode: 'CI_RERUN_PATTERN',
+        methodId: 'hyp.composer',
+        scopeId: scope.scopeId,
+        edges: edges.map((edge) => (
+          'targetCoverage' in edge ? { ...edge, targetCoverage: coverage } : edge
+        )),
+        limitations: [
+          { limitationCode: 'RERUN_NOT_FLAKE', dimension: 'completeness', copyKey: 'hyp.ci_shift.truncated' },
+        ],
+      }))
+      return { db, claimId: registered.claimId }
     }
-    const rebuilt = registerClaim(reversed, claimInput({
-      layer: 'hypothesis',
-      statementCode: 'CI_RERUN_PATTERN',
-      methodId: 'hyp.composer',
-      edges: [
-        { role: 'coverage_basis', targetCoverage: coverage },
-        { role: 'contradicts', targetEvidenceId: 'ev-a2' },
-        { role: 'supports', targetEvidenceId: 'ev-a1' },
-      ],
-      limitations: [
-        { limitationCode: 'RERUN_NOT_FLAKE', dimension: 'completeness', copyKey: 'hyp.ci_shift.truncated' },
-      ],
-    }))
-    expect(rebuilt.claimId).toBe(forward.demoClaimId)
 
-    const forwardTree = explanation(resolveWhy(forward.db, { claimId: forward.demoClaimId }))
-    const reversedTree = explanation(resolveWhy(reversed, { claimId: rebuilt.claimId }))
-    expect(reversedTree.edges).toEqual(forwardTree.edges)
-    expect(reversedTree.limitations).toEqual(forwardTree.limitations)
+    const forward = buildStore([
+      { role: 'supports', targetEvidenceId: 'ev-a1' },
+      { role: 'contradicts', targetEvidenceId: 'ev-a2' },
+      { role: 'coverage_basis', targetCoverage: true },
+    ])
+    const reversed = buildStore([
+      { role: 'coverage_basis', targetCoverage: true },
+      { role: 'contradicts', targetEvidenceId: 'ev-a2' },
+      { role: 'supports', targetEvidenceId: 'ev-a1' },
+    ])
+    // Same claim, written two ways — so any tree difference is ordering, not content.
+    expect(reversed.claimId).toBe(forward.claimId)
+
+    const forwardTree = explanation(resolveWhy(forward.db, { claimId: forward.claimId }))
+    const reversedTree = explanation(resolveWhy(reversed.db, { claimId: reversed.claimId }))
+    expect(reversedTree).toEqual(forwardTree)
+    expect(JSON.stringify(reversedTree)).toBe(JSON.stringify(forwardTree))
   })
 })
 
@@ -856,13 +900,13 @@ describe('why resolver — the C2 boundary', () => {
     expect(
       fixture.db.prepare('SELECT scope_alias FROM collection_job WHERE job_id = ?')
         .pluck().get('job-a1'),
-    ).toBe('scope-a')
+    ).toBe(COVERAGE_SCOPE_ALIASES[0])
   })
 
   it('names a coverage row by (rangeStart, jobId), never by the alias-bearing coverage_id', () => {
     const fixture = whyFixture()
     // The minted id really does carry the alias — that is the property being defended.
-    expect(fixture.coverageA.coverageId).toContain('scope-a')
+    expect(fixture.coverageA.coverageId).toContain(COVERAGE_SCOPE_ALIASES[0])
 
     const tree = explanation(resolveWhy(fixture.db, { claimId: fixture.demoClaimId }))
     const coverageEdge = group(tree, 'coverage_basis').edges[0]
