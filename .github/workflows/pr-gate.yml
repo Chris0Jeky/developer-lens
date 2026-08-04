@@ -17,7 +17,10 @@ permissions:
   contents: read
 
 concurrency:
-  group: pr-gate-${{ github.event.pull_request.number }}
+  # No-op `edited` events (title/body only) get their own group so they can never
+  # cancel an in-progress proving run — measured on PR #75, where a body edit
+  # cancelled the real gate run and left the head unproved.
+  group: pr-gate-${{ github.event.pull_request.number }}-${{ (github.event.action != 'edited' || github.event.changes.base) && 'prove' || 'noop' }}
   cancel-in-progress: true
 
 jobs:
