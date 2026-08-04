@@ -226,6 +226,16 @@ describe('V2 bridge request guard', () => {
       .expect(403)
   })
 
+  it('rejects on Host before it ever inspects the bearer', async () => {
+    const response = await request(appFor(syntheticStore))
+      .get('/api/v2/coverage')
+      .set('Host', 'evil.example')
+      .set('Origin', WEB_ORIGIN)
+      .set('Authorization', `Bearer ${'0'.repeat(64)}`)
+      .expect(403)
+    expect(response.body).toEqual({ error: { code: 'V2_HOST_NOT_ALLOWED' } })
+  })
+
   it('answers an unknown V2 resource with a stable redacted code', async () => {
     const response = await authorized(appFor(syntheticStore), '/api/v2/features').expect(404)
     expect(response.body).toEqual({ error: { code: 'V2_NOT_FOUND' } })
@@ -279,6 +289,22 @@ describe('V2 bridge store provenance gate', () => {
     expect(response.body).toEqual({ error: { code: 'V2_STORE_PROVENANCE_REFUSED' } })
   })
 
+  it('refuses a stored identifier that the storage CHECK allows but the boundary does not', async () => {
+    const path = await storeIn('identifier')
+    seedSyntheticCoverageStore(path)
+    // Accepted by the coverage_id CHECK (allowed charset, under 256 characters)
+    // and by CoverageRecordSchema, rejected by the opaque-identifier rule the
+    // V2 boundary applies.
+    mutateStore(path, (db) => {
+      db.prepare(
+        "UPDATE v2_coverage_record SET coverage_id = '-synthetic-coverage-leading-dash' WHERE status = 'complete'",
+      ).run()
+    })
+
+    const response = await authorized(appFor(path), '/api/v2/coverage').expect(500)
+    expect(response.body).toEqual({ error: { code: 'V2_RESPONSE_CONTRACT_VIOLATION' } })
+  })
+
   it('refuses a stored row that violates the shared coverage contract', async () => {
     const path = await storeIn('malformed')
     seedSyntheticCoverageStore(path)
@@ -303,6 +329,51 @@ describe('V2 bridge mount', () => {
       .set('Origin', WEB_ORIGIN)
       .expect(401)
     expect(rejected.body).toEqual({ error: { code: 'V2_UNAUTHORIZED' } })
+  })
+
+  it('serves both resources through the real lazy mount', async () => {
+    const path = await storeIn('mounted')
+    seedSyntheticCoverageStore(path)
+    const previousStore = process.env.DEVELOPER_LENS_V2_STORE
+    process.env.DEVELOPER_LENS_V2_STORE = path
+
+    try {
+      const { mountV2 } = await import('./mount.js')
+      const app = express()
+      app.use('/api/v2', mountV2(TOKEN))
+
+      const coverage = await request(app)
+        .get('/api/v2/coverage')
+        .set('Host', API_HOST)
+        .set('Authorization', `Bearer ${TOKEN}`)
+        .set(SAME_ORIGIN_METADATA)
+        .expect(200)
+      const coverageBody = V2CoverageResponseSchema.parse(coverage.body)
+      expect(coverageBody.provenance.syntheticMarker).toBe(SYNTHETIC_STORE_MARKER)
+      expect(new Set(coverageBody.records.map((record) => record.status))).toEqual(
+        new Set(COVERAGE_STATUSES),
+      )
+
+      const capabilities = await request(app)
+        .get('/api/v2/capabilities')
+        .set('Host', API_HOST)
+        .set('Origin', WEB_ORIGIN)
+        .set('Authorization', `Bearer ${TOKEN}`)
+        .expect(200)
+      expect(V2CapabilitiesResponseSchema.parse(capabilities.body).capabilities).toHaveLength(
+        CAPABILITY_REGISTRY.length,
+      )
+
+      await request(app)
+        .get('/api/v2/coverage')
+        .set('Host', API_HOST)
+        .set('Authorization', `Bearer ${'0'.repeat(64)}`)
+        .set(SAME_ORIGIN_METADATA)
+        .expect(401)
+    } finally {
+      if (previousStore === undefined) delete process.env.DEVELOPER_LENS_V2_STORE
+      else process.env.DEVELOPER_LENS_V2_STORE = previousStore
+    }
   })
 
   it('keeps the native storage driver behind a dynamic import', async () => {
