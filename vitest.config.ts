@@ -6,7 +6,7 @@ export default defineConfig({
   test: {
     environment: 'jsdom',
     setupFiles: ['./src/test/setup.ts'],
-    include: ['server/**/*.test.ts', 'scripts/**/*.test.ts', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
+    include: ['server/**/*.test.ts', 'scripts/**/*.test.ts', 'shared/**/*.test.ts', 'src/**/*.test.ts', 'src/**/*.test.tsx'],
     restoreMocks: true,
     coverage: {
       reporter: ['text', 'html'],
