@@ -13,7 +13,7 @@ It is designed for a question that ordinary contribution graphs cannot answer: *
 - Development rhythm, burst periods, cross-repository waves, delivery loops, emerging projects, and quiet craft such as tests, docs, refactors, and fixes.
 - A six-axis development DNA and a plain-language builder archetype.
 - A deterministic Signal Lab for integration predictability, change-batch shape, coordination regularity, feedback surface, cadence concentration, and portfolio transitions.
-- Observed facts, derived patterns, and higher-order hypotheses kept visually and semantically distinct.
+- Observed facts, derived patterns, and higher-order hypotheses kept visually and semantically distinct; the hypothesis closes with a question about what evidence could change the interpretation, never a score or prescribed action.
 - Evidence trails, confidence labels, coverage limitations, and a local-only privacy boundary on every analytical layer.
 - A share studio for social cards, platform-ready post copy, native share sheets, and self-contained HTML reports.
 - Hover, focus, and touch inspectors for activity days, language weighting, repository bubbles, headline metrics, and chart context.
@@ -108,6 +108,11 @@ Open <http://127.0.0.1:5173/?demo=v2>. To run its focused smoke coverage without
 npm run test:demo:v2
 ```
 
+For a prepared 3-5 minute walkthrough, use the
+[`showcase demo runbook`](docs/SHOWCASE_DEMO.md). It gives the exact hosted and local routes, a short
+talk track, the privacy boundary to state aloud, and the unfinished activation paths that must not
+be presented as live.
+
 By default, `collect` produces both the six-month and twelve-month lenses. To refresh only one range:
 
 ```powershell
@@ -173,8 +178,9 @@ historical document.
 Owner decisions live only in [`HUMAN_TODO.md`](HUMAN_TODO.md). G1/G2 are approved and G3 has
 standing approval within the named capability boundaries; runtime activation still needs a bounded,
 tested task. G4 is approved only for the default-off OpenAI `gpt-5.6-luna` contract in the data
-charter; `cap.external.model` remains `never_authorized`, so external-model transmission is still
-absent until a separate bounded implementation and gate pass.
+charter; `cap.external.model` remains `never_authorized`. The request builder and HTTP adapter are
+published but uncalled, so external-model transmission stays absent until a separately reviewed
+activation task binds the card, payload preview, credential, and one-call wrapper.
 
 The durable document roles are deliberately separate:
 
@@ -186,6 +192,8 @@ The durable document roles are deliberately separate:
   and phase dependencies.
 - [`docs/IMPLEMENTATION_LEDGER.md`](docs/IMPLEMENTATION_LEDGER.md) — current evidence, residual
   risks, and exact resume point.
+- [`docs/SHOWCASE_DEMO.md`](docs/SHOWCASE_DEMO.md) — the concise synthetic-demo talk track,
+  verification commands, and honest claim boundary.
 - [`docs/POST_DEMO_HARDENING.md`](docs/POST_DEMO_HARDENING.md) — deferred security, privacy,
   resilience, and distribution work.
 - [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](docs/OVERNIGHT_EXECUTION_PROMPT.md) — a copy-ready Sol

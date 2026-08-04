@@ -13,8 +13,8 @@ output.
 
 Development posture: the owner selected a demo-first D1-D3 lane on 2026-08-03. This charter gates
 real/private data and later distribution; it does not block invented C0 fixtures or local synthetic
-demo work. Hardening that is not part of the irreversible floor is tracked in
-[`POST_DEMO_HARDENING.md`](./POST_DEMO_HARDENING.md) until D3 is complete.
+demo work. D3 is complete; hardening that is not part of the irreversible floor remains tracked in
+[`POST_DEMO_HARDENING.md`](./POST_DEMO_HARDENING.md) and advances only as selected bounded work.
 
 ## Product boundary
 
