@@ -67,13 +67,13 @@ if (failures.length === 0) {
 }
 
 const authorityMarkers: Record<string, readonly string[]> = {
-  'AGENTS.md': ['G1 and G2 are owner-approved', 'G3 is standing-approved', 'G4 is open and not approved'],
-  'HUMAN_TODO.md': ['G1 and G2 are owner-approved', 'G3 standing authorization is owner-approved', 'G4 remains open and is not approved'],
-  'docs/data-charter.md': ['G1 and G2 are approved', 'standing G3 authorization', 'G4 is open and not approved'],
-  'docs/source-capability-matrix.md': ['G2 is satisfied', 'Standing G3 authorization', 'G4 is open and not approved'],
-  'docs/DEVELOPER_LENS_V2_ARCHITECTURE.md': ['G2 is approved', 'G3 sources have standing authorization', 'G4 is open and not approved'],
-  'docs/IMPLEMENTATION_LEDGER.md': ['G1 and G2 are owner-approved', 'G3 standing authorization', 'G4 remains open and unapproved'],
-  'docs/OVERNIGHT_EXECUTION_PROMPT.md': ['G1 and G2 are approved', 'G3 standing authorization', 'G4 remains open and is not approved'],
+  'AGENTS.md': ['G1 and G2 are owner-approved', 'G3 is standing-approved', 'G4 is owner-approved only for OpenAI'],
+  'HUMAN_TODO.md': ['G1 and G2 are owner-approved', 'G3 standing authorization is owner-approved', 'G4 is owner-approved only for the OpenAI/GPT-5.6-Luna boundary'],
+  'docs/data-charter.md': ['G1 and G2 are approved', 'standing G3 authorization', 'G4 is approved 2026-08-04 only for the bounded OpenAI'],
+  'docs/source-capability-matrix.md': ['G2 is satisfied', 'Standing G3 authorization', 'G4 is satisfied only for the OpenAI'],
+  'docs/DEVELOPER_LENS_V2_ARCHITECTURE.md': ['G2 is approved', 'G3 sources have standing authorization', 'G4 is approved only for the OpenAI'],
+  'docs/IMPLEMENTATION_LEDGER.md': ['G1 and G2 are owner-approved', 'G3 standing authorization', 'G4 is owner-approved only for OpenAI'],
+  'docs/OVERNIGHT_EXECUTION_PROMPT.md': ['G1 and G2 are approved', 'G3 standing authorization', 'G4 is approved only for OpenAI'],
 }
 
 for (const [path, markers] of Object.entries(authorityMarkers)) {
@@ -95,7 +95,7 @@ for (const path of liveAuthorityFiles) {
   }
   const contents = read(path)
   if (/G4 (?:is )?refused|G4 refusal/i.test(contents)) {
-    failures.push(`${path} still describes the open G4 gate as refused`)
+    failures.push(`${path} describes the approved G4 boundary as refused`)
   }
 }
 

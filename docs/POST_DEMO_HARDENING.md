@@ -1,6 +1,6 @@
 # Post-demo hardening backlog
 
-Owner decision: **2026-08-03**.
+Owner decision: **2026-08-03**. G4 provider-boundary update: **2026-08-04**.
 
 Developer Lens is developed as a local pet-project demo first. Until the D3 working-demo milestone
 in [`DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md), this file is the only
@@ -17,7 +17,8 @@ readiness.
   outputs, no destroyed user work, no external/production mutation, and no public publication of
   the sensitive-data branch without the named owner decision.
 - Invented C0 fixtures are the default. G2 and all seven named G3 sources are approved for later
-  bounded activation; G4 is open and not approved, so external-model transmission stays inactive.
+  bounded activation. G4 is approved only for the OpenAI/Luna contract in the data charter;
+  external-model transmission stays inactive until its own bounded task and gate pass.
 
 ## Seed backlog
 
@@ -33,7 +34,7 @@ These items are intentionally **not demo blockers**.
 | HARD-006 | Export/public-build isolation, private-type import denylist, checksums, COMPLETE marker, acknowledgement invalidation, and bundle/source-map scans | End-to-end export and Pages regression suite |
 | HARD-007 | Connector permissions, pagination, rate/cost budgets, retries, checkpoint overlap, idempotency, truncation, and deletion coverage | Per-capability task card and provider-limit fixtures |
 | HARD-008 | Local Git and parser process isolation, no-network/no-exec controls, lazy-fetch prevention, resource caps, and malicious config handling | Invented repository corpus and worker sandbox proof |
-| HARD-009 | External-model provider terms, payload preview, retention/training claims, spend limit, injection resistance, and deterministic fallback | Inactive while G4 is unapproved; activate only after a future explicit provider contract |
+| HARD-009 | External-model provider terms, payload preview, retention/training claims, spend limit, injection resistance, and deterministic fallback | OpenAI/Luna contract approved; prove the default-off payload/output/transport/budget/deletion seam with invented fixtures before activation |
 | HARD-010 | Dependency pinning, supply-chain review, CI hardening, artifact provenance, and release/distribution controls | Distribution plan and release gate |
 | HARD-011 | Restricted storage and deletion semantics for security/dependency/Projects/ownership/source-structure capabilities | Standing G3 authorization plus a bounded schema/storage task for each capability |
 | HARD-012 | Full threat model, abuse cases, property/fuzz tests, and runtime privacy verification across every sink | Demo-frozen interfaces and risk-based test plan |

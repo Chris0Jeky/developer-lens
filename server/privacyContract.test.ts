@@ -75,7 +75,12 @@ describe('P1 privacy contract', () => {
     expect(CAPABILITY_REGISTRY.map((capability) => capability.id)).toEqual([...CAPABILITY_IDS])
     expect(CAPABILITY_REGISTRY.every((capability) => capability.authorization === 'never_authorized')).toBe(true)
     expect(CAPABILITY_REGISTRY.every((capability) => capability.requiredGates.includes('G2'))).toBe(true)
-    expect(getCapabilityDefinition('cap.external.model').requiredGates).toEqual(['G2', 'G4'])
+    expect(getCapabilityDefinition('cap.external.model')).toMatchObject({
+      authorization: 'never_authorized',
+      requiredGates: ['G2', 'G4'],
+      retentionCode: 'OPENAI_STORE_FALSE_DEFAULT_30D',
+      deletionCode: 'DELETE_LOCAL_MODEL_DESCENDANTS',
+    })
     expect(() => getCapabilityDefinition('unknown.capability')).toThrow()
   })
 

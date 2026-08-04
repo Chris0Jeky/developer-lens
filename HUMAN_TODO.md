@@ -1,8 +1,9 @@
 # Human actions
 
 G1 and G2 are owner-approved. G3 standing authorization is owner-approved for the sensitive
-sources named in `docs/source-capability-matrix.md`, within that matrix and the data charter. G4
-remains open and is not approved. q-4's synthetic-only publication route remains active.
+sources named in `docs/source-capability-matrix.md`, within that matrix and the data charter. G4 is
+owner-approved only for the OpenAI/GPT-5.6-Luna boundary recorded below. q-4's synthetic-only
+publication route remains active.
 
 - [x] **q-1 — G2 retention and real migration approved.** The owner delegated the implementation
   details and accepted the existing conservative policy: C1 retains 36 rolling months, C2 13
@@ -24,11 +25,18 @@ remains open and is not approved. q-4's synthetic-only publication route remains
   remains `never_authorized` until a bounded implementation supplies and tests its activation path;
   this approval does not mutate credentials or authorize external writes.
 
-- [ ] **q-3 — Decide whether to approve G4 external-model use.** G4 is separate because it would
-  transmit data to another provider and introduces provider retention/training terms, telemetry,
-  prompt-injection and payload-review risk, spend controls, provider-held copies, and model-output
-  deletion. Until explicitly approved, keep `cap.external.model` `never_authorized` and do not add
-  or run a provider, SDK, transport, cache, telemetry, spend path, or model payload.
+- [x] **q-3 — G4 external-model use approved for OpenAI GPT-5.6 Luna.** On 2026-08-04 the owner
+  explicitly chose OpenAI as provider, `gpt-5.6-luna` as model, and the environment variable
+  `Llm__OpenAi__ApiKey` as the only credential source. The approved boundary is the stateless
+  Responses API with `store: false`, no hosted tools/files/vector stores, local retrieval only, a
+  strict user-reviewable C1 evidence allowlist, structured hypotheses, and hard per-run token,
+  request, and spend ceilings. OpenAI's published default may still retain abuse-monitoring content
+  by default for up to 30 days (subject to its documented legal/safety exceptions) and encrypted
+  prompt-cache state for up to 24 hours; this is not a zero-data-retention claim. Local revocation
+  cannot recall provider-held copies. The exact contract is in
+  `docs/data-charter.md` and `docs/source-capability-matrix.md`. This approval authorizes bounded
+  implementation, not an automatic request: `cap.external.model` remains `never_authorized` until
+  a separate task card, strict payload/output tests, review, and exact hosted gate activate it.
 
 - [x] **q-4 — Publication route chosen: public synthetic product, agent-authorized code-only branch.**
   Keep the existing public remote and synthetic Pages surface. Agents may implement, test, review,
@@ -50,12 +58,15 @@ remains open and is not approved. q-4's synthetic-only publication route remains
   unauthenticated, GET-only repository lifecycle metadata plus open issue/pull-request lifecycle
   units in a bounded time range and pagination/rate-limit headers. It does not authorize a token,
   credential mutation, local checkout/database/working-tree inspection, prose or people fields,
-  private output publication, or G4. Runtime activation still requires the reviewed parser,
-  transport, projection, storage, rollback, deletion, and exact-head proving checks named by that
-  private card.
+  private output publication, or an external-model request. Runtime activation still requires the
+  reviewed parser, transport, projection, storage, rollback, deletion, and exact-head proving
+  checks named by that private card.
 
 ## Changelog
 
+- 2026-08-04: the owner explicitly approved G4 for OpenAI `gpt-5.6-luna` using the securely assigned
+  `Llm__OpenAi__ApiKey` environment variable. q-3 records the narrow provider, payload, retention,
+  retrieval, spend, and deletion boundary without activating a runtime request.
 - 2026-08-04: the owner selected the first real public repository for a bounded `github.core`
   activation and delegated end-to-end execution. q-5 records only the public policy boundary; the
   selected identity and operational values remain in the ignored local task card.

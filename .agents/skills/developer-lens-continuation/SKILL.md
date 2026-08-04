@@ -40,7 +40,9 @@ Use the repository's tracked sources rather than caching project state in this s
    define exact local scope, read-only credentials, retained fields, coverage behavior, deletion,
    rollback and failure tests before activation.
 5. Treat missing permission or censored history as explicit coverage, never zero activity.
-6. Keep external models absent while G4 remains unapproved.
+6. For external-model work, stay inside the approved OpenAI/Luna data-charter boundary and keep
+   `cap.external.model` `never_authorized` until a bounded default-off implementation and exact-head
+   proving gate pass. Approval never authorizes an unreviewed payload.
 
 ## Protect the boundaries
 

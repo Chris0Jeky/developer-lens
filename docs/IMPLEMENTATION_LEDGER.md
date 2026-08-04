@@ -7,11 +7,12 @@ evidence/design version 2026-08-03.
 
 Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
-The published P4 foundation now includes an inert protocol, opt-in incremental storage bridge,
-invented-fixture page adapter, and a closed parser for one ignored owner-selected activation card.
-The current bounded milestone adds an injected public-unauthenticated GET transport with immediate
-strict projection. It remains default-off and adds no loader, credential, live read, storage
-composition, legacy-collector switch, or public/private output path**.
+The published P4 foundation includes an inert protocol, opt-in incremental storage bridge,
+invented-fixture page adapter, closed activation-card parser, injected public-unauthenticated GET
+transport with immediate projection, and closed-world incremental-schema validation. It remains
+default-off and adds no loader, credential, live read, storage composition, legacy-collector switch,
+or public/private output path. G4 is now provider-specifically approved, while the external-model
+capability remains `never_authorized` pending a separate default-off implementation and gate**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -19,8 +20,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current transport milestone: `origin/main` merge
-  `dcaa305c1e9813ee97ad6262348fb670f9d9953e`.
+- Published implementation baseline before this authority milestone: `origin/main` merge
+  `911069c88085a268dee033fba28034565ca45647`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -77,9 +78,25 @@ unresolved review threads outrank it whenever they disagree.
   `dcaa305c1e9813ee97ad6262348fb670f9d9953e`; exact-merge Pages run
   [30873997951](https://github.com/Chris0Jeky/developer-lens/actions/runs/30873997951) passed the full
   gate, synthetic-showcase privacy verification, artifact upload, and deployment.
-- [PR #21](https://github.com/Chris0Jeky/developer-lens/pull/21) is the current injected REST
-  transport milestone. It contains only the transport, invented tests, and this abstract state;
-  there is no task-card loader, live request, storage composition, or private/public output.
+- [PR #21](https://github.com/Chris0Jeky/developer-lens/pull/21) publishes the injected REST
+  transport at merge `ee99457b1748fefe86892576e726171faa76df7c`; exact-merge Pages run
+  [30875354872](https://github.com/Chris0Jeky/developer-lens/actions/runs/30875354872) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment. It adds no
+  task-card loader, live request, storage composition, or private/public output.
+- [PR #22](https://github.com/Chris0Jeky/developer-lens/pull/22) publishes closed-world incremental
+  schema validation at merge `d0141009cb05210a00db5a3ae8b947f62041110c`; exact-merge Pages run
+  [30876013819](https://github.com/Chris0Jeky/developer-lens/actions/runs/30876013819) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment.
+- [PR #23](https://github.com/Chris0Jeky/developer-lens/pull/23) publishes the context-verifier
+  Markdown/YAML edge-case repairs and closes issue #14 at merge
+  `ceab73b1b57eb3bd7935b8caecc2c50dc6a3c3ff`; exact-merge Pages run
+  [30876446311](https://github.com/Chris0Jeky/developer-lens/actions/runs/30876446311) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment.
+- [PR #24](https://github.com/Chris0Jeky/developer-lens/pull/24) publishes the launcher fallback and
+  generated-dataset boundary repair and closes issue #15 at merge
+  `911069c88085a268dee033fba28034565ca45647`; exact-merge Pages run
+  [30876708265](https://github.com/Chris0Jeky/developer-lens/actions/runs/30876708265) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment.
 
 ## Authority and owner gates
 
@@ -109,8 +126,10 @@ unresolved review threads outrank it whenever they disagree.
   tracked state records only its abstract read/privacy boundary; repository identity, provider ID,
   task path, and runtime values remain local and untracked. The card authorizes public
   unauthenticated reads only and does not itself enable a network or persistence path.
-- G4 remains open and unapproved. `cap.external.model` stays `never_authorized`; no provider, SDK,
-  transport, payload, cache, telemetry, or spend path is scheduled.
+- G4 is owner-approved only for OpenAI `gpt-5.6-luna` within the data charter's exact stateless
+  Responses, C1 payload, local-retrieval, provider-retention, credential, spend, output, and deletion
+  boundary. `cap.external.model` stays `never_authorized`; approval schedules bounded default-off
+  implementation but does not itself read the credential or send a payload.
 
 ## P0 result
 
@@ -164,7 +183,8 @@ unresolved review threads outrank it whenever they disagree.
 - Priority: working local demo, speed/effectiveness/productivity, owner feedback, and focused tests.
 - Sequence: D1 visible synthetic vertical slice, D2 feedback iteration, D3 repeatable local demo,
   the first synthetic P2 SQLite/importer proof, and the bounded P3 foundation are complete locally.
-  P4-P11 remain unactivated, and P12 remains absent because G4 is not approved. For future work,
+  P4-P11 remain unactivated. P12 is provider-specifically approved but remains absent/default-off
+  until its bounded implementation and gate. For future work,
   Sol performs bounded browser/visual passes when needed, records subjective assumptions and
   next-day questions, and proceeds rather than waiting.
 - Hardening rule: security, privacy hardening, resilience, and distribution concerns are recorded in
@@ -374,7 +394,8 @@ unresolved review threads outrank it whenever they disagree.
 - `docs/OVERNIGHT_EXECUTION_PROMPT.md` is reduced from a copied policy/queue snapshot to a thin
   launcher into `AGENTS.md`, the skill, owner decisions and live ledger. The deep-discovery prompt
   is explicitly historical.
-- G2/G3 are synchronized from the owner's new explicit instruction. G4 remains open: external
+- At that milestone G2/G3 were synchronized from the owner's then-current explicit instruction and
+  G4 remained open: external
   transmission has separate provider terms, training/retention, telemetry, injection, spend,
   cache and deletion boundaries, so it cannot be inferred from local retention/source approval.
 - No real/private input, generated dataset, credential, cache or browser profile was inspected.
@@ -393,7 +414,8 @@ unresolved review threads outrank it whenever they disagree.
   read-only inventory, mapping, triage, or review lane.
 - Luna owns bounded mechanical work, Terra receives judgment-heavy implementation/review, and Sol
   retains architecture, privacy, owner gates, canonical context, integration, publication, and
-  merge. G2/G3 approval still does not activate real sources, and G4 remains a hard stop.
+  merge. At that milestone G2/G3 approval did not activate real sources and unapproved G4 remained
+  a hard stop; the later 2026-08-04 provider-specific decision below supersedes only that G4 state.
 - The prompt carries no volatile SHA, PR, or phase snapshot. It reads this ledger and live GitHub at
   startup and after each wave, so a larger future runtime ceiling is used automatically while the
   currently exposed ceiling remains a platform fact rather than repository policy.
@@ -405,6 +427,28 @@ unresolved review threads outrank it whenever they disagree.
   repairs now validate multiline Markdown labels, keep encoded `#` inside local filenames by
   splitting raw fragments before decoding, and reject YAML collection/implicit non-string scalars
   in skill metadata. No private path or file was used by the invented regressions.
+
+## G4 OpenAI/Luna authority decision
+
+- On 2026-08-04 the owner explicitly chose OpenAI as the provider, `gpt-5.6-luna` as the model, and
+  `Llm__OpenAi__ApiKey` as the only credential environment variable. q-3 is closed with the exact
+  provider contract in the data charter and capability matrix.
+- The approved request is synchronous Responses API, standard tier, `store: false`, one request,
+  no retry, at most 16,000 UTF-8 input bytes, at most 2,000 output tokens, and estimated cost at or
+  below USD 0.01 after a fresh terms/pricing check. No hosted file/vector/embedding/search/tool,
+  stateful conversation, background job, cache, telemetry, or initially persisted output is allowed.
+- Retrieval/RAG stays local over explicitly selected C1 analysis-pack facts. Only controlled codes,
+  numeric values, bounded UTC intervals, coverage/limitation metadata, and request-scoped evidence
+  IDs may cross the boundary. The provider response is a schema-validated C1 hypothesis and cannot
+  reach presentation or export before local validation.
+- Official OpenAI documentation checked on 2026-08-04 says API content is not used for training
+  unless opted in, ordinary abuse-monitoring logs may contain prompts/responses by default for up
+  to 30 days (with documented legal/service-protection exceptions), and encrypted prompt-cache
+  state may remain for up to 24 hours. `store: false` avoids ordinary Responses application state
+  but is not a Zero Data Retention claim.
+- The capability registry contract advances to `1.1.0` with the provider/deletion metadata while
+  retaining literal `never_authorized`. This authority slice adds no provider SDK, request code,
+  credential read, payload, response, external call, local cache, telemetry, or model-output data.
 
 ## Verification
 
@@ -628,8 +672,8 @@ unresolved review threads outrank it whenever they disagree.
   synthetic route and showcase verifier.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
 - G2/G3 runtime behavior is not verified merely by approval: no real-data migration, retention
-  cleanup, backup, deletion, or named sensitive connector ran in this slice. G4 remains unapproved,
-  and no external-model path ran.
+  cleanup, backup, deletion, or named sensitive connector ran in this slice. G4 is now approved
+  only for the recorded OpenAI/Luna boundary, but no external-model path or request has run.
 
 ## Residual risk
 
@@ -709,8 +753,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the transport milestone is
-   merge `dcaa305c1e9813ee97ad6262348fb670f9d9953e`; live evidence still outranks this checkpoint.
+1. Refresh Git/GitHub before mutation. The published baseline before this authority milestone is
+   merge `911069c88085a268dee033fba28034565ca45647`; live evidence still outranks this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
    activated hostile-writer claim without an immutable snapshot or equivalent boundary.
@@ -722,5 +766,9 @@ unresolved review threads outrank it whenever they disagree.
    state. Next add the task-root/key-continuity and additive storage-composition seam, including
    schema mismatch rollback, backup/restore, scoped deletion/tombstone, re-consent, replay/stability,
    and non-complete coverage persistence. Keep runtime default-off and make no real request until
-   that composition, focused failure tests, review, and the exact hosted gate pass. G4 remains
-   required for any external-model work.
+   that composition, focused failure tests, review, and the exact hosted gate pass.
+5. G4 is approved only for the exact OpenAI/Luna contract, but `cap.external.model` remains
+   `never_authorized`. A parallel bounded P12 slice may implement the injected default-off request,
+   strict C1 payload/output schemas, local retrieval, budget/error/deletion controls, and invented
+   canaries. Make no live request until that implementation, review, exact hosted gate, and an exact
+   payload-preview/task-card authorization pass.

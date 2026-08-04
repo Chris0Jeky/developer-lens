@@ -70,8 +70,10 @@ OWNER AUTHORITY AND NON-NEGOTIABLE BOUNDARIES
   capability matrix. Approval is not runtime activation: every executable path remains
   never_authorized until a bounded task selects exact repositories, uses existing read-only
   least-privilege access, and proves coverage, retention, deletion, rollback, and failure behavior.
-- G4 remains open and is not approved. No external-model provider, SDK, transport, payload, cache,
-  telemetry, training/retention path, or spend path may be added or run.
+- G4 is approved only for OpenAI `gpt-5.6-luna` within the exact stateless Responses, C1 payload,
+  local-retrieval, provider-retention, credential, spend, output, and deletion boundary in the data
+  charter and capability matrix. `cap.external.model` remains `never_authorized`: use a separate
+  bounded default-off task, invented canaries, review, and exact-head gate before any live request.
 - The public origin route may contain only code, tests, documentation, and invented C0 synthetic
   fixture/assets admitted by the declared public-only schema, plus the verified workflow-generated
   Pages artifact exception. Never track or publish generated datasets (including generated

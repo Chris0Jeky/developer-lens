@@ -13,7 +13,7 @@ facts and commands.
 3. Invoke `$developer-lens-continuation` for implementation, migration, sensitive-source,
    architecture, or handoff work.
 4. Read `docs/data-charter.md` and `docs/source-capability-matrix.md` before any persistence,
-   migration, collector, export, or private-source change.
+   migration, collector, export, private-source, retrieval, or external-model change.
 5. Consult the full architecture only for design decisions; do not read historical prompts as live
    authority.
 
@@ -36,8 +36,10 @@ facts and commands.
 - G3 is standing-approved for the named, reviewed sources in the capability matrix. Current
   executable definitions stay `never_authorized` until a bounded task implements and tests an
   activation path for explicitly selected repositories with existing read-only credentials.
-- G4 is open and not approved. Do not add an external-model provider, SDK, transport, payload,
-  telemetry, cache, or spend path without a new explicit owner decision.
+- G4 is owner-approved only for OpenAI `gpt-5.6-luna` within the exact C1 payload, local-retrieval,
+  provider-retention, credential, spend, output, and deletion boundary in the data charter and
+  capability matrix. `cap.external.model` remains `never_authorized` until a bounded default-off
+  implementation and exact-head gate pass; approval is not permission to send an unreviewed payload.
 - The public `origin` route may carry code, tests, docs, and invented synthetic assets only.
   Authority to design or implement a source is not authority to publish its private output.
 
