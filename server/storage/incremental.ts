@@ -211,12 +211,25 @@ export const INCREMENTAL_GITHUB_CORE_STORAGE_SCHEMA_FINGERPRINT = schemaFingerpr
 const INCREMENTAL_GITHUB_CORE_SCHEMA_NAMES = INCREMENTAL_GITHUB_CORE_SCHEMA_DEFINITIONS.map(
   ({ name }) => name,
 )
+const INCREMENTAL_GITHUB_CORE_SCHEMA_TABLE_NAMES = INCREMENTAL_GITHUB_CORE_SCHEMA_DEFINITIONS
+  .filter(({ type }) => type === 'table')
+  .map(({ name }) => name)
 
 function readOwnedSchemaRows(db: Database.Database): IncrementalSchemaRow[] {
-  const placeholders = INCREMENTAL_GITHUB_CORE_SCHEMA_NAMES.map(() => '?').join(', ')
+  const namePlaceholders = INCREMENTAL_GITHUB_CORE_SCHEMA_NAMES.map(() => '?').join(', ')
+  const tablePlaceholders = INCREMENTAL_GITHUB_CORE_SCHEMA_TABLE_NAMES.map(() => '?').join(', ')
   return db.prepare(
-    `SELECT type, name, tbl_name, sql FROM sqlite_schema WHERE name IN (${placeholders})`,
-  ).all(...INCREMENTAL_GITHUB_CORE_SCHEMA_NAMES) as IncrementalSchemaRow[]
+    `SELECT type, name, tbl_name, sql FROM sqlite_schema
+     WHERE name IN (${namePlaceholders})
+        OR (
+          tbl_name IN (${tablePlaceholders})
+          AND type IN ('index', 'trigger')
+          AND name NOT GLOB 'sqlite_autoindex_*'
+        )`,
+  ).all(
+    ...INCREMENTAL_GITHUB_CORE_SCHEMA_NAMES,
+    ...INCREMENTAL_GITHUB_CORE_SCHEMA_TABLE_NAMES,
+  ) as IncrementalSchemaRow[]
 }
 
 function hasExpectedSchema(rows: readonly IncrementalSchemaRow[]): boolean {

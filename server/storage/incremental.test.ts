@@ -244,6 +244,35 @@ describe('P4 opt-in incremental github.core storage', () => {
     ).get()).not.toBeUndefined()
   })
 
+  it('rejects unexpected triggers or indexes attached to owned tables', () => {
+    const db = database()
+    installIncrementalGithubCoreStorage(db)
+    db.exec([
+      'CREATE TRIGGER unexpected_checkpoint_insert',
+      'AFTER INSERT ON collection_checkpoint',
+      'BEGIN',
+      '  DELETE FROM collection_job WHERE job_id = NEW.committed_job_id;',
+      'END;',
+    ].join('\n'))
+
+    expect(() => installIncrementalGithubCoreStorage(db)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+    expect(db.prepare(
+      "SELECT name FROM sqlite_schema WHERE type = 'trigger' AND name = 'unexpected_checkpoint_insert'",
+    ).pluck().get()).toBe('unexpected_checkpoint_insert')
+    expect(readIncrementalGithubCoreStorageSchemaFingerprint(db)).not.toBe(
+      INCREMENTAL_GITHUB_CORE_STORAGE_SCHEMA_FINGERPRINT,
+    )
+
+    const dbWithIndex = database()
+    installIncrementalGithubCoreStorage(dbWithIndex)
+    dbWithIndex.exec('CREATE INDEX unexpected_scope_index ON collection_job(scope_alias);')
+    expect(() => installIncrementalGithubCoreStorage(dbWithIndex)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+  })
+
   it('atomically stores an empty complete snapshot and a checkpoint without a watermark', () => {
     const db = database()
     installIncrementalGithubCoreStorage(db)
