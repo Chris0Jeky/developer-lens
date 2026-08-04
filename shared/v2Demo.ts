@@ -12,6 +12,7 @@ const V2_INSIGHT_SCHEMA = z
     eyebrow: z.string(),
     title: z.string(),
     body: z.string(),
+    reflectionQuestion: z.string().optional(),
     evidence: z.array(z.string()).length(2),
     caveat: z.string(),
     confidence: z.enum(['high', 'medium', 'low']),
@@ -35,6 +36,11 @@ export const V2_DEMO_PAYLOAD_SCHEMA = z
     insightEyebrows: z.array(z.string()).length(INSIGHT_COUNT),
     insightTitles: z.array(z.string()).length(INSIGHT_COUNT),
     insightBodies: z.array(z.string()).length(INSIGHT_COUNT),
+    insightReflectionQuestions: z.tuple([
+      z.literal(''),
+      z.literal(''),
+      z.string().min(1).max(240),
+    ]),
     insightEvidenceOne: z.array(z.string()).length(INSIGHT_COUNT),
     insightEvidenceTwo: z.array(z.string()).length(INSIGHT_COUNT),
     insightCaveats: z.array(z.string()).length(INSIGHT_COUNT),
@@ -58,6 +64,7 @@ export const V2_DEMO_REGISTRATION = registerPublicPayload(
     insightEyebrows: 'C0',
     insightTitles: 'C0',
     insightBodies: 'C0',
+    insightReflectionQuestions: 'C0',
     insightEvidenceOne: 'C0',
     insightEvidenceTwo: 'C0',
     insightCaveats: 'C0',
@@ -94,6 +101,11 @@ export const V2_DEMO_PAYLOAD: V2DemoPayload = payloadForSink(
       'The observed wave shape and batch sizes combine into a reproducible delivery pattern.',
       'The aligned signals support a useful question: does a visible pause make the next handoff clearer?',
     ],
+    insightReflectionQuestions: [
+      '',
+      '',
+      'What additional evidence would distinguish a deliberate handoff pause from an ordinary gap in the available trace?',
+    ],
     insightEvidenceOne: [
       '3 active windows in the synthetic timeline',
       'Median batch size: 4 events',
@@ -117,18 +129,22 @@ export const V2_DEMO_PAYLOAD: V2DemoPayload = payloadForSink(
 )
 
 function deriveInsights(payload: V2DemoPayload): Insight[] {
-  return payload.insightIds.map((id, index) => ({
-    id,
-    order: payload.insightOrders[index],
-    category: payload.insightCategories[index],
-    eyebrow: payload.insightEyebrows[index],
-    title: payload.insightTitles[index],
-    body: payload.insightBodies[index],
-    evidence: [payload.insightEvidenceOne[index], payload.insightEvidenceTwo[index]],
-    caveat: payload.insightCaveats[index],
-    confidence: payload.insightConfidences[index],
-    score: payload.insightScores[index],
-  }))
+  return payload.insightIds.map((id, index) => {
+    const reflectionQuestion = payload.insightReflectionQuestions[index]
+    return {
+      id,
+      order: payload.insightOrders[index],
+      category: payload.insightCategories[index],
+      eyebrow: payload.insightEyebrows[index],
+      title: payload.insightTitles[index],
+      body: payload.insightBodies[index],
+      ...(reflectionQuestion ? { reflectionQuestion } : {}),
+      evidence: [payload.insightEvidenceOne[index], payload.insightEvidenceTwo[index]],
+      caveat: payload.insightCaveats[index],
+      confidence: payload.insightConfidences[index],
+      score: payload.insightScores[index],
+    }
+  })
 }
 
 // Keep the InsightStack input derived exclusively from the sink-validated payload.

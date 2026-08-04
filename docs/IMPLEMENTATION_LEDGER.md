@@ -45,7 +45,10 @@ cross-binds the task ID and strict current-time parser, builds one exact credent
 preview, and binds the reviewed bundle ID plus SHA-256 digests of its exact UTF-8 bundle JSON and
 request body. Published P12 adds the first authorization-bearing HTTP adapter: a genuine
 bound preview is revalidated before the one named environment lookup, one finite-timeout fetch, and
-strict body/output/usage projection. It remains uncalled and default-off. The external-
+strict body/output/usage projection. It remains uncalled and default-off. The current D1 candidate
+adds one static, sink-validated question to carry forward on the invented hypothesis card so the
+story ends with evidence that could change the interpretation rather than a score or prescribed
+action. The external-
 model capability is still
 `never_authorized`; there is no task-card/runtime caller, actual environment read, network/provider
 execution, cache, telemetry, persistence, export, or presentation path**.
@@ -61,7 +64,7 @@ trusted card/report anchor, task-owned key fingerprint and database,
 backup/restore, revocation/re-consent, and caller-clock binding remain mandatory before any future
 real caller or GET.
 
-The current P4 candidate adds explicit task-owned installation-key creation and continuity loading.
+Published P4 adds explicit task-owned installation-key creation and continuity loading.
 It creates one exact 32-byte key at the canonical ignored task path with exclusive no-overwrite
 semantics, returns only a frozen fingerprint/alias handle, and reopens only a confined, regular,
 single-link key whose exact bigint file and directory identities remain stable across two reads.
@@ -76,8 +79,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current P4 key-continuity candidate:
-  `origin/main` merge `cdae7c1701f9e74109240c9faa5f767d3f70f243`.
+- Published implementation baseline before the current D1 reflection-question candidate:
+  `origin/main` merge `4566448035d5359b671db2edc937823341941009`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -707,8 +710,22 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- The current P4 key-continuity candidate was rebased as `73c9e03` onto activation-runner merge
-  `cdae7c1`. The focused key suite passed 1 file / 12 tests. `npm run check` passed Oxlint, context
+- The current D1 reflection-question candidate keeps its only new copy inside the registered C0
+  public-demo payload and renders it as a static, accessible complementary region on the hypothesis
+  card. The focused InsightStack/App suites passed 2 files / 6 tests; `npm run test:demo:v2` passed
+  1 file / 5 tests. After rebasing onto key-continuity merge `4566448`, `npm run check` passed
+  Oxlint, context verification, 42 test files / 240 tests, TypeScript project builds, and the
+  production Vite build. `npm run build:showcase` passed invented
+  export generation, social rendering, the showcase build, synthetic identity/export-boundary
+  verification, and secret/path scans; `git diff --check` passed. In-app browser inspection at the
+  normal desktop viewport and 390 x 844 found the question visible, readable, filter-preserving, and
+  free of horizontal document overflow. Fresh-context review found no CRITICAL/HIGH correctness,
+  public-sink, humane-copy, accessibility, responsive, or missing-test defect. Its nonblocking
+  schema-layer coupling and unusually small-copy observations are tracked in
+  [#55](https://github.com/Chris0Jeky/developer-lens/issues/55) rather than expanding this slice.
+- P4 key-continuity [PR #60](https://github.com/Chris0Jeky/developer-lens/pull/60) published logic
+  commit `73c9e03` and evidence commit `0e90548` on activation-runner merge `cdae7c1`. The focused
+  key suite passed 1 file / 12 tests. `npm run check` passed Oxlint, context
   verification, 42 test files / 240 tests, TypeScript project builds, and the production Vite build;
   `git diff --check origin/main..HEAD` passed. Tests cover exclusive creation, reopen continuity,
   exact fingerprint mismatch, short/oversized/changed keys, closed inputs and mutation, canonical
@@ -718,7 +735,10 @@ unresolved review threads outrank it whenever they disagree.
   CRITICAL/HIGH defect. That review also confirmed the published activation runner does not import
   or call this key API. Its separate raw-key/card-hash inputs, copied-key zeroing, and durable
   expected-fingerprint binding remain mandatory work for the future bound caller rather than an
-  activation claim in this inert slice.
+  activation claim in this inert slice. The PR merged with commit preservation at `4566448`; exact-
+  merge hosted Pages run `30896810539` passed the full gate, synthetic showcase privacy verifier,
+  artifact upload, and deployment. Both job annotation lists and the post-merge review sweep were
+  empty.
 - P4 activation-runner [PR #58](https://github.com/Chris0Jeky/developer-lens/pull/58) published logic
   commit `59e0a2a` on HTTP-adapter merge
   `1f17095`. The focused hash-bound loader/runner suites passed 2 files / 16 tests. `npm run check`
@@ -746,8 +766,9 @@ unresolved review threads outrank it whenever they disagree.
   credentials/responses and never referenced the real process environment variable. Exact rebased-
   head adversarial review found no CRITICAL/HIGH credential, request-byte, timeout, response-shape,
   usage/cost, raw-discard, or API-surface defect. The PR merged with commit preservation at
-  `1f17095`; exact-merge hosted Pages run `30892681308` passed, and both job annotation lists were
-  empty.
+  `1f17095`; exact-merge hosted Pages run `30892681308` passed the full gate, synthetic privacy
+  verification, artifact upload, and deployment. Both job annotation lists were empty, and the
+  post-merge sweep contained no finding.
 - P4 failure-pairing [PR #53](https://github.com/Chris0Jeky/developer-lens/pull/53) merged as `8ca3a62`
   after rebasing onto zero-page merge `fa4e194`; it maps `rate_limited` only to `RATE_LIMITED` and
   every other closed failure kind only to `FAILURE_<KIND>`. Mismatches reject before a transition;
@@ -1043,14 +1064,21 @@ unresolved review threads outrank it whenever they disagree.
   comparisons; a direct >2^53 collision regression and the unchanged focused/full gates passed.
 - The key worktree had no local dependencies. After matching the lockfile hash and Node major, tests
   used a temporary ignored junction to the primary install. The junction was verified and removed
-  nonrecursively after each run; the exact-rebased full gate then passed and left only generated
-  ignored `dist/` for normal post-merge cleanup.
+  nonrecursively after each run; the exact-rebased full gate then passed. After the exact merge gate,
+  generated `dist/` was the only ignored entry and the coordinator removed the worktree without
+  force.
 - The isolated runner worktree initially had no local dependencies. The worker used a temporary
   ignored `node_modules` junction only after proving the package-lock hash and Node major matched the
   primary checkout. PowerShell junction removal then raised a `NullReferenceException`; the
   coordinator verified the exact worktree-local reparse point and its expected target, removed only
   the junction with nonrecursive .NET directory deletion, and proved the primary dependency target
-  remained present. Generated `dist/` remains ignored until normal post-merge worktree cleanup.
+  remained present. Generated `dist/` was the only ignored entry after the exact merge gate, and the
+  coordinator removed the worktree without force.
+- The first exact-head D1 reflection-question full gate passed 220 tests but the unchanged native
+  analysis-pack determinism case exceeded its 5-second test timeout by 44 ms under concurrent work.
+  It was not called flaky or treated as green: the exact analysis-pack file then passed 5/5 in
+  1.92 seconds with 597 ms of test time, and the unchanged full gate passed 40 files / 221 tests on
+  the bounded second attempt.
 - Pre-publication inspection found that the first request draft omitted native Structured Outputs
   and an explicit standard service tier, and estimated input tokens as bytes divided by four. The
   fix adds the closed `text.format` JSON Schema, `service_tier: default`, cache-write pricing, and a
@@ -1280,8 +1308,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current P4 key-continuity
-   candidate is merge `cdae7c1701f9e74109240c9faa5f767d3f70f243`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current D1 reflection-
+   question candidate is merge `4566448035d5359b671db2edc937823341941009`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -1301,8 +1329,8 @@ unresolved review threads outrank it whenever they disagree.
    job replay with invented in-memory fixtures. Published composition closes the zero-page post-
    metadata gap and failure-kind/limitation pairing. The published inert runner now binds exact
    reviewed card bytes, enforces a total request ceiling, and requires two hash-equal complete
-   observations before complete persistence. The current key-continuity candidate establishes an
-   exact task-owned fingerprint without activating a caller. Next bind that fingerprint and the
+   observations before complete persistence. The published key-continuity foundation establishes
+   an exact task-owned fingerprint without activating a caller. Next bind that fingerprint and the
    task-owned database through a durable reviewed report, then add backup/restore, scoped deletion/
    tombstone, revocation/re-consent, and caller-clock proof. Keep runtime default-off and make no
    real request until those controls, focused failure tests, review, and exact hosted gates pass.

@@ -2514,6 +2514,31 @@ button.heatmap__cell[aria-pressed="true"] {
   line-height: 1.72;
 }
 
+.insight-card__question {
+  margin-top: 20px;
+  padding: 16px 17px;
+  border: 1px solid rgba(255, 140, 163, 0.14);
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 126, 160, 0.055), rgba(183, 155, 255, 0.035));
+}
+
+.insight-card__question > span {
+  display: block;
+  margin-bottom: 7px;
+  color: #b8849b;
+  font-size: 7px;
+  font-weight: 740;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.insight-card__question > p {
+  margin: 0;
+  color: #c6bcc8;
+  font-size: 9px;
+  line-height: 1.6;
+}
+
 .insight-card__evidence {
   display: flex;
   margin-top: auto;
