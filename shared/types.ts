@@ -101,6 +101,7 @@ export interface Insight {
   eyebrow: string
   title: string
   body: string
+  reflectionQuestion?: string
   evidence: string[]
   caveat?: string
   confidence: Confidence

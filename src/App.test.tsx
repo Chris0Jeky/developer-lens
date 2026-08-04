@@ -130,8 +130,15 @@ describe('Developer Lens app', () => {
       /3 active windows in the synthetic timeline/i,
     )
     expect(screen.getByText(/synthetic timestamps describe/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('complementary', { name: /question to carry forward/i }),
+    ).toHaveTextContent(/what additional evidence would distinguish/i)
     expect(Object.values(V2_DEMO_REGISTRATION.fieldClasses).every((fieldClass) => fieldClass === 'C0')).toBe(true)
     expect(() => V2_DEMO_REGISTRATION.schema.parse({ ...V2_DEMO_PAYLOAD, unexpected: true })).toThrow()
+    expect(() => V2_DEMO_REGISTRATION.schema.parse({
+      ...V2_DEMO_PAYLOAD,
+      insightReflectionQuestions: ['A question on an observed card.', '', 'A bounded question.'],
+    })).toThrow()
     expect(payloadForSink('public', V2_DEMO_REGISTRATION, V2_DEMO_PAYLOAD)).toEqual(V2_DEMO_PAYLOAD)
     for (const insight of V2_DEMO_INSIGHTS) {
       expect(screen.getByRole('heading', { name: insight.title })).toBeInTheDocument()

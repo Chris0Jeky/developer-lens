@@ -94,6 +94,15 @@ export function InsightStack({ insights }: { insights: Insight[] }) {
               </div>
               <h3>{insight.title}</h3>
               <p>{insight.body}</p>
+              {insight.reflectionQuestion && (
+                <aside
+                  aria-label="Question to carry forward"
+                  className="insight-card__question"
+                >
+                  <span>Question to carry forward</span>
+                  <p>{insight.reflectionQuestion}</p>
+                </aside>
+              )}
               <div className="insight-card__evidence">
                 <span>Evidence trail</span>
                 {insight.evidence.map((evidence) => (
