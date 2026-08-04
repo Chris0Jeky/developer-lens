@@ -263,7 +263,7 @@ export const CARDS = [
   rollback: 'Panel + endpoints are additive; unmount.',
   demo: 'Walkthrough: question -> comparison -> distribution -> drawer -> limitation -> sensitivity.' },
 
-{ id: 'DL-OPS-CI-01', title: 'Hosted pull-request CI gate before broad autonomous merging (drift demo - reverted in the next commit)', epic: 'analytics-core', type: 'implementation', status: 'READY', risk: 'low', effort: 'M', milestone: 'M1', privacy: 'C0', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-OPS-CI-01', title: 'Hosted pull-request CI gate before broad autonomous merging', epic: 'analytics-core', type: 'implementation', status: 'READY', risk: 'low', effort: 'M', milestone: 'M1', privacy: 'C0', gate: 'gate:G2', horizon: 'active',
   question: 'Does every PR prove context validity, types, tests, and privacy canaries before merge, without a human babysitter?',
   outcome: 'A hosted PR workflow gating merges on: npm run verify:context, unit tests, type/build checks, synthetic privacy canaries, and showcase verification. Ordering rule: complete before multiple autonomous implementation lanes or expanded merge authority.',
   deps: 'none', unlock: '',
