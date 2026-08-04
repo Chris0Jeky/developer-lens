@@ -139,7 +139,7 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   is recorded as one of the ten canonical `CoverageStatus` values, never as zero units.
 - **Canonical objects** — Existing `DL.COV.COMPLETE_RATIO.v1`, `DL.COV.FRESHNESS_AGE_H.v1`,
   `DL.DQ.CONFLICT_RATIO.v1` (canonical §4 — unchanged). Programme deltas:
-  `DL.COV.DIMENSION_VECTOR.v1` (P) — the registered eleven-dimension vector with a `limiting_reason`
+  `DL.COV.DIMENSION_VECTOR.v1` (P) — the registered twelve-dimension vector with a `limiting_reason`
   per dimension; `DL.COV.ABSTENTION_RATIO.v1` (P) — claims abstained / claims attempted per family ×
   window; `DL.COV.PARSER_COVERAGE.v1` (P) — admitted files or bytes / eligible, per language ×
   parser tier; `DL.COV.COMPARABILITY.v1` (P) — snapshot pairs with equal parser major and config
@@ -232,44 +232,67 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   Supports deciding **where structural work is worth doing** — which package boundary, which role
   surface is missing (no CI definition, no migrations, no API surface) — without reading a path.
 - **Sources / fields** — `SRC-COMP-01` / `REPO-DOC-01` via Appendix `B27` (`git ls-tree -r -z
-  --long HEAD^{tree}` at an explicitly selected immutable ref): mode, blob size, and path — all
-  consumed **inside** the worker. `GH-LANG-01` (Appendix `B1` language edges) as an independent
-  cross-check for `source_diversity`. Manifest presence uses the bounded parse already permitted by
-  `GH-SBOM-01` rules (`B16`) — no other content read.
+  --long <card_bound_ref_oid>^{tree}`): mode, blob size, and path — all consumed **inside** the
+  worker. **The activation card binds the exact OID; no mutable ref is ever selected** (never
+  `HEAD`, `HEAD^{tree}`, a branch name, or any symbolic ref), and moving the checkout's `HEAD` must
+  not change the output — XRAY-02 carries a test asserting byte-identical enumeration across
+  checkout `HEAD` movement. `GH-LANG-01` (Appendix `B1` language edges) as an independent
+  cross-check for `source_diversity`. **Manifest handling here is name-only:**
+  `cap.source.structure` alone permits filename/extension/presence classification, so a
+  `dependency_manifest` file may be **counted and role-classified by its name** and nothing more.
+  Reading or parsing a manifest **body** — declared dependencies, workspace topology, SBOM-adjacent
+  content — requires `cap.github.dependencies` (a future local-manifest capability would first
+  need its own reviewed matrix row — none exists today) to be
+  **separately active with its own explicit card dependency**; consent is never piggybacked on
+  `cap.source.structure`, and `GH-SBOM-01` rules (`B16`) govern bodies only inside that capability.
 - **Classes / prohibited / posture** — Input **C4** (paths, names, file lists, modes) destroyed
   in-process; retained **C1** only. Prohibited: paths, file names, identifiers, symbols, source
   bytes, parser diagnostics, working-tree state (`SRC-WORKTREE-X`), submodule recursion without its
-  own consent, and any content read beyond the closed role-sniffing tables. Posture `O+E→A` under
+  own consent, **manifest bodies of any kind under this capability alone**, and any content read
+  beyond the closed role-sniffing tables. Posture `O+E→A` under
   `cap.source.structure` (G3 approved, P10).
 - **Canonical objects** — Closed role taxonomy {build, test, docs, config, migration, api_surface,
-  ci_definition, dependency_manifest, generated, vendored, binary_asset} (ADR-05). Features
+  ci_definition, dependency_manifest, generated, vendored, binary_asset, schema_definition,
+  fixture_golden, snapshot_artifact} (14 roles, ADR-05). Features
   `DL.XRAY.LANGUAGE_SHARE.v1` (P) — byte share by controlled language vocabulary;
   `DL.XRAY.ROLE_PRESENCE.v1` (P) — presence boolean + file count per role;
   `DL.XRAY.PACKAGE_BOUNDARY_COUNT.v1` (P) — distinct package/monorepo boundaries via
-  manifest-presence classes; `DL.XRAY.ENUMERATION_COVERAGE.v1` (P) — enumerated / expected entries.
-- **Baseline / modelled** — Deterministic enumeration and table-driven classification. **None
+  manifest-presence classes (**filename/extension presence only — no body is read**);
+  `DL.XRAY.ENUMERATION_COVERAGE.v1` (P) — enumerated / expected entries.
+- **Baseline / modelled** — Deterministic enumeration and table-driven classification. **Layer:
+  deterministic (derived), never observed** — language shares, role counts, and boundary counts are
+  products of enumeration plus the closed classification tables and carry `parser_coverage`
+  limitations; only `GH-LANG-01`'s provider edges are an observed fact. **None
   justified** — a learned role classifier would need file names or content as features, which are
-  C4/X; the extension/manifest tables are both sufficient and auditable.
-- **Gates / corrections / coverage** — Eligibility: one immutable ref; a dirty working tree must
-  produce an identical result. `n≥1` entries. Corrections: a new snapshot **replaces**, never
-  merges — composition is a snapshot fact. Deletion: `cap.source.structure` revocation deletes
-  summaries and the parser cache; C4 never persisted, so nothing to delete there. Dimensions bound:
+  C4/X; the extension/manifest-name tables are both sufficient and auditable.
+- **Gates / corrections / coverage** — Eligibility: one card-bound immutable ref OID; a dirty
+  working tree, or a checkout whose `HEAD` points elsewhere, must produce an identical result.
+  `n≥1` entries. Corrections: a new snapshot **replaces**, never merges — composition is a
+  snapshot-scoped derivation, not an accumulating observation. Deletion: `cap.source.structure`
+  revocation deletes summaries and the parser cache; C4 never persisted, so nothing to delete
+  there. Dimensions bound:
   `parser_coverage` (role sniffing that abstains), `completeness` (truncated enumeration),
   `comparability` (config revision), `permission`. A failed classification degrades
   `parser_coverage`; it never fabricates a composition share.
 - **Confounders / falsifiers / bounds** — Confounders: vendored and generated trees inflate language
   share; monorepos make "repository composition" a weak unit; provider language detection and local
-  enumeration legitimately disagree. Falsifier: two enumerations of the same ref producing different
-  shares; a role marked present whose only evidence was an excluded generated file. Bounds:
-  `O(F)` entries, `O(B)` admitted manifest bytes (canonical §12); worker time/memory/output caps;
-  no network, no lazy fetch.
+  enumeration legitimately disagree. Falsifier: two enumerations of the same card-bound OID
+  producing different shares; an enumeration that changes when the checkout's `HEAD` moves; a role
+  marked present whose only evidence was an excluded generated file. Bounds: `O(F)` entries
+  (canonical §12); **no manifest bytes are admitted under this capability** — bounded `O(B)` body
+  parses exist only inside the separately-consented dependency capability (CAT-FBK-03); worker
+  time/memory/output caps; no network, no lazy fetch.
 - **UI / corpus / eval / deps / rollout** — UI: **Evidence Atlas** (system overview card) and
   **Architecture Time Machine** (composition strip). Corpus: monorepo with three packages; a
   generated-heavy repository; vendored directory; binary and symlink entries; NUL-safe unusual
-  names; an empty tree; a repository whose only test evidence is generated. Eval gate: identical
-  output with a dirty working tree; zero paths/names in any sink under the adversarial canary scan.
-  Deps: ADR-05, ADR-06 (worker), matrix `cap.source.structure`; cards XRAY-01/02/03. Rollout: opt-in
-  activation card; rollback = revoke capability, delete summaries.
+  names; an empty tree; a repository whose only test evidence is generated; schema, golden-fixture,
+  and snapshot-artifact trees for the three roles added in ADR-05; **a checkout whose `HEAD` is
+  moved to an unrelated ref between two runs of the same card-bound OID**. Eval gate: identical
+  output with a dirty working tree **and across checkout `HEAD` movement**; zero paths/names in any
+  sink under the adversarial canary scan; **zero manifest-body reads with only
+  `cap.source.structure` active**. Deps: ADR-05, ADR-06 (worker), matrix `cap.source.structure`
+  (**manifest bodies additionally require `cap.github.dependencies`**); cards XRAY-01/02/03.
+  Rollout: opt-in activation card; rollback = revoke capability, delete summaries.
 
 ## CAT-STR-02 — Code Anatomy Atlas (opaque module graph, API surface, test topology)
 
@@ -293,7 +316,9 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   `DL.ATLAS.TEST_TOPOLOGY_RATIO.v1` (P) — modules with an inbound edge from a `test`-role module /
   modules, **framed as declared test reachability, never as test quality or adequacy**.
 - **Baseline / modelled** — Deterministic graph algorithms (SCC/components `O(V+E)`, degree
-  distributions, declaration counts). Statistical candidates deferred to research: community
+  distributions, declaration counts). **Layer: module counts, degree distributions, and declaration
+  counts are deterministic (derived) parser products, never observed facts**, and every one of them
+  carries its `parser_coverage` limitation. Statistical candidates deferred to research: community
   detection and graph embeddings stay WB-C5 (ADR-18); the architecture-change classifier stays WB-C8
   with deterministic API/graph-delta thresholds as its baseline (canonical §9). **None justified for
   shipping now.**
@@ -328,8 +353,8 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   building a story or a refactor plan on it.
 - **Sources / fields** — Composed, not collected: CAT-STR-01 composition, CAT-STR-02 graph and API
   counts, CAT-FBK-01/02 policy and CI aggregates, CAT-FBK-03 dependency aggregates — all keyed to
-  the **same immutable ref**. Snapshot key: (repository alias, ref OID, `parser_bundle_version`,
-  config revision) (ADR-07).
+  the **same card-bound immutable ref OID** (never a mutable ref). Snapshot key: (repository alias,
+  ref OID, `parser_bundle_version`, config revision) (ADR-07).
 - **Classes / prohibited / posture** — **C3** graph members (90d) + **C1** aggregates (36m).
   Prohibited: cross-parser-major deltas presented as system change; era labels derived from
   anything but accepted change-points, policy/CI transitions, or user annotation. Posture `O+A`
@@ -601,7 +626,15 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
 - **Gates / corrections / coverage** — Canonical gates: `≥5` eligible events for PR distributions
   and review coverage; negative intervals are rejected as data-quality failures, not clamped.
   `ready_start` = `ReadyForReviewEvent`, else first complete observation where non-draft, else
-  creation for never-draft PRs; store `event|censored`. Corrections: provider revision upsert;
+  creation for never-draft PRs; store `event|censored`. **Cohort/eligibility:** PRs whose
+  `ready_start` falls inside the window on repositories with complete timeline coverage; membership
+  is fixed at `ready_start` and never re-assigned by merge date. **Event:** merge for integration
+  duration, first check or review signal for first-signal duration, `CHANGES_REQUESTED`-preceded
+  head movement for a rework episode. **Censoring:** PRs unterminated at the window boundary are
+  **right-censored at that boundary**, counted in `DL.PR.CENSORED_TAIL_RATIO.v1` — never dropped,
+  never zero, and absence of an event is never a duration. **Prohibited interpretations:** not
+  throughput, effort, responsiveness, or any person's speed; not causal; a shorter duration is not
+  a better one. Corrections: provider revision upsert;
   review edits and dismissals preserve state revision and supersede the projection with **no body
   retained**; a late timeline page recomputes only affected features. Deletion: `github.core`
   cascade. Dimensions bound: `completeness` (timeline pages), `censoring` (open tails,
@@ -695,7 +728,14 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   change-point detection over these series belongs to CAT-PRT-02 and renders as a *separate*
   modelled claim, so cadence itself never carries a model.
 - **Gates / corrections / coverage** — Minimum ISO-week grain; low-support windows are **suppressed,
-  not smoothed**; canonical release-batch gate `≥3` valid intervals for distributions. Corrections:
+  not smoothed**; canonical release-batch gate `≥3` valid intervals for distributions.
+  **Cohort/eligibility:** one repository × ISO week, admitted only when every contributing source
+  window is complete and above its own support gate; a partially covered week is suppressed, not
+  partially plotted. **Event:** the terminal event of the underlying feature — release publication,
+  PR merge, run completion — inherited from the source entry and never redefined here.
+  **Censoring:** the trailing week and any item unterminated at the window edge are
+  **right-censored at the boundary** and marked as such; a week with no events is `null`, never
+  zero. Corrections:
   late events recompute the affected week only; a re-collected window supersedes. Deletion: derived
   features cascade from their sources. Dimensions bound: `sample` (hard floor — this is the
   re-identification-critical domain), `completeness`, `censoring`, `comparability` (a policy change
@@ -751,7 +791,13 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
 - **Gates / corrections / coverage** — Canonical gates: `≥10` for queue/exec/recovery/outcome-mix,
   `≥20` for rerun ratio, `≥20` observations per displayed bin and `≥3` bins for
   `DL.SYS.CHANGE_CI_ASSOC.v1`. Negative queue durations are data-quality failures, not clamps.
-  Cancelled and skipped are **separate outcomes, never duration zero**. Corrections: key by run ID +
+  Cancelled and skipped are **separate outcomes, never duration zero**. **Cohort/eligibility:** runs
+  created inside the window on repositories where `cap.github.actions` was active for the whole
+  window, keyed by (run ID, attempt). **Event:** queue duration = created→started, exec duration =
+  started→completed for the attempt; an outcome is the recorded conclusion enum, not an
+  interpretation of it. **Censoring:** runs still in progress at the window boundary, and runs lost
+  to a saturated listing cap, are **right-censored at the boundary and disclosed** — never a zero
+  duration, never an implied failure, and absence is never zero. Corrections: key by run ID +
   attempt and use attempt-specific job endpoints (default listing is latest execution unless
   `filter=all`); deleted attempts censor. Deletion: C3 at 90 days plus cascade. Dimensions bound:
   `completeness`, `censoring` (`GH_ACTIONS_FILTERED_1000_CAP`, `GH_CHECK_SUITES_1000_CAP`),
@@ -795,7 +841,16 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   **None justified** — deployment outcome prediction has no legitimate decision here and would sit
   on a 90-day censored record.
 - **Gates / corrections / coverage** — Canonical gate: `≥3` valid intervals for batch distributions;
-  `null` when targets are non-ancestor or history is censored. Corrections: retagging and deleted
+  `null` when targets are non-ancestor or history is censored. **Cohort/eligibility:** releases
+  published inside the window whose tag target OID resolves and lies on the first-parent path;
+  drafts and non-ancestor targets are excluded **and disclosed**, never silently skipped.
+  **Event:** an interval is the first-parent distance between two consecutive eligible release
+  targets; a deployment event is its recorded state transition. **Censoring:** the interval opened
+  by the last release in the window is **right-censored at the boundary** and never counted as
+  completed, and deployment history beyond the provider's 90-day horizon stays censored — an
+  absent release or deployment is never zero. **Prohibited interpretations:** batch size and
+  release interval are not velocity, throughput, quality, or risk; a longer interval is not a worse
+  one. Corrections: retagging and deleted
   releases supersede; a non-ancestor target is a recorded finding, not a silent skip. Deletion:
   deployment C3 at 90 days plus cascade; **provider history older than 90 days remains censored even
   after local deletion, and the disclosure says so**. Dimensions bound: `censoring`
@@ -874,7 +929,12 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
 - **Baseline / modelled** — Deterministic lifecycle distributions. **None justified** — every
   modelled variant here trends toward risk scoring, which canonical §4 rejects outright.
 - **Gates / corrections / coverage** — **Never silently infer zero from disabled, 403, or 404** —
-  the three are distinguished and recorded. Sparse severity bands suppressed. Corrections: reopened
+  the three are distinguished and recorded. Sparse severity bands suppressed.
+  **Cohort/eligibility:** alerts created inside the window on repositories where the producing
+  feature was enabled for the whole window, with `DL.SEC.FEATURE_STATE.v1` as the eligibility
+  witness. **Event:** the provider-recorded open→resolved transition, never a dismissal comment or
+  an inferred fix. **Censoring:** alerts still open at the window boundary are **right-censored
+  there**, counted and disclosed rather than dropped or resolved-at-zero. Corrections: reopened
   alerts supersede; initial provider processing lags and that lag is coverage, not absence.
   Deletion: restricted observations, aliases, summaries, caches, and packs, all inside the isolated
   store. Dimensions bound: `permission` (hard), `completeness`, `censoring`, `sample`.
@@ -1121,9 +1181,10 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   planted falsifier set; never restated here), the metric that makes cherry-picking measurable; `INDEX_STALE` (P) as its
   limitation code.
 - **Baseline / modelled** — Three-step ladder, each step must **beat the previous on the retrieval
-  benchmark before adoption** (ADR-20): (1) **deterministic structured retrieval — default,
-  shipped**: SQL filtering over typed facts + registry mapping, with standardized-distance ranking
-  (z-scored numeric features) for "similar windows/systems", and a **mandate** that every result set
+  benchmark before adoption** (ADR-20): (1) **deterministic structured retrieval — the planned
+  deterministic default/baseline** (planning artifact: nothing here is shipped): SQL filtering over
+  typed facts + registry mapping, with standardized-distance ranking (z-scored numeric features)
+  for "similar windows/systems", and a **mandate** that every result set
   deliberately includes supporting, contradicting, coverage, and limitation evidence by quota;
   (2) **controlled-template lexical index (research)**: BM25 over rendered controlled templates
   (statement codes + registered enums only, **no prose**) — evaluated only if (1) measurably fails

@@ -1,12 +1,16 @@
 {
   "$comment": "PROPOSAL ONLY (DL-SPINE-04/05). Registered coverage-vector dimensions v2 and one per-family gate example. All values invented (C0).",
-  "dimension_registry_version": "2.0.1-proposal",
+  "dimension_registry_version": "2.0.2-proposal",
   "dimensions": [
     "permission", "completeness", "eligibility", "freshness", "censoring_freedom", "consistency",
     "sample", "source_diversity", "parser_coverage", "comparability", "drift_stability", "calibration"
   ],
   "direction": "higher_is_better for EVERY dimension (registered per dimension; monotone abstention inverts if polarity is guessed — 2026-08-04 review correction)",
-  "dimension_value": { "type": "number|null", "null_requires": "limiting_reason code" },
+  "dimension_value": {
+    "$comment": "ONE canonical shape for every dimension (2026-08-04 reconciliation: the earlier number|null declaration contradicted the object examples; the object is authoritative). Bare numbers or bare nulls are invalid encodings.",
+    "shape": { "value": "number|null", "limiting_reason": "code|null" },
+    "rule": "value: null REQUIRES a non-null limiting_reason; a present value normally carries limiting_reason: null"
+  },
   "evidence_confidence_mapping": {
     "freshness": "freshness", "sample": "sample", "eligibility": "eligibility",
     "sourceDiversity": "source_diversity", "consistency": "consistency", "completeness": "completeness",
@@ -17,10 +21,16 @@
     "drift_stability": "DL-EVQ-03 (research role)"
   },
   "example_vector": {
-    "permission": 1, "completeness": 0.82, "eligibility": 0.9, "freshness": 0.9,
+    "permission": { "value": 1, "limiting_reason": null },
+    "completeness": { "value": 0.82, "limiting_reason": null },
+    "eligibility": { "value": 0.9, "limiting_reason": null },
+    "freshness": { "value": 0.9, "limiting_reason": null },
     "censoring_freedom": { "value": null, "limiting_reason": "GH_DEPLOY_STATUS_90D_CENSOR" },
-    "consistency": 0.98, "sample": 0.6, "source_diversity": 0.5,
-    "parser_coverage": 0.71, "comparability": 1,
+    "consistency": { "value": 0.98, "limiting_reason": null },
+    "sample": { "value": 0.6, "limiting_reason": null },
+    "source_diversity": { "value": 0.5, "limiting_reason": null },
+    "parser_coverage": { "value": 0.71, "limiting_reason": null },
+    "comparability": { "value": 1, "limiting_reason": null },
     "drift_stability": { "value": null, "limiting_reason": "NO_RECOLLECTION_SERIES" },
     "calibration": { "value": null, "limiting_reason": "NO_RESOLVED_QUESTIONS" }
   },

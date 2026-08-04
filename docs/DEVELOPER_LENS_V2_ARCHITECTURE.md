@@ -1562,9 +1562,10 @@ this document plus the charter and matrix, those win. Live evidence and the resu
    adds `permission`, `censoring_freedom`, `parser_coverage`, `comparability`, `drift_stability`,
    `calibration`), every dimension registered `higher_is_better`, with per-claim-family minimum
    requirements and **monotone abstention** (degrading any dimension can only hold or lower a
-   claim tier). Producers: `calibration` from the calibration scoreboard (cold-start: modelled
-   claims cap at deterministic tier until it produces); `drift_stability` from the claim-stability
-   series (research role). Cards DL-SPINE-04/05 (ADR-02).
+   claim tier). Producers: `calibration` from the calibration scoreboard (cold-start, corrected
+   by I.4 item 3: modelled claims **abstain** until it produces — any deterministic reading is a
+   separately defined deterministic claim, never a restyled model output); `drift_stability` from
+   the claim-stability series (research role). Cards DL-SPINE-04/05 (ADR-02).
 3. **Capability lifecycle.** One typed state machine
    (`never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked`) for every
    capability, with the invariant "gate approval performs no transition" tested by registry
@@ -1576,6 +1577,9 @@ this document plus the charter and matrix, those win. Live evidence and the resu
    lazy dynamic import with per-launch bearer + Host/Origin from birth; V2 read paths refuse
    stores that are neither synthetic-marked nor activation-card-bound. First user-visible slice:
    coverage cockpit + capabilities over the synthetic importer store (card DL-BRIDGE-01; ADR-04).
+   *Reconciled 2026-08-04:* DL-BRIDGE-01 is the **bootstrap slice** (runtime seam + privacy
+   boundary); the first **analytical value slice** is DL-VALUE-01 (I.4 item 1) — the bridge alone
+   does not prove the product thesis.
 5. **Source-structure roles.** The committed-tree role taxonomy is **14 closed roles** — the
    2026-08-03 set plus `schema_definition`, `fixture_golden`, `snapshot_artifact` — enabling
    golden/fixture and migration-ledger archaeology (ADR-05; frontier A3/A4).
@@ -1595,9 +1599,14 @@ this document plus the charter and matrix, those win. Live evidence and the resu
 9. **Grain floor extension.** The product's **own operational timestamps** (collection runs,
    claim versions) fall under the existing cadence grain floor: ISO-week or coarser in any surface
    or export, because on a single-owner installation they are an attendance proxy.
-10. **Query Lab sink ruling.** In-app SQL runs only over a user-selected, checksum-verified
-    COMPLETE analysis pack via DuckDB-WASM in the browser — the canonical store gains no SQL
-    endpoint (ADR-22).
+10. **Query Lab sink ruling (corrected by the 2026-08-04 reconciliation).** A pack is an
+    `ExportView`; the frontend sink contract requires a purpose-built `PresentationView`, and
+    redaction/aliasing alone do not authorise exposing arbitrary pack records to browser code.
+    In-app SQL therefore runs only over **generated, registry-allowlisted PackPresentationView
+    relations** projected at pack build from a user-selected, checksum-verified COMPLETE pack
+    (DuckDB-WASM in the browser, one immutable verified snapshot per session). Raw pack SQL
+    remains an external expert workflow under the export's existing disclosure; the canonical
+    store gains no SQL endpoint; the charter is not weakened (ADR-22).
 
 ### I.2 Dependency-order deltas
 
@@ -1629,3 +1638,84 @@ activation lane and the P12 OpenAI/Luna lane continue unchanged under their exis
 - The current-state map (section 2) predates the `?demo=v2` seam, the P2/P3/P4/P12 subtrees, and
   `npm run verify:context`; the code map in `docs/analyser-program/` and the ledger carry the
   current inventory.
+
+### I.4 2026-08-04 reconciliation addendum (post-PR #62 owner directive; DL-RECON-01)
+
+The owner's reconciliation directive was integrated after PR #62 merged. These deltas bind future
+implementation cards alongside I.1; where they touch the same subject as an I.1 item, I.4 is the
+corrected reading.
+
+1. **Analytical core is load-bearing.** Between canonical facts and claims sits an explicit
+   analytical layer: a **versioned metric-definition registry** (question, subject, unit,
+   window/asOf, cohort/eligibility, event + censoring, missingness, formula, support gates,
+   comparison requirements, sensitivity, confounders, prohibited interpretations, fixtures,
+   supersession) and a **finding contract** (result refs, evidence + counter-evidence,
+   alternatives, limitations, sample/censoring summary, robustness, discriminating evidence).
+   No undocumented shared "engagement/importance/activity/health/maturity/confidence" scalar can
+   be registered. ADR-25/26; cards DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-VALIDATE-01,
+   DL-VALUE-01 (the first deterministic comparative finding — PR integration shape across matched
+   windows). The revised critical path puts this deterministic value slice **before** packs,
+   retrieval, hypothesis composition, and research (waves R0–R8 in
+   `docs/analyser-program/07_DELIVERY_ROADMAP.md` §0; RAG/HYP/ML are optional and off the path).
+2. **AnalyticReference.** `AnalyticReference = ObservationReference | ClaimReference`: raw allowed
+   facts resolve via observation/evidence IDs; counts, ratios, quantiles, durations, shares, graph
+   statistics, and deltas are deterministic claims. The Evidence Drawer accepts either; the UI
+   never labels derived numbers as observed.
+3. **Confidence never re-collapses.** Claim state is eligible / limited / abstained per family
+   floors with the vector and limiting dimensions visible; no low/medium/high band; a modelled
+   claim that fails its floor abstains, and any deterministic fallback is a separately defined
+   claim under its own method and ID — model output never inherits deterministic styling.
+4. **Claim classing split.** Claim content is C1; the installation-scoped `scope_alias` reference
+   is C2 (13-month local boundary) held beside the claim row; pack projection emits a pack-scoped
+   C1 alias and **re-mints pack-local claim IDs**, rewriting edge/lineage/`superseded_by`
+   references transactionally, so canonical claim IDs never link packs.
+5. **Lifecycle epochs.** A revoked consent revision stays terminal with preserved tombstone
+   lineage; a new reviewed card opens a new epoch at `card_bound` (typed `revoked → card_bound`
+   transition conditioned on a new consent revision).
+6. **Provider observations are window-keyed.** Committed-tree facts key by ref OID; rulesets, CI,
+   dependency, and deployment state key by observed coverage windows + connector provenance;
+   co-presentation only where windows align — today's provider state is never projected onto an
+   old ref.
+7. **Deletion before collection.** Any connector creating retained C2/C3 descendants (dependency
+   aliases, graphs, security facts, indexes) depends on the registry-derived deletion planner
+   (DL-LIFE-02) before becoming schedulable.
+8. **Exact graphs stay home.** Ordinary packs carry banded C1 structural summaries only; exact
+   node/edge tables and GraphML are removed from packs entirely (a C3-local graph workspace would
+   be a separate owner-reviewed sink). **This supersedes the pack-layout material in this
+   document's body**: the Appendix-D-style layout entries `graphs/nodes.parquet`,
+   `graphs/edges.parquet`, and `graph-exchange/graph.graphml`, the GraphML row of the storage
+   format table, and the `graphs/nodes.node_id` C3 field-classification row are historical and no
+   longer specify ordinary-pack content.
+9. **V1 analytical primitives retire explicitly.** The weighted engagement blend must not survive
+   as a shared analytical primitive: it never determines V2 importance, momentum, concentration,
+   effective repo count, language activity, private share, focus, finding selection, or narrative
+   ordering (a presentation-only `layoutWeight` is permitted where a visual needs a size). The
+   retirement map: scalar confidence → coverage vector + claim eligibility; `max(...)+local`
+   contribution totals → separate observed series or bounded estimates; merge rate over all
+   created PRs → explicit cohort + right-censoring; creation-to-merge "integration" → accurate
+   naming or ready-to-merge; language bytes × engagement → composition vs activity separated;
+   DNA/archetype/streak/persona → legacy C0 presentation only, then retire; co-occurrence "waves"
+   → preregistered baseline/permutation or independent linkage; commit-intent categories → parser
+   version + unknown share + abstention; constellation/ledger ranking → real relationship
+   encoding, explicit dimension, or clearly decorative. DL-BRIDGE-03 carries this matrix as a
+   written disposition table.
+10. **Two experiences, one engine.** Investigate (System Atlas — the principal product) and
+    Narrate (System Story — same versioned findings; no score, archetype, or narrative-only
+    metric; may honestly end with "no unresolved question under the current evidence" — a forced
+    final question is prohibited). Initial surface staging: Cockpit, one comparative Atlas panel,
+    Evidence Drawer, then the deterministic Story — further views only as their producers land.
+11. **Adjacent lenses bounded.** Code Lens = local, deterministic, repository-relative structural
+    analysis (not a review bot, generator, or defect oracle; ordered vocabulary
+    Different/Inconsistent/Risk-associated/Defective/Hypothesis — "unusual" never collapses into
+    "flawed"); Agent Lens consumes only explicit agent-run evidence (no inference from GitHub
+    activity shape, no raw prompt retention by default); Public Trace Lens stays outside the core
+    product and never infers productivity, seniority, quality, effort, or completeness. All three
+    are parked until after the first value slice and flow observatories.
+12. **Bounded execution.** The active horizon is ≤ 12 dependency-closed cards
+    (`horizon:active`); the freeze list (`horizon:frozen`, 07 §0a) parks external models, generic ML
+    promotion, vector retrieval, Projects/security/rulesets/attestation sources, and broad parser
+    rollout until DL-VALUE-01 is accepted. Backlog expansion is closed for this planning cycle;
+    new analytical ideas enter through evidence-backed questions after the value slice is
+    evaluated. Hosted PR CI (DL-OPS-CI-01) precedes broad autonomous merge lanes. A compact
+    machine-readable state artifact (`docs/analyser-program/CURRENT_STATE.md`) replaces
+    full-ledger reads at resume.

@@ -98,10 +98,11 @@ Three independent passes ran: Scout A (archaeology/contracts lens, 14 candidates
 (dynamics/counterfactuals/evidence-quality lens, 14 candidates), and a completeness critic given
 both reports and instructed to search only un-covered spaces. The critic returned three survivors —
 all in the product's own honesty machinery, none in the "analyse the repository differently" space —
-and declared that space exhausted, with a nine-item near-miss kill list. Per the programme's
-stopping rule (a further independent pass producing no distinct high-value analytical candidate),
-the **analytical frontier is closed for this planning cycle**. New candidates enter through
-DL-OPEN-01's question generators, not through further scouting.
+and returned no distinct high-value candidate outside it, with a nine-item near-miss kill list.
+Per the programme's stopping rule, and reworded by the 2026-08-04 reconciliation to avoid claiming
+the problem space itself is exhausted: **backlog expansion is closed for this planning cycle. New
+analytical ideas enter through evidence-backed questions (DL-OPEN-01's generators) after the first
+value slice (DL-VALUE-01) is evaluated; no further speculative scouting occurs before then.**
 
 ## 4. Coordinator adjudications (recorded decisions on draft-raised items)
 

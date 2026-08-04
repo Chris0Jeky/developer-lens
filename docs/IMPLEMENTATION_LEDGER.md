@@ -1,11 +1,17 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-04**
+Last updated: **2026-08-04** (post-PR #62 reconciliation)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
-evidence/design version 2026-08-03.
+evidence/design version 2026-08-03 + Appendix I.1–I.4.
 
-Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
+**Fast resume:** agents should read the compact state artifact
+[`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
+this ledger's phase narratives below are the **archive** — consult them for history and audit, not
+for the next task. Current phase in one line: planning reconciliation (wave R0) complete;
+implementation starts at card DL-BRIDGE-01 with DL-VALUE-01 as its analytical-value successor.
+
+Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
 The public synthetic V2 demo now includes an accessible observed-to-derived-to-hypothesis story
 path over its existing validated C0 insight payload. The published P4 foundation includes an inert
@@ -68,6 +74,29 @@ green, zero blocking conflicts; idempotent re-apply proven; one MCP-created card
 honestly `PendingReview` for the human; lossy board export + local credentials kept outside Git).
 No product implementation, real collection, external model call, or capability activation
 occurred; `cap.external.model` and every other executable capability remain `never_authorized`.
+
+**2026-08-04 reconciliation (post-PR #62, owner directive; DL-RECON-01/DL-CONTEXT-01, both
+completed docs-only):** the owner's reconciliation directive and the late-arriving automated
+review on merged PR #62 (29 findings; 26 still valid on `main` at `afb026a`, verified individually)
+were integrated in a follow-up docs/planning-only PR. Delivered: the analytical core became
+load-bearing (new ADR-25 metric-definition registry + ADR-26 finding contract / AnalyticReference /
+matched-comparison semantics; canonical Appendix I.4 addendum with the V1-primitive retirement map
+and Investigate/Narrate model); every still-valid review finding was corrected across
+01/02/03/04/05, the schema proposals (typed FK edge targets, C2 scope split, pack claim-ID
+re-mint, one canonical coverage-dimension shape), the charter (Query Lab PresentationView
+clarification), and the matrix (manifest-body consent split, deletion-planner ordering note); the
+card programme grew 118 → **126** (new DL-RECON-01, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01,
+DL-VALIDATE-01, DL-VALUE-01, DL-OPS-CI-01, DL-CONTEXT-01 under `epic:analytics-core`) with the
+card source now **tracked** at `docs/analyser-program/taskdeck/tools/` (generator regenerates the
+manifest and the 07 §6 index — drift structurally impossible); the execution model gained waves
+R0–R8, a ≤12-card dependency-closed **active horizon** (`horizon:active`), and a freeze list
+(`horizon:frozen`) parking ML/vector/GOV/SEC/rulesets/parsers work until DL-VALUE-01 is accepted;
+DL-BRIDGE-01 was renamed the **bootstrap slice** with DL-VALUE-01 as the first analytical value
+slice; high-sensitivity connectors now depend on the deletion planner (DL-LIFE-02); DL-PACK-03
+lost exact-graph/GraphML export (banded summaries only); DL-QL-01 became
+PresentationView-projected; DL-HYP-02 dropped confidence bands for eligibility states; the
+frontier-closure wording was softened to "backlog expansion closed for this planning cycle". Still
+no product implementation, real collection, external model call, or capability activation.
 
 Published P4 adds an inert, no-caller composition runner. It binds the exact opened task-
 card bytes to a caller-reviewed lowercase SHA-256, derives the repository alias before any request,
@@ -1328,14 +1357,19 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-0. **Next implementation slice (2026-08-04): card DL-BRIDGE-01** — the first V2 vertical slice
-   (lazy `/api/v2` coverage+capabilities over the synthetic store + Coverage Cockpit panel).
-   Start from `docs/analyser-program/09_IMPLEMENTATION_LAUNCHER.md`; the full card contract lives
-   in the tracked starter pack and on the seeded local Taskdeck board (state summary in
-   `docs/analyser-program/06_TASKDECK_DEMO_PLAN.md` §1; exact location, credentials, and restart
-   runbook only in the untracked `RESUME.md` beside the database, outside Git). Twelve READY cards exist for parallel lanes; the dependency graph is
-   `07_DELIVERY_ROADMAP.md`. New owner gates are consolidated in `HUMAN_TODO.md` q-6 and
-   `08_OPEN_QUESTIONS.md` §1. Items 1–6 below remain valid for the P4/P12 lanes.
+0. **Next implementation slice (2026-08-04, reconciled): card DL-BRIDGE-01** — the V2
+   **bootstrap** slice (authenticated lazy `/api/v2` coverage+capabilities over the synthetic
+   store + Coverage Cockpit panel), with **DL-VALUE-01** (first deterministic comparative finding)
+   as its named analytical-value successor through DL-METRIC-01/DL-FINDING-01/DL-COMPARE-01.
+   Read `docs/analyser-program/CURRENT_STATE.md` first, then start from
+   `docs/analyser-program/09_IMPLEMENTATION_LAUNCHER.md`; the full card contract lives in the
+   generated starter pack (source `docs/analyser-program/taskdeck/tools/cards.mjs`) and on the
+   seeded local Taskdeck board (state summary in `docs/analyser-program/06_TASKDECK_DEMO_PLAN.md`
+   §1; exact location, credentials, and restart runbook only in the untracked `RESUME.md` beside
+   the database, outside Git). Scheduling follows the ≤12-card active horizon in
+   `07_DELIVERY_ROADMAP.md` §0a, not the READY set. New owner gates are consolidated in
+   `HUMAN_TODO.md` q-6 and `08_OPEN_QUESTIONS.md` §1. Items 1–6 below remain valid for the P4/P12
+   lanes.
 1. Refresh Git/GitHub before mutation. The published product baseline before this documentation-
    only closeout is merge `57eef928a64f5c99e17eba1390dbe95d5878391a`; live evidence still outranks
    this checkpoint.

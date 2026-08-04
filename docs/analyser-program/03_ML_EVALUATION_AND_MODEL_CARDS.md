@@ -122,7 +122,7 @@ result row; a result whose prereg hash is absent or mismatched is **not admissib
 | `resource_budget` | Wall clock, peak RSS, process isolation, no network. | §1.8. |
 | `privacy_classification` | Class of inputs, outputs, and any intermediate index. | Embedding inherits highest input class (principle 6). |
 | `rejection_threshold` | The result that ends the candidate. | Must be stated *before* seeing results. |
-| `analysis_plan` | Test statistic, multiplicity family membership, tie/NaN handling. | §1.4. |
+| `analysis_plan` | Test statistic, multiplicity family membership, tie/NaN handling. | §1.4. Family membership is fixed at first preregistration and carried across every later wave; a successor candidate inherits its predecessor's family and its accumulated `m`. |
 | `frozen_at`, `frozen_by_method_bundle` | Timestamp and workbench version. | Any change ⇒ new `prereg_id`, not an edit. |
 
 ### 1.3 Time-aware evaluation: rolling-origin with nested selection
@@ -157,37 +157,65 @@ evaluation and stays `seeded` with `sample` recorded as the limiting dimension.
 
 ### 1.4 Multiplicity: the chosen false-discovery procedure
 
-**R1.7 — Decision: Benjamini–Hochberg (BH) at q = 0.10 over each promotion wave's primary tests.**
-Exactly as ADR-19 states ("Benjamini–Hochberg across the family's primary tests"), made concrete:
+**R1.7 — Decision: Benjamini–Hochberg (BH) at q = 0.10 over the correction family's primary tests,
+carried across waves.** Exactly as ADR-19 states ("Benjamini–Hochberg across the family's primary
+tests"), made concrete:
 
 1. **One primary test per candidate per promotion attempt.** Secondary metrics are reported but are
    never inputs to promotion. This is what keeps the family small enough to control.
-2. **The family is the candidate-family, fixed at first preregistration** (2026-08-04 review
-   correction): wave membership is the declared set of candidates in the family — it cannot be
-   redefined per attempt, `m ≥` the declared family size always, and a candidate submitting alone
-   still carries the family's `m`. A promotion wave groups the tests actually run, but `m` never
-   shrinks below the family declaration.
-3. **Procedure (BH step-up):** order the wave's *p*-values ascending; let `i*` be the **largest**
+2. **The family is the candidate-family, fixed at first preregistration and carried across waves**
+   (2026-08-04 review correction): family membership is declared when a candidate is first
+   preregistered and **never changes** — it cannot be redefined per attempt or per wave, `m ≥` the
+   declared family size always, and a candidate submitting alone still carries the family's `m`. A
+   promotion wave groups the tests actually *run*: it is a **scheduling unit, never a correction
+   unit**. `q` is a property of the family, not of a wave, and `m` for a family only ever **grows**
+   (item 6) — it never shrinks below the family declaration.
+3. **Procedure (BH step-up):** order the family's *p*-values ascending; let `i*` be the **largest**
    `i` with `p_(i) ≤ (i/m)·q`; reject H0 for **all tests of rank `1…i*`** (none if no such `i`
    exists); `q = 0.10` at `benchmarked` tier. (Corrected 2026-08-04: rejecting only rank `i*`
    inverts promotion ordering.)
 4. **A rejected null is necessary but not sufficient**: the MMI on the point estimate must also be
    met. A statistically detectable improvement smaller than the MMI is **not** a promotion.
-5. **Dependence.** Invented benchmark suites share generators, so the wave's tests are positively
+5. **Dependence.** Invented benchmark suites share generators, so the family's tests are positively
    dependent at best and of unknown structure at worst. **R:** at `benchmarked` tier BH is accepted
    (PRDS is plausible under shared generators, and the cost of a false promotion is bounded because
    nothing ships from `benchmarked`). At `validated` tier, where a false promotion can reach users,
    use **Benjamini–Yekutieli** at q = 0.10 (valid under arbitrary dependence) — the conservatism is
-   the point. *Reversal path:* if a wave's dependence structure is measured and shown PRDS, a
-   reviewed change may drop back to BH for that wave.
-6. **Re-tests count across preregistrations.** A re-attempt necessarily carries a new
-   preregistration and holdout (§1.5), so `m` is carried forward **per `candidate_id`**: attempt
-   `k` for a candidate enters its wave with `m` inflated by all `k−1` prior attempts across every
-   earlier preregistration of that candidate, recorded in the registry. Attempts are capped at
-   **three** per candidate per tier (law 11); the third failure records `rejected_for_now` and
-   only a reviewed new-evidence decision reopens it. (Corrected 2026-08-04: without cross-prereg
-   carry-forward and a cap, per-attempt waves would reset `m` and void both the FDR control and
-   the termination guarantee.)
+   the point. *Reversal path:* if a family's dependence structure is measured and shown PRDS, a
+   reviewed change may drop back to BH for that family.
+6. **Repeated promotion attempts across waves (2026-08-04 reconciliation).** A wave is a scheduling
+   unit, so nothing about a wave may reset a correction. Otherwise a failed candidate could
+   re-preregister into a later wave — possibly alone — and collect a fresh wave-level `q = 0.10`,
+   accumulating uncontrolled false-discovery probability one wave at a time. Four rules bind, and
+   they replace any informal "inflate `m` a bit" arrangement:
+
+   - **(i) One primary promotion attempt per `candidate_id` per ladder tier.** A `candidate_id`
+     that has opened its sealed holdout at a tier has spent its attempt at that tier (§1.5). There
+     is no second primary test for the same `candidate_id` at the same tier, in any later wave.
+   - **(ii) A materially new method or version is a NEW preregistered candidate that stays in the
+     SAME correction family.** Changing the method, its feature set, its hyperparameter space, or
+     its version by enough to justify re-testing produces a new `candidate_id`, a new `prereg_id`,
+     and a new sealed holdout — and that successor is **permanently a member of its predecessor's
+     family**. Family membership is fixed at first preregistration and carried across every later
+     wave, so the family's `m` counts every predecessor attempt whatever wave it ran in and
+     **only ever grows**. The lineage is recorded in the registry, never re-derived per wave.
+   - **(iii) Re-testing an unchanged candidate in a later wave is prohibited.** Same method, same
+     version, same features, new wave is not a new candidate — it is the same test run again until
+     it passes, which is exactly the search this procedure exists to control. Such an attempt is
+     inadmissible and its result is not evidence (§1.2 prereg-hash rule).
+   - **(iv) Online FDR only if formally specified.** An online false-discovery procedure (e.g.
+     alpha-investing / LORD, spending an alpha-wealth budget over a stream of tests arriving in
+     time) may replace the carried-family rule **only** when a dedicated **preregistration
+     amendment** specifies the procedure, its initial wealth, its wealth/reward schedule, and the
+     stream it applies to, frozen before the next test. Absent that amendment, the carried-family
+     rule binds.
+
+   **Attempt cap.** Attempts across a family lineage — the original `candidate_id` plus every
+   successor admitted under (ii) — are capped at **three per lineage per tier** (law 11), and every
+   one of them consumes the **same family `m`**. The third failure records `rejected_for_now` on
+   the lineage; only a reviewed new-evidence decision reopens it. (Corrected 2026-08-04: without
+   carried family membership and a cap, per-wave families would reset `m` and void both the FDR
+   control and the termination guarantee.)
 7. **Never** apply FDR control to secondary/exploratory metrics and then report the survivors as
    findings. Exploratory output is labelled exploratory and cannot enter a card's evidence section.
 
@@ -198,8 +226,11 @@ reserved) and may be opened **once**, at the gate decision, by a run that writes
 immediately and irreversibly into `wb_result` (**proposed**) with the prereg hash.
 
 - A **failed** gate **consumes** the holdout. The candidate cannot re-attempt on the same holdout.
-  Re-attempt requires a *new* preregistration and a *new* sealed holdout (new generator seed range,
-  or for real data a new consented slice — which is a new owner gate).
+  Re-attempt is admissible **only as a materially new candidate** under §1.4 item 6(ii) — a new
+  `candidate_id` with a *new* preregistration and a *new* sealed holdout (new generator seed range,
+  or for real data a new consented slice — which is a new owner gate) — and that successor stays in
+  its predecessor's correction family. Re-running the *unchanged* candidate in a later wave is
+  prohibited outright (§1.4 item 6(iii)).
 - A **passed** gate also consumes it: post-promotion monitoring uses drift monitors and fresh data,
   never the holdout.
 - Accidental opening (a script reading the sealed range) is a **CI-blocking defect** and marks the
@@ -340,9 +371,10 @@ the frozen suite and re-preregister". All benchmark data is **C0 invented** (ADR
   quantiles, composition shares), locate structural change points with an interval, and say when
   there is none.
 - **Deterministic baseline.** ADR-17 rung 2: rolling median/MAD residual alerts with preregistered
-  thresholds and a **false-alert budget expressed per year of observation**. Candidates: PELT
-  (offline), Bayesian online change-point detection (canonical §9). Proposed method IDs
-  `mth.wb.cp.pelt.v0`, `mth.wb.cp.bocpd.v0` (**proposed**).
+  thresholds and a **false-alert budget expressed per year of observation**. Candidates: **BOCPD**
+  (Bayesian **online** change-point detection) and **PELT** (**offline** whole-series segmentation)
+  (canonical §9). Proposed method IDs `mth.wb.cp.bocpd.v0`, `mth.wb.cp.pelt.v0` (**proposed**).
+  **The two are not scored on the same metrics** — see *Evaluation arms* below.
 - **Benchmark design (dataset card `BENCH-WB-C1.v1`, proposed).** Generator
   `gen.wb.series.v1` emits ≥ 400 series × 260 weeks. Planted-effect parameters: change kind
   {level, variance, trend-slope, seasonal-amplitude}; magnitude in robust-σ units
@@ -352,13 +384,42 @@ the frozen suite and re-preregister". All benchmark data is **C0 invented** (ADR
   confounders**: permission loss, `GH_ACTIONS_FILTERED_1000_CAP` truncation,
   `GIT_SHALLOW_BOUNDARY`, and parser-major changes planted *without* a system change. ≥ 30% of
   series carry **no** change point (negative controls).
-- **Metrics (mission-specified).** *Primary:* **false alarms per year of observation** at a fixed
-  detection-delay budget — the product's cost is a user chasing a phantom turning point. *Secondary
-  (descriptive):* **detection delay** distribution (weeks from true onset to alert),
-  **interval calibration** (empirical coverage of the reported change-location interval at nominal
-  80/95%), localisation error, power by magnitude, and **coverage-confound false-alarm rate**
-  (fires on a planted coverage shift with no system change) — this last one is *reported separately
-  and has its own hard ceiling*. Holdouts: time (rolling origin) and generator-seed family.
+- **Evaluation arms (2026-08-04 correction — offline methods get offline metrics).** PELT segments a
+  **whole series at once**: every reported boundary is a function of *all* observations, including
+  those after the boundary itself, so an offline fit **has no causal alert time**. Scoring PELT on
+  an online alert metric — false alarms at a fixed detection-delay budget, or onset-to-alert delay —
+  would read future observations into a quantity defined as "when would a user have been warned".
+  That is leakage (§1.6, L1), not a conservative approximation, and it would also make the
+  candidate comparison dishonest by crediting an offline method with online performance. The card
+  therefore runs two arms whose metrics are **never pooled**:
+  - **Online arm (the promotion arm): baseline median/MAD vs BOCPD only.** Scored on the online
+    alert operating point — false alarms per year of observation at a fixed detection-delay budget,
+    with onset-to-alert delay as its descriptive companion. **PELT does not enter this arm.**
+  - **Offline arm (descriptive): PELT vs the baseline's alert positions read as boundary
+    estimates** (the deterministic baseline is an alerter, so its localisation output is defined as
+    the set of alert weeks; that definition is preregistered). Scored on **localisation only** —
+    boundary distance to the nearest planted change index, a covering / segmentation-error metric
+    against the planted segmentation, and segment-count error against the planted count. **No alert
+    time, no detection delay, and no false-alarms-per-year is computed for PELT.**
+  - *Optional causal wrapper (not run unless separately preregistered).* If an alert-delay
+    comparison of PELT is ever wanted, it runs **only** inside an explicitly specified
+    **repeated-prefix causal wrapper**: for each week `t`, refit PELT on the prefix `[t0, t]` alone;
+    the alert time for a planted change is the first prefix whose **final-segment boundary** falls
+    within a preregistered tolerance of that change index **and persists** across `p` consecutive
+    subsequent prefixes. The refit schedule, the tolerance, and `p` must all be written into the
+    preregistration before any run, and the wrapper's cost binds §1.8. Absent that specification,
+    **no PELT alert-delay or false-alarm number is admissible evidence.**
+- **Metrics (mission-specified).** *Primary (exactly one, §1.2):* **false alarms per year of
+  observation** at a fixed detection-delay budget, **on the online arm (baseline vs BOCPD)** — the
+  product's cost is a user chasing a phantom turning point. *Secondary (descriptive, never
+  promoting):* on the online arm, **onset-to-alert delay** distribution (weeks from true onset to
+  alert) and **interval calibration** (empirical coverage of the reported change-location interval
+  at nominal 80/95%); on the offline arm, **localisation error** (boundary distance / covering
+  metric against the planted change indices) and segment-count error; and across both arms, power
+  by magnitude and the **coverage-confound false-alarm rate** (fires on a planted coverage shift
+  with no system change — an alert rate on the online arm, a spurious-boundary rate on the offline
+  arm) — this last one is *reported separately and has its own hard ceiling*. Holdouts: time
+  (rolling origin) and generator-seed family.
 - **Abstention rule.** Abstain unless `completeness ≥ 0.8`, `comparability = 1`, `calibration ≠ null`
   (ADR-02 worked example), ≥ 52 weekly observations (canonical §9), and the window is free of an
   overlapping coverage transition; otherwise emit `coverage_shift_candidate` or an abstention claim
@@ -366,13 +427,18 @@ the frozen suite and re-preregister". All benchmark data is **C0 invented** (ADR
 - **Drift detection.** Series-length/coverage drift; seasonality regime change; connector version
   change touching the input feature; calibration drift on interval coverage.
 - **Resource budget.** §1.8 default; PELT is O(T)–O(T²) method-dependent (canonical §9) so the
-  budget binds the penalty search, not the other way round.
+  budget binds the penalty search, not the other way round. A preregistered repeated-prefix wrapper
+  multiplies that cost by the number of prefixes and must fit the **same** budget.
 - **Privacy.** Inputs C1 weekly aggregates; outputs C1 modelled claims; no C2/C3 needed. Time grain
   floor: **ISO week** (ADR-14) — no candidate may request finer grain to improve detection.
-- **Rejection threshold.** Reject if it cannot beat median/MAD on false alarms/year by the MMI
-  (**A**: MMI = 1.0 fewer false alarms per year at equal detection delay), **or** if its
-  coverage-confound false-alarm rate exceeds the baseline's, **or** if interval calibration is worse
-  than nominal by more than 10 percentage points (**A**).
+- **Rejection threshold.** Reject if **BOCPD** cannot beat median/MAD on the primary metric — false
+  alarms/year at the fixed detection-delay budget on the online arm — by the MMI (**A**: MMI = 1.0
+  fewer false alarms per year at equal detection delay), **or** if its coverage-confound
+  false-alarm rate exceeds the baseline's, **or** if interval calibration is worse than nominal by
+  more than 10 percentage points (**A**). The offline arm cannot trigger promotion: PELT's
+  localisation result is descriptive under this preregistration, and promoting PELT would require
+  its own preregistration naming a **localisation** primary metric — a new candidate inside the
+  **same** correction family (§1.4 item 6(ii)).
 - **Removal/fallback.** Delete ⇒ ADR-17 rung 2 residual alerts remain; the Pattern Lens and Era
   Comparator still render deterministic transition counts and era boundaries from policy/CI
   transitions and user annotation (ADR-07). No empty panel.
@@ -420,30 +486,55 @@ the frozen suite and re-preregister". All benchmark data is **C0 invented** (ADR
 - **Task.** Assign a coarse failure family to a failed CI attempt using **metadata only** (attempt
   index, queue/exec durations, conclusion transitions, matrix/concurrency presence classes, workflow
   alias, timing shape).
-- **Deterministic baseline.** Outcome/attempt transition mix: `DL.CI.OUTCOME_MIX.v1`,
-  `DL.CI.RERUN_RATIO.v1`, `DL.CI.RECOVERY_TRANSITION_RATIO.v1`.
+- **Deterministic baseline (2026-08-04 correction — the baseline must classify).** macro-F1 is a
+  **per-run** metric, so the baseline must emit **one family label per failed run**. Two classifying
+  baselines are preregistered, and the **stronger of the two on the sealed holdout** is the
+  comparison baseline:
+  1. `mth.wb.ci.majority.v0` (**proposed**) — **majority-class classifier**, fitted on the training
+     prefix only, assigning every run that prefix's most frequent family. This is the floor: it
+     measures whether the candidate learns anything at all beyond the class prior.
+  2. `mth.wb.ci.metarule.v0` (**proposed**) — **deterministic metadata rule classifier**: fixed,
+     preregistered rules over the same metadata-only features (attempt index, conclusion/attempt
+     transitions, queue-vs-exec duration shape, timeout-shaped durations, matrix/concurrency
+     presence class, workflow alias, truncation flags), with an explicit `unknown` default. Its
+     thresholds receive the **same** nested selection as the candidate's (R1.3a).
+
+  Taking the **stronger** of the two is not a tuning choice and does not reuse the holdout: both
+  baselines are preregistered, both are scored inside the *same single* holdout opening (§1.5), and
+  the rule strictly raises the bar the candidate must clear.
+
+  The shipped aggregate surfaces — `DL.CI.OUTCOME_MIX.v1`, `DL.CI.RERUN_RATIO.v1`,
+  `DL.CI.RECOVERY_TRANSITION_RATIO.v1` — remain the **descriptive product context** and the removal
+  fallback, but they emit portfolio-level distributions and assign **no per-run label**, so they are
+  **explicitly not the evaluation baseline**: a macro-F1 "against them" is undefined, not merely
+  hard to compute.
 - **Benchmark design (`BENCH-WB-C3.v1`, proposed).** Generator `gen.wb.ci.v1` emits ≥ 500 failed runs
   with ≥ 50 per family and **owner-approved invented labels**. Planted parameters: family prior;
   metadata separability parameter (the deliberately tunable knob: how much signal the *metadata*
   carries about the family, from 0 to strong); label-noise rate (weak labels are the expected
   reality); workflow heterogeneity; matrix fanout; rerun/recovery patterns; truncation at
   `GH_ACTIONS_FILTERED_1000_CAP` and `GH_CHECK_SUITES_1000_CAP`.
-- **Metrics.** *Primary:* macro-F1 against the baseline. *Secondary:* per-class support, calibration
-  error, selective risk, repository/time/workflow-alias holdouts. **A separability sweep is
-  mandatory**: report macro-F1 as a function of the planted separability parameter, because the
-  honest answer is probably "metadata does not carry the label".
+- **Metrics.** *Primary (exactly one, §1.2):* **macro-F1 against the named classifying baseline** —
+  the stronger of `mth.wb.ci.majority.v0` and `mth.wb.ci.metarule.v0` on the sealed holdout, both
+  scored per run over the same label set. *Secondary:* per-class support, calibration error,
+  selective risk, repository/time/workflow-alias holdouts, and the macro-F1 of each classifying
+  baseline reported separately. **A separability sweep is mandatory**: report macro-F1 as a
+  function of the planted separability parameter, because the honest answer is probably "metadata
+  does not carry the label".
 - **Abstention rule.** ADR-02 floors plus `≥10`–`≥20` CI sample gates from the dictionary.
 - **Drift.** Workflow drift (canonical §9), runner-class mix, schema.
 - **Resource budget.** §1.8.
 - **Privacy.** C3 source facts → C1 aggregates. **Logs, artifacts, caches, annotations, step names,
   and job names remain prohibited (`RAW-CONTENT-X`).** Canonical §9 is explicit: *if metadata is
   insufficient, reject rather than request logs.* This card inherits that as a hard rule.
-- **Rejection threshold.** **Reject if the baseline is unbeaten by the MMI** (**A**: +0.05 macro-F1)
-  — and reject permanently rather than escalating the input class. Also reject if the gain exists
-  only at high planted separability with no evidence that real metadata is separable.
+- **Rejection threshold.** **Reject if the named classifying baseline is unbeaten by the MMI**
+  (**A**: +0.05 macro-F1 over the stronger of `mth.wb.ci.majority.v0` / `mth.wb.ci.metarule.v0` on
+  the sealed holdout) — and reject permanently rather than escalating the input class. Also reject
+  if the gain exists only at high planted separability with no evidence that real metadata is
+  separable.
 - **Removal/fallback.** Delete ⇒ CI Studio renders attempt-aware outcome/rerun/recovery
-  distributions, which is the shipped product. Wording rules bind regardless (rerun ≠ flaky,
-  failure ≠ poor quality — ADR-15).
+  distributions, which is the shipped product (context, not the evaluation baseline — see above).
+  Wording rules bind regardless (rerun ≠ flaky, failure ≠ poor quality — ADR-15).
 
 ### WB-C4 — Sequence/motif discovery
 
@@ -524,12 +615,14 @@ the frozen suite and re-preregister". All benchmark data is **C0 invented** (ADR
   quartile, workflow alias, batch position, queue depth, draft/ready transitions) — **never a person
   covariate** (canonical §9); planted proportional-hazards **violations** (crossing hazards) so the
   assumption check is actually exercised; and truncation at provider caps.
-- **Metrics (mission-specified).** *Primary:* **time-dependent concordance / IBS (integrated Brier
-  score) improvement over KM**, computed under the correct censoring weights. *Secondary:*
-  **censoring accounting** (eligible/censored counts reported on every curve; a metric computed
-  after dropping censored units is a defect, not a result), **assumption checks** (Schoenfeld-style
-  proportional-hazards diagnostics with the planted violation detected), calibration of predicted
-  survival at fixed horizons, and repository/time holdouts.
+- **Metrics (mission-specified).** *Primary (exactly one, §1.2 — 2026-08-04 correction):* **IBS
+  (integrated Brier score) improvement over the KM baseline**, computed under the correct censoring
+  weights (IPCW) over a preregistered horizon grid. *Secondary (descriptive, never promoting):*
+  **time-dependent concordance** — reported for discrimination context only, and explicitly **not** a
+  promotion criterion — **censoring accounting** (eligible/censored counts reported on every curve;
+  a metric computed after dropping censored units is a defect, not a result), **assumption checks**
+  (Schoenfeld-style proportional-hazards diagnostics with the planted violation detected),
+  calibration of predicted survival at fixed horizons, and repository/time holdouts.
 - **Abstention rule.** Abstain below ≥ 100 events / ≥ 10 events-per-parameter; abstain when the
   censoring share exceeds the preregistered ceiling; abstain when the PH check fails and no AFT
   alternative was preregistered. Display gates from `DL.PR.INTEGRATION_DURATION_H.v1` (`≥5` events
@@ -541,9 +634,11 @@ the frozen suite and re-preregister". All benchmark data is **C0 invented** (ADR
   system/queue property; the schema has no reviewer/author dimension and the copy dictionary has no
   per-person formulation.** A survival model here must never be describable as "how fast someone
   responds".
-- **Rejection threshold.** Reject if IBS improvement over KM < MMI (**A**: 10% relative IBS
-  reduction), or if the improvement disappears under informative censoring, or if any covariate
-  proposed is person-resolvable (immediate rejection, not a tuning problem).
+- **Rejection threshold.** Reject if the **primary metric** — IBS improvement over KM — is below the
+  MMI (**A**: 10% relative IBS reduction), or if that IBS improvement disappears under informative
+  censoring, or if any covariate proposed is person-resolvable (immediate rejection, not a tuning
+  problem). A favourable time-dependent concordance **cannot** rescue a failed IBS gate: the
+  promotion gate reads the primary metric and nothing else.
 - **Removal/fallback.** Delete ⇒ KM curves and empirical censored distributions remain — already the
   shipped ADR-12 surface.
 
@@ -593,22 +688,55 @@ the frozen suite and re-preregister". All benchmark data is **C0 invented** (ADR
   changes across ≥ 10 invented systems (canonical §9 floors). Planted parameters: change class prior;
   change magnitude; **module continuity** ground truth (planted splits/merges, so ADR-07's
   content-overlap matching is measured, not assumed); parser-coverage loss planted independently;
-  **parser bundle major changes planted with no system change** (the instrument-drift confounder);
-  language mix; monorepo boundary count; and vendored/generated share.
-- **Metrics.** *Primary:* macro-F1 over the change classes vs the threshold-rule baseline.
+  **parser bundle major changes planted with no system change** (the instrument-drift confounder —
+  fixture set **(a)** below) **and equal-major grammar-bundle minor/patch drift planted with no
+  system change** (fixture set **(b)** below); language mix; monorepo boundary count; and
+  vendored/generated share.
+- **Parser-drift fixture split (2026-08-04 correction — the false-positive gate was vacuous).** The
+  abstention rule below excludes **every** unequal-parser-major pair *before* classification. If all
+  planted parser-drift fixtures bump the parser major, the parser-drift false-positive rate is
+  computed over an **empty denominator** and the gate passes without the model ever having
+  classified anything. The planted parser-drift fixtures are therefore split into two disjoint sets
+  with two different gates:
+  - **(a) Incomparable / parser-shift fixtures** — parser bundle **major** change or config-revision
+    change between snapshots. Scored under a separate **abstention-correctness gate**: the model
+    **must abstain**, and the pair must render as separate eras carrying
+    `WB_PARSER_MAJOR_INCOMPARABLE`. **Abstaining on these is the success criterion**, not a coverage
+    failure. They are **excluded from the false-positive denominator** and from every classification
+    metric. Gate: abstention on set (a) = **100%**; any classified delta across a parser-major
+    boundary is a blocking defect (G-SA7).
+  - **(b) Comparable parser-drift fixtures** — `comparability = 1` (equal parser major **and** equal
+    config revision) with genuine planted **instrument** drift inside that major: grammar-bundle
+    minor/patch changes, grammar-coverage gain or loss, and vendored/generated reclassification, all
+    with **no system change**. These **do reach classification**, carry the ground-truth label
+    `no material change`, and form the denominator of the **parser-drift false-positive rate** and
+    of the classification gates.
+
+  **The gate fails if zero fixtures reach classification.** A parser-drift false-positive rate whose
+  set-(b) denominator is empty, or below the canonical §9 per-class floor (≥ 50 fixtures), is
+  recorded as **unevaluable** — a gate failure, never a pass.
+- **Metrics.** *Primary (exactly one, §1.2):* macro-F1 over the change classes vs the threshold-rule
+  baseline, computed over the fixtures that **reach classification** (the comparable fixtures,
+  including set (b); set (a) is excluded by construction).
   *Secondary:* per-class support, calibration error, selective risk, **feature attribution over
-  controlled features only**, continuity-match accuracy (recovery of planted splits/merges), and
-  **parser-drift false-positive rate** — how often instrument change is labelled system change.
-  Holdouts: repository (held-out systems), time, and language.
+  controlled features only**, continuity-match accuracy (recovery of planted splits/merges),
+  **parser-drift false-positive rate over fixture set (b) only** — how often residual, *comparable*
+  instrument drift is labelled a system change class — and **abstention-correctness rate over
+  fixture set (a)**. Holdouts: repository (held-out systems), time, and language.
 - **Abstention rule.** Abstain unless `comparability = 1` (equal parser major **and** equal config
   revision, ADR-07) and `parser_coverage` clears the family floor. Incomparable snapshot pairs render
-  as separate eras — never as a classified delta.
+  as separate eras — never as a classified delta. This rule is exactly why fixture set (a) is an
+  **abstention** test and never a classification test, and why the false-positive gate must be
+  measured on set (b).
 - **Drift.** Parser/language drift (canonical §9); grammar bundle changes force re-benchmarking.
 - **Resource budget.** §1.8.
 - **Privacy.** C3 graph inputs → C1 summaries; C4 AST destroyed in-worker (ADR-06).
 - **Rejection threshold.** Reject if macro-F1 gain < MMI (**A**: +0.05) on held-out systems, or if
-  the parser-drift false-positive rate exceeds the baseline's — a classifier that manufactures
-  architecture drift from parser drift is worse than no classifier (ADR-07's stated failure mode).
+  the **parser-drift false-positive rate measured over fixture set (b)** exceeds the baseline's — a
+  classifier that manufactures architecture drift from parser drift is worse than no classifier
+  (ADR-07's stated failure mode). Reject also if the **abstention-correctness gate** on fixture set
+  (a) is below 100%, and treat the parser-drift comparison as **failed (unevaluable)** — never as
+  passed — if no fixture reaches classification.
 - **Removal/fallback.** Delete ⇒ deterministic era diffs of snapshot aggregates plus modelled
   continuity remain (ADR-07); each element keeps its layer badge.
 
@@ -681,7 +809,9 @@ implicit. *This ID is proposed and requires coordinator adjudication (§8).*
   because an extraction error is a correctness bug). Inferred: reliability diagram and ECE of the
   suggested-association probability, plus precision at the rendering threshold, plus **correction
   behaviour** (when a later provider edge arrives, the suggested claim is superseded via lineage and
-  the Delivery Map shows the correction — ADR-11).
+  the Delivery Map shows the correction — ADR-11). Both tracks are *reported* metrics; if this
+  evaluation is ever preregistered, §1.2 still requires it to name **exactly one** of them as the
+  primary metric, with the other descriptive — two reported tracks are not two primaries.
 - **Abstention rule.** Below calibration or support gates, suggested associations are not rendered at
   all; deterministic flow ratios never include them, in any state.
 - **Privacy.** C1 aggregates over C2 IDs; no identities.
@@ -783,7 +913,7 @@ prevents the sunk-cost drift that turns "research" into "shipping because we bui
 
 | Candidate | Why rejection is the likely outcome | The evidence that would change it | Where it goes if rejected |
 |---|---|---|---|
-| **WB-C3 CI failure-family classifier (metadata-only)** | Canonical §9 says labels are "likely weak" and logs are prohibited. Metadata (durations, attempt index, matrix presence) plausibly carries very little family signal. | Metadata-only macro-F1 beating the outcome/attempt baseline by the MMI at *realistic* planted separability, with per-class support ≥ 50 and calibrated probabilities. | Permanently rejected at the metadata boundary. **Never** re-opened by requesting logs — that boundary is `RAW-CONTENT-X`. |
+| **WB-C3 CI failure-family classifier (metadata-only)** | Canonical §9 says labels are "likely weak" and logs are prohibited. Metadata (durations, attempt index, matrix presence) plausibly carries very little family signal. | Metadata-only macro-F1 beating the preregistered **classifying** baseline (majority-class / deterministic metadata rules — the aggregate outcome/attempt distributions are context, not a baseline) by the MMI at *realistic* planted separability, with per-class support ≥ 50 and calibrated probabilities. | Permanently rejected at the metadata boundary. **Never** re-opened by requesting logs — that boundary is `RAW-CONTENT-X`. |
 | **WB-C9 rung 3, vector retrieval** | Over C1 codes and numbers, structured retrieval is probably sufficient (ADR-20). Embeddings add a sensitive derivative, a durable-index sink question, and membership-inference exposure for little expected gain. | Rung 1 (and then rung 2) *measurably failing* recall, plus rung 3 beating both on Recall@k/nDCG **and** counter-evidence recall with clean canaries. | Rejected; rung 1 remains the shipped default. This is a **success** of ADR-20's ladder. |
 | **WB-C9 rung 2, BM25 over controlled templates** | Templates are statement codes and enums; lexical matching over a closed vocabulary may add nothing over SQL filtering on the same vocabulary. | A measured recall failure of rung 1 on the authored query set. | Rejected; skip straight past it. |
 | **WB-C5 graph embeddings (sub-candidate)** | Community *detection* has a measurable planted-partition target; *embeddings* mainly enable similarity search that structured features may already serve, at C3 sensitivity. | Embedding-based similarity beating standardized-distance over deterministic graph features on an authored task. | Rejected; SCC/components/degree distributions remain. |
@@ -817,8 +947,8 @@ prevents the sunk-cost drift that turns "research" into "shipping because we bui
 2. **MMI values are placeholders (A).** Every `MMI` above needs to be re-derived from the decision it
    would change before any preregistration is frozen. A preregistration with an unjustified MMI is
    ceremony, not control.
-3. **BH vs BY at `validated` tier** (§1.4 item 5) should be revisited once any wave's dependence
-   structure is measurable.
+3. **BH vs BY at `validated` tier** (§1.4 item 5) should be revisited once any correction family's
+   dependence structure is measurable.
 4. **Does invented-fixture realism have a ceiling that makes `benchmarked` nearly meaningless for
    some candidates?** WB-C3 and WB-C6 are the likeliest: their planted parameters (metadata
    separability, informative censoring) are exactly the quantities nobody can invent honestly.
@@ -838,7 +968,7 @@ prevents the sunk-cost drift that turns "research" into "shipping because we bui
 | Cards | `WB-03` (preregistration + holdout custody), `WB-04` (leakage checklist harness), `WB-05` (drift monitors + auto-demotion) | ADR-19 `WB-01`, `WB-02` |
 | Datasets | `BENCH-WB-C1.v1` … `BENCH-WB-C10.v1` | new family |
 | Generators | `gen.wb.series.v1`, `gen.wb.subjects.v1`, `gen.wb.ci.v1`, `gen.wb.sequences.v1`, `gen.wb.graphs.v1`, `gen.wb.survival.v1`, `gen.wb.observability.v1`, `gen.wb.arch.v1`, `gen.wb.retrieval.v1`, `gen.wb.trace.v1` | new family |
-| Methods | `mth.wb.cp.pelt.v0`, `mth.wb.cp.bocpd.v0` (further method IDs per candidate at build time) | ADR-01 `method_id@method_version` |
+| Methods | `mth.wb.cp.pelt.v0`, `mth.wb.cp.bocpd.v0`, `mth.wb.ci.majority.v0`, `mth.wb.ci.metarule.v0` (further method IDs per candidate at build time) | ADR-01 `method_id@method_version` |
 | Tables | `wb_preregistration`, `wb_result`, `wb_benchmark_suite` (additive, C1, STRICT, FK-bound) | ADR-01 additive-table pattern |
 | Limitation codes | `WB_HOLDOUT_CONSUMED`, `WB_MODEL_DEMOTED`, `WB_BENCHMARKED_NOT_VALIDATED`, `WB_PARSER_MAJOR_INCOMPARABLE` | canonical §7 limitation dictionary |
 | Static-analysis gates | `G-SA1` … `G-SA8` | new, scoped to ADR-05/06/07 |

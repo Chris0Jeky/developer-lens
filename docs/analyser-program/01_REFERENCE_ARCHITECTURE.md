@@ -77,10 +77,17 @@ store.
 
 - `claim` — one row per rendered analytical statement at any layer above observed:
   `claim_id`, `layer` (deterministic|modelled|hypothesis|abstention), `statement_code` (closed
-  enum), `method_id`+`method_version`, `window`, `scope_alias`, `schema_version`, `created_at`,
-  `superseded_by`.
-- `claim_evidence_edge` — `claim_id`, `evidence_id | claim_id (derives_from)`, `role` ∈
+  enum), `method_id`+`method_version`, `window`, opaque `scope_id`, `schema_version`,
+  `created_at`, `superseded_by`. The C2 `scope_alias` *value* never sits in the C1 claim row: it
+  lives in the adjacent `claim_scope` table keyed by the content-free `scope_id` surrogate
+  (corrected 2026-08-04 review round).
+- `claim_evidence_edge` — `claim_id`, exactly one typed target, `role` ∈
   {supports, contradicts, contextualizes, derives_from, coverage_basis, limitation_basis}.
+  Targets are **typed nullable FK columns** (`target_evidence_id REFERENCES evidence`,
+  `target_claim_id REFERENCES claim`, `target_coverage_id REFERENCES coverage`) with an
+  exactly-one-target `CHECK`; a polymorphic unconstrained `target_id TEXT` is prohibited —
+  SQLite must reject dangling targets, or the resolver cannot guarantee a complete evidence walk
+  (corrected 2026-08-04 review round).
 - `limitation_instance` — `claim_id`, `limitation_code` (existing dictionary), `dimension`
   (coverage-vector dimension that triggered it), `copy_key`.
 - `lineage_event` — corrections, revocation cascades, export inclusion: `subject_id`,
@@ -95,9 +102,11 @@ coverage → capability → consent revision in one deterministic walk.
 
 **Stability key (accepted 2026-08-04, frontier finding C-03).** Because any new evidence mints a
 new claim ID, claim *history* cannot be grouped by `claim_id`. Every claim additionally carries a
-**stability key** — the tuple (`statement_code`, `method_id@method_version`, `window`,
-`scope_alias`, `schema_version`) — as an indexed column set, so supersession chains are groupable
-into series. This key is what claim-stability, calibration-scoreboard, and drift surfaces
+**stability key** — the tuple (`statement_code`, `method_id@method_version`, `window`, scope,
+`schema_version`) — as an indexed column set, so supersession chains are groupable into series.
+The scope component is realized as the opaque `scope_id` surrogate (so the index keeps per-scope
+series separate without placing the C2 alias value in the C1 row — series must never merge across
+repository scopes). This key is what claim-stability, calibration-scoreboard, and drift surfaces
 (DL-EVQ-03/04) aggregate over. Grain rule: any surface derived from claim-version or collection
 timing renders at ISO-week grain or coarser — the product's own operational timestamps fall under
 the ADR-14 floor on a single-owner installation.
@@ -106,9 +115,16 @@ the ADR-14 floor on a single-owner installation.
 Drawer, and no new storage engine. RDF adds modelling power nobody needs yet; free-form arrays
 cannot express contradiction, correction, or export lineage, which principles 3–4 require.
 
-**Privacy effect.** Claims carry only statement codes, method IDs, aliases, and windows — C1 by
-construction; edges reference IDs only. No new class or sink. Export includes claim rows only via
-the pack builder's allowlist with pack-scoped re-aliasing.
+**Privacy effect (corrected 2026-08-04 review round).** Claim *content* (statement codes, method
+IDs, windows) is C1, but the installation-scoped `scope_alias` reference is **C2** under the
+charter's alias-link classification (13-month local-only boundary): the local scope reference
+lives in a C2 partition and never inherits C1's 36-month retention or C1-only retrieval/export
+paths. Pack projection emits a fresh **pack-scoped C1 alias** in its place. Additionally, because
+canonical claim IDs are derived from installation-scoped evidence IDs and `scope_alias`, copying
+them into packs would create a stable cross-pack linkage key: the pack builder **re-mints
+pack-local claim IDs** from the pack-scoped evidence/scope identifiers and transactionally
+rewrites every edge, lineage, and `superseded_by` reference during projection. No new class or
+sink.
 
 **Compatibility/migration.** Additive tables in the P2 store; existing P3 pack remains valid. V1
 insights are not imported as claims; the bridge (ADR-04) generates claims only from V2 analyses.
@@ -140,8 +156,11 @@ violates principle 7).
 **Decision.** (b). The coverage vector becomes a **registered, versioned dimension set** of
 twelve dimensions:
 `permission, completeness, eligibility, freshness, censoring_freedom, consistency, sample,
-source_diversity, parser_coverage, comparability, drift_stability, calibration` — each
-`number | null` with a `limiting_reason` code and a registered **`direction`**, which is
+source_diversity, parser_coverage, comparability, drift_stability, calibration` — every dimension
+value uses **one canonical shape** `{ value: number | null, limiting_reason: code | null }`
+(a bare number or bare null is not a valid dimension encoding, and `limiting_reason` is the one
+canonical spelling on every wire/SQL surface — corrected 2026-08-04 review round) and a
+registered **`direction`**, which is
 `higher_is_better` for every dimension (corrected 2026-08-04 review round: an implementer must
 never have to guess polarity, or monotone abstention inverts). Explicit mapping from the canonical
 `EvidenceConfidence` (not 1:1): `freshness→freshness`, `sample→sample`,
@@ -150,12 +169,16 @@ never have to guess polarity, or monotone abstention inverts). Explicit mapping 
 reads higher-is-better), `completeness→completeness`; new dimensions `permission`,
 `censoring_freedom` (1 = no censoring), `parser_coverage`, `comparability`, `drift_stability`
 (1 = stable across re-collections), `calibration` have no v1 counterpart and start `null` with
-limiting reasons. Cold-start rule: while `calibration` has no producer output yet
-(DL-EVQ-04 needs resolved questions), modelled claims render at most at deterministic tier —
-fail-closed over-abstention is the intended behaviour. Claim families declare **minimum vector requirements per claim tier**
-(e.g. a modelled change-point claim requires `completeness ≥ 0.8`, `comparability = 1`,
-`calibration ≠ null`). Degrading any dimension can only hold or lower the claim tier
-(**monotone abstention**); no combination of other dimensions can compensate below a floor.
+limiting reasons. Cold-start rule (corrected 2026-08-04 review round): while `calibration` has no
+producer output yet (DL-EVQ-04 needs resolved questions), modelled claims **abstain** — a modelled
+claim that fails a modelled-layer gate never "degrades to" or renders as deterministic. Where a
+deterministic reading exists, it is an **independently defined deterministic fallback claim**
+under its own method ID and claim ID; model output never inherits deterministic styling or layer.
+Fail-closed over-abstention is the intended behaviour. Claim families declare **minimum vector
+requirements per claim tier** (e.g. a modelled change-point claim requires `completeness ≥ 0.8`,
+`comparability = 1`, `calibration ≠ null`). Degrading any dimension can only hold or lower the
+claim tier (**monotone abstention**); no combination of other dimensions can compensate below a
+floor.
 Limitation copy is resolved from a dictionary keyed by (claim family × limiting dimension),
 so the same truncation produces claim-appropriate language everywhere.
 
@@ -188,6 +211,8 @@ least-privilege and per-capability deletion).
 
 ```
 never_authorized → card_bound → previewed → active ⇄ suspended → revoked(tombstoned)
+                       ↑                                              │
+                       └── new reviewed consent revision (new epoch) ─┘
 ```
 
 - Transitions require: `card_bound` = a reviewed, hash-bound activation card names exact scope,
@@ -199,8 +224,13 @@ never_authorized → card_bound → previewed → active ⇄ suspended → revok
   claims, graph projections, caches, retrieval indexes, model outputs, packs/backups under app
   control) → delete → write content-free tombstone → record `lineage_event`. Deletion enumeration
   is generated from the schema registry, not hand-maintained lists.
-- Reconsent after a card change re-enters at `card_bound`; task-owned keys/databases/reports
-  (issue #6 lineage) bind continuity; a failed key write follows the issue #59 recovery decision.
+- Reconsent is modelled as **lifecycle epochs** (corrected 2026-08-04 review round): a revoked
+  consent *revision* remains terminal and its tombstone lineage is preserved forever, but a new
+  reviewed card creates a **new epoch** entering at `card_bound` — the typed transition set
+  includes `revoked → card_bound` conditioned on a new reviewed consent revision, so the current
+  capability projection reflects the new epoch while history stays immutable. Task-owned
+  keys/databases/reports (issue #6 lineage) bind continuity; a failed key write follows the
+  issue #59 recovery decision.
 - Backup/restore is application-controlled and enumerated in the same registry so restore cannot
   resurrect revoked data (restore replays tombstones last).
 - Cockpit UX (ADR-23) renders: per-capability state, retained classes, ages vs retention clocks,
@@ -251,10 +281,15 @@ what must retire).
 6. **Deprecation order.** DNA/archetype/persona views → scalar confidence → legacy insight stack →
    legacy exporters (ShareStudio moves to `ExportView`-fed builders) → legacy collector last, and
    only after the real-migration protocol (G2) has run for the owner's data.
-7. **Smallest user-visible vertical slice** (the programme's first implementation card):
-   Coverage Cockpit + PR-integration-shape panel rendered from `/api/v2/coverage` +
-   `/api/v2/features` over synthetic-importer data, with Evidence Drawer resolving one claim
-   end-to-end. This exercises spine, storage, API, and UX in one bounded slice.
+7. **Bootstrap slice** (the programme's first implementation card, DL-BRIDGE-01 — reconciled
+   2026-08-04): authenticated lazy `/api/v2/capabilities` + `/api/v2/coverage` over an explicitly
+   synthetic store, rendered by the Coverage Cockpit panel. It proves the V2 runtime seam and
+   privacy boundary; it does **not** yet prove the analytical product thesis.
+8. **First analytical value slice** (DL-VALUE-01, immediately behind the bootstrap plus the
+   analytics-core contracts ADR-25/26): one comparison-first PR-integration-shape finding over
+   invented facts — named cohort, right-censoring, matched-window baseline, contradicting
+   evidence, limitations, sensitivity — rendered in one Atlas panel with the Evidence Drawer
+   resolving it end-to-end. This is the slice that proves why Developer Lens exists.
 
 **Why.** The strangler order retires the highest-risk surfaces (person-shaped analytics) first,
 keeps a working product at every commit, and makes the V2 spine load-bearing immediately.
@@ -299,9 +334,15 @@ fixture_golden, snapshot_artifact**} (14 roles; the last three accepted 2026-08-
 finding A4 — they make golden/fixture-anchored contract surfaces and migration-ledger archaeology
 observable), package/monorepo boundary count via manifest-presence classes, and
 parser/enumeration coverage. Paths, names, file lists are
-C4 and destroyed. Boundaries: no working tree, no submodule recursion without its own consent, no
-content reads beyond role sniffing rules that are themselves closed (extension/manifest tables,
-never file bodies except bounded manifest parses already covered by GH-SBOM-01 rules).
+C4 and destroyed. Boundaries (corrected 2026-08-04 review round): no working tree, no submodule
+recursion without its own consent, and **no file-body reads of any kind under
+`cap.source.structure` alone** — role sniffing uses closed extension/manifest-**name** tables
+only, so a `dependency_manifest` file may be counted and role-classified by name and nothing
+more. Parsing manifest **bodies** (declared dependencies, workspace topology, SBOM-adjacent
+content) requires `cap.github.dependencies` (a future local-manifest capability would first need
+its own reviewed matrix row — none exists today) to be
+separately **active** with an explicit card dependency; consent is never piggybacked from the
+source-structure capability.
 
 **Why/Privacy/Rollback.** Deterministic, cheap, C1-only; failure of any parse degrades
 `parser_coverage`, never fabricates composition. Rollback = delete summaries (90d C3 graph rows
@@ -348,8 +389,14 @@ ATLAS-05 (API-surface counts), ATLAS-06 (test-to-code topology).
 naive cross-version comparison would manufacture "architecture drift" from parser drift.
 
 **Decision.** A **snapshot** is keyed by (repository alias, ref OID, `parser_bundle_version`,
-config revision) and stores graph + composition + API-surface + policy/CI/dependency aggregates
-from the same immutable ref. **Comparability** requires equal parser major and equal config
+config revision) and stores the **committed-tree facts** — graph + composition + API-surface —
+derived from that immutable ref. **Provider observations are not snapshot content (corrected
+2026-08-04 review round):** rulesets, CI runs, dependency state, and deployment state are mutable
+observation-time resources that generally cannot be reconstructed "from" a historical ref; they
+are keyed by their **observed coverage windows** plus connector provenance, never by ref OID.
+Snapshot facts and provider aggregates may be co-presented or compared only where the ref's era
+and the observation window align, and today's provider state is never projected onto an old ref —
+doing so would manufacture era changes. **Comparability** requires equal parser major and equal config
 revision; incomparable pairs render as separate eras with an explicit `comparability` dimension
 limitation, never as deltas. **Module continuity** across snapshots uses content-overlap
 matching (HMAC'd normalized identifier sets); continuity, split, and merge assignments are
@@ -622,6 +669,13 @@ planning session.
   improvement, feature-availability time, split policy (rolling-origin/nested time-aware), and the
   final holdout; a failed gate consumes the holdout (no reuse); false discovery across the
   candidate family controlled (Benjamini–Hochberg across the family's primary tests).
+  **Repeated attempts (corrected 2026-08-04 review round):** one primary promotion attempt per
+  candidate per ladder tier; a materially new method/version is a *new* preregistered candidate
+  that permanently remains in its predecessor's correction family (family membership fixed at
+  first preregistration, carried across waves — a wave is a scheduling unit, never a correction
+  unit, and the family's `m` only grows); re-testing an unchanged candidate is prohibited; an
+  online-FDR procedure is admissible only via a dedicated, formally specified preregistration
+  amendment.
 - **Promotion ladder**: `seeded → benchmarked(invented) → validated(consented,real) → shipped`,
   where `validated` requires a separately authorised, representative, consented dataset with its
   own card and an untouched final holdout — invented fixtures can never carry a candidate past
@@ -651,7 +705,8 @@ composition, and whether vectors earn a place.
 **Decision.** Retrieval is **evidence-ID-based over explicitly selected C1 analysis-pack facts**,
 in three ladder steps that must each beat the previous on the retrieval benchmark before adoption:
 
-1. **Deterministic structured retrieval (default, shipped):** SQL filtering over typed facts +
+1. **Deterministic structured retrieval (planned default/baseline — DL-RAG-01, not yet
+   implemented):** SQL filtering over typed facts +
    feature registry (claim family → relevant feature IDs/coverage/limitations mapping), with
    standardized-distance ranking (z-scored numeric features) for "similar windows/systems".
    **Mandate:** every retrieval result set deliberately includes supporting, contradicting,
@@ -688,16 +743,20 @@ composer is the deterministic machinery around them.
 **Decision.** The composer is **deterministic-first**: template-driven claim assembly (statement
 code + evidence slots filled by ADR-20 retrieval with its counter-evidence quotas), producing
 structured claims with supporting/contradicting IDs, alternatives from a closed per-family
-alternative enum, confidence bands derived from the coverage vector (ADR-02 gates), abstentions
-when gates fail, and a mandatory "what evidence would change this?" question generated from the
-family's falsifier registry. The optional external step remains exactly the approved OpenAI/Luna
+alternative enum, claim **eligibility states** (eligible / limited / abstained) derived from the
+coverage vector per ADR-02 family floors — never a low/medium/high confidence band or any other
+persuasive collapsed scalar (corrected 2026-08-04 review round), with the vector and limiting
+dimensions always visible; abstentions when gates fail (a failed modelled gate abstains, it never
+restyles as deterministic); and a mandatory "what evidence would change this?" question generated
+from the family's falsifier registry. The optional external step remains exactly the approved OpenAI/Luna
 C1 request (uncalled in this session; `cap.external.model` `never_authorized`); a future local
 model must be pinned, licensed, offline, non-executing-remote-code. Model output only ever
 re-ranks/re-words within the closed enums — it cannot add evidence IDs (schema-rejected) or new
 statement codes.
 
-**Cards.** HYP-01 (template composer + falsifier registry), HYP-02 (coverage-derived confidence
-bands), P12 lane continues separately for the external activation (existing cards/issues).
+**Cards.** HYP-01 (template composer + falsifier registry), HYP-02 (claim eligibility states from
+coverage floors), P12 lane continues separately for the external activation (existing
+cards/issues).
 
 ---
 
@@ -711,11 +770,19 @@ private API.
 insights/claims, coverage, data-quality, dictionary, example SQL, notebook plan), each table
 family landing with its producing capability; pack-scoped aliases and sparse suppression at build;
 preview/acknowledgement before build; immutable COMPLETE; `pack_schema_version` gates readers.
-**Query Lab runs over the pack, not the canonical store:** the local UI opens a user-selected
-completed pack directory via DuckDB-WASM entirely in-browser (no new API endpoint, no server SQL
-surface), offering example queries from the pack's own `queries/` and a read-only schema browser.
-This honours the sink contract (the pack is already redacted/aliased) while making evidence
-explorable in-product. Notebook plans reference the same pack (external DuckDB/Python).
+**Query Lab runs over PackPresentationView relations, not raw pack internals (corrected
+2026-08-04 review round):** a pack is an `ExportView`, and the charter's frontend sink contract
+requires a purpose-built `PresentationView` — redaction and aliasing alone do not authorise
+exposing arbitrary pack records to browser code. The pack build therefore generates
+registry-allowlisted **PackPresentationView** relations (plus the example queries rewritten
+against them), and the in-app Query Lab (DuckDB-WASM, in-browser, no new API endpoint, no server
+SQL surface) opens ONE immutable checksum-verified snapshot of a user-selected COMPLETE pack and
+registers, exposes, and permits queries against only those relations (the schema browser lists
+nothing else, and a query naming any other pack table is refused). Raw pack SQL remains an **external expert
+workflow** (DuckDB/Python over the user's own exported artifact, under the export's existing
+disclosure) — the charter is not weakened in this pass. Notebook plans reference the same pack.
+Pack projection also **re-mints pack-local claim IDs** and rewrites edge/lineage/`superseded_by`
+references transactionally (ADR-01), so canonical claim IDs never cross packs as linkage keys.
 
 **Failure/rollback.** A pack that fails checksum/COMPLETE refuses to open; Query Lab has no write
 path. **Revisit.** If DuckDB-WASM bundle cost is unacceptable, Query Lab degrades to copyable SQL
@@ -729,7 +796,10 @@ Structural *shape vectors* — role byte shares, package/module-graph topology, 
 series — are strong fingerprints of a public repository and can defeat pack aliasing by matching
 against public data. Cross-cutting pack rule: structural shape values export only in **coarse
 bands**; exact topology/edge lists never leave C3 (PACK-05 enforces; applies to the whole
-X-Ray/Atlas family, and release instants export ISO-week-floored).
+X-Ray/Atlas family, and release instants export ISO-week-floored). Consequence (reconciled
+2026-08-04): ordinary packs carry **no exact graph node/edge tables and no GraphML** — DL-PACK-03
+exports banded C1 structural summaries only; a C3-local graph workspace, if ever wanted, is a
+separate owner-reviewed sink with its own deletion contract.
 
 **Grounded constraint — three disagreeing manifest shapes (V, 2026-08-04).** The repo currently
 holds (a) the implemented Zod pack manifest in `server/analysisPack/analysisPack.ts`
@@ -757,7 +827,13 @@ layer badges + consistent styling tokens for the seven statuses; every number is
 claim; every hypothesis card ends with its falsifying question; suppressed/missing data renders as
 explicit coverage furniture, never blank. Adoption follows the ADR-04 bridge order; each view has
 a UX acceptance card with annotated wireframes in `05` (desktop + mobile) and no React/CSS
-implementation in this session.
+implementation in this session. **Staging (reconciled 2026-08-04):** the initial product surface
+is only the Coverage/Privacy Cockpit, one comparative Atlas panel, and the Evidence Drawer, with
+the deterministic System Story following once the first finding is accepted; the remaining views
+ship only as their evidence producers become real — no ten-route shell is implemented before
+DL-VALUE-01. Navigation is question-first: system/portfolio + window/baseline + lens, findings
+ordered by evidence relevance (never a blended engagement weight), with contradicting-evidence
+and sensitivity controls.
 
 **Cards.** UX-CC, UX-ED, UX-TM, UX-CR, UX-DM, UX-PL, UX-EC, UX-QL, UX-SS (one per view) + UX-VG
 (visual grammar tokens).
@@ -776,24 +852,104 @@ cost class), and status (open, answered(link), obsolete). The Observatory view l
 questions, shows what each would unlock, and offers a **"surprise me"** exploration that samples
 under-visited evidence regions (coverage-weighted random walk over the claim graph — deterministic
 seed, so reproducible). Questions are data, so packs export them and the story can end on one.
+Questions are generated **only** from real gaps, contradictions, or untested alternatives — when
+none exists, the honest output is "no unresolved question under the current evidence", and no
+surface (including the System Story's final beat) may fabricate a filler question to fill the slot
+(corrected 2026-08-04 review round).
 
 **Cards.** OPEN-01 (question family + generators), OPEN-02 (observatory view model + surprise-me
 walk).
 
 ---
 
+## ADR-25 — Versioned metric-definition registry (analytical core)
+
+**Context (added by the 2026-08-04 reconciliation).** PR #62 made operational uncertainty rigorous
+— privacy, capabilities, deletion, replay, coverage, provenance — but a deterministic result can be
+reproducible, private, and perfectly traced while measuring the wrong construct. Provenance answers
+"where did this come from?"; nothing yet answers "what exactly was measured, under which cohort and
+assumptions, and what must not be inferred from it?". The claim graph is not a substitute for a
+metric registry.
+
+**Decision.** An explicit analytical core sits between canonical facts and claims:
+`source observations → canonical facts → versioned metric definitions → metric results (with
+eligibility, censoring, coverage) → findings → Atlas/Story/exports → optional retrieval/modelled
+analysis`. Every analytical metric has one canonical, versioned registry definition carrying at
+least: `metric_id@version`, question answered, analytical subject, unit, window semantics and
+canonical clock/`asOf`, required capabilities and source fields, eligibility/cohort definition,
+event and censoring definition, missingness and truncation handling, deterministic formula or
+procedure, minimum sample/support gates, comparison requirements, alternative/sensitivity
+definitions, known confounders, **prohibited interpretations**, coverage dimensions consumed,
+fixture and counterexample suite, rendering/export policy, and supersession/removal path. Every
+computed result carries `metric_id@version`, scope alias, window, value or distribution, eligible
+count, censored count, excluded count by reason, the metric-specific coverage vector, evidence
+IDs, calculation provenance, and sensitivity/robustness results. **No metric may rely on an
+undocumented shared "engagement", "importance", "activity", "health", "maturity", or "confidence"
+scalar** — such registrations are schema-rejected, and V2 APIs refuse to expose an unregistered
+metric.
+
+**Why.** Makes analytical validity as load-bearing as privacy, provenance, storage, and replay —
+the central correction of the reconciliation directive.
+
+**Privacy effect.** None; registry entries are C0/C1 definitions. **Failure/rollback.** Additive
+contract; removal restores the status quo. **Cards.** DL-METRIC-01 (registry), DL-VALIDATE-01
+(conformance/counterexample suite).
+
+---
+
+## ADR-26 — Finding contract, AnalyticReference, and matched comparison semantics
+
+**Context (added by the 2026-08-04 reconciliation).** A finding is not a sentence attached to
+evidence, and the prior documents disagreed on what an analytic number must reference (the claim
+table covers statements above observed, while the UX required a `claim_id` for every number).
+
+**Decision.** Three contracts:
+
+1. **Finding contract.** Every finding (deterministic | modelled | hypothesis | abstention)
+   carries: `finding_id@version`, `question_id`, layer, metric result references, observation,
+   candidate interpretation (if any), counter-evidence references, alternative explanations,
+   limitations, sample/eligibility/censoring summary, metric-specific coverage, robustness status
+   (`not-tested | fragile | stable`) with named checks, what evidence would distinguish the
+   alternatives, and presentation eligibility. A finding cannot render without metric/result
+   provenance; a hypothesis cannot render without alternatives and a falsifier; a deterministic
+   finding cannot carry causal wording its statement code does not license.
+2. **AnalyticReference.** `AnalyticReference = ObservationReference | ClaimReference`. Raw allowed
+   provider/local facts resolve through an observation/evidence ID; counts, ratios, quantiles,
+   durations, shares, graph statistics, and deltas are deterministic **claims**. The Evidence
+   Drawer resolver accepts either reference and walks to source, coverage, capability, and
+   consent. The UI never labels parser-derived or aggregated numbers as observed.
+3. **Comparison semantics.** One reusable matched-period contract (with ADR-07's middle case):
+   canonical injected `asOf`, equal-duration half-open UTC windows, explicit cohort, three
+   comparability outcomes (`FULL | MATCHED_PARTIAL | INCOMPARABLE`), matched fraction as a
+   first-class number, right-censoring at window boundaries, and explicit no-comparison outcomes —
+   a failed comparison is never a zero delta. Pure analysis functions never read the system clock.
+
+**Confidence never re-collapses:** claim state is eligible / limited / abstained per family
+floors; no `low | medium | high` band, no compensation across dimensions below floors, and a
+modelled claim that fails its floor abstains while any deterministic fallback renders as its own
+separately defined claim.
+
+**Cards.** DL-FINDING-01 (finding contract + AnalyticReference), DL-COMPARE-01 (comparison
+contract), DL-VALUE-01 (first deterministic comparative finding through the whole core).
+
+---
+
 ## Cross-cutting dependency spine (summary)
 
-The full DAG with phases lives in `07_DELIVERY_ROADMAP.md`. The load-bearing order:
+The full DAG with phases lives in `07_DELIVERY_ROADMAP.md`. The load-bearing order (revised by the
+2026-08-04 reconciliation — deterministic analytical value comes before packs, retrieval, and
+composition):
 
 ```
-SPINE (ADR-01/02/03)  →  BRIDGE first slice (ADR-04)  →  everything user-visible
+SPINE (ADR-01/02/03)  →  BRIDGE bootstrap slice (ADR-04)
+METRIC/FINDING/COMPARE (ADR-25/26)  →  VALUE slice (first deterministic finding)  →  flow facts
 GIT (ADR-08)          →  COUP, TIME, TRACE ancestry, CAD
 XRAY/ATLAS (05/06)    →  TIME (07), test-topology, API-surface
 TRACE (11) + OBSV (12)→  Delivery Map, flow ratios
-LAB/WB (17/19)        →  any modelled claim in UI
-RAG (20)              →  HYP (21)  →  P12 external lane (existing)
-PACK (22)             →  Query Lab, notebooks, RAG source
+VALUE + flow findings →  deterministic System Story (ADR-23/24)
+PACK (22)             →  Query Lab (PresentationView), notebooks
+LAB/WB (17/19)        →  any modelled claim in UI            [optional; off the critical path]
+RAG (20)              →  HYP (21)  →  P12 external lane      [optional; off the critical path]
 ```
 
 No high-sensitivity connector, parser, ML feature, RAG index, or model narrative schedules before

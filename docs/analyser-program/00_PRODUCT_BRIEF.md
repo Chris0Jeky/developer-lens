@@ -26,6 +26,31 @@ delight, not judgement.
 One sentence: *Developer Lens tells you what kind of system a body of work became, shows you
 exactly why it believes that, and tells you what evidence would change its mind.*
 
+Reconciled thesis (owner directive, 2026-08-04): *Developer Lens is a local-first evidence system
+that explains how a software change system evolved, what evidence supports that explanation, what
+it could not observe, what alternative interpretations remain, and what evidence would distinguish
+them.* Its durable differentiator is **local evidence + source coverage + provenance +
+reproducible metrics + falsifiable findings + counter-evidence + portable analysis** — not generic
+charts, GitHub collection, a Wrapped animation, or an LLM. The immediate goal is not the largest
+possible roadmap: it is **one complete vertical slice proving that thesis** (DL-VALUE-01), with
+decision-useful deterministic findings prioritised ahead of packs, retrieval, and modelled
+interpretation.
+
+### 1a. One evidence engine, two system-centred experiences
+
+- **Investigate — the System Atlas.** Question-first, comparative, evidence-oriented exploration:
+  what changed, where a distribution or delivery tail moved, which repositories/modules/workflows
+  account for the difference, what evidence is missing or censored, whether the conclusion
+  survives reasonable alternative definitions, what contradicts it, and what would settle the
+  remaining uncertainty. **This is the principal product.**
+- **Narrate — the System Story.** A guided, humane, visually distinctive narrative over the same
+  versioned findings and evidence: one system or portfolio, one selected era or comparison; no
+  score, archetype, DNA, productivity framing, or personal profile; no narrative-only metric; no
+  claim that cannot be opened in the Atlas and Evidence Drawer; and **no forced question or filler
+  when the evidence contains no unresolved question**. It is the successor to the appealing part
+  of Wrapped — the presentation and emotional accessibility, never the person-shaped analytics.
+  The visual identity may be reused; the analytical semantics may not.
+
 ## 2. Audience and jobs-to-be-done
 
 | Audience | Job | What they get |
@@ -94,8 +119,11 @@ Success (measured on invented fixtures and, later, consented local runs):
   synthetic corpus).
 - **Time-to-first-insight:** a fresh local run over the synthetic corpus reaches a populated
   Evidence Atlas within one bounded collection cycle (budget fixed per capability card).
-- **Question yield:** every hypothesis surface ends in at least one falsifying question; the Open
-  Questions surface is populated from real coverage gaps, not filler.
+- **Question yield (corrected 2026-08-04):** every hypothesis surface ends in its falsifying
+  question **when a genuine one exists**; the Open Questions surface is populated only from real
+  gaps, contradictions, or untested alternatives. A fully covered, fully resolved state renders an
+  honest "no unresolved question under the current evidence" — fabricating a question to satisfy
+  this metric is itself a guardrail failure.
 
 Guardrails (hard failures, tested):
 

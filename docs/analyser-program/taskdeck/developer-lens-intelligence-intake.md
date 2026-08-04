@@ -5,11 +5,14 @@ heading below becomes one Inbox capture for later triage; the authoritative card
 starter-pack manifest beside this file. All content is planning prose — no private data, no
 credentials, no real analytical output.
 
-# Initiative: make the V2 spine user-visible
+# Initiative: make the V2 spine user-visible, then prove the thesis
 
-The first bounded slice (DL-BRIDGE-01) mounts read-only /api/v2 coverage+capabilities endpoints
-over a synthetic-importer store and renders a Coverage Cockpit panel. Until this lands, every V2
-subsystem has zero production callers and the platform is disconnected architecture. Entry point:
+The bootstrap slice (DL-BRIDGE-01) mounts authenticated read-only /api/v2 coverage+capabilities
+endpoints over a synthetic-importer store and renders a Coverage Cockpit panel. Until this lands,
+every V2 subsystem has zero production callers and the platform is disconnected architecture. Its
+immediate successor is the first analytical value slice (DL-VALUE-01): one deterministic
+comparative PR-integration-shape finding through the metric/finding/comparison contracts
+(DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01 — reconciliation 2026-08-04). Entry point:
 docs/analyser-program/09_IMPLEMENTATION_LAUNCHER.md.
 
 # Initiative: evidence claim graph
