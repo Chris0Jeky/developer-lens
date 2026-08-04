@@ -117,6 +117,7 @@ const FIXED_HEADERS = Object.freeze({
 })
 
 const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+const PROVIDER_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{3})?Z$/
 const SAFE_OWNER = /^[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})$/
 const SAFE_REPOSITORY = /^[A-Za-z0-9](?:[A-Za-z0-9._-]{0,99})$/
 const OPAQUE_ALIAS = /^[A-Za-z0-9:._-]{1,128}$/
@@ -133,6 +134,12 @@ function canonicalTimestamp(value: unknown): value is string {
   if (typeof value !== 'string' || !CANONICAL_UTC_TIMESTAMP.test(value)) return false
   const date = new Date(value)
   return !Number.isNaN(date.valueOf()) && date.toISOString() === value
+}
+
+function normalizeProviderTimestamp(value: unknown): string | null {
+  if (typeof value !== 'string' || !PROVIDER_UTC_TIMESTAMP.test(value)) return null
+  const date = new Date(value)
+  return Number.isNaN(date.valueOf()) ? null : date.toISOString()
 }
 
 function rangeIsValid(card: GithubCoreActivationTaskCard, rangeEnd: string): boolean {
@@ -280,14 +287,17 @@ function parseIssues(value: unknown): readonly Record<string, unknown>[] | null 
   for (const item of value) {
     if (!item || typeof item !== 'object' || Array.isArray(item)) return null
     const record = item as Record<string, unknown>
+    const updatedAt = normalizeProviderTimestamp(record.updated_at)
     if (
       typeof record.node_id !== 'string' ||
       record.node_id.length < 1 ||
       record.node_id.length > 256 ||
-      !canonicalTimestamp(record.updated_at)
+      updatedAt === null
     ) return null
     if (Object.hasOwn(record, 'pull_request') && (typeof record.pull_request !== 'object' || record.pull_request === null)) return null
-    result.push(record)
+    result.push(Object.hasOwn(record, 'pull_request')
+      ? { node_id: record.node_id, updated_at: updatedAt, pull_request: {} }
+      : { node_id: record.node_id, updated_at: updatedAt })
   }
   return result
 }

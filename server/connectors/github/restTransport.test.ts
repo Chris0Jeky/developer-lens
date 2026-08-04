@@ -71,7 +71,7 @@ describe('github.core REST transport projection', () => {
   it('uses fixed unauthenticated GET requests and projects only allowlisted fields', async () => {
     const fixture = fetchFixture([
       response(200, metadata, { 'x-ratelimit-remaining': '17', 'x-ratelimit-reset': '1234' }),
-      response(200, [{ node_id: 'raw+/=1', updated_at: '2026-07-02T00:00:00.000Z', pull_request: {}, title: 'POISON_TITLE', body: 'POISON_BODY', user: { login: 'POISON_USER' }, url: 'https://poison.invalid' }, { node_id: 'raw-2', updated_at: rangeEnd }]),
+      response(200, [{ node_id: 'raw+/=1', updated_at: '2026-07-02T00:00:00Z', pull_request: {}, title: 'POISON_TITLE', body: 'POISON_BODY', user: { login: 'POISON_USER' }, url: 'https://poison.invalid' }, { node_id: 'raw-2', updated_at: rangeEnd }]),
     ])
     const aliases: string[] = []
     const result = await collectGithubCoreRest({ card: card(), rangeEnd, fetch: fixture.fetch, alias: (domain, id) => { aliases.push(`${domain}:${id}`); return `${domain}-alias-${id.replaceAll(/[^A-Za-z0-9_-]/g, '_')}` } })
