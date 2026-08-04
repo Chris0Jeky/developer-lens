@@ -407,6 +407,29 @@ describe('github.core inert protocol foundation', () => {
     expect(limited.coverage.status).toBe('truncated')
   })
 
+  it('requires every failure kind to match its closed limitation code', () => {
+    const pairs = [
+      ['rate_limited', 'RATE_LIMITED'],
+      ['transient', 'FAILURE_TRANSIENT'],
+      ['permission', 'FAILURE_PERMISSION'],
+      ['unsupported', 'FAILURE_UNSUPPORTED'],
+      ['schema', 'FAILURE_SCHEMA'],
+      ['unknown', 'FAILURE_UNKNOWN'],
+    ] as const
+    for (const [kind, limitationCode] of pairs) {
+      const paired = nonCompleteInput({
+        status: 'failed',
+        limitationCode,
+        failure: { kind, attempt: 1 },
+        ...(kind === 'rate_limited' ? { saturationReason: 'RATE_LIMITED' } : { saturationReason: undefined }),
+      })
+      expect(() => reconcileGithubCoreNonComplete(paired)).not.toThrow()
+      expect(() => reconcileGithubCoreNonComplete({ ...paired, limitationCode: 'MISMATCHED_CODE' })).toThrow(
+        'failure kind and limitationCode do not match',
+      )
+    }
+  })
+
   it('rejects malformed noncomplete facts and snapshots caller state', () => {
     expect(() => reconcileGithubCoreNonComplete(nonCompleteInput({ observedUnits: -1 }))).toThrow('observedUnits')
     expect(() => reconcileGithubCoreNonComplete(nonCompleteInput({ status: 'truncated', saturationReason: undefined }))).toThrow('saturationReason')

@@ -308,7 +308,7 @@ function validateNonCompleteResult(
       status,
       observedUnits: 0,
       appliedReceiptAliases: [],
-      limitationCode: code as string,
+      limitationCode: code === 'TRANSIENT' ? 'FAILURE_TRANSIENT' : code as string,
       ...(code === 'TRANSIENT' ? { failureKind: 'transient' as const } : {}),
     }
   }
