@@ -97,6 +97,12 @@ lost exact-graph/GraphML export (banded summaries only); DL-QL-01 became
 PresentationView-projected; DL-HYP-02 dropped confidence bands for eligibility states; the
 frontier-closure wording was softened to "backlog expansion closed for this planning cycle". Still
 no product implementation, real collection, external model call, or capability activation.
+A post-merge follow-up PR then triaged the late-arriving automated review of the reconciliation
+itself (14 findings: 2 already fixed pre-merge, 12 corrected — notably DL-PROV-01 rebound to gate
+G-d, observed-zero weeks vs null in cadence, saturation-as-truncation (never censoring) for
+Actions runs, role-pool reservation before the retrieval cap, snapshot-copy deletion lifecycle,
+BH family re-evaluation on growth, DL-VALUE-01 gated on DL-VALIDATE-01, the DL-Q-GRAIN question
+card (127 cards), role→target CHECKs, and a non-mutating `generate.mjs --check` drift gate).
 
 Published P4 adds an inert, no-caller composition runner. It binds the exact opened task-
 card bytes to a caller-reviewed lowercase SHA-256, derives the repository alias before any request,

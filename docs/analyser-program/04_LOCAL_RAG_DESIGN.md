@@ -81,6 +81,14 @@ Verification and reading must target **the same bytes**. The reader therefore:
    from that same snapshot handle/copy, with **no path re-resolution after verification**;
 5. re-asserts the checksums on the same snapshot at task end. A mismatch means the snapshot was not
    immutable after all: the task's results are **discarded**, not reported. **R**
+6. **deletes any copied snapshot when the task ends — on every path** (corrected 2026-08-04 review
+   round): success, failure, and cancellation all delete the task-owned copy; the copy lives under
+   one process-owned snapshot root so crash recovery is a startup sweep of that root (stale
+   task-IDs removed before any new task starts); the root is registered in the schema registry as
+   a deletion-cascade location, so capability revocation and the DL-LIFE-02 planner enumerate it.
+   The zero-writes proof in §5.2 applies to the snapshot's *content* during the task — creating
+   and deleting the copy is the task's own bounded lifecycle, not a write to the pack. An
+   untracked C1 duplicate outliving its task is a defect, never an acceptable residue.
 
 **I** The property this buys is that verification is a statement about the bytes actually consumed.
 The flow this replaces — verify `checksums.sha256`, then hand the *paths* to DuckDB — is a TOCTOU
@@ -338,9 +346,14 @@ Eligible set  (above the working ceiling: deterministic total-order prefix + tru
         │
         ▼  rank ALL eligible rows (L1 distance | L2 BM25 | L3 vectors) → total-order ranked sequence
         │
-        ▼  candidate cap applied to the RANKED sequence (RAG_CANDIDATE_POOL_TRUNCATED if it binds)
+        ▼  §4 counter-evidence quota pools RESERVED per role from the ranked sequence
+        │     (contradicts / coverage_basis / limitation_basis filled FIRST — a global cap must
+        │      never starve a role pool while qualifying counter-evidence exists; corrected
+        │      2026-08-04 review round)
+        ▼  candidate cap consumes the REMAINING budget from supporting rows
+        │     (RAG_CANDIDATE_POOL_TRUNCATED if it binds)
         │
-        ▼  §4 counter-evidence quotas
+        ▼  §4 counter-evidence quotas verified over the final set
 Retrieval result set (evidence IDs + roles + coverage rows) + transient RetrievalLimitation[]
         │
         ├──────────────► ADR-21 deterministic composer (local, complete product)

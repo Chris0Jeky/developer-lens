@@ -71,7 +71,8 @@ publication route remains active.
   adoption-timing suppression; (g) capability-matrix rows for rulesets/attestations/discussions
   (G-d) and artifact metadata-only counts (G-e) — the affected cards (DL-PORT-02, DL-PROV-01) are
   owner-gated on the board and must not be implemented before a reviewed matrix change or your
-  decision; (h) *(added by the 2026-08-04 reconciliation review)* display grain for freshness age:
+  decision; (h) *(added by the 2026-08-04 reconciliation review; question card DL-Q-GRAIN on the
+  board and in `08_OPEN_QUESTIONS.md` §1)* display grain for freshness age:
   the UX renders staleness as an hour-precision age (`stale 31h`, canonical feature
   `DL.COV.FRESHNESS_AGE_H.v1`) while operational collection timing is floored to ISO week — decide
   whether the week floor also binds derived age durations (which can pin the collection run) or

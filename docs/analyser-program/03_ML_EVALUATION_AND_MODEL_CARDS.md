@@ -199,6 +199,14 @@ tests"), made concrete:
      family**. Family membership is fixed at first preregistration and carried across every later
      wave, so the family's `m` counts every predecessor attempt whatever wave it ran in and
      **only ever grows**. The lineage is recorded in the registry, never re-derived per wave.
+     **Growth re-evaluates the whole family (corrected 2026-08-04 review round):** when a
+     successor enlarges `m`, every prior BH/BY decision in the family is recomputed under the new
+     `m` in the same registry transaction; a previously promoted candidate whose primary test no
+     longer clears the step-up under the larger family is **demoted** (registry demotion removes
+     its claims automatically). Family-level FDR control is a property of the *current* family,
+     not of the family as it stood at each historical decision — alternatively, a family may
+     preregister its maximum size up front and reject successors beyond it, or adopt the (iv)
+     online-FDR path.
    - **(iii) Re-testing an unchanged candidate in a later wave is prohibited.** Same method, same
      version, same features, new wave is not a new candidate — it is the same test run again until
      it passes, which is exactly the search this procedure exists to control. Such an attempt is
