@@ -5,6 +5,7 @@ import { afterEach, describe, expect, it } from 'vitest'
 import {
   GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD_ERROR_CODE,
   loadGithubCoreActivationTaskCard,
+  portableFileIdentityMatches,
 } from './activationTaskLoader.js'
 
 const taskId = 'fixture-loader-01'
@@ -114,6 +115,12 @@ async function expectInvalid(input: unknown): Promise<void> {
 }
 
 describe('github.core activation task card loader', () => {
+  it('fails closed when portable opened-file identity is absent or mismatched', () => {
+    expect(portableFileIdentityMatches({ dev: 0, ino: 0 }, { dev: 0, ino: 0 })).toBe(false)
+    expect(portableFileIdentityMatches({ dev: 7, ino: 11 }, { dev: 7, ino: 12 })).toBe(false)
+    expect(portableFileIdentityMatches({ dev: 7, ino: 11 }, { dev: 7, ino: 11 })).toBe(true)
+  })
+
   it('reads only the canonical task card and returns the parser’s frozen card', async () => {
     const root = await fixtureRoot()
     const card = await loadGithubCoreActivationTaskCard({ workspaceRoot: root, taskId })
@@ -134,6 +141,53 @@ describe('github.core activation task card loader', () => {
 
     await rm(cardPath)
     await writeFile(join(root, '.developer-lens', 'activation', taskId, 'other.json'), JSON.stringify(validCard()), 'utf8')
+    await expectInvalid({ workspaceRoot: root, taskId })
+  })
+
+  it('snapshots closed data properties before awaiting and rejects accessors or mutations', async () => {
+    const root = await fixtureRoot()
+    const input = { workspaceRoot: root, taskId }
+    const pending = loadGithubCoreActivationTaskCard(input)
+    input.taskId = '../outside'
+    await expect(pending).resolves.toMatchObject({ taskId })
+
+    let getterCalled = false
+    const accessorInput = {} as Record<string, unknown>
+    Object.defineProperty(accessorInput, 'workspaceRoot', {
+      get: () => { getterCalled = true; throw new Error('getter must not run') },
+      enumerable: true,
+    })
+    Object.defineProperty(accessorInput, 'taskId', { value: taskId, enumerable: true })
+    await expectInvalid(accessorInput)
+    expect(getterCalled).toBe(false)
+  })
+
+  it('rejects duplicate JSON keys at every object depth, including escaped equivalents', async () => {
+    const root = await fixtureRoot()
+    const cardPath = join(root, '.developer-lens', 'activation', taskId, 'task-card.json')
+    const serialized = JSON.stringify(validCard())
+
+    await writeFile(cardPath, serialized.replace('{', '{"taskId":"fixture-loader-01",'), 'utf8')
+    await expectInvalid({ workspaceRoot: root, taskId })
+
+    await writeFile(cardPath, serialized.replace('{"schemaVersion"', '{"task\\u0049d":"fixture-loader-01","schemaVersion"'), 'utf8')
+    await expectInvalid({ workspaceRoot: root, taskId })
+
+    await writeFile(cardPath, serialized.replace('{"owner":"fixture-owner"', '{"owner":"fixture-owner","owner":"fixture-owner"'), 'utf8')
+    await expectInvalid({ workspaceRoot: root, taskId })
+  })
+
+  it('rejects a card larger than the bounded pre-parse read', async () => {
+    const root = await fixtureRoot()
+    const cardPath = join(root, '.developer-lens', 'activation', taskId, 'task-card.json')
+    await writeFile(cardPath, Buffer.alloc(64 * 1024 + 1, 0x20))
+    await expectInvalid({ workspaceRoot: root, taskId })
+  })
+
+  it('rejects invalid UTF-8 before JSON parsing', async () => {
+    const root = await fixtureRoot()
+    const cardPath = join(root, '.developer-lens', 'activation', taskId, 'task-card.json')
+    await writeFile(cardPath, Buffer.from([0xc3, 0x28]))
     await expectInvalid({ workspaceRoot: root, taskId })
   })
 
