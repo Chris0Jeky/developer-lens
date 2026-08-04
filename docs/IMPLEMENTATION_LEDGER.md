@@ -7,9 +7,9 @@ evidence/design version 2026-08-03.
 
 Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
-The current P4 milestone adds an explicitly installed, actual-SQLite storage bridge for invented
-`github.core` transitions behind `never_authorized`; it adds no transport, credential, real-read,
-legacy-collector, or activation path**.
+The current P4 milestone adds a strictly injected, invented-fixture page adapter over the inert
+`github.core` protocol. It remains `never_authorized` and adds no transport, credential, real-read,
+storage composition, legacy-collector, or activation path**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -17,8 +17,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current storage milestone: `origin/main` merge
-  `b1c97d1bba3c9d184bf7ba41cf6627179db16d9a`.
+- Published implementation baseline before the current adapter milestone: `origin/main` merge
+  `daf318067cc6b9984e2bdf7a5601b4d5b7f3e198`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -50,8 +50,13 @@ unresolved review threads outrank it whenever they disagree.
   [#14](https://github.com/Chris0Jeky/developer-lens/issues/14) and
   [#15](https://github.com/Chris0Jeky/developer-lens/issues/15).
 - [PR #16](https://github.com/Chris0Jeky/developer-lens/pull/16) publishes the inert
-  `github.core` protocol foundation at the current baseline. Exact-merge Pages run
+  `github.core` protocol foundation at merge `b1c97d1bba3c9d184bf7ba41cf6627179db16d9a`.
+  Exact-merge Pages run
   [30866650482](https://github.com/Chris0Jeky/developer-lens/actions/runs/30866650482) passed the full
+  gate, synthetic showcase privacy verification, artifact upload, and deployment.
+- [PR #17](https://github.com/Chris0Jeky/developer-lens/pull/17) publishes the opt-in incremental
+  SQLite bridge at merge `daf318067cc6b9984e2bdf7a5601b4d5b7f3e198`. Exact-merge Pages run
+  [30869532164](https://github.com/Chris0Jeky/developer-lens/actions/runs/30869532164) passed the full
   gate, synthetic showcase privacy verification, artifact upload, and deployment.
 
 ## Authority and owner gates
@@ -275,6 +280,22 @@ unresolved review threads outrank it whenever they disagree.
   scope, preserves an unrelated scope, and finishes with integrity, quick, and foreign-key checks.
   No generic JSON, receipt payload, provider string, cursor resume path, staging table, observation
   fact, backup, pack, or runtime call site is added.
+- `server/connectors/github/coreAdapter.ts` is an injected invented-fixture adapter only. It asserts
+  the core manifest is inert and `never_authorized`, snapshots validated caller input, and accepts a
+  closed callback result shape; it imports no HTTP client, SDK, token, subprocess, selected scope,
+  storage bridge, legacy collector, API route, or runtime scheduler.
+- Every request is frozen and bound to the exact opaque scope, consent revision, query/API version,
+  range, page number, and cursor. Accepted receipts and their unit-ID arrays are snapshotted before
+  another callback can run. Extra fields, hostile echoes, duplicate receipts, cursor cycles, and
+  post-validation callback mutation fail closed or cannot alter reconciliation.
+- Collection starts at a null cursor, follows only the prior validated next cursor, and stops at a
+  terminal page or a finite caller cap bounded to 1..1000. It delegates checkpoint, coverage, and
+  retry/refusal classification to the reviewed core transition functions, never sleeps or schedules
+  a retry, preserves non-complete checkpoints, and marks every result `invented_fixture`.
+- `server/connectors/github/coreAdapter.test.ts` uses invented opaque values only and proves strict
+  marker/shape/checkpoint refusal, sequential pagination, terminal/cap behavior, closed failure
+  classification, request/input/receipt mutation resistance, duplicate/cycle refusal, and no retry
+  scheduling or callback-error leakage.
 
 ## Durable continuation foundation
 
@@ -341,6 +362,13 @@ unresolved review threads outrank it whenever they disagree.
   cross-scope FK refusal, full scoped deletion, and database health. `npm run check` passed Oxlint,
   context verification, 25 test files / 103 tests, TypeScript builds, and the production Vite build;
   `git diff --check` passed. Vite emitted only the existing >500 kB advisory.
+- P4 adapter proof on the current publication candidate: the focused invented-fixture suite passed
+  1 file / 10 tests; server TypeScript, scoped Oxlint, and `git diff --check` passed. The full
+  `npm run check` gate passed Oxlint, context verification, 26 test files / 113 tests, TypeScript
+  project builds, and the production Vite build. Vite emitted only the existing >500 kB advisory.
+  The bounded review found one HIGH callback-ownership defect; the fix snapshots/freeze-copies each
+  accepted receipt and unit-ID array. Its direct inter-page mutation regression passed, and the
+  required fresh scoped fix review found no remaining CRITICAL/HIGH defect.
 - Dynamic-swarm/context proof on `codex/sol-ultra-swarm-prompt`: both the tracked continuation skill
   and the updated user-global routing skill passed the official skill validator;
   `npm run verify:context` passed 12 Markdown files / 10 required files, including the new swarm
@@ -454,6 +482,10 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Failures and workarounds
 
+- The first complete adapter gate found 31 failures across the existing SQLite-dependent suites
+  because this worktree's install lacked the `better-sqlite3` binding for Node ABI 137. No adapter
+  assertion failed. `npm rebuild better-sqlite3` rebuilt the worktree-local native dependency; the
+  three affected suites then passed 34/34 and the unchanged full gate passed 113/113.
 - The first combined prompt/docs patch was rejected atomically because the shell-rendered README
   context showed mojibake in place of its real em dash. No partial edit landed; the same change was
   applied as smaller exact-context patches and all context checks passed.
@@ -565,10 +597,10 @@ unresolved review threads outrank it whenever they disagree.
   replayed file again before accepting it. Completed packs remain immutable by contract; an
   activated hostile-writer claim would still need an immutable snapshot or an equivalent stronger
   boundary to exclude an adversarial replace-read-restore sequence.
-- The P4 protocol still has no acquisition or runtime call site. The opt-in synthetic storage bridge
-  proves its four-table transaction/deletion boundary only; cursor/request binding, typed page
-  acquisition, selected-repository consent, backup/grace behavior, observation facts, and legacy
-  collector compatibility remain future reviewed seams.
+- The P4 adapter has only an injected invented-fixture acquisition callback and no runtime call site.
+  It is not composed with the opt-in synthetic storage bridge. Selected-repository consent,
+  credentials, real page acquisition, backup/grace behavior, observation facts, parity/fallback,
+  durable deletion, and legacy collector compatibility remain future reviewed activation seams.
 - The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
   this bounded importer accepts only the registered ASCII repository-reference alphabet; that P2
   compatibility gap remains tracked in
@@ -601,27 +633,27 @@ unresolved review threads outrank it whenever they disagree.
 - The opt-in incremental installer uses `CREATE TABLE IF NOT EXISTS` without a schema fingerprint
   or atomic mismatch rollback. Standard owned P2 databases have no conflicting names; a future
   migration/activation slice must fail closed without partial DDL on a mismatched extension schema.
-- The exported bridge has no production import and accepts only the closed typed projection, but it
-  does not itself consult the `never_authorized` registry or require a synthetic-mode marker. Any
-  runtime adapter must add that authorization boundary instead of treating this test seam as active.
+- The exported storage bridge has no production import and accepts only the closed typed projection,
+  but it does not itself consult the `never_authorized` registry or require a synthetic-mode marker.
+  The current adapter never imports that bridge. Any future composition must preserve the adapter's
+  explicit inert/`never_authorized` check rather than treating either synthetic seam as active.
 - A caller-constructed complete checkpoint can carry a persisted `cursorHint`; no current code
-  schedules or resumes from it. The future adapter must keep pagination cursors non-durable and bind
-  requests independently before activation.
+  schedules or resumes from it. The synthetic adapter always starts from a null cursor and binds
+  requests independently; a real activation must keep pagination cursors non-durable.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before this storage milestone is merge
-   `b1c97d1bba3c9d184bf7ba41cf6627179db16d9a`; live evidence still outranks this checkpoint.
+1. Refresh Git/GitHub before mutation. The published baseline before this adapter milestone is merge
+   `daf318067cc6b9984e2bdf7a5601b4d5b7f3e198`; live evidence still outranks this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
    activated hostile-writer claim without an immutable snapshot or equivalent boundary.
 3. G2 and standing G3 are approved, but no real path is automatically active. Reconcile issue #6's
    duplicate-identity/key-continuity acceptance and issue #5's local-name/identity-vault boundary
    before a real v1 migration. Use invented fixtures and a new bounded task card first.
-4. Continue P4 from the inert protocol plus opt-in synthetic storage bridge. The next
-   dependency-ready slice is a contract-only page adapter with an injected invented acquisition
-   callback, strict cursor/request binding, retry/refusal classification, and terminal/cap coverage;
-   it must add no HTTP SDK, token, subprocess, selected repository, runtime import, or legacy switch.
-   Keep `github.core` `never_authorized`. Real activation still requires an exact selected-
-   repository task card, existing read-only credentials, retention/deletion/rollback behavior,
-   parity/fallback proof, and focused failure tests. G4 remains required for external-model work.
+4. The inert protocol, opt-in synthetic storage bridge, and invented-fixture page adapter now close
+   the dependency-ready contract-only P4 queue. Do not invent another foundation slice. Real
+   activation is the next boundary and requires a new exact selected-repository task card, existing
+   read-only credentials, retention/deletion/rollback behavior, parity/fallback proof, and focused
+   failure tests before any read. Keep `github.core` `never_authorized` until that bounded task is
+   explicitly selected and proved. G4 remains required for any external-model work.
