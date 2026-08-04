@@ -71,7 +71,12 @@ publication route remains active.
   adoption-timing suppression; (g) capability-matrix rows for rulesets/attestations/discussions
   (G-d) and artifact metadata-only counts (G-e) — the affected cards (DL-PORT-02, DL-PROV-01) are
   owner-gated on the board and must not be implemented before a reviewed matrix change or your
-  decision. Additionally, the future real local Taskdeck dogfood analysis
+  decision; (h) *(added by the 2026-08-04 reconciliation review)* display grain for freshness age:
+  the UX renders staleness as an hour-precision age (`stale 31h`, canonical feature
+  `DL.COV.FRESHNESS_AGE_H.v1`) while operational collection timing is floored to ISO week — decide
+  whether the week floor also binds derived age durations (which can pin the collection run) or
+  whether hour-grain staleness is an accepted exception. Additionally, the future real local
+  Taskdeck dogfood analysis
   (spec: `docs/analyser-program/06_TASKDECK_DEMO_PLAN.md` §2) still needs your explicit selection
   of exact immutable refs and approval of its activation card before any run. Nothing on the
   implementation critical path depends on any of these; refusing all of them leaves a complete
@@ -79,6 +84,10 @@ publication route remains active.
 
 ## Changelog
 
+- 2026-08-04 (reconciliation): the post-PR #62 reconciliation added q-6 item (h)
+  (freshness-age display grain) surfaced by the review pass, and changed no other human action.
+  The directive's resolved design choices were integrated into docs/cards directly, not turned
+  into new HUMAN_TODO items; no approval was inferred for any existing gate.
 - 2026-08-04: the intelligence-platform planning session recorded q-6 — a consolidated register of
   six new open owner gates plus the future Taskdeck-dogfood ref selection. No approval was inferred;
   every listed decision remains open and non-blocking.
