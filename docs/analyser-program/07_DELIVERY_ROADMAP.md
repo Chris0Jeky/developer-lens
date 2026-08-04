@@ -26,8 +26,8 @@ phase *grouping*; execution order follows these waves:
 | R1 | V2 bootstrap: authenticated lazy coverage/capability API + Cockpit over a synthetic store | DL-BRIDGE-01 |
 | R2 | Analytical kernel: claim spine, coverage vector, metric registry, finding + comparison contracts, resolver | DL-SPINE-01/02/03/04, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-OPS-CI-01 |
 | R3 | First deterministic analytical value slice (integration shape, matched windows) | DL-VALUE-01, DL-VALIDATE-01, DL-UX-ED |
-| R4 | Flow and feedback facts that deepen the finding | DL-LIFE-01/02, DL-FLOW-01/02/04, DL-OBSV-01/03, DL-CI-01 (after deletion planner) |
-| R5 | Deterministic System Story + V1 retirement matrix | DL-BRIDGE-03/04, DL-UX-SS (deterministic beats), DL-UX-VG/CC |
+| R4 | Flow and feedback facts that deepen the finding | DL-LIFE-01/02, DL-SPINE-05, DL-BRIDGE-02, DL-FLOW-01/02/04, DL-OBSV-01/03, DL-CI-01 (after deletion planner) |
+| R5 | Deterministic System Story + V1 retirement matrix | DL-BRIDGE-03/04, DL-LAB-01, DL-OPEN-01, then DL-UX-SS (deterministic beats), DL-UX-VG/CC — the Story's declared producer chain lands inside R4/R5 so the wave plan is dependency-true (corrected 2026-08-04) |
 | R6 | Packs + Query Lab (PresentationView) | DL-PACK-00/01/02/04/05/06, DL-QL-01 |
 | R7 | Optional interpretation (off the critical path) | DL-RAG-*, DL-HYP-*, WB candidates as unfrozen |
 | R8 | Specialised lenses and remaining programme | structure/time/graph/portfolio depth, demos, frontier |

@@ -199,14 +199,19 @@ tests"), made concrete:
      family**. Family membership is fixed at first preregistration and carried across every later
      wave, so the family's `m` counts every predecessor attempt whatever wave it ran in and
      **only ever grows**. The lineage is recorded in the registry, never re-derived per wave.
-     **Growth re-evaluates the whole family (corrected 2026-08-04 review round):** when a
-     successor enlarges `m`, every prior BH/BY decision in the family is recomputed under the new
-     `m` in the same registry transaction; a previously promoted candidate whose primary test no
-     longer clears the step-up under the larger family is **demoted** (registry demotion removes
-     its claims automatically). Family-level FDR control is a property of the *current* family,
-     not of the family as it stood at each historical decision — alternatively, a family may
-     preregister its maximum size up front and reject successors beyond it, or adopt the (iv)
-     online-FDR path.
+     **Adaptive growth voids fixed-family BH (corrected twice, 2026-08-04 review rounds):**
+     when a successor is introduced *because* its predecessor failed, the family size and the
+     stopping rule depend on observed p-values, and neither the original BH decision **nor a
+     recomputation after each addition** restores the promised FDR control (worked example:
+     independent global-null tests at `q = 0.10` — the first rejects with probability 0.10; if it
+     fails and a second is added, BH at `m = 2` contributes a further `0.90 × 0.05 = 0.045`,
+     giving 0.145 overall). Therefore only two admissible designs exist for successors:
+     **(a) preallocation** — the family's **maximum size is preregistered at its first
+     preregistration**, every BH threshold is computed at that maximum `m` from the first test
+     onward, and a successor beyond the preallocated size is rejected outright; or **(b) the
+     (iv) online-FDR amendment** for genuinely adaptive streams. A retrospective
+     recompute-and-demote sweep may still run as a *conservative cleanup* when a family is found
+     mis-sized, but it is explicitly **not** a control guarantee and never licenses growth.
    - **(iii) Re-testing an unchanged candidate in a later wave is prohibited.** Same method, same
      version, same features, new wave is not a new candidate — it is the same test run again until
      it passes, which is exactly the search this procedure exists to control. Such an attempt is

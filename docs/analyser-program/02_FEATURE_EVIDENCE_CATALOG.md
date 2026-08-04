@@ -735,9 +735,12 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   PR merge, run completion — inherited from the source entry and never redefined here.
   **Censoring:** the trailing week and any item unterminated at the window edge are
   **right-censored at the boundary** and marked as such. A **fully covered eligible week with no
-  events is an observed zero** — known inactivity is evidence, and dropping quiet weeks would bias
-  cadence distributions toward active weeks; `null` is reserved for suppressed, incomplete, or
-  otherwise unknown weeks (corrected 2026-08-04 review round). Corrections:
+  events is an observed zero for event counts** — known inactivity is evidence, and dropping quiet
+  weeks would bias cadence distributions toward active weeks. Duration/interval statistics over an
+  empty cohort are a different matter: quantiles of zero observations are **undefined and stay
+  `null` with an explicit empty-cohort marker** — a zero-duration observation is never fabricated
+  (refined 2026-08-04 review round). `null` without the marker remains reserved for suppressed,
+  incomplete, or otherwise unknown weeks. Corrections:
   late events recompute the affected week only; a re-collected window supersedes. Deletion: derived
   features cascade from their sources. Dimensions bound: `sample` (hard floor — this is the
   re-identification-critical domain), `completeness`, `censoring`, `comparability` (a policy change
