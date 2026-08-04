@@ -7,11 +7,11 @@ evidence/design version 2026-08-03.
 
 Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
-The published P4 foundation now includes an inert protocol, opt-in incremental storage bridge, and
-strictly injected invented-fixture page adapter. The current bounded milestone adds a closed parser
-for an ignored, owner-selected public-repository activation card. It remains default-off and adds
-no loader, transport, credential, real read, storage composition, legacy-collector switch, or
-public/private output path**.
+The published P4 foundation now includes an inert protocol, opt-in incremental storage bridge,
+invented-fixture page adapter, and a closed parser for one ignored owner-selected activation card.
+The current bounded milestone adds an injected public-unauthenticated GET transport with immediate
+strict projection. It remains default-off and adds no loader, credential, live read, storage
+composition, legacy-collector switch, or public/private output path**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -19,8 +19,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current activation-card milestone: `origin/main`
-  merge `3a0d6bd1a564f09a661a1638960152dd368186ed`.
+- Published implementation baseline before the current transport milestone: `origin/main` merge
+  `dcaa305c1e9813ee97ad6262348fb670f9d9953e`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -66,9 +66,17 @@ unresolved review threads outrank it whenever they disagree.
   `3a0d6bd1a564f09a661a1638960152dd368186ed`. Exact-merge Pages run
   [30871009468](https://github.com/Chris0Jeky/developer-lens/actions/runs/30871009468) passed the full
   gate, synthetic showcase privacy verification, artifact upload, and deployment.
-- [PR #19](https://github.com/Chris0Jeky/developer-lens/pull/19) is the current activation-card
-  parser milestone. It publishes only the closed schema, invented tests, and abstract authority
-  state; the selected repository and operational card remain ignored and local.
+- [PR #19](https://github.com/Chris0Jeky/developer-lens/pull/19) publishes the activation-card
+  parser at merge `fd250ca3fc0c94a6c383a05e31ed5dd3eb4526bd`. Exact-merge Pages run
+  [30873430263](https://github.com/Chris0Jeky/developer-lens/actions/runs/30873430263) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment. The selected
+  repository and operational card remain ignored and local.
+- [PR #20](https://github.com/Chris0Jeky/developer-lens/pull/20) is the smallest follow-up for the
+  first late review finding: parsed cards now require the exact proving and stop-condition sets and
+  reject omissions, substitutions, and duplicates. It merged at
+  `dcaa305c1e9813ee97ad6262348fb670f9d9953e`; exact-merge Pages run
+  [30873997951](https://github.com/Chris0Jeky/developer-lens/actions/runs/30873997951) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment.
 
 ## Authority and owner gates
 
@@ -321,6 +329,27 @@ unresolved review threads outrank it whenever they disagree.
   hostile extras, credentials, private visibility, unsafe budgets/timestamps/identifiers, path
   traversal, and weakened retention/coverage/rollback/deletion are rejected. The actual task card
   remains ignored and local.
+- `server/connectors/github/restTransport.ts` is an injected public-unauthenticated GET-only seam.
+  It constructs only the selected repository metadata and open issue/pull-request lifecycle URLs,
+  fixes the API version, `Accept`, and non-identifying user-agent headers, disables redirects, and
+  supplies no authorization or cookie surface. No caller, loader, scheduler, retry, sleep, token,
+  environment, SDK, subprocess, filesystem, database, log, or output path is added.
+- Metadata verifies the immutable numeric repository ID and public visibility before collection.
+  Provider repository/node IDs are immediately passed through a caller-supplied domain-separated
+  alias function; collisions fail closed. The returned frozen union contains only opaque aliases,
+  repository flags, issue/pull-request kind, bounded timestamps, numeric page/unit observations,
+  rate metadata, and content-free status codes. Restricted/failed results omit observational counts
+  and flags so missing evidence cannot masquerade as zero or false.
+- Pagination follows no provider URL. It validates a unique same-host/same-scope `rel="next"`,
+  accepts GitHub's selected-name or immutable-ID path form, requires the next numeric page, and
+  constructs its own request. A terminal page alone can complete; the card's total request budget
+  and rate exhaustion truncate with an unknown total. Response bytes are size-bounded,
+  process-lifetime only, and discarded after immediate field projection.
+- `server/connectors/github/restTransport.test.ts` uses invented fetch/response/alias fixtures. It
+  proves exact headers and query construction, no authorization/cookie, identity/visibility
+  refusal, poison-field excision, half-open range filtering, GitHub canonical pagination, terminal
+  proof, request-cap and rate truncation, deduplication/collision refusal, response-size/schema and
+  HTTP/network classification, content-free failures, and frozen result mutation resistance.
 
 ## Durable continuation foundation
 
@@ -622,10 +651,10 @@ unresolved review threads outrank it whenever they disagree.
   replayed file again before accepting it. Completed packs remain immutable by contract; an
   activated hostile-writer claim would still need an immutable snapshot or an equivalent stronger
   boundary to exclude an adversarial replace-read-restore sequence.
-- The P4 adapter has only an injected invented-fixture acquisition callback and no runtime call
-  site. The activation-card parser validates selection and boundaries but does not read the card
-  from disk or compose it with a transport or the opt-in storage bridge. Real page acquisition,
-  application-controlled backup/restore, key continuity, observation facts, parity/fallback,
+- The P4 synthetic adapter and public REST transport are both injected seams with no runtime call
+  site. The activation-card parser does not read the card from disk, and no code composes the
+  transport with the opt-in storage bridge. Real execution, task-root real-path confinement,
+  application-controlled backup/restore, key continuity, snapshot stability, parity/fallback,
   tombstoned deletion/re-consent, and legacy collector compatibility remain reviewed activation
   seams.
 - The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
@@ -667,20 +696,28 @@ unresolved review threads outrank it whenever they disagree.
 - A caller-constructed complete checkpoint can carry a persisted `cursorHint`; no current code
   schedules or resumes from it. The synthetic adapter always starts from a null cursor and binds
   requests independently; a real activation must keep pagination cursors non-durable.
+- The first-card parser intentionally supports only its reviewed single-segment ASCII default-branch
+  form. A later selected repository with a hierarchical or wider valid Git ref requires a bounded
+  grammar change and invented regression before its card can parse.
+- The REST endpoint is not an immutable provider snapshot. Terminal pagination and a frozen
+  half-open time range prove the bounded observed response, but a composed real runner must use
+  replay/stability evidence and report a non-complete coverage state if concurrent mutation makes
+  the observed snapshot unstable.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the activation-card milestone
-   is merge `3a0d6bd1a564f09a661a1638960152dd368186ed`; live evidence still outranks this checkpoint.
+1. Refresh Git/GitHub before mutation. The published baseline before the transport milestone is
+   merge `dcaa305c1e9813ee97ad6262348fb670f9d9953e`; live evidence still outranks this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
    activated hostile-writer claim without an immutable snapshot or equivalent boundary.
 3. G2 and standing G3 are approved, but no real path is automatically active. Reconcile issue #6's
    duplicate-identity/key-continuity acceptance and issue #5's local-name/identity-vault boundary
    before a real v1 migration. Use invented fixtures and a new bounded task card first.
-4. The exact repository is owner-selected in an ignored local task card, and the current milestone
-   supplies its closed parser without exposing identity or operational values. Next implement the
-   injected public-unauthenticated GET transport and strict immediate projection using invented
-   fixtures only. Keep runtime default-off and make no real request until transport, storage
-   composition, backup/rollback, deletion/tombstone, parity/fallback, failure tests, review, and the
-   exact hosted gate all pass. G4 remains required for any external-model work.
+4. The exact repository is owner-selected in an ignored local task card; its closed parser and
+   injected public-unauthenticated transport expose no identity or operational values in tracked
+   state. Next add the task-root/key-continuity and additive storage-composition seam, including
+   schema mismatch rollback, backup/restore, scoped deletion/tombstone, re-consent, replay/stability,
+   and non-complete coverage persistence. Keep runtime default-off and make no real request until
+   that composition, focused failure tests, review, and the exact hosted gate pass. G4 remains
+   required for any external-model work.
