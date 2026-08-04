@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   OPENAI_LUNA_ENDPOINT,
   OPENAI_LUNA_MAX_INPUT_BYTES,
+  OPENAI_LUNA_OUTPUT_SCHEMA_NAME,
   OpenAiLunaRequestError,
   buildOpenAiLunaRequest,
   sendOpenAiLunaRequest,
@@ -33,8 +34,11 @@ const output = {
 
 const priceQuote = {
   model: 'gpt-5.6-luna' as const,
-  inputUsdPerMillionTokens: 1,
-  outputUsdPerMillionTokens: 1,
+  serviceTier: 'default' as const,
+  unit: 'USD_PER_MILLION_TOKENS' as const,
+  inputUsdPerMillionTokens: 0.2,
+  cacheWriteUsdPerMillionTokens: 0.25,
+  outputUsdPerMillionTokens: 1.2,
   verifiedAt: '2026-08-04T00:00:00Z',
 }
 const now = '2026-08-04T12:00:00Z'
@@ -50,11 +54,28 @@ describe('injected OpenAI/Luna Responses boundary', () => {
     expect(request.headers).toEqual({ Accept: 'application/json', 'Content-Type': 'application/json' })
     expect(Object.keys(request)).toEqual(['method', 'url', 'headers', 'body'])
     const body = JSON.parse(request.body) as Record<string, unknown>
-    expect(body).toEqual({
-      model: 'gpt-5.6-luna', store: false, max_output_tokens: 1500,
-      input: expect.stringContaining('req_00000000000000000000000000000001'),
+    expect(body).toMatchObject({
+      model: 'gpt-5.6-luna', service_tier: 'default', store: false, max_output_tokens: 1500,
+      instructions: expect.stringContaining('deterministic C1 evidence'),
+      input: JSON.stringify(bundle),
+      text: { format: {
+        type: 'json_schema', name: OPENAI_LUNA_OUTPUT_SCHEMA_NAME, strict: true,
+        schema: { type: 'object', additionalProperties: false },
+      } },
     })
-    expect(Object.keys(body).sort()).toEqual(['input', 'max_output_tokens', 'model', 'store'])
+    expect(Object.keys(body).sort()).toEqual([
+      'input', 'instructions', 'max_output_tokens', 'model', 'service_tier', 'store', 'text',
+    ])
+    const format = (body.text as { format: { schema: Record<string, unknown> } }).format
+    expect(format.schema).not.toHaveProperty('$schema')
+    expect(format.schema).toMatchObject({
+      required: ['schema_version', 'request_id', 'claims'],
+      properties: {
+        schema_version: { type: 'string', enum: ['1.0.0'] },
+        claims: { items: { additionalProperties: false } },
+      },
+    })
+    expect(JSON.stringify(format.schema)).not.toContain('"const"')
     expect(JSON.stringify(request)).not.toContain('Authorization')
     expect(JSON.stringify(request)).not.toContain('tools')
     expect(JSON.stringify(request)).not.toContain('SECRET_PROVIDER_ID')
@@ -65,9 +86,21 @@ describe('injected OpenAI/Luna Responses boundary', () => {
 
   it('rejects invalid, stale, malformed, and over-budget pricing before any callback', () => {
     expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, model: 'other' }, now }), 'OPENAI_LUNA_PRICE_INVALID')
+    expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, serviceTier: 'auto' }, now }), 'OPENAI_LUNA_PRICE_INVALID')
+    expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, unit: 'USD_PER_TOKEN' }, now }), 'OPENAI_LUNA_PRICE_INVALID')
     expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, verifiedAt: '2026-08-02T11:59:59Z' }, now }), 'OPENAI_LUNA_PRICE_INVALID')
     expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, inputUsdPerToken: 1 }, now }), 'OPENAI_LUNA_PRICE_INVALID')
     expectCode(() => buildOpenAiLunaRequest({ bundle, priceQuote: { ...priceQuote, outputUsdPerMillionTokens: 10_000 }, now }), 'OPENAI_LUNA_COST_LIMIT')
+    expectCode(() => buildOpenAiLunaRequest({
+      bundle: { ...bundle, budget: { ...bundle.budget, max_output_tokens: 1 } },
+      priceQuote: {
+        ...priceQuote,
+        inputUsdPerMillionTokens: 10,
+        cacheWriteUsdPerMillionTokens: 10,
+        outputUsdPerMillionTokens: 0.000_001,
+      },
+      now,
+    }), 'OPENAI_LUNA_COST_LIMIT')
     expectCode(() => buildOpenAiLunaRequest({ bundle: { ...bundle, repository_name: 'PRIVATE_CANARY' }, priceQuote, now }), 'OPENAI_LUNA_REQUEST_INVALID')
   })
 

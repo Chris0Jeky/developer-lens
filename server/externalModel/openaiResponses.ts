@@ -4,6 +4,7 @@ import {
   parseC1EvidenceBundle,
   parseModelOutput,
   type C1EvidenceBundle,
+  ModelOutputSchema,
   type ModelOutput,
 } from './c1Contract.js'
 
@@ -13,14 +14,18 @@ export const OPENAI_LUNA_MAX_INPUT_BYTES = 16_000 as const
 export const OPENAI_LUNA_MAX_OUTPUT_TOKENS = 2_000 as const
 export const OPENAI_LUNA_MAX_ESTIMATED_USD = 0.01 as const
 export const OPENAI_LUNA_MAX_PRICE_AGE_SECONDS = 86_400 as const
+export const OPENAI_LUNA_OUTPUT_SCHEMA_NAME = 'developer_lens_c1_output' as const
 
 const FIXED_INSTRUCTIONS =
   'Use only the supplied deterministic C1 evidence. Return schema-valid hypotheses, counter-hypotheses, or abstentions; never invent evidence or include source text.'
 const UtcTimestampSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/)
 const PriceQuoteSchema = z.object({
   model: z.literal(OPENAI_LUNA_MODEL),
-  inputUsdPerMillionTokens: z.number().finite().nonnegative().max(10_000),
-  outputUsdPerMillionTokens: z.number().finite().nonnegative().max(10_000),
+  serviceTier: z.literal('default'),
+  unit: z.literal('USD_PER_MILLION_TOKENS'),
+  inputUsdPerMillionTokens: z.number().finite().positive().max(10_000),
+  cacheWriteUsdPerMillionTokens: z.number().finite().positive().max(10_000),
+  outputUsdPerMillionTokens: z.number().finite().positive().max(10_000),
   verifiedAt: UtcTimestampSchema,
 }).strict()
 const CallResultSchema = z.object({
@@ -61,10 +66,75 @@ export type OpenAiLunaRequestErrorCode =
   | 'OPENAI_LUNA_CALL_FAILED'
   | 'OPENAI_LUNA_PROVIDER_STATUS'
   | 'OPENAI_LUNA_OUTPUT_INVALID'
+  | 'OPENAI_LUNA_SCHEMA_INVALID'
 
 function fail(code: OpenAiLunaRequestErrorCode): never {
   throw new OpenAiLunaRequestError(code)
 }
+
+const OPENAI_STRICT_SCHEMA_KEYWORDS = new Set([
+  'type',
+  'properties',
+  'required',
+  'additionalProperties',
+  'items',
+  'enum',
+  'pattern',
+  'minItems',
+  'maxItems',
+])
+
+function convertSchemaValue(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(convertSchemaValue)
+  if (value === null || typeof value !== 'object') return value
+  const converted: Record<string, unknown> = {}
+  for (const [key, child] of Object.entries(value)) {
+    if (key === '$schema') continue
+    if (key === 'const') {
+      converted.enum = [convertSchemaValue(child)]
+      continue
+    }
+    converted[key] = convertSchemaValue(child)
+  }
+  return converted
+}
+
+function assertOpenAiStrictSchema(value: unknown): asserts value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    fail('OPENAI_LUNA_SCHEMA_INVALID')
+  }
+  const schema = value as Record<string, unknown>
+  for (const key of Object.keys(schema)) {
+    if (!OPENAI_STRICT_SCHEMA_KEYWORDS.has(key)) fail('OPENAI_LUNA_SCHEMA_INVALID')
+  }
+  if (schema.type === 'object') {
+    const properties = schema.properties
+    const required = schema.required
+    if (
+      properties === null || typeof properties !== 'object' || Array.isArray(properties) ||
+      !Array.isArray(required) || schema.additionalProperties !== false
+    ) {
+      fail('OPENAI_LUNA_SCHEMA_INVALID')
+    }
+    const propertyNames = Object.keys(properties)
+    if (
+      required.length !== propertyNames.length ||
+      required.some((name) => typeof name !== 'string' || !propertyNames.includes(name))
+    ) {
+      fail('OPENAI_LUNA_SCHEMA_INVALID')
+    }
+    for (const propertySchema of Object.values(properties)) assertOpenAiStrictSchema(propertySchema)
+  }
+  if (schema.items !== undefined) assertOpenAiStrictSchema(schema.items)
+}
+
+function buildModelOutputJsonSchema(): Record<string, unknown> {
+  const converted = convertSchemaValue(z.toJSONSchema(ModelOutputSchema, { target: 'draft-7' }))
+  assertOpenAiStrictSchema(converted)
+  return converted
+}
+
+const modelOutputJsonSchema = buildModelOutputJsonSchema()
 
 function canonicalUtc(value: string): number | null {
   if (!UtcTimestampSchema.safeParse(value).success) return null
@@ -98,9 +168,19 @@ function bodyForBundle(bundle: C1EvidenceBundle): {
   if (inputBytes > OPENAI_LUNA_MAX_INPUT_BYTES) fail('OPENAI_LUNA_INPUT_TOO_LARGE')
   const bodyObject = {
     model: OPENAI_LUNA_MODEL,
+    service_tier: 'default',
     store: false,
     max_output_tokens: bundle.budget.max_output_tokens,
-    input: `${FIXED_INSTRUCTIONS}\n${evidenceInput}`,
+    instructions: FIXED_INSTRUCTIONS,
+    input: evidenceInput,
+    text: {
+      format: {
+        type: 'json_schema',
+        name: OPENAI_LUNA_OUTPUT_SCHEMA_NAME,
+        strict: true,
+        schema: modelOutputJsonSchema,
+      },
+    },
   } as const
   const body = JSON.stringify(bodyObject)
   const bodyBytes = Buffer.byteLength(body, 'utf8')
@@ -109,9 +189,15 @@ function bodyForBundle(bundle: C1EvidenceBundle): {
 }
 
 function estimateUsd(bodyBytes: number, maxOutputTokens: number, price: OpenAiLunaPriceQuote): number {
-  const estimatedInputTokens = Math.ceil(bodyBytes / 4)
+  // A byte-level upper bound cannot underestimate a byte-pair token count. Use the more expensive
+  // of an ordinary input or cache write so implicit prompt caching cannot bypass the ceiling.
+  const maximumInputTokens = bodyBytes
+  const maximumInputPrice = Math.max(
+    price.inputUsdPerMillionTokens,
+    price.cacheWriteUsdPerMillionTokens,
+  )
   const estimate = (
-    estimatedInputTokens * price.inputUsdPerMillionTokens +
+    maximumInputTokens * maximumInputPrice +
     maxOutputTokens * price.outputUsdPerMillionTokens
   ) / 1_000_000
   if (!Number.isFinite(estimate) || estimate > OPENAI_LUNA_MAX_ESTIMATED_USD) {
