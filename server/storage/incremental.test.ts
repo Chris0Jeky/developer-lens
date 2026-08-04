@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
+import { completeObservedUnits } from '../../shared/coverage.js'
 import {
   reconcileGithubCoreReceipts,
   type GithubCoreCheckpoint,
@@ -15,6 +16,7 @@ import {
   readIncrementalGithubCoreStorageSchemaFingerprint,
   persistIncrementalGithubCoreTransition,
   readIncrementalGithubCoreCheckpoint,
+  type RestrictedGithubCoreCheckpointTransition,
   type PersistGithubCoreTransitionInput,
 } from './incremental.js'
 
@@ -138,6 +140,39 @@ function truncatedInput(
   }
 }
 
+function restrictedInput(
+  previous: GithubCoreCheckpoint | null,
+  jobId = 'job-restricted',
+): PersistGithubCoreTransitionInput {
+  const transition: RestrictedGithubCoreCheckpointTransition = {
+    status: 'restricted',
+    coverage: {
+      coverageId: 'github.core:scope-a:2026-01-02T00:00:00.000Z',
+      capabilityId: 'github.core',
+      scopeAlias: 'scope-a',
+      rangeStart: '2026-01-02T00:00:00.000Z',
+      rangeEnd: '2026-01-03T00:00:00.000Z',
+      status: 'restricted',
+      expectedUnits: null,
+      observedUnits: 0,
+      omittedUnits: null,
+      retryable: false,
+      observedAt,
+      limitationCode: 'REPOSITORY_NOT_PUBLIC',
+    },
+    checkpoint: previous,
+    appliedReceiptIds: [],
+  }
+  return {
+    jobId,
+    scopeAlias: 'scope-a',
+    consentRevision: 'consent-a',
+    startedAt,
+    completedAt,
+    transition,
+  }
+}
+
 function count(db: Database.Database, table: string, where = '', value?: string): number {
   const statement = db.prepare('SELECT COUNT(*) FROM ' + table + where).pluck()
   return Number(value === undefined ? statement.get() : statement.get(value))
@@ -176,6 +211,32 @@ describe('P4 opt-in incremental github.core storage', () => {
       analytical_key: 'repo-a',
     })
     expect(readIncrementalGithubCoreStorageSchemaFingerprint(db)).toBe(
+      INCREMENTAL_GITHUB_CORE_STORAGE_SCHEMA_FINGERPRINT,
+    )
+    expect(INCREMENTAL_GITHUB_CORE_STORAGE_VERSION).toBe('2.2.0')
+  })
+
+  it('fails closed on the prior 2.1.0 extension contract without partial DDL', () => {
+    const db = database()
+    db.exec([
+      'CREATE TABLE collection_job (',
+      '  job_id TEXT PRIMARY KEY NOT NULL,',
+      "  storage_contract_version TEXT NOT NULL CHECK (storage_contract_version = '2.1.0'),",
+      "  status TEXT NOT NULL CHECK (status IN ('complete', 'truncated', 'failed'))",
+      ') STRICT;',
+      "INSERT INTO collection_job (job_id, storage_contract_version, status) VALUES ('legacy-job', '2.1.0', 'failed');",
+    ].join('\n'))
+
+    expect(() => installIncrementalGithubCoreStorage(db)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+    expect(db.prepare('SELECT job_id, storage_contract_version, status FROM collection_job').all()).toEqual([
+      { job_id: 'legacy-job', storage_contract_version: '2.1.0', status: 'failed' },
+    ])
+    for (const table of INCREMENTAL_GITHUB_CORE_TABLES.slice(1)) {
+      expect(db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name = ?").get(table)).toBeUndefined()
+    }
+    expect(readIncrementalGithubCoreStorageSchemaFingerprint(db)).not.toBe(
       INCREMENTAL_GITHUB_CORE_STORAGE_SCHEMA_FINGERPRINT,
     )
   })
@@ -417,6 +478,79 @@ describe('P4 opt-in incremental github.core storage', () => {
     ).pluck().all()).toEqual(['complete', 'failed', 'truncated'])
   })
 
+  it('records restricted coverage without an observational zero or checkpoint advance', () => {
+    const db = database()
+    installIncrementalGithubCoreStorage(db)
+    persistIncrementalGithubCoreTransition(db, completeInput())
+    const previous = readIncrementalGithubCoreCheckpoint(db, 'scope-a')
+    const restricted = restrictedInput(previous)
+
+    expect(completeObservedUnits(restricted.transition.coverage)).toBeNull()
+    expect(persistIncrementalGithubCoreTransition(db, restricted)).toMatchObject({ applied: true })
+    expect(readIncrementalGithubCoreCheckpoint(db, 'scope-a')).toEqual(previous)
+    expect(db.prepare(
+      'SELECT status, snapshot_id, expected_units, observed_units, omitted_units, limitation_code FROM coverage_ledger WHERE job_id = ?',
+    ).get('job-restricted')).toEqual({
+      status: 'restricted',
+      snapshot_id: null,
+      expected_units: null,
+      observed_units: 0,
+      omitted_units: null,
+      limitation_code: 'REPOSITORY_NOT_PUBLIC',
+    })
+    expect(count(db, 'collection_job')).toBe(2)
+    expect(count(db, 'coverage_ledger')).toBe(2)
+    expect(count(db, 'source_snapshot')).toBe(1)
+    expect(persistIncrementalGithubCoreTransition(db, restricted)).toMatchObject({ applied: false })
+    expect(count(db, 'collection_job')).toBe(2)
+    expect(runStorageChecks(db)).toEqual({ integrity: 'ok', quick: 'ok', foreignKeys: [] })
+  })
+
+  it('rejects restricted snapshot, cursor, and coverage-status mismatches before writing', () => {
+    const db = database()
+    installIncrementalGithubCoreStorage(db)
+    const restricted = restrictedInput(null)
+
+    expect(() => persistIncrementalGithubCoreTransition(db, {
+      ...restricted,
+      sourceSnapshotId: 'forbidden-snapshot',
+    })).toThrow('NONCOMPLETE_SNAPSHOT_FORBIDDEN')
+    expect(() => persistIncrementalGithubCoreTransition(db, {
+      ...restricted,
+      transition: { ...restricted.transition, cursorHint: 'forbidden-cursor' },
+    })).toThrow('CURSOR_HINT_STATUS_MISMATCH')
+    expect(() => persistIncrementalGithubCoreTransition(db, {
+      ...restricted,
+      transition: {
+        ...restricted.transition,
+        coverage: { ...restricted.transition.coverage, status: 'failed' },
+      },
+    } as unknown as PersistGithubCoreTransitionInput)).toThrow('COVERAGE_STATUS_MISMATCH')
+    for (const table of INCREMENTAL_GITHUB_CORE_TABLES) expect(count(db, table)).toBe(0)
+  })
+
+  it('rolls back a restricted transition when coverage persistence fails', () => {
+    const db = database()
+    installIncrementalGithubCoreStorage(db)
+    persistIncrementalGithubCoreTransition(db, completeInput())
+    const previous = readIncrementalGithubCoreCheckpoint(db, 'scope-a')
+    db.exec([
+      'CREATE TRIGGER injected_restricted_failure BEFORE INSERT ON coverage_ledger',
+      'BEGIN',
+      "  SELECT RAISE(ABORT, 'INJECTED_RESTRICTED_FAILURE');",
+      'END;',
+    ].join('\n'))
+
+    expect(() => persistIncrementalGithubCoreTransition(db, restrictedInput(previous))).toThrow(
+      'INJECTED_RESTRICTED_FAILURE',
+    )
+    expect(readIncrementalGithubCoreCheckpoint(db, 'scope-a')).toEqual(previous)
+    expect(count(db, 'collection_job')).toBe(1)
+    expect(count(db, 'coverage_ledger')).toBe(1)
+    expect(count(db, 'source_snapshot')).toBe(1)
+    expect(runStorageChecks(db)).toEqual({ integrity: 'ok', quick: 'ok', foreignKeys: [] })
+  })
+
   it('records recovery after a failed attempt over the same range', () => {
     const db = database()
     installIncrementalGithubCoreStorage(db)
@@ -513,6 +647,10 @@ describe('P4 opt-in incremental github.core storage', () => {
     const db = database()
     installIncrementalGithubCoreStorage(db)
     persistIncrementalGithubCoreTransition(db, completeInput())
+    persistIncrementalGithubCoreTransition(db, restrictedInput(
+      readIncrementalGithubCoreCheckpoint(db, 'scope-a'),
+      'job-restricted-a',
+    ))
     persistIncrementalGithubCoreTransition(db, completeInput({
       scopeAlias: 'scope-b',
       consentRevision: 'consent-b',
@@ -532,10 +670,10 @@ describe('P4 opt-in incremental github.core storage', () => {
 
     expect(Object.keys(deleted).sort()).toEqual([...INCREMENTAL_GITHUB_CORE_TABLES].sort())
     expect(deleted).toEqual({
-      collection_job: 1,
+      collection_job: 2,
       collection_checkpoint: 1,
       source_snapshot: 1,
-      coverage_ledger: 1,
+      coverage_ledger: 2,
     })
     for (const table of INCREMENTAL_GITHUB_CORE_TABLES) {
       expect(count(db, table, ' WHERE scope_alias = ?', 'scope-a')).toBe(0)
