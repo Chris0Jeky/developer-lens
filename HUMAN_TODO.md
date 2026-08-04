@@ -95,8 +95,21 @@ publication route remains active.
   "no human babysitter" outcome is only half-delivered. Add the check after at least one run has
   reported, so the name is selectable in the settings picker.
 
+- [ ] **q-8 — Check for and terminate any leaked Claude session processes from the pre-handoff
+  session.** On 2026-08-04 the handed-off session kept executing for over an hour after handoff —
+  it merged [PR #87](https://github.com/Chris0Jeky/developer-lens/pull/87) itself and collided in a
+  worktree on the [PR #89](https://github.com/Chris0Jeky/developer-lens/pull/89) lane before it
+  stood down cleanly. Leaked agent/MCP processes waste RAM and usage and can interfere with active
+  lanes. Check for and terminate any orphaned Claude session processes — use Task Manager, or the
+  `claude-config` repo's `tools/mcp-hygiene.ps1` sweep. This is a local machine-hygiene action for a
+  human to perform; agents cannot verify or close it, so it stays open until you confirm no leaked
+  session remains.
+
 ## Changelog
 
+- 2026-08-04: the R1 wave-2 state-sync closeout recorded q-8 — a human machine-hygiene check to
+  terminate any leaked Claude session processes from the pre-handoff session, which kept executing
+  for over an hour after handoff. No approval was inferred and no existing item was changed.
 - 2026-08-04: DL-OPS-CI-01 landed the hosted pull-request gate `.github/workflows/pr-gate.yml` and
   recorded q-7, the admin-only step of marking that check required in `main` branch protection. No
   owner approval was inferred and no capability was activated; the workflow uses no secrets and no

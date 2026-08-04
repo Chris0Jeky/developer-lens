@@ -1435,7 +1435,73 @@ Five active-horizon cards merged in one wave. Per-card evidence below; the compa
   constraints), DL-SPINE-03 (lane open), and the DL-FINDING-01/DL-COMPARE-01 lanes now unblocked by
   the DL-METRIC-01 merge.
 
+## 2026-08-04 — R1 wave 2 (analytics-core kernel completion)
+
+The rest of the active-horizon analytics-core kernel merged in a second autonomous wave, closing
+the spine lanes and both remaining contracts plus the Evidence Drawer. Ten of the twelve
+active-horizon cards are now DONE; DL-VALIDATE-01 is in flight and DL-VALUE-01 is the only card
+after it. Per-card evidence below; the compact live pointer stays
+`docs/analyser-program/CURRENT_STATE.md`.
+
+- **DL-SPINE-02 — deterministic claim canonicalisation + replay.**
+  [PR #84](https://github.com/Chris0Jeky/developer-lens/pull/84), merge `b52c458`. Landed the v2
+  claim-ID material and replay proof carrying the seven
+  [#81](https://github.com/Chris0Jeky/developer-lens/issues/81) constraints (ID-material claim
+  targets, the supersession cycle guard, replay clock semantics, the internally minted scope
+  surrogate, layer order, and the basis-edge minimum). The ADR-01 privacy-effect text was corrected
+  in its fix round. Full per-card review evidence is on the PR.
+- **DL-SPINE-03 — why-am-I-seeing-this resolver.**
+  [PR #85](https://github.com/Chris0Jeky/developer-lens/pull/85), merge `610188c`. The deterministic
+  UI → claim → edges → evidence → coverage → capability → consent walk; the resolver fixtures were
+  adapted to the #84 minted scope surrogate (`37ca17f`). Read-only module; full evidence on the PR.
+- **DL-UX-ED — Evidence Drawer (universal claim inspector).**
+  [PR #87](https://github.com/Chris0Jeky/developer-lens/pull/87), merge `4c3f476`. Every analytic
+  mark opens the SPINE-03 walk (supports, contradicts, coverage, limitations, method version,
+  correction lineage, falsifying question), resolving the typed AnalyticReference union
+  (ObservationReference | ClaimReference). Its fix commit `1de8a94` extended the `verifyShowcase`
+  native-dependency canary. Review lens: one independent adversarial round. This card was reviewed
+  and merged by the prior session; this state-sync session performed a post-merge compliance check
+  confirming the merge and the canary extension.
+- **DL-FINDING-01 — finding contract.**
+  [PR #88](https://github.com/Chris0Jeky/developer-lens/pull/88), merge `2208fcf`. The versioned
+  finding contract (metric-result refs, evidence + counter-evidence, alternative explanations,
+  limitations, sample/eligibility/censoring summary, robustness status, discriminating-evidence
+  statement, presentation eligibility) plus the typed AnalyticReference union. Review lens: one
+  independent adversarial round returned two HIGH findings, both fixed in one round and verified —
+  the fix round closed a withdrawn-metric bypass and completed the sample-summary state mirror.
+  A parallel prior-session review surfaced a third HIGH in a "do not merge" note that raced the
+  merge by seconds and was never seen pre-merge: robustness check statements are exempt from the
+  causal-copy scan (`copyScanTargets` passes them with `scanCausal: false`). Confirmed against
+  merged main post-merge, tracked as issue #91, and folded into the in-flight DL-VALIDATE-01 lane
+  with the PR's other findings.ts hardening items.
+- **DL-COMPARE-01 — matched-period comparison + censoring semantics.**
+  [PR #89](https://github.com/Chris0Jeky/developer-lens/pull/89), merge `d407cb1`. The reusable
+  comparison contract (canonical injected asOf, equal-duration half-open UTC windows,
+  instrument-matched subwindows with FULL / MATCHED_PARTIAL / INCOMPARABLE, matched fraction as a
+  first-class number, right-censoring at boundaries, explicit cohort choice, explicit no-comparison
+  outcomes). Review lens: two independent parallel adversarial reviews consolidated into a single
+  fix round of four findings, all fixed + verified — empty-cohort value-class classification,
+  matched-window binding with `MATCHED_SET_NONCONTIGUOUS` / `MATCHED_WINDOW_MISMATCH` refusals,
+  matched-side state checks, and a censoring check on effective sides; the redundant
+  `WINDOW_SHAPE_MISMATCH` code was removed. Advances
+  [#67](https://github.com/Chris0Jeky/developer-lens/issues/67) — the comparison half of the
+  typed-empty-cohort semantics landed; the issue stays open for DL-VALIDATE-01/DL-VALUE-01.
+- **Cross-session coordination.** The prior autonomous session stood down mid-run after handing off.
+  Its partial fix work on this wave was reimplemented cleanly in the surviving lanes and its stash
+  was dropped, so no partial state from it remains in the merged heads above. This state-sync
+  closeout is a separate documentation-only lane.
+- Carry-forward: [#82](https://github.com/Chris0Jeky/developer-lens/issues/82) (metric-result
+  hardening — the N1 sample-dimension-on-empty-cohort question and the M-a/M-b/M-c items) folds into
+  DL-VALIDATE-01's remit; [#68](https://github.com/Chris0Jeky/developer-lens/issues/68) and
+  [#69](https://github.com/Chris0Jeky/developer-lens/issues/69) stay frozen.
+
 ## Exact resume point
+
+**Superseded 2026-08-04 (R1 wave 2).** DL-SPINE-02 (`b52c458`), DL-SPINE-03 (`610188c`), DL-UX-ED
+(`4c3f476`), DL-FINDING-01 (`2208fcf`) and DL-COMPARE-01 (`d407cb1`) have all merged, so the wave-1
+resume pointer below is also history. The live resume point is DL-VALIDATE-01 (in flight) then
+DL-VALUE-01 — the last active-horizon card — per the R1 wave 2 section above and
+`docs/analyser-program/CURRENT_STATE.md`. Items 1–6 stay valid.
 
 **Superseded 2026-08-04 (R1 wave 1).** DL-BRIDGE-01 and DL-METRIC-01 merged, so item 0's pointer
 below is history. The live resume point is the rest of the analytics-core kernel — DL-SPINE-02

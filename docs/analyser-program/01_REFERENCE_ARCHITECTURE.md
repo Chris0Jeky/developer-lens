@@ -919,9 +919,12 @@ event and censoring definition, missingness and truncation handling, determinist
 procedure, minimum sample/support gates, comparison requirements, alternative/sensitivity
 definitions, known confounders, **prohibited interpretations**, coverage dimensions consumed,
 fixture and counterexample suite, rendering/export policy, and supersession/removal path. Every
-computed result carries `metric_id@version`, scope alias, window, value or distribution, eligible
-count, censored count, excluded count by reason, the metric-specific coverage vector, evidence
-IDs, calculation provenance, and sensitivity/robustness results. **No metric may rely on an
+computed result carries `metric_id@version`, its store-local scope binding (`scopeAlias` on
+the result row, local-only — the C2 alias value never travels into C1 downstream contracts,
+where the finding contract carries the content-free `scope_id` surrogate instead; corrected
+2026-08-04 fix round), window, value or distribution, eligible count, censored count, excluded
+count by reason, the metric-specific coverage vector, evidence IDs, calculation provenance, and
+sensitivity/robustness results. **No metric may rely on an
 undocumented shared "engagement", "importance", "activity", "health", "maturity", or "confidence"
 scalar** — such registrations are schema-rejected, and V2 APIs refuse to expose an unregistered
 metric.
