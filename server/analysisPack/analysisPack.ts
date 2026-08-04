@@ -118,6 +118,10 @@ interface VerifiedPack {
   summary: CoverageReplayRow[]
 }
 
+interface AnalysisPackVerificationHooks {
+  afterCoverageChecksumValidated?: () => Promise<void> | void
+}
+
 function sha256(bytes: Uint8Array | string): string {
   return createHash('sha256').update(bytes).digest('hex')
 }
@@ -333,7 +337,11 @@ async function assertPackFileSet(packDirectory: string, complete: boolean): Prom
   }
 }
 
-async function verifyPack(packDirectory: string, complete: boolean): Promise<VerifiedPack> {
+async function verifyPack(
+  packDirectory: string,
+  complete: boolean,
+  hooks?: AnalysisPackVerificationHooks,
+): Promise<VerifiedPack> {
   try {
     if (complete && !(await pathExists(join(packDirectory, 'COMPLETE')))) {
       throw new AnalysisPackError('ANALYSIS_PACK_INCOMPLETE')
@@ -358,7 +366,11 @@ async function verifyPack(packDirectory: string, complete: boolean): Promise<Ver
       throw new AnalysisPackError('ANALYSIS_PACK_CORRUPT')
     }
 
+    await hooks?.afterCoverageChecksumValidated?.()
     const inspected = await inspectCoverageParquet(coveragePath)
+    if (sha256(await readFile(coveragePath)) !== coverageSha256) {
+      throw new AnalysisPackError('ANALYSIS_PACK_CORRUPT')
+    }
     if (!exactStringArray(
       inspected.facts.map((fact) => fact.capability_id),
       manifest.capabilities,
@@ -458,6 +470,10 @@ export async function buildAnalysisPack(options: BuildAnalysisPackOptions): Prom
   }
 }
 
-export async function replayCoverageSummary(packDirectory: string): Promise<CoverageReplayRow[]> {
-  return (await verifyPack(packDirectory, true)).summary
+export async function replayCoverageSummary(
+  packDirectory: string,
+  /** @internal Test-only seam for deterministic concurrent-writer simulation. */
+  hooks?: AnalysisPackVerificationHooks,
+): Promise<CoverageReplayRow[]> {
+  return (await verifyPack(packDirectory, true, hooks)).summary
 }
