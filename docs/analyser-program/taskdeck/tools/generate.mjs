@@ -93,11 +93,20 @@ function buildDescription(c) {
   return lines.join('\n');
 }
 
+const CHECK = process.argv.includes('--check'); // non-mutating drift check for the PR gate
+
 function depIds(c) {
   return (c.deps || '').split(/[,;]/).map(s => s.trim()).filter(d => /^DL-[A-Z0-9-]+$/.test(d));
 }
 
 const errors = [];
+// every non-'none' dependency token must be a well-formed card ID — a typo like DL-SPINE_01 must
+// fail the build, never silently vanish from the dependency graph (review finding, 2026-08-04)
+for (const c of CARDS) {
+  for (const tok of (c.deps || '').split(/[,;]/).map(s => s.trim()).filter(Boolean)) {
+    if (tok !== 'none' && !/^DL-[A-Z0-9-]+$/.test(tok)) errors.push(`${c.id}: malformed dep token "${tok}"`);
+  }
+}
 const seen = new Set();
 const byId = new Map();
 const cardsOut = [];
@@ -170,7 +179,13 @@ const manifest = {
   seedCards: cardsOut,
 };
 
-writeFileSync(OUT_JSON, JSON.stringify(manifest, null, 2) + '\n');
+const manifestOut = JSON.stringify(manifest, null, 2) + '\n';
+if (CHECK) {
+  const current = readFileSync(OUT_JSON, 'utf8');
+  if (current !== manifestOut) { console.error('DRIFT: committed manifest differs from cards.mjs — run generate.mjs'); process.exit(1); }
+} else {
+  writeFileSync(OUT_JSON, manifestOut);
+}
 
 // regenerate the card index section of 07_DELIVERY_ROADMAP.md in place
 let md = `${INDEX_MARKER}\n\n`;
@@ -187,7 +202,13 @@ if (cut < 0) { console.error(`marker not found in ${ROADMAP}`); process.exit(1);
 const afterMarker = roadmap.slice(cut + INDEX_MARKER.length);
 const tailAt = afterMarker.indexOf('\n## ');
 const tail = tailAt >= 0 ? afterMarker.slice(tailAt + 1) : '';
-writeFileSync(ROADMAP, roadmap.slice(0, cut) + md + (tail ? '\n' + tail : ''));
+const roadmapOut = roadmap.slice(0, cut) + md + (tail ? '\n' + tail : '');
+if (CHECK) {
+  if (roadmap !== roadmapOut) { console.error('DRIFT: 07 card index differs from cards.mjs — run generate.mjs'); process.exit(1); }
+  console.log(`CHECK OK: manifest and 07 index match cards.mjs (${CARDS.length} cards)`);
+  process.exit(0);
+}
+writeFileSync(ROADMAP, roadmapOut);
 
 console.log(`OK: ${cardsOut.length} cards, ${LABELS.length} labels, ${COLUMNS.length} columns -> ${OUT_JSON}`);
 console.log(`index: ${CARDS.length} rows -> ${ROADMAP}`);

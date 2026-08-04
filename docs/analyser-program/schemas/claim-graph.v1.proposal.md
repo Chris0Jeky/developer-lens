@@ -43,7 +43,16 @@ CREATE TABLE claim_evidence_edge (
   role TEXT NOT NULL CHECK (role IN
     ('supports','contradicts','contextualizes','derives_from','coverage_basis','limitation_basis')),
   CHECK ((target_evidence_id IS NOT NULL) + (target_claim_id IS NOT NULL)
-       + (target_coverage_id IS NOT NULL) = 1)
+       + (target_coverage_id IS NOT NULL) = 1),
+  -- role→target compatibility (corrected 2026-08-04 review round): an FK-valid edge with a
+  -- semantically wrong target kind must not exist — derives_from targets claims, coverage_basis
+  -- targets coverage, evidentiary roles target evidence
+  CHECK (
+    (role = 'derives_from'   AND target_claim_id    IS NOT NULL) OR
+    (role = 'coverage_basis' AND target_coverage_id IS NOT NULL) OR
+    (role IN ('supports','contradicts','contextualizes','limitation_basis')
+                             AND target_evidence_id IS NOT NULL)
+  )
 ) STRICT;
 
 CREATE TABLE limitation_instance (
@@ -79,7 +88,7 @@ Example claim row (invented):
     {"target_coverage_id": "cov_112", "role": "coverage_basis"}
   ],
   "limitations": [
-    {"limitation_code": "GH_ACTIONS_FILTERED_1000_CAP", "dimension": "censoring_freedom", "copy_key": "hyp.ci_shift.censored"}
+    {"limitation_code": "GH_ACTIONS_FILTERED_1000_CAP", "dimension": "completeness", "copy_key": "hyp.ci_shift.truncated"}
   ]
 }
 ```

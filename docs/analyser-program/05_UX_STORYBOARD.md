@@ -50,7 +50,7 @@ fills it exists, and not one card earlier.
 | 1 | **Coverage / Privacy Cockpit** (S8) | Depends only on the capability lifecycle and the coverage ledger — both real before any analysis runs |
 | 2 | **One comparative System Atlas panel** (one panel of S1, not the S1 grid) | One lens, one system-or-portfolio, current window against a baseline window |
 | 3 | **Evidence Drawer** (S7) | The resolver is the product's spine; nothing above it is trustworthy without it |
-| 4 | **Deterministic System Story** (S10, deterministic beats only) | Unlocked **once the first finding is accepted** — not before, and modelled/hypothesis beats stay dark |
+| 4 | **Deterministic System Story** (S10, deterministic beats only) | Unlocked in **wave R5** (card `DL-UX-SS`), after the first finding is accepted AND its producer cards land — acceptance of `DL-VALUE-01` is necessary but not sufficient, because the Story card owns its own dependencies (corrected 2026-08-04: the R3 slice delivers surfaces 1–3 only; a deterministic-beats-only Story earlier than R5 would need its own bounded card) |
 
 **Everything else is staged behind its evidence producer.** Architecture Time Machine (S2), Change
 River (S3), Delivery / Traceability Map (S4), Pattern Lens (S5), Era Comparator (S6), Query Lab (S9),
@@ -307,8 +307,9 @@ DESKTOP (Atlas vision — §2.1 governs what actually ships first) ────�
 ```
 
 ① Rail — **only staged surfaces render** (§2.1). The nine shown here are the Atlas vision, not first
-ship: at `DL-VALUE-01` the rail carries the Cockpit, the one comparative Atlas panel, and (once the
-first finding is accepted) the deterministic Story. Fixed order, non-color current indicator (left bar
+ship: at `DL-VALUE-01` the rail carries the Cockpit, the one comparative Atlas panel, and the
+Evidence Drawer affordance; the deterministic Story joins in wave R5 via `DL-UX-SS` (corrected
+2026-08-04 — the R3 slice does not deliver it). Fixed order, non-color current indicator (left bar
 + bold weight); an unbuilt surface is absent, never a greyed or placeholder item.
 ② Scope header binds repository or portfolio **alias** only (the identity vault never reaches the UI)
 and renders the **lens** — the question being asked — beside **both** windows: the current window and
@@ -1148,7 +1149,7 @@ Bridge stage IDs are proposed; the order is ADR-04 §4/§6/§7.
 | Stage | Bridge content | Surfaces landing | Data dependency | Legacy fallback |
 |---|---|---|---|---|
 | **B0** | Freeze V1; mount `/api/v2/*` over synthetic-importer output | none (infrastructure) | P2 store, synthetic importer | `legacy-read-only` pins the whole app to V1 |
-| **B1** | ADR-04 §7 smallest vertical slice = the `DL-VALUE-01` analytical value slice | **S8** (coverage half) + **S7** (one claim end to end) + **one comparative S1 panel** (one lens, current vs baseline window) + **S10 deterministic beats** once the first finding is accepted — and nothing else (§2.1) | `/api/v2/coverage`, `/api/v2/features`, SPINE-01…03 | V2 routes stay unlinked from primary nav until the UX acceptance card passes; the legacy dashboard remains the landing surface |
+| **B1** | ADR-04 §7 smallest vertical slice = the `DL-VALUE-01` analytical value slice | **S8** (coverage half) + **S7** (one claim end to end) + **one comparative S1 panel** (one lens, current vs baseline window) — and nothing else (§2.1; the deterministic S10 Story follows in wave R5 via `DL-UX-SS`, corrected 2026-08-04) | `/api/v2/coverage`, `/api/v2/features`, SPINE-01…03 | V2 routes stay unlinked from primary nav until the UX acceptance card passes; the legacy dashboard remains the landing surface |
 | **B2** | Retire DNA / archetype / persona views | **S10** replaces Wrapped; **S1** becomes the landing surface | claim graph + already-available deterministic features | Legacy Wrapped gains a deprecation banner; removal is a separate card. **Person-shaped views are not ported** — their absence is the specified behaviour |
 | **B3** | Retire scalar confidence | **S8** privacy half (`UX-PC`): lifecycle, retention clocks, deletion preview | ADR-03 state machine, schema-registry enumeration | The scalar renders only inside legacy views and is never computed from V2 data |
 | **B4** | Retire the legacy insight stack | **S4**, **S3** | TRACE-01/02, OBSV-PR-01…03, SEM-01/02, GIT-01…03 | Legacy insight stack stays reachable per view until each replacement passes its card |

@@ -734,8 +734,10 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   partially plotted. **Event:** the terminal event of the underlying feature — release publication,
   PR merge, run completion — inherited from the source entry and never redefined here.
   **Censoring:** the trailing week and any item unterminated at the window edge are
-  **right-censored at the boundary** and marked as such; a week with no events is `null`, never
-  zero. Corrections:
+  **right-censored at the boundary** and marked as such. A **fully covered eligible week with no
+  events is an observed zero** — known inactivity is evidence, and dropping quiet weeks would bias
+  cadence distributions toward active weeks; `null` is reserved for suppressed, incomplete, or
+  otherwise unknown weeks (corrected 2026-08-04 review round). Corrections:
   late events recompute the affected week only; a re-collected window supersedes. Deletion: derived
   features cascade from their sources. Dimensions bound: `sample` (hard floor — this is the
   re-identification-critical domain), `completeness`, `censoring`, `comparability` (a policy change
@@ -795,13 +797,18 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   created inside the window on repositories where `cap.github.actions` was active for the whole
   window, keyed by (run ID, attempt). **Event:** queue duration = created→started, exec duration =
   started→completed for the attempt; an outcome is the recorded conclusion enum, not an
-  interpretation of it. **Censoring:** runs still in progress at the window boundary, and runs lost
-  to a saturated listing cap, are **right-censored at the boundary and disclosed** — never a zero
-  duration, never an implied failure, and absence is never zero. Corrections: key by run ID +
+  interpretation of it. **Censoring:** runs still in progress at the window boundary are
+  **right-censored at the boundary and disclosed** — never a zero duration, never an implied
+  failure. Runs lost to a saturated listing cap were **never observed** and cannot be censored
+  subjects (no identity, no start time, no at-risk duration): saturation is **cohort truncation**
+  that lowers `completeness` or renders the window ineligible, and it never enters survival-style
+  denominators (corrected 2026-08-04 review round). Absence is never zero. Corrections: key by run ID +
   attempt and use attempt-specific job endpoints (default listing is latest execution unless
   `filter=all`); deleted attempts censor. Deletion: C3 at 90 days plus cascade. Dimensions bound:
-  `completeness`, `censoring` (`GH_ACTIONS_FILTERED_1000_CAP`, `GH_CHECK_SUITES_1000_CAP`),
-  `sample`, `permission`, `drift` (workflow definition change mid-window).
+  `completeness` (`GH_ACTIONS_FILTERED_1000_CAP`, `GH_CHECK_SUITES_1000_CAP` — saturation is
+  cohort truncation, per the correction above), `censoring_freedom` (in-progress runs at the
+  window boundary), `sample`, `permission`, `drift_stability` (workflow definition change
+  mid-window).
 - **Confounders / falsifiers / bounds** — Confounders: runner class, cache state, matrix width,
   concurrency groups, provider scheduling, and self-hosted capacity dominate durations. **Wording
   rules, enforced in the copy dictionary and claim statement enums: rerun ≠ flaky

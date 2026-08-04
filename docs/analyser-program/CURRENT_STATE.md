@@ -23,7 +23,8 @@ authority_order: [AGENTS.md, .agent-harness/tier.json, HUMAN_TODO.md, data-chart
 last_verified_checks: npm run verify:context + starter-pack generator validation (see PR)
 capabilities: every executable capability remains never_authorized; cap.external.model uncalled
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
-  126 cards; never edit the manifest or 07 §6 index by hand)
+  127 cards; `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
+  or 07 §6 index by hand)
 local_board: seeded Taskdeck board outside Git; restart runbook in untracked RESUME.md beside its
   database (06_TASKDECK_DEMO_PLAN.md §1 describes it without paths)
 residual_risks:
