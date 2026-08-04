@@ -134,6 +134,110 @@ const INCREMENTAL_GITHUB_CORE_STORAGE_SQL = [
   'END;',
 ].join('\n')
 
+interface IncrementalSchemaDefinition {
+  readonly type: 'table' | 'trigger'
+  readonly name: string
+  readonly tableName: string
+  readonly sql: string
+}
+
+interface IncrementalSchemaRow {
+  readonly type: string
+  readonly name: string
+  readonly tbl_name: string
+  readonly sql: string | null
+}
+
+function parseSchemaDefinitions(sql: string): IncrementalSchemaDefinition[] {
+  const statements: string[] = []
+  let current: string[] = []
+  let trigger = false
+  for (const line of sql.split('\n')) {
+    const trimmed = line.trim()
+    current.push(line)
+    if (/^CREATE\s+TRIGGER\b/i.test(trimmed)) trigger = true
+    if ((trigger && trimmed === 'END;') || (!trigger && trimmed.endsWith(';'))) {
+      statements.push(current.join('\n'))
+      current = []
+      trigger = false
+    }
+  }
+  if (current.length > 0) throw new Error('INCREMENTAL_STORAGE_SCHEMA_MISMATCH')
+
+  return statements.map((statement) => {
+    const match = statement.match(
+      /^\s*CREATE\s+(TABLE|TRIGGER)\s+IF\s+NOT\s+EXISTS\s+([A-Za-z_][A-Za-z0-9_]*)/i,
+    )
+    if (!match) throw new Error('INCREMENTAL_STORAGE_SCHEMA_MISMATCH')
+    const type = match[1].toLowerCase() as IncrementalSchemaDefinition['type']
+    const name = match[2]
+    const tableName = type === 'table'
+      ? name
+      : statement.match(/\bON\s+([A-Za-z_][A-Za-z0-9_]*)/i)?.[1]
+    if (!tableName) throw new Error('INCREMENTAL_STORAGE_SCHEMA_MISMATCH')
+    return { type, name, tableName, sql: statement }
+  })
+}
+
+function normalizeSchemaSql(sql: string): string {
+  return sql
+    .replace(/\bIF\s+NOT\s+EXISTS\b/gi, '')
+    .replace(/;\s*$/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toLowerCase()
+}
+
+const INCREMENTAL_GITHUB_CORE_SCHEMA_DEFINITIONS = parseSchemaDefinitions(
+  INCREMENTAL_GITHUB_CORE_STORAGE_SQL,
+)
+
+function schemaFingerprint(rows: readonly IncrementalSchemaDefinition[] | readonly IncrementalSchemaRow[]): string {
+  const canonical = rows
+    .map((row) => {
+      const tableName = 'tableName' in row ? row.tableName : row.tbl_name
+      const sql = 'tableName' in row ? row.sql : row.sql ?? ''
+      return [row.type, row.name, tableName, normalizeSchemaSql(sql)].join('|')
+    })
+    .sort()
+    .join('\n')
+  return createHash('sha256').update(canonical).digest('hex')
+}
+
+export const INCREMENTAL_GITHUB_CORE_STORAGE_SCHEMA_FINGERPRINT = schemaFingerprint(
+  INCREMENTAL_GITHUB_CORE_SCHEMA_DEFINITIONS,
+)
+
+const INCREMENTAL_GITHUB_CORE_SCHEMA_NAMES = INCREMENTAL_GITHUB_CORE_SCHEMA_DEFINITIONS.map(
+  ({ name }) => name,
+)
+
+function readOwnedSchemaRows(db: Database.Database): IncrementalSchemaRow[] {
+  const placeholders = INCREMENTAL_GITHUB_CORE_SCHEMA_NAMES.map(() => '?').join(', ')
+  return db.prepare(
+    `SELECT type, name, tbl_name, sql FROM sqlite_schema WHERE name IN (${placeholders})`,
+  ).all(...INCREMENTAL_GITHUB_CORE_SCHEMA_NAMES) as IncrementalSchemaRow[]
+}
+
+function hasExpectedSchema(rows: readonly IncrementalSchemaRow[]): boolean {
+  if (rows.length !== INCREMENTAL_GITHUB_CORE_SCHEMA_DEFINITIONS.length) return false
+  const expected = new Map(
+    INCREMENTAL_GITHUB_CORE_SCHEMA_DEFINITIONS.map((definition) => [definition.name, definition]),
+  )
+  return rows.every((row) => {
+    const definition = expected.get(row.name)
+    return definition !== undefined
+      && row.type === definition.type
+      && row.tbl_name === definition.tableName
+      && row.sql !== null
+      && normalizeSchemaSql(row.sql) === normalizeSchemaSql(definition.sql)
+  })
+}
+
+export function readIncrementalGithubCoreStorageSchemaFingerprint(db: Database.Database): string {
+  return schemaFingerprint(readOwnedSchemaRows(db))
+}
+
 const OpaqueIdSchema = z.string().regex(/^[A-Za-z0-9:._-]{1,128}$/)
 const CoverageIdSchema = z.string().regex(/^[A-Za-z0-9:._-]{1,256}$/)
 const LowercaseSha256Schema = z.string().regex(/^[a-f0-9]{64}$/)
@@ -215,9 +319,31 @@ function assertHealthyStorage(db: Database.Database): void {
 }
 
 export function installIncrementalGithubCoreStorage(db: Database.Database): void {
-  db.pragma('foreign_keys = ON')
-  db.exec(INCREMENTAL_GITHUB_CORE_STORAGE_SQL)
-  assertHealthyStorage(db)
+  try {
+    db.pragma('foreign_keys = ON')
+    db.transaction(() => {
+      const existing = readOwnedSchemaRows(db)
+      if (existing.length > 0) {
+        if (!hasExpectedSchema(existing)) {
+          throw new Error('INCREMENTAL_STORAGE_SCHEMA_MISMATCH')
+        }
+        assertHealthyStorage(db)
+        return
+      }
+
+      db.exec(INCREMENTAL_GITHUB_CORE_STORAGE_SQL)
+      const installed = readOwnedSchemaRows(db)
+      if (!hasExpectedSchema(installed)) {
+        throw new Error('INCREMENTAL_STORAGE_SCHEMA_MISMATCH')
+      }
+      assertHealthyStorage(db)
+    })()
+  } catch (error) {
+    if (error instanceof Error && error.message === 'INCREMENTAL_STORAGE_CHECK_FAILED') {
+      throw error
+    }
+    throw new Error('INCREMENTAL_STORAGE_SCHEMA_MISMATCH')
+  }
 }
 
 function checkpointProjection(checkpoint: GithubCoreCheckpoint | null): unknown {
