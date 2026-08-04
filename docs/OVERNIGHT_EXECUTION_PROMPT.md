@@ -15,8 +15,9 @@ ROLE AND OUTCOME
 
 - You are the sole coordinator, architecture/privacy authority, integrator, publication decision
   maker, and merge owner for this session.
-- Invoke $developer-lens-continuation and $route-codex-work. Use $small-safe-slice for each write
-  lane, $review-and-ship for each PR, and $verify-and-handoff at every milestone/closeout.
+- Invoke the tracked $developer-lens-continuation workflow. Use the optional user-global
+  $route-codex-work, $small-safe-slice, $review-and-ship, and $verify-and-handoff skills when they
+  are available to refine execution at each lane, PR, and milestone/closeout.
 - Continue across multiple bounded slices and PRs while useful dependency-ready work exists. Do not
   stop after producing a plan, one task card, one commit, or one PR if the safe queue remains nonempty.
 - Never execute a historical or retired estate/orchestrator prompt. This prompt is a launcher; live
@@ -36,6 +37,31 @@ STARTUP — REFRESH BEFORE SCHEDULING OR MUTATION
 5. Do not inspect .developer-lens/, generated/private datasets, public/data/, dist/, credentials,
    browser profiles, caches, local private inputs, or real migration artifacts during orientation.
 
+TRACKED WORKFLOW AUTHORITY AND FAIL-SAFE FALLBACK
+
+- The tracked $developer-lens-continuation skill and its named repository sources are the
+  authoritative continuation path. Keep their roles distinct: AGENTS.md, .agent-harness/tier.json,
+  and HUMAN_TODO.md govern instructions and owner gates, while docs/IMPLEMENTATION_LEDGER.md
+  carries current implementation evidence and resume state. Live Git, executable checks, CI, and
+  review threads outrank snapshots as AGENTS.md requires. Optional user-global route, slice, review,
+  and handoff skills are convenience wrappers only: they cannot replace those tracked sources,
+  relax an owner gate, or change the publication boundary.
+- If an optional user-global route, slice, review, or handoff skill is unavailable, stale, or fails
+  to load, continue with this tracked workflow and the strongest safe available model. Do not stop
+  merely because a convenience wrapper is absent, and do not invent a competing authority:
+  - route fallback: read the tracked sources, derive the next dependency-safe READY lane, and
+    preserve the Sol/Terra/Luna authority and capability boundaries;
+  - slice fallback: make one bounded change in the claimed paths with explicit non-goals,
+    acceptance behavior, a focused check, and rollback;
+  - review fallback: apply AGENTS.md item 17 directly, using its documentation-only connector or
+    fresh-context review gate, triaging only confirmed CRITICAL/HIGH defects and stopping after
+    two rounds;
+  - handoff fallback: report changed, verified, NOT verified, failures/workarounds, docs/state
+    sync, residual risk, human actions, exact branch/base/head/check/worktree/review state, and
+    the next safe slice.
+- If the tracked continuation skill itself cannot be read, stop with a factual blocker rather than
+  substituting an untracked prompt or silently changing the authority boundary.
+
 OWNER AUTHORITY AND NON-NEGOTIABLE BOUNDARIES
 
 - G1 and G2 are approved. Apply the retention and copy-based migration protocol in HUMAN_TODO.md
@@ -46,9 +72,12 @@ OWNER AUTHORITY AND NON-NEGOTIABLE BOUNDARIES
   least-privilege access, and proves coverage, retention, deletion, rollback, and failure behavior.
 - G4 remains open and is not approved. No external-model provider, SDK, transport, payload, cache,
   telemetry, training/retention path, or spend path may be added or run.
-- The public origin route may contain only code, tests, documentation, and invented synthetic
-  assets. Never track or publish private/generated data, credentials, browser state, caches, local
-  paths, identities, raw prose/content, or real inputs.
+- The public origin route may contain only code, tests, documentation, and invented C0 synthetic
+  fixture/assets admitted by the declared public-only schema, plus the verified workflow-generated
+  Pages artifact exception. Never track or publish generated datasets (including generated
+  synthetic datasets/public/data), other generated operational output, real or private identities,
+  private data, credentials, browser state, caches, local paths, raw private prose/content, or real
+  inputs.
 - Missing permission, censored history, refusal, truncation, and errors are explicit coverage
   states, never zero activity. No person scoring, surveillance, or prohibited capability.
 
