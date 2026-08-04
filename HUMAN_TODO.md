@@ -105,8 +105,23 @@ publication route remains active.
   human to perform; agents cannot verify or close it, so it stays open until you confirm no leaked
   session remains.
 
+  Update (2026-08-04, R1 wave 3 state-sync): a second leaked-process instance occurred this run — a
+  lane worker's `vite` dev server survived its worker and blocked a worktree removal; the process
+  was identified by its command line and terminated. Separately, the orphaned partial worktree
+  directory `C:/Users/jekyt/Desktop/Printer Config/Others/Git/dl-worktrees/value01` remains for
+  manual deletion: git has already deregistered it, and the repository floor guard correctly refuses
+  recursive deletion outside the project, so an agent cannot remove it. Its contents are regenerable
+  build artifacts plus a partial copy of already-pushed tracked files — nothing unique is at risk.
+  q-8 stays open.
+
 ## Changelog
 
+- 2026-08-04 (R1 wave 3 state-sync): expanded q-8 with a second leaked-process instance observed
+  this run — a lane worker's `vite` dev server survived its worker and blocked a worktree removal,
+  identified by command line and terminated — plus the orphaned partial worktree directory
+  `dl-worktrees/value01` left for manual deletion (git-deregistered; the floor guard refuses
+  recursive out-of-project deletion; contents are regenerable artifacts + a partial copy of pushed
+  tracked files). q-8 stays open; no approval was inferred and no other item was changed.
 - 2026-08-04: the R1 wave-2 state-sync closeout recorded q-8 — a human machine-hygiene check to
   terminate any leaked Claude session processes from the pre-handoff session, which kept executing
   for over an hour after handoff. No approval was inferred and no existing item was changed.
