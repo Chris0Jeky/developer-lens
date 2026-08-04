@@ -13,7 +13,9 @@ invented-fixture page adapter, closed activation-card parser, injected public-un
 transport with immediate projection, closed-world incremental-schema validation, and a confined
 descriptor-bound, duplicate-key-rejecting, 64 KiB ignored-card loader. A shared installation-
 scoped alias factory now preserves the existing migration identities and adds closed, domain-
-separated repository, issue, pull-request, and page aliases. P4 remains default-off and
+separated repository, issue, pull-request, and page aliases. The opt-in store now records restricted
+coverage as explicitly noncomplete without advancing a checkpoint or creating a snapshot. P4
+remains default-off and
 adds no credential, live read, storage composition,
 legacy-collector switch, or public/private output path. G4 is now provider-specifically approved,
 while a strict C1 evidence/output contract, deterministic local retrieval, and a credentialless
@@ -27,8 +29,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current OpenAI request-contract milestone:
-  `origin/main` merge `eae8370c8dbdad0fd0c6e49589c3cafd612e6ac9`.
+- Published implementation baseline before the current restricted-storage milestone:
+  `origin/main` merge `4ee986ed1e65cd58a56799391827359224ce1f14`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -135,6 +137,12 @@ unresolved review threads outrank it whenever they disagree.
   [30880417283](https://github.com/Chris0Jeky/developer-lens/actions/runs/30880417283) passed the full
   gate, synthetic-showcase privacy verification, artifact upload, and deployment. Issue #6 remains
   open for installation-key creation, persistence, mismatch, rotation/recovery, and deletion.
+- [PR #33](https://github.com/Chris0Jeky/developer-lens/pull/33) publishes the bounded credentialless
+  OpenAI/Luna request contract at merge `4ee986ed1e65cd58a56799391827359224ce1f14`;
+  exact-merge Pages run
+  [30880901044](https://github.com/Chris0Jeky/developer-lens/actions/runs/30880901044) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment. It adds no
+  credential read or provider/network execution.
 
 ## Authority and owner gates
 
@@ -353,15 +361,21 @@ unresolved review threads outrank it whenever they disagree.
 - `server/connectors/github/core.test.ts` uses invented opaque scopes, jobs, pages, units, hashes,
   failures, and caps only. This foundation adds no `fetch`, `gh`, subprocess, token, credential,
   selected-repository, SQLite, API, legacy-collector, public-data, or external-model wiring.
-- `server/storage/incremental.ts` is a separate opt-in `2.1.0` bridge over an already-owned P2
+- `server/storage/incremental.ts` is a separate opt-in `2.2.0` bridge over an already-owned P2
   SQLite handle. Its installer adds four STRICT tables—`collection_job`,
   `collection_checkpoint`, `source_snapshot`, and `coverage_ledger`—without changing the P2
   opener, schema SQL, application ID, user version, importer, or existing rows.
 - A single transaction validates a strict scalar-only projection, writes an immutable final job and
   coverage, and advances the checkpoint only for a complete snapshot. Identical job payloads replay
   without writes; changed payloads, contract/consent mismatches, cross-scope links, out-of-range or
-  regressing watermarks, and unknown nested fields fail closed. Failed/truncated attempts remain
-  auditable and can be followed by a successful retry over the same range without checkpoint loss.
+  regressing watermarks, and unknown nested fields fail closed. Failed, truncated, and restricted
+  attempts remain auditable and can be followed by a successful retry over the same range without
+  checkpoint loss.
+- A restricted transition must carry restricted coverage, the exact prior checkpoint, no cursor,
+  and no snapshot ID. It writes only the immutable job and coverage rows, replays idempotently, and
+  remains nonnumeric through `completeObservedUnits`; its physical zero placeholder is never a
+  complete observation. The contract/fingerprint bump deliberately rejects prior `2.1.0` or
+  tampered extension schemas unchanged because this opt-in extension has no activated real store.
 - Scope deletion explicitly enumerates all four owned tables, removes only the selected synthetic
   scope, preserves an unrelated scope, and finishes with integrity, quick, and foreign-key checks.
   No generic JSON, receipt payload, provider string, cursor resume path, staging table, observation
@@ -561,6 +575,13 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
+- P4 restricted-storage candidate [PR #34](https://github.com/Chris0Jeky/developer-lens/pull/34)
+  was rebased onto OpenAI request merge `4ee986e`; the focused incremental storage suite passed
+  1 file / 19 tests. `npm run check` passed Oxlint, context verification, 34 test files / 163 tests,
+  TypeScript project builds, and the production Vite build; `git diff --check` passed. Direct
+  regressions cover status alignment, prior-checkpoint preservation, no snapshot/cursor, nonnumeric
+  derived observation, stable limitation, idempotent replay, rollback, scope deletion, exact
+  version/fingerprint, and fail-closed prior-schema handling.
 - P12 request-contract candidate [PR #33](https://github.com/Chris0Jeky/developer-lens/pull/33)
   was rebased onto installation-alias merge `eae8370`; the focused request suite passed 1 file / 5
   tests. `npm run check` passed Oxlint, context verification, 34 test files / 159 tests, TypeScript
@@ -818,6 +839,8 @@ unresolved review threads outrank it whenever they disagree.
 - CLI, `dataStore`, collector, API, export, or Pages activation of SQLite; real/private JSON
   migration and the now-approved backup/grace/deletion protocol remain deliberately unexercised.
   Issues #5/#6 and a bounded migration task still precede a real read or reader switch.
+- No REST result is composed into the incremental store. Restricted persistence is proved only with
+  invented input; the real task card, Taskdeck scope, network, and task-owned database remain unread.
 - Production adoption by existing collectors, storage, API, exporters, or Pages beyond the local
   synthetic route and showcase verifier.
 - No pull-request CI lane exists; the exact-merge Pages build/deploy is the verified hosted gate.
@@ -893,9 +916,10 @@ unresolved review threads outrank it whenever they disagree.
   The shared alias factory preserves those identities and rejects duplicate batch identities, but
   key creation, persistence, mismatch, rotation/recovery, and deletion behavior remain tracked in
   [#6](https://github.com/Chris0Jeky/developer-lens/issues/6) before real migration.
-- The opt-in incremental installer uses `CREATE TABLE IF NOT EXISTS` without a schema fingerprint
-  or atomic mismatch rollback. Standard owned P2 databases have no conflicting names; a future
-  migration/activation slice must fail closed without partial DDL on a mismatched extension schema.
+- The opt-in incremental installer has an exact schema fingerprint and atomically fails closed on
+  prior or mismatched extension objects. It intentionally does not migrate an existing `2.1.0`
+  extension to `2.2.0`; any activated store requiring that transition needs a separately reviewed
+  application-controlled backup, migration, integrity proof, and rollback path.
 - The exported storage bridge has no production import and accepts only the closed typed projection,
   but it does not itself consult the `never_authorized` registry or require a synthetic-mode marker.
   The current adapter never imports that bridge. Any future composition must preserve the adapter's
@@ -913,8 +937,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current OpenAI request
-   candidate is merge `eae8370c8dbdad0fd0c6e49589c3cafd612e6ac9`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current restricted-storage
+   candidate is merge `4ee986ed1e65cd58a56799391827359224ce1f14`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -925,12 +949,12 @@ unresolved review threads outrank it whenever they disagree.
 4. The exact repository is owner-selected in an ignored local task card; its parser, confined
    descriptor-bound loader, and injected public-unauthenticated transport expose no identity or
    operational values in tracked state. The shared alias factory now preserves existing repository
-   identities and defines closed unit/page domains. Next wire it through the additive transport/
-   projection path and add issue #6 key-lifecycle/mismatch enforcement plus storage composition,
-   including schema mismatch rollback, backup/restore, scoped deletion/tombstone,
-   re-consent, replay/stability, and non-complete coverage persistence. Keep runtime default-off and
-   make no real request until that composition, focused failure tests, review, and the exact hosted
-   gate pass.
+   identities and defines closed unit/page domains; the opt-in store now preserves restricted
+   coverage without a snapshot or checkpoint advance. Next add page-local unit membership and the
+   pure alias/hash/replay composition, then issue #6 key-lifecycle/mismatch enforcement,
+   backup/restore, scoped deletion/tombstone, re-consent, and snapshot-stability proof. Keep runtime
+   default-off and make no real request until that composition, focused failure tests, review, and
+   the exact hosted gate pass.
 5. G4 is approved only for the exact OpenAI/Luna contract, but `cap.external.model` remains
    `never_authorized`. The strict C1 payload/output and deterministic local-retrieval foundation is
    present, and the credentialless request boundary now enforces native strict output, standard
