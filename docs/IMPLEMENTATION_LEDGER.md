@@ -19,7 +19,7 @@ separated repository, issue, pull-request, and page aliases. The opt-in store no
 coverage as explicitly noncomplete without advancing a checkpoint or creating a snapshot. Published
 complete composition now maps only validated complete REST results into a canonical,
 deeply frozen snapshot proposal with exact range/page/membership proof, a content-stable hash, and a
-job-unique opaque source-snapshot ID. The current D1 candidate adds visible evidence-fit confidence
+job-unique opaque source-snapshot ID. Published D1 now adds visible evidence-fit confidence
 and lens-limit cues to every story-path step without turning confidence into a person score. P4
 remains default-off and adds no credential, live read,
 storage write/integration,
@@ -28,7 +28,9 @@ while a strict C1 evidence/output contract, deterministic local retrieval, and a
 OpenAI Responses request boundary remain default-off. The published P12 activation slice adds a
 strict, review-chronology-bound activation-card parser without reading its future card. A bounded
 follow-up now rejects calendar-invalid pricing timestamps that JavaScript would otherwise normalize
-into a different date. The external-model capability is still
+into a different date. The current P12 candidate applies the same calendar-component boundary to C1
+bundle ranges while preserving supported fractional UTC forms and half-open range limits. The
+external-model capability is still
 `never_authorized`; there is no environment read, authorization-bearing transport, network/provider
 execution, raw response, cache, telemetry, persistence, or presentation path**.
 
@@ -38,8 +40,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current D1 story-uncertainty candidate:
-  `origin/main` merge `581cd58d085ad80bb34bad38f952e5206bf2ce4d`.
+- Published implementation baseline before the current P12 C1-range-date candidate:
+  `origin/main` merge `9cbfd1d8d7f02afbcf1325a687aca4c77ed221cb`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -621,13 +623,20 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- D1 story-uncertainty candidate was rebased onto complete-composition merge `581cd58`; the focused
+- P12 C1-range-date candidate was rebased onto story-uncertainty merge `9cbfd1d`; the focused C1,
+  request, and activation suites passed 3 files / 16 tests. `npm run check` passed Oxlint, context
+  verification, 36 test files / 193 tests, TypeScript project builds, and the production Vite build;
+  `git diff --check` passed. Exact rebased-head fresh-context review found no CRITICAL/HIGH calendar-
+  validity, supported-format, range-limit, content-free-error, or request-integration defect.
+- D1 story-uncertainty [PR #40](https://github.com/Chris0Jeky/developer-lens/pull/40)
+  merged as `9cbfd1d` after rebasing onto complete-composition merge `581cd58`; the focused
   story suite passed 1 file / 3 tests and `npm run test:demo:v2` passed 1 file / 5 tests. `npm run
   check` passed Oxlint, context verification, 36 test files / 191 tests, TypeScript project builds,
   and the production Vite build; `git diff --check` passed. Desktop and 390 x 844 in-app browser
   inspection found readable confidence/limit cues, correct wrapping, exact accessible names, and no
   console errors or warnings. Exact rebased-head fresh-context review found no CRITICAL/HIGH humane-
-  copy, accessibility, missing-data, or responsive defect.
+  copy, accessibility, missing-data, or responsive defect. Exact-merge hosted Pages run
+  `30885521668` completed successfully; its post-merge sweep contained no finding.
 - P4 complete-REST-composition [PR #39](https://github.com/Chris0Jeky/developer-lens/pull/39)
   merged as `581cd58` after rebasing onto canonical-price-date merge `f7aa9f4`;
   the focused REST transport/composition suites passed 2 files / 31 tests. `npm run check` passed
@@ -995,10 +1004,11 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Tracked non-blocking review findings
 
-- The C1 evidence-bundle range parser still relies on shape-valid UTC text plus JavaScript date
-  parsing, which can normalize an impossible calendar date. This cannot bypass the repaired price-
-  freshness gate and remains separately tracked in
-  [#37](https://github.com/Chris0Jeky/developer-lens/issues/37).
+- The current C1 range-date candidate closes
+  [#37](https://github.com/Chris0Jeky/developer-lens/issues/37) by component-checking parsed UTC
+  calendar fields. JavaScript's legacy year `0000`-`0099` arithmetic can still weaken the three-year
+  cap for ancient ranges; current-era behavior is unaffected and the residual remains separately
+  tracked in [#41](https://github.com/Chris0Jeky/developer-lens/issues/41).
 - P6 must compare verified owner email only ephemerally, emit only `is_self`, and never retain
   identity or per-person output.
 - P2 deletion tests must enumerate collection jobs/checkpoints, source snapshots, coverage,
@@ -1033,8 +1043,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current D1 story-
-   uncertainty candidate is merge `581cd58d085ad80bb34bad38f952e5206bf2ce4d`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P12 C1-range-date
+   candidate is merge `9cbfd1d8d7f02afbcf1325a687aca4c77ed221cb`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
