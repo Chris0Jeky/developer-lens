@@ -9,10 +9,11 @@ Current phase: **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synt
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
 The published P4 foundation includes an inert protocol, opt-in incremental storage bridge,
 invented-fixture page adapter, closed activation-card parser, injected public-unauthenticated GET
-transport with immediate projection, and closed-world incremental-schema validation. It remains
-default-off and adds no loader, credential, live read, storage composition, legacy-collector switch,
-or public/private output path. G4 is now provider-specifically approved, while the external-model
-capability remains `never_authorized` pending a separate default-off implementation and gate**.
+transport with immediate projection, closed-world incremental-schema validation, and a confined
+ignored-card loader. It remains default-off and adds no credential, live read, storage composition,
+legacy-collector switch, or public/private output path. G4 is now provider-specifically approved,
+while the external-model capability remains `never_authorized` pending a separate default-off
+implementation and gate**.
 
 This is the durable factual checkpoint, not a transcript. Git, executable checks, hosted CI, and
 unresolved review threads outrank it whenever they disagree.
@@ -20,8 +21,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before this authority milestone: `origin/main` merge
-  `911069c88085a268dee033fba28034565ca45647`.
+- Published implementation baseline before the current loader milestone: `origin/main` merge
+  `94f00ae67e5c72c388698872ec5a706e9265f898`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -97,6 +98,15 @@ unresolved review threads outrank it whenever they disagree.
   `911069c88085a268dee033fba28034565ca45647`; exact-merge Pages run
   [30876708265](https://github.com/Chris0Jeky/developer-lens/actions/runs/30876708265) passed the full
   gate, synthetic-showcase privacy verification, artifact upload, and deployment.
+- [PR #25](https://github.com/Chris0Jeky/developer-lens/pull/25) records the bounded OpenAI/Luna G4
+  authority at merge `94f00ae67e5c72c388698872ec5a706e9265f898`; exact-merge Pages run
+  [30877247691](https://github.com/Chris0Jeky/developer-lens/actions/runs/30877247691) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment. Late review
+  comments against its pre-fix head were reconciled once; all direct boundary findings were already
+  closed in the merged head and the remaining retention-code naming ambiguity was non-blocking.
+- [PR #26](https://github.com/Chris0Jeky/developer-lens/pull/26) is the current confined ignored-card
+  loader milestone. It contains no tracked card identity/value, network, database, credential,
+  runtime switch, or output path.
 
 ## Authority and owner gates
 
@@ -352,6 +362,12 @@ unresolved review threads outrank it whenever they disagree.
   hostile extras, credentials, private visibility, unsafe budgets/timestamps/identifiers, path
   traversal, and weakened retention/coverage/rollback/deletion are rejected. The actual task card
   remains ignored and local.
+- `server/connectors/github/activationTaskLoader.ts` accepts only an absolute workspace root and
+  opaque task ID, derives the one canonical ignored `task-card.json` path, resolves filesystem
+  metadata before reading, rejects static symlink/junction or alternate-root escape, delegates to
+  the strict parser, and collapses failures to one content-free code. Invented temporary fixtures
+  prove the accepted path plus malformed/schema, closed-input, traversal, wrong-root and symlink
+  refusals. No production caller imports the loader.
 - `server/connectors/github/restTransport.ts` is an injected public-unauthenticated GET-only seam.
   It constructs only the selected repository metadata and open issue/pull-request lifecycle URLs,
   fixes the API version, `Accept`, and non-identifying user-agent headers, disables redirects, and
@@ -699,11 +715,11 @@ unresolved review threads outrank it whenever they disagree.
   activated hostile-writer claim would still need an immutable snapshot or an equivalent stronger
   boundary to exclude an adversarial replace-read-restore sequence.
 - The P4 synthetic adapter and public REST transport are both injected seams with no runtime call
-  site. The activation-card parser does not read the card from disk, and no code composes the
-  transport with the opt-in storage bridge. Real execution, task-root real-path confinement,
-  application-controlled backup/restore, key continuity, snapshot stability, parity/fallback,
-  tombstoned deletion/re-consent, and legacy collector compatibility remain reviewed activation
-  seams.
+  site. The loader reads only the canonical task-owned card but no production caller composes it
+  with transport or the opt-in storage bridge. Application-controlled backup/restore, installation-
+  key continuity, snapshot stability, parity/fallback, tombstoned deletion/re-consent, and legacy
+  collector compatibility remain reviewed activation seams. Static realpath checks do not claim
+  hostile concurrent local-writer integrity; a composed snapshot must close or disclose that race.
 - The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
   this bounded importer accepts only the registered ASCII repository-reference alphabet; that P2
   compatibility gap remains tracked in
@@ -753,20 +769,21 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before this authority milestone is
-   merge `911069c88085a268dee033fba28034565ca45647`; live evidence still outranks this checkpoint.
+1. Refresh Git/GitHub before mutation. The published baseline before the current loader milestone is
+   merge `94f00ae67e5c72c388698872ec5a706e9265f898`; live evidence still outranks this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
    activated hostile-writer claim without an immutable snapshot or equivalent boundary.
 3. G2 and standing G3 are approved, but no real path is automatically active. Reconcile issue #6's
    duplicate-identity/key-continuity acceptance and issue #5's local-name/identity-vault boundary
    before a real v1 migration. Use invented fixtures and a new bounded task card first.
-4. The exact repository is owner-selected in an ignored local task card; its closed parser and
-   injected public-unauthenticated transport expose no identity or operational values in tracked
-   state. Next add the task-root/key-continuity and additive storage-composition seam, including
-   schema mismatch rollback, backup/restore, scoped deletion/tombstone, re-consent, replay/stability,
-   and non-complete coverage persistence. Keep runtime default-off and make no real request until
-   that composition, focused failure tests, review, and the exact hosted gate pass.
+4. The exact repository is owner-selected in an ignored local task card; its parser, confined
+   loader, and injected public-unauthenticated transport expose no identity or operational values in
+   tracked state. Next add installation-key continuity and additive transport/projection/storage
+   composition, including schema mismatch rollback, backup/restore, scoped deletion/tombstone,
+   re-consent, replay/stability, and non-complete coverage persistence. Keep runtime default-off and
+   make no real request until that composition, focused failure tests, review, and the exact hosted
+   gate pass.
 5. G4 is approved only for the exact OpenAI/Luna contract, but `cap.external.model` remains
    `never_authorized`. A parallel bounded P12 slice may implement the injected default-off request,
    strict C1 payload/output schemas, local retrieval, budget/error/deletion controls, and invented
