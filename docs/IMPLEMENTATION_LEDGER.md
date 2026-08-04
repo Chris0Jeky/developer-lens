@@ -687,8 +687,9 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- The current P12 HTTP-adapter candidate was rebased onto failure-pairing merge `8ca3a62`; the shared
-  card loader, OpenAI card loader, request, preview, and HTTP adapter suites passed 5 files / 32 tests.
+- The current P12 HTTP-adapter candidate was rebased onto failure-pairing merge `8ca3a62`;
+  `server/connectors/github/activationTaskLoader.test.ts`, the OpenAI card-loader, request, preview,
+  and HTTP-adapter suites passed 5 files / 32 tests.
   `npm run check` passed Oxlint, context verification, 40 test files / 221 tests, TypeScript project
   builds, and the production Vite build; `git diff --check` passed. Tests injected only invented
   credentials/responses and never referenced the real process environment variable. Exact rebased-
