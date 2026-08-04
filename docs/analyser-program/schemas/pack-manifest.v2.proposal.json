@@ -1,0 +1,53 @@
+{
+  "$comment": "PROPOSAL ONLY (DL-PACK-00 target). Pack 2.0 manifest reconciling the three current shapes: the implemented Zod 1.0.0 manifest (sole 1.0.0 authority), the wider docs/analysis-pack/manifest.schema.json, and the canonical section-11 example. Field names follow the implemented camelCase shape. All values invented (C0).",
+  "manifestVersion": "2.0.0-proposal",
+  "privacyContractVersion": "1.0.0",
+  "canonicalEnvelopeSchemaVersion": "2.0.0",
+  "packId": "pack-<32 hex from sha256(createdAt || NUL || content hashes)>",
+  "createdAt": "2026-08-04T00:00:00Z",
+  "range": { "start": "2026-01-01T00:00:00Z", "end": "2026-04-01T00:00:00Z" },
+  "exportClassification": "redacted_aggregate",
+  "capabilities": [ { "id": "github.core", "consentRevision": "sha256:…" } ],
+  "coverageStatuses": ["complete", "truncated"],
+  "redactionRevision": "v2",
+  "featureVersions": ["DL.PR.INTEGRATION_DURATION_H.v1"],
+  "dictionaryRevision": "dict-2026-08-04",
+  "artifacts": [
+    {
+      "path": "tables/coverage.parquet",
+      "schemaId": "fact.coverage.v1",
+      "classification": "C1",
+      "rows": 42,
+      "bytes": 10240,
+      "sha256": "…"
+    },
+    {
+      "path": "tables/facts/pr_lifecycle.parquet",
+      "schemaId": "fact.pr_lifecycle.v1",
+      "classification": "C1",
+      "rows": 120,
+      "bytes": 20480,
+      "sha256": "…"
+    },
+    {
+      "path": "queries/01_coverage.sql",
+      "schemaId": "query.example.v1",
+      "classification": "C0",
+      "rows": 0,
+      "bytes": 512,
+      "sha256": "…"
+    }
+  ],
+  "structuralExportPolicy": {
+    "$comment": "Accepted 2026-08-04 fingerprinting rule (PACK-06 measures it)",
+    "shapeVectors": "coarse bands only",
+    "topologyEdgeLists": "never exported (C3-confined)",
+    "releaseInstants": "ISO-week floored"
+  },
+  "omissions": [ { "reason": "sparse_suppressed", "count": 3 } ],
+  "completeMarker": "COMPLETE",
+  "notes": [
+    "externalModelEvidence from the current JSON schema is NOT carried into 2.0.0; model outputs are ordinary claims tables.",
+    "Every evidence_id referenced by any claims table must exist in the same pack (closure rule)."
+  ]
+}

@@ -1,0 +1,30 @@
+{
+  "$comment": "PROPOSAL ONLY (DL-SPINE-04/05). Registered coverage-vector dimensions v2 and one per-family gate example. All values invented (C0).",
+  "dimension_registry_version": "2.0.0-proposal",
+  "dimensions": [
+    "permission", "completeness", "freshness", "censoring", "conflict", "sample",
+    "source_diversity", "parser_coverage", "comparability", "drift", "calibration"
+  ],
+  "dimension_value": { "type": "number|null", "null_requires": "limiting_reason code" },
+  "producers": {
+    "calibration": "DL-EVQ-04 (accepted 2026-08-04)",
+    "drift": "DL-EVQ-03 (research role)"
+  },
+  "example_vector": {
+    "permission": 1, "completeness": 0.82, "freshness": 0.9,
+    "censoring": { "value": null, "limiting_reason": "GH_DEPLOY_STATUS_90D_CENSOR" },
+    "conflict": 0.98, "sample": 0.6, "source_diversity": 0.5,
+    "parser_coverage": 0.71, "comparability": 1,
+    "drift": { "value": null, "limiting_reason": "NO_RECOLLECTION_SERIES" },
+    "calibration": { "value": null, "limiting_reason": "NO_RESOLVED_QUESTIONS" }
+  },
+  "gate_example": {
+    "claim_family": "modelled.change_point",
+    "tier_requirements": {
+      "render_as_modelled": { "completeness": ">=0.8", "comparability": "==1", "calibration": "!=null" },
+      "degrade_to_deterministic_alert": { "completeness": ">=0.6" },
+      "abstain_below": "otherwise"
+    },
+    "monotonicity": "degrading any dimension can only hold or lower the tier; no cross-dimension compensation below floors"
+  }
+}

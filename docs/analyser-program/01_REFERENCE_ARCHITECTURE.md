@@ -93,6 +93,15 @@ inputs reproduces identical claim IDs; a changed input set produces a new claim 
 `superseded_by` link. "Why am I seeing this?" resolves UI element → claim → edges → evidence →
 coverage → capability → consent revision in one deterministic walk.
 
+**Stability key (accepted 2026-08-04, frontier finding C-03).** Because any new evidence mints a
+new claim ID, claim *history* cannot be grouped by `claim_id`. Every claim additionally carries a
+**stability key** — the tuple (`statement_code`, `method_id@method_version`, `window`,
+`scope_alias`, `schema_version`) — as an indexed column set, so supersession chains are groupable
+into series. This key is what claim-stability, calibration-scoreboard, and drift surfaces
+(DL-EVQ-03/04) aggregate over. Grain rule: any surface derived from claim-version or collection
+timing renders at ISO-week grain or coarser — the product's own operational timestamps fall under
+the ADR-14 floor on a single-owner installation.
+
 **Why.** Relational + deterministic IDs gives replayable lineage, cheap joins for the Evidence
 Drawer, and no new storage engine. RDF adds modelling power nobody needs yet; free-form arrays
 cannot express contradiction, correction, or export lineage, which principles 3–4 require.
@@ -272,8 +281,11 @@ needs the concrete role taxonomy, monorepo boundaries, and comparability rules.
 **Decision.** Immutable-ref, ephemeral `git ls-tree` enumeration inside the isolated worker
 (ADR-06 controls); retained output is C1: language/byte-share by controlled vocabulary, role
 presence/counts for a closed role taxonomy {build, test, docs, config, migration, api_surface,
-ci_definition, dependency_manifest, generated, vendored, binary_asset}, package/monorepo boundary
-count via manifest-presence classes, and parser/enumeration coverage. Paths, names, file lists are
+ci_definition, dependency_manifest, generated, vendored, binary_asset, **schema_definition,
+fixture_golden, snapshot_artifact**} (14 roles; the last three accepted 2026-08-04 from frontier
+finding A4 — they make golden/fixture-anchored contract surfaces and migration-ledger archaeology
+observable), package/monorepo boundary count via manifest-presence classes, and
+parser/enumeration coverage. Paths, names, file lists are
 C4 and destroyed. Boundaries: no working tree, no submodule recursion without its own consent, no
 content reads beyond role sniffing rules that are themselves closed (extension/manifest tables,
 never file bodies except bounded manifest parses already covered by GH-SBOM-01 rules).
@@ -328,7 +340,13 @@ from the same immutable ref. **Comparability** requires equal parser major and e
 revision; incomparable pairs render as separate eras with an explicit `comparability` dimension
 limitation, never as deltas. **Module continuity** across snapshots uses content-overlap
 matching (HMAC'd normalized identifier sets); continuity, split, and merge assignments are
-**modelled** layer with reported match confidence, never observed facts. **Eras** are labeled
+**modelled** layer with reported match confidence, never observed facts. **Matched-window middle
+case (accepted 2026-08-04, frontier finding C-08):** between "comparable" and "incomparable" sits
+the matched-sub-window comparison — eras compare only on sub-windows where the instrument matched
+(equal parser major, equal config revision, coverage within preregistered tolerances), the
+**matched fraction** of each era is a first-class number, and the unmatched residual names its
+disqualifying dimension; the naive whole-era diff is never rendered when the matched diff disagrees
+with it. **Eras** are labeled
 intervals derived from accepted change-points (ADR-17), policy/CI transitions, or user annotation;
 "what materially changed between eras" is a deterministic diff of snapshot aggregates plus
 modelled continuity, each element carrying its layer badge.
@@ -689,6 +707,13 @@ path. **Revisit.** If DuckDB-WASM bundle cost is unacceptable, Query Lab degrade
 reconciliation), PACK-01…04 (tables per producing domain), PACK-05
 (preview/acknowledgement/suppression), QL-01 (DuckDB-WASM lab), QL-02 (example-query + dictionary
 generation).
+
+**Banded structural exports (accepted 2026-08-04, frontier cross-cutting risk from Scout A).**
+Structural *shape vectors* — role byte shares, package/module-graph topology, declaration-count
+series — are strong fingerprints of a public repository and can defeat pack aliasing by matching
+against public data. Cross-cutting pack rule: structural shape values export only in **coarse
+bands**; exact topology/edge lists never leave C3 (PACK-05 enforces; applies to the whole
+X-Ray/Atlas family, and release instants export ISO-week-floored).
 
 **Grounded constraint — three disagreeing manifest shapes (V, 2026-08-04).** The repo currently
 holds (a) the implemented Zod pack manifest in `server/analysisPack/analysisPack.ts`
