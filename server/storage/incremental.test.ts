@@ -8,9 +8,11 @@ import {
 import { openStorageDatabase, runStorageChecks } from './database.js'
 import {
   INCREMENTAL_GITHUB_CORE_STORAGE_VERSION,
+  INCREMENTAL_GITHUB_CORE_STORAGE_SCHEMA_FINGERPRINT,
   INCREMENTAL_GITHUB_CORE_TABLES,
   deleteIncrementalGithubCoreScope,
   installIncrementalGithubCoreStorage,
+  readIncrementalGithubCoreStorageSchemaFingerprint,
   persistIncrementalGithubCoreTransition,
   readIncrementalGithubCoreCheckpoint,
   type PersistGithubCoreTransitionInput,
@@ -173,6 +175,131 @@ describe('P4 opt-in incremental github.core storage', () => {
       provider_id: 'repo-provider-a',
       analytical_key: 'repo-a',
     })
+    expect(readIncrementalGithubCoreStorageSchemaFingerprint(db)).toBe(
+      INCREMENTAL_GITHUB_CORE_STORAGE_SCHEMA_FINGERPRINT,
+    )
+  })
+
+  it('fails closed on a conflicting pre-existing table without partial owned DDL', () => {
+    const db = database()
+    const userVersion = db.pragma('user_version', { simple: true })
+    db.exec([
+      'CREATE TABLE collection_job (sentinel TEXT NOT NULL);',
+      "INSERT INTO collection_job (sentinel) VALUES ('sentinel');",
+    ].join('\n'))
+
+    expect(() => installIncrementalGithubCoreStorage(db)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+    expect(db.prepare('SELECT sentinel FROM collection_job').pluck().all()).toEqual(['sentinel'])
+    expect(db.pragma('user_version', { simple: true })).toBe(userVersion)
+    const ownedObjects = db.prepare(
+      `SELECT type, name FROM sqlite_schema WHERE name IN (${[
+        ...INCREMENTAL_GITHUB_CORE_TABLES,
+        'collection_job_immutable_update',
+        'source_snapshot_complete_job',
+        'coverage_ledger_job_match',
+        'collection_checkpoint_complete_job_insert',
+        'collection_checkpoint_complete_job_update',
+      ].map(() => '?').join(', ')}) ORDER BY type, name`,
+    ).all(
+      ...INCREMENTAL_GITHUB_CORE_TABLES,
+      'collection_job_immutable_update',
+      'source_snapshot_complete_job',
+      'coverage_ledger_job_match',
+      'collection_checkpoint_complete_job_insert',
+      'collection_checkpoint_complete_job_update',
+    )
+    expect(ownedObjects).toEqual([{ type: 'table', name: 'collection_job' }])
+  })
+
+  it('rejects a missing or tampered owned object without repairing or mutating it', () => {
+    const db = database()
+    installIncrementalGithubCoreStorage(db)
+    db.exec('DROP TRIGGER collection_job_immutable_update;')
+    const before = db.prepare(
+      "SELECT name FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT GLOB 'sqlite_*' ORDER BY type, name",
+    ).pluck().all()
+
+    expect(() => installIncrementalGithubCoreStorage(db)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+    expect(db.prepare("SELECT name FROM sqlite_schema WHERE type = 'trigger' AND name = 'collection_job_immutable_update'").get()).toBeUndefined()
+    expect(db.prepare(
+      "SELECT name FROM sqlite_schema WHERE type IN ('table', 'trigger') AND name NOT GLOB 'sqlite_*' ORDER BY type, name",
+    ).pluck().all()).toEqual(before)
+
+    const dbWithTamperedTable = database()
+    installIncrementalGithubCoreStorage(dbWithTamperedTable)
+    dbWithTamperedTable.exec([
+      'DROP TABLE source_snapshot;',
+      'CREATE TABLE source_snapshot (sentinel TEXT NOT NULL);',
+    ].join('\n'))
+    expect(() => installIncrementalGithubCoreStorage(dbWithTamperedTable)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+    expect(dbWithTamperedTable.prepare('SELECT sentinel FROM source_snapshot').all()).toEqual([])
+    expect(dbWithTamperedTable.prepare(
+      "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'collection_checkpoint'",
+    ).get()).not.toBeUndefined()
+  })
+
+  it('rejects unexpected triggers or indexes attached to owned tables', () => {
+    const db = database()
+    installIncrementalGithubCoreStorage(db)
+    db.exec([
+      'CREATE TRIGGER unexpected_checkpoint_insert',
+      'AFTER INSERT ON collection_checkpoint',
+      'BEGIN',
+      '  DELETE FROM collection_job WHERE job_id = NEW.committed_job_id;',
+      'END;',
+    ].join('\n'))
+
+    expect(() => installIncrementalGithubCoreStorage(db)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+    expect(db.prepare(
+      "SELECT name FROM sqlite_schema WHERE type = 'trigger' AND name = 'unexpected_checkpoint_insert'",
+    ).pluck().get()).toBe('unexpected_checkpoint_insert')
+    expect(readIncrementalGithubCoreStorageSchemaFingerprint(db)).not.toBe(
+      INCREMENTAL_GITHUB_CORE_STORAGE_SCHEMA_FINGERPRINT,
+    )
+
+    const dbWithIndex = database()
+    installIncrementalGithubCoreStorage(dbWithIndex)
+    dbWithIndex.exec('CREATE INDEX unexpected_scope_index ON collection_job(scope_alias);')
+    expect(() => installIncrementalGithubCoreStorage(dbWithIndex)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+  })
+
+  it('rejects temporary objects that shadow or mutate owned tables', () => {
+    const dbWithShadow = database()
+    installIncrementalGithubCoreStorage(dbWithShadow)
+    dbWithShadow.exec('CREATE TEMP TABLE collection_job (sentinel TEXT NOT NULL);')
+
+    expect(() => installIncrementalGithubCoreStorage(dbWithShadow)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
+    expect(dbWithShadow.prepare(
+      "SELECT name FROM sqlite_temp_schema WHERE type = 'table' AND name = 'collection_job'",
+    ).pluck().get()).toBe('collection_job')
+    expect(readIncrementalGithubCoreStorageSchemaFingerprint(dbWithShadow)).not.toBe(
+      INCREMENTAL_GITHUB_CORE_STORAGE_SCHEMA_FINGERPRINT,
+    )
+
+    const dbWithTrigger = database()
+    installIncrementalGithubCoreStorage(dbWithTrigger)
+    dbWithTrigger.exec([
+      'CREATE TEMP TRIGGER unexpected_temp_checkpoint_insert',
+      'AFTER INSERT ON main.collection_checkpoint',
+      'BEGIN',
+      '  DELETE FROM collection_job WHERE job_id = NEW.committed_job_id;',
+      'END;',
+    ].join('\n'))
+    expect(() => installIncrementalGithubCoreStorage(dbWithTrigger)).toThrow(
+      'INCREMENTAL_STORAGE_SCHEMA_MISMATCH',
+    )
   })
 
   it('atomically stores an empty complete snapshot and a checkpoint without a watermark', () => {
