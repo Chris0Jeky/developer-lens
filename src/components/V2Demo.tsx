@@ -1,6 +1,7 @@
 import { Sparkles, ShieldCheck } from 'lucide-react'
 import { InsightStack } from './InsightStack'
 import { LensLogo } from './LensLogo'
+import { V2StoryPath } from './V2StoryPath'
 import { V2_DEMO_INSIGHTS, V2_DEMO_PAYLOAD } from '../../shared/v2Demo'
 
 export function V2Demo() {
@@ -47,6 +48,7 @@ export function V2Demo() {
             </div>
             <p>{V2_DEMO_PAYLOAD.boundary}</p>
           </div>
+          <V2StoryPath insights={V2_DEMO_INSIGHTS} />
           <InsightStack insights={V2_DEMO_INSIGHTS} />
           <p className="section-heading__note">{V2_DEMO_PAYLOAD.closingCaveat}</p>
         </section>
