@@ -16,10 +16,12 @@ ignored-card loader plus frozen alias-only membership on every accepted REST pag
 installation-
 scoped alias factory now preserves the existing migration identities and adds closed, domain-
 separated repository, issue, pull-request, and page aliases. The opt-in store now records restricted
-coverage as explicitly noncomplete without advancing a checkpoint or creating a snapshot. The
-current P4 publication candidate composes only validated complete REST results into a canonical,
+coverage as explicitly noncomplete without advancing a checkpoint or creating a snapshot. Published
+complete composition now maps only validated complete REST results into a canonical,
 deeply frozen snapshot proposal with exact range/page/membership proof, a content-stable hash, and a
-job-unique opaque source-snapshot ID. P4 remains default-off and adds no credential, live read,
+job-unique opaque source-snapshot ID. The current D1 candidate adds visible evidence-fit confidence
+and lens-limit cues to every story-path step without turning confidence into a person score. P4
+remains default-off and adds no credential, live read,
 storage write/integration,
 legacy-collector switch, or public/private output path. G4 is now provider-specifically approved,
 while a strict C1 evidence/output contract, deterministic local retrieval, and a credentialless
@@ -36,8 +38,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current complete-REST-composition candidate:
-  `origin/main` merge `f7aa9f4fcf9ac7cb69a6a0261dfb9f9978c5c093`.
+- Published implementation baseline before the current D1 story-uncertainty candidate:
+  `origin/main` merge `581cd58d085ad80bb34bad38f952e5206bf2ce4d`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -484,9 +486,15 @@ unresolved review threads outrank it whenever they disagree.
 - The rail adds no schema field, fetch, account/repository input, local-history read, model output,
   persistence, export, or generated dataset. `V2Demo` remains the only caller and keeps the existing
   public synthetic boundary copy visible above the story.
+- Each step now names high, medium, or low confidence explicitly as evidence fit rather than a score
+  about a person, and labels its existing caveat as a lens limit. Missing caveats stay missing instead
+  of being invented; the exact material confidence and caveat text is included in the list item's
+  accessible name as well as the visible rail.
 - Desktop and 390 px in-app browser inspection found no horizontal overflow; the rail changes from
-  three columns to a vertical connected path. The existing Observed filter remained keyboard/ARIA
-  addressable and changed the live status from 3/3 to 1/3 with exactly one visible insight card.
+  three columns to a vertical connected path, with all three confidence/limit cues readable and no
+  story-card clipping. Browser console errors and warnings were empty. The existing Observed filter
+  remained keyboard/ARIA addressable and changed the live status from 3/3 to 1/3 with exactly one
+  visible insight card.
 
 ## Durable continuation foundation
 
@@ -613,12 +621,21 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- P4 complete-REST-composition candidate was rebased onto canonical-price-date merge `f7aa9f4`;
+- D1 story-uncertainty candidate was rebased onto complete-composition merge `581cd58`; the focused
+  story suite passed 1 file / 3 tests and `npm run test:demo:v2` passed 1 file / 5 tests. `npm run
+  check` passed Oxlint, context verification, 36 test files / 191 tests, TypeScript project builds,
+  and the production Vite build; `git diff --check` passed. Desktop and 390 x 844 in-app browser
+  inspection found readable confidence/limit cues, correct wrapping, exact accessible names, and no
+  console errors or warnings. Exact rebased-head fresh-context review found no CRITICAL/HIGH humane-
+  copy, accessibility, missing-data, or responsive defect.
+- P4 complete-REST-composition [PR #39](https://github.com/Chris0Jeky/developer-lens/pull/39)
+  merged as `581cd58` after rebasing onto canonical-price-date merge `f7aa9f4`;
   the focused REST transport/composition suites passed 2 files / 31 tests. `npm run check` passed
   Oxlint, context verification, 36 test files / 190 tests, TypeScript project builds, and the
   production Vite build; `git diff --check` passed. Exact rebased-head fresh-context review found
   no CRITICAL/HIGH range-binding, pagination, membership, hashing, per-job identity, freezing, or
-  transport-regression defect.
+  transport-regression defect. Exact-merge hosted Pages run `30884911163` completed successfully;
+  its post-merge sweep contained no finding.
 - P12 activation-card [PR #36](https://github.com/Chris0Jeky/developer-lens/pull/36)
   merged as `a2b7cab`; exact-merge hosted Pages run `30882690146` completed successfully. Its late
   automated review identified a direct evidence-gate defect: a textually shaped but impossible
@@ -918,6 +935,9 @@ unresolved review threads outrank it whenever they disagree.
   only for the recorded OpenAI/Luna boundary; the C1, local-retrieval, and credentialless request
   foundations remain process-local and no credential-bearing adapter, external transport, or real
   provider request has run.
+- The story-uncertainty slice was inspected in normal desktop and 390 x 844 viewport screenshots,
+  but CSS-disabled and print rendering were not separately verified. Caveat text remains available in
+  accessible names and the existing insight cards if the decorative rail cue is unavailable.
 
 ## Residual risk
 
@@ -1013,8 +1033,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current P4 complete-
-   composition candidate is merge `f7aa9f4fcf9ac7cb69a6a0261dfb9f9978c5c093`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current D1 story-
+   uncertainty candidate is merge `581cd58d085ad80bb34bad38f952e5206bf2ce4d`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -1027,7 +1047,7 @@ unresolved review threads outrank it whenever they disagree.
    operational values in tracked state. The shared alias factory now preserves existing repository
    identities and defines closed unit/page domains; the opt-in store now preserves restricted
    coverage without a snapshot or checkpoint advance, and published page receipts now expose frozen
-   alias-only membership. The current candidate composes only complete results into canonical hashes,
+   alias-only membership. Published complete composition now emits canonical hashes,
    receipts, and checkpoint proposals. Next publish the pure noncomplete transition mapping and then
    integrate both paths with two-run storage replay/stability proof before issue
    #6 key-
