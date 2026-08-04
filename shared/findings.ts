@@ -977,6 +977,23 @@ export const FindingSchema = z
       context.addIssue({ code: 'custom', message: 'Limitations must be distinct by code and dimension', path: ['limitations'] })
     }
 
+    /**
+     * PR #88 fold-in (5c), tracked into DL-VALIDATE-01's remit: a truncated primary result cannot
+     * be presented under complete observation. Mirror `shared/metrics.ts`'s truncated rule — which
+     * requires a completeness entry naming a limiting reason — onto the finding's own coverage
+     * vector, so a finding cannot summarise a truncated result while claiming complete completeness.
+     */
+    if (finding.sampleSummary.state === 'truncated') {
+      const completeness = finding.coverage.find((entry) => entry.dimension === 'completeness')
+      if (!completeness || completeness.limiting_reason === null) {
+        context.addIssue({
+          code: 'custom',
+          message: 'A truncated sample summary requires a completeness coverage entry that names a limiting reason',
+          path: ['coverage'],
+        })
+      }
+    }
+
     /* -- Presentation ------------------------------------------------------------------------ */
 
     if (finding.robustness.status === 'fragile' && finding.limitations.length === 0) {
@@ -1105,6 +1122,23 @@ export function validateFinding(candidate: unknown): Finding {
       if (check.sensitivityVariantId !== null && !variantIds.has(check.sensitivityVariantId)) {
         throw new FindingContractError(
           `Robustness check ${check.checkId} names sensitivity variant "${check.sensitivityVariantId}", which ${primary.metricId}@${primary.metricVersion} does not define`,
+        )
+      }
+    }
+
+    /**
+     * PR #88 fold-in (5b), tracked into DL-VALIDATE-01's remit: the finding's metric-specific
+     * coverage is an embedded copy, and an embedded copy can drift. Cross-check that every
+     * dimension the finding reports is one the primary metric definition actually declares it
+     * consumes — the underlying result row is already validated dimension-for-dimension against the
+     * same definition by `validateMetricResult`, so a finding citing a dimension the metric never
+     * measures is a drift the conformance contract must catch.
+     */
+    const declaredDimensions = new Set<string>(definition.coverageDimensions)
+    for (const entry of finding.coverage) {
+      if (!declaredDimensions.has(entry.dimension)) {
+        throw new FindingContractError(
+          `Finding coverage dimension "${entry.dimension}" is not one the primary metric ${primary.metricId}@${primary.metricVersion} declares it consumes`,
         )
       }
     }
