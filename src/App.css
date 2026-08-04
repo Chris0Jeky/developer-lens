@@ -2273,7 +2273,7 @@ button.heatmap__cell[aria-pressed="true"] {
 
 .v2-story-path__confidence {
   color: #9ca4b6;
-  font-size: 8px;
+  font-size: 9px;
   font-weight: 650;
   line-height: 1.4;
   text-transform: capitalize;
@@ -2298,7 +2298,7 @@ button.heatmap__cell[aria-pressed="true"] {
 .v2-story-path__limit {
   display: block;
   color: #737d91;
-  font-size: 8px;
+  font-size: 9px;
   line-height: 1.45;
 }
 

@@ -50,9 +50,9 @@ export function V2StoryPath({ insights }: { insights: Insight[] }) {
           <li
             aria-label={[
               `${String(order).padStart(2, '0')} ${label}: ${orientation}`,
-              `${insight.confidence} confidence · evidence fit`,
+              `${insight.confidence} confidence · evidence fit.`,
               insight.caveat ? `Lens limit · ${insight.caveat}` : undefined,
-            ].filter(Boolean).join('. ')}
+            ].filter(Boolean).join(' ')}
             className={`v2-story-path__step v2-story-path__step--${order}`}
             key={order}
           >
