@@ -77,6 +77,9 @@ unresolved review threads outrank it whenever they disagree.
   `dcaa305c1e9813ee97ad6262348fb670f9d9953e`; exact-merge Pages run
   [30873997951](https://github.com/Chris0Jeky/developer-lens/actions/runs/30873997951) passed the full
   gate, synthetic-showcase privacy verification, artifact upload, and deployment.
+- [PR #21](https://github.com/Chris0Jeky/developer-lens/pull/21) is the current injected REST
+  transport milestone. It contains only the transport, invented tests, and this abstract state;
+  there is no task-card loader, live request, storage composition, or private/public output.
 
 ## Authority and owner gates
 
