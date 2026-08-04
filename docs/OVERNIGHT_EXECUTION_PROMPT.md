@@ -121,8 +121,13 @@ WRITER AND WORKTREE OWNERSHIP
 - The coordinator alone harvests a writer result, verifies base/head and claimed-path diff, runs the
   required integration checks, and integrates it exactly once. Reject private output, path overlap,
   stale unreviewed contracts, or unexplained files.
-- Before removing any owned worktree, inspect status including ignored files, preserve required
-  outputs outside it, use plain worktree removal without force, and verify the primary checkout.
+- Before removing any owned worktree, inspect tracked/untracked status and enumerate ignored paths
+  only within the lane's task-card-authorized owned cleanup boundary. Do not read or enumerate
+  `.developer-lens/`, generated `public/data/`, `dist/`, credential/env files, browser profiles,
+  caches, or local real/private inputs unless the task card explicitly authorizes the exact path
+  read. Preserve required outputs outside that boundary; if safe preservation cannot be established
+  without crossing it, park and hand off the worktree instead of removing it. Otherwise use plain
+  worktree removal without force and verify the primary checkout.
 
 EXECUTION WAVES
 
