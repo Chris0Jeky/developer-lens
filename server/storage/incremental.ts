@@ -10,7 +10,7 @@ import {
 import { CoverageRecordSchema } from '../../shared/coverage.js'
 import { runStorageChecks } from './database.js'
 
-export const INCREMENTAL_GITHUB_CORE_STORAGE_VERSION = '2.1.0' as const
+export const INCREMENTAL_GITHUB_CORE_STORAGE_VERSION = '2.2.0' as const
 export const INCREMENTAL_GITHUB_CORE_TABLES = [
   'collection_job',
   'collection_checkpoint',
@@ -23,7 +23,7 @@ export type IncrementalGithubCoreTable = typeof INCREMENTAL_GITHUB_CORE_TABLES[n
 const INCREMENTAL_GITHUB_CORE_STORAGE_SQL = [
   'CREATE TABLE IF NOT EXISTS collection_job (',
   '  job_id TEXT PRIMARY KEY NOT NULL CHECK (length(job_id) BETWEEN 1 AND 128 AND job_id NOT GLOB \'*[^A-Za-z0-9:._-]*\'),',
-  '  storage_contract_version TEXT NOT NULL CHECK (storage_contract_version = \'2.1.0\'),',
+  '  storage_contract_version TEXT NOT NULL CHECK (storage_contract_version = \'2.2.0\'),',
   '  payload_hash TEXT NOT NULL CHECK (length(payload_hash) = 64 AND payload_hash NOT GLOB \'*[^0-9a-f]*\'),',
   '  capability_id TEXT NOT NULL CHECK (capability_id = \'github.core\'),',
   '  scope_alias TEXT NOT NULL CHECK (length(scope_alias) BETWEEN 1 AND 128 AND scope_alias NOT GLOB \'*[^A-Za-z0-9:._-]*\'),',
@@ -35,7 +35,7 @@ const INCREMENTAL_GITHUB_CORE_STORAGE_SQL = [
   '  observed_at TEXT NOT NULL,',
   '  started_at TEXT NOT NULL,',
   '  completed_at TEXT NOT NULL,',
-  '  status TEXT NOT NULL CHECK (status IN (\'complete\', \'truncated\', \'failed\')),',
+  '  status TEXT NOT NULL CHECK (status IN (\'complete\', \'truncated\', \'failed\', \'restricted\')),',
   '  UNIQUE (job_id, capability_id, scope_alias),',
   '  CHECK (range_start < range_end),',
   '  CHECK (started_at <= completed_at)',
@@ -75,7 +75,7 @@ const INCREMENTAL_GITHUB_CORE_STORAGE_SQL = [
   '  capability_id TEXT NOT NULL CHECK (capability_id = \'github.core\'),',
   '  scope_alias TEXT NOT NULL CHECK (length(scope_alias) BETWEEN 1 AND 128 AND scope_alias NOT GLOB \'*[^A-Za-z0-9:._-]*\'),',
   '  range_end TEXT NOT NULL,',
-  '  status TEXT NOT NULL CHECK (status IN (\'complete\', \'truncated\', \'failed\')),',
+  '  status TEXT NOT NULL CHECK (status IN (\'complete\', \'truncated\', \'failed\', \'restricted\')),',
   '  expected_units INTEGER CHECK (expected_units IS NULL OR expected_units >= 0),',
   '  observed_units INTEGER NOT NULL CHECK (observed_units >= 0),',
   '  omitted_units INTEGER CHECK (omitted_units IS NULL OR omitted_units >= 0),',
@@ -283,7 +283,7 @@ const CheckpointSchema = z.object({
 }).strict()
 
 const TransitionSchema = z.object({
-  status: z.enum(['complete', 'truncated', 'failed']),
+  status: z.enum(['complete', 'truncated', 'failed', 'restricted']),
   coverage: CoverageRecordSchema,
   checkpoint: CheckpointSchema.nullable(),
   appliedReceiptIds: z.array(OpaqueIdSchema).superRefine((values, context) => {
@@ -306,6 +306,20 @@ const CommitInputSchema = z.object({
 
 type ParsedCommitInput = z.infer<typeof CommitInputSchema>
 
+type IncrementalCoverageRecord = z.infer<typeof CoverageRecordSchema>
+
+export interface RestrictedGithubCoreCheckpointTransition {
+  readonly status: 'restricted'
+  readonly coverage: IncrementalCoverageRecord & { readonly status: 'restricted' }
+  readonly checkpoint: GithubCoreCheckpoint | null
+  readonly appliedReceiptIds: readonly string[]
+  readonly cursorHint?: string
+}
+
+export type PersistedGithubCoreCheckpointTransition =
+  | GithubCoreCheckpointTransition
+  | RestrictedGithubCoreCheckpointTransition
+
 export interface PersistGithubCoreTransitionInput {
   readonly jobId: string
   readonly scopeAlias: string
@@ -313,7 +327,7 @@ export interface PersistGithubCoreTransitionInput {
   readonly sourceSnapshotId?: string
   readonly startedAt: string
   readonly completedAt: string
-  readonly transition: GithubCoreCheckpointTransition
+  readonly transition: PersistedGithubCoreCheckpointTransition
 }
 
 export interface PersistGithubCoreTransitionResult {
