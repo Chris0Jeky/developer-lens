@@ -17,6 +17,24 @@ import { v2ErrorBody } from './errors.js'
  * which is the existing `.env` / `import.meta.env` channel the dev UI already
  * uses for `VITE_STATIC_DEMO`. With no token configured the cockpit renders an
  * explicit unauthorized state — the surface fails closed, never open.
+ *
+ * Accepted deviation — "per-launch" and "usable by the UI" are mutually
+ * exclusive here. `VITE_DEVELOPER_LENS_V2_TOKEN` is resolved by Vite at dev-server
+ * start or build time, so a freshly generated per-launch token can never reach
+ * the page: the only configuration in which the cockpit works is a fixed token
+ * supplied to both processes. The generated token is therefore the fail-closed
+ * default (API reachable only by a deliberate local caller), and the working
+ * cockpit configuration is a fixed, session-scoped secret rather than a
+ * per-launch one. A real per-launch channel needs a server-rendered handoff,
+ * which is a later card.
+ *
+ * Honest security property — this bearer is not a secret against a local HTTP
+ * requester. Once it is inlined into the built or dev-served JavaScript, any
+ * local process can fetch that asset and read it. What it defends is the
+ * browser drive-by surface: a page on another origin cannot read a response it
+ * is not allowed to see, and together with the exact Host allowlist, the exact
+ * Origin allowlist, and the `Sec-Fetch-*` gate it keeps a hostile web page from
+ * driving this API. It is not a defence against a local attacker.
  */
 const SUPPLIED_TOKEN_PATTERN = /^[A-Za-z0-9._-]{32,256}$/
 

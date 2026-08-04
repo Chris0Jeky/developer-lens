@@ -12,6 +12,13 @@ import { V2Error } from './errors.js'
  * The SQL CHECK constraints are deliberately weaker than `CoverageRecordSchema`:
  * storage integrity and the served contract are separate gates, and the read
  * path re-validates every row against the shared contract before it is served.
+ *
+ * Honest guarantee of the provenance gate — it proves that the store *claims*
+ * synthetic provenance, not that its rows are synthetic. A local writer who
+ * already holds the file could stamp the synthetic marker onto real rows and
+ * this gate would serve them. It defends against accident — a store swapped in
+ * by mistake, a real-collection target pointed at the bridge, a foreign SQLite
+ * file — and not against a local attacker who already has the data.
  */
 export const V2_BRIDGE_STORE_TABLES = ['v2_store_provenance', 'v2_coverage_record'] as const
 

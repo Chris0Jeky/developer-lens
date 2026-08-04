@@ -98,12 +98,31 @@ export const V2CapabilitiesResponseSchema = z
 
 export type V2CapabilitiesResponse = z.infer<typeof V2CapabilitiesResponseSchema>
 
+/**
+ * The served coverage record. `CoverageRecordSchema` accepts any non-empty
+ * string for `coverageId` and `scopeAlias`; at the API boundary both must also
+ * be opaque identifiers, so prose, a path, or a person-shaped label cannot
+ * reach a caller. The authority for that property is this boundary, not the
+ * storage CHECK constraint.
+ */
+export const V2CoverageRecordSchema = CoverageRecordSchema.superRefine((record, context) => {
+  for (const field of ['coverageId', 'scopeAlias'] as const) {
+    if (!OpaqueIdentifierSchema.safeParse(record[field]).success) {
+      context.addIssue({
+        code: 'custom',
+        message: `${field} must be an opaque identifier at the V2 boundary`,
+        path: [field],
+      })
+    }
+  }
+})
+
 export const V2CoverageResponseSchema = z
   .object({
     apiContractVersion: z.literal(V2_API_CONTRACT_VERSION),
     coverageContractVersion: z.literal(COVERAGE_CONTRACT_VERSION),
     provenance: V2StoreProvenanceSchema,
-    records: z.array(CoverageRecordSchema),
+    records: z.array(V2CoverageRecordSchema),
   })
   .strict()
 
