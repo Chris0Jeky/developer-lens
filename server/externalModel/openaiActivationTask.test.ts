@@ -53,8 +53,9 @@ const baseCard = () => ({
     'local_c1_bundle_only',
     'no_repository_or_source_bytes',
     'no_hosted_tools_files_or_vector_stores',
-    'no_conversation_background_or_provider_state',
-    'no_cache_telemetry_or_persistence',
+    'no_conversation_or_background_mode',
+    'no_local_cache_telemetry_or_persistence',
+    'provider_retention_boundary_acknowledged',
     'no_presentation_export_or_public_sink',
   ],
   outputControls: [
@@ -148,6 +149,13 @@ describe('OpenAI/Luna activation task card', () => {
     expectInvalid({ ...valid, payload: { ...valid.payload, bundleId: 'bundle-not-a-c1-id' } })
     expectInvalid({ ...valid, payload: { ...valid.payload, requestBodySha256: 'not-a-sha' } })
     expectInvalid({ ...valid, privacyControls: valid.privacyControls.slice(0, -1) })
+    expectInvalid({
+      ...valid,
+      privacyControls: valid.privacyControls.map((control) =>
+        control === 'provider_retention_boundary_acknowledged'
+          ? 'no_cache_telemetry_or_persistence'
+          : control),
+    })
     expectInvalid({ ...valid, outputControls: [...valid.outputControls.slice(0, -1), valid.outputControls[0]] })
     expectInvalid({ ...valid, stopConditions: [...valid.stopConditions, 'pricing_evidence_unreconciled'] })
     expectInvalid({ ...valid, review: { ...valid.review, status: 'pending' } })

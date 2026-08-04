@@ -28,8 +28,9 @@ const PRIVACY_CONTROLS = [
   'local_c1_bundle_only',
   'no_repository_or_source_bytes',
   'no_hosted_tools_files_or_vector_stores',
-  'no_conversation_background_or_provider_state',
-  'no_cache_telemetry_or_persistence',
+  'no_conversation_or_background_mode',
+  'no_local_cache_telemetry_or_persistence',
+  'provider_retention_boundary_acknowledged',
   'no_presentation_export_or_public_sink',
 ] as const
 const OUTPUT_CONTROLS = [
