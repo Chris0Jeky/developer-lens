@@ -9,7 +9,9 @@ name: PR gate
 on:
   pull_request:
     branches: [main]
-    types: [opened, synchronize, reopened, ready_for_review]
+    # `edited` covers base-branch retargets; the job-level guard below skips the
+    # title/body edits that share the same activity type.
+    types: [opened, synchronize, reopened, ready_for_review, edited]
 
 permissions:
   contents: read
@@ -21,6 +23,9 @@ concurrency:
 jobs:
   gate:
     name: Prove the pull request
+    # On `edited` events, run only when the base branch changed (a retarget moves the
+    # merge base, so the previous green no longer proves this PR against its new base).
+    if: github.event.action != 'edited' || github.event.changes.base
     runs-on: ubuntu-latest
     steps:
       - name: Check out the pull request
