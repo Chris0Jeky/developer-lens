@@ -11,7 +11,9 @@ The public synthetic V2 demo now includes an accessible observed-to-derived-to-h
 path over its existing validated C0 insight payload. The published P4 foundation includes an inert protocol, opt-in incremental storage bridge,
 invented-fixture page adapter, closed activation-card parser, injected public-unauthenticated GET
 transport with immediate projection, closed-world incremental-schema validation, and a confined
-descriptor-bound, duplicate-key-rejecting, 64 KiB ignored-card loader. It remains default-off and
+descriptor-bound, duplicate-key-rejecting, 64 KiB ignored-card loader. A shared installation-
+scoped alias factory now preserves the existing migration identities and adds closed, domain-
+separated repository, issue, pull-request, and page aliases. P4 remains default-off and
 adds no credential, live read, storage composition,
 legacy-collector switch, or public/private output path. G4 is now provider-specifically approved,
 while a strict C1 evidence/output contract and deterministic local-retrieval foundation remain
@@ -24,8 +26,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current loader-hardening milestone:
-  `origin/main` merge `6032394302f43717a8b0d9087aa0c5bbd4b20c49`.
+- Published implementation baseline before the current installation-alias milestone:
+  `origin/main` merge `0a8925a805ba5a4794824db521ead09dcf6360a6`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -121,6 +123,12 @@ unresolved review threads outrank it whenever they disagree.
   exact-merge Pages run
   [30879165749](https://github.com/Chris0Jeky/developer-lens/actions/runs/30879165749) passed the full
   gate, synthetic-showcase privacy verification, artifact upload, and deployment.
+- [PR #30](https://github.com/Chris0Jeky/developer-lens/pull/30) hardens the ignored-card loader and
+  closes issue #28 at merge `0a8925a805ba5a4794824db521ead09dcf6360a6`; exact-merge Pages run
+  [30879569412](https://github.com/Chris0Jeky/developer-lens/actions/runs/30879569412) passed the full
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment. Its Node 20
+  action-runtime deprecation annotation is tracked separately in
+  [#31](https://github.com/Chris0Jeky/developer-lens/issues/31).
 
 ## Authority and owner gates
 
@@ -411,6 +419,15 @@ unresolved review threads outrank it whenever they disagree.
   refusal, poison-field excision, half-open range filtering, GitHub canonical pagination, terminal
   proof, request-cap and rate truncation, deduplication/collision refusal, response-size/schema and
   HTTP/network classification, content-free failures, and frozen result mutation resistance.
+- `server/storage/installationAliases.ts` snapshots one caller-injected installation key of at
+  least 32 bytes and exposes only closed repository, issue, pull-request, and page alias methods.
+  The existing repository provider and analytical HMAC byte streams, domains, and `repo-` prefix
+  remain exact; new GitHub-core domains are disjoint, and batch projection rejects duplicate
+  identities or generated alias collisions without returning raw provider IDs.
+- `server/storage/migrateV1.ts` now consumes that shared factory while preserving its exported
+  `InstallationKeyError` contract. This does not create, load, persist, rotate, recover, or delete a
+  key and does not wire aliases to REST collection; those issue #6 activation requirements remain
+  open.
 
 ## D1 synthetic evidence-story path
 
@@ -524,6 +541,12 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
+- P4 installation-alias candidate [PR #32](https://github.com/Chris0Jeky/developer-lens/pull/32)
+  was rebased onto loader-hardening merge `0a8925a`; the focused alias and migration suites passed
+  2 files / 23 tests. `npm run check` passed Oxlint, context verification, 33 test files / 154
+  tests, TypeScript project builds, and the production Vite build; `git diff --check` passed. A
+  fresh-context review found no CRITICAL/HIGH identity-continuity, migration-compatibility,
+  collision, privacy, or raw-ID escape defect.
 - P4 loader-hardening proof after rebasing onto C1 merge `6032394`: the focused loader suite passed
   1 file / 9 tests; `npm run check` passed Oxlint, context verification, 32 test files / 149 tests,
   TypeScript project builds, and the production Vite build; and `git diff --check` passed. Direct
@@ -674,6 +697,9 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Failures and workarounds
 
+- The first exact-head alias gate could not resolve `oxlint` because that isolated worktree had no
+  local `node_modules`. A lockfile-pinned `npm ci` installed 354 packages with zero reported
+  vulnerabilities; the unchanged full gate then passed 154/154 tests.
 - The first complete adapter gate found 31 failures across the existing SQLite-dependent suites
   because this worktree's install lacked the `better-sqlite3` binding for Node ABI 137. No adapter
   assertion failed. `npm rebuild better-sqlite3` rebuilt the worktree-local native dependency; the
@@ -793,7 +819,8 @@ unresolved review threads outrank it whenever they disagree.
 - The P4 synthetic adapter and public REST transport are both injected seams with no runtime call
   site. The loader reads only the canonical task-owned card but no production caller composes it
   with transport or the opt-in storage bridge. Application-controlled backup/restore, installation-
-  key continuity, snapshot stability, parity/fallback, tombstoned deletion/re-consent, and legacy
+  key lifecycle and mismatch enforcement, snapshot stability, parity/fallback, tombstoned deletion/
+  re-consent, and legacy
   collector compatibility remain reviewed activation seams. The opened-handle proof closes path-
   replacement redirection, but same-size in-place card writes can still race content bytes; a
   composed runner must bind an owner-reviewed payload hash/snapshot rather than claiming hostile
@@ -825,7 +852,8 @@ unresolved review threads outrank it whenever they disagree.
   activation path.
 - A future provider-expansion review must assert disjoint transformed repository IDs; current
   installation HMAC aliases remove the raw local-alias collision path for the bounded producer.
-  Duplicate repository identity rejection and installation-key continuity are tracked in
+  The shared alias factory preserves those identities and rejects duplicate batch identities, but
+  key creation, persistence, mismatch, rotation/recovery, and deletion behavior remain tracked in
   [#6](https://github.com/Chris0Jeky/developer-lens/issues/6) before real migration.
 - The opt-in incremental installer uses `CREATE TABLE IF NOT EXISTS` without a schema fingerprint
   or atomic mismatch rollback. Standard owned P2 databases have no conflicting names; a future
@@ -847,8 +875,9 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current loader hardening is
-   merge `6032394302f43717a8b0d9087aa0c5bbd4b20c49`; live evidence still outranks this checkpoint.
+1. Refresh Git/GitHub before mutation. The published baseline before the current installation-alias
+   candidate is merge `0a8925a805ba5a4794824db521ead09dcf6360a6`; live evidence still outranks
+   this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
    activated hostile-writer claim without an immutable snapshot or equivalent boundary.
@@ -857,8 +886,10 @@ unresolved review threads outrank it whenever they disagree.
    before a real v1 migration. Use invented fixtures and a new bounded task card first.
 4. The exact repository is owner-selected in an ignored local task card; its parser, confined
    descriptor-bound loader, and injected public-unauthenticated transport expose no identity or
-   operational values in tracked state. Next add installation-key continuity and additive transport/projection/storage
-   composition, including schema mismatch rollback, backup/restore, scoped deletion/tombstone,
+   operational values in tracked state. The shared alias factory now preserves existing repository
+   identities and defines closed unit/page domains. Next wire it through the additive transport/
+   projection path and add issue #6 key-lifecycle/mismatch enforcement plus storage composition,
+   including schema mismatch rollback, backup/restore, scoped deletion/tombstone,
    re-consent, replay/stability, and non-complete coverage persistence. Keep runtime default-off and
    make no real request until that composition, focused failure tests, review, and the exact hosted
    gate pass.
