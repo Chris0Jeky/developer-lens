@@ -679,10 +679,14 @@ interface CopyScanTarget {
  * confounders. Those fields exist so an author can write "this is never a productivity measure",
  * and scanning them would make the required warning impossible to express.
  *
- * `candidateInterpretation`, `alternativeExplanations`, and `discriminatingEvidence` are where a
- * causal reading is ALLOWED to be named — that is what a hypothesis is — so they are scanned for
- * blended constructs only. The `observation` is what was measured, at every layer, so it is
- * scanned for both.
+ * The causal/evaluative exemption is EXACTLY the three hypothesis fields —
+ * `candidateInterpretation`, `alternativeExplanations`, and `discriminatingEvidence` — where a
+ * causal reading is legitimately named (that is what a hypothesis is), so they are scanned for
+ * blended constructs only. Everything else that carries prose is scanned for BOTH the construct
+ * and the causal/evaluative families: the `observation` and the `abstention.statement`, and
+ * `robustness.checks[].statement`. A check statement describes a method perturbation ("recomputed
+ * on a shifted window"), never a causal claim, so unlicensed causal wording in one is a copy-test
+ * failure rather than licensed prose (issue #91).
  */
 function copyScanTargets(finding: Finding): readonly CopyScanTarget[] {
   const targets: CopyScanTarget[] = [
@@ -698,7 +702,9 @@ function copyScanTargets(finding: Finding): readonly CopyScanTarget[] {
     targets.push({ field: 'discriminatingEvidence.statement', text: finding.discriminatingEvidence.statement, scanCausal: false })
   }
   finding.robustness.checks.forEach((check, index) => {
-    targets.push({ field: `robustness.checks.${index}.statement`, text: check.statement, scanCausal: false })
+    // Issue #91: a check statement is scanned for causal/evaluative wording like the observation —
+    // it reports what the check did, so it never needs a licensed causal claim.
+    targets.push({ field: `robustness.checks.${index}.statement`, text: check.statement, scanCausal: true })
   })
   if (finding.abstention !== null) {
     targets.push({ field: 'abstention.statement', text: finding.abstention.statement, scanCausal: true })

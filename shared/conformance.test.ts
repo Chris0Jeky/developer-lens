@@ -18,7 +18,7 @@ import {
   validateMetricResult,
   type MetricResult,
 } from './metrics.js'
-import { FindingContractError, validateFinding } from './findings.js'
+import { FindingContractError, FindingSchema, validateFinding } from './findings.js'
 import {
   ComparisonContractError,
   STRUCTURAL_REFUSAL_REASONS,
@@ -620,6 +620,25 @@ describe('finding contract construct validity (5a / 5b / 5c) and contradiction',
     expect(validateFinding(truncatedHonest).sampleSummary.state).toBe('truncated')
   })
 
+  it('5d: an unlicensed causal claim in a robustness check statement is rejected (issue #91)', () => {
+    // A rendered robustness check statement is copy-scanned like the observation: a deterministic
+    // DELIVERY_FLOW finding (which licenses no causal terms) cannot smuggle "because" into a check.
+    const causalCheck = baseFinding({
+      robustness: { status: 'stable', checks: [{ checkId: 'CHK', statement: 'held steady because a code freeze reduced churn this window', outcome: 'held', sensitivityVariantId: null }] },
+    })
+    expect(() => validateFinding(causalCheck)).toThrow(FindingContractError)
+    const parsed = FindingSchema.safeParse(causalCheck)
+    expect(parsed.success).toBe(false)
+    if (!parsed.success) {
+      expect(parsed.error.issues.map((issue) => issue.path.join('.'))).toContain('robustness.checks.0.statement')
+    }
+    // A statement that only describes the perturbation — no causal claim — is accepted.
+    const honestCheck = baseFinding({
+      robustness: { status: 'stable', checks: [{ checkId: 'CHK', statement: 'Recomputed on a window that excludes the code-freeze interval.', outcome: 'held', sensitivityVariantId: null }] },
+    })
+    expect(validateFinding(honestCheck).robustness.status).toBe('stable')
+  })
+
   it('contradiction: a finding may carry counter-evidence that contradicts its own evidence', () => {
     const contradicted = baseFinding({
       evidence: [{ kind: 'claim', claimId: CLAIM_B, claimLayer: 'deterministic' }],
@@ -953,9 +972,10 @@ describe('fixture-class census', () => {
       '5a real withdrawn metric': 'finding contract › 5a withdrawn primary + supporting',
       '5b coverage-dimension cross-check': 'finding contract › 5b',
       '5c truncated completeness cross-check': 'finding contract › 5c',
+      '5d robustness check causal-scan': 'finding contract › 5d issue #91',
     }
     expect(Object.keys(covered).length).toBeGreaterThanOrEqual(16)
-    expect(Object.keys(boundDecisions)).toHaveLength(7)
+    expect(Object.keys(boundDecisions)).toHaveLength(8)
     for (const description of [...Object.values(covered), ...Object.values(boundDecisions)]) {
       expect(description.length).toBeGreaterThan(0)
     }
