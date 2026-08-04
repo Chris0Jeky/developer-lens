@@ -11,7 +11,7 @@ export interface SkillFrontmatter {
 }
 
 const markdownLinkPattern =
-  /!?\[[^\]]*\]\(\s*(?:<([^>\r\n]+)>|([^\s)\r\n]+))(?:\s+(?:"[^"\r\n]*"|'[^'\r\n]*'|\([^\r\n)]*\)))?\s*\)/g
+  /!?\[(?:[^\]\r\n]|\r?\n(?!\r?\n))*\]\(\s*(?:<([^>\r\n]+)>|([^\s)\r\n]+))(?:\s+(?:"[^"\r\n]*"|'[^'\r\n]*'|\([^\r\n)]*\)))?\s*\)/g
 
 export function extractMarkdownLinkTargets(contents: string): string[] {
   return [...contents.matchAll(markdownLinkPattern)].map((match) => match[1] ?? match[2] ?? '')
@@ -84,8 +84,9 @@ function parseScalar(value: string): { value?: string; error?: string } {
     /^[&*!|>@`#]/.test(value) ||
     /^-\s/.test(value) ||
     /^(?:~|null|true|false|yes|no|on|off|[-+]?\.(?:inf|nan))$/i.test(value) ||
-    /^[+-]?(?:0[xob][0-9a-f_]+|[0-9][0-9_]*(?:\.[0-9_]*)?(?:e[+-]?[0-9]+)?)$/i.test(value) ||
-    /^\d{4}-\d{1,2}-\d{1,2}(?:$|[Tt ])/i.test(value)
+    /^[+-]?(?:0[xob][0-9a-f_]+|[0-9][0-9_]*(?:\.[0-9_]*)?(?:e[+-]?[0-9]+)?|\.[0-9_]+(?:e[+-]?[0-9]+)?)$/i.test(value) ||
+    /^\d{4}-\d{1,2}-\d{1,2}(?:$|[Tt]\d| \d)/i.test(value) ||
+    /^\?\s/.test(value)
   ) {
     return { error: `plain scalar must remain a string: ${value}` }
   }
