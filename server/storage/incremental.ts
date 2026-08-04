@@ -6,6 +6,7 @@ import {
   GITHUB_CORE_REST_API_VERSION,
   type GithubCoreCheckpoint,
   type GithubCoreCheckpointTransition,
+  type GithubCoreNonCompleteCheckpointTransition,
 } from '../connectors/github/core.js'
 import { CoverageRecordSchema } from '../../shared/coverage.js'
 import { runStorageChecks } from './database.js'
@@ -318,6 +319,7 @@ export interface RestrictedGithubCoreCheckpointTransition {
 
 export type PersistedGithubCoreCheckpointTransition =
   | GithubCoreCheckpointTransition
+  | GithubCoreNonCompleteCheckpointTransition
   | RestrictedGithubCoreCheckpointTransition
 
 export interface PersistGithubCoreTransitionInput {
