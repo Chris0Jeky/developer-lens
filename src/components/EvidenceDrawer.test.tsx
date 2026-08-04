@@ -140,8 +140,7 @@ describe('EvidenceDrawer — the demo hypothesis walk', () => {
     expect(screen.getByTestId('falsifying-question')).toHaveTextContent(DEMO_QUESTION)
   })
 
-  it('walks a supporting edge to its coverage, job, and capability on demand', async () => {
-    const user = userEvent.setup()
+  it('walks a supporting edge to its coverage, job, and capability on demand', () => {
     renderDrawer(HYPOTHESIS_REFERENCE, DEMO_QUESTION)
 
     // The capability terminus is not eagerly in the DOM.

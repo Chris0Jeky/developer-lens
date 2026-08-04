@@ -134,7 +134,7 @@ export const UNRESOLVABLE_COPY: Readonly<Record<WhyUnresolvableReason, string>> 
 }
 
 /** The six edge-group roles: a label and the fact to state when the group is empty. */
-export const EDGE_ROLE_COPY: Readonly<
+const EDGE_ROLE_COPY: Readonly<
   Record<WhyEdgeGroup['role'], { readonly label: string; readonly empty: string }>
 > = {
   supports: { label: 'Supports', empty: 'No supporting evidence recorded.' },
