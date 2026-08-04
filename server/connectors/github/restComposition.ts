@@ -340,7 +340,18 @@ function validateNonCompleteResult(
   assertBoolean(repositoryFlags.fork)
   assertSafeCount(observedUnitCount)
   assertSafeCount(observedPageCount)
-  if (pagesValue.length < 1 || pagesValue.length > input.pageCap || observedPageCount !== pagesValue.length) fail()
+  if (pagesValue.length === 0) {
+    if (unitsValue.length !== 0 || observedUnitCount !== 0 || observedPageCount !== 0) fail()
+    return {
+      status,
+      observedUnits: 0,
+      appliedReceiptAliases: [],
+      limitationCode: code as string,
+      saturationReason: code as string,
+      ...(code === 'RATE_LIMITED' ? { failureKind: 'rate_limited' as const } : {}),
+    }
+  }
+  if (pagesValue.length > input.pageCap || observedPageCount !== pagesValue.length) fail()
   if (observedUnitCount !== unitsValue.length) fail()
   const units = unitsValue.map((unit) => validateUnit(unit, rangeStart, rangeEnd))
   const pages = pagesValue.map(validatePage)

@@ -35,7 +35,10 @@ that preserves the prior checkpoint without terminal-receipt, snapshot, or compl
 validates/composes restricted, failed, and truncated results into frozen noncomplete transitions
 only. Published P4 feeds only those reviewed complete/noncomplete composition outputs into the opt-in
 store and proves replay, per-job snapshot identity, and checkpoint preservation with invented in-
-memory fixtures. Published P12 extracts the proven confined activation-card reader,
+memory fixtures. The current P4 candidate accepts the coherent post-metadata zero-page truncation
+that occurs when the request budget or rate limit is exhausted before the first unit page, while
+preserving noncomplete coverage with no cursor, snapshot, or checkpoint movement. Published P12
+extracts the proven confined activation-card reader,
 cross-binds the task ID and strict current-time parser, builds one exact credentialless request
 preview, and binds the reviewed bundle ID plus SHA-256 digests of its exact UTF-8 bundle JSON and
 request body. The external-
@@ -49,8 +52,8 @@ unresolved review threads outrank it whenever they disagree.
 ## Live state
 
 - Checkout: the repository root for this task; no absolute local path is persisted here.
-- Published implementation baseline before the current Pages Node 24 action candidate:
-  `origin/main` merge `41df4fced4f73880693f2d3301afa570b6b49fb0`.
+- Published implementation baseline before the current P4 zero-page truncation candidate:
+  `origin/main` merge `97498b20f54f2a58d865beab918bcbea50df7e43`.
 - Pull requests: [#3](https://github.com/Chris0Jeky/developer-lens/pull/3) merged at
   `5df1a09eddb1d9c003d5749b82f7462126a78e07`; follow-up
   [#4](https://github.com/Chris0Jeky/developer-lens/pull/4) merged at
@@ -149,10 +152,8 @@ unresolved review threads outrank it whenever they disagree.
 - [PR #30](https://github.com/Chris0Jeky/developer-lens/pull/30) hardens the ignored-card loader and
   closes issue #28 at merge `0a8925a805ba5a4794824db521ead09dcf6360a6`; exact-merge Pages run
   [30879569412](https://github.com/Chris0Jeky/developer-lens/actions/runs/30879569412) passed the full
-  gate, synthetic-showcase privacy verification, artifact upload, and deployment. Its Node 20
-  action-runtime deprecation annotation is addressed by the current workflow-only candidate and
-  remains tracked until its exact merge deploy proves the annotation absent in
-  [#31](https://github.com/Chris0Jeky/developer-lens/issues/31).
+  gate, synthetic-showcase privacy verification, artifact upload, and deployment. Its former Node 20
+  action-runtime deprecation annotation is closed by the published Node 24 action refresh below.
 - [PR #32](https://github.com/Chris0Jeky/developer-lens/pull/32) publishes the installation-scoped
   alias factory at merge `eae8370c8dbdad0fd0c6e49589c3cafd612e6ac9`; exact-merge Pages run
   [30880417283](https://github.com/Chris0Jeky/developer-lens/actions/runs/30880417283) passed the full
@@ -670,13 +671,23 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Verification
 
-- The current Pages workflow-only candidate advances `configure-pages` from v5 to v6,
+- Pages Node 24 actions [PR #51](https://github.com/Chris0Jeky/developer-lens/pull/51) merged as
+  `97498b2` and advances `configure-pages` from v5 to v6,
   `upload-pages-artifact` from v4 to v5, and `deploy-pages` from v4 to v5. Their official releases
   move the JavaScript actions to Node 24 and the composite uploader to `upload-artifact` v7; build
   commands, permissions, artifact path, environment, triggers, concurrency, and public-data route are
   unchanged. `npm run check` passed Oxlint, context verification, 39 test files / 213 tests,
   TypeScript project builds, and the production Vite build. `npm run build:showcase` regenerated and
-  verified only the invented synthetic artifact; `git diff --check` passed.
+  verified only the invented synthetic artifact; `git diff --check` passed. Exact-merge hosted Pages
+  run `30890398493` passed the full gate, privacy verification, artifact upload, and deployment. Both
+  hosted job annotation lists were empty, directly closing
+  [#31](https://github.com/Chris0Jeky/developer-lens/issues/31).
+- The current P4 zero-page candidate accepts only a fully observed public repository-metadata shape
+  with empty unit/page arrays and exact zero counts after request-budget or rate-limit truncation.
+  It produces frozen noncomplete coverage with no applied receipt, cursor, snapshot, or checkpoint
+  movement; incoherent empty-page/count/unit combinations still fail closed. The focused core, REST
+  transport/composition, and composition-to-storage suites passed 4 files / 55 tests, including
+  invented in-memory persistence and write-free replay of the new outcome.
 - P4 storage-replay [PR #50](https://github.com/Chris0Jeky/developer-lens/pull/50) merged as `41df4fc`
   after rebasing onto payload-preview merge `2d4cdc7`; the focused core,
   REST composition, incremental storage, and cross-seam storage suites passed 4 files / 64 tests.
@@ -685,8 +696,8 @@ unresolved review threads outrank it whenever they disagree.
   found no CRITICAL/HIGH replay, snapshot-identity, checkpoint, cursor-durability, or storage-boundary
   defect. Exact rebased-head interaction review likewise found no CRITICAL/HIGH correctness, privacy,
   data-loss, payload-preview interaction, or persistence-invariant defect. Exact-merge hosted Pages
-  run `30889631382` completed successfully; its post-merge sweep contained no finding. Its remaining
-  Node 20 action-runtime annotations are the subject of the current workflow-only candidate.
+  run `30889631382` completed successfully; its post-merge sweep contained no finding. Its Node 20
+  action-runtime annotations were closed by PR #51.
 - P12 payload-preview [PR #49](https://github.com/Chris0Jeky/developer-lens/pull/49) merged as
   `2d4cdc7` after rebasing onto confined-card-loader merge `277e2c3`; the focused C1, request,
   activation-card, and preview suites passed 4 files / 21 tests. `npm run check` passed Oxlint,
@@ -1122,9 +1133,9 @@ unresolved review threads outrank it whenever they disagree.
   exact state-boundary choice remains tracked in
   [#44](https://github.com/Chris0Jeky/developer-lens/issues/44).
 - A valid rate-limit or request-budget truncation can occur after repository metadata but before the
-  first unit page. The current composer rejects that coherent zero-page shape safely; support and
-  direct regressions remain tracked in
-  [#46](https://github.com/Chris0Jeky/developer-lens/issues/46) before storage/runtime integration.
+  first unit page. The current candidate accepts only the coherent zero-page shape and adds direct
+  composition/storage regressions for [#46](https://github.com/Chris0Jeky/developer-lens/issues/46);
+  the issue remains open until exact merge proof.
 - P6 must compare verified owner email only ephemerally, emit only `is_self`, and never retain
   identity or per-person output.
 - P2 deletion tests must enumerate collection jobs/checkpoints, source snapshots, coverage,
@@ -1159,8 +1170,8 @@ unresolved review threads outrank it whenever they disagree.
 
 ## Exact resume point
 
-1. Refresh Git/GitHub before mutation. The published baseline before the current Pages Node 24 action
-   candidate is merge `41df4fced4f73880693f2d3301afa570b6b49fb0`; live evidence still outranks
+1. Refresh Git/GitHub before mutation. The published baseline before the current P4 zero-page
+   truncation candidate is merge `97498b20f54f2a58d865beab918bcbea50df7e43`; live evidence still outranks
    this checkpoint.
 2. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
@@ -1177,8 +1188,9 @@ unresolved review threads outrank it whenever they disagree.
    receipts, and checkpoint proposals. Published noncomplete composition range-binds transport
    outcomes and produces frozen, checkpoint-preserving transitions without snapshot material. The
    published storage seam proves complete/noncomplete composition-to-storage and same-job/distinct-
-   job replay with invented in-memory fixtures. Next add the bounded real runner and hostile-provider
-   two-read stability classification before issue
+   job replay with invented in-memory fixtures. The current candidate closes the zero-page post-
+   metadata composition gap. Next close the failure-kind/limitation pairing in issue #42, then add the
+   bounded real runner and hostile-provider two-read stability classification before issue
    #6 key-
    lifecycle/mismatch enforcement,
    backup/restore, scoped deletion/tombstone, re-consent, and snapshot-stability proof. Keep runtime

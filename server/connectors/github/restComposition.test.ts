@@ -231,7 +231,7 @@ describe('pure complete REST composition', () => {
 })
 
 describe('pure noncomplete REST composition', () => {
-  it('composes restricted, failed, metadata-only, and partial truncation without snapshots', () => {
+  it('composes restricted, failed, pre/post-metadata, and partial truncation without snapshots', () => {
     const restricted = composeGithubCoreRestNoncomplete({
       ...nonCompleteContext,
       result: {
@@ -250,12 +250,35 @@ describe('pure noncomplete REST composition', () => {
       ...nonCompleteContext,
       result: nonCompleteResult({ repositoryFlags: null, units: null, pages: null, observedUnitCount: null, observedPageCount: null }),
     })
+    const postMetadataBudget = composeGithubCoreRestNoncomplete({
+      ...nonCompleteContext,
+      result: nonCompleteResult({ units: [], pages: [], observedUnitCount: 0, observedPageCount: 0 }),
+    })
+    const postMetadataRateLimit = composeGithubCoreRestNoncomplete({
+      ...nonCompleteContext,
+      result: nonCompleteResult({
+        code: 'RATE_LIMITED',
+        rateLimit: { remaining: 0, reset: 1234 },
+        units: [],
+        pages: [],
+        observedUnitCount: 0,
+        observedPageCount: 0,
+      }),
+    })
     const partial = composeGithubCoreRestNoncomplete({ ...nonCompleteContext, result: nonCompleteResult() })
     expect(restricted.transition).toMatchObject({ status: 'restricted', checkpoint: null, appliedReceiptIds: [] })
     expect(failed.transition).toMatchObject({ status: 'failed', checkpoint: null, appliedReceiptIds: [] })
     expect(metadataOnly.transition).toMatchObject({ status: 'truncated', checkpoint: null, appliedReceiptIds: [] })
+    expect(postMetadataBudget.transition).toMatchObject({
+      status: 'truncated', checkpoint: null, appliedReceiptIds: [], coverage: { limitationCode: 'REQUEST_BUDGET_EXHAUSTED' },
+    })
+    expect(postMetadataRateLimit.transition).toMatchObject({
+      status: 'truncated', checkpoint: null, appliedReceiptIds: [], coverage: { limitationCode: 'RATE_LIMITED' },
+    })
+    expect(postMetadataBudget.transition).not.toHaveProperty('cursorHint')
+    expect(postMetadataRateLimit.transition).not.toHaveProperty('cursorHint')
     expect(partial.transition).toMatchObject({ status: 'truncated', appliedReceiptIds: ['page-1'], cursorHint: '2' })
-    for (const result of [restricted, failed, metadataOnly, partial]) {
+    for (const result of [restricted, failed, metadataOnly, postMetadataBudget, postMetadataRateLimit, partial]) {
       expect(Object.keys(result)).toEqual(['transition'])
       expect(Object.isFrozen(result)).toBe(true)
       expect(Object.isFrozen(result.transition)).toBe(true)
@@ -276,6 +299,9 @@ describe('pure noncomplete REST composition', () => {
       { ...restricted, extra: 'unknown' } as unknown as GithubCoreRestNonCompleteResult,
       nonCompleteResult({ observedUnitCount: 2 }),
       nonCompleteResult({ units: null }),
+      nonCompleteResult({ units: [], pages: [], observedUnitCount: 1, observedPageCount: 0 }),
+      nonCompleteResult({ units: [], pages: [], observedUnitCount: 0, observedPageCount: 1 }),
+      nonCompleteResult({ units: [{ alias: 'issue-a', kind: 'issue', updatedAt: rangeStart }], pages: [], observedUnitCount: 1, observedPageCount: 0 }),
       nonCompleteResult({ pages: [{ pageNumber: 1, receiptAlias: 'issue-a', unitCount: 1, unitAliases: ['issue-a'], nextPage: 2 }] }),
       nonCompleteResult({ pages: [{ pageNumber: 1, receiptAlias: 'page-1', unitCount: 1, unitAliases: ['issue-a'], nextPage: null }] }),
       nonCompleteResult({ units: [{ alias: 'issue-a', kind: 'issue', updatedAt: rangeEnd }] }),

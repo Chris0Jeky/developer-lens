@@ -65,7 +65,7 @@ function completeResult(): GithubCoreRestCompleteResult {
   }
 }
 
-function noncompleteResult(kind: 'restricted' | 'failed' | 'metadata' | 'partial'): GithubCoreRestNonCompleteResult {
+function noncompleteResult(kind: 'restricted' | 'failed' | 'metadata' | 'post_metadata' | 'partial'): GithubCoreRestNonCompleteResult {
   if (kind === 'restricted') {
     return {
       kind: 'restricted',
@@ -101,6 +101,23 @@ function noncompleteResult(kind: 'restricted' | 'failed' | 'metadata' | 'partial
       pages: null,
       observedUnitCount: null,
       observedPageCount: null,
+      rangeStart,
+      rangeEnd,
+    }
+  }
+  if (kind === 'post_metadata') {
+    return {
+      kind: 'truncated',
+      status: 'truncated',
+      total: null,
+      code: 'REQUEST_BUDGET_EXHAUSTED',
+      repositoryAlias: scopeAlias,
+      rateLimit: { remaining: 2, reset: 1234 },
+      repositoryFlags: { public: true, archived: false, disabled: false, fork: false },
+      units: [],
+      pages: [],
+      observedUnitCount: 0,
+      observedPageCount: 0,
       rangeStart,
       rangeEnd,
     }
@@ -163,7 +180,7 @@ describe('P4 composed incremental storage replay', () => {
       startedAt, completedAt, transition: complete.transition,
     })
     const previous = readIncrementalGithubCoreCheckpoint(db, scopeAlias)
-    const kinds = ['restricted', 'failed', 'metadata', 'partial'] as const
+    const kinds = ['restricted', 'failed', 'metadata', 'post_metadata', 'partial'] as const
     for (const [index, kind] of kinds.entries()) {
       const jobId = `job-noncomplete-${index + 1}`
       const composed = composeGithubCoreRestNoncomplete({
@@ -186,6 +203,7 @@ describe('P4 composed incremental storage replay', () => {
       { status: 'complete', snapshot_id: complete.sourceSnapshotId },
       { status: 'restricted', snapshot_id: null },
       { status: 'failed', snapshot_id: null },
+      { status: 'truncated', snapshot_id: null },
       { status: 'truncated', snapshot_id: null },
       { status: 'truncated', snapshot_id: null },
     ])
