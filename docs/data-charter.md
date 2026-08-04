@@ -68,6 +68,12 @@ coverage states, schema versions, and export classifications fail closed.
 No runtime may serialize an upstream object wholesale. Classification is attached to registered
 fields, not supplied by an untrusted caller. A field absent from the registry is prohibited.
 
+Clarification (2026-08-04, non-weakening): an analysis pack is an `ExportView`. When the in-app
+Query Lab reads a user-selected pack, the frontend row above still binds — browser code may query
+only generated, registry-allowlisted `PresentationView` relations projected at pack build
+(`PackPresentationView`), never arbitrary pack fact/feature tables. Raw pack SQL remains an
+external expert workflow over the user's own exported artifact, outside the application's sinks.
+
 ### G4 OpenAI/Luna provider boundary
 
 The owner approved this exact external boundary on 2026-08-04. Any broader provider, model, API,
