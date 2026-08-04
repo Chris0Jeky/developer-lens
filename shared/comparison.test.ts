@@ -752,6 +752,128 @@ describe('F1: empty-cohort classification under either legal encoding', () => {
 })
 
 /* ------------------------------------------------------------------------------------------ *
+ * 5c. S1 — matched-side state is re-checked; the censoring contradiction runs on effective sides
+ * ------------------------------------------------------------------------------------------ */
+
+describe('S1: matched-side state re-check and effective-side censoring', () => {
+  const wholeCurrent = observedInterval(CURRENT_WINDOW, { eligible: 12, censored: 0, sampleSize: 12, quantiles: [{ quantile: 0.5, value: 50_000 }], resultId: 'r-current' })
+  const wholeBaseline = observedInterval(BASELINE_WINDOW, { eligible: 10, censored: 0, sampleSize: 10, quantiles: [{ quantile: 0.5, value: 40_000 }], resultId: 'r-baseline' })
+  const goodBaselineMatched = observedInterval({ start: BASELINE_WINDOW.start, end: BASELINE_MID }, { eligible: 5, censored: 0, sampleSize: 5, quantiles: [{ quantile: 0.5, value: 38_000 }], resultId: 'r-bm' })
+
+  function partial(currentMatched: Json, baselineMatched: Json, specOverride: Json = {}): Json {
+    return {
+      spec: makeSpec(specOverride),
+      current: makeSide(wholeCurrent, firstHalfSub(CURRENT_WINDOW.start, CURRENT_MID), currentMatched),
+      baseline: makeSide(wholeBaseline, firstHalfSub(BASELINE_WINDOW.start, BASELINE_MID), baselineMatched),
+    }
+  }
+
+  it('an unavailable matched side is UNAVAILABLE_SIDE (never fed into MATCHED_PARTIAL counts)', () => {
+    const unavailableMatched = makeResult({
+      resultId: 'r-cm-unavailable',
+      metric: INTERVAL_METRIC,
+      window: { start: CURRENT_WINDOW.start, end: CURRENT_MID },
+      state: 'unavailable',
+      stateReasonCode: 'CAPABILITY_NEVER_AUTHORIZED',
+      counts: { eligible: 0, censored: 0, excluded: [] },
+      value: { kind: 'no_value', reasonCode: 'CAPABILITY_NEVER_AUTHORIZED' },
+    })
+    expect(asIncomparable(compareMatchedWindows(partial(unavailableMatched, goodBaselineMatched))).reasonCode).toBe('UNAVAILABLE_SIDE')
+  })
+
+  it('a truncated matched side is TRUNCATED_SIDE', () => {
+    const truncatedMatched = makeResult({
+      resultId: 'r-cm-truncated',
+      metric: INTERVAL_METRIC,
+      window: { start: CURRENT_WINDOW.start, end: CURRENT_MID },
+      state: 'truncated',
+      stateReasonCode: 'SOURCE_PAGE_LIMIT_REACHED',
+      counts: { eligible: 5, censored: 0, excluded: [] },
+      value: { kind: 'quantiles', sampleSize: 5, quantiles: [{ quantile: 0.5, value: 48_000 }] },
+      coverage: [
+        { dimension: 'completeness', value: 0.6, limiting_reason: 'SATURATION_CAP_REACHED' },
+        { dimension: 'comparability', value: 1, limiting_reason: null },
+      ],
+    })
+    expect(asIncomparable(compareMatchedWindows(partial(truncatedMatched, goodBaselineMatched))).reasonCode).toBe('TRUNCATED_SIDE')
+  })
+
+  it('no_censoring_possible with censored>0 only in the matched results is CENSORING_TREATMENT_CONTRADICTED', () => {
+    // The whole sides report zero censored, so the old whole-side check would have passed this;
+    // the effective-side check catches the censored units the matched arithmetic actually uses.
+    const censoredMatched = observedInterval({ start: CURRENT_WINDOW.start, end: CURRENT_MID }, { eligible: 6, censored: 2, sampleSize: 4, quantiles: [{ quantile: 0.5, value: 48_000 }], resultId: 'r-cm-censored' })
+    const result = compareMatchedWindows(partial(censoredMatched, goodBaselineMatched, { censoringTreatment: 'no_censoring_possible' }))
+    expect(asIncomparable(result).reasonCode).toBe('CENSORING_TREATMENT_CONTRADICTED')
+  })
+
+  it('no_censoring_possible with censored=0 everywhere still produces MATCHED_PARTIAL', () => {
+    const cleanMatched = observedInterval({ start: CURRENT_WINDOW.start, end: CURRENT_MID }, { eligible: 6, censored: 0, sampleSize: 6, quantiles: [{ quantile: 0.5, value: 48_000 }], resultId: 'r-cm-clean' })
+    const result = compareMatchedWindows(partial(cleanMatched, goodBaselineMatched, { censoringTreatment: 'no_censoring_possible' }))
+    expect(result.outcome).toBe('MATCHED_PARTIAL')
+  })
+})
+
+/* ------------------------------------------------------------------------------------------ *
+ * 5d. F2 — the matched-subwindow result's own window is validated against the matched segment
+ * ------------------------------------------------------------------------------------------ */
+
+describe('F2: matched-subwindow result window is validated', () => {
+  const wholeCurrent = observedInterval(CURRENT_WINDOW, { eligible: 12, censored: 0, sampleSize: 12, quantiles: [{ quantile: 0.5, value: 50_000 }], resultId: 'r-current' })
+  const wholeBaseline = observedInterval(BASELINE_WINDOW, { eligible: 10, censored: 0, sampleSize: 10, quantiles: [{ quantile: 0.5, value: 40_000 }], resultId: 'r-baseline' })
+  const goodCurrentMatched = observedInterval({ start: CURRENT_WINDOW.start, end: CURRENT_MID }, { eligible: 6, censored: 0, sampleSize: 6, quantiles: [{ quantile: 0.5, value: 48_000 }], resultId: 'r-cm' })
+  const goodBaselineMatched = observedInterval({ start: BASELINE_WINDOW.start, end: BASELINE_MID }, { eligible: 5, censored: 0, sampleSize: 5, quantiles: [{ quantile: 0.5, value: 38_000 }], resultId: 'r-bm' })
+
+  function partial(
+    currentMatched: Json | null,
+    baselineMatched: Json | null,
+    currentSub: Json[] = firstHalfSub(CURRENT_WINDOW.start, CURRENT_MID),
+    baselineSub: Json[] = firstHalfSub(BASELINE_WINDOW.start, BASELINE_MID),
+  ): Json {
+    return {
+      spec: makeSpec(),
+      current: makeSide(wholeCurrent, currentSub, currentMatched),
+      baseline: makeSide(wholeBaseline, baselineSub, baselineMatched),
+    }
+  }
+
+  it('a whole-window matchedResult masquerading as matched-only is MATCHED_WINDOW_MISMATCH', () => {
+    // The single matched segment is [0,5d), but this matched result spans the whole 10-day window.
+    const masquerade = observedInterval(CURRENT_WINDOW, { eligible: 6, censored: 0, sampleSize: 6, quantiles: [{ quantile: 0.5, value: 48_000 }], resultId: 'r-cm-whole' })
+    expect(asIncomparable(compareMatchedWindows(partial(masquerade, goodBaselineMatched))).reasonCode).toBe('MATCHED_WINDOW_MISMATCH')
+  })
+
+  it('a correct contiguous matched window produces MATCHED_PARTIAL end-to-end', () => {
+    const result = compareMatchedWindows(partial(goodCurrentMatched, goodBaselineMatched))
+    expect(result.outcome).toBe('MATCHED_PARTIAL')
+    if (result.outcome === 'MATCHED_PARTIAL') {
+      expect(result.matchedFraction).toBeCloseTo(0.5, 10)
+      expect(result.counts.current.eligible).toBe(6)
+      expect(result.value.kind).toBe('quantile_delta')
+    }
+  })
+
+  it('two matched stretches split by a residual gap is MATCHED_SET_NONCONTIGUOUS', () => {
+    // Each side covers [0,3d) and [5d,10d) with the same instrument; [3d,5d) is uncovered on both,
+    // so the matched set is two disjoint segments — no single matched result can honestly cover it.
+    const splitCurrentSub = [
+      { window: { start: CURRENT_WINDOW.start, end: '2026-01-14T00:00:00.000Z' }, instrument: INSTRUMENT_A, comparability: COMPARABLE_1 },
+      { window: { start: CURRENT_MID, end: CURRENT_WINDOW.end }, instrument: INSTRUMENT_A, comparability: COMPARABLE_1 },
+    ]
+    const splitBaselineSub = [
+      { window: { start: BASELINE_WINDOW.start, end: '2026-01-04T00:00:00.000Z' }, instrument: INSTRUMENT_A, comparability: COMPARABLE_1 },
+      { window: { start: BASELINE_MID, end: BASELINE_WINDOW.end }, instrument: INSTRUMENT_A, comparability: COMPARABLE_1 },
+    ]
+    const result = compareMatchedWindows(partial(null, null, splitCurrentSub, splitBaselineSub))
+    expect(asIncomparable(result).reasonCode).toBe('MATCHED_SET_NONCONTIGUOUS')
+  })
+
+  it('an off-by-one-ms matched window end is MATCHED_WINDOW_MISMATCH', () => {
+    const offByOne = observedInterval({ start: CURRENT_WINDOW.start, end: '2026-01-16T00:00:00.001Z' }, { eligible: 6, censored: 0, sampleSize: 6, quantiles: [{ quantile: 0.5, value: 48_000 }], resultId: 'r-cm-offbyone' })
+    expect(asIncomparable(compareMatchedWindows(partial(offByOne, goodBaselineMatched))).reasonCode).toBe('MATCHED_WINDOW_MISMATCH')
+  })
+})
+
+/* ------------------------------------------------------------------------------------------ *
  * 6. matchInstrumentSubwindows — partition, arithmetic, merging, precedence
  * ------------------------------------------------------------------------------------------ */
 

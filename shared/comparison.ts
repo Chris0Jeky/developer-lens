@@ -163,6 +163,17 @@ export const STRUCTURAL_REFUSAL_REASONS = [
   'MATCHED_SUBWINDOW_RESULT_MISSING',
   /** A matched-subwindow result claims more eligible units than its own whole window holds. */
   'MATCHED_RESULT_EXCEEDS_WHOLE',
+  /**
+   * The matched set is more than one contiguous stretch. A single matched-subwindow result cannot
+   * honestly represent recomputation over disjoint stretches of the period; bridging them would
+   * fabricate arithmetic across the gap. A later card may extend this to segment-wise results.
+   */
+  'MATCHED_SET_NONCONTIGUOUS',
+  /**
+   * A matched-subwindow result's own window is not the single matched segment it must cover. A
+   * whole-window or wrong-span result must never masquerade as matched-only arithmetic.
+   */
+  'MATCHED_WINDOW_MISMATCH',
   /** The declared censoring treatment contradicts the censored counts actually reported. */
   'CENSORING_TREATMENT_CONTRADICTED',
   /** Two present values of different kinds (a count against a distribution) do not subtract. */
@@ -648,12 +659,24 @@ export function isComparable(
  * Instrument matching
  * ------------------------------------------------------------------------------------------ */
 
+/**
+ * A maximal contiguous stretch that matched on both sides, as an offset range from each window's
+ * own start. The complement of `residual` within `[0, durationMs)`. A `FULL` match is the single
+ * segment `[0, durationMs)`; a valid `MATCHED_PARTIAL` is exactly one interior segment.
+ */
+export interface MatchedSegment {
+  readonly startOffsetMs: number
+  readonly endOffsetMs: number
+}
+
 export interface SubwindowMatching {
   /** Matched milliseconds over window duration, in [0, 1]. A first-class reported number. */
   readonly matchedFraction: number
   readonly matchedMs: number
   readonly durationMs: number
   readonly residual: readonly ResidualSegment[]
+  /** The matched stretches, merged and adjacent-collapsed. One honest MATCHED_PARTIAL segment. */
+  readonly matchedSegments: readonly MatchedSegment[]
 }
 
 interface OffsetSubwindow {
@@ -779,6 +802,7 @@ export function matchInstrumentSubwindows(
 
   let matchedMs = 0
   const residual: ResidualSegment[] = []
+  const matchedSegments: MatchedSegment[] = []
   for (let index = 0; index < ordered.length - 1; index += 1) {
     const startOffsetMs = ordered[index]
     const endOffsetMs = ordered[index + 1]
@@ -789,6 +813,12 @@ export function matchInstrumentSubwindows(
     )
     if (classification.matched) {
       matchedMs += endOffsetMs - startOffsetMs
+      const previousMatched = matchedSegments[matchedSegments.length - 1]
+      if (previousMatched && previousMatched.endOffsetMs === startOffsetMs) {
+        matchedSegments[matchedSegments.length - 1] = { startOffsetMs: previousMatched.startOffsetMs, endOffsetMs }
+      } else {
+        matchedSegments.push({ startOffsetMs, endOffsetMs })
+      }
       continue
     }
     const previous = residual[residual.length - 1]
@@ -810,7 +840,7 @@ export function matchInstrumentSubwindows(
     })
   }
 
-  return { matchedFraction: matchedMs / durationMs, matchedMs, durationMs, residual }
+  return { matchedFraction: matchedMs / durationMs, matchedMs, durationMs, residual, matchedSegments }
 }
 
 /* ------------------------------------------------------------------------------------------ *
@@ -1079,8 +1109,10 @@ function comparabilityEntry(result: MetricResult): { value: number | null; limit
  *
  * Refusal order is fixed and documented, because which reason a caller sees must be
  * deterministic: identity and binding first (metric, cohort, windows, `asOf`), then observability
- * of each side, then the comparability dimension, then the declared censoring treatment, then
- * subwindow structure and matching, then the matched-subwindow inputs, then value shape.
+ * of each whole-window side, then the comparability dimension, then subwindow structure and
+ * matching, then the matched-subwindow inputs (the matched set's contiguity, and per matched side
+ * its presence, binding, `asOf`, own observability, window geometry, and eligible bound), then the
+ * declared censoring treatment checked against the effective arithmetic sides, then value shape.
  */
 export function compareMatchedWindows(candidate: unknown): ComparisonResult {
   const parsed = ComparisonInputSchema.safeParse(candidate)
@@ -1210,19 +1242,7 @@ export function compareMatchedWindows(candidate: unknown): ComparisonResult {
     }
   }
 
-  /** 8. The declared censoring treatment must not contradict the reported counts. */
-  if (spec.censoringTreatment === 'no_censoring_possible') {
-    for (const { label, side } of sides) {
-      if (side.result.counts.censored > 0) {
-        return refuse(
-          'CENSORING_TREATMENT_CONTRADICTED',
-          `The comparison declares censoring impossible but the ${label} side reports ${side.result.counts.censored} censored units`,
-        )
-      }
-    }
-  }
-
-  /** 9. Subwindow structure, then 10. instrument matching. */
+  /** 8. Subwindow structure, then 9. instrument matching. */
   const matching = matchInstrumentSubwindows(spec, current.subwindows, baseline.subwindows)
   if (!matching) {
     return refuse('SUBWINDOW_PARTITION_INVALID', 'Subwindows overlap, run backwards, or fall outside their own window')
@@ -1242,18 +1262,34 @@ export function compareMatchedWindows(candidate: unknown): ComparisonResult {
   const isFull = matching.matchedMs === matching.durationMs
 
   /**
-   * 11. Matched-partial arithmetic runs on results recomputed over the matched subwindows only.
+   * 10. Matched-partial arithmetic runs on results recomputed over the matched subwindows only.
    * Without them there is no honest number to report, and rescaling the whole-window result would
    * be a fabrication, so the comparison refuses.
    */
   let effectiveCurrent = current.result
   let effectiveBaseline = baseline.result
   if (!isFull) {
+    /**
+     * A single matched-subwindow result can only stand for ONE contiguous matched stretch. A
+     * matched set split into disjoint stretches has no honest single-window result: bridging the
+     * gap would fabricate arithmetic across time that matched on neither side. (`matchedMs > 0`
+     * here — the NO_MATCHED_SUBWINDOW gate above ran — so there is at least one segment.)
+     */
+    if (matching.matchedSegments.length !== 1) {
+      return refuse(
+        'MATCHED_SET_NONCONTIGUOUS',
+        `The matched set spans ${matching.matchedSegments.length} disjoint stretches; one matched-subwindow result cannot honestly represent recomputation over them`,
+        matching.matchedFraction,
+        matching.residual,
+      )
+    }
+    const matchedSegment = matching.matchedSegments[0]
+
     const matchedSides = [
-      { label: 'current', whole: current.result, matched: current.matchedResult },
-      { label: 'baseline', whole: baseline.result, matched: baseline.matchedResult },
+      { label: 'current', whole: current.result, matched: current.matchedResult, window: spec.currentWindow },
+      { label: 'baseline', whole: baseline.result, matched: baseline.matchedResult, window: spec.baselineWindow },
     ] as const
-    for (const { label, whole, matched } of matchedSides) {
+    for (const { label, whole, matched, window } of matchedSides) {
       if (!matched) {
         return refuse(
           'MATCHED_SUBWINDOW_RESULT_MISSING',
@@ -1282,6 +1318,46 @@ export function compareMatchedWindows(candidate: unknown): ComparisonResult {
           matching.residual,
         )
       }
+      /**
+       * Observability of the matched side, checked exactly as step 6 checks the whole-window side.
+       * A matched result that was never observed (`unavailable`/`coverage_failed`) or was cut off
+       * by its instrument (`truncated`) is not a zero: substituting it would manufacture a
+       * real-looking delta from a side no one measured. The whole-window path refused these states;
+       * the matched path did not, so a censored/unavailable/truncated matched side could feed the
+       * MATCHED_PARTIAL counts, value, and censoring untouched.
+       */
+      if ((UNAVAILABLE_STATES as readonly string[]).includes(matched.state)) {
+        return refuse(
+          'UNAVAILABLE_SIDE',
+          `The ${label} side's matched-subwindow result is ${matched.state}: there is no observation to substitute, and no zero to report`,
+          matching.matchedFraction,
+          matching.residual,
+        )
+      }
+      if (matched.state === 'truncated') {
+        return refuse(
+          'TRUNCATED_SIDE',
+          `The ${label} side's matched-subwindow result is truncated, so a difference against it would measure the instrument rather than the system`,
+          matching.matchedFraction,
+          matching.residual,
+        )
+      }
+      /**
+       * The matched result must cover exactly the single matched segment, mapped into this side's
+       * own window: a whole-window or wrong-span result must never masquerade as matched-only
+       * arithmetic. Offsets are compared in epoch-ms (no clock read; `epochMs` is `Date.parse` of a
+       * string), and the message is built from the window strings and offset numbers alone.
+       */
+      const expectedStartMs = epochMs(window.start) + matchedSegment.startOffsetMs
+      const expectedEndMs = epochMs(window.start) + matchedSegment.endOffsetMs
+      if (epochMs(matched.window.start) !== expectedStartMs || epochMs(matched.window.end) !== expectedEndMs) {
+        return refuse(
+          'MATCHED_WINDOW_MISMATCH',
+          `The ${label} side's matched-subwindow result covers [${matched.window.start}, ${matched.window.end}) but the single matched segment is offset [${matchedSegment.startOffsetMs}, ${matchedSegment.endOffsetMs}) ms from the window start ${window.start}`,
+          matching.matchedFraction,
+          matching.residual,
+        )
+      }
       if (matched.counts.eligible > whole.counts.eligible) {
         return refuse(
           'MATCHED_RESULT_EXCEEDS_WHOLE',
@@ -1293,6 +1369,29 @@ export function compareMatchedWindows(candidate: unknown): ComparisonResult {
     }
     effectiveCurrent = current.matchedResult as MetricResult
     effectiveBaseline = baseline.matchedResult as MetricResult
+  }
+
+  /**
+   * 11. The declared censoring treatment must not contradict the counts of the sides the arithmetic
+   * actually uses. Checking the EFFECTIVE sides covers both bases with one rule: for FULL they are
+   * the whole-window results (coverage preserved), and for MATCHED_PARTIAL they are the matched
+   * results substituted above. Without this, a censored matched side could ship beside the static
+   * `no_censoring_possible` statement that both sides report zero censored — which its counts deny.
+   */
+  if (spec.censoringTreatment === 'no_censoring_possible') {
+    for (const { label, result } of [
+      { label: 'current', result: effectiveCurrent },
+      { label: 'baseline', result: effectiveBaseline },
+    ] as const) {
+      if (result.counts.censored > 0) {
+        return refuse(
+          'CENSORING_TREATMENT_CONTRADICTED',
+          `The comparison declares censoring impossible but the ${label} side reports ${result.counts.censored} censored units`,
+          matching.matchedFraction,
+          matching.residual,
+        )
+      }
+    }
   }
 
   /** 12. Two present values of different kinds do not subtract. */
