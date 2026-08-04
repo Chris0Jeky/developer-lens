@@ -1074,7 +1074,17 @@ function buildLimitations(
   if (spec.censoringTreatment === 'uncensored_sample_with_declared_tails' && (current.counts.censored > 0 || baseline.counts.censored > 0)) {
     codes.push('CENSORED_TAILS_EXCLUDED')
   }
-  if (value.kind === 'quantile_delta') {
+  /**
+   * Issue #82 (M-c): a censoring-rate gap between the sides biases a share difference the same way
+   * it biases a distribution difference. A censorable proportion's denominator is
+   * eligible_minus_censored (metrics.ts forces this), so both sides already exclude their censored
+   * units — and if they exclude unequal fractions, part of the delta reflects unequal follow-up
+   * rather than a real difference. `CENSORED_TAILS_EXCLUDED` already discloses that censoring
+   * happened; this adds the rate-gap warning. A non-censorable proportion (denominatorBasis
+   * 'eligible') is forced to no_censoring_possible, so both censored counts are zero and this never
+   * fires spuriously.
+   */
+  if (value.kind === 'quantile_delta' || value.kind === 'proportion_delta') {
     const currentFraction = current.counts.eligible === 0 ? 0 : current.counts.censored / current.counts.eligible
     const baselineFraction = baseline.counts.eligible === 0 ? 0 : baseline.counts.censored / baseline.counts.eligible
     if (currentFraction !== baselineFraction) {
