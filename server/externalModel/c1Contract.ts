@@ -57,7 +57,33 @@ const MAX_CLAIMS = 32
 const MAX_IDS = 16
 const MAX_INPUT_BYTES = 16_000
 const MAX_NUMBER = Number.MAX_SAFE_INTEGER
-const UtcTimestampSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?Z$/)
+const UTC_TIMESTAMP_PATTERN =
+  /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,3}))?Z$/
+
+function parseCanonicalUtc(value: string): number | null {
+  const match = UTC_TIMESTAMP_PATTERN.exec(value)
+  if (!match) return null
+  const parsed = Date.parse(value)
+  if (!Number.isFinite(parsed)) return null
+  const date = new Date(parsed)
+  const milliseconds = Number((match[7] ?? '').padEnd(3, '0') || '0')
+  if (
+    date.getUTCFullYear() !== Number(match[1]) ||
+    date.getUTCMonth() + 1 !== Number(match[2]) ||
+    date.getUTCDate() !== Number(match[3]) ||
+    date.getUTCHours() !== Number(match[4]) ||
+    date.getUTCMinutes() !== Number(match[5]) ||
+    date.getUTCSeconds() !== Number(match[6]) ||
+    date.getUTCMilliseconds() !== milliseconds
+  ) return null
+  return parsed
+}
+
+const UtcTimestampSchema = z.string().superRefine((value, context) => {
+  if (parseCanonicalUtc(value) === null) {
+    context.addIssue({ code: 'custom', message: 'timestamp is not canonical' })
+  }
+})
 const RequestIdSchema = z.string().regex(/^req_[a-f0-9]{32}$/)
 const EvidenceIdSchema = z.string().regex(/^ev_\d{3}$/)
 const ClaimIdSchema = z.string().regex(/^claim_\d{2}$/)
@@ -99,11 +125,12 @@ export const C1RangeSchema = z.object({
   start: UtcTimestampSchema,
   end: UtcTimestampSchema,
 }).strict().superRefine((range, context) => {
-  const start = Date.parse(range.start)
-  const end = Date.parse(range.end)
-  if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) {
+  const start = parseCanonicalUtc(range.start)
+  const end = parseCanonicalUtc(range.end)
+  if (start === null || end === null || start >= end) {
     context.addIssue({ code: 'custom', path: ['end'], message: 'invalid_range' })
   }
+  if (start === null || end === null) return
   const startDate = new Date(start)
   const maximumEnd = Date.UTC(
     startDate.getUTCFullYear() + 3,

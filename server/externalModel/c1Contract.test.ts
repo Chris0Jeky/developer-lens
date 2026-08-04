@@ -75,6 +75,33 @@ describe('C1 evidence and model-output contracts', () => {
     expect(C1EvidenceBundleSchema.safeParse(oversized).success).toBe(false)
   })
 
+  it('rejects impossible calendar and clock components instead of normalized dates', () => {
+    for (const timestamp of [
+      '2026-02-30T00:00:00Z',
+      '2024-02-30T00:00:00Z',
+      '2026-01-01T24:00:00Z',
+    ]) {
+      expect(C1EvidenceBundleSchema.safeParse({
+        ...bundle,
+        range: { start: timestamp, end: '2026-03-01T00:00:00Z' },
+      }).success).toBe(false)
+    }
+  })
+
+  it('accepts canonical UTC timestamps with supported fractional precision', () => {
+    for (const start of [
+      '2026-01-01T00:00:00Z',
+      '2026-01-01T00:00:00.1Z',
+      '2026-01-01T00:00:00.01Z',
+      '2026-01-01T00:00:00.001Z',
+    ]) {
+      expect(C1EvidenceBundleSchema.safeParse({
+        ...bundle,
+        range: { start, end: '2026-03-01T00:00:00Z' },
+      }).success).toBe(true)
+    }
+  })
+
   it('cross-validates request-scoped IDs and emits content-free errors', () => {
     expect(() => parseModelOutput(bundle, {
       schema_version: '1.0.0', request_id: bundle.bundle_id,
