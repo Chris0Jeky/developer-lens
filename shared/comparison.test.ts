@@ -8,6 +8,7 @@ import {
   ComparisonSpecSchema,
   HalfOpenWindowSchema,
   REQUIRED_MATCHED_PARTIAL_LIMITATION,
+  STRUCTURAL_REFUSAL_REASONS,
   compareMatchedWindows,
   comparisonSupportUnits,
   isComparable,
@@ -870,6 +871,31 @@ describe('F2: matched-subwindow result window is validated', () => {
   it('an off-by-one-ms matched window end is MATCHED_WINDOW_MISMATCH', () => {
     const offByOne = observedInterval({ start: CURRENT_WINDOW.start, end: '2026-01-16T00:00:00.001Z' }, { eligible: 6, censored: 0, sampleSize: 6, quantiles: [{ quantile: 0.5, value: 48_000 }], resultId: 'r-cm-offbyone' })
     expect(asIncomparable(compareMatchedWindows(partial(offByOne, goodBaselineMatched))).reasonCode).toBe('MATCHED_WINDOW_MISMATCH')
+  })
+})
+
+/* ------------------------------------------------------------------------------------------ *
+ * 5e. S2 — window-shape violations surface as a parse throw, not a dead typed refusal
+ * ------------------------------------------------------------------------------------------ */
+
+describe('S2: window-shape violations throw at parse, WINDOW_SHAPE_MISMATCH is removed', () => {
+  it('compareMatchedWindows throws ComparisonContractError on mismatched-duration windows', () => {
+    // A 20-day current window against the 10-day baseline fails ComparisonSpecSchema.superRefine,
+    // so the input never parses and no INCOMPARABLE result (WINDOW_SHAPE_MISMATCH) is ever built.
+    const wideWindow = { start: '2026-01-11T00:00:00.000Z', end: '2026-01-31T00:00:00.000Z' }
+    const current = observedInterval(wideWindow, { eligible: 8, censored: 0, sampleSize: 8, quantiles: [{ quantile: 0.5, value: 40_000 }] })
+    const baseline = observedInterval(BASELINE_WINDOW, { eligible: 8, censored: 0, sampleSize: 8, quantiles: [{ quantile: 0.5, value: 41_000 }] })
+    expect(() =>
+      compareMatchedWindows({
+        spec: makeSpec({ currentWindow: wideWindow }),
+        current: makeSide(current, fullSub(wideWindow)),
+        baseline: makeSide(baseline, fullSub(BASELINE_WINDOW)),
+      }),
+    ).toThrow(ComparisonContractError)
+  })
+
+  it('STRUCTURAL_REFUSAL_REASONS no longer carries the dead WINDOW_SHAPE_MISMATCH member', () => {
+    expect((STRUCTURAL_REFUSAL_REASONS as readonly string[]).includes('WINDOW_SHAPE_MISMATCH')).toBe(false)
   })
 })
 

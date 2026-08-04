@@ -131,14 +131,19 @@ export type ComparisonOutcome = z.infer<typeof ComparisonOutcomeSchema>
 /**
  * Structural refusals — reasons the two windows cannot be compared AT ALL. Each one produces an
  * `INCOMPARABLE` result, which carries no numbers of any kind.
+ *
+ * Window-SHAPE violations are deliberately NOT members here. Unequal-duration or overlapping
+ * windows are a caller-contract error, not a data-observed refusal: `ComparisonSpecSchema` fails
+ * closed on them (`superRefine`), so `ComparisonInputSchema.safeParse` rejects the input and
+ * `compareMatchedWindows` throws a `ComparisonContractError` before any side is inspected. A shape
+ * that can never reach the arithmetic cannot be a reason the arithmetic emits — the parse throw IS
+ * the whole treatment, so there is no `WINDOW_SHAPE_MISMATCH` refusal code.
  */
 export const STRUCTURAL_REFUSAL_REASONS = [
   /** The two sides name different metrics, or different versions of one metric. Never coerced. */
   'METRIC_MISMATCH',
   /** A side's result window is not the window the spec bound it to. */
   'WINDOW_BINDING_MISMATCH',
-  /** The windows themselves do not form a matched pair (shape checked before any arithmetic). */
-  'WINDOW_SHAPE_MISMATCH',
   /** A side was computed at a different `asOf` than the canonical injected one. */
   'AS_OF_MISMATCH',
   /** `asOf` falls inside a compared window: its open tail is unobserved, so durations differ. */
