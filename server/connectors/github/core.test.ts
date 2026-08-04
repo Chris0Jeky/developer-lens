@@ -188,18 +188,18 @@ describe('github.core inert protocol foundation', () => {
     expect(result.checkpoint?.cursorHint).toBeUndefined()
   })
 
-  it('deduplicates semantically identical receipts regardless of property insertion order', () => {
+  it('deduplicates semantically identical receipts regardless of property or unit insertion order', () => {
     const first: GithubCoreReceipt = {
       receiptId: 'receipt-01',
       pageNumber: 1,
-      unitIds: ['unit-01'],
+      unitIds: ['unit-01', 'unit-02'],
       highWatermark: '2026-01-01T18:00:00.000Z',
       nextCursor: 'cursor-02',
     }
     const sameDifferentOrder: GithubCoreReceipt = {
       nextCursor: 'cursor-02',
       highWatermark: '2026-01-01T18:00:00.000Z',
-      unitIds: ['unit-01'],
+      unitIds: ['unit-02', 'unit-01'],
       pageNumber: 1,
       receiptId: 'receipt-01',
     }
@@ -210,7 +210,7 @@ describe('github.core inert protocol foundation', () => {
         {
           receiptId: 'receipt-02',
           pageNumber: 2,
-          unitIds: ['unit-02'],
+          unitIds: ['unit-03'],
           highWatermark: '2026-01-01T13:00:00.000Z',
           nextCursor: null,
         },
@@ -220,7 +220,7 @@ describe('github.core inert protocol foundation', () => {
     expect(result).toMatchObject({
       status: 'complete',
       appliedReceiptIds: ['receipt-01', 'receipt-02'],
-      coverage: { expectedUnits: 2, observedUnits: 2 },
+      coverage: { expectedUnits: 3, observedUnits: 3 },
       checkpoint: { highWatermark: '2026-01-01T18:00:00.000Z' },
     })
   })

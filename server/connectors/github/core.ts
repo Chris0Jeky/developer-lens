@@ -316,12 +316,13 @@ export function classifyGithubCoreRetry(
 }
 
 function receiptsAreEquivalent(left: GithubCoreReceipt, right: GithubCoreReceipt): boolean {
+  const rightUnitIds = new Set(right.unitIds)
   return left.receiptId === right.receiptId &&
     left.pageNumber === right.pageNumber &&
     left.highWatermark === right.highWatermark &&
     left.nextCursor === right.nextCursor &&
     left.unitIds.length === right.unitIds.length &&
-    left.unitIds.every((unitId, index) => unitId === right.unitIds[index])
+    left.unitIds.every((unitId) => rightUnitIds.has(unitId))
 }
 
 function normalizedReceipts(
