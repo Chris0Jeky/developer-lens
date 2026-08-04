@@ -18,10 +18,12 @@ import {
 } from './coverage.js'
 import {
   METRIC_RENDER_SURFACES,
+  MetricRegistryError,
   MetricResultStateSchema,
   findForbiddenConstructTerm,
   getMetricDefinition,
   isRegisteredMetric,
+  resolveMetricForRendering,
   type MetricCoverageEntry,
   type MetricResult,
 } from './metrics.js'
@@ -284,12 +286,42 @@ export const FindingSampleSummarySchema = z
   })
   .strict()
   .superRefine((summary, context) => {
-    if (summary.state === 'empty_eligible_cohort' && (summary.counts.eligible !== 0 || summary.counts.censored !== 0)) {
-      context.addIssue({
-        code: 'custom',
-        message: 'An empty eligible cohort has zero eligible and zero censored units',
-        path: ['counts'],
-      })
+    // Mirror the full state -> counts invariant set that shared/metrics.ts's MetricResultSchema
+    // enforces on a result, so the embedded summary cannot contradict the result it summarises.
+    // Only counts-relevant rules are mirrored: the summary carries neither the window/asOf nor the
+    // coverage vector, so the state rules keyed on those (truncated's completeness limit, the
+    // completed-window checks) have nothing to constrain here.
+    const { eligible, censored } = summary.counts
+    switch (summary.state) {
+      case 'observed': {
+        if (eligible === 0) {
+          context.addIssue({ code: 'custom', message: 'An observed result has a non-empty eligible cohort', path: ['counts', 'eligible'] })
+        }
+        break
+      }
+      case 'empty_eligible_cohort': {
+        if (eligible !== 0 || censored !== 0) {
+          context.addIssue({ code: 'custom', message: 'An empty eligible cohort has zero eligible and zero censored units', path: ['counts'] })
+        }
+        break
+      }
+      case 'censored_only': {
+        if (eligible === 0 || censored !== eligible) {
+          context.addIssue({ code: 'custom', message: 'A censored-only result has every eligible unit censored', path: ['counts'] })
+        }
+        break
+      }
+      case 'unavailable':
+      case 'coverage_failed': {
+        if (eligible !== 0) {
+          context.addIssue({ code: 'custom', message: 'An unavailable or failed result has no measured eligible cohort', path: ['counts', 'eligible'] })
+        }
+        break
+      }
+      case 'truncated':
+        // metrics.ts constrains only the completeness coverage entry for a truncated result, which
+        // the embedded summary does not carry, so there is no counts invariant to mirror here.
+        break
     }
   })
 export type FindingSampleSummary = z.infer<typeof FindingSampleSummarySchema>
@@ -1048,6 +1080,20 @@ export function validateFinding(candidate: unknown): Finding {
       throw new FindingContractError(
         `Finding references metric ${metricReference}, which is not registered; an undocumented metric cannot back a finding`,
       )
+    }
+    // isRegisteredMetric ignores MetricDefinition.status, so a registered-but-withdrawn metric
+    // would otherwise slip through. Resolve every reference — primary AND supporting — through the
+    // same rendering resolver metrics.ts uses in validateMetricResult: a withdrawn definition
+    // renders nothing, so it must fail closed here rather than back a finding that cannot render.
+    try {
+      resolveMetricForRendering(metricReference)
+    } catch (error) {
+      if (error instanceof MetricRegistryError) {
+        throw new FindingContractError(
+          `Finding references metric ${metricReference}, which is withdrawn and renders nothing; a withdrawn metric cannot back a finding`,
+        )
+      }
+      throw error
     }
   }
 

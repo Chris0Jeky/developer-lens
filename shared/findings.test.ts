@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CLAIM_LAYERS, CLAIM_STATEMENT_CODES } from './claims.js'
 import { findForbiddenConstructTerm, isRegisteredMetric } from './metrics.js'
 import {
@@ -38,6 +38,28 @@ import {
   requiredReferenceKindFor,
   validateFinding,
 } from './findings.js'
+
+/*
+ * The shared metric registry ships no withdrawn definition and shared/metrics.ts is out of scope
+ * for this fix, so validateFinding's withdrawn-metric gate is exercised by simulating a withdrawn
+ * resolve. resolveMetricForRendering throws MetricRegistryError for any reference added to
+ * `withdrawnReferences` — exactly as it would for a genuinely withdrawn definition — and delegates
+ * to the real registry for every other reference, so all other tests see unchanged behaviour.
+ */
+const mocks = vi.hoisted(() => ({ withdrawnReferences: new Set<string>() }))
+
+vi.mock('./metrics.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./metrics.js')>()
+  return {
+    ...actual,
+    resolveMetricForRendering: (reference: string) => {
+      if (mocks.withdrawnReferences.has(reference)) {
+        throw new actual.MetricRegistryError(`Metric ${reference} is withdrawn and cannot be rendered`)
+      }
+      return actual.resolveMetricForRendering(reference)
+    },
+  }
+})
 
 /* ------------------------------------------------------------------------------------------ *
  * Fixtures — a valid finding at each layer, built as plain data so tests can corrupt one field
@@ -331,6 +353,43 @@ describe('FindingSampleSummary invariants', () => {
     expect(FindingSampleSummarySchema.safeParse({ resultId: 'r', state: 'empty_eligible_cohort', counts: { eligible: 3, censored: 0, excluded: [] } }).success).toBe(false)
     expect(FindingSampleSummarySchema.safeParse({ resultId: 'r', state: 'empty_eligible_cohort', counts: { eligible: 0, censored: 1, excluded: [] } }).success).toBe(false)
   })
+
+  /**
+   * The remaining state -> counts invariants, mirrored from shared/metrics.ts's MetricResultSchema
+   * onto the embedded summary so it cannot contradict the result it summarises.
+   */
+  const summaryAccepts = (state: string, eligible: number, censored: number): boolean =>
+    FindingSampleSummarySchema.safeParse({ resultId: 'r', state, counts: { eligible, censored, excluded: [] } }).success
+
+  it('requires an observed result to have a non-empty eligible cohort', () => {
+    expect(summaryAccepts('observed', 5, 2)).toBe(true)
+    expect(summaryAccepts('observed', 0, 0)).toBe(false)
+  })
+
+  it('requires a censored-only result to have every eligible unit censored', () => {
+    expect(summaryAccepts('censored_only', 4, 4)).toBe(true)
+    expect(summaryAccepts('censored_only', 4, 2)).toBe(false)
+    expect(summaryAccepts('censored_only', 0, 0)).toBe(false)
+  })
+
+  it('requires an unavailable result to have no measured eligible cohort', () => {
+    expect(summaryAccepts('unavailable', 0, 0)).toBe(true)
+    expect(summaryAccepts('unavailable', 5, 0)).toBe(false)
+  })
+
+  it('requires a coverage-failed result to have no measured eligible cohort', () => {
+    expect(summaryAccepts('coverage_failed', 0, 0)).toBe(true)
+    expect(summaryAccepts('coverage_failed', 3, 0)).toBe(false)
+  })
+
+  it('leaves truncated counts unconstrained by state, mirroring metrics.ts', () => {
+    // metrics.ts imposes no state -> counts rule on a truncated result, so any base-valid counts
+    // are accepted — including an empty cohort, which the observed state would reject...
+    expect(summaryAccepts('truncated', 40, 0)).toBe(true)
+    expect(summaryAccepts('truncated', 0, 0)).toBe(true)
+    // ...while the shared base invariant (censored <= eligible) still rejects contradictory counts.
+    expect(summaryAccepts('truncated', 2, 5)).toBe(false)
+  })
 })
 
 /* ------------------------------------------------------------------------------------------ *
@@ -618,6 +677,51 @@ describe('validateFinding registry resolution', () => {
       robustness: { status: 'stable', checks: [{ checkId: 'CHK_BAD', statement: 'Recomputed under a variant of another metric.', outcome: 'held', sensitivityVariantId: WRONG_METRIC_VARIANT }] },
     })
     expect(() => validateFinding(finding)).toThrow(/does not define/)
+  })
+})
+
+/* ------------------------------------------------------------------------------------------ *
+ * validateFinding — withdrawn-metric registry gate. A withdrawn definition is still registered,
+ * so the status-blind isRegisteredMetric check passes; validateFinding must additionally resolve
+ * every reference for rendering and fail closed, for the primary and for supporting roles alike.
+ * ------------------------------------------------------------------------------------------ */
+
+describe('validateFinding withdrawn-metric gate', () => {
+  const INTERVAL_REF = 'pull_request.integration_interval@1.1.0'
+
+  afterEach(() => {
+    mocks.withdrawnReferences.clear()
+  })
+
+  function withSupporting(): Payload {
+    return make(baseDeterministicFinding, {
+      metricResults: [
+        { metricId: READY_COUNT_ID, metricVersion: '1.0.0', resultId: 'result_1', role: 'primary' },
+        { metricId: 'pull_request.integration_interval', metricVersion: '1.1.0', resultId: 'result_2', role: 'supporting' },
+      ],
+    })
+  }
+
+  it('confirms both references are registered, so the gate is status-driven not registration-driven', () => {
+    expect(isRegisteredMetric(READY_COUNT_REF)).toBe(true)
+    expect(isRegisteredMetric(INTERVAL_REF)).toBe(true)
+    // With nothing marked withdrawn, both the primary-only and the primary+supporting findings pass.
+    expect(validateFinding(baseDeterministicFinding()).findingId).toBe('fnd_ready_count_det')
+    expect(validateFinding(withSupporting()).metricResults).toHaveLength(2)
+  })
+
+  it('fails closed when the primary metric is withdrawn, naming the reference', () => {
+    mocks.withdrawnReferences.add(READY_COUNT_REF)
+    expect(() => validateFinding(baseDeterministicFinding())).toThrow(FindingContractError)
+    expect(() => validateFinding(baseDeterministicFinding())).toThrow(READY_COUNT_REF)
+    expect(() => validateFinding(baseDeterministicFinding())).toThrow(/withdrawn/)
+  })
+
+  it('fails closed when a supporting metric is withdrawn, naming the reference', () => {
+    mocks.withdrawnReferences.add(INTERVAL_REF)
+    expect(() => validateFinding(withSupporting())).toThrow(FindingContractError)
+    expect(() => validateFinding(withSupporting())).toThrow(INTERVAL_REF)
+    expect(() => validateFinding(withSupporting())).toThrow(/withdrawn/)
   })
 })
 
