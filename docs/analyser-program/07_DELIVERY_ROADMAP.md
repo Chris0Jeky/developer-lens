@@ -206,8 +206,8 @@ source, never this table. Horizon: A = active queue, F = frozen until DL-VALUE-0
 | DL-METRIC-01 | Versioned metric-definition registry | analytics-core | contract | DONE | A | none | M2 | medium/M |
 | DL-FINDING-01 | Finding contract: alternatives, contradiction, robustness, AnalyticReference | analytics-core | contract | DONE | A | DL-METRIC-01, DL-SPINE-01 | M2 | medium/M |
 | DL-COMPARE-01 | Matched-period comparison and censoring semantics | analytics-core | contract | DONE | A | DL-METRIC-01 | M2 | medium/M |
-| DL-VALIDATE-01 | Analytical conformance and counterexample suite | analytics-core | evaluation | READY | A | DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01 | M2 | medium/M |
-| DL-VALUE-01 | First deterministic comparative finding (integration shape, matched windows) | analytics-core | implementation | BLOCKED_BY_DEPENDENCY | A | DL-BRIDGE-01, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-VALIDATE-01, DL-SPINE-02, DL-SPINE-03, DL-UX-ED | M2 | medium/L |
+| DL-VALIDATE-01 | Analytical conformance and counterexample suite | analytics-core | evaluation | DONE | A | DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01 | M2 | medium/M |
+| DL-VALUE-01 | First deterministic comparative finding (integration shape, matched windows) | analytics-core | implementation | DONE | A | DL-BRIDGE-01, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-VALIDATE-01, DL-SPINE-02, DL-SPINE-03, DL-UX-ED | M2 | medium/L |
 | DL-OPS-CI-01 | Hosted pull-request CI gate before broad autonomous merging | analytics-core | implementation | DONE | A | none | M1 | low/M |
 | DL-CONTEXT-01 | Compact machine-readable current state and active horizon | analytics-core | process | DONE |  | none | M1 | low/S |
 | DL-GIT-01 | Hardened explicit-ref extraction + coverage semantics | git-topology | implementation | BLOCKED_BY_DEPENDENCY |  | DL-LIFE-02 | M3 | high/M |

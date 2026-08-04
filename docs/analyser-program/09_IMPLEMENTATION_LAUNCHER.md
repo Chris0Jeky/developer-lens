@@ -1,40 +1,45 @@
 # Implementation Launcher
 
 Transient pointer — contains no policy, architecture, or gate text of its own.
-Reconciled 2026-08-04 after R1 wave 2 (DL-SPINE-02, DL-SPINE-03, DL-UX-ED, DL-FINDING-01 and
-DL-COMPARE-01 merged, completing the spine lanes and the analytics-core contracts; evidence in
-[`../IMPLEMENTATION_LEDGER.md`](../IMPLEMENTATION_LEDGER.md)).
+Reconciled 2026-08-04 after R1 wave 3 (DL-VALIDATE-01 and DL-VALUE-01 merged): the bounded
+**R1–R3 active horizon is COMPLETE — all 12 active-horizon cards are DONE** (evidence in
+[`../IMPLEMENTATION_LEDGER.md`](../IMPLEMENTATION_LEDGER.md), the R1 wave 3 section, including the
+DL-VALUE-01 PRODUCT PROOF).
 
-**Done, no longer next cards:** the whole analytics-core kernel except the last two, merged across
-R1 waves 1–2: **DL-BRIDGE-01** (PR #72, the V2 bootstrap seam + Coverage Cockpit per ADR-04 in
-[`01_REFERENCE_ARCHITECTURE.md`](./01_REFERENCE_ARCHITECTURE.md)), **DL-METRIC-01** (PR #75, the
-versioned metric registry), **DL-SPINE-02** (PR #84, deterministic claim canonicalisation +
-replay), **DL-SPINE-03** (PR #85, why-am-I-seeing-this resolver), **DL-FINDING-01** (PR #88, the
-finding contract + AnalyticReference), **DL-COMPARE-01** (PR #89, matched-period comparison +
-censoring), and **DL-UX-ED** (PR #87, the Evidence Drawer). None of these proved the analytical
-product thesis; **DL-VALUE-01** still does.
+**Done — the whole active horizon.** Across R1 waves 1–3: the spine and analytics-core kernel
+(**DL-BRIDGE-01** #72, **DL-METRIC-01** #75, **DL-SPINE-01..04** #74/#84/#85/#73, **DL-FINDING-01**
+#88, **DL-COMPARE-01** #89, **DL-UX-ED** #87, **DL-OPS-CI-01** #70), the conformance instrument
+(**DL-VALIDATE-01** #92), and the value slice that proved the analytical product thesis
+(**DL-VALUE-01** #94 — the first deterministic comparative finding). There is **no next
+active-horizon implementation card**; the active queue is spent.
 
-**Exact next implementation card** — the conformance instrument, then the value slice:
+**Exact next action — roadmap reassessment, not an implementation slice.**
 
-1. **DL-VALIDATE-01** — the analytical conformance and counterexample suite; **in flight now**. Its
-   remit folds in the two tracked [#82](https://github.com/Chris0Jeky/developer-lens/issues/82)
-   metric-result-hardening items — **N1** (the sample-dimension-on-empty-cohort question) and
-   **M-a / M-b / M-c** — which are settled here before the value slice.
-2. **DL-VALUE-01** — the final active-horizon card and the point of the programme: the first
-   deterministic comparative finding across matched windows, censoring-aware, with contradiction,
-   limitations, and sensitivity. Blocked only on DL-VALIDATE-01.
+1. **Reassess the roadmap.** Read [`07_DELIVERY_ROADMAP.md`](./07_DELIVERY_ROADMAP.md) §0a and
+   [`CURRENT_STATE.md`](./CURRENT_STATE.md) against current capacity, the open owner gates
+   (`HUMAN_TODO.md` q-6/q-7), and the still-open residual risks (#86 is a q-5 precondition; #93 is
+   conformance-suite hygiene; #71/#76/#78/#79/#80 stand). Decide whether to open the **R4 stretch**
+   and promote its first card into a fresh active horizon. Confirm capacity **before** promoting
+   anything.
+2. **Standing R4 preference — a preference, not an authorization to start.** When the reassessment
+   opens R4, the recorded stretch order is **DL-LIFE-01** (the capability-lifecycle state machine
+   with the approval-never-activates invariant) first, then **DL-LIFE-02** (the schema-registry
+   deletion cascade, which closes most of
+   [#80](https://github.com/Chris0Jeky/developer-lens/issues/80)). **R4 begins only after the
+   reassessment confirms capacity** — do not start DL-LIFE-01 straight from this pointer.
 
-The bounded queue is the `horizon:active` set in
-[`07_DELIVERY_ROADMAP.md`](./07_DELIVERY_ROADMAP.md) §0a; card contracts live in the generated
-starter pack
-[`taskdeck/developer-lens-intelligence-platform.taskdeck.json`](./taskdeck/developer-lens-intelligence-platform.taskdeck.json)
-(source of truth: `taskdeck/tools/cards.mjs`).
+**Do not unfreeze on your own.** **R7/R8 stay frozen**, and the `horizon:frozen` set in
+[`07_DELIVERY_ROADMAP.md`](./07_DELIVERY_ROADMAP.md) §0a — mirrored as `frozen_until_value_slice`
+in [`CURRENT_STATE.md`](./CURRENT_STATE.md) — stays frozen until the reassessment explicitly reopens
+it. Owner gates in `HUMAN_TODO.md` q-6 and [`08_OPEN_QUESTIONS.md`](./08_OPEN_QUESTIONS.md) §1 are
+unchanged.
 
 **Authorities to read before starting** (in this order):
 
 1. `AGENTS.md`, `.agent-harness/tier.json`, `HUMAN_TODO.md`
 2. `docs/analyser-program/CURRENT_STATE.md` (compact state), then
-   `docs/IMPLEMENTATION_LEDGER.md` (exact resume point)
+   `docs/IMPLEMENTATION_LEDGER.md` (exact resume point + the R1 wave 3 horizon-exit evidence)
 3. `docs/data-charter.md`, `docs/source-capability-matrix.md`
 4. `docs/DEVELOPER_LENS_V2_ARCHITECTURE.md` (stable design + 2026-08-04 addenda)
-5. `docs/analyser-program/01_REFERENCE_ARCHITECTURE.md` ADR-04/25/26 and the card itself
+5. `docs/analyser-program/01_REFERENCE_ARCHITECTURE.md` ADR-03 (capability lifecycle) and the card
+   itself, once the reassessment opens R4
