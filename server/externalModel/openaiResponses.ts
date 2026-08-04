@@ -22,12 +22,14 @@ const UtcTimestampSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2
 const PriceQuoteSchema = z.object({
   model: z.literal(OPENAI_LUNA_MODEL),
   serviceTier: z.literal('default'),
+  contextBand: z.literal('short'),
   unit: z.literal('USD_PER_MILLION_TOKENS'),
   inputUsdPerMillionTokens: z.number().finite().positive().max(10_000),
   cacheWriteUsdPerMillionTokens: z.number().finite().positive().max(10_000),
   outputUsdPerMillionTokens: z.number().finite().positive().max(10_000),
   verifiedAt: UtcTimestampSchema,
 }).strict()
+export const OpenAiLunaPriceQuoteSchema = PriceQuoteSchema
 const CallResultSchema = z.object({
   status: z.number().int().min(100).max(599),
   structuredOutput: z.unknown(),
@@ -142,7 +144,7 @@ function canonicalUtc(value: string): number | null {
   return Number.isFinite(parsed) ? parsed : null
 }
 
-function validatePriceQuote(priceQuote: unknown, now: string): OpenAiLunaPriceQuote {
+export function parseOpenAiLunaPriceQuote(priceQuote: unknown, now: string): OpenAiLunaPriceQuote {
   const parsed = PriceQuoteSchema.safeParse(priceQuote)
   const nowMs = canonicalUtc(now)
   if (!parsed.success || nowMs === null) fail('OPENAI_LUNA_PRICE_INVALID')
@@ -218,7 +220,7 @@ export function buildOpenAiLunaRequest(input: {
   } catch {
     fail('OPENAI_LUNA_REQUEST_INVALID')
   }
-  const price = validatePriceQuote(input.priceQuote, input.now)
+  const price = parseOpenAiLunaPriceQuote(input.priceQuote, input.now)
   const { body, bodyBytes } = bodyForBundle(bundle)
   estimateUsd(bodyBytes, bundle.budget.max_output_tokens, price)
   return Object.freeze({
