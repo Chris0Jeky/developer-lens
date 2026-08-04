@@ -1469,6 +1469,11 @@ after it. Per-card evidence below; the compact live pointer stays
   statement, presentation eligibility) plus the typed AnalyticReference union. Review lens: one
   independent adversarial round returned two HIGH findings, both fixed in one round and verified —
   the fix round closed a withdrawn-metric bypass and completed the sample-summary state mirror.
+  A parallel prior-session review surfaced a third HIGH in a "do not merge" note that raced the
+  merge by seconds and was never seen pre-merge: robustness check statements are exempt from the
+  causal-copy scan (`copyScanTargets` passes them with `scanCausal: false`). Confirmed against
+  merged main post-merge, tracked as issue #91, and folded into the in-flight DL-VALIDATE-01 lane
+  with the PR's other findings.ts hardening items.
 - **DL-COMPARE-01 — matched-period comparison + censoring semantics.**
   [PR #89](https://github.com/Chris0Jeky/developer-lens/pull/89), merge `d407cb1`. The reusable
   comparison contract (canonical injected asOf, equal-duration half-open UTC windows,

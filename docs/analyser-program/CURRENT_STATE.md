@@ -44,6 +44,8 @@ residual_risks:
      producer-absence limiting codes, canonical coverage-code registration'
   - '#67 typed empty cohorts: the registry-side semantics landed with PR #75 and the comparison
      half with PR #89; VALIDATE (exemplars) and VALUE (visible counts) still owe their side'
+  - '#91 robustness check statements exempt from the causal-copy scan (found by a parallel review
+     whose do-not-merge note raced the PR #88 merge); fix folded into the DL-VALIDATE-01 lane'
   - '#82 metric-result hardening, including the N1 sample-dimension-on-empty-cohort question, is to
      be settled before DL-VALUE-01'
   - '#71 pages.yml Node 22->24 alignment'
