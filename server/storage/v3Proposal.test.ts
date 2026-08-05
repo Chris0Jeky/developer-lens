@@ -431,6 +431,10 @@ describe('storage-v3 B1a proposal', () => {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
+        if (target && /(?:^|[\\/])v3ContinuityReviewAnchor(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          offenders.push(`${sourcePath} -> ${target}`)
+        }
         if (target && /(?:^|[\\/])activationResult(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           if (sourcePath !== 'server/connectors/github/activationReport.ts') {
@@ -500,6 +504,19 @@ describe('storage-v3 B1a proposal', () => {
       '../../shared/capabilities.js',
       '../lifecycle.js',
     ])
+    const reviewAnchorPath = join(root, 'server', 'storage', 'v3ContinuityReviewAnchor.ts')
+    const reviewAnchorFile = ts.createSourceFile(
+      reviewAnchorPath,
+      readFileSync(reviewAnchorPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const reviewAnchorImports = reviewAnchorFile.statements.flatMap((statement) =>
+      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
+      statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)
+        ? [statement.moduleSpecifier.text]
+        : [])
+    expect(reviewAnchorImports).toEqual([])
     const activationResultPath = join(root, 'server', 'connectors', 'github', 'activationResult.ts')
     const activationResultFile = ts.createSourceFile(
       activationResultPath,
