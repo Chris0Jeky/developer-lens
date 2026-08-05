@@ -27,9 +27,9 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, selector, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b2a' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b2a-ii' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 303
+export const STORAGE_V3_SHADOW_USER_VERSION = 304
 
 /**
  * Canonical identity columns are immutable after insertion.  This registry is
@@ -248,6 +248,8 @@ const key = (column: string, prefix: string): string =>
 const c1 = (column: string): string => key(column, 'scope-')
 const token = (column: string, max = 256): string =>
   `length(${column}) BETWEEN 1 AND ${max} AND ${column} NOT GLOB '*[^A-Za-z0-9:._-]*'`
+const canonicalTimestampShape = (column: string): string =>
+  `length(${column}) = 24 AND ${column} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'`
 const quoted = (values: readonly string[]): string => values.map((value) => `'${value}'`).join(', ')
 
 /** Strict, isolated DDL for every table named by the B1a disposition registry. */
@@ -468,7 +470,7 @@ CREATE TABLE IF NOT EXISTS claim (
   window_start TEXT NOT NULL, window_end TEXT NOT NULL,
   schema_version TEXT NOT NULL CHECK (schema_version = '${CLAIM_SCHEMA_VERSION}'),
   claim_id_material_version TEXT NOT NULL CHECK (claim_id_material_version = '${CLAIM_MATERIAL_V3_PROPOSAL_VERSION}'),
-  created_at TEXT NOT NULL,
+  created_at TEXT CHECK (created_at IS NULL OR ${canonicalTimestampShape('created_at')}),
   superseded_by TEXT CHECK (superseded_by IS NULL OR ${key('superseded_by', 'cl_')}),
   PRIMARY KEY (scope_id, claim_id),
   FOREIGN KEY (scope_id) REFERENCES claim_scope(scope_id),

@@ -1286,6 +1286,9 @@ export function rewriteStorageV3Shadow(
       )
       for (const claim of claimsById.values()) {
         const targetClaim = claimMap.get(claim.claimId) ?? fail('GRAPH_REFUSED')
+        const retainedCreatedAt = asOf < addUtcMonthsClamped(claim.createdAt)
+          ? claim.createdAt
+          : null
         insertClaim.run(
           targetClaim.scopeId,
           targetClaim.targetId,
@@ -1296,7 +1299,7 @@ export function rewriteStorageV3Shadow(
           claim.windowStart,
           claim.windowEnd,
           claim.schemaVersion,
-          claim.createdAt,
+          retainedCreatedAt,
         )
         copiedClaims += 1
       }
