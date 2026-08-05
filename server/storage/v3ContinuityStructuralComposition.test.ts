@@ -9,7 +9,6 @@ import {
   type CapabilityLifecycleSnapshot,
 } from '../lifecycle.js'
 import { createInstallationAliases } from './installationAliases.js'
-import { taskInstallationKeyTestSeams } from './taskInstallationKey.js'
 import {
   composeGithubCoreContinuityStructuralConsistency,
   GITHUB_CORE_CONTINUITY_STRUCTURAL_COMPOSITION_ERROR_CODE,
@@ -273,10 +272,6 @@ async function fixture(options: FixtureOptions = {}) {
   await mkdir(directory, { recursive: true })
 
   const keyBytes = Buffer.from(options.keyBytes ?? KEY)
-  await taskInstallationKeyTestSeams.setupWithRandomBytes(
-    { workspaceRoot: root, taskId: TASK_ID },
-    () => Buffer.from(keyBytes),
-  )
   const card = options.card?.(validCard()) ?? validCard()
   const cardBytes = JSON.stringify(card)
   const cardSha256 = sha256(cardBytes)
@@ -298,6 +293,7 @@ async function fixture(options: FixtureOptions = {}) {
   const anchorBytes = JSON.stringify(anchor)
 
   await Promise.all([
+    writeFile(join(directory, 'installation-key.bin'), keyBytes, { mode: 0o600 }),
     writeFile(join(directory, 'task-card.json'), cardBytes, 'utf8'),
     writeFile(join(directory, 'last-run-report.json'), reportBytes, 'utf8'),
     writeFile(join(directory, 'continuity-review-anchor.json'), anchorBytes, 'utf8'),
@@ -393,7 +389,7 @@ describe('github.core continuity structural composition', () => {
     await expectInvalid(composeGithubCoreContinuityStructuralConsistency(prepared.input))
   })
 
-  it('rejects a lifecycle preview or proof that differs from the anchor', async () => {
+  it('rejects a lifecycle preview that differs from the anchor', async () => {
     vi.spyOn(Date, 'now').mockReturnValue(Date.parse(NOW))
     const prepared = await fixture({
       snapshot: ({ scopeAlias, cardSha256 }) => activeSnapshot(
@@ -401,6 +397,19 @@ describe('github.core continuity structural composition', () => {
         cardSha256,
         'f'.repeat(64),
         PROOF,
+      ),
+    })
+    await expectInvalid(composeGithubCoreContinuityStructuralConsistency(prepared.input))
+  })
+
+  it('rejects a lifecycle proof that differs from the anchor', async () => {
+    vi.spyOn(Date, 'now').mockReturnValue(Date.parse(NOW))
+    const prepared = await fixture({
+      snapshot: ({ scopeAlias, cardSha256 }) => activeSnapshot(
+        scopeAlias,
+        cardSha256,
+        PREVIEW,
+        'f'.repeat(64),
       ),
     })
     await expectInvalid(composeGithubCoreContinuityStructuralConsistency(prepared.input))
