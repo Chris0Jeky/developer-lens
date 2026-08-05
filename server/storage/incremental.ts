@@ -21,6 +21,54 @@ export const INCREMENTAL_GITHUB_CORE_TABLES = [
 
 export type IncrementalGithubCoreTable = typeof INCREMENTAL_GITHUB_CORE_TABLES[number]
 
+/**
+ * Canonical lifecycle metadata for the incremental github.core store.  The deletion
+ * planner consumes this registry; callers must not reproduce its table order.
+ */
+export interface IncrementalGithubCoreTableRegistryEntry {
+  readonly tableName: IncrementalGithubCoreTable
+  readonly capabilityId: 'github.core'
+  readonly deletionRole: 'scope-root' | 'dependent'
+  /** Parent tables referenced by this table's cross-table foreign keys. */
+  readonly dependsOn: readonly IncrementalGithubCoreTable[]
+  readonly selfReferentialForeignKeys: false
+  readonly lineageSubjectColumn?: string
+}
+
+export const INCREMENTAL_GITHUB_CORE_TABLE_REGISTRY = [
+  {
+    tableName: 'collection_job',
+    capabilityId: 'github.core',
+    deletionRole: 'scope-root',
+    dependsOn: [],
+    selfReferentialForeignKeys: false,
+    lineageSubjectColumn: 'job_id',
+  },
+  {
+    tableName: 'collection_checkpoint',
+    capabilityId: 'github.core',
+    deletionRole: 'scope-root',
+    dependsOn: ['collection_job', 'source_snapshot'],
+    selfReferentialForeignKeys: false,
+  },
+  {
+    tableName: 'source_snapshot',
+    capabilityId: 'github.core',
+    deletionRole: 'scope-root',
+    dependsOn: ['collection_job'],
+    selfReferentialForeignKeys: false,
+    lineageSubjectColumn: 'snapshot_id',
+  },
+  {
+    tableName: 'coverage_ledger',
+    capabilityId: 'github.core',
+    deletionRole: 'scope-root',
+    dependsOn: ['collection_job', 'source_snapshot'],
+    selfReferentialForeignKeys: false,
+    lineageSubjectColumn: 'coverage_id',
+  },
+] as const satisfies readonly IncrementalGithubCoreTableRegistryEntry[]
+
 const INCREMENTAL_GITHUB_CORE_STORAGE_SQL = [
   'CREATE TABLE IF NOT EXISTS collection_job (',
   '  job_id TEXT PRIMARY KEY NOT NULL CHECK (length(job_id) BETWEEN 1 AND 128 AND job_id NOT GLOB \'*[^A-Za-z0-9:._-]*\'),',
@@ -260,6 +308,14 @@ function hasExpectedSchema(rows: readonly IncrementalSchemaRow[]): boolean {
 
 export function readIncrementalGithubCoreStorageSchemaFingerprint(db: Database.Database): string {
   return schemaFingerprint(readOwnedSchemaRows(db))
+}
+
+/** Read-only schema assertion used by lifecycle planning before any deletion is attempted. */
+export function assertIncrementalGithubCoreStorageSchema(db: Database.Database): void {
+  if (!hasExpectedSchema(readOwnedSchemaRows(db))) {
+    throw new Error('INCREMENTAL_STORAGE_SCHEMA_MISMATCH')
+  }
+  assertHealthyStorage(db)
 }
 
 const OpaqueIdSchema = z.string().regex(/^[A-Za-z0-9:._-]{1,128}$/)
