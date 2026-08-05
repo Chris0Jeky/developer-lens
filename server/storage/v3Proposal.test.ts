@@ -135,7 +135,27 @@ describe('storage-v3 B1a proposal', () => {
       causedBy: `scope-${'b'.repeat(64)}`,
     }).success).toBe(false)
     expect(LINEAGE_V3_EVENT_SUBJECT_KINDS.scope_alias_expired).toEqual(['scope'])
+    expect(LINEAGE_V3_EVENT_SUBJECT_KINDS.c2_retention_expired).toEqual([
+      'job', 'snapshot', 'checkpoint', 'coverage',
+    ])
     expect(LINEAGE_V3_EVENT_SUBJECT_KINDS.legacy_deletion_operation).toEqual(['deletion'])
+    expect(LineageV3EventSchema.safeParse({
+      ...event,
+      subjectKind: 'coverage',
+      subjectId: `cov-${hex}`,
+      eventKind: 'c2_retention_expired',
+    }).success).toBe(true)
+    expect(LineageV3EventSchema.safeParse({
+      ...event,
+      subjectKind: 'coverage',
+      subjectId: `cov-${hex}`,
+      eventKind: 'c2_retention_expired',
+      operationId: `del-${hex}`,
+    }).success).toBe(false)
+    expect(LineageV3EventSchema.safeParse({
+      ...event,
+      eventKind: 'c2_retention_expired',
+    }).success).toBe(false)
     expect(LINEAGE_V3_DELETION_EVENT_KINDS).toEqual([
       'tombstone_cascade', 'index_deleted', 'legacy_deletion_operation',
     ])
@@ -206,6 +226,18 @@ describe('storage-v3 B1a proposal', () => {
     expect(byTable.commit_observation.preserve).toEqual(['aggregate counters', 'feature classification'])
     expect(byTable.pull_request_fact.preserve).toEqual(['lifecycle state', 'aggregate counters'])
     expect(byTable.dated_event_observation.preserve).toEqual(['event_kind'])
+    expect(byTable.commit_observation.delete).toEqual(expect.arrayContaining([
+      expect.stringMatching(/complete nullable C2 observation field group.*never the C1 anchor\/counters/i),
+    ]))
+    expect(byTable.pull_request_fact.delete).toEqual(expect.arrayContaining([
+      expect.stringMatching(/complete nullable C2 observation field group.*never the C1 anchor\/state\/counters/i),
+    ]))
+    expect(byTable.dated_event_observation.delete).toEqual(expect.arrayContaining([
+      expect.stringMatching(/complete nullable C2 observation field group.*never the C1 anchor\/event kind/i),
+    ]))
+    expect(byTable.collection_checkpoint.delete).toEqual(expect.arrayContaining([
+      expect.stringMatching(/complete nullable C2 field group.*never the C1 checkpoint anchor/i),
+    ]))
     expect(byTable.collection_job.preserve).toEqual(['capability_id', 'status'])
     expect(byTable.source_snapshot.preserve).toEqual(['validated C1 snapshot anchor and closed status'])
     expect(byTable.claim.preserve).toEqual(expect.arrayContaining([
@@ -343,11 +375,12 @@ describe('storage-v3 B1a proposal', () => {
     const liveClaims = await import('../../shared/claims.js')
     expect(liveClaims.ClaimIdMaterialVersionSchema.safeParse('claim-id.v3').success).toBe(false)
     expect(liveClaims.LineageEventKindSchema.safeParse('scope_alias_expired').success).toBe(false)
+    expect(liveClaims.LineageEventKindSchema.safeParse('c2_retention_expired').success).toBe(false)
     expect(liveClaims.LineageEventKindSchema.safeParse('scope_series_restarted').success).toBe(false)
     expect(liveClaims.LineageEventKindSchema.safeParse('legacy_deletion_operation').success).toBe(false)
   })
 
-  it('allows only the inert rewrite-to-schema-to-proposal chain and no production caller', () => {
+  it('allows only the inert migration/rewrite/sweep/schema/proposal chain and no production caller', () => {
     const root = resolve(__dirname, '../..')
     const roots = ['server', 'shared', 'src', 'scripts'].map((name) => join(root, name))
     const files: string[] = []
@@ -380,11 +413,19 @@ describe('storage-v3 B1a proposal', () => {
         }
         if (target && /(?:^|[\\/])v3ShadowSchema(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'server/storage/v3ShadowRewrite.ts') offenders.push(`${sourcePath} -> ${target}`)
+          if (!['server/storage/v3ShadowRewrite.ts', 'server/storage/v3ShadowSweep.ts'].includes(sourcePath)) {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
         }
         if (target && /(?:^|[\\/])v3ShadowRewrite(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'server/storage/v3ShadowMigration.ts') offenders.push(`${sourcePath} -> ${target}`)
+          if (!['server/storage/v3ShadowMigration.ts', 'server/storage/v3ShadowSweep.ts'].includes(sourcePath)) {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
+        }
+        if (target && /(?:^|[\\/])v3ShadowSweep(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          offenders.push(`${sourcePath} -> ${target}`)
         }
         ts.forEachChild(node, check)
       }
@@ -404,6 +445,24 @@ describe('storage-v3 B1a proposal', () => {
         ? [statement.moduleSpecifier.text]
         : [])
     expect(proposalImports).toEqual(['zod'])
+    const sweepPath = join(root, 'server', 'storage', 'v3ShadowSweep.ts')
+    const sweepFile = ts.createSourceFile(
+      sweepPath,
+      readFileSync(sweepPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const sweepImports = sweepFile.statements.flatMap((statement) =>
+      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
+        ? [statement.moduleSpecifier.text]
+        : [])
+    expect(sweepImports).toEqual([
+      'node:crypto',
+      'better-sqlite3',
+      '../../shared/claims.js',
+      './v3ShadowSchema.js',
+      './v3ShadowRewrite.js',
+    ])
     expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))
       .toMatch(/from ['"]\.\/v3ShadowRewrite\.js['"]/)
   })

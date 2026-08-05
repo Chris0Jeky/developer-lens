@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2a-ii claim-provenance retained form)
+Last updated: **2026-08-05** (DL-LIFE-02 B2a-iii ongoing C2 sweep)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,7 +9,7 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-and B1b-i/ii/iii plus B2a-i are merged; the current head contains inert B2a-ii claim-provenance expiry, while the rest of B2–B4
+and B1b-i/ii/iii plus B2a-i/ii are merged; the current head contains the inert B2a-iii C2 sweep, while the rest of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
@@ -1831,7 +1831,7 @@ tombstone replay. PR #112 head `1c771cc` passed hosted run `30994203412`, merged
 and passed exact-merge Pages/privacy run `30994446119` plus an empty late-comment sweep. LIFE-02
 and #80 remain incomplete; B2a is not complete. HUMAN_TODO q-6/q-7/q-8 are unchanged.
 
-## 2026-08-05 — DL-LIFE-02 B2a-ii claim-provenance retained form (current slice)
+## 2026-08-05 — DL-LIFE-02 B2a-ii claim-provenance retained form (merged)
 
 B2a-ii advances only the caller-free shadow identity to `3.0.0-shadow-b2a-ii` / `user_version`
 304. It classifies `claim.created_at` as exact C2 operational provenance, keeps the active v2
@@ -1851,18 +1851,62 @@ build, and diff checking. The target DDL deliberately enforces the exact UTC str
 semantic calendar validity remains enforced by the required source `ClaimRecordSchema` parse before
 the transactional rewrite. No direct target writer exists, and any future one must preserve that
 parser boundary. Fresh reviews found no HIGH/CRITICAL defect and retained this bounded distinction
-as a non-blocking residual. Hosted and exact-merge gates remain pending. No production caller,
-selector, capability state, or HUMAN_TODO item changes. LIFE-02/#80 and B2 remain incomplete.
+as a non-blocking residual. PR #113 head `d28bd9f` passed hosted run `30996013913`, merged as
+`ad8ba9a`, and passed exact-merge Pages/privacy run `30996264276` plus an empty late-comment sweep.
+No production caller, selector, capability state, or HUMAN_TODO item changes. LIFE-02/#80 and B2
+remain incomplete.
+
+## 2026-08-05 — DL-LIFE-02 B2a-iii ongoing C2 sweep (current slice)
+
+B2a-iii versions the caller-free shadow as `3.0.0-shadow-b2a-iii` / `user_version` 305 and adds the
+separate target-only `sweepStorageV3C2` seam. The sweep first acquires an immediate SQLite write
+transaction, then proves the exact application/user/schema fingerprint, table set, absence of TEMP
+shadow objects, integrity, quick-check, and foreign keys before planning any mutation. Canonical UTC
+expiry is inclusive. Stored expiry markers are parsed rather than passed to SQLite calendar
+arithmetic; `claim.created_at` reuses the exact 13-month calendar-clamped helper. Malformed target
+clocks fail before mutation. A competing writer returns the opaque `SWEEP_BUSY` result without
+retry, and every planned stage plus final validation has rollback injection.
+
+All ten declared C2 groups are monotone: scope alias/link/clock; repository aliases/clock; commit,
+pull-request, and dated-event operational fields; job, checkpoint, snapshot, and coverage operational
+fields; and claim creation provenance. The physical row remains only as the declared content-free C1
+anchor. The decision/proposal now state this co-located representation precisely: deleting the whole
+logical C2 observation means atomically clearing its complete nullable field group and expiry marker,
+not deleting the physical row's C1 aggregate/classification fields. C0 bridge rows, C1 observations,
+all anchor IDs/status/aggregates, claim/evidence edges, limitations, and supersession remain byte-for-
+byte equivalent in the invented fixture snapshot. A successful replay sees no eligible C2 group,
+does not call entropy, emits no second event, and cannot resurrect a value.
+
+Alias expiry writes the existing C1 `scope_alias_expired` event. The previously unnamed required
+incremental retention event is versioned as `c2_retention_expired`, accepts only retained job,
+snapshot, checkpoint, and coverage anchors, requires the owner row in the same scope, and always
+uses a neutral `op-` operation. It is emitted only for anchors reachable from a retained claim graph;
+an expired unreferenced job clears without manufacturing lineage. One operation is minted per scope,
+collisions retry against existing lineage keys, and a partial unique index prevents duplicate
+retention semantics for the same subject/week. This is retention, never correction or deletion.
+
+The focused proposal/schema/rewrite/migration/sweep seam passes 137 tests. The full local gate passes
+65 files / 1,051 tests plus context verification, lint, typecheck, build, and diff checking. Fresh
+authority, SQL/concurrency, and test-gap lenses found no remaining HIGH/CRITICAL defect after the
+C1-anchor wording and claim-reachability corrections. The only runtime output is content-free
+counts/status; the AST import gate proves no production module imports the sweep. No source reader,
+selector, renewal path, resolver/UI, capability state, or HUMAN_TODO item changes. Authenticated
+continuity renewal and coverage/job absence resolution remain the next B2 work. A fresh migration
+can currently materialize an already-expired incremental anchor with a NULL C2 group and therefore
+no sweep event; before any production migration/writer, the renewal/writer contract must explicitly
+decide and prove whether that never-retained state needs an origin event. B3 deletion/lineage and B4
+app-owned artifacts remain separate. LIFE-02/#80 and B2 remain incomplete.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B2a-ii in progress).** Finish the full local, fresh review, hosted,
-exact-merge, and late-sweep gates for the target-only `claim.created_at` retained form. Keep the
-active v2 required timestamp contract and the C1 claim ID/checksum material unchanged. Expiry must
-clear only the target C2 value at the inclusive calendar-clamped boundary, preserving the full C1
-claim graph; do not add a production selector or a speculative side table. Then take the exact
-ongoing v3 C2 sweep as the next bounded B2 slice, including idempotent no-resurrection and
-transaction rollback, before authenticated continuity renewal and resolver/UI work. Continue B3-B4 exactly as
+**Current 2026-08-05 (B2a-iii in progress).** Finish fresh post-fix review, hosted, exact-merge,
+and late-sweep gates for the target-only ongoing C2 sweep. Preserve the logical C2-group/C1-anchor
+split, inclusive canonical UTC expiry, immediate transaction, no-resurrection replay, claim-reachable
+retention lineage, and per-scope neutral operations. Do not add a source reader, production selector,
+or capability activation. Then take authenticated continuity renewal as the next bounded B2 slice,
+including the explicit migration-origin disposition for already-expired never-retained C2 groups,
+followed by canonical coverage/job absence resolution and its API/PresentationView/Evidence Drawer
+consumer migration. Continue B3-B4 exactly as
 `docs/analyser-program/10_LIFE_02B_DECISION.md` defines. Do not add a real-store/source-selection
 caller, persist identity input/mapping, or enter LIFE-03 backup/grace work. No intermediate slice may mark LIFE-02
 DONE or close #80. B4 only unblocks LIFE-03; the first real migration/connector additionally needs

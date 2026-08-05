@@ -75,6 +75,11 @@ retention. An OID/SHA, provider/repository alias, caller ID, exact range, exact 
 other C2 operational value may be copied only into the separately expiring C2 observation side of
 a `rewrite`; it is never a preserved C1-anchor field. A whole C2 observation disappears at its
 exact 13-month boundary even when its content-free C1 anchor remains.
+In the normalized shadow schema that side may be a paired nullable field group on the same physical
+row as its C1 anchor; "disappears" means every field in that C2 group, including its expiry marker,
+becomes NULL atomically. It does not authorize deletion of the physical row or its declared C1
+aggregate/classification fields. A physical row is deleted only when its disposition preserves no
+C1 anchor.
 
 | Present domain | Required storage-v3 disposition |
 |---|---|
@@ -141,6 +146,10 @@ The alias-link sweep atomically clears both `claim_scope.scope_alias` and its ex
 preserves the C1 claim series. The incremental sweep deletes each expired C2 operational row—alias,
 caller IDs, exact ranges/timestamps, cursor/watermark material, and provenance—while leaving only
 its C1 anchor and a typed retention event when a retained claim still references that anchor.
+The closed event is `c2_retention_expired`, restricted to retained `job`, `snapshot`, `checkpoint`,
+and `coverage` anchors and a neutral `op-` operation. It is deliberately distinct from correction,
+revocation, and deletion events; base observations and claim creation provenance have no separate
+retained lineage subject and are cleared without inventing one.
 Evidence and claims never FK-reference the deleted C2 row, so the sweep neither aborts nor silently
 deletes the 36-month series. Revocation, by contrast, enumerates and tombstones the anchor and its
 registered descendants.
@@ -160,7 +169,8 @@ grain. A deletion request mints one random `del-` operation ID and binds it to t
 exact replay reuses it, while a different operation for an already-tombstoned subject conflicts.
 Only `tombstone_cascade`, `index_deleted`, and `legacy_deletion_operation` use a `del-` deletion
 operation ID. Every other closed event kind uses a neutral random `op-` operation ID; correction,
-export, reconsent, index-built, alias-expiry, and series-restart events must never invent a deletion operation. The
+export, reconsent, index-built, alias-expiry, C2-retention-expiry, and series-restart events must
+never invent a deletion operation. The
 capability stays the controlled literal `github.core`, never inferred from the operation ID.
 A deletion transaction first enumerates every registered subject, writes its C1 tombstone under
 that stable operation, deletes dependents before parents, verifies integrity/FKs, and commits once.

@@ -118,7 +118,7 @@ export const CLAIM_MATERIAL_V3_PROPOSAL = {
   remintOnMaterialRewrite: true,
 } as const
 
-/** Proposal lineage extends the shipped six kinds with the three LIFE-02 lifecycle events. */
+/** Proposal lineage extends the shipped six kinds with the four LIFE-02 lifecycle events. */
 export const LINEAGE_V3_EVENT_KINDS = [
   'correction',
   'tombstone_cascade',
@@ -127,6 +127,7 @@ export const LINEAGE_V3_EVENT_KINDS = [
   'index_built',
   'index_deleted',
   'scope_alias_expired',
+  'c2_retention_expired',
   'scope_series_restarted',
   'legacy_deletion_operation',
 ] as const
@@ -161,6 +162,7 @@ export const LINEAGE_V3_EVENT_SUBJECT_KINDS = {
   index_built: LINEAGE_V3_SUBJECT_KINDS,
   index_deleted: LINEAGE_V3_SUBJECT_KINDS,
   scope_alias_expired: ['scope'],
+  c2_retention_expired: ['job', 'snapshot', 'checkpoint', 'coverage'],
   scope_series_restarted: ['scope'],
   legacy_deletion_operation: ['deletion'],
 } as const satisfies Readonly<Record<LineageV3EventKind, readonly LineageV3SubjectKind[]>>
@@ -295,14 +297,14 @@ const disposition = <T extends StorageV3Disposition>(value: T): T => value
 export const STORAGE_V3_DISPOSITIONS = [
   disposition({ tableName: 'import_run', family: 'base', action: 'delete', preserve: [], rewrite: [], delete: ['all legacy rows lacking scope and import-time ownership'] }),
   disposition({ tableName: 'repository_identity', family: 'base', action: 'rewrite', preserve: ['is_private', 'is_archived', 'is_fork'], rewrite: ['provider_id and analytical_key remain only in the expiring C2 identity row', 'ephemeral raw provider ID independently recomputes provider_id (repository-provider domain) and analytical_key (repository-analytical domain); require byte equality for both', 'claim_scope.scope_alias continuity uses an exact match against the recomputed provider_id only, never analytical_key', 'provider identity -> scope- C1 anchor'], delete: ['provider_id and analytical_key at C2 expiry', 'raw provider ID and installation key are never retained in target, proof, error, or log'] }),
-  disposition({ tableName: 'commit_observation', family: 'base', action: 'rewrite', preserve: ['aggregate counters', 'feature classification'], rewrite: ['repository_provider_id -> canonical scope_id', 'commit sha as an expiring C2 observation'], delete: ['commit sha, source provenance, and row at C2 expiry', 'rows whose repository binding is unverifiable'] }),
-  disposition({ tableName: 'pull_request_fact', family: 'base', action: 'rewrite', preserve: ['lifecycle state', 'aggregate counters'], rewrite: ['repository_provider_id -> canonical scope_id', 'pull-request number as an expiring C2 observation'], delete: ['pull-request number, provider provenance, and row at C2 expiry', 'rows whose repository binding is unverifiable'] }),
+  disposition({ tableName: 'commit_observation', family: 'base', action: 'rewrite', preserve: ['aggregate counters', 'feature classification'], rewrite: ['repository_provider_id -> canonical scope_id', 'commit sha as an expiring C2 observation'], delete: ['complete nullable C2 observation field group (commit sha, exact time, source provenance, and expiry marker) at C2 expiry; never the C1 anchor/counters', 'rows whose repository binding is unverifiable'] }),
+  disposition({ tableName: 'pull_request_fact', family: 'base', action: 'rewrite', preserve: ['lifecycle state', 'aggregate counters'], rewrite: ['repository_provider_id -> canonical scope_id', 'pull-request number as an expiring C2 observation'], delete: ['complete nullable C2 observation field group (pull-request number, exact times, and expiry marker) at C2 expiry; never the C1 anchor/state/counters', 'rows whose repository binding is unverifiable'] }),
   disposition({ tableName: 'coverage_observation', family: 'base', action: 'delete', preserve: [], rewrite: [], delete: ['all legacy aggregate rows without complete member-scope ownership'] }),
-  disposition({ tableName: 'dated_event_observation', family: 'base', action: 'rewrite', preserve: ['event_kind'], rewrite: ['repository_provider_id -> canonical scope_id', 'occurred_at as an expiring C2 observation'], delete: ['exact occurred_at and row at C2 expiry', 'rows whose repository binding is unverifiable'] }),
+  disposition({ tableName: 'dated_event_observation', family: 'base', action: 'rewrite', preserve: ['event_kind'], rewrite: ['repository_provider_id -> canonical scope_id', 'occurred_at as an expiring C2 observation'], delete: ['complete nullable C2 observation field group (exact occurred_at and expiry marker) at C2 expiry; never the C1 anchor/event kind', 'rows whose repository binding is unverifiable'] }),
   disposition({ tableName: 'v2_store_provenance', family: 'bridge', action: 'preserve', preserve: ['validated C0 synthetic-only provenance'], rewrite: [], delete: [], refuse: ['activation_card or unverifiable provenance'] }),
   disposition({ tableName: 'v2_coverage_record', family: 'bridge', action: 'preserve', preserve: ['rows covered by exactly one validated C0 synthetic-only provenance record'], rewrite: [], delete: [], refuse: ['rows without that provenance or rows under activation_card/unverifiable provenance'] }),
   disposition({ tableName: 'collection_job', family: 'incremental', action: 'rewrite', preserve: ['capability_id', 'status'], rewrite: ['job- anchor and scope_id', 'payload hash as an expiring C2 observation'], delete: ['caller job ID, payload hash, and exact operational timestamps at C2 expiry'] }),
-  disposition({ tableName: 'collection_checkpoint', family: 'incremental', action: 'rewrite', preserve: ['query/source version', 'checkpoint coverage state'], rewrite: ['ckpt- anchor, scope_id, retention/deletion order, lineage coverage'], delete: ['cursor, exact watermark, and operational row at C2 expiry'] }),
+  disposition({ tableName: 'collection_checkpoint', family: 'incremental', action: 'rewrite', preserve: ['query/source version', 'checkpoint coverage state'], rewrite: ['ckpt- anchor, scope_id, retention/deletion order, lineage coverage'], delete: ['complete nullable C2 field group (cursor, exact watermark, overlap/hash, and expiry marker) at C2 expiry; never the C1 checkpoint anchor'] }),
   disposition({ tableName: 'source_snapshot', family: 'incremental', action: 'rewrite', preserve: ['validated C1 snapshot anchor and closed status'], rewrite: ['snap- anchor bound to canonical scope/job', 'snapshot hash and coverage range as expiring C2 observations'], delete: ['caller snapshot ID, snapshot hash, exact range, provenance, and times at C2 expiry'] }),
   disposition({ tableName: 'coverage_ledger', family: 'incremental', action: 'rewrite', preserve: ['status and content-free coverage facts'], rewrite: ['cov- anchor bound to canonical scope/job/snapshot'], delete: ['coverage_id alias, exact range, and job observation at C2 expiry'] }),
   disposition({ tableName: 'evidence', family: 'claim', action: 'rewrite', preserve: ['C1 evidence anchor and closed layer/schema'], rewrite: ['ev- anchor and C1 coverage reference'], delete: ['alias-bearing or exact operational references at C2 expiry', 'evidence attached to claims removed by a validated cascade'], refuse: ['unanchored, dangling, or cross-scope evidence rows'] }),

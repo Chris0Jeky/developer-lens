@@ -27,9 +27,9 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, selector, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b2a-ii' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b2a-iii' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 304
+export const STORAGE_V3_SHADOW_USER_VERSION = 305
 
 /**
  * Canonical identity columns are immutable after insertion.  This registry is
@@ -150,6 +150,7 @@ BEGIN
 END;`
 
 export const STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME = 'storage_v3_lineage_scope_guard'
+export const STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME = 'storage_v3_c2_retention_owner_guard'
 
 const lineageOwnerRegistry = [
   { subjectKind: 'scope', prefix: 'scope-', tableName: 'claim_scope', idColumn: 'scope_id' },
@@ -241,6 +242,30 @@ WHEN (
 )
 BEGIN
   SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE');
+END;`
+
+const c2RetentionOwnerTriggerSql = `CREATE TRIGGER IF NOT EXISTS ${STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME}
+BEFORE INSERT ON lineage_event
+WHEN NEW.event_kind = 'c2_retention_expired' AND NOT (
+  (NEW.subject_kind = 'job' AND EXISTS (
+    SELECT 1 FROM collection_job AS owner
+    WHERE owner.scope_id = NEW.scope_id AND owner.job_id = NEW.subject_id
+  ))
+  OR (NEW.subject_kind = 'snapshot' AND EXISTS (
+    SELECT 1 FROM source_snapshot AS owner
+    WHERE owner.scope_id = NEW.scope_id AND owner.snapshot_id = NEW.subject_id
+  ))
+  OR (NEW.subject_kind = 'checkpoint' AND EXISTS (
+    SELECT 1 FROM collection_checkpoint AS owner
+    WHERE owner.scope_id = NEW.scope_id AND owner.checkpoint_id = NEW.subject_id
+  ))
+  OR (NEW.subject_kind = 'coverage' AND EXISTS (
+    SELECT 1 FROM coverage_ledger AS owner
+    WHERE owner.scope_id = NEW.scope_id AND owner.coverage_id = NEW.subject_id
+  ))
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_C2_RETENTION_OWNER_REQUIRED');
 END;`
 
 const key = (column: string, prefix: string): string =>
@@ -538,15 +563,20 @@ CREATE TABLE IF NOT EXISTS lineage_event (
   CHECK ((subject_kind = 'scope' AND ${c1('subject_id')}) OR (subject_kind = 'claim' AND ${key('subject_id', 'cl_')}) OR (subject_kind = 'job' AND ${key('subject_id', 'job-')}) OR (subject_kind = 'snapshot' AND ${key('subject_id', 'snap-')}) OR (subject_kind = 'checkpoint' AND ${key('subject_id', 'ckpt-')}) OR (subject_kind = 'coverage' AND ${key('subject_id', 'cov-')}) OR (subject_kind = 'evidence' AND ${key('subject_id', 'ev-')}) OR (subject_kind = 'artifact' AND ${key('subject_id', 'art-')}) OR (subject_kind = 'deletion' AND ${key('subject_id', 'del-')})),
   CHECK (caused_by IS NULL OR ${c1('caused_by')} OR ${key('caused_by', 'cl_')} OR ${key('caused_by', 'job-')} OR ${key('caused_by', 'snap-')} OR ${key('caused_by', 'ckpt-')} OR ${key('caused_by', 'cov-')} OR ${key('caused_by', 'ev-')} OR ${key('caused_by', 'art-')} OR ${key('caused_by', 'op-')} OR ${key('caused_by', 'del-')}),
   CHECK ((event_kind = 'scope_alias_expired' AND subject_kind = 'scope') OR (event_kind <> 'scope_alias_expired')),
+  CHECK ((event_kind = 'c2_retention_expired' AND subject_kind IN ('job', 'snapshot', 'checkpoint', 'coverage')) OR (event_kind <> 'c2_retention_expired')),
   CHECK ((event_kind = 'scope_series_restarted' AND subject_kind = 'scope') OR (event_kind <> 'scope_series_restarted')),
   CHECK ((event_kind = 'legacy_deletion_operation' AND subject_kind = 'deletion' AND operation_id = subject_id) OR (event_kind <> 'legacy_deletion_operation')),
   CHECK ((event_kind = 'legacy_deletion_operation' AND scope_id IS NULL) OR (event_kind <> 'legacy_deletion_operation' AND scope_id IS NOT NULL AND ${c1('scope_id')})),
   CHECK (event_kind <> 'scope_series_restarted' OR caused_by IS NULL)
 ) STRICT;
+CREATE UNIQUE INDEX IF NOT EXISTS lineage_retention_event_identity ON lineage_event (
+  scope_id, subject_kind, subject_id, event_kind, event_week
+) WHERE event_kind IN ('scope_alias_expired', 'c2_retention_expired');
 ${immutableTriggerSqlBlock}
 ${immutableInsertTriggerSqlBlock}
 ${identityBindingTriggerSqlBlock}
 ${lineageScopeTriggerSql}
+${c2RetentionOwnerTriggerSql}
 ${lineageOwnerTriggerSqlBlock}
 `
 

@@ -317,7 +317,7 @@ export function addUtcMonthsClamped(timestamp: string, months = 13): string {
   return parseTime(result.toISOString())
 }
 
-function isoWeek(timestamp: string): string {
+export function isoWeekFromCanonicalTimestamp(timestamp: string): string {
   const date = new Date(parseTime(timestamp))
   date.setUTCHours(0, 0, 0, 0)
   date.setUTCDate(date.getUTCDate() + 4 - (date.getUTCDay() || 7))
@@ -1380,7 +1380,7 @@ export function rewriteStorageV3Shadow(
         const eventKind = requiredText(row.event_kind)
         const sourceCause = nullableText(row.caused_by)
         const occurredAt = parseTime(row.occurred_at)
-        const eventWeek = isoWeek(occurredAt)
+        const eventWeek = isoWeekFromCanonicalTimestamp(occurredAt)
 
         if (sourceSubjectId.startsWith(LEGACY_TOMBSTONE_PREFIX)) {
           const suffix = sourceSubjectId.slice(LEGACY_TOMBSTONE_PREFIX.length)

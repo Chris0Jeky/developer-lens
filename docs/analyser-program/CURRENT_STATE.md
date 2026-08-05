@@ -6,7 +6,7 @@ file disagrees with Git, CI, or the ledger's live evidence, those win.
 
 ```yaml
 updated: 2026-08-05
-phase: 'R4 active horizon OPEN — DL-LIFE-02 B2a-i is merged; B2a-ii claim-provenance retained form is current and LIFE-02/#80 remain incomplete'
+phase: 'R4 active horizon OPEN — DL-LIFE-02 B2a-ii is merged; B2a-iii target-only ongoing C2 sweep is current and LIFE-02/#80 remain incomplete'
 head: see `git log -1 origin/main` — live Git outranks the merge SHAs recorded below
 merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-SPINE-01 #74/75e7c39', 'DL-BRIDGE-01 #72/a6fcae1', 'DL-METRIC-01 #75/d1e29dd',
@@ -19,10 +19,11 @@ merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-LIFE-02 contract correction #108/7a270f4',
   'DL-LIFE-02 B1b-i #109/2a55b11', 'DL-LIFE-02 B1b-ii #110/2cf2236 -> ed413dc',
   'DL-LIFE-02 B1b-iii #111/e575059 -> 202aebea',
-  'DL-LIFE-02 B2a-i #112/1c771cc -> e0f3894'] # card stays active through B4
-active_slice: 'DL-LIFE-02 B2a-ii — caller-free, invented-fixture-only claim.created_at C2 expiry
-  and C1-only retained form in the v3 shadow rewrite; no production caller or capability activation'
-next_task: finish and merge B2a-ii, then exact ongoing C2 sweep, authenticated continuity renewal,
+  'DL-LIFE-02 B2a-i #112/1c771cc -> e0f3894',
+  'DL-LIFE-02 B2a-ii #113/d28bd9f -> ad8ba9a'] # card stays active through B4
+active_slice: 'DL-LIFE-02 B2a-iii — caller-free, invented-fixture-only target C2 sweep with
+  exact expiry, rollback, no resurrection, and typed C1 retention lineage; no production caller'
+next_task: finish and merge B2a-iii, then authenticated continuity renewal,
   coverage/job absence resolver, B3 complete SQL deletion, and B4 app-owned artifacts; only the B4 state refresh may mark DONE, and
   the first real migration/connector still requires LIFE-03 plus #86 coverage remint
 next_value_slice: 'DL-EVQ-03 is DONE; no second value card is admitted while the deletion critical
@@ -68,7 +69,12 @@ last_verified_checks: hosted PR gate green at every merged R1-R3 head above; LIF
   migration tests and the full 64-file/1,034-test local gate with context, lint, typecheck, build,
   and diff checking. Fresh reviews found no HIGH/CRITICAL defect; the target DDL checks exact UTC
   string shape while semantic calendar validity remains at the required source parser boundary.
-  Hosted and exact-merge gates remain pending.
+  B2a-ii PR #113 head d28bd9f passed hosted run 30996013913 and merged as ad8ba9a;
+  exact-merge Pages/privacy run 30996264276 passed with an empty late-comment sweep. B2a-iii passes
+  137 focused proposal/schema/rewrite/migration/sweep tests and the full 65-file/1,051-test local
+  gate with context, lint, typecheck, build, and diff checking. Fresh authority, SQL/concurrency,
+  and test-gap reviews found no remaining HIGH/CRITICAL defect after the C1-anchor wording and
+  claim-reachability corrections; hosted and exact-merge gates remain pending.
 capabilities: every executable capability remains never_authorized; cap.external.model uncalled
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
   127 cards; `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
@@ -82,7 +88,8 @@ residual_risks:
   - '#79 BRIDGE-02 must serve a PresentationView, not the canonical record shape'
   - '#80 carries binding constraints on DL-LIFE-02 (open): PR #103 covers registered SQLite slice A,
      PR #105 covers inert B1a, PRs #107/#108 correct its late contracts, PR #109 covers B1b-i,
-     PR #110 covers B1b-ii, PR #111 covers B1b-iii, and PR #112 covers B2a-i; B2a-ii through B4 remain mandatory'
+     PR #110 covers B1b-ii, PR #111 covers B1b-iii, PR #112 covers B2a-i, and PR #113 covers B2a-ii;
+     B2a-iii through B4 remain mandatory'
   - 'B1b must enforce the corrected PR #106 contract: match scope continuity against the provider-
      domain alias, retain aliases only in expiring C2 rows, and bind index_deleted to del-'
   - 'B1b-ii must use its transient ownership map to abort mapped live lineage subjects/causes whose
@@ -97,6 +104,10 @@ residual_risks:
      B3 owns complete SQL deletion, tombstone replay, and the final no-rebind proof'
   - 'B2a-ii target DDL validates the nullable claim.created_at UTC string shape, while the required
      source ClaimRecordSchema parser enforces semantic calendar validity; no direct target writer exists'
+  - 'B2a-iii expiry markers remain mutable shadow C2 values; the sweep validates canonical form and
+     only clears, but a first production writer/renewal path must enforce one-way authenticated clocks'
+  - 'A fresh shadow migration can materialize an already-expired incremental anchor with NULL C2 and
+     no sweep event; the pre-production renewal/writer contract must prove its explicit origin disposition'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,
      producer-absence limiting codes, canonical coverage-code registration'
   - '#86 coverage_id embeds the collection scope_alias and now travels inside C1 claim-graph
