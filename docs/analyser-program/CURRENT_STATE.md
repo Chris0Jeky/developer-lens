@@ -6,10 +6,10 @@ file disagrees with Git, CI, or the ledger's live evidence, those win.
 
 ```yaml
 updated: 2026-08-05
-current_slice_override: 'B2b-ii-a PR #116 head d939e1b passed hosted run 31003641095, merged as
-  8e8b0bc, and exact-merge Pages/privacy run 31003872271 plus the late-comment sweep passed;
-  B2b-ii-b strict C1 activation-result validation is current'
-phase: 'R4 active horizon OPEN — DL-LIFE-02 B2b-ii-a is merged; B2b-ii-b C1 result validation is current and LIFE-02/#80 remain incomplete'
+current_slice_override: 'B2b-ii-b PR #117 head f910137 passed hosted run 31005511635, merged as
+  8aa19b3, and exact-merge Pages/privacy run 31005770546 plus the late-comment sweep passed;
+  B2b-ii-c stable local-C2 activation report loading is current'
+phase: 'R4 active horizon OPEN — DL-LIFE-02 B2b-ii-b is merged; B2b-ii-c report loading is current and LIFE-02/#80 remain incomplete'
 head: see `git log -1 origin/main` — live Git outranks the merge SHAs recorded below
 merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-SPINE-01 #74/75e7c39', 'DL-BRIDGE-01 #72/a6fcae1', 'DL-METRIC-01 #75/d1e29dd',
@@ -26,11 +26,12 @@ merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-LIFE-02 B2a-ii #113/d28bd9f -> ad8ba9a',
   'DL-LIFE-02 B2a-iii #114/762f9f9 -> 6dad325',
   'DL-LIFE-02 B2b-i #115/d4683c7 -> bdf8e436',
-  'DL-LIFE-02 B2b-ii-a #116/d939e1b -> 8e8b0bc'] # card stays active through B4
-active_slice: 'DL-LIFE-02 B2b-ii-b — caller-free strict C1 github.core activation-result validator;
-  no local-C2 report envelope, owner anchor, clock, continuity writer, or capability activation'
-next_task: finish and merge B2b-ii-b, then B2b-ii-c local-C2 report envelope plus stable exact-byte
-  loader, an independent owner-reviewed report/card/key/time anchor plus trusted clock, caller-free composition, the
+  'DL-LIFE-02 B2b-ii-a #116/d939e1b -> 8e8b0bc',
+  'DL-LIFE-02 B2b-ii-b #117/f910137 -> 8aa19b3'] # card stays active through B4
+active_slice: 'DL-LIFE-02 B2b-ii-c — stable local-C2 github.core report envelope and hash-bound loader;
+  no owner anchor, trusted clock, continuity writer, production caller, or capability activation'
+next_task: finish and merge B2b-ii-c, then add an independent owner-reviewed report/card/key/time
+  anchor plus trusted clock, caller-free composition, the
   compare-and-swap renewal writer, restart and migration-origin retention events,
   coverage/job absence resolver, B3 complete SQL deletion, and B4 app-owned artifacts; only the B4 state refresh may mark DONE, and
   the first real migration/connector still requires LIFE-03 plus #86 coverage remint
@@ -38,7 +39,7 @@ next_value_slice: 'DL-EVQ-03 is DONE; no second value card is admitted while the
   path remains active'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No dependency or owner gate blocks the current invented-fixture C1 result-validation work.
+blockers: 'No dependency or owner gate blocks the current invented-fixture report contract/loading work.
   Trusted continuity composition and renewal remain blocked by the absence of an independent
   owner-reviewed report anchor and trusted clock; neither may be inferred from caller claims.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) + 08_OPEN_QUESTIONS.md §1 unchanged; q-7 (mark the
@@ -95,12 +96,17 @@ last_verified_checks: hosted PR gate green at every merged R1-R3 head above; LIF
   31003872271 passed with an empty late-comment sweep. B2b-ii-b passes 2 focused parser/proposal
   files / 17 tests and the full 68-file/1,070-test local gate with context, lint, typecheck, build,
   and diff checking. Fresh code, authority, and transport-invariant reviews found no HIGH/CRITICAL
-  defect after the strict producer-count fixes; hosted and exact-merge gates remain pending.
+  defect after the strict producer-count fixes. PR #117 head f910137 passed hosted run 31005511635,
+  merged as 8aa19b3, and exact-merge Pages/privacy run 31005770546 passed with an empty late-comment
+  sweep. B2b-ii-c passes 6 focused loader/report/proposal files / 34 tests and the full 71-file/
+  1,082-test local gate with context, lint, typecheck, build, and diff checking. Fresh artifact-core
+  and integrated code, test, privacy, and authority reviews found no HIGH/CRITICAL defect; hosted
+  and exact-merge gates remain.
 capabilities: every executable capability remains never_authorized; cap.external.model uncalled
 b2b_i: 'merged structural-only continuity candidate; PR #115 head d4683c7 merged as bdf8e436 after
   hosted run 31002017618; exact-merge run 31002333681 and the late-comment sweep passed'
-next_task_b2b: 'finish strict C1 activation-result validator; then B2b-ii-c local-C2 report envelope
-  plus stable loader, independent owner-reviewed report/card/key/time anchor and trusted clock,
+next_task_b2b: 'finish stable local-C2 report envelope/loader; then an independent owner-reviewed
+  report/card/key/time anchor and trusted clock,
   caller-free composition, CAS writer,
   then restart plus claim-reachable migration-origin retention events'
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
@@ -116,8 +122,8 @@ residual_risks:
   - '#80 carries binding constraints on DL-LIFE-02 (open): PR #103 covers registered SQLite slice A,
      PR #105 covers inert B1a, PRs #107/#108 correct its late contracts, PR #109 covers B1b-i,
      PR #110 covers B1b-ii, PR #111 covers B1b-iii, PR #112 covers B2a-i, PR #113 covers B2a-ii,
-     PR #114 covers B2a-iii, PR #115 covers B2b-i, and PR #116 covers B2b-ii-a;
-     B2b-ii-b through B4 remain mandatory'
+     PR #114 covers B2a-iii, PR #115 covers B2b-i, PR #116 covers B2b-ii-a, and PR #117 covers
+     B2b-ii-b; B2b-ii-c through B4 remain mandatory'
   - 'B1b must enforce the corrected PR #106 contract: match scope continuity against the provider-
      domain alias, retain aliases only in expiring C2 rows, and bind index_deleted to del-'
   - 'B1b-ii must use its transient ownership map to abort mapped live lineage subjects/causes whose
