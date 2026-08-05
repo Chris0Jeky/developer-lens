@@ -2581,6 +2581,30 @@ button.heatmap__cell[aria-pressed="true"] {
   padding: 36px;
 }
 
+/* Discreet route links out of a section — deliberately quieter than a button. */
+.section-links {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 18px;
+  margin-top: 18px;
+}
+
+.section-links > a {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: #6a7387;
+  font-size: 9px;
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+
+.section-links > a:hover,
+.section-links > a:focus-visible {
+  color: var(--aqua);
+}
+
 .coverage-panel {
   display: grid;
   grid-template-columns: 0.95fr 1.15fr;

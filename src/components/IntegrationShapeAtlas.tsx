@@ -490,7 +490,9 @@ export function IntegrationShapeAtlasRoute() {
       <div className="ambient ambient--one" aria-hidden="true" />
       <div className="ambient ambient--two" aria-hidden="true" />
       <header className="app-header">
-        <span className="atlas-route__brand">Developer Lens · integration shape</span>
+        <a className="atlas-route__brand" href="?">
+          ← Developer Lens · integration shape
+        </a>
         <span className="local-pill local-pill--public">Invented C1 · offline</span>
       </header>
       <main className="atlas-route__main">

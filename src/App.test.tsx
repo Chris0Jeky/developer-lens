@@ -1,4 +1,4 @@
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { analyzeDataset } from '../server/analytics'
@@ -105,6 +105,53 @@ describe('Developer Lens app', () => {
     expect(
       screen.queryByRole('link', { name: /shape the signal pipeline/i }),
     ).not.toBeInTheDocument()
+  })
+
+  it('reaches the Integration Shape Atlas from the dashboard rather than a typed URL', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => demo,
+      }),
+    )
+    render(<App />)
+    await screen.findByText('Your development trail,')
+
+    const surfaces = screen.getByRole('navigation', { name: /evidence surfaces/i })
+    expect(
+      within(surfaces).getByRole('link', { name: /integration shape atlas/i }),
+    ).toHaveAttribute('href', '?view=integration-shape')
+    expect(within(surfaces).getByRole('link', { name: /coverage cockpit/i })).toHaveAttribute(
+      'href',
+      '?view=cockpit-v2',
+    )
+  })
+
+  it('offers the Atlas but not the local-only cockpit on the hosted showcase', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => publicDemo,
+      }),
+    )
+    render(<App />)
+    await screen.findByText('Public demo')
+
+    const surfaces = screen.getByRole('navigation', { name: /evidence surfaces/i })
+    expect(within(surfaces).getByRole('link', { name: /integration shape atlas/i })).toBeInTheDocument()
+    expect(within(surfaces).queryByRole('link', { name: /coverage cockpit/i })).not.toBeInTheDocument()
+  })
+
+  it('renders the Atlas route with a way back to the dashboard', async () => {
+    vi.stubGlobal('fetch', vi.fn())
+    window.history.replaceState({}, '', '/?view=integration-shape')
+
+    render(<App />)
+
+    expect(await screen.findByTestId('integration-shape-atlas')).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /integration shape/i })).toHaveAttribute('href', '?')
   })
 
   it('renders the offline V2 story, filters every evidence level, and never fetches', async () => {

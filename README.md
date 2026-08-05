@@ -129,6 +129,15 @@ A **non-browser** caller (curl, a script) does need a bearer, and must set it de
 server, then send `Authorization: Bearer <that value>`. With the variable unset the API generates
 an unreadable per-launch value and never prints it, so it answers no non-browser caller at all.
 
+### Try the Integration Shape Atlas
+
+<http://127.0.0.1:5173/?view=integration-shape> renders one deterministic comparative finding end to
+end — the question, the matched-window comparison, the distribution and its tail, every honest
+count, and the limitations — where every analytic number is a button that opens the Evidence Drawer
+on its complete evidence walk. It needs no API and no data: the facts are the invented C1
+composition in `shared/integrationShape.ts`, so it works on the hosted showcase too. Both this route
+and the cockpit are linked from the dashboard's *Coverage & privacy* section.
+
 For a prepared 3-5 minute walkthrough, use the
 [`showcase demo runbook`](docs/SHOWCASE_DEMO.md). It gives the exact hosted and local routes, a short
 talk track, the privacy boundary to state aloud, and the unfinished activation paths that must not

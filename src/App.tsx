@@ -460,6 +460,23 @@ function DashboardApp() {
               <article className="panel coverage-wrap">
                 <CoveragePanel meta={data.meta} />
               </article>
+              {/*
+                The Atlas and the cockpit were reachable only by typing a query string, which
+                meant the deepest evidence surfaces in the product were, in practice, unreachable.
+                They belong under coverage: both are about what the lens can and cannot see.
+              */}
+              <nav className="section-links" aria-label="Evidence surfaces">
+                <a href="?view=integration-shape">
+                  <Layers3 size={13} aria-hidden="true" /> Integration Shape Atlas — one finding,
+                  every number traced to its evidence
+                </a>
+                {!publicShowcase && (
+                  <a href="?view=cockpit-v2">
+                    <ShieldCheck size={13} aria-hidden="true" /> Coverage cockpit — the V2 coverage
+                    and capability boundary
+                  </a>
+                )}
+              </nav>
             </section>
           </main>
 
