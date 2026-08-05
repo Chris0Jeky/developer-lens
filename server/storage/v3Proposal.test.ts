@@ -401,10 +401,10 @@ describe('storage-v3 B1a proposal', () => {
           (ts.isImportDeclaration(node) || ts.isExportDeclaration(node)) && node.moduleSpecifier &&
           ts.isStringLiteral(node.moduleSpecifier) ? node.moduleSpecifier.text : undefined
         const requireLiteral = ts.isCallExpression(node) && ts.isIdentifier(node.expression) &&
-          node.expression.text === 'require' && node.arguments.length === 1 &&
+          node.expression.text === 'require' && node.arguments.length >= 1 &&
           ts.isStringLiteral(node.arguments[0]) ? node.arguments[0].text : undefined
         const dynamicLiteral = ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword &&
-          node.arguments.length === 1 && ts.isStringLiteral(node.arguments[0]) ? node.arguments[0].text : undefined
+          node.arguments.length >= 1 && ts.isStringLiteral(node.arguments[0]) ? node.arguments[0].text : undefined
         const target = moduleSpecifier ?? requireLiteral ?? dynamicLiteral
         if (target && /(?:^|[\\/])v3Proposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
@@ -424,6 +424,10 @@ describe('storage-v3 B1a proposal', () => {
           }
         }
         if (target && /(?:^|[\\/])v3ShadowSweep(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          offenders.push(`${sourcePath} -> ${target}`)
+        }
+        if (target && /(?:^|[\\/])v3ContinuityAuthorization(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
@@ -462,6 +466,23 @@ describe('storage-v3 B1a proposal', () => {
       '../../shared/claims.js',
       './v3ShadowSchema.js',
       './v3ShadowRewrite.js',
+    ])
+    const continuityPath = join(root, 'server', 'storage', 'v3ContinuityAuthorization.ts')
+    const continuityFile = ts.createSourceFile(
+      continuityPath,
+      readFileSync(continuityPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const continuityImports = continuityFile.statements.flatMap((statement) =>
+      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
+        ? [statement.moduleSpecifier.text]
+        : [])
+    expect(continuityImports).toEqual([
+      'node:crypto',
+      '../../shared/claims.js',
+      '../../shared/capabilities.js',
+      '../lifecycle.js',
     ])
     expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))
       .toMatch(/from ['"]\.\/v3ShadowRewrite\.js['"]/)

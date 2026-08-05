@@ -5,6 +5,7 @@ import {
   createCapabilityLifecycleRegistrySnapshots,
   createCapabilityLifecycleSnapshot,
   reduceCapabilityLifecycle,
+  replayValidateCapabilityLifecycleSnapshot,
   simulateCapabilityGateApprovals,
   type CapabilityLifecycleSnapshot,
 } from './lifecycle.js'
@@ -40,6 +41,44 @@ function activated(): CapabilityLifecycleSnapshot {
 }
 
 describe('capability lifecycle', () => {
+  it('replay-validates an existing snapshot without changing it', () => {
+    const snapshot = activated()
+    const result = replayValidateCapabilityLifecycleSnapshot(structuredClone(snapshot))
+    expect(result).toMatchObject({ ok: true, snapshot: { state: 'active' } })
+    if (!result.ok) throw new Error(result.code)
+    expect(result.snapshot).toEqual(snapshot)
+    expect(Object.isFrozen(result.snapshot)).toBe(true)
+
+    const inherited = Object.freeze(Object.create(snapshot))
+    const inheritedResult = replayValidateCapabilityLifecycleSnapshot(inherited)
+    expect(inheritedResult).toMatchObject({ ok: true, snapshot: { state: 'active' } })
+    if (!inheritedResult.ok) throw new Error(inheritedResult.code)
+    expect(inheritedResult.snapshot).not.toBe(inherited)
+    expect(inheritedResult.snapshot).toEqual(snapshot)
+    expect(Object.keys(inheritedResult.snapshot)).toContain('eventHistory')
+
+    let accessorEpoch = 1
+    const accessor = structuredClone(snapshot) as CapabilityLifecycleSnapshot
+    Object.defineProperty(accessor, 'epoch', { enumerable: true, get: () => accessorEpoch })
+    Object.freeze(accessor)
+    const accessorResult = replayValidateCapabilityLifecycleSnapshot(accessor)
+    expect(accessorResult).toMatchObject({ ok: true, snapshot: { epoch: 1 } })
+    if (!accessorResult.ok) throw new Error(accessorResult.code)
+    accessorEpoch = 999
+    expect(accessorResult.snapshot.epoch).toBe(1)
+    expect(Object.getOwnPropertyDescriptor(accessorResult.snapshot, 'epoch')).toHaveProperty('value', 1)
+
+    const hostile = new Proxy({}, { ownKeys: () => { throw new Error('must fail closed') } })
+    expect(replayValidateCapabilityLifecycleSnapshot(hostile)).toEqual({
+      ok: false, code: 'INVALID_LIFECYCLE_SNAPSHOT',
+    })
+
+    const tampered = { ...snapshot, state: 'suspended' as const }
+    expect(replayValidateCapabilityLifecycleSnapshot(tampered)).toMatchObject({
+      ok: false, code: 'INVALID_LIFECYCLE_SNAPSHOT',
+    })
+  })
+
   it('keeps every registry definition and lifecycle snapshot byte-identical when gates are approved', () => {
     const registryBefore = JSON.stringify(CAPABILITY_REGISTRY)
     const snapshots = createCapabilityLifecycleRegistrySnapshots(scopeAlias)
@@ -49,7 +88,8 @@ describe('capability lifecycle', () => {
       const result = simulateCapabilityGateApprovals(snapshot, ['G2', 'G3', 'G4'])
       expect(result).toMatchObject({ ok: true })
       if (!result.ok) throw new Error(result.code)
-      expect(result.snapshot).toBe(snapshot)
+      expect(result.snapshot).toEqual(snapshot)
+      expect(result.snapshot).not.toBe(snapshot)
       expect(JSON.stringify(result.snapshot)).toBe(before)
       expect(snapshot.state).toBe('never_authorized')
       expect(snapshot.consentRevision).toBeNull()
@@ -108,7 +148,8 @@ describe('capability lifecycle', () => {
     const duplicate = reduceCapabilityLifecycle(bound, boundEvent)
     expect(duplicate).toMatchObject({ ok: true, snapshot: bound })
     if (!duplicate.ok) throw new Error(duplicate.code)
-    expect(duplicate.snapshot).toBe(bound)
+    expect(duplicate.snapshot).toEqual(bound)
+    expect(duplicate.snapshot).not.toBe(bound)
     expect(reduceCapabilityLifecycle(bound, event('bind_card', 'bind-01', 1, { cardSha256: cardB }))).toMatchObject({ ok: false, code: 'EVENT_COLLISION', snapshot: bound })
   })
 
