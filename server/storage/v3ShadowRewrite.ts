@@ -38,6 +38,14 @@ import {
   STORAGE_V3_SHADOW_TABLES,
 } from './v3ShadowSchema.js'
 
+export {
+  STORAGE_V3_SHADOW_APPLICATION_ID,
+  STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT,
+  STORAGE_V3_SHADOW_TABLES,
+  STORAGE_V3_SHADOW_USER_VERSION,
+  storageV3ShadowSchemaFingerprint,
+} from './v3ShadowSchema.js'
+
 export type StorageV3ShadowRewriteErrorCode =
   | 'SOURCE_SCHEMA_REFUSED'
   | 'SOURCE_BRIDGE_REFUSED'
@@ -65,6 +73,28 @@ export interface ShadowIdentityBinding {
   readonly rawProviderId: string
 }
 
+/** Closed mutation checkpoints for the B1b-iii rollback seam. */
+export const STORAGE_V3_SHADOW_REWRITE_STAGES = [
+  'scopes',
+  'identities',
+  'bridge',
+  'commitObservations',
+  'pullRequestFacts',
+  'datedEvents',
+  'jobs',
+  'snapshots',
+  'coverage',
+  'checkpoints',
+  'evidence',
+  'claims',
+  'claimEdges',
+  'limitations',
+  'lineage',
+  'finalValidation',
+] as const
+
+export type StorageV3ShadowRewriteStage = typeof STORAGE_V3_SHADOW_REWRITE_STAGES[number]
+
 export interface StorageV3ShadowRewriteOptions {
   readonly sourceDb: Database.Database
   readonly targetDb: Database.Database
@@ -72,6 +102,8 @@ export interface StorageV3ShadowRewriteOptions {
   readonly installationKey: Buffer
   readonly asOf: string
   readonly randomBytes?: (size: number) => Buffer
+  /** Test-only failure injection. The callback receives no source/target values. */
+  readonly failAfterStage?: (stage: StorageV3ShadowRewriteStage) => void
 }
 
 export interface StorageV3ShadowRewriteResult {
@@ -647,6 +679,14 @@ export function rewriteStorageV3Shadow(
     let omittedUnclassifiedLineageEvents = 0
 
     options.targetDb.transaction(() => {
+      const checkpoint = (stage: StorageV3ShadowRewriteStage): void => {
+        try {
+          options.failAfterStage?.(stage)
+        } catch {
+          // Failure injection is deliberately opaque and always aborts the target transaction.
+          fail('REWRITE_FAILED')
+        }
+      }
       const mintId = (prefix: string): string => mint(prefix, usedKeys, entropy)
       const targetScopeForAlias = (scopeAlias: unknown): string | undefined => {
         const alias = requiredText(scopeAlias)
@@ -687,6 +727,7 @@ export function rewriteStorageV3Shadow(
         )
         copiedScopes += 1
       }
+      checkpoint('scopes')
       for (const state of identityStates.values()) {
         if (!state.eligible || state.existingScopeId !== undefined) continue
         if (!state.targetScopeId || !state.anchor || !state.expiresAt) fail('GRAPH_REFUSED')
@@ -731,6 +772,7 @@ export function rewriteStorageV3Shadow(
           state.row.is_fork,
         )
       }
+      checkpoint('identities')
 
       if (sourceImage.provenance.syntheticMarker === null) fail('SOURCE_BRIDGE_REFUSED')
       options.targetDb.prepare(
@@ -767,6 +809,7 @@ export function rewriteStorageV3Shadow(
           record.limitationCode,
         )
       }
+      checkpoint('bridge')
 
       const insertCommit = options.targetDb.prepare(
         `INSERT INTO commit_observation (
@@ -803,6 +846,7 @@ export function rewriteStorageV3Shadow(
           row.message_length,
         )
       }
+      checkpoint('commitObservations')
 
       const insertPullRequest = options.targetDb.prepare(
         `INSERT INTO pull_request_fact (
@@ -842,6 +886,7 @@ export function rewriteStorageV3Shadow(
           row.reviews,
         )
       }
+      checkpoint('pullRequestFacts')
 
       const insertDatedEvent = options.targetDb.prepare(
         `INSERT INTO dated_event_observation (
@@ -867,6 +912,7 @@ export function rewriteStorageV3Shadow(
           row.event_kind,
         )
       }
+      checkpoint('datedEvents')
 
       const insertJob = options.targetDb.prepare(
         `INSERT INTO collection_job (
@@ -916,6 +962,7 @@ export function rewriteStorageV3Shadow(
           live ? expiresAt : null,
         )
       }
+      checkpoint('jobs')
 
       const insertSnapshot = options.targetDb.prepare(
         `INSERT INTO source_snapshot (
@@ -960,6 +1007,7 @@ export function rewriteStorageV3Shadow(
           live ? expiresAt : null,
         )
       }
+      checkpoint('snapshots')
 
       const insertCoverage = options.targetDb.prepare(
         `INSERT INTO coverage_ledger (
@@ -1024,6 +1072,7 @@ export function rewriteStorageV3Shadow(
           live ? expiresAt : null,
         )
       }
+      checkpoint('coverage')
 
       for (const [oldJobId, row] of sourceJobs) {
         const expectedSnapshots = row.status === 'complete' ? 1 : 0
@@ -1098,6 +1147,7 @@ export function rewriteStorageV3Shadow(
           live ? expiresAt : null,
         )
       }
+      checkpoint('checkpoints')
 
       const insertEvidence = options.targetDb.prepare(
         `INSERT INTO evidence (scope_id, evidence_id, coverage_id, layer, schema_version)
@@ -1134,6 +1184,7 @@ export function rewriteStorageV3Shadow(
           row.schema_version,
         )
       }
+      checkpoint('evidence')
 
       for (const row of sourceRows(sourceImage, 'claim')) {
         const claim = parseClaim(row)
@@ -1258,6 +1309,7 @@ export function rewriteStorageV3Shadow(
         ).run(successor.targetId, targetClaim.scopeId, targetClaim.targetId)
         if (result.changes !== 1) fail('GRAPH_REFUSED')
       }
+      checkpoint('claims')
 
       const insertEdge = options.targetDb.prepare(
         `INSERT INTO claim_evidence_edge (
@@ -1288,6 +1340,7 @@ export function rewriteStorageV3Shadow(
           )
         }
       }
+      checkpoint('claimEdges')
 
       const insertLimitation = options.targetDb.prepare(
         `INSERT INTO limitation_instance (
@@ -1311,6 +1364,7 @@ export function rewriteStorageV3Shadow(
           limitation.copyKey,
         )
       }
+      checkpoint('limitations')
 
       const insertLineage = options.targetDb.prepare(
         `INSERT INTO lineage_event (
@@ -1393,6 +1447,7 @@ export function rewriteStorageV3Shadow(
         )
         copiedLineageEvents += 1
       }
+      checkpoint('lineage')
 
       if (
         jobMap.size + omittedJobs.size !== sourceRows(sourceImage, 'collection_job').length
@@ -1405,6 +1460,7 @@ export function rewriteStorageV3Shadow(
       ) {
         fail('GRAPH_REFUSED')
       }
+      checkpoint('finalValidation')
     })()
 
     return Object.freeze({

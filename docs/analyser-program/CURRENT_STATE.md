@@ -6,7 +6,7 @@ file disagrees with Git, CI, or the ledger's live evidence, those win.
 
 ```yaml
 updated: 2026-08-05
-phase: 'R4 active horizon OPEN — DL-LIFE-02 B1b-i is merged; the current head implements inert B1b-ii and the card remains incomplete'
+phase: 'R4 active horizon OPEN — DL-LIFE-02 B1b-i and B1b-ii are merged; B1b-iii orchestration is current and the card remains incomplete'
 head: see `git log -1 origin/main` — live Git outranks the merge SHAs recorded below
 merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-SPINE-01 #74/75e7c39', 'DL-BRIDGE-01 #72/a6fcae1', 'DL-METRIC-01 #75/d1e29dd',
@@ -17,11 +17,10 @@ merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-LIFE-02 slice A #103/5e6304e', 'DL-LIFE-02 B1a #105/f9cc008',
   'DL-LIFE-02 B1a late repair #107/263839d',
   'DL-LIFE-02 contract correction #108/7a270f4',
-  'DL-LIFE-02 B1b-i #109/2a55b11'] # card stays active through B4
-active_slice: 'DL-LIFE-02 B1b-ii in the current head — invented-fixture-only authenticated,
-  transactional rewrite into the still caller-free and non-selectable storage-v3 shadow target'
-next_task: finish and merge the current B1b-ii authenticated rewrite, then B1b-iii orchestration,
-  then B2 retention/continuity/resolver and B3
+  'DL-LIFE-02 B1b-i #109/2a55b11', 'DL-LIFE-02 B1b-ii #110/2cf2236 -> ed413dc'] # card stays active through B4
+active_slice: 'DL-LIFE-02 B1b-iii — invented-fixture-only stage rollback, close/reopen proof,
+  replay-normalized checksum, and first selectable shadow target; no production caller'
+next_task: finish and merge B1b-iii orchestration, then B2 retention/continuity/resolver and B3
   complete SQL deletion, and B4 app-owned artifacts; only the B4 state refresh may mark DONE, and
   the first real migration/connector still requires LIFE-03 plus #86 coverage remint
 next_value_slice: 'DL-EVQ-03 is DONE; no second value card is admitted while the deletion critical
@@ -53,9 +52,14 @@ last_verified_checks: hosted PR gate green at every merged R1-R3 head above; LIF
   exact-merge Pages run 30978065710 passed. Its proof was the same 8 focused tests and 61 files/922
   tests plus context/typecheck/build. B1b-i head eab066d passed 24 focused tests and the full
   62-file/938-test local gate plus hosted run 30980483640, then merged as 2a55b11; exact-merge Pages
-  run 30980674556 and its late review sweep passed. The current B1b-ii head passes 65 focused
-  storage tests and the full 63-file/979-test local gate including context verification, lint,
-  typecheck, and build; hosted and exact-merge evidence remain pending publication.
+  run 30980674556 and its late review sweep passed. B1b-ii PR #110 head 2cf2236 merged as ed413dc;
+  hosted run 30987156228 and exact-merge Pages run 30987394372 passed with an empty late sweep.
+  The current B1b-iii head adds the stage/target orchestration slice and passes 88 focused tests plus
+  the full 64-file/1,019-test local gate including context verification, lint, typecheck, and build.
+  Fresh post-fix checksum/privacy and lifecycle/concurrency reviews found no HIGH/CRITICAL defect.
+  Its first full run hit only the five-second per-test ceiling for two exhaustive stage loops; those
+  matrices pass unchanged after splitting into independently timed cases. B1b-iii hosted and
+  exact-merge evidence remain pending publication.
 capabilities: every executable capability remains never_authorized; cap.external.model uncalled
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
   127 cards; `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest

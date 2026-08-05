@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B1b-ii authenticated rewrite)
+Last updated: **2026-08-05** (DL-LIFE-02 B1b-iii orchestration)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,7 +9,7 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-and B1b-i are merged; the current head contains inert B1b-ii, while B1b-iii then B2–B4
+and B1b-i/ii are merged; the current head contains inert B1b-iii orchestration, while B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
@@ -1780,17 +1780,36 @@ the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
 - **Boundary.** No protected/generated/private data was inspected. Every capability remains
   `never_authorized`; q-6/q-7/q-8 and the q-8 orphan directory are unchanged.
 
+## 2026-08-05 — DL-LIFE-02 B1b-iii orchestration (current slice)
+
+PR #110 B1b-ii (`2cf2236`) merged as `ed413dc`; hosted run `30987156228` and exact-merge Pages
+run `30987394372` passed, with an empty late-comment sweep. This slice adds the caller-free
+`v3ShadowMigration` orchestration boundary, two caller-owned target attempts, close/reopen schema,
+integrity, quick-check, foreign-key-enforcement, and process-input privacy proof, a versioned C1
+allowlist with graph-normalized replay checksum, a private full-source mutation fingerprint, and
+opaque per-stage rollback injection across the complete shadow rewrite. The target factory accepts
+the freshly reopened primary only after every proof; the frozen public result contains no database
+handle, path, alias, raw identity, key, or mapping. The rewrite and B1b-i/ii result remain incomplete/
+non-selectable; only the orchestrator can return `completeB1b: true`. Invented tests prove all 16
+rollback checkpoints in both target attempts, exact discard behavior, source immutability/mutation
+refusal, independent entropy, C2-insensitive and C1-sensitive checksum behavior, row-order
+normalization, schema/FK/replay refusal, and a deterministic two-writer lock. The exact local proof
+is 88 focused tests and the full 64-file/1,019-test gate plus context verification, lint, typecheck,
+and build. Fresh post-fix Luna checksum/privacy and lifecycle/concurrency lenses found no HIGH or
+CRITICAL defect; the latter independently reran the full gate. The first full-gate attempt timed out
+only because both exhaustive stage matrices were
+inside two five-second Vitest cases; splitting them into one independently timed case per stage
+made the unchanged assertions pass under full-suite load. No production source selector,
+filesystem reader, identity mapping, or capability state changed. LIFE-02 remains incomplete;
+B2-B4 remain mandatory and HUMAN_TODO q-6/q-7/q-8 are unchanged.
+
 ## Exact resume point
 
-**Current 2026-08-05 (B1b-i merged; B1b-ii in the current head).** Finish the
-invented-fixture-only authenticated rewrite: accept the ephemeral raw provider ID explicitly,
-recompute and byte-check both stored aliases, match scope continuity only against the provider-
-domain alias, populate the shadow target transactionally with an in-memory old/new map, rewrite the
-complete base/incremental/claim/lineage graph, remint every affected `claim-id.v3`, prove closure,
-destroy the map, and still return `completeB1b: false` / `selectable: false`. Merge only after the
-exact local/hosted/fresh-review gates. B1b-iii then owns rollback
-injection, post-close reopen/integrity/privacy proof, replay-normalized checksums, and the first
-transactionally selected target. Do not reuse the existing in-place target path,
+**Current 2026-08-05 (B1b-iii in progress).** Complete the focused orchestration proof and exact
+local/hosted/fresh-review gates. Keep the caller-free authenticated rewrite and B1b-i/ii result
+`completeB1b: false` / `selectable: false`; only the new orchestration boundary may select a target
+after rollback, close/reopen, schema/integrity/privacy, and replay-normalized checksum proof. Do not
+reuse the existing in-place target path,
 add a real-store/source-selection caller, persist identity input/mapping, or enter LIFE-03 backup/
 grace work. Then continue B2-B4 exactly as
 `docs/analyser-program/10_LIFE_02B_DECISION.md` defines. No intermediate slice may mark LIFE-02

@@ -374,7 +374,8 @@ describe('storage-v3 B1a proposal', () => {
           if (sourcePath !== 'server/storage/v3ShadowRewrite.ts') offenders.push(`${sourcePath} -> ${target}`)
         }
         if (target && /(?:^|[\\/])v3ShadowRewrite(?:\.[cm]?js|\.ts)?$/.test(target)) {
-          offenders.push(`${relative(root, path).replaceAll('\\', '/')} -> ${target}`)
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (sourcePath !== 'server/storage/v3ShadowMigration.ts') offenders.push(`${sourcePath} -> ${target}`)
         }
         ts.forEachChild(node, check)
       }
@@ -394,5 +395,7 @@ describe('storage-v3 B1a proposal', () => {
         ? [statement.moduleSpecifier.text]
         : [])
     expect(proposalImports).toEqual(['zod'])
+    expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))
+      .toMatch(/from ['"]\.\/v3ShadowRewrite\.js['"]/)
   })
 })
