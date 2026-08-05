@@ -39,6 +39,8 @@ function database(): Database.Database {
 
 const context = (jobId: string, checkpoint: Parameters<typeof composeGithubCoreRestComplete>[0]['checkpoint'] = null): GithubCoreRestCompositionContext => ({
   checkpoint,
+  // #86: caller-owned content-free coverage key; the connector no longer mints one.
+  coverageId: `cov-${'a'.repeat(64)}`,
   scopeAlias,
   rangeStart,
   rangeEnd,

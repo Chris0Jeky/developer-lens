@@ -12,9 +12,12 @@ import {
 
 const rangeStart = '2026-07-01T00:00:00.000Z'
 const rangeEnd = '2026-08-01T00:00:00.000Z'
+/** Invented content-free coverage key (#86): `cov-` plus 64 lowercase hex. */
+const coverageId = `cov-${'0f1e2d3c'.repeat(8)}`
 
 const context: GithubCoreRestCompositionContext = {
   checkpoint: null,
+  coverageId,
   scopeAlias: 'repo-alias',
   rangeStart,
   rangeEnd,
@@ -160,6 +163,45 @@ describe('pure complete REST composition', () => {
     expect(replay.sourceSnapshotId).not.toBe(first.sourceSnapshotId)
     expect(composeGithubCoreRestComplete({ ...context, result: completeResult() }).sourceSnapshotId)
       .toBe(first.sourceSnapshotId)
+  })
+
+  it('passes the caller-owned content-free coverage key through both compositions (#86)', () => {
+    const complete = composeGithubCoreRestComplete({ ...context, result: completeResult() })
+    const noncomplete = composeGithubCoreRestNoncomplete({
+      ...nonCompleteContext,
+      result: nonCompleteResult(),
+    })
+
+    expect(complete.transition.coverage.coverageId).toBe(coverageId)
+    expect(noncomplete.transition.coverage.coverageId).toBe(coverageId)
+    for (const record of [complete.transition.coverage, noncomplete.transition.coverage]) {
+      expect(record.coverageId).not.toContain(record.scopeAlias)
+      expect(record.coverageId).not.toContain(rangeEnd)
+    }
+  })
+
+  it('refuses a composition whose coverage key is absent or not registry-shaped (#86)', () => {
+    const { coverageId: _omitted, ...withoutCoverageId } = context
+    expect(() =>
+      composeGithubCoreRestComplete({
+        ...(withoutCoverageId as GithubCoreRestCompositionContext),
+        result: completeResult(),
+      }),
+    ).toThrow('REST_COMPLETE_COMPOSITION_INVALID')
+    expect(() =>
+      composeGithubCoreRestComplete({
+        ...context,
+        coverageId: `github.core:repo-alias:${rangeEnd}`,
+        result: completeResult(),
+      }),
+    ).toThrow('REST_COMPLETE_COMPOSITION_INVALID')
+    expect(() =>
+      composeGithubCoreRestNoncomplete({
+        ...nonCompleteContext,
+        coverageId: 'cov-not-hex',
+        result: nonCompleteResult(),
+      }),
+    ).toThrow('REST_NONCOMPLETE_COMPOSITION_INVALID')
   })
 
   it.each([

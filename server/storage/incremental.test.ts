@@ -26,6 +26,12 @@ const firstRangeEnd = '2026-01-02T00:00:00.000Z'
 const observedAt = '2026-01-05T00:00:00.000Z'
 const startedAt = '2026-01-05T00:00:01.000Z'
 const completedAt = '2026-01-05T00:00:02.000Z'
+/**
+ * Invented content-free coverage key (#86). The connector now requires this shape; the storage
+ * CHECK constraint is deliberately unchanged and still admits the legacy alias-bearing form a
+ * hand-seeded fixture below uses, because migrating existing stores is a separate card.
+ */
+const contentFreeCoverageId = `cov-${'7c8d9e0f'.repeat(8)}`
 
 afterEach(() => {
   for (const db of databases.splice(0)) {
@@ -73,6 +79,7 @@ function completeInput(options: CompleteOptions = {}): PersistGithubCoreTransiti
     completedAt,
     transition: reconcileGithubCoreReceipts({
       checkpoint: options.previous ?? null,
+      coverageId: contentFreeCoverageId,
       scopeAlias,
       rangeStart,
       rangeEnd,
@@ -98,6 +105,7 @@ function failedInput(
     completedAt,
     transition: reconcileGithubCoreReceipts({
       checkpoint: previous,
+      coverageId: contentFreeCoverageId,
       scopeAlias: 'scope-a',
       rangeStart: '2026-01-02T00:00:00.000Z',
       rangeEnd: '2026-01-03T00:00:00.000Z',
@@ -123,6 +131,7 @@ function truncatedInput(
     completedAt,
     transition: reconcileGithubCoreReceipts({
       checkpoint: previous,
+      coverageId: contentFreeCoverageId,
       scopeAlias: 'scope-a',
       rangeStart: '2026-01-03T00:00:00.000Z',
       rangeEnd: '2026-01-04T00:00:00.000Z',

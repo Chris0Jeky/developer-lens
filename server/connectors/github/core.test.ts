@@ -7,6 +7,7 @@ import {
   boundedGithubCoreOverlapStart,
   classifyGithubCoreRetry,
   githubCoreManifest,
+  mintGithubCoreCoverageId,
   planGithubCoreCollection,
   reconcileGithubCoreReceipts,
   reconcileGithubCoreNonComplete,
@@ -18,6 +19,8 @@ import {
 const rangeStart = '2026-01-01T00:00:00.000Z'
 const rangeEnd = '2026-01-02T00:00:00.000Z'
 const observedAt = '2026-01-03T00:00:00.000Z'
+/** Invented content-free coverage key (#86): `cov-` plus 64 lowercase hex, derived from nothing. */
+const coverageId = `cov-${'a1b2c3d4'.repeat(8)}`
 
 function checkpoint(overrides: Partial<GithubCoreCheckpoint> = {}): GithubCoreCheckpoint {
   return {
@@ -39,6 +42,7 @@ type NonCompleteInput = GithubCoreNonCompleteReconciliationInput
 function input(overrides: Partial<ReconciliationInput> = {}): ReconciliationInput {
   return {
     checkpoint: checkpoint(),
+    coverageId,
     scopeAlias: 'scope-01',
     rangeStart,
     rangeEnd,
@@ -58,6 +62,7 @@ function unsafeCheckpoint(overrides: Record<string, unknown>): GithubCoreCheckpo
 function nonCompleteInput(overrides: Partial<NonCompleteInput> = {}): NonCompleteInput {
   return {
     checkpoint: checkpoint(),
+    coverageId,
     scopeAlias: 'scope-01',
     rangeStart,
     rangeEnd,
@@ -74,6 +79,64 @@ function nonCompleteInput(overrides: Partial<NonCompleteInput> = {}): NonComplet
     ...overrides,
   }
 }
+
+describe('github.core content-free coverage identifiers (#86)', () => {
+  it('carries the caller-supplied key verbatim and never rebuilds an alias-bearing one', () => {
+    const plan = planGithubCoreCollection(input())
+    const complete = reconcileGithubCoreReceipts(input())
+    const nonComplete = reconcileGithubCoreNonComplete(nonCompleteInput())
+
+    for (const record of [plan.coverage, complete.coverage, nonComplete.coverage]) {
+      expect(record.coverageId).toBe(coverageId)
+      expect(record.coverageId).not.toContain(record.scopeAlias)
+      expect(record.coverageId).not.toContain('github.core')
+      expect(record.coverageId).not.toContain(rangeEnd)
+    }
+  })
+
+  it('mints only content-free keys and never derives one from the collection window', () => {
+    const first = mintGithubCoreCoverageId()
+    const second = mintGithubCoreCoverageId()
+
+    expect(first).toMatch(/^cov-[0-9a-f]{64}$/)
+    expect(second).toMatch(/^cov-[0-9a-f]{64}$/)
+    expect(first).not.toBe(second)
+    // The mint takes no argument at all, which is what makes "not a function of an alias,
+    // provider ID, timestamp, or range" structural rather than a review promise.
+    expect(mintGithubCoreCoverageId).toHaveLength(0)
+  })
+
+  it('rejects the legacy alias-bearing shape and every other non-registry key', () => {
+    const rejected = [
+      `github.core:scope-01:${rangeEnd}`,
+      'cov-not-hex',
+      `cov-${'a'.repeat(63)}`,
+      `cov-${'A'.repeat(64)}`,
+      `COV-${'a'.repeat(64)}`,
+      `scope-${'a'.repeat(64)}`,
+      '',
+    ]
+    for (const candidate of rejected) {
+      expect(() => reconcileGithubCoreReceipts(input({ coverageId: candidate }))).toThrow(
+        'coverageId must be a content-free coverage key',
+      )
+      expect(() => reconcileGithubCoreNonComplete(nonCompleteInput({ coverageId: candidate }))).toThrow(
+        'coverageId must be a content-free coverage key',
+      )
+    }
+  })
+
+  it('keeps replay deterministic for a replayed job and distinct across logical windows', () => {
+    const replayed = reconcileGithubCoreReceipts(input())
+    const original = reconcileGithubCoreReceipts(input())
+    const laterWindow = reconcileGithubCoreReceipts(
+      input({ coverageId: `cov-${'b4'.repeat(32)}`, jobId: 'job-03' }),
+    )
+
+    expect(replayed.coverage).toEqual(original.coverage)
+    expect(laterWindow.coverage.coverageId).not.toBe(original.coverage.coverageId)
+  })
+})
 
 describe('github.core inert protocol foundation', () => {
   it('pins protocol versions and exposes the still-denied capability manifest and plan coverage', () => {

@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto'
 import { getCapabilityDefinition } from '../../../shared/capabilities.js'
 import { CoverageRecordSchema, type CoverageRecord } from '../../../shared/coverage.js'
 
@@ -12,6 +13,13 @@ export const GITHUB_CORE_MAX_OPAQUE_ID_LENGTH = 128 as const
 const OPAQUE_ID = /^[A-Za-z0-9:._-]+$/
 const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 const LOWERCASE_SHA_256 = /^[0-9a-f]{64}$/
+
+/**
+ * The reserved C1 coverage key (#86; 10_LIFE_02B_DECISION.md §1 rule 2). A coverage identifier
+ * travels into claim-graph material, so it is content-free: `cov-` plus 64 lowercase hex, and
+ * never a hash, HMAC, or other function of an alias, provider ID, timestamp, or range.
+ */
+const CONTENT_FREE_COVERAGE_ID = /^cov-[0-9a-f]{64}$/
 
 export interface GithubCoreCheckpoint {
   readonly capabilityId: 'github.core'
@@ -73,6 +81,14 @@ export interface GithubCoreRetryClassification {
 
 export interface GithubCoreReconciliationInput {
   readonly checkpoint: GithubCoreCheckpoint | null
+  /**
+   * Caller-owned content-free coverage key for this logical collection window (#86). The connector
+   * never derives it, so replay determinism belongs to the caller's job identity: replaying a job
+   * supplies the same `coverageId` it supplied the first time, exactly as it must already supply
+   * the same `jobId`, `observedAt`, and range. A different value under an already-committed job ID
+   * fails closed on the storage payload hash rather than writing a second coverage row.
+   */
+  readonly coverageId: string
   readonly scopeAlias: string
   readonly rangeStart: string
   readonly rangeEnd: string
@@ -111,6 +127,8 @@ export type GithubCoreNonCompleteStatus = 'restricted' | 'failed' | 'truncated'
  */
 export interface GithubCoreNonCompleteReconciliationInput {
   readonly checkpoint: GithubCoreCheckpoint | null
+  /** Caller-owned content-free coverage key; see `GithubCoreReconciliationInput.coverageId`. */
+  readonly coverageId: string
   readonly scopeAlias: string
   readonly rangeStart: string
   readonly rangeEnd: string
@@ -148,6 +166,22 @@ function assertLowercaseSha256(value: string, field: string): void {
   if (typeof value !== 'string' || !LOWERCASE_SHA_256.test(value)) {
     throw new Error(`${field} must be a canonical lowercase SHA-256`)
   }
+}
+
+function assertContentFreeCoverageId(value: string, field: string): void {
+  if (typeof value !== 'string' || !CONTENT_FREE_COVERAGE_ID.test(value)) {
+    throw new Error(`${field} must be a content-free coverage key of cov- plus 64 lowercase hex`)
+  }
+}
+
+/**
+ * Mints one content-free coverage key from fresh entropy. It takes no input by design: the whole
+ * point of #86 is that no retained key is a function of an alias, provider ID, timestamp, or range.
+ * A caller mints once per logical collection window and carries the value alongside its job
+ * identity, so replaying that job reuses the same key rather than deriving a new one.
+ */
+export function mintGithubCoreCoverageId(): string {
+  return `cov-${randomBytes(32).toString('hex')}`
 }
 
 function freezeDeep<T>(value: T): T {
@@ -236,7 +270,10 @@ function assertCompatibleCheckpoint(
 }
 
 function coverage(
-  input: Pick<GithubCoreReconciliationInput, 'scopeAlias' | 'rangeStart' | 'rangeEnd' | 'observedAt'>,
+  input: Pick<
+    GithubCoreReconciliationInput,
+    'coverageId' | 'scopeAlias' | 'rangeStart' | 'rangeEnd' | 'observedAt'
+  >,
   status: CoverageRecord['status'],
   expectedUnits: number | null,
   observedUnits: number,
@@ -245,11 +282,12 @@ function coverage(
   retryable: boolean,
   saturationReason?: string,
 ): CoverageRecord {
+  assertContentFreeCoverageId(input.coverageId, 'coverageId')
   assertOpaqueId(input.scopeAlias, 'scopeAlias')
   assertRange(input.rangeStart, input.rangeEnd)
   parseCanonicalTimestamp(input.observedAt, 'observedAt')
   return CoverageRecordSchema.parse({
-    coverageId: `github.core:${input.scopeAlias}:${input.rangeEnd}`,
+    coverageId: input.coverageId,
     capabilityId: 'github.core',
     scopeAlias: input.scopeAlias,
     rangeStart: input.rangeStart,
@@ -299,7 +337,13 @@ export function boundedGithubCoreOverlapStart(
 export function planGithubCoreCollection(
   input: Pick<
     GithubCoreReconciliationInput,
-    'checkpoint' | 'scopeAlias' | 'rangeStart' | 'rangeEnd' | 'observedAt' | 'consentRevision'
+    | 'checkpoint'
+    | 'coverageId'
+    | 'scopeAlias'
+    | 'rangeStart'
+    | 'rangeEnd'
+    | 'observedAt'
+    | 'consentRevision'
   >,
 ): GithubCorePlan {
   assertRange(input.rangeStart, input.rangeEnd)
@@ -449,6 +493,7 @@ function assertFailureLimitationPair(kind: GithubCoreFailureKind, limitationCode
 export function reconcileGithubCoreNonComplete(
   input: GithubCoreNonCompleteReconciliationInput,
 ): GithubCoreNonCompleteCheckpointTransition {
+  assertContentFreeCoverageId(input.coverageId, 'coverageId')
   assertOpaqueId(input.scopeAlias, 'scopeAlias')
   assertOpaqueId(input.jobId, 'jobId')
   assertOpaqueId(input.consentRevision, 'consentRevision')
@@ -537,6 +582,7 @@ export const reconcileGithubCoreNonCompleteOutcome = reconcileGithubCoreNonCompl
  * not read a provider, persist anything, or bypass the denied collection plan.
  */
 export function reconcileGithubCoreReceipts(input: GithubCoreReconciliationInput): GithubCoreCheckpointTransition {
+  assertContentFreeCoverageId(input.coverageId, 'coverageId')
   assertOpaqueId(input.scopeAlias, 'scopeAlias')
   assertOpaqueId(input.jobId, 'jobId')
   assertOpaqueId(input.consentRevision, 'consentRevision')
