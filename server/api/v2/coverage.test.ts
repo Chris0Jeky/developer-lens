@@ -180,7 +180,7 @@ describe('V2 bridge coverage endpoint', () => {
 })
 
 describe('V2 bridge request guard', () => {
-  it('rejects a wrong or missing bearer', async () => {
+  it('rejects a wrong or missing bearer when nothing proves a same-origin browser fetch', async () => {
     const app = appFor(syntheticStore)
     const wrong = await request(app)
       .get('/api/v2/coverage')
@@ -202,6 +202,61 @@ describe('V2 bridge request guard', () => {
       .set('Origin', WEB_ORIGIN)
       .set('Authorization', TOKEN)
       .expect(401)
+  })
+
+  it('accepts a proven same-origin browser fetch with no credential at all (#78)', async () => {
+    const app = appFor(syntheticStore)
+
+    // The cockpit's exact request shape: same-origin, so no Origin header and no Authorization.
+    await request(app)
+      .get('/api/v2/coverage')
+      .set('Host', API_HOST)
+      .set(SAME_ORIGIN_METADATA)
+      .expect(200)
+
+    // ...and the same proof alongside an allowlisted Origin.
+    await request(app)
+      .get('/api/v2/capabilities')
+      .set('Host', API_HOST)
+      .set('Origin', WEB_ORIGIN)
+      .set(SAME_ORIGIN_METADATA)
+      .expect(200)
+
+    // A stale or wrong bearer is irrelevant once the fetch proof stands on its own.
+    await request(app)
+      .get('/api/v2/coverage')
+      .set('Host', API_HOST)
+      .set('Authorization', `Bearer ${'0'.repeat(64)}`)
+      .set(SAME_ORIGIN_METADATA)
+      .expect(200)
+  })
+
+  it('never accepts a credential-free request that cannot prove same-origin fetch metadata', async () => {
+    const app = appFor(syntheticStore)
+
+    for (const metadata of [
+      { ...SAME_ORIGIN_METADATA, 'Sec-Fetch-Site': 'cross-site' },
+      { ...SAME_ORIGIN_METADATA, 'Sec-Fetch-Site': 'same-site' },
+      { ...SAME_ORIGIN_METADATA, 'Sec-Fetch-Mode': 'no-cors' },
+      { ...SAME_ORIGIN_METADATA, 'Sec-Fetch-Dest': 'document' },
+    ]) {
+      // With an allowlisted Origin the request clears the origin gate and is refused on the
+      // credential instead, which is the fail-closed half of the two-channel rule.
+      await request(app)
+        .get('/api/v2/coverage')
+        .set('Host', API_HOST)
+        .set('Origin', WEB_ORIGIN)
+        .set(metadata)
+        .expect(401)
+    }
+
+    // A cross-origin page cannot reach the credential check at all.
+    await request(app)
+      .get('/api/v2/coverage')
+      .set('Host', API_HOST)
+      .set('Origin', 'http://evil.example')
+      .set({ ...SAME_ORIGIN_METADATA, 'Sec-Fetch-Site': 'cross-site' })
+      .expect(403)
   })
 
   it('rejects a wrong or malformed Host', async () => {
@@ -478,11 +533,12 @@ describe('V2 bridge mount', () => {
         CAPABILITY_REGISTRY.length,
       )
 
+      // A non-browser caller (no same-origin fetch proof) still needs the right bearer.
       await request(app)
         .get('/api/v2/coverage')
         .set('Host', API_HOST)
+        .set('Origin', WEB_ORIGIN)
         .set('Authorization', `Bearer ${'0'.repeat(64)}`)
-        .set(SAME_ORIGIN_METADATA)
         .expect(401)
     } finally {
       if (previousStore === undefined) delete process.env.DEVELOPER_LENS_V2_STORE

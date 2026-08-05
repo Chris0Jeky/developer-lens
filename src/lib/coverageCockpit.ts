@@ -12,12 +12,14 @@ import type {
 
 /**
  * Every way this surface can fail is its own state. Collapsing them into one
- * "refused" would tell a user whose bearer went stale to go looking at store
+ * "refused" would tell a user whose request was not authenticated to go looking at store
  * provenance, which is exactly the wrong repair.
+ *
+ * There is no `unconfigured` state any more (#78): the page holds no credential to be missing,
+ * so "this page was never given a bearer" stopped being a way this surface can fail.
  */
 export type CoverageCockpitState =
   | { readonly kind: 'loading' }
-  | { readonly kind: 'unconfigured' }
   | { readonly kind: 'unauthorized'; readonly code: string }
   | { readonly kind: 'guard-refused'; readonly code: string }
   | { readonly kind: 'provenance-refused'; readonly code: string }
@@ -55,8 +57,8 @@ export function omittedLabel(omittedUnits: number | null): string {
 }
 
 /**
- * Each HTTP outcome maps to the state whose remediation actually fixes it: a
- * rejected bearer is a restart, a rejected origin is a different URL, a refused
+ * Each HTTP outcome maps to the state whose remediation actually fixes it: an unauthenticated
+ * request is a stripped `Sec-Fetch-*` proof, a rejected origin is a different URL, a refused
  * store is a reseed, and a missing store is a first seed.
  */
 export function cockpitStateForStatus(status: number, code: string): CoverageCockpitState {

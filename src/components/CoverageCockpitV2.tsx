@@ -80,29 +80,16 @@ interface ProblemView {
 }
 
 const PROBLEM_VIEWS: Readonly<Record<CoverageCockpitProblemKind, ProblemView>> = {
-  unconfigured: {
-    banner: 'The V2 bridge is mounted but this page holds no launch bearer.',
-    eyebrow: 'Coverage cockpit · no bearer',
-    heading: 'This page cannot see the V2 store yet.',
-    body: (
-      <p>
-        The API generates a bearer secret once per launch and prints it on the local launch banner.
-        Set the same value as <code>DEVELOPER_LENS_V2_TOKEN</code> and{' '}
-        <code>VITE_DEVELOPER_LENS_V2_TOKEN</code> to let this surface read it. Until then the
-        cockpit reports its own blindness rather than an empty result.
-      </p>
-    ),
-  },
   unauthorized: {
-    banner: 'The V2 bridge did not accept this page’s bearer.',
-    eyebrow: 'Coverage cockpit · bearer rejected',
-    heading: 'This page holds a bearer the bridge refused.',
+    banner: 'The V2 bridge did not accept this request.',
+    eyebrow: 'Coverage cockpit · request not authenticated',
+    heading: 'The bridge could not tell that this was a same-origin page request.',
     body: (
       <p>
-        The API mints a new bearer on every launch, so a page loaded against an earlier one goes
-        stale as soon as the server restarts. Set <code>DEVELOPER_LENS_V2_TOKEN</code> and{' '}
-        <code>VITE_DEVELOPER_LENS_V2_TOKEN</code> to the same fixed value, restart{' '}
-        <code>npm run dev</code>, and reload this page.
+        This page holds no credential by design. It is authenticated by the browser’s own
+        same-origin fetch metadata, which something between the page and the API stripped —
+        typically a proxy or extension that rewrites <code>Sec-Fetch-*</code> headers. Reach the
+        cockpit directly through <code>npm run dev</code> rather than through another hop.
       </p>
     ),
   },
@@ -365,17 +352,11 @@ export function CoverageCockpitV2Route() {
   const [state, setState] = useState<CoverageCockpitState>({ kind: 'loading' })
 
   useEffect(() => {
-    const token: unknown = import.meta.env.VITE_DEVELOPER_LENS_V2_TOKEN
-    if (typeof token !== 'string' || token.length === 0) {
-      setState({ kind: 'unconfigured' })
-      return
-    }
-
+    // #78: no credential lives in this page. The requests are same-origin, so the browser sends
+    // the `Sec-Fetch-*` proof the guard authenticates on and no `Authorization` header exists to
+    // be inlined into a bundle.
     const controller = new AbortController()
-    const init = {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: controller.signal,
-    }
+    const init = { signal: controller.signal }
 
     Promise.all([fetch('/api/v2/coverage', init), fetch('/api/v2/capabilities', init)])
       .then(async ([coverageResponse, capabilitiesResponse]) => {

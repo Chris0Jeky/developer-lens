@@ -12,7 +12,7 @@
     "export:demo": "tsx scripts/exportDemo.ts",
     "seed:v2": "tsx server/api/v2/syntheticImporter.ts",
     "render:social": "tsx scripts/renderSocialCard.ts",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && npm run verify:no-secrets",
     "build:showcase": "npm run export:demo && npm run render:social && tsc -b && vite build --base=/developer-lens/ --mode showcase && npm run verify:showcase",
     "start": "tsx server/index.ts --production",
     "lint": "oxlint .",
@@ -20,6 +20,7 @@
     "test:demo:v2": "vitest run src/App.test.tsx",
     "test:watch": "vitest",
     "verify:context": "tsx scripts/verifyProjectContext.ts",
+    "verify:no-secrets": "tsx scripts/verifyNoSecretsInDist.ts",
     "verify:showcase": "tsx scripts/verifyShowcase.ts",
     "check": "npm run lint && npm run verify:context && npm run test && npm run build"
   },

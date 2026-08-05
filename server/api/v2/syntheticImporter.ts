@@ -1,5 +1,5 @@
 import { mkdirSync } from 'node:fs'
-import { dirname, resolve } from 'node:path'
+import { basename, dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { CoverageRecord } from '../../../shared/coverage.js'
 import { openStorageDatabase } from '../../storage/database.js'
@@ -81,5 +81,7 @@ const invokedDirectly =
 if (invokedDirectly) {
   const target = process.argv[2] ?? defaultV2StorePath()
   seedSyntheticCoverageStore(target)
-  console.log(`Seeded the synthetic V2 bridge store at ${resolve(target)}`)
+  // #78: the charter's log sink denies paths, so only the file's own name is reported. The
+  // operator already knows where they pointed it; the log does not need to say.
+  console.log(`Seeded the synthetic V2 bridge store: ${basename(target)}`)
 }

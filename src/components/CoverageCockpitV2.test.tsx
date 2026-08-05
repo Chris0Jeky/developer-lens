@@ -149,13 +149,13 @@ describe('Coverage Cockpit V2', () => {
     )
   })
 
-  it('reports its own blindness when no launch bearer reached the page', () => {
-    render(<CoverageCockpitV2 state={{ kind: 'unconfigured' }} />)
+  it('never names a bearer variable the page no longer holds (#78)', () => {
+    const { container } = render(
+      <CoverageCockpitV2 state={{ kind: 'unauthorized', code: 'V2_UNAUTHORIZED' }} />,
+    )
 
-    expect(
-      screen.getByRole('heading', { name: /cannot see the v2 store yet/i }),
-    ).toBeInTheDocument()
-    expect(screen.getByText(/reports its own blindness/i)).toBeInTheDocument()
+    expect(container.textContent).not.toMatch(/VITE_DEVELOPER_LENS_V2_TOKEN|DEVELOPER_LENS_V2_TOKEN/)
+    expect(screen.getByText(/holds no credential by design/i)).toBeInTheDocument()
   })
 
   it('surfaces a typed refusal code instead of an empty result', () => {
@@ -192,11 +192,14 @@ describe('Coverage Cockpit V2', () => {
     })
   })
 
-  it('tells a rejected bearer to restart, not to inspect the store', () => {
+  it('tells an unauthenticated request to check the hop, not to inspect the store', () => {
     render(<CoverageCockpitV2 state={{ kind: 'unauthorized', code: 'V2_UNAUTHORIZED' }} />)
 
-    expect(screen.getByRole('heading', { name: /bearer the bridge refused/i })).toBeInTheDocument()
-    expect(screen.getByText(/mints a new bearer on every launch/i)).toBeInTheDocument()
+    expect(
+      screen.getByRole('heading', { name: /same-origin page request/i }),
+    ).toBeInTheDocument()
+    expect(screen.getByText(/proxy or extension that rewrites/i)).toBeInTheDocument()
+    expect(screen.getByText('Sec-Fetch-*')).toBeInTheDocument()
     expect(screen.getByTestId('cockpit-refusal-code')).toHaveTextContent('V2_UNAUTHORIZED')
     expect(screen.queryByText(/synthetic provenance/i)).not.toBeInTheDocument()
   })
@@ -252,15 +255,25 @@ describe('Coverage Cockpit V2', () => {
     expect(Date.parse(stale!.observedAt)).toBeLessThan(Date.parse(stale!.rangeStart))
   })
 
-  it('never calls the API without a configured launch bearer', async () => {
-    const fetchMock = vi.fn()
+  it('fetches same-origin and sends no credential at all (#78)', async () => {
+    const fetchMock = vi.fn(async () => new Response('{}', { status: 503 }))
     vi.stubGlobal('fetch', fetchMock)
 
     render(<CoverageCockpitV2Route />)
 
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2))
+    expect(fetchMock.mock.calls.map((call) => (call as unknown as [string])[0])).toEqual([
+      '/api/v2/coverage',
+      '/api/v2/capabilities',
+    ])
+    for (const call of fetchMock.mock.calls) {
+      const init = (call as unknown as [string, RequestInit | undefined])[1]
+      expect(init).toBeDefined()
+      expect(Object.keys(init!)).toEqual(['signal'])
+      expect(init).not.toHaveProperty('headers')
+    }
     await waitFor(() =>
-      expect(screen.getByRole('heading', { name: /cannot see the v2 store yet/i })).toBeInTheDocument(),
+      expect(screen.getByRole('heading', { name: /no synthetic store here yet/i })).toBeInTheDocument(),
     )
-    expect(fetchMock).not.toHaveBeenCalled()
   })
 })

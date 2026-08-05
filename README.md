@@ -92,7 +92,11 @@ npm run collect -- --local-root "C:\path\to\repos"
 npm run dev
 ```
 
-Open the Vite URL shown in the terminal. The API stays on `http://127.0.0.1:4141`; Vite proxies `/api` during development.
+Open <http://127.0.0.1:5173>. The web port is pinned, so a busy 5173 makes Vite refuse to start
+rather than move to 5174 — a moved port is not on the V2 Host allowlist and every `/api/v2` request
+would fail closed for a reason that looks nothing like a port collision. The API stays on
+`http://127.0.0.1:4141` (set `DEVELOPER_LENS_PORT` to move it; the dev proxy follows), and Vite
+proxies `/api` during development.
 
 ### Try the offline V2 demo
 
@@ -112,10 +116,18 @@ npm run test:demo:v2
 
 Run `npm run seed:v2` to write the invented coverage fixtures into
 `.developer-lens-synthetic/` (a gitignored directory kept separate from the private
-`.developer-lens/` runtime data), then export the same value as `DEVELOPER_LENS_V2_TOKEN` and
-`VITE_DEVELOPER_LENS_V2_TOKEN`, start `npm run dev`, and open
-<http://127.0.0.1:5173/?view=cockpit-v2>; without both variables the cockpit reports that it holds
-no bearer instead of rendering an empty panel.
+`.developer-lens/` runtime data), start `npm run dev`, and open
+<http://127.0.0.1:5173/?view=cockpit-v2>.
+
+The browser needs no token. The cockpit fetches `/api/v2` same-origin and the API authenticates it
+on the exact Host allowlist plus the browser's own `Sec-Fetch-*` metadata, which a page on another
+origin cannot forge. Nothing credential-shaped is read from `import.meta.env`, so nothing can be
+inlined into a bundle.
+
+A **non-browser** caller (curl, a script) does need a bearer, and must set it deliberately: export
+`DEVELOPER_LENS_V2_TOKEN` to a value of 32-256 characters from `[A-Za-z0-9._-]` before starting the
+server, then send `Authorization: Bearer <that value>`. With the variable unset the API generates
+an unreadable per-launch value and never prints it, so it answers no non-browser caller at all.
 
 For a prepared 3-5 minute walkthrough, use the
 [`showcase demo runbook`](docs/SHOWCASE_DEMO.md). It gives the exact hosted and local routes, a short
