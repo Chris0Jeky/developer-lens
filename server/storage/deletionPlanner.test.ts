@@ -170,6 +170,16 @@ describe('DL-LIFE-02 registered deletion planner', () => {
     expect(order).toContain('lineage_event')
   })
 
+  it('rejects C2 and generic opaque tokens as tombstone subjects', () => {
+    const db = deepFixture()
+    for (const tombstoneSubjectId of ['scope-a', 'opaque-revocation-token']) {
+      expect(errorCode(() => planRegisteredGithubCoreDeletion(db, {
+        ...request(),
+        tombstoneSubjectId,
+      }))).toBe('DELETION_REQUEST_INVALID')
+    }
+  })
+
   it('fails a direct NO ACTION coverage delete, then removes the deep chain transactionally', () => {
     const db = deepFixture()
     expect(() => db.prepare("DELETE FROM coverage_ledger WHERE scope_alias = 'scope-a'").run()).toThrow(/FOREIGN KEY/)
