@@ -185,7 +185,7 @@ inputs; it is not a content-free proof or retained C1 key and may enter no log, 
 or public sink. The trusted loader/writer must retain or revalidate its own ephemeral inputs rather
 than trying to recover identity or review metadata from this candidate.
 
-### B2b-ii-a stable task-card snapshot prerequisite (current)
+### B2b-ii-a stable task-card snapshot prerequisite (shipped)
 
 The next composition cannot honestly be called trusted yet. No independently anchored owner-reviewed
 report digest or trusted clock exists, and the pre-B2b-ii task-card reader sampled content only once.
@@ -199,13 +199,27 @@ This proves a stable observed snapshot, not owner review, hostile-writer atomici
 authority. The loader still accepts a stable card that predates its read, and platform no-follow
 flags are only defence in depth. It performs no database, key, clock, network, lifecycle, retention,
 or capability mutation, and existing capability registry/API values remain `never_authorized`.
+PR #116 head `d939e1b` passed hosted run `31003641095`, merged as `8e8b0bc`, and passed exact-merge
+Pages/privacy run `31003872271` plus an empty late-comment sweep.
 
-Next define the strict inert run-report schema and stable exact-byte loader, then add a separately
-owner-reviewed anchor for report/card/key/lifecycle/time plus a trusted clock. A report self-hash or
-caller-supplied expected hash is not that anchor. CAS revision is read transactionally and the
-operation is writer-owned. Only then may a caller-free composer feed the compare-and-swap writer,
-followed by restart handling and the migration-origin disposition for already-expired never-retained
-C2 groups.
+### B2b-ii-b strict C1 activation-result validator (current)
+
+B2b-ii-b first isolates the exact versioned github.core runner-result projection. Its closed C1
+shape contains only controlled capability/version, stability, coverage, limitation/retry, and
+request-count facts. It accepts no local-C2 task/job/scope/card/report/key/digest/time/range/alias
+field. `stable` means only equal bounded probe hashes and supplies no source-truth, review,
+authentication, authorization, continuity, renewal, or retention claim.
+
+The parser reconstructs exact own data properties, refuses inherited/accessor/symbol/extra input,
+fails closed on hostile inspection traps, enforces only producer-reachable status/code/count/request
+combinations, and deeply freezes a fixed-order result. It has no production caller or filesystem/
+database/network/clock/key/lifecycle/capability dependency. B2b-ii-c must embed this C1 object
+unchanged inside the strict local-C2 report envelope
+and add the stable exact-byte loader. Then add a separately owner-reviewed anchor for report/card/key/
+lifecycle/time plus a trusted clock. A report self-hash or caller-supplied expected hash is not that
+anchor. CAS revision is read transactionally and the operation is writer-owned. Only then may a
+caller-free composer feed the compare-and-swap writer, followed by restart handling and the migration-
+origin disposition for already-expired never-retained C2 groups.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the

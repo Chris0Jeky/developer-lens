@@ -431,6 +431,10 @@ describe('storage-v3 B1a proposal', () => {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
+        if (target && /(?:^|[\\/])activationResult(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          offenders.push(`${sourcePath} -> ${target}`)
+        }
         ts.forEachChild(node, check)
       }
       check(file)
@@ -484,6 +488,19 @@ describe('storage-v3 B1a proposal', () => {
       '../../shared/capabilities.js',
       '../lifecycle.js',
     ])
+    const activationResultPath = join(root, 'server', 'connectors', 'github', 'activationResult.ts')
+    const activationResultFile = ts.createSourceFile(
+      activationResultPath,
+      readFileSync(activationResultPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const activationResultImports = activationResultFile.statements.flatMap((statement) =>
+      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
+      statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)
+        ? [statement.moduleSpecifier.text]
+        : [])
+    expect(activationResultImports).toEqual([])
     expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))
       .toMatch(/from ['"]\.\/v3ShadowRewrite\.js['"]/)
   })

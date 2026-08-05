@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-a stable task-card snapshot prerequisite)
+Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-b strict C1 activation-result validator)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,8 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-B1b-i/ii/iii, B2a-i/ii/iii, and the inert B2b-i structural candidate are merged; the current branch
-hardens the confined task-card snapshot prerequisite for B2b-ii, while the rest of B2–B4
+B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and the B2b-ii-a stable card snapshot are merged; the current
+branch adds only the caller-free C1 github.core activation-result validator, while the rest of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
@@ -1937,7 +1937,7 @@ claim → coverage or claim → evidence → coverage, then that coverage's job/
 only when both owners are reachable; unreferenced, omitted, and base anchors emit no origin event.
 Coverage/job absence resolution, B3 deletion, and B4 artifacts remain later dependencies.
 
-## 2026-08-05 — DL-LIFE-02 B2b-ii-a stable task-card snapshot prerequisite (current slice)
+## 2026-08-05 — DL-LIFE-02 B2b-ii-a stable task-card snapshot prerequisite (merged)
 
 Post-B2b-i authority review found two blockers to honestly naming the next composition a trusted
 loader. There is no independently anchored owner-reviewed report digest or trusted clock, and the
@@ -1955,29 +1955,53 @@ generic/GitHub/OpenAI loader stack passes 3 files / 20 tests. The full local gat
 1,061 tests plus context verification, lint, typecheck, build, and diff checking; only the two
 pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size advisory remain. A
 fresh post-implementation file/race lens found no HIGH/CRITICAL defect. Hosted and exact-merge gates
-remain to be recorded.
+then passed: PR #116 head `d939e1b` passed hosted run `31003641095`, merged as `8e8b0bc`, and
+exact-merge Pages/privacy run `31003872271` plus the late-comment sweep were green and empty.
 
 This is snapshot stability only. It neither authenticates a stable malicious card nor creates an
 owner-reviewed report anchor, trusted review time, trusted clock, key binding, continuity authority,
 database write, network call, lifecycle transition, retention extension, or capability activation.
 All executable capabilities remain `never_authorized`.
 
-The next exact prerequisite is a strict inert `last-run-report.json` schema and stable exact-byte
-loader whose expected digest is explicitly external to the report and still not authority by
-itself. Then add a separately owner-reviewed anchor binding the report digest, exact card digest,
-expected installation-key fingerprint, lifecycle/card epoch, and canonical review time, plus a
-trusted process-clock boundary. CAS revision comes from the database transaction and its operation
-ID is writer-owned, never trusted from the report. Only after those seams are proved may a caller-
-free composer feed the compare-and-swap continuity writer.
+The report work now splits at its privacy seam. B2b-ii-b first validates only the versioned C1
+runner-result projection. B2b-ii-c then embeds that projection unchanged in a strict local-C2
+`last-run-report.json` envelope and adds stable exact-byte loading whose expected digest remains
+external to the report and is still not authority by itself. Only after that may a separately
+owner-reviewed anchor bind report/card/key/lifecycle/time plus a trusted process clock. CAS revision
+comes from the database transaction and its operation ID is writer-owned, never trusted from the
+report.
+
+## 2026-08-05 — DL-LIFE-02 B2b-ii-b strict C1 activation-result validator (current slice)
+
+B2b-ii-b is a pure, caller-free parser for the existing github.core runner's C1 result facts. Its
+closed versioned object contains only capability/version literals, probe stability, the exact
+coverage status/count/retry/limitation projection, and request-budget counters. It rejects every
+task, job, scope, card, report, key, digest, timestamp, range, alias, URL, provider, or prose field.
+`stable` means only that the two bounded probe hashes were equal; it never means complete source
+truth, review, authentication, authorization, continuity, renewal permission, or retention extension.
+
+The validator reconstructs own data properties before validation, rejects inherited, accessor,
+symbol, or extra fields and fails closed on hostile inspection traps with one content-free error. It
+enforces the exact reachable runner truth table, active-probe ceilings, metadata-only coverage, and
+request arithmetic, then returns one deterministic deeply frozen shape. It has no filesystem,
+database, network, clock, key, lifecycle, runner, retention, or capability dependency and no
+production caller. The focused parser/proposal gate passes 2 files / 17 tests plus targeted lint,
+server typecheck, and diff checking. The full local gate passes 68 files / 1,070 tests plus context
+verification, lint, typecheck, build, and diff checking; only the two pre-existing Evidence Drawer
+Fast Refresh warnings and existing bundle-size advisory remain. Fresh code, authority, and
+transport-invariant reviews found no HIGH/CRITICAL defect after the strict producer-count fixes.
+Hosted and exact-merge evidence
+remain to be recorded. All executable capabilities remain `never_authorized`.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-ii-a in progress).** Finish the full local, fresh review, hosted,
-exact-merge, and late-sweep gates for the stable task-card snapshot prerequisite. Preserve the
-content-free error, closed input, bounded duplicate-key-safe parsing, no-caller/default-off posture,
-and explicit statement that stable bytes are not owner authority. Then add the inert run-report
-schema/loader, the independently owner-reviewed report/card/key/time anchor and trusted clock, and
-only then the caller-free composition and compare-and-swap renewal writer. Follow with restart
+**Current 2026-08-05 (B2b-ii-b in progress).** Finish the focused/full local, fresh review, hosted,
+exact-merge, and late-sweep gates for the strict C1 activation-result validator. Preserve its exact
+runner truth table, hostile-input reconstruction, deterministic freeze, caller-free AST gate, C1-
+only field allowlist, and non-authority wording. Then implement B2b-ii-c: the local-C2 report
+envelope plus stable exact-byte loader. Follow with the independently owner-reviewed report/card/key/
+time anchor and trusted clock, then caller-free composition and compare-and-swap renewal writer,
+then restart
 handling and the claim-reachable migration-origin retention events. Only then take canonical
 coverage/job absence resolution and its
 API/PresentationView/Evidence Drawer consumer migration. Continue B3-B4 exactly as
