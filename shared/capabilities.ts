@@ -22,6 +22,22 @@ export const CAPABILITY_IDS = [
 export const CapabilityIdSchema = z.enum(CAPABILITY_IDS)
 export type CapabilityId = z.infer<typeof CapabilityIdSchema>
 
+export const CapabilityLifecycleStateSchema = z.enum([
+  'never_authorized',
+  'card_bound',
+  'previewed',
+  'active',
+  'suspended',
+  'revoked',
+])
+export type CapabilityLifecycleState = z.infer<typeof CapabilityLifecycleStateSchema>
+
+/** Lowercase SHA-256 digests bind reviewed cards, previews, and proving evidence. */
+export const LowercaseSha256Schema = z.string().regex(/^[0-9a-f]{64}$/)
+
+/** Opaque aliases are the only scope identifiers admitted by the lifecycle contract. */
+export const CapabilityScopeAliasSchema = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
+
 const CapabilityDefinitionSchema = z
   .object({
     id: CapabilityIdSchema,
@@ -79,6 +95,29 @@ export const CAPABILITY_REGISTRY = [
   capability('cap.source.structure', 'OPAQUE_MODULE_GRAPH', 'C4', ['G2', 'G3'], 'P10', 'C4_PROCESS_C3_90D_C1_36M', 'DELETE_STRUCTURE_DESCENDANTS', 'never_authorized'),
   capability('cap.external.model', 'CONTROLLED_HYPOTHESES', 'C1', ['G2', 'G4'], 'P12', 'OPENAI_STORE_FALSE_DEFAULT_30D', 'DELETE_LOCAL_MODEL_DESCENDANTS', 'never_authorized'),
 ] as const
+
+/**
+ * Construct the inert lifecycle baseline for a registry capability.  This is
+ * descriptive state only; it neither evaluates gates nor enables a runtime.
+ */
+export function createNeverAuthorizedCapabilityLifecycleSnapshot(
+  capabilityId: CapabilityId,
+  scopeAlias: string,
+): Readonly<{
+  capabilityId: CapabilityId
+  scopeAlias: string
+  state: 'never_authorized'
+  epoch: 0
+  consentRevision: null
+}> {
+  return Object.freeze({
+    capabilityId: CapabilityIdSchema.parse(capabilityId),
+    scopeAlias: CapabilityScopeAliasSchema.parse(scopeAlias),
+    state: 'never_authorized' as const,
+    epoch: 0 as const,
+    consentRevision: null,
+  })
+}
 
 const capabilityMap = new Map(CAPABILITY_REGISTRY.map((definition) => [definition.id, definition]))
 
