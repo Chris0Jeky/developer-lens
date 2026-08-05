@@ -14,10 +14,12 @@ import {
   type FindingReferenceWalkEntry,
 } from '../../shared/findings.js'
 import {
+  INTEGRATION_SHAPE_ANALYSIS_VERSION,
   INTEGRATION_SHAPE_REFERENCES,
   resolveIntegrationShapeEvidence,
   type IntegrationShapeEvidenceResolution,
 } from '../../shared/integrationShapeEvidence.js'
+export { INTEGRATION_SHAPE_ANALYSIS_VERSION }
 import type { AnalyticReference } from '../../shared/findings.js'
 
 /**
@@ -31,7 +33,6 @@ import type { AnalyticReference } from '../../shared/findings.js'
  * The composition itself lives in `shared/integrationShape.ts` (client-safe, no `node:crypto`); this
  * module is the server half that may import `shared/findings.ts` and therefore the validators.
  */
-export const INTEGRATION_SHAPE_ANALYSIS_VERSION = '1.0.0' as const
 
 /** The validated, renderable primary finding. Fails closed at load if the contract rejects it. */
 export const INTEGRATION_SHAPE_FINDING: Finding = assertRenderableFinding(buildIntegrationShapeFinding(), 'atlas').finding

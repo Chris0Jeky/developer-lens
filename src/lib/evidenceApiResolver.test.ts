@@ -101,6 +101,7 @@ describe('evidence API resolver — accepting only contract-conformant matching 
     ['a projection with an unknown discriminant', { projection: { kind: 'surprise' } }],
     ['a body with no projection at all', { projection: undefined } as Record<string, unknown>],
     ['a wrong api contract version', { apiContractVersion: '9.9.9' }],
+    ['a stale analysis version serving absence furniture', { analysisVersion: '0.9.0' }],
   ])('falls back to the offline composition for %s', async (_label, overrides) => {
     const { result } = await settled(P50, respondWith(envelope(overrides)))
     expect(result.current(P50)).toBe(resolveIntegrationShapeEvidence(P50))

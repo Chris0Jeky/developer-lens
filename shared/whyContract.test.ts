@@ -60,6 +60,65 @@ describe('why contract — the runtime schema mirrors the resolver projection ex
     }
   })
 
+  it('rejects an edge whose role disagrees with its group heading', () => {
+    const wire = JSON.parse(JSON.stringify(
+      resolveIntegrationShapeEvidence(INTEGRATION_SHAPE_REFERENCES[0]),
+    )) as { edges: Array<{ role: string; edges: Array<{ role: string }> }> }
+    const supports = wire.edges.find((group) => group.role === 'supports')!
+    expect(supports.edges.length).toBeGreaterThan(0)
+    supports.edges[0].role = 'contradicts'
+    expect(WhyResolutionSchema.safeParse(wire).success).toBe(false)
+  })
+
+  it('rejects a group whose target kind disagrees with the closed role mapping', () => {
+    const wire = JSON.parse(JSON.stringify(
+      resolveIntegrationShapeEvidence(INTEGRATION_SHAPE_REFERENCES[0]),
+    )) as { edges: Array<{ role: string; targetKind: string }> }
+    wire.edges.find((group) => group.role === 'supports')!.targetKind = 'claim'
+    expect(WhyResolutionSchema.safeParse(wire).success).toBe(false)
+  })
+
+  it('rejects a scope that reports its alias both linked and cleared', () => {
+    const wire = JSON.parse(JSON.stringify(
+      resolveIntegrationShapeEvidence(INTEGRATION_SHAPE_REFERENCES[0]),
+    )) as { scope: { hasAlias: boolean; scopeId: string; aliasLink: unknown } }
+    expect(wire.scope.hasAlias).toBe(true)
+    wire.scope.aliasLink = {
+      kind: 'missing_link',
+      reason: 'SCOPE_ALIAS_CLEARED',
+      targetKind: 'scope',
+      targetId: wire.scope.scopeId,
+      coverageKey: null,
+      lineage: [],
+    }
+    expect(WhyResolutionSchema.safeParse(wire).success).toBe(false)
+  })
+
+  it('rejects negative or fractional coverage counts', () => {
+    const observation = INTEGRATION_SHAPE_REFERENCES.find((r) => r.kind === 'observation')!
+    for (const observedUnits of [-1, 1.5]) {
+      const wire = JSON.parse(JSON.stringify(
+        resolveIntegrationShapeEvidence(observation),
+      )) as { coverage: { observedUnits: number } }
+      wire.coverage.observedUnits = observedUnits
+      expect(WhyResolutionSchema.safeParse(wire).success, String(observedUnits)).toBe(false)
+    }
+  })
+
+  it('rejects a capability node that disagrees with the closed registry', () => {
+    const observation = INTEGRATION_SHAPE_REFERENCES.find((r) => r.kind === 'observation')!
+    const wire = JSON.parse(JSON.stringify(
+      resolveIntegrationShapeEvidence(observation),
+    )) as { coverage: { job: { capability: { requiredGates: string[]; refusalStatus: string } } } }
+    wire.coverage.job.capability.requiredGates = []
+    expect(WhyResolutionSchema.safeParse(wire).success).toBe(false)
+    const active = JSON.parse(JSON.stringify(
+      resolveIntegrationShapeEvidence(observation),
+    )) as { coverage: { job: { capability: { refusalStatus: string } } } }
+    active.coverage.job.capability.refusalStatus = 'active'
+    expect(WhyResolutionSchema.safeParse(active).success).toBe(false)
+  })
+
   it('rejects truncated and mislabelled projections', () => {
     expect(WhyResolutionSchema.safeParse({ kind: 'unresolvable' }).success).toBe(false)
     expect(WhyResolutionSchema.safeParse({ kind: 'surprise' }).success).toBe(false)

@@ -12,6 +12,7 @@ import {
   type CoverageRecord,
 } from '../../../shared/coverage.js'
 import { AnalyticReferenceSchema } from '../../../shared/findings.js'
+import { INTEGRATION_SHAPE_ANALYSIS_VERSION } from '../../../shared/integrationShapeEvidence.js'
 import { ISO_WEEK_LABEL_PATTERN, isoWeekLabel } from '../../../shared/presentationGrain.js'
 import { DataClassSchema } from '../../../shared/privacy.js'
 import { WhyResolutionSchema, whyResolutionAnswersReference } from '../../../shared/whyContract.js'
@@ -244,7 +245,9 @@ export type V2CoverageResponse = z.infer<typeof V2CoverageResponseSchema>
 export const V2EvidenceResolveResponseSchema = z
   .object({
     apiContractVersion: z.literal(V2_API_CONTRACT_VERSION),
-    analysisVersion: SemanticVersionSchema,
+    // Pinned, not a permissive semver: an older local service that predates the bundled
+    // analysis must not replace a rich offline walk with valid absence furniture.
+    analysisVersion: z.literal(INTEGRATION_SHAPE_ANALYSIS_VERSION),
     reference: AnalyticReferenceSchema,
     projection: WhyResolutionSchema,
   })

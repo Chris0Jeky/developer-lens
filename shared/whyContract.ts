@@ -1,5 +1,10 @@
 import { z } from 'zod'
-import { ClaimEdgeRoleSchema, ClaimEdgeTargetKindSchema } from './claims.js'
+import { CAPABILITY_REGISTRY } from './capabilities.js'
+import {
+  CLAIM_EDGE_ROLE_TARGET_KIND,
+  ClaimEdgeRoleSchema,
+  ClaimEdgeTargetKindSchema,
+} from './claims.js'
 import type { AnalyticReference } from './findings.js'
 import type {
   WhyCapabilityNode,
@@ -107,6 +112,12 @@ export const WhyMissingLinkSchema = z.strictObject({
   lineage: z.array(WhyLineageEventSchema),
 }) satisfies z.ZodType<WhyMissingLink>
 
+/**
+ * A capability node must BE a registry entry, not merely look like one: the drawer
+ * renders these fields verbatim under "Capability & consent terms", so a malformed
+ * response must not be able to claim weaker gates or an active refusal state than
+ * `CAPABILITY_REGISTRY` declares (PR #132 review).
+ */
 export const WhyCapabilityNodeSchema = z.strictObject({
   kind: z.literal('capability'),
   capabilityId: z.string(),
@@ -114,6 +125,18 @@ export const WhyCapabilityNodeSchema = z.strictObject({
   classCeiling: z.string(),
   requiredGates: z.array(z.string()),
   refusalStatus: z.string(),
+}).superRefine((node, ctx) => {
+  const definition = CAPABILITY_REGISTRY.find((candidate) => candidate.id === node.capabilityId)
+  if (
+    !definition
+    || definition.purposeCode !== node.purposeCode
+    || definition.classCeiling !== node.classCeiling
+    || definition.refusalStatus !== node.refusalStatus
+    || definition.requiredGates.length !== node.requiredGates.length
+    || definition.requiredGates.some((gate, index) => node.requiredGates[index] !== gate)
+  ) {
+    ctx.addIssue({ code: 'custom', message: 'capability node does not match the closed registry' })
+  }
 }) satisfies z.ZodType<WhyCapabilityNode>
 
 export const WhyCollectionJobNodeSchema = z.strictObject({
@@ -121,7 +144,7 @@ export const WhyCollectionJobNodeSchema = z.strictObject({
   jobId: z.string(),
   status: z.string(),
   consentRevision: z.string(),
-  capability: z.discriminatedUnion('kind', [WhyCapabilityNodeSchema, WhyMissingLinkSchema]),
+  capability: z.union([WhyCapabilityNodeSchema, WhyMissingLinkSchema]),
 }) satisfies z.ZodType<WhyCollectionJobNode>
 
 export const WhyCoverageNodeSchema = z.strictObject({
@@ -131,9 +154,9 @@ export const WhyCoverageNodeSchema = z.strictObject({
   status: z.string(),
   limitationCode: z.string(),
   retryable: z.boolean(),
-  expectedUnits: z.number().nullable(),
-  observedUnits: z.number(),
-  omittedUnits: z.number().nullable(),
+  expectedUnits: z.number().int().nonnegative().nullable(),
+  observedUnits: z.number().int().nonnegative(),
+  omittedUnits: z.number().int().nonnegative().nullable(),
   saturationReason: z.string().nullable(),
   observedAt: z.string(),
   job: z.discriminatedUnion('kind', [WhyCollectionJobNodeSchema, WhyMissingLinkSchema]),
@@ -173,12 +196,29 @@ export const WhyClaimReferenceNodeSchema = z.strictObject({
   ...whyClaimSummaryFields,
 }) satisfies z.ZodType<WhyClaimReferenceNode>
 
+/**
+ * The resolver invariant `hasAlias === (aliasLink === null)` is part of the contract:
+ * a response reporting the alias both linked and cleared would render contradictory
+ * retention state in the drawer. When the alias is gone, the link must be the exact
+ * furniture the resolver emits: a `SCOPE_ALIAS_CLEARED` missing-link naming the scope.
+ */
 export const WhyScopeNodeSchema = z.strictObject({
   kind: z.literal('scope'),
   scopeId: z.string(),
   hasAlias: z.boolean(),
   linkedAt: z.string(),
   aliasLink: WhyMissingLinkSchema.nullable(),
+}).superRefine((node, ctx) => {
+  if (node.hasAlias !== (node.aliasLink === null)) {
+    ctx.addIssue({ code: 'custom', message: 'scope alias state contradicts its alias link' })
+    return
+  }
+  if (
+    node.aliasLink !== null
+    && (node.aliasLink.reason !== 'SCOPE_ALIAS_CLEARED' || node.aliasLink.targetKind !== 'scope')
+  ) {
+    ctx.addIssue({ code: 'custom', message: 'cleared alias link must be SCOPE_ALIAS_CLEARED furniture' })
+  }
 }) satisfies z.ZodType<WhyScopeNode>
 
 export const WhyEdgeSchema = z.strictObject({
@@ -193,11 +233,37 @@ export const WhyEdgeSchema = z.strictObject({
   ]),
 }) satisfies z.ZodType<WhyEdge>
 
+/**
+ * The drawer labels each section from the GROUP role and renders every nested edge
+ * beneath it, so a group must be internally coherent: its target kind is the closed
+ * role mapping's, and every member edge carries the group's role with a target of the
+ * declared kind (or missing-link furniture). Contradicting evidence must not be
+ * renderable under a "supports" heading (PR #132 review).
+ */
 export const WhyEdgeGroupSchema = z.strictObject({
   kind: z.literal('edge_group'),
   role: ClaimEdgeRoleSchema,
   targetKind: ClaimEdgeTargetKindSchema,
   edges: z.array(WhyEdgeSchema),
+}).superRefine((group, ctx) => {
+  if (CLAIM_EDGE_ROLE_TARGET_KIND[group.role] !== group.targetKind) {
+    ctx.addIssue({ code: 'custom', message: 'edge group target kind disagrees with its role' })
+  }
+  for (const edge of group.edges) {
+    if (edge.role !== group.role) {
+      ctx.addIssue({ code: 'custom', message: 'edge role disagrees with its group' })
+      return
+    }
+    const target = edge.target
+    const coherent = target.kind === 'missing_link'
+      || (group.targetKind === 'evidence' && target.kind === 'evidence')
+      || (group.targetKind === 'claim' && target.kind === 'claim_reference')
+      || (group.targetKind === 'coverage' && target.kind === 'coverage')
+    if (!coherent) {
+      ctx.addIssue({ code: 'custom', message: 'edge target kind disagrees with its group' })
+      return
+    }
+  }
 }) satisfies z.ZodType<WhyEdgeGroup>
 
 export const WhyLimitationSchema = z.strictObject({
@@ -233,7 +299,7 @@ export const WhyExplanationTreeSchema = z.strictObject({
   bound: z.number(),
   element: WhyElementRefSchema.nullable(),
   claim: WhyClaimNodeSchema,
-  scope: z.discriminatedUnion('kind', [WhyScopeNodeSchema, WhyMissingLinkSchema]),
+  scope: z.union([WhyScopeNodeSchema, WhyMissingLinkSchema]),
   edges: z.array(WhyEdgeGroupSchema),
   limitations: z.array(WhyLimitationSchema),
   lineage: z.array(WhyLineageEventSchema),
