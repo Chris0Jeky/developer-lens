@@ -25,11 +25,25 @@ import {
 
 /**
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
- * and this module contains no reader, writer, selector, or migration caller.
+ * and this module contains no reader, writer, or migration caller.
  */
 export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b2a-iii' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
 export const STORAGE_V3_SHADOW_USER_VERSION = 305
+
+/**
+ * Continuity CAS state lives in the store it guards.  These two tables are
+ * new-store state, never migration output: no v2 source carries them, the
+ * rewrite never writes them, and acceptance requires them empty.
+ */
+export const STORAGE_V3_CONTINUITY_CAS_TABLES = [
+  'continuity_cas_operation',
+  'continuity_cas_state',
+] as const
+export type StorageV3ContinuityCasTable = typeof STORAGE_V3_CONTINUITY_CAS_TABLES[number]
+/** One content-free abort code shared by the CAS triggers and their module. */
+export const STORAGE_V3_CONTINUITY_CAS_ERROR = 'STORAGE_V3_CONTINUITY_CAS_INVALID' as const
+const CONTINUITY_CAS_MAX_REVISION = Number.MAX_SAFE_INTEGER
 
 /**
  * Canonical identity columns are immutable after insertion.  This registry is
@@ -276,6 +290,57 @@ const token = (column: string, max = 256): string =>
 const canonicalTimestampShape = (column: string): string =>
   `length(${column}) = 24 AND ${column} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'`
 const quoted = (values: readonly string[]): string => values.map((value) => `'${value}'`).join(', ')
+
+const casAbort = (name: string, timing: string): string =>
+  `CREATE TRIGGER IF NOT EXISTS ${name}
+${timing}
+BEGIN
+  SELECT RAISE(ABORT, '${STORAGE_V3_CONTINUITY_CAS_ERROR}');
+END;`
+
+/**
+ * Single-row revision state plus its immutable operation history.  The triggers
+ * make monotonic single-step revisions and append-only history table properties
+ * rather than writer conventions.
+ */
+const continuityCasSqlBlock = `CREATE TABLE IF NOT EXISTS continuity_cas_state (
+  scope_id TEXT PRIMARY KEY NOT NULL CHECK (${c1('scope_id')}),
+  revision INTEGER NOT NULL CHECK (revision >= 0 AND revision <= ${CONTINUITY_CAS_MAX_REVISION})
+) STRICT;
+CREATE TABLE IF NOT EXISTS continuity_cas_operation (
+  operation_id TEXT PRIMARY KEY NOT NULL CHECK (${key('operation_id', 'op-')}),
+  scope_id TEXT NOT NULL CHECK (${c1('scope_id')}),
+  expected_revision INTEGER NOT NULL
+    CHECK (expected_revision >= 0 AND expected_revision < ${CONTINUITY_CAS_MAX_REVISION}),
+  applied_revision INTEGER NOT NULL
+    CHECK (
+      applied_revision > 0
+      AND applied_revision <= ${CONTINUITY_CAS_MAX_REVISION}
+      AND applied_revision = expected_revision + 1
+    ),
+  payload_sha256 TEXT NOT NULL
+    CHECK (length(payload_sha256) = 64 AND payload_sha256 NOT GLOB '*[^0-9a-f]*'),
+  UNIQUE (scope_id, applied_revision),
+  FOREIGN KEY (scope_id) REFERENCES continuity_cas_state(scope_id) ON DELETE RESTRICT
+) STRICT;
+${casAbort('continuity_cas_state_scope_immutable', 'BEFORE UPDATE OF scope_id ON continuity_cas_state')}
+${casAbort(
+  'continuity_cas_state_revision_step',
+  `BEFORE UPDATE OF revision ON continuity_cas_state
+WHEN NEW.revision != OLD.revision + 1`,
+)}
+${casAbort('continuity_cas_state_no_delete', 'BEFORE DELETE ON continuity_cas_state')}
+${casAbort(
+  'continuity_cas_operation_matches_state',
+  `BEFORE INSERT ON continuity_cas_operation
+WHEN NOT EXISTS (
+  SELECT 1 FROM continuity_cas_state AS state
+  WHERE state.scope_id = NEW.scope_id
+    AND state.revision = NEW.applied_revision
+)`,
+)}
+${casAbort('continuity_cas_operation_no_update', 'BEFORE UPDATE ON continuity_cas_operation')}
+${casAbort('continuity_cas_operation_no_delete', 'BEFORE DELETE ON continuity_cas_operation')}`
 
 /** Strict, isolated DDL for every table named by the B1a disposition registry. */
 export const STORAGE_V3_SHADOW_SCHEMA_SQL = `
@@ -578,6 +643,7 @@ ${identityBindingTriggerSqlBlock}
 ${lineageScopeTriggerSql}
 ${c2RetentionOwnerTriggerSql}
 ${lineageOwnerTriggerSqlBlock}
+${continuityCasSqlBlock}
 `
 
 export interface StorageV3ShadowResult {
@@ -729,7 +795,7 @@ export function storageV3ShadowSchemaFingerprint(db: Database.Database): string 
 
 function hasOwnedTempSchemaObject(db: Database.Database): boolean {
   const objectPlaceholders = shadowSchemaObjectNames.map(() => '?').join(', ')
-  const tablePlaceholders = STORAGE_V3_TABLES.map(() => '?').join(', ')
+  const tablePlaceholders = STORAGE_V3_SHADOW_TABLES.map(() => '?').join(', ')
   return db.prepare(
     `SELECT 1 FROM sqlite_temp_schema
      WHERE name COLLATE NOCASE IN (${objectPlaceholders})
@@ -739,7 +805,7 @@ function hasOwnedTempSchemaObject(db: Database.Database): boolean {
           AND name NOT GLOB 'sqlite_autoindex_*'
         )
      LIMIT 1`,
-  ).get(...shadowSchemaObjectNames, ...STORAGE_V3_TABLES) !== undefined
+  ).get(...shadowSchemaObjectNames, ...STORAGE_V3_SHADOW_TABLES) !== undefined
 }
 
 export function storageV3ShadowResult(): StorageV3ShadowResult {
@@ -780,7 +846,7 @@ export function installStorageV3ShadowSchema(db: Database.Database): StorageV3Sh
     const installed = db.prepare(
       `SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name`,
     ).all() as Array<{ name: string }>
-    const expected = [...STORAGE_V3_TABLES].sort()
+    const expected = [...STORAGE_V3_SHADOW_TABLES].sort()
     const actual = installed.map(({ name }) => name)
     if (actual.length !== expected.length || actual.some((name, index) => name !== expected[index])) {
       throw new Error('STORAGE_V3_SHADOW_SCHEMA_MISMATCH')
@@ -798,5 +864,12 @@ export function installStorageV3ShadowSchema(db: Database.Database): StorageV3Sh
   })()
 }
 
-export const STORAGE_V3_SHADOW_TABLES: readonly StorageV3Table[] = STORAGE_V3_TABLES
+/** The tables a v2 source also carries; the rewrite reads and writes only these. */
+export const STORAGE_V3_SHADOW_MIGRATED_TABLES: readonly StorageV3Table[] = STORAGE_V3_TABLES
+/** Every table the installed shadow store owns: migrated tables plus CAS state. */
+export const STORAGE_V3_SHADOW_TABLES = [
+  ...STORAGE_V3_TABLES,
+  ...STORAGE_V3_CONTINUITY_CAS_TABLES,
+] as const
+export type StorageV3ShadowTable = typeof STORAGE_V3_SHADOW_TABLES[number]
 export const STORAGE_V3_SHADOW_DISPOSITIONS = STORAGE_V3_DISPOSITIONS

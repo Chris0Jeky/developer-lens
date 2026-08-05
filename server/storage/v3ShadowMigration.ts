@@ -124,6 +124,10 @@ const C1_GRAPH_COLUMNS = {
     'scope_id', 'subject_kind', 'subject_id', 'operation_id', 'capability_id', 'caused_by',
     'event_kind', 'event_week',
   ],
+  // New-store state, never migration output: empty at acceptance and outside the
+  // replayed C1 graph, so neither target's CAS rows can enter the checksum.
+  continuity_cas_state: [],
+  continuity_cas_operation: [],
 } as const satisfies Record<ShadowTable, readonly string[]>
 
 const lengthPrefix = (value: string): string => `${value.length}:${value}`
@@ -221,7 +225,22 @@ function graphColours(rows: readonly C1Row[]): ReadonlyMap<string, string> {
   return colours
 }
 
-function assertSelectableTarget(db: Database.Database): void {
+export interface StorageV3SelectableTargetOptions {
+  /**
+   * Acceptance proves a virgin store, so every never-written table must be empty.
+   * A store already in owner service carries CAS revision state; only that opens.
+   */
+  readonly allowContinuityCasState?: boolean
+}
+
+/**
+ * Every structural proof acceptance runs. Exported so the selector re-proves an
+ * on-disk store with the same code path the orchestrator accepted it under.
+ */
+export function assertSelectableStorageV3Target(
+  db: Database.Database,
+  options: StorageV3SelectableTargetOptions = {},
+): void {
   if (db.inTransaction) throw new Error()
   db.pragma('foreign_keys = ON')
   if (Number(db.prepare('PRAGMA foreign_keys').pluck().get()) !== 1) throw new Error()
@@ -244,8 +263,11 @@ function assertSelectableTarget(db: Database.Database): void {
   if (String(db.prepare('PRAGMA integrity_check').pluck().get()) !== 'ok') throw new Error()
   if (String(db.prepare('PRAGMA quick_check').pluck().get()) !== 'ok') throw new Error()
   if (db.prepare('PRAGMA foreign_key_check').all().length !== 0) throw new Error()
-  // Delete-disposition tables: the rewrite never writes them, so any row is injected.
-  for (const table of ['import_run', 'coverage_observation']) {
+  // Delete-disposition and CAS tables: the rewrite never writes them, so any row is injected.
+  const empty = options.allowContinuityCasState
+    ? ['import_run', 'coverage_observation']
+    : ['import_run', 'coverage_observation', 'continuity_cas_state', 'continuity_cas_operation']
+  for (const table of empty) {
     if (Number(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get()) !== 0) throw new Error()
   }
 }
@@ -418,8 +440,8 @@ export function orchestrateStorageV3ShadowMigration(
       || primary.db === options.sourceDb
       || replay.db === options.sourceDb
     ) throw new Error()
-    assertSelectableTarget(primary.db)
-    assertSelectableTarget(replay.db)
+    assertSelectableStorageV3Target(primary.db)
+    assertSelectableStorageV3Target(replay.db)
     assertProcessInputsAbsent(primary.db, options.identityBindings, options.installationKey)
     assertProcessInputsAbsent(replay.db, options.identityBindings, options.installationKey)
     const checksum = replayNormalizedShadowChecksum(primary.db)

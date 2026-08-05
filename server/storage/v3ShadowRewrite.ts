@@ -34,6 +34,7 @@ import { createInstallationAliases } from './installationAliases.js'
 import { SQLITE_APPLICATION_ID, SQLITE_USER_VERSION } from './schema.js'
 import {
   installStorageV3ShadowSchema,
+  STORAGE_V3_SHADOW_MIGRATED_TABLES,
   STORAGE_V3_SHADOW_RESULT,
   STORAGE_V3_SHADOW_TABLES,
 } from './v3ShadowSchema.js'
@@ -232,7 +233,7 @@ function preflightSource(db: Database.Database): void {
     const actualTables = db.prepare(
       "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name",
     ).pluck().all() as string[]
-    const expectedTables = [...STORAGE_V3_SHADOW_TABLES].sort()
+    const expectedTables = [...STORAGE_V3_SHADOW_MIGRATED_TABLES].sort()
     if (JSON.stringify(actualTables) !== JSON.stringify(expectedTables)) {
       fail('SOURCE_SCHEMA_REFUSED')
     }
@@ -266,7 +267,7 @@ function readSourceImage(db: Database.Database): SourceImage {
       }
 
       const tables: Record<string, Row[]> = {}
-      for (const tableName of STORAGE_V3_SHADOW_TABLES) {
+      for (const tableName of STORAGE_V3_SHADOW_MIGRATED_TABLES) {
         tables[tableName] = tableRows(db, tableName)
       }
       return { tables, provenance, bridgeCoverage }
