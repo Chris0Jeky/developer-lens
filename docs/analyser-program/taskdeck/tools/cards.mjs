@@ -18,7 +18,7 @@ const PROVE_CTX = 'npm run verify:context; git diff --check';
 
 export const CARDS = [
 // ============ EP-SPINE ============
-{ id: 'DL-SPINE-01', title: 'Evidence claim graph table contracts', epic: 'spine', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-SPINE-01', title: 'Evidence claim graph table contracts', epic: 'spine', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2',
   question: 'Can every rendered statement be resolved to its evidence, contradiction, limitation, and correction lineage?',
   outcome: 'Typed claim/claim_evidence_edge/limitation_instance/lineage_event contracts exist in shared/ + STRICT SQLite tables, so every rendered statement can be resolved to evidence, contradiction, limitation, and correction lineage.',
   deps: 'none', unlock: '',
@@ -31,7 +31,7 @@ export const CARDS = [
   rollback: 'Drop the four table families; no other table references them yet.',
   demo: 'Test output shows a claim resolving to its full evidence walk on fixtures.' },
 
-{ id: 'DL-SPINE-02', title: 'Deterministic claim canonicalisation and replay proof', epic: 'spine', type: 'implementation', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-SPINE-02', title: 'Deterministic claim canonicalisation and replay proof', epic: 'spine', type: 'implementation', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2',
   question: 'Does replaying the same inputs reproduce byte-identical claim IDs, so corrections are lineage and never overwrites?',
   outcome: 'Claim IDs are content-derived (sha256 over statement code, method@version, ordered evidence IDs, window, scope, schema) and replay reproduces identical IDs.',
   deps: 'DL-SPINE-01', unlock: 'DL-SPINE-01 merged',
@@ -45,7 +45,7 @@ export const CARDS = [
   demo: 'Replay test transcript.',
   constraints: 'DL#81 binds: ID material includes claim targets; supersession cycle guard; replay clock semantics; anchor idempotency; internally minted scope surrogate; layer dependency order; >=1 basis edge' },
 
-{ id: 'DL-SPINE-03', title: 'Why-am-I-seeing-this resolver', epic: 'spine', type: 'implementation', status: 'DONE', risk: 'low', effort: 'S', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-SPINE-03', title: 'Why-am-I-seeing-this resolver', epic: 'spine', type: 'implementation', status: 'DONE', risk: 'low', effort: 'S', milestone: 'M2', privacy: 'C1', gate: 'gate:G2',
   question: 'Why am I seeing this number - and does the walk terminate at source, coverage, capability, and consent every time?',
   outcome: 'One deterministic walk resolves UI element -> claim -> edges -> evidence -> coverage -> capability -> consent revision, powering the Evidence Drawer.',
   deps: 'DL-SPINE-01', unlock: 'DL-SPINE-01 merged',
@@ -58,7 +58,7 @@ export const CARDS = [
   rollback: 'Resolver is read-only; remove module.',
   demo: 'Resolver output for one hypothesis fixture showing supports+contradicts+limitation.' },
 
-{ id: 'DL-SPINE-04', title: 'Coverage-vector dimension registry v2', epic: 'spine', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-SPINE-04', title: 'Coverage-vector dimension registry v2', epic: 'spine', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2',
   question: 'Which dimensions of evidence quality gate this claim, and which one is limiting it right now?',
   outcome: 'Registered closed 12-dimension set (permission, completeness, eligibility, freshness, censoring_freedom, consistency, sample, source_diversity, parser_coverage, comparability, drift_stability, calibration), every dimension direction=higher_is_better, per-dimension limiting-reason codes, and the explicit EvidenceConfidence mapping (six carried, six new-null) per ADR-02 as corrected 2026-08-04.',
   deps: 'none', unlock: '',
@@ -85,7 +85,8 @@ export const CARDS = [
   constraints: 'DL#76 binds: source_diversity clamp decision; producer-absence limiting codes; canonical coverage-code registration' },
 
 // ============ EP-LIFE ============
-{ id: 'DL-LIFE-01', title: 'Capability lifecycle state machine + approval-never-activates invariant', epic: 'lifecycle', type: 'contract', status: 'READY', risk: 'high', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2',
+{ id: 'DL-LIFE-01', title: 'Capability lifecycle state machine + approval-never-activates invariant', epic: 'lifecycle', type: 'contract', status: 'READY', risk: 'high', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+  question: 'Can a reviewed capability card move through consent safely while gate approval alone remains byte-identically inert?',
   outcome: 'One typed lifecycle (never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked) instantiated by every capability, with a registry-snapshot test proving gate approvals perform no transition.',
   deps: 'none', unlock: '',
   paths: 'shared/capabilities.ts (extend); server lifecycle module; tests',
@@ -97,7 +98,8 @@ export const CARDS = [
   rollback: 'Lifecycle wraps the existing registry; remove wrapper, registry unchanged.',
   demo: 'State-machine diagram + invariant test output.' },
 
-{ id: 'DL-LIFE-02', title: 'Deletion enumeration from schema registry + cascade proof', epic: 'lifecycle', type: 'implementation', status: 'BLOCKED_BY_DEPENDENCY', risk: 'high', effort: 'M', milestone: 'M1', privacy: 'C1-C3', gate: 'gate:G2',
+{ id: 'DL-LIFE-02', title: 'Deletion enumeration from schema registry + cascade proof', epic: 'lifecycle', type: 'implementation', status: 'BLOCKED_BY_DEPENDENCY', risk: 'high', effort: 'M', milestone: 'M1', privacy: 'C1-C3', gate: 'gate:G2', horizon: 'active',
+  question: 'When consent is revoked, can the product prove every retained descendant is deleted without hand-maintained table lists?',
   outcome: 'Descendant deletion (facts, features, claims, graphs, caches, indexes, model outputs, app-controlled packs/backups) is generated from the schema registry, not hand lists; revocation leaves only a content-free tombstone.',
   deps: 'DL-LIFE-01', unlock: 'DL-LIFE-01 merged',
   paths: 'server/storage deletion planner; lineage_event writes; cascade tests',
@@ -123,7 +125,7 @@ export const CARDS = [
   constraints: 'DL#6 (key continuity), DL#59 (failed key creation recovery)' },
 
 // ============ EP-BRIDGE ============
-{ id: 'DL-BRIDGE-01', title: 'V2 bootstrap slice: /api/v2 coverage+capabilities over synthetic store + Coverage Cockpit panel', epic: 'bridge', type: 'implementation', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C0', gate: 'gate:G2', demoRelevant: true, horizon: 'active',
+{ id: 'DL-BRIDGE-01', title: 'V2 bootstrap slice: /api/v2 coverage+capabilities over synthetic store + Coverage Cockpit panel', epic: 'bridge', type: 'implementation', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C0', gate: 'gate:G2', demoRelevant: true,
   question: 'Can the user see any V2 surface at all - or is the platform still disconnected architecture?',
   outcome: 'The BOOTSTRAP slice (wave R1): authenticated lazy-mounted /api/v2/capabilities + /api/v2/coverage served from a synthetic-importer-populated SQLite store, rendered by a new Coverage Cockpit route. Proves the V2 runtime seam and privacy boundary; it does NOT yet prove the analytical product thesis - DL-VALUE-01 does.',
   deps: 'none', unlock: '',
@@ -200,7 +202,7 @@ export const CARDS = [
   rollback: 'Docs revert.',
   demo: 'The reconciliation PR itself.' },
 
-{ id: 'DL-METRIC-01', title: 'Versioned metric-definition registry', epic: 'analytics-core', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-METRIC-01', title: 'Versioned metric-definition registry', epic: 'analytics-core', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2',
   question: 'What exactly was measured, on which cohort, under which assumptions - and what must never be inferred from it?',
   outcome: 'A closed, versioned metric-definition registry: metric_id@version, question answered, analytical subject, unit, window/asOf semantics, required capabilities+fields, eligibility/cohort, event + censoring definition, missingness/truncation handling, deterministic formula, minimum support gates, comparison requirements, sensitivity variants, known confounders, prohibited interpretations, coverage dimensions consumed, fixture suite, render/export policy, supersession path. Undocumented metrics become impossible to expose through V2 APIs.',
   deps: 'none', unlock: '',
@@ -213,7 +215,7 @@ export const CARDS = [
   rollback: 'Additive contract; remove module.',
   demo: 'One registered metric rendered with its full definition card.' },
 
-{ id: 'DL-FINDING-01', title: 'Finding contract: alternatives, contradiction, robustness, AnalyticReference', epic: 'analytics-core', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-FINDING-01', title: 'Finding contract: alternatives, contradiction, robustness, AnalyticReference', epic: 'analytics-core', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2',
   question: 'What does the system claim, what contradicts it, what else could explain it, and how stable is it?',
   outcome: 'One versioned finding contract for deterministic/modelled/hypothesis/abstention findings: metric result refs, evidence + counter-evidence IDs, alternative explanations, limitations, sample/eligibility/censoring summary, metric-specific coverage, robustness status + checks, discriminating-evidence statement, presentation eligibility. Plus the typed AnalyticReference union (ObservationReference | ClaimReference) every rendered analytic mark resolves through - derived counts are deterministic claims, never OBS.',
   deps: 'DL-METRIC-01, DL-SPINE-01', unlock: 'metric registry + claim tables merged',
@@ -226,7 +228,7 @@ export const CARDS = [
   rollback: 'Additive contract; remove module.',
   demo: 'One finding payload with full evidence walk on fixtures.' },
 
-{ id: 'DL-COMPARE-01', title: 'Matched-period comparison and censoring semantics', epic: 'analytics-core', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-COMPARE-01', title: 'Matched-period comparison and censoring semantics', epic: 'analytics-core', type: 'contract', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C1', gate: 'gate:G2',
   question: 'Did this window genuinely differ from the matched baseline window, or only in what we could observe?',
   outcome: 'One reusable comparison contract: canonical injected asOf, equal-duration half-open UTC windows, instrument-matched subwindows with three outcomes (FULL / MATCHED_PARTIAL / INCOMPARABLE), matched fraction as a first-class number, right-censoring at window boundaries, explicit cohort choice, and explicit no-comparison outcomes. A failed comparison is never a zero delta.',
   deps: 'DL-METRIC-01', unlock: 'metric registry merged',
@@ -239,7 +241,7 @@ export const CARDS = [
   rollback: 'Additive contract; remove module.',
   demo: 'Three-outcome comparison table on fixtures.' },
 
-{ id: 'DL-VALIDATE-01', title: 'Analytical conformance and counterexample suite', epic: 'analytics-core', type: 'evaluation', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C0', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-VALIDATE-01', title: 'Analytical conformance and counterexample suite', epic: 'analytics-core', type: 'evaluation', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C0', gate: 'gate:G2',
   question: 'Would our fixtures catch a metric that is reproducible, private - and measuring the wrong construct?',
   outcome: 'An analytics-grade fixture suite testing construct validity, not only code correctness: goldens, counterexamples, null/unknown, truncation, right-censoring, alternative windows, alternative cohort definitions, parameter sensitivity, contradiction, source disagreement, and permutation/null baselines for wave-like findings.',
   deps: 'DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01', unlock: 'analytics-core contracts merged',
@@ -252,7 +254,7 @@ export const CARDS = [
   rollback: 'Fixtures only.',
   demo: 'Conformance report for one metric family.' },
 
-{ id: 'DL-VALUE-01', title: 'First deterministic comparative finding (integration shape, matched windows)', epic: 'analytics-core', type: 'implementation', status: 'DONE', risk: 'medium', effort: 'L', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', horizon: 'active', demoRelevant: true,
+{ id: 'DL-VALUE-01', title: 'First deterministic comparative finding (integration shape, matched windows)', epic: 'analytics-core', type: 'implementation', status: 'DONE', risk: 'medium', effort: 'L', milestone: 'M2', privacy: 'C1', gate: 'gate:G2', demoRelevant: true,
   question: 'How did PR integration shape differ between this window and the preceding matched window?',
   outcome: 'First analytical value slice (wave R3) on invented facts via /api/v2 + one comparative Atlas panel + Drawer: cohort = PRs ready-for-review per window, merge event, right-censored open PRs, censoring-aware baseline or abstention, eligible/censored/excluded counts, distribution/tail view, metric-specific coverage, contradicting observation where present, limitations + alternatives, >=1 sensitivity variant.',
   deps: 'DL-BRIDGE-01, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-VALIDATE-01, DL-SPINE-02, DL-SPINE-03, DL-UX-ED', unlock: 'bootstrap + analytics-core contracts + conformance suite + resolver + drawer merged',
@@ -265,7 +267,7 @@ export const CARDS = [
   rollback: 'Panel + endpoints are additive; unmount.',
   demo: 'Walkthrough: question -> comparison -> distribution -> drawer -> limitation -> sensitivity.' },
 
-{ id: 'DL-OPS-CI-01', title: 'Hosted pull-request CI gate before broad autonomous merging', epic: 'analytics-core', type: 'implementation', status: 'DONE', risk: 'low', effort: 'M', milestone: 'M1', privacy: 'C0', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-OPS-CI-01', title: 'Hosted pull-request CI gate before broad autonomous merging', epic: 'analytics-core', type: 'implementation', status: 'DONE', risk: 'low', effort: 'M', milestone: 'M1', privacy: 'C0', gate: 'gate:G2',
   question: 'Does every PR prove context validity, types, tests, and privacy canaries before merge, without a human babysitter?',
   outcome: 'A hosted PR workflow gating merges on: npm run verify:context, unit tests, type/build checks, synthetic privacy canaries, and showcase verification. Ordering rule: complete before multiple autonomous implementation lanes or expanded merge authority.',
   deps: 'none', unlock: '',
@@ -1126,7 +1128,7 @@ export const CARDS = [
   rollback: 'View-level revert; BRIDGE-01 panel remains.',
   demo: 'Cockpit walkthrough on fixtures.' },
 
-{ id: 'DL-UX-ED', title: 'Evidence Drawer (universal claim inspector)', epic: 'ux-atlas', type: 'ux', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C0', gate: 'gate:G2', demoRelevant: true, horizon: 'active',
+{ id: 'DL-UX-ED', title: 'Evidence Drawer (universal claim inspector)', epic: 'ux-atlas', type: 'ux', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M2', privacy: 'C0', gate: 'gate:G2', demoRelevant: true,
   question: 'Can I open any rendered number and walk to what supports it, what contradicts it, and what limits it?',
   outcome: 'Every analytic mark opens a drawer showing the SPINE-03 walk: supports, contradicts, coverage, limitations, method version, correction lineage, and the falsifying question. Resolves the typed AnalyticReference union (ObservationReference | ClaimReference) - raw allowed facts via observation ID, derived numbers via claim ID.',
   deps: 'DL-SPINE-03', unlock: 'resolver merged (consumes the minimal V2 evidence endpoint shipping with DL-VALUE-01; the full DL-BRIDGE-02 endpoint family remains a later card)',
@@ -1400,7 +1402,8 @@ export const CARDS = [
   rollback: 'On-demand only.',
   demo: 'Fragility profile for one claim.' },
 
-{ id: 'DL-EVQ-03', title: 'Claim stability across re-collections (frontier C-03; stability key)', epic: 'evidence-quality', type: 'implementation', status: 'BLOCKED_BY_DEPENDENCY', risk: 'medium', effort: 'M', milestone: 'M6', privacy: 'C1', gate: 'gate:G2',
+{ id: 'DL-EVQ-03', title: 'Claim stability across re-collections (frontier C-03; stability key)', epic: 'evidence-quality', type: 'implementation', status: 'READY', risk: 'medium', effort: 'M', milestone: 'M6', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+  question: 'How stable is each claim family across repeated collections, and is change driven by evidence coverage or measured value?',
   outcome: 'Stability series over the ADR-01 stability key: churn, oscillation, value range, coverage-vs-value attribution share; drift-dimension producer role stays research.',
   deps: 'DL-SPINE-01, DL-SPINE-02', unlock: 'claim tables + canonicalisation merged (stability key is in the ADR-01 contract)',
   paths: 'server/analysis/claimStability.ts; tests',
