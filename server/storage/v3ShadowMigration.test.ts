@@ -37,8 +37,14 @@ function sourceFixture(): { db: Database.Database; key: Buffer; raw: string } {
     .run(provider, analytical)
   db.prepare('INSERT INTO commit_observation (repository_provider_id, sha, occurred_at, source, feature_type, is_revert, is_fixup, message_length) VALUES (?, ?, ?, ?, ?, 0, 0, 1)')
     .run(provider, 'invented-sha', '2026-01-01T00:00:00.000Z', 'github', 'feat')
+  // A slice-A legacy tombstone: rewritten as `del-<same 64 hex>` DERIVED from this row,
+  // not minted, so both targets must carry it literally (PR #127 late review).
+  db.prepare('INSERT INTO lineage_event (subject_id, event_kind, caused_by, occurred_at) VALUES (?, ?, ?, ?)')
+    .run(`scope_tombstone_${LEGACY_TOMBSTONE_SUFFIX}`, 'tombstone_cascade', 'cap_github_core', '2026-01-01T12:00:00.000Z')
   return { db, key, raw }
 }
+
+const LEGACY_TOMBSTONE_SUFFIX = 'a'.repeat(64)
 
 interface AttemptRecord {
   closeCount: number
@@ -253,6 +259,20 @@ describe('B1b-iii shadow orchestration', () => {
     ['same-shaped key substitution in a literal C2 column', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
       attempt.db.prepare('UPDATE commit_observation SET sha = ?')
         .run(`job-${(kind === 'primary' ? 'a' : 'b').repeat(64)}`)
+    }],
+    // The exact PR #127 late-review scenario: a source-derived legacy deletion ID is
+    // replaced with another same-shaped `del-<64hex>` in ONE target. Alpha-renaming
+    // would colour both values identically and accept; literal comparison refuses.
+    ['same-shaped substitution of a source-derived legacy deletion ID', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
+      if (kind !== 'primary') return
+      // lineage_event key columns are immutable-trigger guarded, so model the hostile
+      // divergence as delete + re-insert of the substituted row.
+      const week = attempt.db.prepare("SELECT event_week FROM lineage_event WHERE event_kind = 'legacy_deletion_operation'").pluck().get() as string
+      attempt.db.prepare("DELETE FROM lineage_event WHERE event_kind = 'legacy_deletion_operation'").run()
+      const substituted = `del-${'b'.repeat(64)}`
+      attempt.db.prepare(
+        'INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (NULL, ?, ?, ?, ?, NULL, ?, ?)',
+      ).run('deletion', substituted, substituted, 'github.core', 'legacy_deletion_operation', week)
     }],
     ['injected continuity CAS state at acceptance', (_kind: 'primary' | 'replay', attempt: FileAttempt) => {
       const scope = attempt.db.prepare('SELECT scope_id FROM claim_scope LIMIT 1').pluck().get() as string
