@@ -202,7 +202,7 @@ or capability mutation, and existing capability registry/API values remain `neve
 PR #116 head `d939e1b` passed hosted run `31003641095`, merged as `8e8b0bc`, and passed exact-merge
 Pages/privacy run `31003872271` plus an empty late-comment sweep.
 
-### B2b-ii-b strict C1 activation-result validator (current)
+### B2b-ii-b strict C1 activation-result validator (shipped)
 
 B2b-ii-b first isolates the exact versioned github.core runner-result projection. Its closed C1
 shape contains only controlled capability/version, stability, coverage, limitation/retry, and
@@ -213,13 +213,34 @@ authentication, authorization, continuity, renewal, or retention claim.
 The parser reconstructs exact own data properties, refuses inherited/accessor/symbol/extra input,
 fails closed on hostile inspection traps, enforces only producer-reachable status/code/count/request
 combinations, and deeply freezes a fixed-order result. It has no production caller or filesystem/
-database/network/clock/key/lifecycle/capability dependency. B2b-ii-c must embed this C1 object
-unchanged inside the strict local-C2 report envelope
-and add the stable exact-byte loader. Then add a separately owner-reviewed anchor for report/card/key/
-lifecycle/time plus a trusted clock. A report self-hash or caller-supplied expected hash is not that
-anchor. CAS revision is read transactionally and the operation is writer-owned. Only then may a
-caller-free composer feed the compare-and-swap writer, followed by restart handling and the migration-
-origin disposition for already-expired never-retained C2 groups.
+database/network/clock/key/lifecycle/capability dependency. PR #117 head `f910137` passed hosted run
+`31005511635`, merged as `8aa19b3`, and passed exact-merge Pages/privacy run `31005770546` plus an
+empty late-comment sweep.
+
+### B2b-ii-c stable local-C2 activation report (current)
+
+The strict `github-core-activation-report.v1` envelope embeds the B2b-ii-b object unchanged and adds
+only caller-claimed C2 `taskId`, `jobId`, and logical `jobStartedAt`. It omits root capability/card/
+report digests, scope, key, provider, range, review, authorization, continuity, operation, and prose
+fields. A report-provided card digest would be forgeable provenance, not authority; the later anchor
+must instead compare fresh card bytes and the external card digest against the persisted transition
+consent revision and lifecycle state while jointly binding the external report digest.
+
+One fixed-spec activation-artifact loader now serves both canonical `task-card.json` and
+`last-run-report.json` paths without exposing a caller-selected filename or limit. The report path
+keeps the card loader's 64 KiB bound, canonical ancestor and descriptor/path identity checks, one-
+link rule, double exact read, mutation detection, fatal UTF-8, duplicate-key refusal, SHA binding,
+and buffer zeroing. The github.core wrapper cross-checks the envelope task against the path and maps
+all failures to one content-free code. The exact production chain is artifact loader → report loader
+→ report parser → C1 result parser, with no caller above it and no writer or sink.
+
+Stable matching report bytes still provide no report origin, owner review, trusted time, card/key
+binding, authorization, continuity, renewal, retention, or completeness claim. Next add a separately
+owner-reviewed anchor for report/card/key/lifecycle/time plus a trusted clock. A report self-hash or
+caller-supplied expected hash is not that anchor. CAS revision is read transactionally and the
+operation is writer-owned. Only then may a caller-free composer feed the compare-and-swap writer,
+followed by restart handling and the migration-origin disposition for already-expired never-retained
+C2 groups.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the
