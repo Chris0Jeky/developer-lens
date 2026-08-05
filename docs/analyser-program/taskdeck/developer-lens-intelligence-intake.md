@@ -13,7 +13,7 @@ every V2 subsystem has zero production callers and the platform is disconnected 
 immediate successor is the first analytical value slice (DL-VALUE-01): one deterministic
 comparative PR-integration-shape finding through the metric/finding/comparison contracts
 (DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01 — reconciliation 2026-08-04). Entry point:
-docs/analyser-program/09_IMPLEMENTATION_LAUNCHER.md.
+docs/analyser-program/CURRENT_STATE.md.
 
 # Initiative: evidence claim graph
 

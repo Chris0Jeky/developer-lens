@@ -30,6 +30,8 @@ const requiredFiles = [
   'README.md',
   'docs/DEVELOPER_LENS_V2_ARCHITECTURE.md',
   'docs/IMPLEMENTATION_LEDGER.md',
+  'docs/analyser-program/CURRENT_STATE.md',
+  'docs/analyser-program/07_DELIVERY_ROADMAP.md',
   'docs/data-charter.md',
   'docs/source-capability-matrix.md',
 ] as const

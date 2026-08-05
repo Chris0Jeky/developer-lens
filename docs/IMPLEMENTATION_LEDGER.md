@@ -1,6 +1,7 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (B2b-ii-j merged; q-7 required PR gate verified)
+Last updated: **2026-08-05** (LIFE-02 §7 simplification: inert continuity/owner-PKI chain deleted,
+PR #111/#109 acceptance-seam defects fixed, late-review-timing record corrected)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -8,10 +9,19 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 **Fast resume:** agents should read the compact state artifact
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
-for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e/f/g/h/i/j are merged; the next bounded
-slice is the inert B2b-ii-k `owner-trust-root.v1` snapshot validator, while B2b-ii-k through B4
-remain without marking the card DONE or unblocking sensitive connectors between slices.
+for the next task. Current phase in one line: R1–R3 is complete; the LIFE-02 chain through
+B2b-ii-j is merged, and the 2026-08-05 simplification
+(`docs/analyser-program/10_LIFE_02B_DECISION.md` §7) deleted the inert continuity/owner-PKI
+artifacts and replaced the B2b-ii-k trust-root plan with an executable core (target factory,
+selector, CAS-in-store, owner-controlled default-off entrypoint), then B3/B4 — without marking the
+card DONE or unblocking sensitive connectors between slices.
+
+**Correction (2026-08-05, standing):** the per-slice sentences below claiming an "empty
+late-comment sweep" for PRs #104–#125 were measured before the Codex connector posted — it
+consistently posts 3–10 minutes **after** merge — and are not evidence of clean reviews. Twenty
+late Codex comments across PRs #104–#112 sat untriaged until the 2026-08-05 batch triage (tracking
+issues are linked from each PR thread; two live #109 findings were fixed directly). Merges now wait
+for the Codex review to arrive or a 15-minute post-ready window, whichever is first.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
@@ -2274,29 +2284,10 @@ untouched.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-ii-j merged; B2b-ii-k next).** Add one inert, proposal-only validator for
-an externally provisioned `owner-trust-root.v1` snapshot. Accept only a closed own-data synthetic
-snapshot with one active key plus retired/revoked history; validate safe monotonic revisions,
-unique opaque key IDs and fingerprints, canonical Ed25519 SPKI bytes and recomputed digests, and
-reject low-order/noncanonical public keys. Return only a frozen static shape-valid result, never
-trust, owner identity, approval, enrollment, rotation, revocation, or authorization. Add no
-self-signed bootstrap, first-key enrollment, writer, path, environment, database, network, anchor,
-signature, production caller, or capability effect. Before any later verifier integration, also
-reject low-order/noncanonical signature `R` and prove the issue #80 identity-point/`S = 0` forgery
-fails closed.
-
-Only after that process-owned trust-root boundary exists may a later slice bind fixed-path anchor
-selection, current same-scope retained C1 identity, lifecycle/revocation, continuity epoch, C2
-receipt expiry/sweep, and CAS state under one writer lock or implement a true renewal writer. Then
-take restart handling and claim-reachable migration-origin retention events, followed by canonical
-coverage/job absence resolution and its API/PresentationView/Evidence Drawer consumer migration.
-Continue B3-B4 exactly as `docs/analyser-program/10_LIFE_02B_DECISION.md` defines. Do not add a
-real-store/source-selection caller, persist identity input/mapping, or enter LIFE-03 backup/grace
-work. No intermediate slice may mark LIFE-02 DONE or close #80. B4 only unblocks LIFE-03; the first
-real migration/connector additionally needs LIFE-03's backup/grace/restore/tombstone-replay proof
-and #86's alias-bearing V2 coverage remint. Carry LIFE-01's pending-revocation suspension/resume
-invariant into the first caller boundary. R7/R8 remain frozen; q-6/q-8 remain open; protected data
-remains out of scope.
+The next slice is stated in exactly one place:
+[`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md). The 2026-08-05
+simplification (`docs/analyser-program/10_LIFE_02B_DECISION.md` §7) superseded the previous
+trust-root/credential resume prose that lived here.
 
 **Superseded 2026-08-04 (R1 wave 3 — active horizon COMPLETE).** DL-VALIDATE-01 (`df59bbc`, PR #92)
 and DL-VALUE-01 (`c632093`, PR #94) have merged, completing all 12 active-horizon cards. There is no
@@ -2304,8 +2295,9 @@ next active-horizon implementation slice; the live resume point is the **roadmap
 decides whether the R4 stretch opens — standing preference DL-LIFE-01 (capability lifecycle state
 machine), then DL-LIFE-02 (deletion cascade, closes most of
 [#80](https://github.com/Chris0Jeky/developer-lens/issues/80)) — and only after the reassessment
-confirms capacity. R7/R8 stay frozen. See `docs/analyser-program/09_IMPLEMENTATION_LAUNCHER.md` and
-`docs/analyser-program/CURRENT_STATE.md`. Items 1–6 below stay valid for the dormant P4/P12 lanes.
+confirms capacity. R7/R8 stay frozen. See `docs/analyser-program/CURRENT_STATE.md` (the launcher
+file this text once named was deleted 2026-08-05). Items 1–6 below stay valid for the dormant
+P4/P12 lanes.
 
 **Superseded 2026-08-04 (R1 wave 2).** DL-SPINE-02 (`b52c458`), DL-SPINE-03 (`610188c`), DL-UX-ED
 (`4c3f476`), DL-FINDING-01 (`2208fcf`) and DL-COMPARE-01 (`d407cb1`) have all merged, so the wave-1
@@ -2322,8 +2314,8 @@ below is history. The live resume point is the rest of the analytics-core kernel
    **bootstrap** slice (authenticated lazy `/api/v2` coverage+capabilities over the synthetic
    store + Coverage Cockpit panel), with **DL-VALUE-01** (first deterministic comparative finding)
    as its named analytical-value successor through DL-METRIC-01/DL-FINDING-01/DL-COMPARE-01.
-   Read `docs/analyser-program/CURRENT_STATE.md` first, then start from
-   `docs/analyser-program/09_IMPLEMENTATION_LAUNCHER.md`; the full card contract lives in the
+   Read `docs/analyser-program/CURRENT_STATE.md` first (the launcher file that once followed it
+   was deleted 2026-08-05); the full card contract lives in the
    generated starter pack (source `docs/analyser-program/taskdeck/tools/cards.mjs`) and on the
    seeded local Taskdeck board (state summary in `docs/analyser-program/06_TASKDECK_DEMO_PLAN.md`
    §1; exact location, credentials, and restart runbook only in the untracked `RESUME.md` beside
@@ -2336,7 +2328,9 @@ below is history. The live resume point is the rest of the analytics-core kernel
    this checkpoint.
 2. The owner ended the autonomous continuation after the documentation/demo closeout. Do not start
    backup/restore, a real selected-repository read, or an OpenAI/Luna request without a new owner
-   request.
+   request. *(Superseded 2026-08-04 by HUMAN_TODO q-5: the owner has since selected one bounded
+   public repository and delegated end-to-end execution within its recorded boundary; the LIFE-03
+   and #86 preconditions still bind.)*
 3. Invoke `$developer-lens-continuation` and preserve P3 as an immutable, unactivated C1 coverage
    pack. Its current reader verifies the Parquet hash after replay; do not expand that proof into an
    activated hostile-writer claim without an immutable snapshot or equivalent boundary.

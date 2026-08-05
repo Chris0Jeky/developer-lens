@@ -3,8 +3,9 @@
 Status: **Accepted (planning artifact)** · Session: 2026-08-04 planning-and-seeding
 Authority note: this folder (`docs/analyser-program/`) is a **non-authoritative working proposal
 space**. Stable contracts live only in `docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`,
-`docs/data-charter.md`, and `docs/source-capability-matrix.md`; live evidence and the resume point
-live only in `docs/IMPLEMENTATION_LEDGER.md`. If this folder disagrees with those, those win.
+`docs/data-charter.md`, and `docs/source-capability-matrix.md`; the live resume point lives only
+in `docs/analyser-program/CURRENT_STATE.md` (the ledger is the history archive). If this folder
+disagrees with those, those win.
 
 Labels used across this folder: **V** verified repository fact · **D** documented platform fact ·
 **R** recommendation · **I** inference · **A** assumption (with reversal path) · **REJ** rejected ·
