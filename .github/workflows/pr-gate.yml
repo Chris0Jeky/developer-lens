@@ -36,7 +36,7 @@ jobs:
 
       - name: Set up Node.js
         # Matches the locked local proving runtime (Node 24; better-sqlite3 is ABI-specific).
-        # NOTE: pages.yml still deploys on Node 22 — alignment tracked as a separate issue.
+        # pages.yml uses the same Node 24 proving runtime (aligned by PR #97).
         uses: actions/setup-node@v6
         with:
           node-version: 24
