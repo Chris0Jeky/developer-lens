@@ -4,6 +4,7 @@ import { reconcileGithubCoreReceipts } from '../connectors/github/core.js'
 import {
   ClaimStorageError,
   claimScopeTestSeams,
+  clearClaimScopeAlias,
   installClaimGraphStorage,
   registerClaim,
   registerEvidenceAnchor,
@@ -26,6 +27,7 @@ const databases: Database.Database[] = []
 const OCCURRED_AT = '2026-04-06T12:00:00.000Z'
 const TOMBSTONE_ID = `scope_tombstone_${'d4'.repeat(32)}`
 const ALPHA_SCOPE = `scope-${'a1'.repeat(32)}`
+const BETA_SCOPE = `scope-${'b2'.repeat(32)}`
 
 afterEach(() => {
   for (const db of databases.splice(0)) {
@@ -141,7 +143,71 @@ function deepFixture(): Database.Database {
     causedBy: null,
     occurredAt: OCCURRED_AT,
   })
+  registerLineageEvent(db, {
+    subjectId: 'scope-a',
+    eventKind: 'correction',
+    causedBy: null,
+    occurredAt: OCCURRED_AT,
+  })
+  registerLineageEvent(db, {
+    subjectId: 'opaque-alias-cause',
+    eventKind: 'correction',
+    causedBy: 'scope-a',
+    occurredAt: OCCURRED_AT,
+  })
+  registerLineageEvent(db, {
+    subjectId: 'opaque-evidence-cause',
+    eventKind: 'correction',
+    causedBy: 'secret-evidence',
+    occurredAt: OCCURRED_AT,
+  })
   return db
+}
+
+function registeredRowCounts(db: Database.Database): Record<string, number> {
+  return Object.fromEntries(
+    REGISTERED_GITHUB_CORE_DELETION_TABLES.map(({ tableName }) => [tableName, count(db, tableName)]),
+  )
+}
+
+function plantCrossScopeClaim(
+  db: Database.Database,
+  options: { readonly evidenceTarget?: string; readonly supersededByAlpha?: boolean },
+): string {
+  claimScopeTestSeams.registerWithEntropy(
+    db,
+    { scopeAlias: 'scope-b', linkedAt: '2026-01-05T00:00:00.000Z' },
+    () => Buffer.from('b2'.repeat(32), 'hex'),
+  )
+  const alphaClaimId = String(db.prepare(
+    'SELECT claim_id FROM claim WHERE scope_id = ?',
+  ).pluck().get(ALPHA_SCOPE))
+  const claimId = `cl_${'b2'.repeat(32)}`
+  db.prepare(`
+    INSERT INTO claim (
+      claim_id, layer, statement_code, method_id, method_version,
+      window_start, window_end, scope_id, schema_version,
+      claim_id_material_version, created_at, superseded_by
+    )
+    SELECT ?, layer, statement_code, method_id, method_version,
+           window_start, window_end, ?, schema_version,
+           claim_id_material_version, created_at, ?
+    FROM claim WHERE claim_id = ?
+  `).run(
+    claimId,
+    BETA_SCOPE,
+    options.supersededByAlpha ? alphaClaimId : null,
+    alphaClaimId,
+  )
+  if (options.evidenceTarget) {
+    db.prepare(`
+      INSERT INTO claim_evidence_edge (
+        claim_id, role, target_evidence_id, target_claim_id,
+        target_coverage_id, target_coverage_range_start, target_coverage_job_id
+      ) VALUES (?, 'supports', ?, NULL, NULL, NULL, NULL)
+    `).run(claimId, options.evidenceTarget)
+  }
+  return claimId
 }
 
 function request() {
@@ -215,6 +281,58 @@ describe('DL-LIFE-02 registered deletion planner', () => {
     expect(count(db, 'lineage_event', " WHERE event_kind = 'tombstone_cascade'")).toBe(0)
   })
 
+  it('refuses reused tombstone IDs atomically when another scope still has rows', () => {
+    const db = deepFixture()
+    const staleScopeBPlan = planRegisteredGithubCoreDeletion(db, {
+      ...request(),
+      scopeAlias: 'scope-b',
+    })
+    executeRegisteredGithubCoreDeletion(db, planRegisteredGithubCoreDeletion(db, request()))
+    const before = registeredRowCounts(db)
+
+    expect(errorCode(() => executeRegisteredGithubCoreDeletion(db, staleScopeBPlan)))
+      .toBe('DELETION_TOMBSTONE_CONFLICT')
+    expect(registeredRowCounts(db)).toEqual(before)
+    expect(count(db, 'collection_job', ' WHERE scope_alias = ?', 'scope-b')).toBe(1)
+    expect(count(db, 'lineage_event', " WHERE event_kind = 'tombstone_cascade'")).toBe(1)
+  })
+
+  it('refuses atomically when the C1 claim binding has lost its original alias', () => {
+    const db = deepFixture()
+    const stalePlan = planRegisteredGithubCoreDeletion(db, request())
+    expect(clearClaimScopeAlias(db, ALPHA_SCOPE)).toBe(1)
+    const before = registeredRowCounts(db)
+
+    expect(errorCode(() => executeRegisteredGithubCoreDeletion(db, stalePlan)))
+      .toBe('DELETION_SCOPE_BINDING_INCOMPLETE')
+    expect(registeredRowCounts(db)).toEqual(before)
+    expect(count(db, 'collection_job', ' WHERE scope_alias = ?', 'scope-a')).toBe(1)
+    expect(count(db, 'claim')).toBe(1)
+    expect(count(db, 'lineage_event', " WHERE event_kind = 'tombstone_cascade'")).toBe(0)
+  })
+
+  it('refuses a cross-scope claim that cites evidence selected for deletion', () => {
+    const db = deepFixture()
+    plantCrossScopeClaim(db, { evidenceTarget: 'secret-evidence' })
+    const before = registeredRowCounts(db)
+
+    expect(errorCode(() => planRegisteredGithubCoreDeletion(db, request())))
+      .toBe('DELETION_CROSS_SCOPE_DEPENDENCY')
+    expect(registeredRowCounts(db)).toEqual(before)
+    expect(count(db, 'lineage_event', " WHERE event_kind = 'tombstone_cascade'")).toBe(0)
+  })
+
+  it('refuses an incoming cross-scope supersession before the NO ACTION delete', () => {
+    const db = deepFixture()
+    plantCrossScopeClaim(db, { supersededByAlpha: true })
+    const before = registeredRowCounts(db)
+
+    expect(errorCode(() => planRegisteredGithubCoreDeletion(db, request())))
+      .toBe('DELETION_CROSS_SCOPE_DEPENDENCY')
+    expect(registeredRowCounts(db)).toEqual(before)
+    expect(count(db, 'lineage_event', " WHERE event_kind = 'tombstone_cascade'")).toBe(0)
+  })
+
   it('is idempotent and leaves only the content-free registered tombstone for the revoked fixture', () => {
     const db = deepFixture()
     const first = executeRegisteredGithubCoreDeletion(db, planRegisteredGithubCoreDeletion(db, request()))
@@ -223,16 +341,16 @@ describe('DL-LIFE-02 registered deletion planner', () => {
     expect(first.alreadyTombstoned).toBe(false)
     expect(replay).toMatchObject({ tombstoneWritten: false, alreadyTombstoned: true })
     expect(replay.deletedTables).toEqual([])
-    const tombstones = db.prepare(
-      "SELECT subject_id, event_kind, caused_by, occurred_at FROM lineage_event WHERE event_kind = 'tombstone_cascade'",
+    const lineage = db.prepare(
+      'SELECT subject_id, event_kind, caused_by, occurred_at FROM lineage_event',
     ).all()
-    expect(tombstones).toEqual([{
+    expect(lineage).toEqual([{
       subject_id: TOMBSTONE_ID,
       event_kind: 'tombstone_cascade',
       caused_by: 'cap_github_core',
       occurred_at: OCCURRED_AT,
     }])
-    const persisted = JSON.stringify(tombstones)
+    const persisted = JSON.stringify(lineage)
     expect(persisted).not.toContain('scope-a')
     expect(persisted).not.toContain('fixture.cascade')
     expect(persisted).not.toContain('coverage_id')

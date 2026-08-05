@@ -43,6 +43,9 @@ export type DeletionPlannerErrorCode =
   | 'DELETION_REGISTRY_UNREGISTERED_MANAGED_TABLE'
   | 'DELETION_REQUEST_INVALID'
   | 'DELETION_PLAN_INVALID'
+  | 'DELETION_TOMBSTONE_CONFLICT'
+  | 'DELETION_SCOPE_BINDING_INCOMPLETE'
+  | 'DELETION_CROSS_SCOPE_DEPENDENCY'
   | 'DELETION_TRANSACTION_FAILED'
 
 export class DeletionPlannerError extends Error {
@@ -306,6 +309,7 @@ function buildSelectors(
 function lineageSelector(
   ordered: readonly PlannerRegistryEntry[],
   selectors: ReadonlyMap<string, Selector>,
+  scopeAlias: string,
 ): Selector {
   const selects: string[] = []
   const args: string[] = []
@@ -319,9 +323,14 @@ function lineageSelector(
     )
     args.push(...selector.args)
   }
-  return selects.length === 0
-    ? { sql: '0', args: [] }
-    : { sql: `subject_id IN (${selects.join(' UNION ')})`, args }
+  if (selects.length === 0) {
+    return { sql: 'subject_id = ? OR caused_by = ?', args: [scopeAlias, scopeAlias] }
+  }
+  const affectedIds = selects.join(' UNION ')
+  return {
+    sql: `(subject_id = ? OR caused_by = ? OR subject_id IN (${affectedIds}) OR caused_by IN (${affectedIds}))`,
+    args: [scopeAlias, scopeAlias, ...args, ...args],
+  }
 }
 
 function validateRequest(request: RegisteredGithubCoreDeletionRequest): void {
@@ -341,6 +350,95 @@ function hasTombstone(db: Database.Database, request: RegisteredGithubCoreDeleti
   ).get(request.tombstoneSubjectId, CAPABILITY_TOMBSTONE_CAUSE) !== undefined
 }
 
+function selectorHasRows(
+  db: Database.Database,
+  tableName: string,
+  selector: Selector,
+): boolean {
+  return db.prepare(
+    `SELECT 1 FROM ${quotedIdentifier(tableName)} AS target WHERE ${selector.sql} LIMIT 1`,
+  ).get(...selector.args) !== undefined
+}
+
+function assertClaimScopeBindingsComplete(db: Database.Database): void {
+  const unboundClaim = db.prepare(`
+    SELECT 1
+    FROM claim_scope AS scope
+    WHERE scope.scope_alias IS NULL
+      AND EXISTS (SELECT 1 FROM claim WHERE claim.scope_id = scope.scope_id)
+    LIMIT 1
+  `).get()
+  if (unboundClaim !== undefined) {
+    throw new DeletionPlannerError('DELETION_SCOPE_BINDING_INCOMPLETE')
+  }
+}
+
+function assertNoCrossScopeClaimDependencies(
+  db: Database.Database,
+  selectors: ReadonlyMap<string, Selector>,
+  scopeAlias: string,
+): void {
+  const edgeSelector = selectors.get('claim_evidence_edge')
+  if (!edgeSelector) throw new DeletionPlannerError('DELETION_PLAN_INVALID')
+  const externalEdge = db.prepare(`
+    SELECT 1
+    FROM claim_evidence_edge AS target
+    WHERE ${edgeSelector.sql}
+      AND NOT EXISTS (
+        SELECT 1
+        FROM claim AS owner
+        JOIN claim_scope AS owner_scope ON owner_scope.scope_id = owner.scope_id
+        WHERE owner.claim_id = target.claim_id
+          AND owner_scope.scope_alias = ?
+      )
+    LIMIT 1
+  `).get(...edgeSelector.args, scopeAlias)
+  if (externalEdge !== undefined) {
+    throw new DeletionPlannerError('DELETION_CROSS_SCOPE_DEPENDENCY')
+  }
+
+  const incomingSupersession = db.prepare(`
+    SELECT 1
+    FROM claim AS referencing
+    JOIN claim_scope AS referencing_scope ON referencing_scope.scope_id = referencing.scope_id
+    WHERE referencing.superseded_by IN (
+      SELECT selected.claim_id
+      FROM claim AS selected
+      JOIN claim_scope AS selected_scope ON selected_scope.scope_id = selected.scope_id
+      WHERE selected_scope.scope_alias = ?
+    )
+      AND referencing_scope.scope_alias <> ?
+    LIMIT 1
+  `).get(scopeAlias, scopeAlias)
+  if (incomingSupersession !== undefined) {
+    throw new DeletionPlannerError('DELETION_CROSS_SCOPE_DEPENDENCY')
+  }
+}
+
+function assertCompleteRegisteredCascade(
+  db: Database.Database,
+  ordered: readonly PlannerRegistryEntry[],
+  selectors: ReadonlyMap<string, Selector>,
+  request: RegisteredGithubCoreDeletionRequest,
+): boolean {
+  assertClaimScopeBindingsComplete(db)
+  assertNoCrossScopeClaimDependencies(db, selectors, request.scopeAlias)
+  const lineage = lineageSelector(ordered, selectors, request.scopeAlias)
+  const hasAffectedRows = ordered.some((entry) => {
+    if (entry.deletionRole === 'lineage') {
+      return selectorHasRows(db, entry.tableName, lineage)
+    }
+    const selector = selectors.get(entry.tableName)
+    if (!selector) throw new DeletionPlannerError('DELETION_PLAN_INVALID')
+    return selectorHasRows(db, entry.tableName, selector)
+  })
+  const tombstoneExists = hasTombstone(db, request)
+  if (tombstoneExists && hasAffectedRows) {
+    throw new DeletionPlannerError('DELETION_TOMBSTONE_CONFLICT')
+  }
+  return tombstoneExists
+}
+
 /**
  * Read-only preflight. It validates the closed registry and reports the complete-product
  * boundary without changing data or installing missing schemas.
@@ -353,7 +451,8 @@ export function planRegisteredGithubCoreDeletion(
   const registry = REGISTERED_GITHUB_CORE_DELETION_TABLES as readonly PlannerRegistryEntry[]
   const ordered = orderedDeletionEntries(registry)
   assertRegistryMatchesSchema(db, registry)
-  buildSelectors(db, ordered, request.scopeAlias)
+  const selectors = buildSelectors(db, ordered, request.scopeAlias)
+  const alreadyTombstoned = assertCompleteRegisteredCascade(db, ordered, selectors, request)
   return {
     capabilityId: 'github.core',
     scopeAlias: request.scopeAlias,
@@ -362,7 +461,7 @@ export function planRegisteredGithubCoreDeletion(
     deletionOrder: ordered.map(({ tableName, deletionRole }) => ({ tableName, deletionRole })),
     completeProduct: false,
     excludedDomains: INCOMPLETE_REGISTERED_DOMAIN_EXCLUSIONS,
-    alreadyTombstoned: hasTombstone(db, request),
+    alreadyTombstoned,
     registrySignature: registrySignature(registry),
   }
 }
@@ -392,7 +491,8 @@ function executePlan(
   try {
     return db.transaction((): RegisteredGithubCoreDeletionResult => {
       assertRegistryMatchesSchema(db, registry)
-      if (hasTombstone(db, request)) {
+      const selectors = buildSelectors(db, ordered, request.scopeAlias)
+      if (assertCompleteRegisteredCascade(db, ordered, selectors, request)) {
         return {
           deletedTables: [],
           tombstoneWritten: false,
@@ -402,8 +502,7 @@ function executePlan(
         }
       }
 
-      const selectors = buildSelectors(db, ordered, request.scopeAlias)
-      const oldLineage = lineageSelector(ordered, selectors)
+      const oldLineage = lineageSelector(ordered, selectors, request.scopeAlias)
       const deletedTables: string[] = []
       for (const entry of ordered) {
         if (entry.deletionRole === 'lineage') {
