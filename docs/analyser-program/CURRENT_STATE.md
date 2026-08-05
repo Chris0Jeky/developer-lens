@@ -6,10 +6,10 @@ file disagrees with Git, CI, or the ledger's live evidence, those win.
 
 ```yaml
 updated: 2026-08-05
-current_slice_override: 'B2b-i structural-only continuity candidate is now current; B2a-iii PR #114
-  head 762f9f9 passed hosted run 30999010546, merged as 6dad325, and exact-merge Pages/privacy run
-  30999228603 plus the late-comment sweep passed'
-phase: 'R4 active horizon OPEN — DL-LIFE-02 B2a-iii is merged; B2b-i structural-only continuity candidate is current and LIFE-02/#80 remain incomplete'
+current_slice_override: 'B2b-i PR #115 head d4683c7 passed hosted run 31002017618, merged as
+  bdf8e436, and exact-merge Pages/privacy run 31002333681 plus the late-comment sweep passed;
+  B2b-ii-a stable task-card snapshot hardening is current'
+phase: 'R4 active horizon OPEN — DL-LIFE-02 B2b-i is merged; B2b-ii-a card stability is current and LIFE-02/#80 remain incomplete'
 head: see `git log -1 origin/main` — live Git outranks the merge SHAs recorded below
 merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-SPINE-01 #74/75e7c39', 'DL-BRIDGE-01 #72/a6fcae1', 'DL-METRIC-01 #75/d1e29dd',
@@ -24,20 +24,22 @@ merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-LIFE-02 B1b-iii #111/e575059 -> 202aebea',
   'DL-LIFE-02 B2a-i #112/1c771cc -> e0f3894',
   'DL-LIFE-02 B2a-ii #113/d28bd9f -> ad8ba9a',
-  'DL-LIFE-02 B2a-iii #114/762f9f9 -> 6dad325'] # card stays active through B4
-active_slice: 'DL-LIFE-02 B2b-i — pure replay-valid structural continuity candidate; no trusted
-  loader, renewal writer, production caller, or capability activation'
-next_task: finish and merge B2b-i, then trusted report/card/key/clock loading, the compare-and-swap
-  renewal writer, restart and migration-origin retention events,
+  'DL-LIFE-02 B2a-iii #114/762f9f9 -> 6dad325',
+  'DL-LIFE-02 B2b-i #115/d4683c7 -> bdf8e436'] # card stays active through B4
+active_slice: 'DL-LIFE-02 B2b-ii-a — stable task-card snapshot prerequisite; no trusted report
+  anchor, clock, continuity writer, production caller, or capability activation'
+next_task: finish and merge B2b-ii-a, then inert run-report parsing/stable loading, an independent
+  owner-reviewed report/card/key/time anchor plus trusted clock, caller-free composition, the
+  compare-and-swap renewal writer, restart and migration-origin retention events,
   coverage/job absence resolver, B3 complete SQL deletion, and B4 app-owned artifacts; only the B4 state refresh may mark DONE, and
   the first real migration/connector still requires LIFE-03 plus #86 coverage remint
 next_value_slice: 'DL-EVQ-03 is DONE; no second value card is admitted while the deletion critical
   path remains active'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No dependency or owner gate blocks the current invented-fixture work. Active repository
-  rows in B1b-ii require explicit
-  invented raw provider-ID binding input; a v2 SQLite alias pair alone must fail closed.'
+blockers: 'No dependency or owner gate blocks the current invented-fixture card-stability work.
+  Trusted continuity composition and renewal remain blocked by the absence of an independent
+  owner-reviewed report anchor and trusted clock; neither may be inferred from caller claims.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) + 08_OPEN_QUESTIONS.md §1 unchanged; q-7 (mark the
   pr-gate check required — admin; active ruleset 20425147 currently enforces deletion only) and
   q-8 (process/orphan-directory cleanup — human) remain open'
@@ -83,14 +85,18 @@ last_verified_checks: hosted PR gate green at every merged R1-R3 head above; LIF
   6dad325, and exact-merge Pages/privacy run 30999228603 passed with an empty late-comment sweep.
   B2b-i passes 21 focused lifecycle/candidate/proposal tests and the full 66-file/1,057-test local
   gate with context, lint, typecheck, build, and diff checking. Fresh authority, privacy/state,
-  and narrow code reviews found no HIGH/CRITICAL defect after the integration corrections; hosted
-  and exact-merge gates remain pending.
+  and narrow code reviews found no HIGH/CRITICAL defect after the integration corrections. PR #115
+  head d4683c7 passed hosted run 31002017618, merged as bdf8e436, and exact-merge Pages/privacy run
+  31002333681 passed with an empty late-comment sweep. B2b-ii-a currently passes 3 focused card-
+  loader files / 20 tests and the full 67-file/1,061-test local gate with context, lint, typecheck,
+  build, and diff checking. Fresh file/race review found no HIGH/CRITICAL defect; hosted and exact-
+  merge gates remain pending.
 capabilities: every executable capability remains never_authorized; cap.external.model uncalled
-b2b_i: 'current structural-only continuity candidate; B2a-iii PR #114 merged at 6dad325,
-  hosted run 30999010546 and exact-merge run 30999228603 passed, and the late-comment sweep was empty'
-next_task_b2b: 'trusted report/card/key/clock loader, then compare-and-swap writer, then restart
-  plus migration-origin disposition: existing c2_retention_expired at original expiry week only
-  for same-scope claim-reachable C1 anchors; unreferenced, omitted, and base anchors emit no event'
+b2b_i: 'merged structural-only continuity candidate; PR #115 head d4683c7 merged as bdf8e436 after
+  hosted run 31002017618; exact-merge run 31002333681 and the late-comment sweep passed'
+next_task_b2b: 'finish stable card snapshot prerequisite; then inert run-report loader, independent
+  owner-reviewed report/card/key/time anchor and trusted clock, caller-free composition, CAS writer,
+  then restart plus claim-reachable migration-origin retention events'
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
   127 cards; `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
   or 07 §6 index by hand)
@@ -104,7 +110,7 @@ residual_risks:
   - '#80 carries binding constraints on DL-LIFE-02 (open): PR #103 covers registered SQLite slice A,
      PR #105 covers inert B1a, PRs #107/#108 correct its late contracts, PR #109 covers B1b-i,
      PR #110 covers B1b-ii, PR #111 covers B1b-iii, PR #112 covers B2a-i, PR #113 covers B2a-ii,
-     and PR #114 covers B2a-iii; B2b through B4 remain mandatory'
+     PR #114 covers B2a-iii, and PR #115 covers B2b-i; B2b-ii through B4 remain mandatory'
   - 'B1b must enforce the corrected PR #106 contract: match scope continuity against the provider-
      domain alias, retain aliases only in expiring C2 rows, and bind index_deleted to del-'
   - 'B1b-ii must use its transient ownership map to abort mapped live lineage subjects/causes whose
