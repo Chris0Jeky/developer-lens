@@ -6,7 +6,6 @@ import {
   CapabilityIdSchema,
 } from '../../../shared/capabilities.js'
 import {
-  COVERAGE_CONTRACT_VERSION,
   CoverageRecordSchema,
   CoverageStatusSchema,
   completeObservedUnits,
@@ -213,10 +212,18 @@ export function buildCoveragePresentationViews(
   )
 }
 
+/**
+ * Version of the coverage PRESENTATION projection served below. Deliberately not
+ * `COVERAGE_CONTRACT_VERSION`: that names the canonical record contract, which this
+ * response stopped serving when #79 landed. A caller that pinned the old field name
+ * fails its parse loudly instead of silently receiving a different shape.
+ */
+export const V2_COVERAGE_PRESENTATION_VERSION = '1.0.0' as const
+
 export const V2CoverageResponseSchema = z
   .object({
     apiContractVersion: z.literal(V2_API_CONTRACT_VERSION),
-    coverageContractVersion: z.literal(COVERAGE_CONTRACT_VERSION),
+    coveragePresentationVersion: z.literal(V2_COVERAGE_PRESENTATION_VERSION),
     provenance: V2StoreProvenanceSchema,
     records: z.array(CoveragePresentationViewSchema),
   })

@@ -1,13 +1,13 @@
 import express from 'express'
 import { z } from 'zod'
 import { CAPABILITY_CONTRACT_VERSION } from '../../../shared/capabilities.js'
-import { COVERAGE_CONTRACT_VERSION } from '../../../shared/coverage.js'
 import { resolveV2RuntimeConfig, type V2RuntimeConfig } from './config.js'
 import { PresentationLeakError, assertPresentationSafe } from '../../analysis/integrationShape.js'
 import {
   buildCapabilityViews,
   buildCoveragePresentationViews,
   V2_API_CONTRACT_VERSION,
+  V2_COVERAGE_PRESENTATION_VERSION,
   V2CapabilitiesResponseSchema,
   V2CoverageRecordSchema,
   V2CoverageResponseSchema,
@@ -71,7 +71,7 @@ export function createV2Router(config: V2RuntimeConfig): express.Router {
       if (!canonical.success) throw new V2Error('V2_RESPONSE_CONTRACT_VIOLATION')
       const body = V2CoverageResponseSchema.safeParse({
         apiContractVersion: V2_API_CONTRACT_VERSION,
-        coverageContractVersion: COVERAGE_CONTRACT_VERSION,
+        coveragePresentationVersion: V2_COVERAGE_PRESENTATION_VERSION,
         provenance,
         records: buildCoveragePresentationViews(canonical.data),
       })

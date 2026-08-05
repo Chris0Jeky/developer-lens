@@ -126,12 +126,19 @@ inlined into a bundle.
 
 A **non-browser** caller (curl, a script) can either send a bearer — export
 `DEVELOPER_LENS_V2_TOKEN` (32-256 characters from `[A-Za-z0-9._-]`) before starting the server,
-then send `Authorization: Bearer <that value>` — or simply set the three same-origin
-`Sec-Fetch-*` headers itself; the two channels are deliberately equivalent. Neither is a defence
-against a process already on your machine, and none is claimed: what the Host/Origin allowlists
-and the fetch-metadata proof defend is the browser drive-by surface, where a page on another
-origin cannot forge those headers. The API binds to `127.0.0.1` and serves only the synthetic
-store.
+then send `Authorization: Bearer <that value>` **plus an allowlisted `Origin` header** (the guard
+rejects a metadata-free request with no Origin before it reads any credential) — or simply set
+the three same-origin `Sec-Fetch-*` headers itself; the two channels are deliberately equivalent.
+A working example against the API's own origin:
+
+```bash
+curl -H "Sec-Fetch-Site: same-origin" -H "Sec-Fetch-Mode: cors" -H "Sec-Fetch-Dest: empty" http://127.0.0.1:4141/api/v2/coverage
+```
+
+Neither channel is a defence against a process already on your machine, and none is claimed:
+what the Host/Origin allowlists and the fetch-metadata proof defend is the browser drive-by
+surface, where a page on another origin cannot forge those headers. The API binds to `127.0.0.1`
+and serves only the synthetic store.
 
 ### Try the Integration Shape Atlas
 
