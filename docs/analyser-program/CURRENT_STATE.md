@@ -6,10 +6,10 @@ file disagrees with Git, CI, or the ledger's live evidence, those win.
 
 ```yaml
 updated: 2026-08-05
-current_slice_override: 'B2b-ii-h PR #123 head c5256bb passed hosted run 31017359944, merged as
-  65dfd155, and exact-merge Pages/privacy run 31017611856 plus the late-comment sweep passed;
-  B2b-ii-i isolated fixture-only continuity CAS proposal is current'
-phase: 'R4 active horizon OPEN — DL-LIFE-02 B2b-ii-h is merged; B2b-ii-i CAS proposal is current and LIFE-02/#80 remain incomplete'
+current_slice_override: 'B2b-ii-i PR #124 head 006728e passed hosted run 31020379782, merged as
+  34af993, and exact-merge Pages/privacy run 31020694799 plus the late-comment sweep passed;
+  B2b-ii-j inert process-only review-signature verification proposal is current'
+phase: 'R4 active horizon OPEN — DL-LIFE-02 B2b-ii-i is merged; B2b-ii-j signature proposal is current and LIFE-02/#80 remain incomplete'
 head: see `git log -1 origin/main` — live Git outranks the merge SHAs recorded below
 merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-SPINE-01 #74/75e7c39', 'DL-BRIDGE-01 #72/a6fcae1', 'DL-METRIC-01 #75/d1e29dd',
@@ -33,11 +33,13 @@ merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-LIFE-02 B2b-ii-e #120/5a08fcf -> cdaa083',
   'DL-LIFE-02 B2b-ii-f #121/cad4d73 -> 1706df1',
   'DL-LIFE-02 B2b-ii-g #122/16f4c7d -> c66d602',
-  'DL-LIFE-02 B2b-ii-h #123/c5256bb -> 65dfd155'] # card stays active through B4
-active_slice: 'DL-LIFE-02 B2b-ii-i — isolated fixture-only continuity CAS proposal;
-  no protected-card migration, scope seed, owner provenance, continuity writer, production caller, or capability activation'
-next_task: finish and merge B2b-ii-i, then add owner-authenticated anchor provenance and transactional
-  same-scope C1/lifecycle/revocation plus continuity-epoch binding before a true renewal writer;
+  'DL-LIFE-02 B2b-ii-h #123/c5256bb -> 65dfd155',
+  'DL-LIFE-02 B2b-ii-i #124/006728e -> 34af993'] # card stays active through B4
+active_slice: 'DL-LIFE-02 B2b-ii-j — inert process-only review-signature verification proposal;
+  no trusted key root, owner identity, protected-card migration, scope seed, renewal writer, production caller, or capability activation'
+next_task: finish and merge B2b-ii-j, then add a separate owner-controlled trust-root and credential
+  enrollment/rotation/revocation contract before transactional same-scope retained C1/lifecycle/revocation,
+  continuity-epoch, C2 receipt, and CAS binding or a true renewal writer;
   then restart and migration-origin retention events,
   coverage/job absence resolver, B3 complete SQL deletion, and B4 app-owned artifacts; only the B4 state refresh may mark DONE, and
   the first real migration/connector still requires LIFE-03 plus #86 coverage remint
@@ -45,8 +47,9 @@ next_value_slice: 'DL-EVQ-03 is DONE; no second value card is admitted while the
   path remains active'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No dependency or owner gate blocks the current invented-fixture CAS proposal work.
-  Trusted renewal remains blocked by absent owner-authenticated anchor origin, transactional same-scope
+blockers: 'No dependency or owner gate blocks the current invented-fixture signature-verification proposal work.
+  A signature against a caller-selected key is not owner authentication. Trusted renewal remains
+  blocked by an absent owner-controlled trust root and credential boundary, transactional same-scope
   C1/lifecycle/revocation and continuity-epoch state, receipt C2 expiry/sweep, composer/writer boundaries,
   and deliberate migration of the protected ignored card; none may be inferred.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) + 08_OPEN_QUESTIONS.md §1 unchanged; q-7 (mark the
@@ -137,11 +140,17 @@ last_verified_checks: hosted PR gate green at every merged R1-R3 head above; LIF
   build, and diff checking. Fresh correctness/concurrency and privacy/authority reviews found no
   HIGH/CRITICAL defect after exact replay identity, safe revision increment, unknown-scope refusal,
   rollback, lock contention, immutable history, and the fixture-only C2 boundary were proved.
+  PR #124 head 006728e passed hosted run 31020379782, merged as 34af993, and exact-merge
+  Pages/privacy run 31020694799 passed with an empty late-comment sweep. B2b-ii-j currently passes
+  2 focused proposal/import-guard files / 17 tests and the full 77-file/1,137-test local gate with
+  context, lint, typecheck, build, and diff checking. Fresh cryptographic/parser and privacy/authority
+  reviews found no HIGH/CRITICAL defect; the B2b-ii-j hosted gate is pending.
 capabilities: every executable capability remains never_authorized; cap.external.model uncalled
 b2b_i: 'merged structural-only continuity candidate; PR #115 head d4683c7 merged as bdf8e436 after
   hosted run 31002017618; exact-merge run 31002333681 and the late-comment sweep passed'
-next_task_b2b: 'finish the isolated CAS proposal; then owner-authenticated anchor provenance plus
-  transactional same-scope lifecycle/C1/epoch state before a renewal writer; then restart plus
+next_task_b2b: 'finish the inert signature-verification proposal; then add a separate owner-controlled
+  trust-root and credential enrollment/rotation/revocation contract before transactional same-scope
+  retained C1/lifecycle/revocation/epoch/C2 receipt/CAS state or a renewal writer; then restart plus
   claim-reachable migration-origin retention events'
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
   127 cards; `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
@@ -158,8 +167,8 @@ residual_risks:
      PR #110 covers B1b-ii, PR #111 covers B1b-iii, PR #112 covers B2a-i, PR #113 covers B2a-ii,
      PR #114 covers B2a-iii, PR #115 covers B2b-i, PR #116 covers B2b-ii-a, PR #117 covers
      B2b-ii-b, PR #118 covers B2b-ii-c, PR #119 covers B2b-ii-d, PR #120 covers B2b-ii-e,
-     PR #121 covers B2b-ii-f, PR #122 covers B2b-ii-g, and PR #123 covers B2b-ii-h;
-     B2b-ii-i through B4 remain mandatory'
+     PR #121 covers B2b-ii-f, PR #122 covers B2b-ii-g, PR #123 covers B2b-ii-h, and PR #124
+     covers B2b-ii-i; B2b-ii-j through B4 remain mandatory'
   - 'B1b must enforce the corrected PR #106 contract: match scope continuity against the provider-
      domain alias, retain aliases only in expiring C2 rows, and bind index_deleted to del-'
   - 'B1b-ii must use its transient ownership map to abort mapped live lineage subjects/causes whose
@@ -178,6 +187,9 @@ residual_risks:
      only clears, but a first production writer/renewal path must enforce one-way authenticated clocks'
   - 'B2b-ii-i payload_sha256 is local C2 in a disposable fixture database with no expiry/sweeper;
      production promotion must add explicit 13-month deletion plus owner-authenticated same-scope lifecycle/C1 binding'
+  - 'B2b-ii-j signature_matches proves only consistency against a caller-selected candidate key;
+     production promotion requires a separate owner-controlled trust root and credential lifecycle,
+     fixed-path parsed anchor loading, 13-month local-C2 deletion, and transactional same-scope binding'
   - 'A fresh shadow migration can materialize an already-expired incremental anchor with NULL C2 and
      no sweep event; the pre-production renewal/writer contract must prove its explicit origin disposition'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,

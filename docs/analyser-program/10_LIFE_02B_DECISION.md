@@ -369,7 +369,7 @@ filesystem-heavy adversarial scenario was isolated to remove a reproduced test-t
 PR #123 head `c5256bb` passed hosted run `31017359944`, merged as `65dfd155`, and passed
 exact-merge Pages/privacy run `31017611856` plus an empty late-comment sweep.
 
-### B2b-ii-i isolated continuity CAS proposal (current)
+### B2b-ii-i isolated continuity CAS proposal (shipped)
 
 The next bounded prerequisite is a separate, fixture-only SQLite CAS primitive rather than a
 renewal writer. The structural anchor still has no owner-authenticated origin, and the application
@@ -411,6 +411,35 @@ preview and proof mismatches are independently covered. The full local gate pass
 tests plus context verification, lint, typecheck, build, and diff checking. Fresh SQL/concurrency,
 correctness, and privacy/authority reviews found no HIGH/CRITICAL defect. The only remaining review
 caveat is the deliberate promotion stop around the local-C2 digest lifetime described above.
+
+PR #124 head `006728e` passed hosted run `31020379782`, merged as `34af993`, and passed
+exact-merge Pages/privacy run `31020694799` plus an empty late-comment sweep.
+
+### B2b-ii-j inert review-signature verification proposal (current)
+
+Cryptographic consistency is the next separable prerequisite, not owner authentication. The
+process-only verifier accepts exact bounded anchor bytes, one caller-supplied candidate canonical
+Ed25519 SPKI public key, and a closed versioned signature envelope. It recomputes the anchor and key
+digests and verifies fixed signing material: the ASCII domain
+`developer-lens:github-core-continuity-review-signature:v1`, one NUL byte, the binary anchor digest,
+and the binary SPKI digest. Exact canonical base64, 44-byte Ed25519 SPKI DER, a 64-byte signature,
+and S below the Ed25519 group order are required.
+
+`signature_matches` proves only that the candidate key verifies the supplied bytes. It is not owner
+identity, review provenance, approval, authorization, scope continuity, lifecycle freshness,
+renewal, retention extension, or capability activation. The proposal has no signer, key generation,
+trusted-key registry, enrollment, path, artifact loader, persistence, clock, lifecycle, CAS, API,
+network, or production caller. Tests use ephemeral invented keys only, the production import gate
+rejects the module, and every executable capability remains `never_authorized`.
+
+The focused proposal/import proof passes 2 files / 17 tests. The full local gate passes 77 files /
+1,137 tests plus context verification, lint, typecheck, build, and diff checking; only the two
+existing Evidence Drawer Fast Refresh warnings and bundle-size advisory remain. Fresh
+cryptographic/parser and privacy/authority reviews found no HIGH/CRITICAL defect. Promotion first
+requires a separate process-owned, owner-controlled
+trust-root and credential enrollment/rotation/revocation contract that selects the canonical key
+and fixed-path parsed anchor; it then requires same-scope retained C1, current lifecycle/revocation,
+continuity epoch, C2 receipt expiry/sweep, and CAS state under the same writer lock.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the

@@ -462,6 +462,10 @@ describe('storage-v3 B1a proposal', () => {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
+        if (target && /(?:^|[\\/])v3ContinuityReviewSignatureProposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          offenders.push(`${sourcePath} -> ${target}`)
+        }
         if (target && /(?:^|[\\/])activationResult(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           if (sourcePath !== 'server/connectors/github/activationReport.ts') {
@@ -658,6 +662,36 @@ describe('storage-v3 B1a proposal', () => {
       'node:crypto',
       'better-sqlite3',
       './v3Proposal.js',
+    ])
+    const continuityReviewSignatureProposalPath = join(
+      root,
+      'server',
+      'storage',
+      'v3ContinuityReviewSignatureProposal.ts',
+    )
+    const continuityReviewSignatureProposalFile = ts.createSourceFile(
+      continuityReviewSignatureProposalPath,
+      readFileSync(continuityReviewSignatureProposalPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const continuityReviewSignatureProposalImports =
+      continuityReviewSignatureProposalFile.statements.flatMap((statement) =>
+        ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
+          ? [statement.moduleSpecifier.text]
+          : [])
+    expect(continuityReviewSignatureProposalImports).toEqual(['node:crypto'])
+    const continuityReviewSignatureProposalNamedImports =
+      continuityReviewSignatureProposalFile.statements.flatMap((statement) =>
+        ts.isImportDeclaration(statement)
+          && statement.importClause?.namedBindings
+          && ts.isNamedImports(statement.importClause.namedBindings)
+          ? statement.importClause.namedBindings.elements.map((element) => element.name.text)
+          : [])
+    expect(continuityReviewSignatureProposalNamedImports.sort()).toEqual([
+      'createHash',
+      'createPublicKey',
+      'verify',
     ])
     expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))
       .toMatch(/from ['"]\.\/v3ShadowRewrite\.js['"]/)
