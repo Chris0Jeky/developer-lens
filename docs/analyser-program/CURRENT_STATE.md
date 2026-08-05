@@ -6,7 +6,7 @@ file disagrees with Git, CI, or the ledger's live evidence, those win.
 
 ```yaml
 updated: 2026-08-05
-phase: 'R4 active horizon OPEN — DL-LIFE-02 slice A is merged but the card remains incomplete; B1a is next; R1-R3 remains complete'
+phase: 'R4 active horizon OPEN — DL-LIFE-02 slice A and inert B1a are merged; a late-review B1a repair is next and the card remains incomplete; R1-R3 remains complete'
 head: see `git log -1 origin/main` — live Git outranks the merge SHAs recorded below
 merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-SPINE-01 #74/75e7c39', 'DL-BRIDGE-01 #72/a6fcae1', 'DL-METRIC-01 #75/d1e29dd',
@@ -14,19 +14,20 @@ merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-FINDING-01 #88/2208fcf', 'DL-COMPARE-01 #89/d407cb1',
   'DL-VALIDATE-01 #92/df59bbc', 'DL-VALUE-01 #94/c632093',
   'DL-LIFE-01 #100/41a1804', 'DL-EVQ-03 #99/cad0a11',
-  'DL-LIFE-02 slice A #103/5e6304e'] # card remains READY/active until all B slices merge
-active_slice: 'DL-LIFE-02 B1a — isolated proposal-only typed C1 identity, lineage/storage/
-  claim-material v3, and present-table migration-disposition contracts; live registries and v2
-  runtime/on-disk behavior remain unchanged'
-next_task: B1a contract first, then B1b copy migration, B2 retention/continuity/resolver, B3
+  'DL-LIFE-02 slice A #103/5e6304e', 'DL-LIFE-02 B1a #105/f9cc008'] # card stays active through B4
+active_slice: 'DL-LIFE-02 B1a late-review repair — C2 observation-vs-anchor dispositions, neutral
+  op- lineage operations, and fail-closed invalid claim-graph dispositions; proposal remains inert'
+next_task: B1a follow-up first, then B1b-i shadow schema, B1b-ii rewrite, B1b-iii orchestration,
+  then B2 retention/continuity/resolver and B3
   complete SQL deletion, and B4 app-owned artifacts; only the B4 state refresh may mark DONE, and
   the first real migration/connector still requires LIFE-03 plus #86 coverage remint
 next_value_slice: 'DL-EVQ-03 is DONE; no second value card is admitted while the deletion critical
   path remains active'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No dependency or owner gate blocks invented-fixture B work. Slice A is intentionally
-  incomplete; decision record 10_LIFE_02B_DECISION.md and issue #80 bind B1a-B4.'
+blockers: 'No dependency or owner gate blocks the invented-fixture repair. Three late PR #105
+  findings are confirmed and must land before B1b. Active repository rows then require explicit
+  invented raw provider-ID binding input; a v2 SQLite alias pair alone must fail closed.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) + 08_OPEN_QUESTIONS.md §1 unchanged; q-7 (mark the
   pr-gate check required — admin; active ruleset 20425147 currently enforces deletion only) and
   q-8 (process/orphan-directory cleanup — human) remain open'
@@ -40,7 +41,9 @@ last_verified_checks: hosted PR gate green at every merged R1-R3 head above; LIF
   head c6ff6b5 passed hosted run 30970321092 and merged as d2dfb36; exact-merge Pages run
   30970482370 passed. LIFE-02A head 8e29f9e passed hosted run 30972206800 and merged as 5e6304e;
   exact-merge Pages run 30972364522 passed. Its final local proof was 14 planner tests, 58 focused
-  storage tests, and 60 files/914 tests plus context/typecheck/build.
+  storage tests, and 60 files/914 tests plus context/typecheck/build. B1a head 38c85a4 passed hosted
+  run 30975235029 and merged as f9cc008; exact-merge Pages run 30975430150 passed. Its final proof
+  was 7 focused tests and 61 files/921 tests plus context/typecheck/build.
 capabilities: every executable capability remains never_authorized; cap.external.model uncalled
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
   127 cards; `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
@@ -52,8 +55,12 @@ residual_risks:
   - '#78 dev-credential surface (bundle-safe bearer channel, no token/path logging, port-drift-proof
      allowlist) binds before any real-data surface'
   - '#79 BRIDGE-02 must serve a PresentationView, not the canonical record shape'
-  - '#80 carries binding constraints on DL-LIFE-02 (open): PR #103 covers only registered SQLite
-     slice A; B1a-B4 in 10_LIFE_02B_DECISION.md remain mandatory before whole-product completion'
+  - '#80 carries binding constraints on DL-LIFE-02 (open): PR #103 covers registered SQLite slice A
+     and PR #105 covers inert B1a; B1b-B4 remain mandatory before whole-product completion'
+  - 'late PR #105 review requires the smallest proposal follow-up: C2 fields cannot be C1-preserved,
+     non-deletion lineage needs op- rather than del-, and invalid claim graphs must abort migration'
+  - 'stored provider_id and analytical_key are independent domain-separated HMACs; B1b must verify
+     both from an ephemeral raw provider ID or fail closed, and must never derive one alias from the other'
   - 'B4 completion only unblocks LIFE-03; a first real migration/connector also requires LIFE-03
      backup/grace/restore/tombstone-replay proof and #86 V2 alias-bearing coverage remint'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,

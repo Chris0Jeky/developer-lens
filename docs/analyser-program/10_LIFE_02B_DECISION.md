@@ -21,11 +21,12 @@ is invented.
 2. **Preserve the existing canonical forms that are already contractual.** Scope IDs remain
    `scope-` plus 64 lowercase hex; claim IDs remain `cl_` plus 64 lowercase hex under their
    versioned claim-ID material. New retained C1 keys for currently opaque operational entities use
-   a closed registry (`job-`, `snap-`, `ckpt-`, `cov-`, `ev-`, `art-`, and `del-`, each followed by
-   64 lowercase hex). Retained C1 keys are minted from fresh random entropy only; they are never an
-   HMAC or other function of an alias, provider ID, timestamp, path, or old ID. The existing
-   installation-key seam authenticates C2 alias continuity and migration inputs but never produces
-   a retained C1 key.
+   a closed registry (`job-`, `snap-`, `ckpt-`, `cov-`, `ev-`, `art-`, neutral-operation `op-`, and
+   deletion-operation `del-`, each followed by 64 lowercase hex). New opaque keys are minted from
+   fresh random entropy only; claims remain versioned-material IDs. No retained key is an HMAC or
+   other function of an alias, provider ID, timestamp, path, or old ID. The existing installation-
+   key seam authenticates C2 alias continuity and migration inputs but never produces a retained
+   C1 key.
 3. **Do not retain an old-to-new mapping.** Alias-bearing `coverage_id`, caller job/snapshot/
    checkpoint IDs, exact range material, and temporary migration maps remain C2. A migration keeps
    its complete mapping in transaction memory only, rewrites every dependent edge, remints every
@@ -57,6 +58,8 @@ Rejected shortcuts: `ON DELETE CASCADE` without tombstone replay; a retained C2 
 hashing aliases into supposedly C1 keys; a generic filesystem scan; deleting all packs when scope
 ownership is unknown; retaining expired aliases for continuity; changing only TypeScript writers
 while raw SQL UPDATE remains able to cross scopes; or counting a refused legacy domain as deleted.
+Deriving one stored HMAC alias from the other, or accepting the pair without exact ephemeral raw-ID
+verification, is also forbidden.
 
 ## 2. Storage-v3 binding and present-table disposition
 
@@ -67,6 +70,12 @@ its exact range/job/timestamp fields. SQLite INSERT and UPDATE enforcement must 
 parents, evidence anchors, coverage edges, supersession/derivation links, and artifact ownership.
 Scope and canonical parent keys are immutable after insertion.
 
+In the disposition contract, `preserve` means a C0/C1 field that may remain after class-appropriate
+retention. An OID/SHA, provider/repository alias, caller ID, exact range, exact source timestamp, or
+other C2 operational value may be copied only into the separately expiring C2 observation side of
+a `rewrite`; it is never a preserved C1-anchor field. A whole C2 observation disappears at its
+exact 13-month boundary even when its content-free C1 anchor remains.
+
 | Present domain | Required storage-v3 disposition |
 |---|---|
 | `collection_job` | Split a C1 `job-` anchor from the C2 operational row; add `scope_id`; caller ID and exact times expire with the C2 row. |
@@ -74,22 +83,35 @@ Scope and canonical parent keys are immutable after insertion.
 | `coverage_ledger` | Split a C1 `cov-` anchor from the C2 exact-range/job observation; claims/evidence reference only the anchor. |
 | `collection_checkpoint` | Add `ckpt-`, `scope_id`, exact retention anchor, deletion order, and lineage coverage; the operational row expires as C2. |
 | claim graph | Add scope-safe evidence/coverage-anchor addressing; rewrite all affected edges and remint claims under a new claim-material version when material changes. |
-| `repository_identity` | Verify `analytical_key` against `provider_id` with the existing installation key, then reuse an exact unique `claim_scope.scope_alias` match or mint a new random scope; ambiguity/mismatch aborts. Exact provider ID and analytical alias both expire as C2. |
+| `repository_identity` | Require the ephemeral raw provider ID for every unexpired identity, recompute both stored aliases with the existing installation key, require byte equality, then reuse an exact unique `claim_scope.scope_alias` match or mint a new random scope; absent input, ambiguity, or mismatch aborts. Exact raw/provider/analytical identity remains C2 and never enters the target proof. |
 | `commit_observation`, `pull_request_fact`, `dated_event_observation` | Inherit the exact repository scope; register as descendants with class-appropriate retention anchors. |
 | `import_run` | Existing rows lack safe time/scope ownership: delete them during migration. Future rows bind participating scopes and an import time. |
 | `coverage_observation` | Existing aggregates lack safe scope membership/time: delete them during migration and report absence honestly. Future aggregates bind every member scope; revoking one deletes the whole aggregate. |
 | V2 bridge tables | Keep the present C0 synthetic-only domain explicit. `activation_card` provenance remains refused. Any future real writer must add scope/deletion metadata first. |
 
-Legacy repository binding is never inferred from similarity. The migrator recomputes the expected
-installation alias from the exact provider ID using the existing key, requires byte equality, then
-uses the exact alias match above. A store without a matching claim scope receives a new random
-scope and a C2 alias link timestamped at the proven legacy anchor; a conflicting match aborts. This
-mapping exists only inside the copy transaction. Migration time is **not** a retention anchor. The
-legacy identity anchor is the latest valid canonical source timestamp among its commit, PR, and
-dated-event descendants. If none exists, or the anchor has already expired, the identity and its
-descendants are not copied and a typed absence is reported; an unverifiable/invalid timestamp
-aborts rather than resetting the lifetime. At C2 expiry both `provider_id` and `analytical_key` are
-deleted with their repository-bound operational descendants; the retained C1 scope survives.
+Legacy repository binding is never inferred from similarity. The stored `provider_id` and
+`analytical_key` are independent domain-separated HMACs over a raw provider ID; one alias cannot be
+recomputed from the other. For every identity with an unexpired valid descendant anchor, B1b
+therefore requires an in-memory binding input containing the exact raw provider ID. With the
+existing installation key it recomputes **both** aliases, requires byte equality with both stored
+values, then uses the exact analytical-alias match above. Missing raw material fails with
+`IDENTITY_BINDING_UNVERIFIABLE`; either mismatch fails with `IDENTITY_BINDING_MISMATCH`; a
+non-unique exact scope match fails with `IDENTITY_BINDING_AMBIGUOUS`. No raw ID, key, or alias pair
+is written to the target, proof, error, or log. B1b tests inject invented bindings directly; it has
+no filesystem/source reader. LIFE-03's first-real wrapper may supply the raw ID ephemerally from
+the original migration source, inside its backup/grace boundary, but a v2 SQLite store alone is
+insufficient authority. Binding inputs are an exact one-to-one set: duplicate raw/computed aliases,
+or an extra input with no unexpired source identity, also fail as `IDENTITY_BINDING_AMBIGUOUS`.
+
+After authentication, a store without a matching claim scope receives a new random scope and a C2
+alias link timestamped at the proven legacy anchor; a conflicting match aborts. This mapping exists
+only inside the copy transaction. Migration time is **not** a retention anchor. The legacy identity
+anchor is the latest valid canonical source timestamp among its commit, PR, and dated-event
+descendants. If none exists, or the anchor has already expired, the identity and its descendants
+are not copied and a typed absence is reported without inventing a binding; an unverifiable/invalid
+timestamp aborts rather than resetting the lifetime. At C2 expiry the raw input, `provider_id`, and
+`analytical_key` are absent with their repository-bound operational descendants; the retained C1
+scope survives.
 
 The rewrite graph is closed: incremental rows, evidence anchors, claim edges, transitive claim
 dependencies, supersession, limitations, safe lineage, and claim stability keys are all checked.
@@ -131,7 +153,9 @@ Storage v3 uses a versioned closed lineage schema with separate `subject_kind`, 
 `subject_id`, closed `event_kind`, stable `operation_id`, closed `capability_id`, and ISO-week event
 grain. A deletion request mints one random `del-` operation ID and binds it to the reviewed request;
 exact replay reuses it, while a different operation for an already-tombstoned subject conflicts.
-The capability stays the controlled literal `github.core`, never inferred from the operation ID.
+Every non-deletion event uses a neutral random `op-` operation ID; correction, export, reconsent,
+index, alias-expiry, and series-restart events must never invent a deletion operation. The
+capability stays the controlled literal `github.core`, never inferred from the operation ID.
 A deletion transaction first enumerates every registered subject, writes its C1 tombstone under
 that stable operation, deletes dependents before parents, verifies integrity/FKs, and commits once.
 Old alias-bearing subjects/causes are rewritten only when the in-memory migration map proves their
@@ -162,8 +186,9 @@ or physical-media/SSD-erasure claim is permitted.
 
 ## 5. Reviewable execution sequence
 
-Each item is a separate exact-base PR with focused tests, `npm run check`, fresh adversarial review
-proportional to its lifecycle/privacy risk, hosted gate, aging floor, merge, and state refresh.
+Each item, including each B1b sub-slice, is a separate exact-base PR with focused tests,
+`npm run check`, fresh adversarial review proportional to its lifecycle/privacy risk, hosted gate,
+aging floor, merge, and state refresh.
 
 1. **B1a — inert identity and migration contract.** Add isolated, proposal-only typed C1 key,
    lineage-v3, storage-v3, claim-material-v3, and exhaustive present-table disposition contracts
@@ -172,18 +197,32 @@ proportional to its lifecycle/privacy risk, hosted gate, aging floor, merge, and
    `LINEAGE_EVENT_KINDS`, installer DDL, writers, resolver, or capability registry. Existing v2
    behavior and accepted schemas remain unchanged. The proof snapshots live version/kind arrays and
    installer SQL, and rejects any production-module import of `v3Proposal`; a test-only import is the
-   only allowed edge. B1b owns the atomic switch from proposal to live versioned storage. This is
-   the exact next slice.
+   only allowed edge. This slice is merged and remains inert. Three late review findings require a
+   smallest follow-up before B1b: classify exact C2 observation fields under rewrite/expiry rather
+   than C1 preserve; add neutral `op-` identity for non-deletion lineage; and make unremintable,
+   dangling, or cross-scope claim-graph states abort instead of silently deleting them. The
+   follow-up stays in `v3Proposal.ts`/its focused test and remains caller-free. It is the exact next
+   slice.
 2. **B1b — copy migration and graph rewrite.** Implement the shadow target, every present-table
    disposition, transient old/new mapping, atomic graph/claim remint, rollback, rerun, and target-
    selection proof using invented stores only. No real-store invocation, source selection change,
    migration backup, grace cleanup, or production caller; those remain blocked until LIFE-03.
+   Accept repository-binding material only as an explicit in-memory invented-fixture input under
+   the fail-closed alias checks above; a v2 store without raw provider identity cannot self-authorize
+   migration.
    Production migration mints fresh random, non-derived C1 keys. Replayed steps within the same
    target attempt reuse identities already inserted in that target; a failed target is discarded,
    so a fresh attempt may mint different surrogates. Synthetic replay proof therefore injects
    deterministic entropy where exact fixtures need it and compares normalized graph/checksum
    output with random surrogate keys alpha-renamed. It never derives or persists a stable seed from
    C2 source material.
+   Deliver B1b in three dependency-true sub-PRs: **B1b-i** compiles/installs the isolated v3 shadow
+   schema and proves all 18 dispositions plus source immutability; **B1b-ii** adds authenticated
+   repository binding and the transient base/incremental/claim/lineage rewrite engine; **B1b-iii**
+   adds per-stage rollback injection, post-close reopen/integrity/privacy proof, replay-normalized
+   checksums, and the first selectable-target result. B1b-i/ii must return an explicit incomplete,
+   non-selectable result. None changes the v2 reader, existing migration selector, production
+   caller graph, backup/grace behavior, or capability state.
 3. **B2 — enforcement, retention, continuity, and resolver.** Add INSERT+UPDATE scope constraints,
    C1-anchor/C2-observation split, exact sweep, authenticated link renewal, and canonical coverage/
    job absence resolution. Version and migrate the resolver/API/PresentationView/Evidence Drawer so
@@ -210,8 +249,12 @@ Stop and keep LIFE-02 incomplete if any present table lacks a concrete dispositi
 ownership/retention is absent; retained claim/evidence/lineage still contains old coverage/job/
 range identity; claim material changes without reminting; UPDATE bypasses scope enforcement; an
 alias can extend retention without new authenticated consent/card state; arbitrary legacy lineage
-survives; expired `linked_at` or repository aliases remain; a C2 observation is still FK-required by
-a retained claim; resolver/API/UI still exposes retired exact fields; an app-owned pack can become
+survives; a SHA/OID/exact timestamp is classified as preserved C1; a non-deletion event carries a
+`del-` operation; an unremintable/dangling/cross-scope graph row is dropped rather than aborting;
+expired `linked_at` or repository aliases remain; a C2 observation is still FK-required by a
+retained claim; resolver/API/UI still exposes retired exact fields; an app-owned pack can become
 complete before scope registration; SQLite sidecar/rebuild completion is absent; filesystem
 deletion needs a scan or unconstrained path; backup restore enters this card; #86 is treated as
-resolved by C0-only V2; or any proof would require protected/private/generated data.
+resolved by C0-only V2; a stored HMAC alias is treated as raw provider identity; an unexpired
+repository migrates without exact ephemeral raw-ID verification of both aliases; or any proof would
+require protected/private/generated data.

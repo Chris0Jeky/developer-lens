@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02A merge and binding B decision)
+Last updated: **2026-08-05** (DL-LIFE-02 B1a late review and B1b binding correction)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -8,9 +8,9 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 **Fast resume:** agents should read the compact state artifact
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
-for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A is merged but the card
-remains active; start B1a's inert identity/migration contracts, then complete B1b–B4 without marking
-the card DONE or unblocking sensitive connectors between slices.
+for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A and inert B1a are merged
+but the card remains active; repair three confirmed late B1a findings, then execute B1b-i/ii/iii and
+B2–B4 without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
@@ -1688,16 +1688,43 @@ the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
   [`docs/analyser-program/10_LIFE_02B_DECISION.md`](./analyser-program/10_LIFE_02B_DECISION.md): B1a
   inert contracts, B1b copy migration, B2 retention/continuity/resolver, B3 complete SQL deletion,
   and B4 confined app-owned artifacts. The card and #80 remain open through B4.
+- **B1a.** [PR #105](https://github.com/Chris0Jeky/developer-lens/pull/105) landed final head
+  `38c85a4` as merge `f9cc008`; hosted run `30975235029` and exact-merge Pages run `30975430150`
+  passed. Its exact proof was 7 focused proposal tests and the full 61-file/921-test suite plus
+  context verification, typecheck, and build. Adversarial review found and fixed six direct
+  lifecycle/compatibility defects: omitted V2 bridge tables; event/subject mismatches; random claim-
+  ID conflation; missing slice-A tombstone compatibility; mismatched legacy operation identity;
+  and restarted-series back-links. The result remains proposal-only and absent from every
+  production import graph, live registry, installer, writer, resolver, and capability path. Review
+  classified its `Date.UTC` handling of otherwise-valid ISO week-years 0000–0099 as LOW/MED and
+  non-blocking because product operational timestamps are modern; proleptic support remains absent.
+- **Late B1a review.** Three Codex P2 threads arrived after merge and the first sweep; live
+  reconciliation recovered them at the next workflow checkpoint. All three are confirmed direct
+  lifecycle/privacy defects under this repository's causal severity bar: base dispositions could
+  C1-preserve C2 SHA/exact-time fields; every lineage event required a deletion-only `del-`
+  operation; and unremintable/dangling/cross-scope claim-graph rows were described as deletions
+  instead of target-aborting invalid states. The exact next slice is a two-file inert-proposal
+  follow-up linked to PR #105; B1b stays blocked until it lands.
+- **B1b identity correction.** Live-code feasibility proved the stored `provider_id` and
+  `analytical_key` are independent domain-separated HMACs over the raw provider ID, so the original
+  instruction to derive one from the other was impossible. The corrected binding requires an
+  explicit ephemeral raw provider-ID input, recomputes both aliases with the installation key, and
+  fails closed on missing/mismatched/ambiguous active identity. Invented tests inject it in memory;
+  a real wrapper remains LIFE-03 work. No raw identity is retained or emitted.
 - **Boundary.** No protected/generated/private data was inspected. Every capability remains
   `never_authorized`; q-6/q-7/q-8 and the q-8 orphan directory are unchanged.
 
 ## Exact resume point
 
-**Current 2026-08-05 (DL-LIFE-02A merged; B1a next).** Implement **B1a** from live `origin/main`:
-isolated proposal-only typed C1 identity/lineage, storage-v3/claim-material-v3, and exhaustive
-present-table migration-disposition contracts with invented canaries. Do not append them to live
-version/kind registries; preserve existing v2 installers, writers, resolver, capability state,
-accepted schemas, and on-disk behavior. Then continue B1b-B4 exactly as
+**Current 2026-08-05 (B1a merged; late repair next).** Update only `server/storage/v3Proposal.ts`
+and its focused test: separate retained C0/C1 `preserve` from expiring C2 observation fields; add a
+fresh-random `op-` operation key and require it for non-deletion lineage while keeping `del-` for
+deletion/tombstone operations; move unremintable claims plus dangling/cross-scope/unanchored edges
+from delete to fail-closed refusal. Preserve the no-production-import/runtime/DDL/caller boundary.
+Then implement B1b-i/ii/iii from live `origin/main`: isolated shadow schema, authenticated rewrite,
+and transactional selection proof respectively. Do not reuse the existing in-place target path,
+add a real-store/source-selection caller, persist identity input/mapping, or enter LIFE-03 backup/
+grace work. Then continue B2-B4 exactly as
 `docs/analyser-program/10_LIFE_02B_DECISION.md` defines. No intermediate slice may mark LIFE-02
 DONE or close #80. B4 only unblocks LIFE-03; the first real migration/connector additionally needs
 LIFE-03's backup/grace/restore/tombstone-replay proof and #86's alias-bearing V2 coverage remint.
