@@ -83,7 +83,7 @@ exact 13-month boundary even when its content-free C1 anchor remains.
 | `coverage_ledger` | Split a C1 `cov-` anchor from the C2 exact-range/job observation; claims/evidence reference only the anchor. |
 | `collection_checkpoint` | Add `ckpt-`, `scope_id`, exact retention anchor, deletion order, and lineage coverage; the operational row expires as C2. |
 | claim graph | Add scope-safe evidence/coverage-anchor addressing; rewrite all affected edges and remint claims under a new claim-material version when material changes. |
-| `repository_identity` | Require the ephemeral raw provider ID for every unexpired identity, recompute both stored aliases with the existing installation key, require byte equality, then reuse an exact unique `claim_scope.scope_alias` match or mint a new random scope; absent input, ambiguity, or mismatch aborts. Exact raw/provider/analytical identity remains C2 and never enters the target proof. |
+| `repository_identity` | Require the ephemeral raw provider ID for every unexpired identity. Independently recompute `provider_id` with the repository-provider domain and `analytical_key` with the repository-analytical domain using the existing installation key, require byte equality for both, then reuse an exact unique `claim_scope.scope_alias` match against the recomputed `provider_id` (never `analytical_key`) or mint a new random scope; absent input, ambiguity, or mismatch aborts. The raw ID stays process-only; the verified aliases remain C2 and never enter the target proof. |
 | `commit_observation`, `pull_request_fact`, `dated_event_observation` | Inherit the exact repository scope; register as descendants with class-appropriate retention anchors. |
 | `import_run` | Existing rows lack safe time/scope ownership: delete them during migration. Future rows bind participating scopes and an import time. |
 | `coverage_observation` | Existing aggregates lack safe scope membership/time: delete them during migration and report absence honestly. Future aggregates bind every member scope; revoking one deletes the whole aggregate. |
@@ -93,11 +93,16 @@ Legacy repository binding is never inferred from similarity. The stored `provide
 `analytical_key` are independent domain-separated HMACs over a raw provider ID; one alias cannot be
 recomputed from the other. For every identity with an unexpired valid descendant anchor, B1b
 therefore requires an in-memory binding input containing the exact raw provider ID. With the
-existing installation key it recomputes **both** aliases, requires byte equality with both stored
-values, then uses the exact analytical-alias match above. Missing raw material fails with
+existing installation key it independently recomputes the repository-provider alias and the
+repository-analytical alias, requires byte equality with both stored values, then uses an exact
+`claim_scope.scope_alias` match against the recomputed provider/repository-domain alias only —
+never `analytical_key`. Missing raw material fails with
 `IDENTITY_BINDING_UNVERIFIABLE`; either mismatch fails with `IDENTITY_BINDING_MISMATCH`; a
-non-unique exact scope match fails with `IDENTITY_BINDING_AMBIGUOUS`. No raw ID, key, or alias pair
-is written to the target, proof, error, or log. B1b tests inject invented bindings directly; it has
+non-unique exact scope match fails with `IDENTITY_BINDING_AMBIGUOUS`. No raw ID or installation key
+is written to the target, proof, error, or log, and the verified alias pair never enters a proof,
+error, or log. `provider_id` and `analytical_key` may exist only in the expiring C2 identity row;
+`scope_alias` may exist only in its expiring C2 link. All three are absent at the exact 13-month
+boundary. B1b tests inject invented bindings directly; it has
 no filesystem/source reader. LIFE-03's first-real wrapper may supply the raw ID ephemerally from
 the original migration source, inside its backup/grace boundary, but a v2 SQLite store alone is
 insufficient authority. Binding inputs are an exact one-to-one set: duplicate raw/computed aliases,
@@ -153,8 +158,9 @@ Storage v3 uses a versioned closed lineage schema with separate `subject_kind`, 
 `subject_id`, closed `event_kind`, stable `operation_id`, closed `capability_id`, and ISO-week event
 grain. A deletion request mints one random `del-` operation ID and binds it to the reviewed request;
 exact replay reuses it, while a different operation for an already-tombstoned subject conflicts.
-Every non-deletion event uses a neutral random `op-` operation ID; correction, export, reconsent,
-index, alias-expiry, and series-restart events must never invent a deletion operation. The
+Only `tombstone_cascade`, `index_deleted`, and `legacy_deletion_operation` use a `del-` deletion
+operation ID. Every other closed event kind uses a neutral random `op-` operation ID; correction,
+export, reconsent, index-built, alias-expiry, and series-restart events must never invent a deletion operation. The
 capability stays the controlled literal `github.core`, never inferred from the operation ID.
 A deletion transaction first enumerates every registered subject, writes its C1 tombstone under
 that stable operation, deletes dependents before parents, verifies integrity/FKs, and commits once.
@@ -249,8 +255,9 @@ Stop and keep LIFE-02 incomplete if any present table lacks a concrete dispositi
 ownership/retention is absent; retained claim/evidence/lineage still contains old coverage/job/
 range identity; claim material changes without reminting; UPDATE bypasses scope enforcement; an
 alias can extend retention without new authenticated consent/card state; arbitrary legacy lineage
-survives; a SHA/OID/exact timestamp is classified as preserved C1; a non-deletion event carries a
-`del-` operation; an unremintable/dangling/cross-scope graph row is dropped rather than aborting;
+survives; a SHA/OID/exact timestamp is classified as preserved C1; a lineage event outside the
+exact `tombstone_cascade`/`index_deleted`/`legacy_deletion_operation` set carries a `del-` operation,
+or one inside that set carries `op-`; an unremintable/dangling/cross-scope graph row is dropped rather than aborting;
 expired `linked_at` or repository aliases remain; a C2 observation is still FK-required by a
 retained claim; resolver/API/UI still exposes retired exact fields; an app-owned pack can become
 complete before scope registration; SQLite sidecar/rebuild completion is absent; filesystem
