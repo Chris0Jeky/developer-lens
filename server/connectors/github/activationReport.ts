@@ -3,7 +3,9 @@
  *
  * The task id, job id, and start time are caller-claimed C2 provenance. They are not an
  * authorization, continuity, source-completeness, retention, or review decision. The nested
- * C1 result's `stable` state remains bounded probe equality only.
+ * C1 result's `stable` state remains bounded probe equality only. Card and report digests are
+ * intentionally external: a report-carried card claim cannot replace later fresh card,
+ * persisted-transition, lifecycle, and owner-anchor cross-binding.
  */
 
 import {

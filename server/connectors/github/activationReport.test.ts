@@ -130,7 +130,7 @@ describe('github.core activation report C2 parser', () => {
       '2026-08-05T12:34:56Z', '2026-02-29T12:34:56.789Z',
       '2026-08-05T12:34:56.78Z', '2026-08-05T12:34:56.789+00:00',
     ]) expectInvalid({ ...completeReport, jobStartedAt })
-    for (const field of ['capabilityId', 'taskCardSha256', 'reportSha256', 'scopeAlias', 'keyFingerprint', 'provider', 'rangeStart', 'reviewedAt', 'continuityEpoch', 'authorization']) {
+    for (const field of ['capabilityId', 'taskCardSha256', 'expectedTaskCardSha256', 'reportSha256', 'scopeAlias', 'keyFingerprint', 'provider', 'rangeStart', 'reviewedAt', 'continuityEpoch', 'authorization']) {
       expectInvalid({ ...completeReport, [field]: 'poison' })
     }
     expectInvalid({ ...completeReport, result: { ...completeResult, poison: true } })

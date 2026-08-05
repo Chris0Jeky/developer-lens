@@ -433,6 +433,18 @@ describe('storage-v3 B1a proposal', () => {
         }
         if (target && /(?:^|[\\/])activationResult(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (sourcePath !== 'server/connectors/github/activationReport.ts') {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
+        }
+        if (target && /(?:^|[\\/])activationReport(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (sourcePath !== 'server/connectors/github/activationReportLoader.ts') {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
+        }
+        if (target && /(?:^|[\\/])activationReportLoader(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
         ts.forEachChild(node, check)
@@ -501,6 +513,33 @@ describe('storage-v3 B1a proposal', () => {
         ? [statement.moduleSpecifier.text]
         : [])
     expect(activationResultImports).toEqual([])
+    const activationReportPath = join(root, 'server', 'connectors', 'github', 'activationReport.ts')
+    const activationReportFile = ts.createSourceFile(
+      activationReportPath,
+      readFileSync(activationReportPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const activationReportImports = activationReportFile.statements.flatMap((statement) =>
+      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
+        ? [statement.moduleSpecifier.text]
+        : [])
+    expect(activationReportImports).toEqual(['./activationResult.js'])
+    const activationReportLoaderPath = join(root, 'server', 'connectors', 'github', 'activationReportLoader.ts')
+    const activationReportLoaderFile = ts.createSourceFile(
+      activationReportLoaderPath,
+      readFileSync(activationReportLoaderPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const activationReportLoaderImports = activationReportLoaderFile.statements.flatMap((statement) =>
+      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
+        ? [statement.moduleSpecifier.text]
+        : [])
+    expect(activationReportLoaderImports).toEqual([
+      '../../activationArtifactLoader.js',
+      './activationReport.js',
+    ])
     expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))
       .toMatch(/from ['"]\.\/v3ShadowRewrite\.js['"]/)
   })
