@@ -24,6 +24,7 @@ import {
 const scope = (character = 'a'): string => `scope-${character.repeat(64)}`
 const operation = (character = 'a'): string => `op-${character.repeat(64)}`
 const payload = (character = 'a'): string => character.repeat(64)
+const APPLIED_AT = '2026-03-01T00:00:00.000Z'
 const request = (
   overrides: Partial<ContinuityCasInput> = {},
 ): ContinuityCasInput => ({
@@ -31,6 +32,7 @@ const request = (
   expectedRevision: 0,
   operationId: operation(),
   payloadSha256: payload(),
+  appliedAt: APPLIED_AT,
   ...overrides,
 })
 
@@ -40,8 +42,14 @@ const openStore = (path = ':memory:'): Database.Database => {
   return db
 }
 
+/** CAS scopes must exist in claim_scope (#128); the fixture migrates that minimum. */
+const seedScope = (db: Database.Database, scopeId: string): void => {
+  db.prepare('INSERT OR IGNORE INTO claim_scope (scope_id) VALUES (?)').run(scopeId)
+}
+
 const openFixture = (): Database.Database => {
   const db = openStore()
+  seedScope(db, scope())
   initializeContinuityCasScope(db, scope())
   return db
 }
@@ -80,6 +88,8 @@ describe('v3 continuity CAS in the shadow store', () => {
   it('initializes one scope idempotently and validates the scope shape', () => {
     const db = openStore()
     try {
+      seedScope(db, scope())
+      seedScope(db, scope('b'))
       expect(initializeContinuityCasScope(db, scope())).toBe('created')
       expect(initializeContinuityCasScope(db, scope())).toBe('existing')
       expect(initializeContinuityCasScope(db, scope('b'))).toBe('created')
@@ -226,6 +236,7 @@ describe('v3 continuity CAS in the shadow store', () => {
   it('classifies every immutable operation-identity mismatch as conflict before stale', () => {
     const db = openFixture()
     try {
+      seedScope(db, scope('b'))
       initializeContinuityCasScope(db, scope('b'))
       expect(applyContinuityCasOperation(db, request()).status).toBe('applied')
       const conflicts = [
@@ -284,6 +295,7 @@ describe('v3 continuity CAS in the shadow store', () => {
     const holder = openStore(path)
     const contender = new Database(path)
     try {
+      seedScope(holder, scope())
       initializeContinuityCasScope(holder, scope())
       holder.pragma('busy_timeout = 0')
       contender.pragma('busy_timeout = 0')
@@ -339,6 +351,7 @@ describe('v3 continuity CAS in the shadow store', () => {
     const path = resolve(directory, 'store.sqlite')
     let db = openStore(path)
     try {
+      seedScope(db, scope())
       initializeContinuityCasScope(db, scope())
       expect(applyContinuityCasOperation(db, request()).status).toBe('applied')
       db.close()
@@ -350,6 +363,65 @@ describe('v3 continuity CAS in the shadow store', () => {
     } finally {
       if (db.open) db.close()
       rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('refuses to initialize a phantom scope that claim_scope does not hold (#128)', () => {
+    const db = openStore()
+    try {
+      // Well-formed scope id, no claim_scope row: exactly the PR #130 late finding.
+      expect(() => initializeContinuityCasScope(db, scope('b'))).toThrow(ContinuityCasError)
+      expect(stateRevision(db, scope('b'))).toBeUndefined()
+      seedScope(db, scope('b'))
+      expect(initializeContinuityCasScope(db, scope('b'))).toBe('created')
+    } finally {
+      db.close()
+    }
+  })
+
+  it('fails a replay closed once the sweep cleared its receipt, without weakening conflicts', () => {
+    const db = openFixture()
+    try {
+      expect(applyContinuityCasOperation(db, request()).status).toBe('applied')
+      // The clear-only trigger permits exactly this write — the sweep's path.
+      db.prepare('UPDATE continuity_cas_operation SET payload_sha256 = NULL WHERE operation_id = ?')
+        .run(operation())
+      const replay = applyContinuityCasOperation(db, request())
+      expect(replay.status).toBe('receipt_expired')
+      // Identity mismatches still conflict ahead of the receipt check.
+      expect(applyContinuityCasOperation(db, request({ scopeId: scope('b') })).status).toBe('conflict')
+      expect(stateRevision(db)).toBe(1)
+      expect(operationCount(db)).toBe(1)
+    } finally {
+      db.close()
+    }
+  })
+
+  it('conflicts a replay whose applied week disagrees with the recorded one', () => {
+    const db = openFixture()
+    try {
+      expect(applyContinuityCasOperation(db, request()).status).toBe('applied')
+      expect(applyContinuityCasOperation(
+        db,
+        request({ appliedAt: '2026-03-20T00:00:00.000Z' }),
+      ).status).toBe('conflict')
+    } finally {
+      db.close()
+    }
+  })
+
+  it('permits no receipt update other than clearing it', () => {
+    const db = openFixture()
+    try {
+      expect(applyContinuityCasOperation(db, request()).status).toBe('applied')
+      expect(() => db.prepare(
+        'UPDATE continuity_cas_operation SET payload_sha256 = ? WHERE operation_id = ?',
+      ).run(payload('b'), operation())).toThrow(/STORAGE_V3_CONTINUITY_CAS_INVALID/)
+      expect(() => db.prepare(
+        'UPDATE continuity_cas_operation SET applied_week = ? WHERE operation_id = ?',
+      ).run('2026-W20', operation())).toThrow(/STORAGE_V3_CONTINUITY_CAS_INVALID/)
+    } finally {
+      db.close()
     }
   })
 })

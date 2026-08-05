@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3'
 import { OperationIdV3Schema, ScopeIdV3Schema } from './v3Proposal.js'
+import { isoWeekFromCanonicalTimestamp } from './v3ShadowRewrite.js'
 import {
   STORAGE_V3_CONTINUITY_CAS_ERROR,
   STORAGE_V3_SHADOW_APPLICATION_ID,
@@ -17,7 +18,13 @@ import {
 const MAX_REVISION = Number.MAX_SAFE_INTEGER
 const ERROR_CODE = STORAGE_V3_CONTINUITY_CAS_ERROR
 
-export type ContinuityCasStatus = 'applied' | 'replayed' | 'stale' | 'conflict'
+/**
+ * `receipt_expired` is the honest answer for a replay whose stored receipt digest was
+ * cleared by the 13-month C2 sweep: with no receipt, replay-vs-conflict cannot be
+ * verified, so the operation is refused rather than falsely reported `replayed` or
+ * `applied`. Detection is never weakened into acceptance (PR #130 late review).
+ */
+export type ContinuityCasStatus = 'applied' | 'replayed' | 'stale' | 'conflict' | 'receipt_expired'
 /** A scope initializer is idempotent: it either mints revision 0 or finds it. */
 export type ContinuityCasScopeStatus = 'created' | 'existing'
 
@@ -31,6 +38,7 @@ const RESULTS = Object.freeze({
   replayed: Object.freeze({ kind: 'v3_continuity_cas', status: 'replayed' }),
   stale: Object.freeze({ kind: 'v3_continuity_cas', status: 'stale' }),
   conflict: Object.freeze({ kind: 'v3_continuity_cas', status: 'conflict' }),
+  receipt_expired: Object.freeze({ kind: 'v3_continuity_cas', status: 'receipt_expired' }),
 } as const satisfies Readonly<Record<ContinuityCasStatus, ContinuityCasResult>>)
 
 export class ContinuityCasError extends Error {
@@ -50,8 +58,23 @@ export interface ContinuityCasInput {
   readonly scopeId: string
   readonly expectedRevision: number
   readonly operationId: string
-  /** Opaque local-C2 receipt digest; the CAS grants it no retention of its own. */
+  /** Opaque local-C2 receipt digest; the 13-month sweep clears it in place. */
   readonly payloadSha256: string
+  /**
+   * The writer's process wall time as a canonical millisecond timestamp. Only its
+   * ISO-week floor is stored (`applied_week`, ADR-01 grain rule); an exact replay
+   * must land in the same week or it is a conflict.
+   */
+  readonly appliedAt: string
+}
+
+const CANONICAL_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+
+function parseAppliedAt(value: unknown): string {
+  if (typeof value !== 'string' || !CANONICAL_TIMESTAMP.test(value)) fail()
+  const time = Date.parse(value)
+  if (!Number.isFinite(time) || new Date(time).toISOString() !== value) fail()
+  return value
 }
 
 function parseInput(input: unknown): ContinuityCasInput {
@@ -59,7 +82,7 @@ function parseInput(input: unknown): ContinuityCasInput {
   const prototype = Object.getPrototypeOf(input)
   if (prototype !== Object.prototype && prototype !== null) fail()
   const keys = Reflect.ownKeys(input)
-  const expectedKeys = ['expectedRevision', 'operationId', 'payloadSha256', 'scopeId']
+  const expectedKeys = ['appliedAt', 'expectedRevision', 'operationId', 'payloadSha256', 'scopeId']
   if (keys.some((key) => typeof key !== 'string') || keys.length !== expectedKeys.length) fail()
   if ([...keys].sort().some((key, index) => key !== expectedKeys[index])) fail()
 
@@ -87,6 +110,7 @@ function parseInput(input: unknown): ContinuityCasInput {
     expectedRevision: values.expectedRevision,
     operationId: operation.data,
     payloadSha256: values.payloadSha256,
+    appliedAt: parseAppliedAt(values.appliedAt),
   })
 }
 
@@ -194,6 +218,11 @@ export function initializeContinuityCasScope(
         'SELECT revision FROM continuity_cas_state WHERE scope_id = ?',
       ).get(scope)
       if (existing) return 'existing'
+      // Existence rule, deliberately not an FK: a phantom CAS scope must never guard a
+      // scope the store does not hold (PR #130 late review / #128), while B3 scope
+      // deletion must still be able to remove CAS rows together with their scope —
+      // a RESTRICT edge from state to claim_scope would block that erasure order.
+      if (!db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(scope)) fail()
       const inserted = db.prepare(
         'INSERT INTO continuity_cas_state (scope_id, revision) VALUES (?, 0)',
       ).run(scope)
@@ -212,7 +241,8 @@ interface OperationRow {
   readonly scope_id: string
   readonly expected_revision: number
   readonly applied_revision: number
-  readonly payload_sha256: string
+  readonly payload_sha256: string | null
+  readonly applied_week: string
 }
 
 interface StateRow {
@@ -232,10 +262,11 @@ function executeApply(
   const input = parseInput(rawInput)
   if (db.inTransaction) fail()
   enableConnectionGuards(db)
+  const appliedWeek = isoWeekFromCanonicalTimestamp(input.appliedAt)
   const apply = db.transaction((): ContinuityCasResult => {
     assertShadowStore(db)
     const existingOperation = db.prepare(
-      `SELECT scope_id, expected_revision, applied_revision, payload_sha256
+      `SELECT scope_id, expected_revision, applied_revision, payload_sha256, applied_week
        FROM continuity_cas_operation
        WHERE operation_id = ?`,
     ).get(input.operationId) as OperationRow | undefined
@@ -245,8 +276,12 @@ function executeApply(
         existingOperation.scope_id !== input.scopeId
         || existingOperation.expected_revision !== input.expectedRevision
         || existingOperation.applied_revision !== appliedRevision
-        || existingOperation.payload_sha256 !== input.payloadSha256
+        || existingOperation.applied_week !== appliedWeek
       ) return RESULTS.conflict
+      // The sweep cleared this receipt at the 13-month boundary: replay identity can
+      // no longer be verified, so refuse rather than guess in either direction.
+      if (existingOperation.payload_sha256 === null) return RESULTS.receipt_expired
+      if (existingOperation.payload_sha256 !== input.payloadSha256) return RESULTS.conflict
       const state = db.prepare(
         'SELECT revision FROM continuity_cas_state WHERE scope_id = ?',
       ).get(input.scopeId) as StateRow | undefined
@@ -267,14 +302,15 @@ function executeApply(
     testHooks?.afterStateMutation?.()
     db.prepare(
       `INSERT INTO continuity_cas_operation (
-        operation_id, scope_id, expected_revision, applied_revision, payload_sha256
-      ) VALUES (?, ?, ?, ?, ?)`,
+        operation_id, scope_id, expected_revision, applied_revision, payload_sha256, applied_week
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
     ).run(
       input.operationId,
       input.scopeId,
       input.expectedRevision,
       appliedRevision,
       input.payloadSha256,
+      appliedWeek,
     )
     testHooks?.afterOperationInsert?.()
     assertDatabaseConsistency(db)

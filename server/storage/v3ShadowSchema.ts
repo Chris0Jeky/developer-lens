@@ -27,9 +27,9 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b2a-iii' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.1.0-shadow-b3' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 305
+export const STORAGE_V3_SHADOW_USER_VERSION = 306
 
 /**
  * Continuity CAS state lives in the store it guards.  These two tables are
@@ -299,9 +299,33 @@ BEGIN
 END;`
 
 /**
+ * The two append-only guards, exported so the B3 scope-deletion saga can drop and
+ * byte-identically recreate them inside its single transaction: scope revocation is
+ * the ONE operation allowed to remove CAS rows, and recreating the identical text
+ * keeps the schema fingerprint unchanged. Every other writer still hits the abort.
+ */
+export const STORAGE_V3_CAS_NO_DELETE_TRIGGERS = Object.freeze([
+  Object.freeze({
+    name: 'continuity_cas_state_no_delete',
+    sql: casAbort('continuity_cas_state_no_delete', 'BEFORE DELETE ON continuity_cas_state'),
+  }),
+  Object.freeze({
+    name: 'continuity_cas_operation_no_delete',
+    sql: casAbort('continuity_cas_operation_no_delete', 'BEFORE DELETE ON continuity_cas_operation'),
+  }),
+])
+
+/**
  * Single-row revision state plus its immutable operation history.  The triggers
  * make monotonic single-step revisions and append-only history table properties
  * rather than writer conventions.
+ *
+ * `applied_week` carries the ISO-week grain floor of the writer's process wall time
+ * (ADR-01 grain rule); the writer computes it from a canonical timestamp, the CHECK
+ * pins only the shape. `payload_sha256` is a LOCAL C2 receipt: the G2 13-month
+ * lifetime binds it, so it is nullable and the sweep clears it in place — the
+ * clear-only trigger below makes NULL the only value an update can ever write,
+ * keeping the history append-only in every other respect (PR #130 late review).
  */
 const continuityCasSqlBlock = `CREATE TABLE IF NOT EXISTS continuity_cas_state (
   scope_id TEXT PRIMARY KEY NOT NULL CHECK (${c1('scope_id')}),
@@ -318,8 +342,13 @@ CREATE TABLE IF NOT EXISTS continuity_cas_operation (
       AND applied_revision <= ${CONTINUITY_CAS_MAX_REVISION}
       AND applied_revision = expected_revision + 1
     ),
-  payload_sha256 TEXT NOT NULL
-    CHECK (length(payload_sha256) = 64 AND payload_sha256 NOT GLOB '*[^0-9a-f]*'),
+  payload_sha256 TEXT
+    CHECK (payload_sha256 IS NULL OR (length(payload_sha256) = 64 AND payload_sha256 NOT GLOB '*[^0-9a-f]*')),
+  applied_week TEXT NOT NULL CHECK (
+    length(applied_week) = 8
+    AND applied_week GLOB '[0-9][0-9][0-9][0-9]-W[0-5][0-9]'
+    AND substr(applied_week, 7, 2) BETWEEN '01' AND '53'
+  ),
   UNIQUE (scope_id, applied_revision),
   FOREIGN KEY (scope_id) REFERENCES continuity_cas_state(scope_id) ON DELETE RESTRICT
 ) STRICT;
@@ -329,7 +358,7 @@ ${casAbort(
   `BEFORE UPDATE OF revision ON continuity_cas_state
 WHEN NEW.revision != OLD.revision + 1`,
 )}
-${casAbort('continuity_cas_state_no_delete', 'BEFORE DELETE ON continuity_cas_state')}
+${STORAGE_V3_CAS_NO_DELETE_TRIGGERS[0].sql}
 ${casAbort(
   'continuity_cas_operation_matches_state',
   `BEFORE INSERT ON continuity_cas_operation
@@ -339,8 +368,19 @@ WHEN NOT EXISTS (
     AND state.revision = NEW.applied_revision
 )`,
 )}
-${casAbort('continuity_cas_operation_no_update', 'BEFORE UPDATE ON continuity_cas_operation')}
-${casAbort('continuity_cas_operation_no_delete', 'BEFORE DELETE ON continuity_cas_operation')}`
+${casAbort(
+  'continuity_cas_operation_no_update',
+  `BEFORE UPDATE ON continuity_cas_operation
+WHEN NOT (
+  NEW.operation_id = OLD.operation_id
+  AND NEW.scope_id = OLD.scope_id
+  AND NEW.expected_revision = OLD.expected_revision
+  AND NEW.applied_revision = OLD.applied_revision
+  AND NEW.applied_week = OLD.applied_week
+  AND NEW.payload_sha256 IS NULL
+)`,
+)}
+${STORAGE_V3_CAS_NO_DELETE_TRIGGERS[1].sql}`
 
 /** Strict, isolated DDL for every table named by the B1a disposition registry. */
 export const STORAGE_V3_SHADOW_SCHEMA_SQL = `
@@ -631,7 +671,7 @@ CREATE TABLE IF NOT EXISTS lineage_event (
   CHECK ((event_kind = 'c2_retention_expired' AND subject_kind IN ('job', 'snapshot', 'checkpoint', 'coverage')) OR (event_kind <> 'c2_retention_expired')),
   CHECK ((event_kind = 'scope_series_restarted' AND subject_kind = 'scope') OR (event_kind <> 'scope_series_restarted')),
   CHECK ((event_kind = 'legacy_deletion_operation' AND subject_kind = 'deletion' AND operation_id = subject_id) OR (event_kind <> 'legacy_deletion_operation')),
-  CHECK ((event_kind = 'legacy_deletion_operation' AND scope_id IS NULL) OR (event_kind <> 'legacy_deletion_operation' AND scope_id IS NOT NULL AND ${c1('scope_id')})),
+  CHECK ((event_kind = 'legacy_deletion_operation' AND scope_id IS NULL) OR (event_kind IN (${quoted(LINEAGE_V3_DELETION_EVENT_KINDS.filter((kind) => kind !== 'legacy_deletion_operation'))}) AND (scope_id IS NULL OR ${c1('scope_id')})) OR (event_kind NOT IN (${quoted(LINEAGE_V3_DELETION_EVENT_KINDS)}) AND scope_id IS NOT NULL AND ${c1('scope_id')})),
   CHECK (event_kind <> 'scope_series_restarted' OR caused_by IS NULL)
 ) STRICT;
 CREATE UNIQUE INDEX IF NOT EXISTS lineage_retention_event_identity ON lineage_event (

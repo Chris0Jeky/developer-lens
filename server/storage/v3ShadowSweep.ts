@@ -28,6 +28,7 @@ export type StorageV3C2SweepGroup = typeof STORAGE_V3_C2_SWEEP_GROUPS[number]
 
 export const STORAGE_V3_C2_SWEEP_STAGES = [
   ...STORAGE_V3_C2_SWEEP_GROUPS,
+  'casReceipts',
   'lineage',
   'finalValidation',
 ] as const
@@ -64,6 +65,8 @@ export interface StorageV3C2SweepResult {
   readonly status: 'complete' | 'noop'
   readonly schemaVersion: typeof STORAGE_V3_SHADOW_SCHEMA_VERSION
   readonly cleared: Readonly<Record<StorageV3C2SweepGroup, number>>
+  /** CAS payload receipts cleared at the 13-month boundary (PR #130 late review / #128). */
+  readonly casReceiptsCleared: number
   readonly lineageEvents: number
 }
 
@@ -356,6 +359,43 @@ function plannedLineageEvents(
   return events
 }
 
+/** Monday 00:00:00.000Z of an ISO week label — the earliest instant the week covers. */
+function isoWeekMondayTimestamp(week: string): string {
+  const match = /^(\d{4})-W(\d{2})$/.exec(week)
+  if (!match) fail('SWEEP_STATE_REFUSED')
+  const year = Number(match[1])
+  const weekNumber = Number(match[2])
+  const jan4 = Date.UTC(year, 0, 4)
+  const jan4Weekday = new Date(jan4).getUTCDay() || 7
+  const week1Monday = jan4 - (jan4Weekday - 1) * 86_400_000
+  return new Date(week1Monday + (weekNumber - 1) * 7 * 86_400_000).toISOString()
+}
+
+/**
+ * Clear CAS payload receipts whose 13-month lifetime has passed. The receipt's exact
+ * applied time is not stored (grain rule), so the boundary is computed from the week's
+ * Monday — the earliest instant the row can have been written — which can only expire
+ * a receipt up to six days EARLY, never retain it past 13 months. Rows stay (revision
+ * history is C1); only the local-C2 digest is cleared, which the clear-only trigger
+ * permits. No lineage event: CAS operations are not an analytic subject class and no
+ * resolver walks them.
+ */
+function clearExpiredCasReceipts(db: Database.Database, asOf: string): number {
+  const candidates = db.prepare(
+    'SELECT operation_id, applied_week FROM continuity_cas_operation WHERE payload_sha256 IS NOT NULL',
+  ).all() as Array<{ operation_id: string; applied_week: string }>
+  const clear = db.prepare(
+    'UPDATE continuity_cas_operation SET payload_sha256 = NULL WHERE operation_id = ? AND payload_sha256 IS NOT NULL',
+  )
+  let cleared = 0
+  for (const candidate of candidates) {
+    if (addUtcMonthsClamped(isoWeekMondayTimestamp(candidate.applied_week)) > asOf) continue
+    if (clear.run(candidate.operation_id).changes !== 1) fail('SWEEP_STATE_REFUSED')
+    cleared += 1
+  }
+  return cleared
+}
+
 function mintOperationId(
   entropy: (size: number) => Buffer,
   used: Set<string>,
@@ -432,6 +472,9 @@ export function sweepStorageV3C2(options: StorageV3C2SweepOptions): StorageV3C2S
     }
     options.failAfterStage?.('claim')
 
+    const casReceiptsCleared = clearExpiredCasReceipts(options.targetDb, asOf)
+    options.failAfterStage?.('casReceipts')
+
     const usedLineageKeys = new Set<string>()
     for (const row of options.targetDb.prepare(
       'SELECT subject_id, operation_id, caused_by FROM lineage_event',
@@ -490,12 +533,15 @@ export function sweepStorageV3C2(options: StorageV3C2SweepOptions): StorageV3C2S
     options.failAfterStage?.('finalValidation')
 
     const cleared = Object.freeze({ ...counts })
-    const changed = Object.values(cleared).some((count) => count > 0) || lineageEvents > 0
+    const changed = Object.values(cleared).some((count) => count > 0)
+      || casReceiptsCleared > 0
+      || lineageEvents > 0
     return Object.freeze({
       completeB2: false,
       status: changed ? 'complete' : 'noop',
       schemaVersion: STORAGE_V3_SHADOW_SCHEMA_VERSION,
       cleared,
+      casReceiptsCleared,
       lineageEvents,
     })
     })
