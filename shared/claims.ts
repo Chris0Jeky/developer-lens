@@ -181,9 +181,10 @@ export const CanonicalTimestampSchema = z.string().regex(CANONICAL_TIMESTAMP_PAT
  * a sweeper needs to compute the charter's 13-month alias-link boundary; re-registering
  * a scope keeps the original link time (first link wins).
  *
- * No sweeper exists yet — the retention mechanism itself is future work, tracked as
- * issue #80. What is proven today is only that clearing the alias leaves every C1 claim
- * row and its `scope_id` series grouping intact.
+ * The target-only v3 shadow sweeper is inert: it has no production selector, caller, or
+ * activation path. The live-store sweep/renewal mechanism remains future work under
+ * issue #80. What is proven here is that clearing the alias leaves every C1 claim row
+ * and its `scope_id` series grouping intact.
  */
 export const ClaimScopeSchema = z
   .object({

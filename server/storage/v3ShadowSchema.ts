@@ -569,6 +569,9 @@ CREATE TABLE IF NOT EXISTS lineage_event (
   CHECK ((event_kind = 'legacy_deletion_operation' AND scope_id IS NULL) OR (event_kind <> 'legacy_deletion_operation' AND scope_id IS NOT NULL AND ${c1('scope_id')})),
   CHECK (event_kind <> 'scope_series_restarted' OR caused_by IS NULL)
 ) STRICT;
+CREATE UNIQUE INDEX IF NOT EXISTS lineage_retention_event_identity ON lineage_event (
+  scope_id, subject_kind, subject_id, event_kind, event_week
+) WHERE event_kind IN ('scope_alias_expired', 'c2_retention_expired');
 ${immutableTriggerSqlBlock}
 ${immutableInsertTriggerSqlBlock}
 ${identityBindingTriggerSqlBlock}

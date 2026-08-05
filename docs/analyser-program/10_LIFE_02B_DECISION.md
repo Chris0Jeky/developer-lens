@@ -75,6 +75,11 @@ retention. An OID/SHA, provider/repository alias, caller ID, exact range, exact 
 other C2 operational value may be copied only into the separately expiring C2 observation side of
 a `rewrite`; it is never a preserved C1-anchor field. A whole C2 observation disappears at its
 exact 13-month boundary even when its content-free C1 anchor remains.
+In the normalized shadow schema that side may be a paired nullable field group on the same physical
+row as its C1 anchor; "disappears" means every field in that C2 group, including its expiry marker,
+becomes NULL atomically. It does not authorize deletion of the physical row or its declared C1
+aggregate/classification fields. A physical row is deleted only when its disposition preserves no
+C1 anchor.
 
 | Present domain | Required storage-v3 disposition |
 |---|---|

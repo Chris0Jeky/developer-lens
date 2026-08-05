@@ -369,6 +369,7 @@ describe('storage-v3 B2a shadow schema', () => {
       const insert = db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
       insert.run(scopeA, 'scope', scopeA, id('del-'), 'github.core', null, 'index_deleted', '2026-W32')
       insert.run(scopeA, 'job', id('job-'), id('op-', '8'), 'github.core', null, 'c2_retention_expired', '2026-W32')
+      expect(() => insert.run(scopeA, 'job', id('job-'), id('op-', '5'), 'github.core', null, 'c2_retention_expired', '2026-W32')).toThrow()
       expect(() => insert.run(scopeA, 'coverage', id('cov-'), id('op-', '6'), 'github.core', null, 'c2_retention_expired', '2026-W32'))
         .toThrow('STORAGE_V3_SHADOW_C2_RETENTION_OWNER_REQUIRED')
       expect(() => insert.run(scopeA, 'scope', scopeA, id('op-', '7'), 'github.core', null, 'c2_retention_expired', '2026-W32')).toThrow()
