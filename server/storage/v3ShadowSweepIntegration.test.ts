@@ -5,9 +5,7 @@ import type Database from 'better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   createInventedV2Source,
-  installInventedV2Bridge,
   migrateInventedSource,
-  proveRegisteredDeletion,
   STORE_LIFECYCLE_TIMELINE,
 } from '../../scripts/storeLifecycle.js'
 import { openSelectedStorageV3Store } from './v3StoreFiles.js'
@@ -21,6 +19,7 @@ import { sweepStorageV3C2 } from './v3ShadowSweep.js'
  */
 const AGED_EXPIRY = '2026-04-01T00:00:00.000Z'
 const RECENT_EXPIRY = '2027-02-01T00:00:00.000Z'
+const DELETABLE_EXPIRY = '2027-02-15T00:00:00.000Z'
 
 type Row = Record<string, unknown>
 
@@ -87,10 +86,8 @@ describe('storage-v3 C2 sweep against a migrated store', () => {
     directory = mkdtempSync(join(tmpdir(), 'developer-lens-v3-sweep-integration-'))
     const source = createInventedV2Source(directory)
     try {
-      // The same order the CLI journey uses: the registered v2-domain deletion
-      // runs first, so its tombstone travels through the rewrite as lineage.
-      expect(proveRegisteredDeletion(source).tombstoneWritten).toBe(true)
-      installInventedV2Bridge(source)
+      // The B3 fixture order: the bridge is present from the start and the
+      // historical legacy tombstone travels through the rewrite as lineage.
       expect(migrateInventedSource(source, directory).status).toBe('complete')
     } finally {
       source.db.close()
@@ -109,7 +106,8 @@ describe('storage-v3 C2 sweep against a migrated store', () => {
     const scopeExpiry = db.prepare(
       'SELECT scope_id, alias_expires_at FROM claim_scope ORDER BY alias_expires_at',
     ).all() as Row[]
-    expect(scopeExpiry.map(({ alias_expires_at: expiry }) => expiry)).toEqual([AGED_EXPIRY, RECENT_EXPIRY])
+    expect(scopeExpiry.map(({ alias_expires_at: expiry }) => expiry))
+      .toEqual([AGED_EXPIRY, RECENT_EXPIRY, DELETABLE_EXPIRY])
     const agedScope = String(scopeExpiry[0].scope_id)
     const recentScope = String(scopeExpiry[1].scope_id)
 
@@ -192,7 +190,7 @@ describe('storage-v3 C2 sweep against a migrated store', () => {
     const reopened = openSelectedStorageV3Store(directory)
     try {
       expect(Number(reopened.prepare('SELECT COUNT(*) FROM lineage_event').pluck().get())).toBe(6)
-      expect(Number(reopened.prepare('SELECT COUNT(*) FROM claim').pluck().get())).toBe(2)
+      expect(Number(reopened.prepare('SELECT COUNT(*) FROM claim').pluck().get())).toBe(3)
     } finally {
       reopened.close()
     }
@@ -209,8 +207,8 @@ describe('storage-v3 C2 sweep against a migrated store', () => {
     expect(later.status).toBe('complete')
     expect(later.lineageEvents).toBe(5)
     expect(c2Values(db, recentScope).every((value) => value === null)).toBe(true)
-    expect(Number(db.prepare('SELECT COUNT(*) FROM claim').pluck().get())).toBe(2)
-    expect(Number(db.prepare('SELECT COUNT(*) FROM coverage_ledger').pluck().get())).toBe(2)
+    expect(Number(db.prepare('SELECT COUNT(*) FROM claim').pluck().get())).toBe(3)
+    expect(Number(db.prepare('SELECT COUNT(*) FROM coverage_ledger').pluck().get())).toBe(3)
     expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
   })
 })
