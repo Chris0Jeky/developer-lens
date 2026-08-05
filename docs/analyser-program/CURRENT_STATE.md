@@ -6,13 +6,14 @@ file disagrees with Git, CI, or the ledger's live evidence, those win.
 
 ```yaml
 updated: 2026-08-05
-current_slice_override: 'LIFE-02 simplification (10_LIFE_02B_DECISION.md §7): the inert
-  continuity/owner-PKI chain (B2b-i..B2b-ii-j descendants) is deleted, the PR #111 acceptance-seam
-  defects and the PR #109 empty-limitation-code defect are fixed, and the late-review-timing defect
-  in the ledger is corrected. The revised stopping point is executable, not contractual.'
-phase: 'R4 active horizon OPEN — DL-LIFE-02 simplified; the next slice is the executable core
-  (production target factory, v3 selector, CAS folded into the shadow store, one owner-controlled
-  default-off local entrypoint for migrate/select/sweep/delete with restart proof); then B3/B4 per
+current_slice_override: 'LIFE-02 executable core (10_LIFE_02B_DECISION.md §7.6): the production
+  StorageV3ShadowTargetFactory and store selector (server/storage/v3StoreFiles.ts), the CAS folded
+  into the shadow store as continuity_cas_state/continuity_cas_operation with an exported scope
+  initializer, and the owner-controlled default-off entrypoint (scripts/storeLifecycle.ts,
+  npm run store:lifecycle) driving build -> delete -> migrate -> select -> CAS restart -> sweep ->
+  re-validate on invented data only. Delivered on branch fable/life02-executable-core.'
+phase: 'R4 active horizon OPEN — DL-LIFE-02 executable core delivered; the next LIFE-02 work is
+  B3 (complete SQL deletion on the v3 domain) and then B4 (app-owned artifacts) per
   10_LIFE_02B_DECISION.md §5. LIFE-02/#80 remain incomplete.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
@@ -21,10 +22,9 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'DL-LIFE-02 chain PRs #103, #105, #107-#125 (slice A, B1a+repairs, B1b-i..iii, B2a-i..iii,
   B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
   their engineering record stays in the ledger', 'state syncs #126']
-active_slice: 'DL-LIFE-02 executable core — production StorageV3ShadowTargetFactory + selector,
-  CAS-in-store with an exported scope initializer, owner-controlled default-off local entrypoint
-  driving migrate -> select -> sweep -> delete on invented stores, interruption/restart proof.
-  Inert-code budget is zero: every new module lands with its consumer in the same PR.'
+active_slice: 'DL-LIFE-02 B3 — complete SQL deletion on the v3 domain (the executable core it
+  depends on is delivered), then B4 app-owned artifacts per 10_LIFE_02B_DECISION.md §5. Inert-code
+  budget stays zero: every new module lands with its consumer in the same PR.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -91,8 +91,17 @@ residual_risks:
   - 'v2_store_provenance drift: api/v2/store.ts declares 6 columns including activation_card_id,
      v3ShadowSchema.ts declares 5 and pins mode=synthetic, yet v3Proposal.ts calls the table
      preserve — an activation_card-mode v2 store is unmigratable (SOURCE_BRIDGE_REFUSED)'
-  - 'the C2 sweep has never run against a rewrite output (its fixtures are hand-seeded); the
-     executable-core slice owes a sweep-after-rewrite integration test'
+  - 'closed by the executable core: the C2 sweep now runs against a real rewrite output in
+     server/storage/v3ShadowSweepIntegration.test.ts (migrate through the file factory, sweep the
+     accepted store, expired cohort NULLed with its retention events, live cohort byte-identical).
+     The CAS is no longer a separate database either — it is two tables inside the shadow store,
+     empty at acceptance and asserted against the shadow application_id, user_version and schema
+     fingerprint'
+  - 'measured by the executable-core slice and binding on B3: planRegisteredGithubCoreDeletion
+     refuses any store that carries an unregistered table with a capability_id or scope_alias
+     column, and v2_coverage_record is exactly that, so the slice-A planner cannot run on a store
+     with the C0 bridge installed (DELETION_REGISTRY_UNREGISTERED_MANAGED_TABLE). The CLI journey
+     therefore deletes before it installs the bridge'
   - 'graphColours refinement is super-linear in identifier count, and the acceptance-time
      fullEquivalenceShadowChecksum (PR #127) is now the dominant term because it colours every
      minted identity column across all tables; fine for fixtures, a practical hang risk at
