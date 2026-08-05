@@ -328,7 +328,7 @@ replay lifecycle, and capture wall time internally, but may return only structur
 PR #122 head `16f4c7d` passed hosted run `31014606288`, merged as `c66d602`, and passed
 exact-merge Pages/privacy run `31014845736` plus an empty late-comment sweep.
 
-### B2b-ii-h structural continuity composition (current)
+### B2b-ii-h structural continuity composition (shipped)
 
 The no-caller composer accepts only one path/task-selected anchor digest and a lifecycle transcript.
 It synchronously copies the transcript through recursive own-data inspection with explicit depth,
@@ -365,6 +365,52 @@ The focused composition/proposal proof passes 2 files / 23 tests and the full lo
 files / 1,114 tests plus context verification, lint, typecheck, build, and diff checking. Fresh
 implementation and privacy/authority reviews found no HIGH/CRITICAL product defect after every
 filesystem-heavy adversarial scenario was isolated to remove a reproduced test-timeout blocker.
+
+PR #123 head `c5256bb` passed hosted run `31017359944`, merged as `65dfd155`, and passed
+exact-merge Pages/privacy run `31017611856` plus an empty late-comment sweep.
+
+### B2b-ii-i isolated continuity CAS proposal (current)
+
+The next bounded prerequisite is a separate, fixture-only SQLite CAS primitive rather than a
+renewal writer. The structural anchor still has no owner-authenticated origin, and the application
+has no transactionally bound same-scope C1 identity plus lifecycle-freshness state. An alias can be
+cleared and later rebound, the four task-local files are only individually stable, and a stale
+active transcript can race revocation. Treating B2b-ii-h as authority would therefore renew the
+wrong series or extend retention after revocation. The CAS proposal proves only the mechanical
+state transition while keeping those promotion stops explicit.
+
+Its closed input is `scopeId`, nonnegative safe `expectedRevision`, `operationId`, and one opaque
+lowercase `payloadSha256`. The digest is local C2 because it can bind a structural receipt; the
+proposal grants it no production retention, sink, or expiry semantics. All tests use invented
+values and disposable databases. The standalone schema has its own application/user identity,
+exact object fingerprint, strict tables, monotonic revision state, and immutable operation history.
+It installs only into an empty main and temporary schema, enables connection-local foreign keys and
+recursive triggers, and validates integrity, quick check, foreign keys, schema identity, and exact
+state/history continuity.
+
+Every apply runs under `BEGIN IMMEDIATE` on one connection. Exact replay compares operation,
+scope, expected/applied revisions, and digest; a reused operation with any mismatch is `conflict`
+before stale-revision classification. A new operation performs a revision-guarded update, requires
+exactly one changed row, inserts its immutable operation record, revalidates the history, and commits
+once. Unknown scopes return `stale` and are never silently seeded. The maximum safe integer is
+reserved rather than incremented into an unaddressable JavaScript revision. Failures after either
+mutation stage roll back, lock contention and all SQLite failures collapse to one content-free
+error, and success returns only frozen static `applied`, `replayed`, `stale`, or `conflict` status.
+
+This is not the shadow store, a scope registry, continuity-epoch state, authenticated anchor
+provenance, lifecycle lock, renewal, retention extension, lineage writer, API, runtime caller, or
+capability activation. A production promotion must first authenticate the anchor origin, seed the
+same retained C1 scope through that authority, bind current lifecycle/revocation and continuity
+epoch in the same transaction, define the 13-month receipt expiry/sweep, and prove that an expired
+alias cannot bind a new scope series. The import gate rejects every production import of this
+proposal; every executable capability remains `never_authorized`.
+
+The focused CAS/proposal proof passes 2 files / 21 tests. The composer regression proof now passes
+16 tests after its fixture stopped redundantly exercising the durability-heavy key-creation seam;
+preview and proof mismatches are independently covered. The full local gate passes 76 files / 1,128
+tests plus context verification, lint, typecheck, build, and diff checking. Fresh SQL/concurrency,
+correctness, and privacy/authority reviews found no HIGH/CRITICAL defect. The only remaining review
+caveat is the deliberate promotion stop around the local-C2 digest lifetime described above.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the

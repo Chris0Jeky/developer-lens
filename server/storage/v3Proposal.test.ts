@@ -409,7 +409,12 @@ describe('storage-v3 B1a proposal', () => {
         if (target && /(?:^|[\\/])v3Proposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           const edge = `${sourcePath} -> ${target.split('/').at(-1)?.replace(/\.(?:[cm]?js|ts)$/, '') ?? target}`
-          if (sourcePath !== 'server/storage/v3ShadowSchema.ts') offenders.push(edge)
+          if (![
+            'server/storage/v3ShadowSchema.ts',
+            'server/storage/v3ContinuityCasProposal.ts',
+          ].includes(sourcePath)) {
+            offenders.push(edge)
+          }
         }
         if (target && /(?:^|[\\/])v3ShadowSchema(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
@@ -450,6 +455,10 @@ describe('storage-v3 B1a proposal', () => {
           }
         }
         if (target && /(?:^|[\\/])v3ContinuityStructuralComposition(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          offenders.push(`${sourcePath} -> ${target}`)
+        }
+        if (target && /(?:^|[\\/])v3ContinuityCasProposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
@@ -628,6 +637,27 @@ describe('storage-v3 B1a proposal', () => {
       '../trustedProcessClock.js',
       './taskInstallationKey.js',
       './v3ContinuityReviewAnchorLoader.js',
+    ])
+    const continuityCasProposalPath = join(
+      root,
+      'server',
+      'storage',
+      'v3ContinuityCasProposal.ts',
+    )
+    const continuityCasProposalFile = ts.createSourceFile(
+      continuityCasProposalPath,
+      readFileSync(continuityCasProposalPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const continuityCasProposalImports = continuityCasProposalFile.statements.flatMap((statement) =>
+      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
+        ? [statement.moduleSpecifier.text]
+        : [])
+    expect(continuityCasProposalImports).toEqual([
+      'node:crypto',
+      'better-sqlite3',
+      './v3Proposal.js',
     ])
     expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))
       .toMatch(/from ['"]\.\/v3ShadowRewrite\.js['"]/)
