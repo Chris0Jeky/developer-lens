@@ -6,6 +6,10 @@ import { describe, expect, it } from 'vitest'
 import type { V2RuntimeConfig } from './config.js'
 import { createV2Router } from './router.js'
 import { CLAIM_IDS, EVIDENCE_IDS, INTEGRATION_SHAPE_SCOPE_ALIAS } from '../../../shared/integrationShape.js'
+import {
+  INTEGRATION_SHAPE_REFERENCES,
+  resolveIntegrationShapeEvidence,
+} from '../../../shared/integrationShapeEvidence.js'
 
 /**
  * DL-VALUE-01 — the minimal evidence endpoint. It inherits the V2 guard (bearer + Host + same-origin
@@ -99,5 +103,26 @@ describe('V2 evidence endpoint — resolving one reference', () => {
   it('rejects a malformed query with V2_NOT_FOUND', async () => {
     await authorized('/api/v2/evidence/resolve?kind=nonsense&id=x').expect(404)
     await authorized('/api/v2/evidence/resolve?id=cl_x').expect(404)
+  })
+
+  it('serves exactly what the Atlas resolves locally, so the client fallback is equivalent', async () => {
+    // The Atlas now calls this endpoint and falls back to `resolveIntegrationShapeEvidence` when
+    // it does not answer. That fallback is only honest if the two produce the same walk — this
+    // asserts it for every reference the finding renders, at the endpoint's own request path.
+    for (const reference of INTEGRATION_SHAPE_REFERENCES) {
+      const query =
+        reference.kind === 'observation'
+          ? `kind=observation&id=${encodeURIComponent(reference.evidenceId)}`
+          : `kind=claim&id=${encodeURIComponent(reference.claimId)}`
+      const response = await authorized(`/api/v2/evidence/resolve?${query}`).expect(200)
+      expect(response.body.projection).toEqual(
+        JSON.parse(JSON.stringify(resolveIntegrationShapeEvidence(reference))),
+      )
+      expect(response.body.reference).toEqual(
+        reference.kind === 'observation'
+          ? { kind: 'observation', evidenceId: reference.evidenceId }
+          : { kind: 'claim', claimId: reference.claimId, claimLayer: 'deterministic' },
+      )
+    }
   })
 })

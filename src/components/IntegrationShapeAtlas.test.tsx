@@ -1,9 +1,10 @@
-import { cleanup, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import App from '../App'
 import { IntegrationShapeAtlasPanel } from './IntegrationShapeAtlas'
-import { buildIntegrationShapePresentation } from '../../shared/integrationShape'
+import { UNRESOLVABLE_COPY } from './evidenceDrawerCopy'
+import { CLAIM_IDS, buildIntegrationShapePresentation } from '../../shared/integrationShape'
 import { CAUSAL_OR_EVALUATIVE_TERMS } from '../../shared/findings'
 
 const presentation = buildIntegrationShapePresentation()
@@ -193,7 +194,7 @@ describe('IntegrationShapeAtlas — copy discipline', () => {
   })
 })
 
-describe('IntegrationShapeAtlas — routed in App and never fetches', () => {
+describe('IntegrationShapeAtlas — routed in App and never fetches to render', () => {
   it('renders at ?view=integration-shape without a network call', () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
@@ -201,5 +202,85 @@ describe('IntegrationShapeAtlas — routed in App and never fetches', () => {
     render(<App />)
     expect(screen.getByTestId('integration-shape-atlas')).toBeInTheDocument()
     expect(fetchMock).not.toHaveBeenCalled()
+  })
+})
+
+describe('IntegrationShapeAtlas — the evidence API is the drawer resolver, local composition is the fallback', () => {
+  const P50_CLAIM_MARK = /p50 \(median\) difference: -2\.0 d/i
+
+  it('asks the V2 evidence endpoint for the opened reference and renders what it served', async () => {
+    // A projection the LOCAL composition would never produce for this claim, so what the drawer
+    // renders can only have come from the endpoint.
+    const served = {
+      kind: 'unresolvable',
+      resolverVersion: '1.0.0',
+      reason: 'STORAGE_UNAVAILABLE',
+      claimId: CLAIM_IDS.p50,
+      lineage: [],
+    }
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ projection: served }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    renderPanel()
+
+    await user.click(screen.getByRole('button', { name: P50_CLAIM_MARK }))
+
+    await waitFor(() =>
+      expect(screen.getByText(UNRESOLVABLE_COPY.STORAGE_UNAVAILABLE)).toBeInTheDocument(),
+    )
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+    expect((fetchMock.mock.calls[0] as unknown as [string])[0]).toBe(
+      `/api/v2/evidence/resolve?kind=claim&id=${encodeURIComponent(CLAIM_IDS.p50)}`,
+    )
+  })
+
+  it('falls back silently to the identical local walk when the endpoint is absent', async () => {
+    // The public showcase has no API at all. The drawer must be complete anyway, with nothing on
+    // screen reporting a failure the reader cannot act on and that changed nothing they can see.
+    const fetchMock = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    renderPanel()
+
+    await user.click(screen.getByRole('button', { name: P50_CLAIM_MARK }))
+    const dialog = screen.getByRole('dialog')
+
+    expect(within(dialog).getByText(/evidence ev_merge_events_current/i)).toBeInTheDocument()
+    expect(within(dialog).getByTestId('edge-group-contradicts')).toHaveTextContent(
+      /ev_open_tail_current/i,
+    )
+    expect(dialog.textContent).not.toMatch(/unavailable|offline|could not reach/i)
+
+    // One failure retires the channel: opening a second mark does not try again.
+    await user.click(screen.getByRole('button', { name: /p75 difference/i }))
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+  })
+
+  it('ignores a served body that is not a resolution the drawer can render', async () => {
+    const fetchMock = vi.fn(
+      async () =>
+        new Response(JSON.stringify({ projection: { kind: 'something_else' } }), {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    renderPanel()
+
+    await user.click(screen.getByRole('button', { name: P50_CLAIM_MARK }))
+
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+    expect(
+      within(screen.getByRole('dialog')).getByText(/evidence ev_merge_events_current/i),
+    ).toBeInTheDocument()
   })
 })
