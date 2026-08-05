@@ -361,14 +361,13 @@ function selectorHasRows(
 }
 
 function assertClaimScopeBindingsComplete(db: Database.Database): void {
-  const unboundClaim = db.prepare(`
+  const unboundScope = db.prepare(`
     SELECT 1
     FROM claim_scope AS scope
     WHERE scope.scope_alias IS NULL
-      AND EXISTS (SELECT 1 FROM claim WHERE claim.scope_id = scope.scope_id)
     LIMIT 1
   `).get()
-  if (unboundClaim !== undefined) {
+  if (unboundScope !== undefined) {
     throw new DeletionPlannerError('DELETION_SCOPE_BINDING_INCOMPLETE')
   }
 }

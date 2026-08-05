@@ -311,6 +311,37 @@ describe('DL-LIFE-02 registered deletion planner', () => {
     expect(count(db, 'lineage_event', " WHERE event_kind = 'tombstone_cascade'")).toBe(0)
   })
 
+  it('refuses an unbound claim scope with no claim and preserves its lineage atomically', () => {
+    const db = deepFixture()
+    const stalePlan = planRegisteredGithubCoreDeletion(db, request())
+    db.prepare('DELETE FROM limitation_instance').run()
+    db.prepare('DELETE FROM claim_evidence_edge').run()
+    db.prepare('DELETE FROM claim').run()
+    expect(clearClaimScopeAlias(db, ALPHA_SCOPE)).toBe(1)
+    registerLineageEvent(db, {
+      subjectId: ALPHA_SCOPE,
+      eventKind: 'correction',
+      causedBy: null,
+      occurredAt: OCCURRED_AT,
+    })
+    const before = registeredRowCounts(db)
+    const lineageBefore = db.prepare(
+      'SELECT rowid, subject_id, event_kind, caused_by, occurred_at FROM lineage_event ORDER BY rowid',
+    ).all()
+
+    expect(errorCode(() => planRegisteredGithubCoreDeletion(db, request())))
+      .toBe('DELETION_SCOPE_BINDING_INCOMPLETE')
+    expect(errorCode(() => executeRegisteredGithubCoreDeletion(db, stalePlan)))
+      .toBe('DELETION_SCOPE_BINDING_INCOMPLETE')
+    expect(registeredRowCounts(db)).toEqual(before)
+    expect(db.prepare(
+      'SELECT rowid, subject_id, event_kind, caused_by, occurred_at FROM lineage_event ORDER BY rowid',
+    ).all()).toEqual(lineageBefore)
+    expect(count(db, 'claim')).toBe(0)
+    expect(count(db, 'claim_scope', ' WHERE scope_alias IS NULL')).toBe(1)
+    expect(count(db, 'lineage_event', " WHERE event_kind = 'tombstone_cascade'")).toBe(0)
+  })
+
   it('refuses a cross-scope claim that cites evidence selected for deletion', () => {
     const db = deepFixture()
     plantCrossScopeClaim(db, { evidenceTarget: 'secret-evidence' })
