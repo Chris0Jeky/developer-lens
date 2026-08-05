@@ -105,8 +105,89 @@ describe('capability lifecycle', () => {
 
     const boundEvent = event('bind_card', 'bind-01', 1, { cardSha256: cardA })
     const bound = applied(initial, boundEvent)
-    expect(reduceCapabilityLifecycle(bound, boundEvent)).toMatchObject({ ok: true, snapshot: bound })
+    const duplicate = reduceCapabilityLifecycle(bound, boundEvent)
+    expect(duplicate).toMatchObject({ ok: true, snapshot: bound })
+    if (!duplicate.ok) throw new Error(duplicate.code)
+    expect(duplicate.snapshot).toBe(bound)
     expect(reduceCapabilityLifecycle(bound, event('bind_card', 'bind-01', 1, { cardSha256: cardB }))).toMatchObject({ ok: false, code: 'EVENT_COLLISION', snapshot: bound })
+  })
+
+  it('rejects forged non-genesis snapshots without a replayable transcript', () => {
+    const initial = createCapabilityLifecycleSnapshot('github.core', scopeAlias)
+    const forgedPreviewed = Object.freeze({
+      ...initial,
+      state: 'previewed' as const,
+      epoch: 1,
+      consentRevision: cardA,
+      cardSha256: cardA,
+      previewSha256: preview,
+    })
+    const forgedActive = Object.freeze({
+      ...forgedPreviewed,
+      state: 'active' as const,
+      exactHeadProofSha256: proof,
+    })
+
+    expect(reduceCapabilityLifecycle(forgedPreviewed, event('activate', 'forged-activate', 1, {
+      cardSha256: cardA,
+      previewSha256: preview,
+      exactHeadProofSha256: proof,
+    }))).toMatchObject({ ok: false, code: 'INVALID_LIFECYCLE_SNAPSHOT' })
+    expect(reduceCapabilityLifecycle(forgedActive, event('suspend', 'forged-suspend', 1, {
+      cardSha256: cardA,
+      previewSha256: preview,
+      exactHeadProofSha256: proof,
+    }))).toMatchObject({ ok: false, code: 'INVALID_LIFECYCLE_SNAPSHOT' })
+  })
+
+  it('rejects missing, reordered, tampered, and state-divergent transcripts while accepting legal replay', () => {
+    const snapshot = activated()
+    const [bindRecord, previewRecord, activateRecord] = snapshot.eventHistory
+    if (!bindRecord || !previewRecord || !activateRecord || previewRecord.event.type !== 'record_preview') {
+      throw new Error('invented transcript is incomplete')
+    }
+    const candidate = event('suspend', 'suspend-01', 1, {
+      cardSha256: cardA,
+      previewSha256: preview,
+      exactHeadProofSha256: proof,
+    })
+
+    expect(reduceCapabilityLifecycle({ ...snapshot, eventHistory: [previewRecord, bindRecord, activateRecord] }, candidate)).toMatchObject({
+      ok: false, code: 'INVALID_LIFECYCLE_SNAPSHOT',
+    })
+    expect(reduceCapabilityLifecycle({ ...snapshot, eventHistory: [bindRecord, activateRecord] }, candidate)).toMatchObject({
+      ok: false, code: 'INVALID_LIFECYCLE_SNAPSHOT',
+    })
+    expect(reduceCapabilityLifecycle({
+      ...snapshot,
+      eventHistory: [bindRecord, { ...previewRecord, digest: cardB }, activateRecord],
+    }, candidate)).toMatchObject({ ok: false, code: 'INVALID_LIFECYCLE_SNAPSHOT' })
+    expect(reduceCapabilityLifecycle({
+      ...snapshot,
+      eventHistory: [
+        bindRecord,
+        { ...previewRecord, event: { ...previewRecord.event, previewSha256: cardB } },
+        activateRecord,
+      ],
+    }, candidate)).toMatchObject({ ok: false, code: 'INVALID_LIFECYCLE_SNAPSHOT' })
+    const tamperedPreview = { ...previewRecord.event, previewSha256: cardB }
+    expect(reduceCapabilityLifecycle({
+      ...snapshot,
+      eventHistory: [
+        bindRecord,
+        { event: tamperedPreview, digest: capabilityLifecycleEventDigest(tamperedPreview) },
+        activateRecord,
+      ],
+    }, candidate)).toMatchObject({ ok: false, code: 'INVALID_LIFECYCLE_SNAPSHOT' })
+    expect(reduceCapabilityLifecycle({ ...snapshot, state: 'suspended' }, candidate)).toMatchObject({
+      ok: false, code: 'INVALID_LIFECYCLE_SNAPSHOT',
+    })
+
+    const replayed = reduceCapabilityLifecycle(structuredClone(snapshot), candidate)
+    expect(replayed).toMatchObject({ ok: true, snapshot: { state: 'suspended' } })
+    if (!replayed.ok) throw new Error(replayed.code)
+    expect(Object.isFrozen(replayed.snapshot)).toBe(true)
+    expect(Object.isFrozen(replayed.snapshot.eventHistory.at(-1)?.event)).toBe(true)
   })
 
   it('requires a matching successful deletion receipt before revocation and makes that revision terminal', () => {
@@ -150,6 +231,7 @@ describe('capability lifecycle', () => {
     expect(Object.isFrozen(snapshot)).toBe(true)
     expect(Object.isFrozen(snapshot.eventHistory)).toBe(true)
     expect(Object.isFrozen(snapshot.eventHistory[0])).toBe(true)
+    expect(Object.isFrozen(snapshot.eventHistory[0]?.event)).toBe(true)
     expect(Object.isFrozen(snapshot)).toBe(true)
   })
 })

@@ -38,10 +38,6 @@ export class CapabilityLifecycleError extends Error {
 
 const EventIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
 const GateSchema = z.enum(['G2', 'G3', 'G4'])
-const EventRecordSchema = z.object({
-  eventId: EventIdSchema,
-  digest: LowercaseSha256Schema,
-}).strict()
 
 const eventBase = z.object({
   eventId: EventIdSchema,
@@ -92,6 +88,11 @@ export const CapabilityLifecycleEventSchema = z.discriminatedUnion('type', [
 ])
 export type CapabilityLifecycleEvent = z.infer<typeof CapabilityLifecycleEventSchema>
 
+const EventRecordSchema = z.object({
+  event: CapabilityLifecycleEventSchema,
+  digest: LowercaseSha256Schema,
+}).strict()
+
 export const CapabilityLifecycleSnapshotSchema = z.object({
   capabilityId: CapabilityIdSchema,
   scopeAlias: CapabilityScopeAliasSchema,
@@ -111,7 +112,7 @@ export const CapabilityLifecycleSnapshotSchema = z.object({
   const hasProof = snapshot.exactHeadProofSha256 !== null
   const hasIntent = snapshot.deletionIntentId !== null && snapshot.deletionIntentSha256 !== null
   const hasReceipt = snapshot.deletionReceiptSha256 !== null
-  const eventIds = snapshot.eventHistory.map((event) => event.eventId)
+  const eventIds = snapshot.eventHistory.map((record) => record.event.eventId)
   if (new Set(eventIds).size !== eventIds.length) context.addIssue({ code: 'custom' })
   if (snapshot.state === 'never_authorized') {
     if (snapshot.epoch !== 0 || hasCard || hasPreview || hasProof || hasIntent || hasReceipt) context.addIssue({ code: 'custom' })
@@ -169,9 +170,17 @@ export function capabilityLifecycleEventDigest(event: CapabilityLifecycleEvent):
 function validSnapshot(input: unknown): CapabilityLifecycleSnapshot | null {
   const parsed = CapabilityLifecycleSnapshotSchema.safeParse(input)
   if (!parsed.success) return null
+  let reconstructed = createCapabilityLifecycleSnapshot(parsed.data.capabilityId, parsed.data.scopeAlias)
+  for (const record of parsed.data.eventHistory) {
+    if (record.digest !== capabilityLifecycleEventDigest(record.event)) return null
+    const replayed = reduceValidatedCapabilityLifecycle(reconstructed, record.event)
+    if (!replayed.ok) return null
+    reconstructed = replayed.snapshot
+  }
+  if (stableJson(reconstructed) !== stableJson(parsed.data)) return null
   return isDeepFrozen(input)
     ? input as CapabilityLifecycleSnapshot
-    : freezeDeep(parsed.data)
+    : reconstructed
 }
 
 function success(snapshot: CapabilityLifecycleSnapshot): CapabilityLifecycleReduction {
@@ -190,7 +199,10 @@ function nextSnapshot(
   return freezeDeep({
     ...snapshot,
     ...changes,
-    eventHistory: [...snapshot.eventHistory, Object.freeze({ eventId: event.eventId, digest: capabilityLifecycleEventDigest(event) })],
+    eventHistory: [...snapshot.eventHistory, {
+      event,
+      digest: capabilityLifecycleEventDigest(event),
+    }],
   })
 }
 
@@ -250,18 +262,12 @@ export function simulateCapabilityGateApprovals(
   return success(snapshot)
 }
 
-/**
- * Pure, database-free transition reducer. It records only opaque event and
- * evidence digests, so callers cannot use it as a persistence or activation path.
- */
-export function reduceCapabilityLifecycle(input: unknown, candidateEvent: unknown): CapabilityLifecycleReduction {
-  const snapshot = validSnapshot(input)
-  if (!snapshot) return failure('INVALID_LIFECYCLE_SNAPSHOT')
-  const parsedEvent = CapabilityLifecycleEventSchema.safeParse(candidateEvent)
-  if (!parsedEvent.success) return failure('INVALID_LIFECYCLE_EVENT', snapshot)
-  const event = parsedEvent.data
+function reduceValidatedCapabilityLifecycle(
+  snapshot: CapabilityLifecycleSnapshot,
+  event: CapabilityLifecycleEvent,
+): CapabilityLifecycleReduction {
   const digest = capabilityLifecycleEventDigest(event)
-  const priorEvent = snapshot.eventHistory.find((record) => record.eventId === event.eventId)
+  const priorEvent = snapshot.eventHistory.find((record) => record.event.eventId === event.eventId)
   if (priorEvent) return priorEvent.digest === digest ? success(snapshot) : failure('EVENT_COLLISION', snapshot)
   if (event.capabilityId !== snapshot.capabilityId) return failure('CAPABILITY_MISMATCH', snapshot)
   if (event.scopeAlias !== snapshot.scopeAlias) return failure('SCOPE_MISMATCH', snapshot)
@@ -327,4 +333,19 @@ export function reduceCapabilityLifecycle(input: unknown, candidateEvent: unknow
     return failure('REVOCATION_RECEIPT_MISMATCH', snapshot)
   }
   return success(nextSnapshot(snapshot, event, { state: 'revoked', deletionReceiptSha256: event.receiptSha256 }))
+}
+
+/**
+ * Pure, database-free transition reducer. The transcript proves structural
+ * lineage only: card, preview, and exact-head proof digests remain opaque
+ * caller-supplied claims. A future trusted card-loader/proving adapter must
+ * authenticate the external bytes, review, and check run before creating an
+ * event; this contract alone never authorizes a caller or runtime.
+ */
+export function reduceCapabilityLifecycle(input: unknown, candidateEvent: unknown): CapabilityLifecycleReduction {
+  const snapshot = validSnapshot(input)
+  if (!snapshot) return failure('INVALID_LIFECYCLE_SNAPSHOT')
+  const parsedEvent = CapabilityLifecycleEventSchema.safeParse(candidateEvent)
+  if (!parsedEvent.success) return failure('INVALID_LIFECYCLE_EVENT', snapshot)
+  return reduceValidatedCapabilityLifecycle(snapshot, parsedEvent.data)
 }
