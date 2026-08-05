@@ -419,6 +419,15 @@ const schemaContractFingerprint = fingerprintSchemaRows(
 )
 export const STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT = schemaContractFingerprint
 
+/** Fingerprint the installed shadow DDL using the same normalization as the contract. */
+export function storageV3ShadowSchemaFingerprint(db: Database.Database): string {
+  return fingerprintSchemaRows(
+    db.prepare(
+      "SELECT type, name, tbl_name, sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name",
+    ).all() as ShadowSchemaRow[],
+  )
+}
+
 function hasOwnedTempSchemaObject(db: Database.Database): boolean {
   const objectPlaceholders = shadowSchemaObjectNames.map(() => '?').join(', ')
   const tablePlaceholders = STORAGE_V3_TABLES.map(() => '?').join(', ')
