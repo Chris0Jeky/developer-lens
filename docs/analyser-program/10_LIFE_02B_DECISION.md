@@ -217,7 +217,7 @@ database/network/clock/key/lifecycle/capability dependency. PR #117 head `f91013
 `31005511635`, merged as `8aa19b3`, and passed exact-merge Pages/privacy run `31005770546` plus an
 empty late-comment sweep.
 
-### B2b-ii-c stable local-C2 activation report (current)
+### B2b-ii-c stable local-C2 activation report (shipped)
 
 The strict `github-core-activation-report.v1` envelope embeds the B2b-ii-b object unchanged and adds
 only caller-claimed C2 `taskId`, `jobId`, and logical `jobStartedAt`. It omits root capability/card/
@@ -241,6 +241,29 @@ caller-supplied expected hash is not that anchor. CAS revision is read transacti
 operation is writer-owned. Only then may a caller-free composer feed the compare-and-swap writer,
 followed by restart handling and the migration-origin disposition for already-expired never-retained
 C2 groups.
+
+PR #118 head `c393bd1` passed hosted run `31008061712`, merged as `cb9161c`, and passed
+exact-merge Pages/privacy run `31008333181` plus an empty late-comment sweep.
+
+### B2b-ii-d continuity review anchor (current)
+
+The pure `github-core-continuity-review-anchor.v1` parser accepts only one fixed local-C2 syntactic
+record. It binds caller claims for the reviewed report, task card, installation-key fingerprint,
+active lifecycle epoch, preview, exact-head proof, next continuity epoch, and canonical millisecond
+UTC review time to one path-safe task ID. Its review decision literal remains a claim, not owner
+authentication or evidence. All deletion intent, intent-digest, and receipt-digest fields must be
+exactly null so an apparently active lifecycle with pending revocation cannot be represented as a
+clean reviewed state.
+
+The parser has no imports or production caller and performs no filesystem, clock, database, key,
+lifecycle, writer, network, retention, authorization, or activation work. A later composer must
+bind the anchor to one path-selected task and same-scope C1 row; freshly re-read report/card/key;
+the persisted consent revision; and a replayed lifecycle snapshot with exact epoch, preview/proof,
+and deletion-null equality. It must enforce
+`report.jobStartedAt <= reviewedAt <= trustedNow` and
+`reviewedContinuityEpoch === currentContinuityEpoch + 1` inside the writer's CAS transaction. The
+composer must reject pending revocation even while lifecycle state remains `active`. This parser
+intentionally performs none of those checks and activates nothing.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the

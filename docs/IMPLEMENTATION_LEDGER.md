@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-c stable local-C2 activation report)
+Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-d continuity review anchor)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,8 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, B2b-ii-a, and the B2b-ii-b strict C1 result validator are merged;
-the current branch adds only the local-C2 github.core report envelope and stable loader, while the
+B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c are merged;
+the current branch adds only an inert local-C2 continuity review-anchor parser, while the
 remainder of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
@@ -1995,7 +1995,7 @@ PR #117 head `f910137` passed hosted run `31005511635`, merged as `8aa19b3`, and
 Pages/privacy run `31005770546` plus the late-comment sweep were green and empty. All executable
 capabilities remain `never_authorized`.
 
-## 2026-08-05 — DL-LIFE-02 B2b-ii-c stable local-C2 activation report (current slice)
+## 2026-08-05 — DL-LIFE-02 B2b-ii-c stable local-C2 activation report (merged)
 
 B2b-ii-c defines the strict `github-core-activation-report.v1` envelope with only `schemaVersion`,
 caller-claimed C2 `taskId`, `jobId`, and `jobStartedAt`, plus the unchanged B2b-ii-b C1 `result`.
@@ -2020,18 +2020,44 @@ The focused integrated loader/report/proposal proof passes 6 files / 34 tests; t
 passes 71 files / 1,082 tests plus context verification, lint, typecheck, build, and diff checking.
 Only the two pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size advisory
 remain. Fresh artifact-core and integrated code, test, privacy, and authority reviews found no
-HIGH/CRITICAL defect; hosted and exact-merge evidence remain to be recorded. Stable bytes and a matching
-external report digest still prove neither origin nor owner authority. Every executable capability
-remains `never_authorized`.
+HIGH/CRITICAL defect. PR #118 head `c393bd1` passed hosted run `31008061712`, merged as `cb9161c`,
+and exact-merge Pages/privacy run `31008333181` plus the late-comment sweep were green and empty.
+Stable bytes and a matching external report digest still prove neither origin nor owner authority.
+Every executable capability remains `never_authorized`.
+
+## 2026-08-05 — DL-LIFE-02 B2b-ii-d continuity review anchor (current slice)
+
+B2b-ii-d adds only the pure `github-core-continuity-review-anchor.v1` syntax boundary for a
+caller-claimed local-C2 review record. Its closed shape binds the reviewed report, task card,
+installation-key fingerprint, active lifecycle epoch, preview, exact-head proof, next continuity
+epoch, and millisecond UTC review time to one task ID. It also requires all three reviewed deletion
+intent/digest/receipt fields to be exactly null, because an `active` lifecycle can still have a
+pending revocation. The decision literal is not owner authentication, review evidence, trusted
+time, binding, authorization, renewal, retention, or completeness.
+
+The parser has no imports, caller, filesystem, database, key, network, clock, lifecycle, writer, or
+sink. The production AST gate rejects the direct ES import/export and literal
+require/dynamic-import forms used by the repository's current source set, and the live tree has no
+caller. The later composer must bind one path-selected task to one same-scope C1 row, freshly
+re-read report/card/key bytes, and a replayed
+lifecycle snapshot; require exact digest, consent revision, epoch, preview/proof, and deletion-null
+equality; enforce `report.jobStartedAt <= reviewedAt <= trustedNow`; and consume
+`reviewedContinuityEpoch === currentContinuityEpoch + 1` inside the writer's CAS transaction. This
+slice intentionally performs none of those checks. All executable capabilities remain
+`never_authorized`.
+
+The focused anchor/proposal proof passes 2 files / 13 tests. The full local gate passes 72 files /
+1,087 tests plus context verification, lint, typecheck, build, and diff checking; only the two
+pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size advisory remain.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-ii-c in progress).** Finish fresh integrated privacy/authority review,
-hosted proof, exact-merge Pages/privacy, and the late sweep for the stable local-C2 report envelope
-and loader. Preserve the five-field envelope, fixed report path/cap, external non-authoritative
-report digest, report/task path cross-check, shared card-loader guarantees, exact caller AST chain,
-and content-free failures. Then add the independently owner-reviewed report/card/key/time anchor and
-trusted clock, followed by caller-free composition and the compare-and-swap renewal writer,
+**Current 2026-08-05 (B2b-ii-d in progress).** Finish the inert continuity review-anchor parser,
+its no-caller AST gate, focused/full proof, fresh privacy/authority review, hosted proof,
+exact-merge Pages/privacy, and late sweep. Preserve the fixed caller-claimed shape, exact-null
+deletion triplet, content-free failures, and explicit non-authority boundary. Then add the trusted
+process clock, followed by caller-free report/card/key/lifecycle/anchor composition and the
+compare-and-swap renewal writer,
 then restart
 handling and the claim-reachable migration-origin retention events. Only then take canonical
 coverage/job absence resolution and its
