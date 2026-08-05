@@ -268,7 +268,7 @@ intentionally performs none of those checks and activates nothing.
 PR #119 head `02094d2` passed hosted run `31010122666`, merged as `8cabc53`, and passed
 exact-merge Pages/privacy run `31010364274` plus an empty late-comment sweep.
 
-### B2b-ii-e trusted process clock (current)
+### B2b-ii-e trusted process clock (shipped)
 
 The clock boundary exposes separate zero-argument captures for canonical millisecond UTC wall time
 and Node's finite nonnegative monotonic milliseconds. The wall reading is the only value that may
@@ -283,6 +283,28 @@ dependency. Its source import is limited to Node's monotonic performance clock. 
 not authenticate the review anchor or authorize continuity, renewal, retention, collection, or
 activation. The later composer must capture wall time internally and continue to reject caller-
 supplied substitutes.
+
+PR #120 head `5a08fcf` passed hosted run `31011375033`, merged as `cdaa083`, and passed
+exact-merge Pages/privacy run `31011609025` plus an empty late-comment sweep.
+
+### B2b-ii-f stable continuity-anchor loading (current)
+
+The review anchor lives only at the fixed ignored task path
+`continuity-review-anchor.json` under `.developer-lens/activation/<taskId>/`. Its loader reuses the
+card/report seam's closed 64 KiB input, canonical path and stable descriptor identities, one-link
+rule, double exact read, mutation checks, fatal UTF-8, duplicate-key rejection, digest binding, and
+buffer zeroing. The github.core wrapper parses the closed anchor, rejects a path/anchor task
+mismatch, returns the observed stable digest with the frozen parsed anchor, and exposes no filename
+or limit selector.
+
+Observed bytes matching an external digest remain only byte integrity; neither value authenticates
+owner identity, review, approval, origin, trusted time, or any report/card/key/lifecycle/CAS claim.
+The existing task-card `localBoundary` shape does not yet name this artifact, so the first reviewed
+composition/caller contract must explicitly add or otherwise close that path invariant before use.
+The loader has no caller, writer, database, clock, network, lifecycle mutation, retention action,
+sink, or capability effect. Next composition may produce only a structural consistency proposal;
+owner authentication, same-scope C1 state, lifecycle freshness under race, next-epoch CAS, and the
+writer-owned operation remain mandatory before renewal or retention can be claimed.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the

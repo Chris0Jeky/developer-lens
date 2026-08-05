@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-e trusted process clock)
+Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-f stable continuity-anchor loading)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,8 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d are merged;
-the current branch adds only an inert trusted process clock boundary, while the
+B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e are merged;
+the current branch adds only an inert fixed-path, hash-bound continuity review-anchor loader, while the
 remainder of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
@@ -2054,7 +2054,7 @@ non-blocking AST-form coverage note was explicitly triaged without overclaiming 
 head `02094d2` passed hosted run `31010122666`, merged as `8cabc53`, and exact-merge Pages/privacy
 run `31010364274` plus the late-comment sweep were green and empty.
 
-## 2026-08-05 — DL-LIFE-02 B2b-ii-e trusted process clock (current slice)
+## 2026-08-05 — DL-LIFE-02 B2b-ii-e trusted process clock (merged)
 
 B2b-ii-e adds two separate zero-argument process-owned captures. Wall time is validated as a
 nonnegative safe-integer millisecond reading and returned only as canonical millisecond UTC for the
@@ -2075,14 +2075,45 @@ executable capability remains `never_authorized`.
 The focused clock/proposal proof passes 2 files / 15 tests. The full local gate passes 73 files /
 1,094 tests plus context verification, lint, typecheck, build, and diff checking; only the two
 pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size advisory remain.
+Fresh clock, privacy/authority, and inertness reviews found no HIGH/CRITICAL defect. The mutable
+same-process clock and defense-in-depth range/AST notes were explicitly triaged as non-blocking;
+there is still no production caller. PR #120 head `5a08fcf` passed hosted run `31011375033`, merged
+as `cdaa083`, and exact-merge Pages/privacy run `31011609025` plus the late-comment sweep were green
+and empty.
+
+## 2026-08-05 — DL-LIFE-02 B2b-ii-f stable continuity-anchor loading (current slice)
+
+B2b-ii-f adds exactly one canonical ignored artifact path:
+`.developer-lens/activation/<taskId>/continuity-review-anchor.json`. The shared loader applies the
+same 64 KiB cap, closed hash-bound input, canonical ancestor and descriptor/path identity, one-link
+rule, double exact read, mutation detection, fatal UTF-8, duplicate-key refusal, and buffer zeroing
+as the card/report paths. Callers cannot select a filename or byte limit. A dedicated wrapper parses
+the closed sixteen-field github.core anchor, cross-checks its task ID against the path-selected
+task, returns the observed stable SHA-256 with the frozen anchor, and maps every failure to one
+content-free error.
+
+The observed digest remains ephemeral local binding material and the existing task-card/report
+public result shapes stay unchanged. Matching a caller-supplied external digest proves only which
+stable bytes were observed; it does not prove owner identity, review, approval, provenance, trusted
+time, report/card/key/lifecycle/CAS binding, authorization, renewal, retention, activation, or
+source completeness. The current task-card `localBoundary` schema does not declare the new anchor
+filename; the first composition/caller boundary must resolve that closed contract explicitly rather
+than infer it. The exact production chain is shared artifact loader -> anchor loader -> pure anchor
+parser, with no caller above it and no writer, database, clock, network, lifecycle mutation, sink,
+or capability activation. Every executable capability remains `never_authorized`.
+
+The focused artifact/anchor-loader/proposal proof passes 3 files / 16 tests. The full local gate
+passes 74 files / 1,099 tests plus context verification, lint, typecheck, build, and diff checking;
+only the two pre-existing Evidence Drawer Fast Refresh warnings remain.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-ii-e in progress).** Finish the inert trusted process clock, its
-no-caller AST gate, focused/full proof, fresh clock/authority review, hosted proof, exact-merge
-Pages/privacy, and late sweep. Preserve the separate zero-argument wall/monotonic captures,
-wall-only persisted chronology, process-local monotonic boundary, content-free failures, and
-explicit non-authority posture. Then add caller-free report/card/key/lifecycle/anchor composition and the
+**Current 2026-08-05 (B2b-ii-f in progress).** Finish the fixed-path, hash-bound continuity-anchor
+loader, observed-digest return, task/path cross-check, exact caller AST chain, focused/full proof,
+fresh artifact/authority review, hosted proof, exact-merge Pages/privacy, and late sweep. Preserve
+the existing card/report public shapes, fixed 64 KiB path contract, shared stable-loader guarantees,
+content-free failures, and explicit byte-integrity-only boundary. Then add caller-free
+report/card/key/lifecycle/anchor structural composition and the
 compare-and-swap renewal writer,
 then restart
 handling and the claim-reachable migration-origin retention events. Only then take canonical

@@ -433,6 +433,12 @@ describe('storage-v3 B1a proposal', () => {
         }
         if (target && /(?:^|[\\/])v3ContinuityReviewAnchor(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (sourcePath !== 'server/storage/v3ContinuityReviewAnchorLoader.ts') {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
+        }
+        if (target && /(?:^|[\\/])v3ContinuityReviewAnchorLoader(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
         if (target && /(?:^|[\\/])trustedProcessClock(?:\.[cm]?js|\.ts)?$/.test(target)) {
@@ -521,6 +527,21 @@ describe('storage-v3 B1a proposal', () => {
         ? [statement.moduleSpecifier.text]
         : [])
     expect(reviewAnchorImports).toEqual([])
+    const reviewAnchorLoaderPath = join(root, 'server', 'storage', 'v3ContinuityReviewAnchorLoader.ts')
+    const reviewAnchorLoaderFile = ts.createSourceFile(
+      reviewAnchorLoaderPath,
+      readFileSync(reviewAnchorLoaderPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const reviewAnchorLoaderImports = reviewAnchorLoaderFile.statements.flatMap((statement) =>
+      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
+        ? [statement.moduleSpecifier.text]
+        : [])
+    expect(reviewAnchorLoaderImports).toEqual([
+      '../activationArtifactLoader.js',
+      './v3ContinuityReviewAnchor.js',
+    ])
     const trustedClockPath = join(root, 'server', 'trustedProcessClock.ts')
     const trustedClockFile = ts.createSourceFile(
       trustedClockPath,
