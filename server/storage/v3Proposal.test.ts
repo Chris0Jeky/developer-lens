@@ -135,7 +135,27 @@ describe('storage-v3 B1a proposal', () => {
       causedBy: `scope-${'b'.repeat(64)}`,
     }).success).toBe(false)
     expect(LINEAGE_V3_EVENT_SUBJECT_KINDS.scope_alias_expired).toEqual(['scope'])
+    expect(LINEAGE_V3_EVENT_SUBJECT_KINDS.c2_retention_expired).toEqual([
+      'job', 'snapshot', 'checkpoint', 'coverage',
+    ])
     expect(LINEAGE_V3_EVENT_SUBJECT_KINDS.legacy_deletion_operation).toEqual(['deletion'])
+    expect(LineageV3EventSchema.safeParse({
+      ...event,
+      subjectKind: 'coverage',
+      subjectId: `cov-${hex}`,
+      eventKind: 'c2_retention_expired',
+    }).success).toBe(true)
+    expect(LineageV3EventSchema.safeParse({
+      ...event,
+      subjectKind: 'coverage',
+      subjectId: `cov-${hex}`,
+      eventKind: 'c2_retention_expired',
+      operationId: `del-${hex}`,
+    }).success).toBe(false)
+    expect(LineageV3EventSchema.safeParse({
+      ...event,
+      eventKind: 'c2_retention_expired',
+    }).success).toBe(false)
     expect(LINEAGE_V3_DELETION_EVENT_KINDS).toEqual([
       'tombstone_cascade', 'index_deleted', 'legacy_deletion_operation',
     ])

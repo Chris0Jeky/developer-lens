@@ -112,9 +112,10 @@ store.
   relabelling by another route.
 - `limitation_instance` — `claim_id`, `limitation_code` (existing dictionary), `dimension`
   (coverage-vector dimension that triggered it), `copy_key`.
-- `lineage_event` — corrections, revocation cascades, export inclusion: `subject_id`,
-  `event_kind` ∈ {correction, tombstone_cascade, export_included, reconsent, index_built,
-  index_deleted}, `caused_by`, `occurred_at`.
+- `lineage_event` — versioned, typed C1 history for correction, revocation, export, reconsent,
+  indexes, alias expiry, C2 retention expiry, series restart, and legacy deletion compatibility:
+  `scope_id`, typed `subject_kind`/`subject_id`, closed `event_kind`, neutral `op-` or deletion-only
+  `del-` operation, controlled capability, optional typed cause, and ISO-week event grain.
 
 Claim IDs are deterministic: `cl_` + SHA-256 over the canonicalisation material, whose format is
 itself versioned (`CLAIM_ID_MATERIAL_VERSION`, recorded on every claim row). Material **v2**

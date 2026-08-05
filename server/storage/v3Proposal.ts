@@ -118,7 +118,7 @@ export const CLAIM_MATERIAL_V3_PROPOSAL = {
   remintOnMaterialRewrite: true,
 } as const
 
-/** Proposal lineage extends the shipped six kinds with the three LIFE-02 lifecycle events. */
+/** Proposal lineage extends the shipped six kinds with the four LIFE-02 lifecycle events. */
 export const LINEAGE_V3_EVENT_KINDS = [
   'correction',
   'tombstone_cascade',
@@ -127,6 +127,7 @@ export const LINEAGE_V3_EVENT_KINDS = [
   'index_built',
   'index_deleted',
   'scope_alias_expired',
+  'c2_retention_expired',
   'scope_series_restarted',
   'legacy_deletion_operation',
 ] as const
@@ -161,6 +162,7 @@ export const LINEAGE_V3_EVENT_SUBJECT_KINDS = {
   index_built: LINEAGE_V3_SUBJECT_KINDS,
   index_deleted: LINEAGE_V3_SUBJECT_KINDS,
   scope_alias_expired: ['scope'],
+  c2_retention_expired: ['job', 'snapshot', 'checkpoint', 'coverage'],
   scope_series_restarted: ['scope'],
   legacy_deletion_operation: ['deletion'],
 } as const satisfies Readonly<Record<LineageV3EventKind, readonly LineageV3SubjectKind[]>>

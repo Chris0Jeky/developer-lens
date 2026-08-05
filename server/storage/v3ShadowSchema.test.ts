@@ -7,6 +7,7 @@ import { installIncrementalGithubCoreStorage } from './incremental.js'
 import {
   installStorageV3ShadowSchema,
   STORAGE_V3_SHADOW_APPLICATION_ID,
+  STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
   STORAGE_V3_SHADOW_RESULT,
   STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT,
   STORAGE_V3_SHADOW_SCHEMA_SQL,
@@ -48,6 +49,7 @@ describe('storage-v3 B2a shadow schema', () => {
           ...STORAGE_V3_SHADOW_IMMUTABLE_INSERT_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_IDENTITY_BINDING_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES,
+          STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
           STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME,
         ].sort(),
       )
@@ -359,8 +361,17 @@ describe('storage-v3 B2a shadow schema', () => {
       installStorageV3ShadowSchema(db)
       db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
       db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+      db.prepare(`INSERT INTO collection_job (
+        scope_id, job_id, capability_id, storage_contract_version, query_version,
+        source_api_version, consent_revision, status
+      ) VALUES (?, ?, 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')`)
+        .run(scopeA, id('job-'))
       const insert = db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
       insert.run(scopeA, 'scope', scopeA, id('del-'), 'github.core', null, 'index_deleted', '2026-W32')
+      insert.run(scopeA, 'job', id('job-'), id('op-', '8'), 'github.core', null, 'c2_retention_expired', '2026-W32')
+      expect(() => insert.run(scopeA, 'coverage', id('cov-'), id('op-', '6'), 'github.core', null, 'c2_retention_expired', '2026-W32'))
+        .toThrow('STORAGE_V3_SHADOW_C2_RETENTION_OWNER_REQUIRED')
+      expect(() => insert.run(scopeA, 'scope', scopeA, id('op-', '7'), 'github.core', null, 'c2_retention_expired', '2026-W32')).toThrow()
       insert.run(null, 'deletion', id('del-', 'b'), id('del-', 'b'), 'github.core', null, 'legacy_deletion_operation', '2026-W32')
       expect(() => insert.run(null, 'deletion', id('del-', 'b'), id('del-', 'b'), 'github.core', null, 'legacy_deletion_operation', '2026-W32')).toThrow()
       expect(() => insert.run(scopeA, 'deletion', id('del-', 'c'), id('del-', 'd'), 'github.core', null, 'legacy_deletion_operation', '2026-W32')).toThrow()
@@ -653,6 +664,7 @@ describe('storage-v3 B2a shadow schema', () => {
     ['B1b-i', 301],
     ['B1b-iii', 302],
     ['B2a-i', 303],
+    ['B2a-ii', 304],
   ])('rejects the superseded %s shadow identity before changing schema', (_slice, userVersion) => {
     const db = new Database(':memory:')
     try {
