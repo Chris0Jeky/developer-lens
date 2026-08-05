@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (R4 roadmap reassessment)
+Last updated: **2026-08-05** (R4 wave 1 and LIFE-02 execution)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -8,9 +8,9 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 **Fast resume:** agents should read the compact state artifact
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
-for the next task. Current phase in one line: R1–R3 is complete and the bounded R4 horizon is open;
-start DL-LIFE-01, advance DL-EVQ-03 only as its disjoint analytical lane, and start DL-LIFE-02 only
-after DL-LIFE-01 merges.
+for the next task. Current phase in one line: R1–R3 is complete; R4's DL-LIFE-01 and DL-EVQ-03 are
+merged; finish DL-LIFE-02 as the registered-SQLite planner slice followed by the scope/adapters
+slice, without marking the card complete or unblocking sensitive connectors between them.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
@@ -1611,14 +1611,74 @@ every `horizon:frozen` card remain frozen.
   capabilities inactive. The project authorities bind this work; no estate-law edit was admitted
   as a product detour.
 
+## 2026-08-05 — R4 wave 1 delivery and LIFE-02 execution decision
+
+R4's first delivery wave is merged. The lifecycle contract and claim-stability value lane landed
+without activating a capability, wiring a production caller, reading protected data, or expanding
+the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
+
+- **Horizon and hygiene.** [PR #96](https://github.com/Chris0Jeky/developer-lens/pull/96) admitted
+  the three-card R4 horizon at head `165e9e6` and merged as `404d27d`; hosted PR gate run
+  `30967803953` passed. [PR #97](https://github.com/Chris0Jeky/developer-lens/pull/97) aligned Pages
+  to Node 24, closed #71, passed hosted run `30968041166`, and merged as `3f208a0`; exact-merge
+  Pages run `30968376450` passed. [PR #98](https://github.com/Chris0Jeky/developer-lens/pull/98)
+  replaced the two vacuous conformance checks, closed #93, passed hosted run `30968434615`, and
+  merged as `0f38660`. Its four connector comments were classified and resolved as non-blocking.
+- **DL-LIFE-01 — immutable lifecycle contract.** [PR #100](https://github.com/Chris0Jeky/developer-lens/pull/100)
+  landed final head `25326bf` as merge `41a1804`; hosted PR gate run `30969544413` and exact-merge
+  Pages run `30969712337` passed. The exact head passed 22 focused tests, the full 58-file/894-test
+  suite, 29 P4 review checks, typecheck, and build. Independent review found one HIGH: a forged
+  non-genesis transcript snapshot could be replayed without structural lineage. The bounded fix
+  validates snapshot ancestry and both fresh-context reviews were clean. Opaque card, preview, and
+  proof digests still require a future trusted adapter for external authenticity; there is no
+  caller. A late connector P2 also showed that `request_revocation` leaves the lifecycle active and
+  permits resume while revocation intent is pending. With no caller this is tracked as non-blocking,
+  but the first caller must suspend on intent and reject resume until the pending intent resolves.
+- **DL-EVQ-03 — claim stability across re-collections.** [PR #99](https://github.com/Chris0Jeky/developer-lens/pull/99)
+  landed final head `2f1909d` as merge `cad0a11`; hosted run `30969742520` and exact-merge Pages run
+  `30969909632` passed. The exact head passed 5 focused tests, the full 59-file/899-test suite,
+  typecheck, and build. Review found and fixed one HIGH supersession-cycle gap before merge. Late
+  review then confirmed a replay defect: a later observation with the same immutable claim ID was
+  rejected solely because `createdAt` advanced, although that clock is not claim-ID material.
+  [PR #101](https://github.com/Chris0Jeky/developer-lens/pull/101) removed that comparison and added
+  the later-clock zero-churn regression; final head `c6ff6b5` passed 6 claim-stability tests, 34
+  claim-replay tests, the full 59-file/900-test suite, typecheck, build, fresh-context review, and
+  hosted run `30970321092`, then merged as `d2dfb36`; exact-merge Pages run `30970482370` passed.
+  The original HIGH thread was linked to the landed fix and resolved, and the post-merge sweep found
+  no late review threads. Lower-severity week-label/order contract notes were classified once and
+  left non-blocking.
+- **DL-LIFE-02 decision — preserve the full acceptance boundary through two PRs.** One M-sized card
+  cannot honestly prove the registered SQLite graph, migrate scope bindings, implement the C2
+  retention sweep, and cover every declared app-controlled non-SQL descendant in one reviewable
+  change. Slice A therefore owns a fail-closed, registry-derived, transactional planner over the
+  existing incremental + claim tables, including children-before-parents order, the current
+  `NO ACTION` seam, rollback, idempotence, a missing-lineage canary, and a content-free tombstone.
+  The tombstone's `subject_id` and `caused_by` must be class-appropriate, domain-separated lineage
+  IDs (for example `cl_`, `ev_`, or `scope_`), with a regression proving a caller cannot retain a
+  C2/C3 alias indefinitely by placing it in either field.
+  Slice B owns the scope-binding migration, issue #80's C2 sweep, and explicit V2/filesystem
+  pack/backup/cache/index adapters. Slice A remains deliberately incomplete: it cannot mark the
+  card DONE, close #80, or unblock sensitive connectors. Both slices use invented in-memory
+  fixtures only and claim neither physical erasure nor deletion of provider-held copies.
+- **Owner and protected-data boundary.** q-6, q-7, and q-8 remain open. Main protection was still
+  absent at the wave's start, so every PR used the hosted exact-head gate manually. At final live
+  refresh the legacy protection endpoint still returned 404; active ruleset `20425147` enforced
+  branch deletion only and did not require `Prove the pull request`, so q-7 remains open. The q-8
+  orphan directory and all protected/generated/private-data paths remained uninspected and
+  unchanged.
+
 ## Exact resume point
 
-**Current 2026-08-05 (R4 horizon opened).** Start **DL-LIFE-01** from the live `origin/main` head,
-using the pure contract boundary above and `npm test -- server/lifecycle.test.ts` followed by
-`npm run check`. **DL-EVQ-03** is READY as the disjoint analytical lane, proved with
-`npm test -- server/analysis/claimStability.test.ts` then `npm run check`. **DL-LIFE-02** follows
-only after DL-LIFE-01 merges and its base/dependency evidence is refreshed. Issue #93 and #71 stay
-separate hygiene slices. R7/R8 remain frozen; q-6/q-7/q-8 remain open.
+**Current 2026-08-05 (R4 wave 1 merged; DL-LIFE-02 active).** Continue **DL-LIFE-02 slice A** from
+live `origin/main`: the registered-SQLite planner, fail-closed lineage canary, atomic rollback,
+idempotence, and content-free tombstone described above, including domain-separated lineage IDs
+and the no-C2/C3-alias retention regression. Integrate the live base before publication
+and prove focused storage tests plus `npm run check`; this is a high-risk lifecycle seam and needs
+fresh adversarial review, hosted exact-head gate, and the post-push aging floor. Then execute
+**slice B** — scope-binding migration, C2 sweep, and the complete declared non-SQL adapter set —
+before marking LIFE-02 DONE, closing #80's covered conditions, or unblocking any sensitive
+connector. Also carry LIFE-01's pending-revocation suspension/resume invariant into the first
+caller boundary. R7/R8 remain frozen; q-6/q-7/q-8 remain open; protected data remains out of scope.
 
 **Superseded 2026-08-04 (R1 wave 3 — active horizon COMPLETE).** DL-VALIDATE-01 (`df59bbc`, PR #92)
 and DL-VALUE-01 (`c632093`, PR #94) have merged, completing all 12 active-horizon cards. There is no
