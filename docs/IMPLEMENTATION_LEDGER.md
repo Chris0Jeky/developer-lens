@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-i isolated continuity CAS proposal)
+Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-j inert review-signature verification proposal)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,8 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e/f/g/h are merged;
-the current branch adds only an isolated fixture-only continuity CAS proposal, while the
+B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e/f/g/h/i are merged;
+the current branch adds only an inert process-only signature-verification proposal, while the
 remainder of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
@@ -2176,7 +2176,7 @@ actionable proving finding was that reproduced timeout, now fixed and re-proved.
 PR #123 head `c5256bb` passed hosted run `31017359944`, merged as `65dfd155`, and exact-merge
 Pages/privacy run `31017611856` plus the late-comment sweep were green and empty.
 
-## 2026-08-05 — DL-LIFE-02 B2b-ii-i isolated continuity CAS proposal (current slice)
+## 2026-08-05 — DL-LIFE-02 B2b-ii-i isolated continuity CAS proposal (merged)
 
 B2b-ii-i deliberately implements the CAS mechanism without pretending the structural composition
 is authority. A true renewal writer remains blocked by the unowned anchor origin, individually
@@ -2213,6 +2213,9 @@ mismatches to be covered separately, without raising the timeout. The final full
 the two existing Evidence Drawer Fast Refresh warnings and bundle-size advisory remain. Fresh
 SQL/concurrency, correctness, and privacy/authority reviews found no HIGH/CRITICAL defect.
 
+PR #124 head `006728e` passed hosted run `31020379782`, merged as `34af993`, and exact-merge
+Pages/privacy run `31020694799` plus the late-comment sweep were green and empty.
+
 The proposal cannot seed a scope. Future promotion must first add owner-authenticated anchor
 provenance, current same-scope retained C1 and lifecycle/revocation state under the writer lock,
 continuity-epoch comparison, explicit receipt expiry/sweep, and the expired-alias/new-series
@@ -2220,15 +2223,48 @@ disposition. Only then may a bounded renewal writer exist. The production import
 module, protected/generated paths remain uninspected, and every executable capability remains
 `never_authorized`.
 
+## 2026-08-05 — DL-LIFE-02 B2b-ii-j inert review-signature verification proposal (current slice)
+
+B2b-ii-j isolates the smallest cryptographic prerequisite without converting the review anchor
+into authority. The caller supplies exact bounded anchor bytes and a candidate canonical Ed25519
+public key plus a closed signature envelope. A successful result proves only that the signature
+covers those bytes and that candidate key under the fixed versioned domain; it does not prove who
+owns the key, who reviewed the anchor, or that anyone approved or authorized an operation.
+
+The proposal recomputes the anchor and canonical-SPKI SHA-256 digests, constructs fixed signing
+material from the ASCII domain, a NUL separator, and the two binary digests, and verifies an exact
+64-byte Ed25519 signature. It rejects noncanonical base64, a noncanonical 44-byte Ed25519 SPKI DER
+encoding, a high-S signature, digest or field substitution, unknown fields, inherited containers,
+symbols, and accessors without reading their getters. Success is one frozen static
+`signature_matches` value; every failure is the same content-free error.
+
+The production module imports only `createHash`, `createPublicKey`, and `verify`. It owns no signer,
+key generation, trusted-key registry, enrollment or rotation, path, artifact loader, source,
+identity input, storage, clock, lifecycle, CAS, retention, network, API, production caller, or
+capability effect. Tests create only ephemeral invented keys at runtime, and the AST import gate
+rejects every production import of this module. The focused proposal/import proof passes 2 files /
+17 tests. The full local gate passes 77 files / 1,137 tests plus context verification, lint,
+typecheck, build, and diff checking; only the two existing Evidence Drawer Fast Refresh warnings
+and bundle-size advisory remain. Fresh cryptographic/parser plus privacy/authority reviews found no
+HIGH/CRITICAL defect.
+
+Future promotion must first add a separate process-owned, owner-controlled trust-root and credential
+enrollment/rotation/revocation boundary that maps an approved key identity to canonical public-key
+bytes and fixed-path parsed anchor bytes. Only after that authority exists may another bounded slice
+bind current same-scope retained C1 identity, lifecycle/revocation, continuity epoch, C2 receipt
+expiry/sweep, and CAS state under one writer lock. This proposal cannot seed a scope, renew a series,
+extend retention, migrate the protected ignored card, authorize a capability, or establish owner
+identity. Every executable capability remains `never_authorized`.
+
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-ii-i in progress).** Finish the isolated fixture-only continuity CAS
-proposal, focused/full proof, fresh correctness/privacy review, hosted proof, exact-merge
-Pages/privacy, and late sweep. Preserve strict empty-database installation, exact replay identity,
-immediate locking, single-row guarded mutation, rollback, immutable history, unknown-scope refusal,
-closed/static outputs, the local-C2 receipt classification, unchanged runtime posture, and the
-protected ignored-card boundary. Then add owner-authenticated anchor provenance and transactional
-same-scope C1/lifecycle/revocation plus continuity-epoch binding before any true renewal writer;
+**Current 2026-08-05 (B2b-ii-j in progress).** Finish the inert process-only review-signature
+verification proposal, full proof, hosted proof, exact-merge Pages/privacy, and late sweep. Preserve
+the candidate-key-only meaning, fixed domain and signing bytes, canonical Ed25519 encodings,
+closed/static outputs, content-free failure, production-import rejection, unchanged runtime posture,
+and the protected ignored-card boundary. Then add a separate owner-controlled trust-root and
+credential enrollment/rotation/revocation boundary before transactional same-scope retained
+C1/lifecycle/revocation plus continuity-epoch and C2-receipt binding or any true renewal writer;
 then take restart
 handling and the claim-reachable migration-origin retention events. Only then take canonical
 coverage/job absence resolution and its
