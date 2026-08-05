@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B1a late review and B1b binding correction)
+Last updated: **2026-08-05** (DL-LIFE-02 late contract correction before B1b-i)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -8,9 +8,9 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 **Fast resume:** agents should read the compact state artifact
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
-for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A and inert B1a are merged
-but the card remains active; repair three confirmed late B1a findings, then execute B1b-i/ii/iii and
-B2–B4 without marking the card DONE or unblocking sensitive connectors between slices.
+for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, inert B1a, and its first
+late repair are merged; the current head corrects the second late contract review, and B1b-i/ii/iii
+then B2–B4 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
@@ -1704,7 +1704,17 @@ the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
   C1-preserve C2 SHA/exact-time fields; every lineage event required a deletion-only `del-`
   operation; and unremintable/dangling/cross-scope claim-graph rows were described as deletions
   instead of target-aborting invalid states. The exact next slice is a two-file inert-proposal
-  follow-up linked to PR #105; B1b stays blocked until it lands.
+  follow-up linked to PR #105. [PR #107](https://github.com/Chris0Jeky/developer-lens/pull/107)
+  landed final head `d7acb10` as merge `263839d`; hosted run `30976889901` and exact-merge Pages run
+  `30977063643` passed. Its exact proof was 8 focused tests and the full 61-file/922-test suite plus
+  context verification, typecheck, and build. Its late sweep was empty.
+- **Second late contract review.** A later sweep of the documentation correction in
+  [PR #106](https://github.com/Chris0Jeky/developer-lens/pull/106) recovered three more Codex P2
+  threads. Live code proves `claim_scope.scope_alias` is the repository-provider-domain alias, not
+  `analytical_key`; the decision must allow the verified aliases only in expiring C2 identity/link
+  rows while keeping the raw ID and installation key process-only; and `index_deleted` is a
+  revocation-cascade event that must share the reviewed `del-` operation. The current head contains
+  the bounded proposal/documentation-only correction; B1b-i is the exact next slice after it merges.
 - **B1b identity correction.** Live-code feasibility proved the stored `provider_id` and
   `analytical_key` are independent domain-separated HMACs over the raw provider ID, so the original
   instruction to derive one from the other was impossible. The corrected binding requires an
@@ -1716,12 +1726,13 @@ the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B1a merged; late repair next).** Update only `server/storage/v3Proposal.ts`
-and its focused test: separate retained C0/C1 `preserve` from expiring C2 observation fields; add a
-fresh-random `op-` operation key and require it for non-deletion lineage while keeping `del-` for
-deletion/tombstone operations; move unremintable claims plus dangling/cross-scope/unanchored edges
-from delete to fail-closed refusal. Preserve the no-production-import/runtime/DDL/caller boundary.
-Then implement B1b-i/ii/iii from live `origin/main`: isolated shadow schema, authenticated rewrite,
+**Current 2026-08-05 (second late contract correction in the current head; B1b-i next).** The current
+head independently verifies provider and analytical aliases from ephemeral raw identity, matches
+scope continuity only against the provider-domain alias, keeps aliases only in expiring C2 rows,
+and requires `del-` for `tombstone_cascade`, `index_deleted`, and `legacy_deletion_operation` while
+every other closed event uses `op-`. It preserves the absence of any production import, runtime,
+DDL, or caller edge. After it merges, implement B1b-i/ii/iii from live `origin/main`: isolated shadow
+schema, authenticated rewrite,
 and transactional selection proof respectively. Do not reuse the existing in-place target path,
 add a real-store/source-selection caller, persist identity input/mapping, or enter LIFE-03 backup/
 grace work. Then continue B2-B4 exactly as

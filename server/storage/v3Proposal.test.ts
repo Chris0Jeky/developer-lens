@@ -11,6 +11,7 @@ import {
   LEGACY_DELETION_OPERATION_COMPATIBILITY,
   LineageOperationIdV3Schema,
   LineageV3EventSchema,
+  LINEAGE_V3_DELETION_EVENT_KINDS,
   LINEAGE_V3_EVENT_SUBJECT_KINDS,
   LINEAGE_V3_EVENT_KINDS,
   STORAGE_V3_BASE_TABLES,
@@ -111,6 +112,8 @@ describe('storage-v3 B1a proposal', () => {
     expect(LineageOperationIdV3Schema.safeParse(`scope-${hex}`).success).toBe(false)
     expect(LineageV3EventSchema.safeParse({ ...event, eventKind: 'tombstone_cascade', operationId: `del-${hex}` }).success).toBe(true)
     expect(LineageV3EventSchema.safeParse({ ...event, eventKind: 'tombstone_cascade', operationId: `op-${hex}` }).success).toBe(false)
+    expect(LineageV3EventSchema.safeParse({ ...event, eventKind: 'index_deleted', operationId: `del-${hex}` }).success).toBe(true)
+    expect(LineageV3EventSchema.safeParse({ ...event, eventKind: 'index_deleted', operationId: `op-${hex}` }).success).toBe(false)
     expect(LineageV3EventSchema.safeParse({ ...event, eventKind: 'correction', operationId: `del-${hex}` }).success).toBe(false)
     expect(LineageV3EventSchema.safeParse({
       ...event,
@@ -133,6 +136,9 @@ describe('storage-v3 B1a proposal', () => {
     }).success).toBe(false)
     expect(LINEAGE_V3_EVENT_SUBJECT_KINDS.scope_alias_expired).toEqual(['scope'])
     expect(LINEAGE_V3_EVENT_SUBJECT_KINDS.legacy_deletion_operation).toEqual(['deletion'])
+    expect(LINEAGE_V3_DELETION_EVENT_KINDS).toEqual([
+      'tombstone_cascade', 'index_deleted', 'legacy_deletion_operation',
+    ])
     expect(LEGACY_DELETION_OPERATION_COMPATIBILITY).toEqual({
       sourceEventKind: 'tombstone_cascade',
       sourceSubjectPrefix: 'scope_tombstone_',
@@ -174,12 +180,21 @@ describe('storage-v3 B1a proposal', () => {
       STORAGE_V3_DISPOSITIONS[0],
     ])).toThrow('STORAGE_V3_DISPOSITION_NOT_EXHAUSTIVE')
     const lineage = STORAGE_V3_DISPOSITIONS.find(({ tableName }) => tableName === 'lineage_event')
+    const identity = STORAGE_V3_DISPOSITIONS.find(({ tableName }) => tableName === 'repository_identity')
     expect(lineage?.rewrite).toContain(
       'slice-A scope_tombstone_<64hex> + cap_github_core -> legacy_deletion_operation on del-<same hex> with the same operation ID, github.core capability and ISO-week-floored time',
     )
     expect(lineage && 'refuse' in lineage ? lineage.refuse : undefined).toContain(
       'conflicting slice-A compatibility event or recognized subject-class mismatch',
     )
+    expect(identity?.rewrite).toEqual(expect.arrayContaining([
+      expect.stringMatching(/ephemeral raw provider ID independently recomputes provider_id .* analytical_key .* byte equality/i),
+      expect.stringMatching(/scope_alias continuity uses an exact match against the recomputed provider_id only, never analytical_key/i),
+    ]))
+    expect(identity?.delete).toEqual(expect.arrayContaining([
+      expect.stringMatching(/provider_id and analytical_key at C2 expiry/i),
+      expect.stringMatching(/raw provider ID and installation key are never retained in target, proof, error, or log/i),
+    ]))
   })
 
   it('keeps C2 observations out of every preserve disposition and aborts unsafe claim graphs', () => {

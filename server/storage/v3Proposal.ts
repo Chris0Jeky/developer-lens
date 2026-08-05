@@ -130,6 +130,12 @@ export const LINEAGE_V3_EVENT_KINDS = [
   'scope_series_restarted',
   'legacy_deletion_operation',
 ] as const
+/** Only these lineage events carry a deletion operation identity. */
+export const LINEAGE_V3_DELETION_EVENT_KINDS = [
+  'tombstone_cascade',
+  'index_deleted',
+  'legacy_deletion_operation',
+] as const
 export const LineageV3EventKindSchema = z.enum(LINEAGE_V3_EVENT_KINDS)
 export type LineageV3EventKind = z.infer<typeof LineageV3EventKindSchema>
 
@@ -194,7 +200,7 @@ export const LineageV3EventSchema = z.object({
   if (value.eventKind === 'legacy_deletion_operation' && value.operationId !== value.subjectId) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['operationId'], message: 'Legacy deletion operation identity mismatch' })
   }
-  const deletionEvent = value.eventKind === 'tombstone_cascade' || value.eventKind === 'legacy_deletion_operation'
+  const deletionEvent = (LINEAGE_V3_DELETION_EVENT_KINDS as readonly string[]).includes(value.eventKind)
   const expectedOperationPrefix = deletionEvent ? C1_KEY_PREFIXES.deletion : C1_KEY_PREFIXES.operation
   if (!value.operationId.startsWith(expectedOperationPrefix)) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['operationId'], message: `${value.eventKind} requires ${expectedOperationPrefix} operation identity` })
@@ -223,6 +229,7 @@ export const LINEAGE_V3_PROPOSAL = {
   status: V3_PROPOSAL_STATUS,
   version: LINEAGE_V3_PROPOSAL_VERSION,
   eventKinds: LINEAGE_V3_EVENT_KINDS,
+  deletionEventKinds: LINEAGE_V3_DELETION_EVENT_KINDS,
   subjectKinds: LINEAGE_V3_SUBJECT_KINDS,
   capabilityIds: ['github.core'] as const,
   eventGrain: 'iso-week',
@@ -287,7 +294,7 @@ const disposition = <T extends StorageV3Disposition>(value: T): T => value
 
 export const STORAGE_V3_DISPOSITIONS = [
   disposition({ tableName: 'import_run', family: 'base', action: 'delete', preserve: [], rewrite: [], delete: ['all legacy rows lacking scope and import-time ownership'] }),
-  disposition({ tableName: 'repository_identity', family: 'base', action: 'rewrite', preserve: ['is_private', 'is_archived', 'is_fork'], rewrite: ['provider identity -> scope- C1 anchor', 'analytical alias remains transient C2 link'], delete: ['provider_id', 'analytical_key after C2 expiry'] }),
+  disposition({ tableName: 'repository_identity', family: 'base', action: 'rewrite', preserve: ['is_private', 'is_archived', 'is_fork'], rewrite: ['provider_id and analytical_key remain only in the expiring C2 identity row', 'ephemeral raw provider ID independently recomputes provider_id (repository-provider domain) and analytical_key (repository-analytical domain); require byte equality for both', 'claim_scope.scope_alias continuity uses an exact match against the recomputed provider_id only, never analytical_key', 'provider identity -> scope- C1 anchor'], delete: ['provider_id and analytical_key at C2 expiry', 'raw provider ID and installation key are never retained in target, proof, error, or log'] }),
   disposition({ tableName: 'commit_observation', family: 'base', action: 'rewrite', preserve: ['aggregate counters', 'feature classification'], rewrite: ['repository_provider_id -> canonical scope_id', 'commit sha as an expiring C2 observation'], delete: ['commit sha, source provenance, and row at C2 expiry', 'rows whose repository binding is unverifiable'] }),
   disposition({ tableName: 'pull_request_fact', family: 'base', action: 'rewrite', preserve: ['lifecycle state', 'aggregate counters'], rewrite: ['repository_provider_id -> canonical scope_id', 'pull-request number as an expiring C2 observation'], delete: ['pull-request number, provider provenance, and row at C2 expiry', 'rows whose repository binding is unverifiable'] }),
   disposition({ tableName: 'coverage_observation', family: 'base', action: 'delete', preserve: [], rewrite: [], delete: ['all legacy aggregate rows without complete member-scope ownership'] }),
