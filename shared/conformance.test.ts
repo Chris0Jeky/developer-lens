@@ -11,6 +11,8 @@ import {
 } from './conformance.js'
 import {
   MetricRegistryError,
+  METRIC_FIXTURE_CLASSES,
+  MetricDefinitionSchema,
   assertExposableMetricResult,
   getMetricDefinition,
   resolveMetricForComputation,
@@ -18,6 +20,7 @@ import {
   validateMetricResult,
   type MetricResult,
 } from './metrics.js'
+import { BLENDED_SCALAR_DEFINITION_FIXTURE } from './metricFixtures.js'
 import { FindingContractError, FindingSchema, validateFinding } from './findings.js'
 import {
   ComparisonContractError,
@@ -436,19 +439,53 @@ describe('alternate cohort and window definitions, and sensitivity variants', ()
     expect(share.formula).toMatchObject({ kind: 'proportion_of_cohort', denominatorBasis: 'eligible_minus_censored' })
   })
 
-  it('M-a: a fixture where censored runs correlate with failure exercises the worst-case bound', () => {
-    // Invented: 40 concluded first attempts, 32 passed; 10 more were right-censored (still running).
-    // Informative censoring means the still-running attempts are likelier to fail; the reported
-    // share (32/40 = 0.80) is an upper bound, and the worst-case lower bound assumes all 10 fail.
-    const eligible = 50
-    const censored = 10
-    const concluded = eligible - censored // 40
-    const passed = 32
-    const reportedShare = passed / concluded // 0.80
-    const worstCaseShare = passed / (concluded + censored) // 32/50 = 0.64
-    expect(reportedShare).toBeCloseTo(0.8, 10)
-    expect(worstCaseShare).toBeLessThan(reportedShare) // the confounder can only lower the estimate
-    expect(worstCaseShare).toBeCloseTo(0.64, 10)
+  it('M-a: a valid proportion result binds the worst-case all-fail variant to counts and denominators', () => {
+    const share = getMetricDefinition(PASS_SHARE_REFERENCE)
+    const worstCaseVariant = share.sensitivityVariants.find((variant) => variant.variantId === 'WORST_CASE_CENSORED_ALL_FAIL')
+    expect(worstCaseVariant).toMatchObject({
+      variantId: 'WORST_CASE_CENSORED_ALL_FAIL',
+      parameterChange: expect.stringMatching(/censored count back into the denominator/i),
+    })
+
+    // Invented: 50 eligible first attempts, 10 still running, and 32 concluded passes. The
+    // ordinary result reports 32 / (50 - 10), while the all-fail sensitivity result adds the
+    // censored attempts back to the denominator without changing the numerator.
+    const result: MetricResult = {
+      resultId: 'conformance-pass-share-m-a',
+      metricId: share.metricId,
+      metricVersion: share.version,
+      scopeAlias: 'scope-alpha',
+      window: { start: '2026-07-01T00:00:00.000Z', end: '2026-08-01T00:00:00.000Z' },
+      asOf: '2026-08-01T00:00:00.000Z',
+      state: 'observed',
+      stateReasonCode: 'OBSERVED',
+      counts: { eligible: 50, censored: 10, excluded: [] },
+      value: { kind: 'proportion', numerator: 32, denominator: 40 },
+      coverage: share.coverageDimensions.map((dimension) => ({ dimension, value: 1, limiting_reason: null })),
+      evidenceIds: ['claim-conformance-pass-share-m-a'],
+      calculation: { procedureId: share.formula.procedureId, metricContractVersion: '1.1.0', engineVersion: '1.0.0' },
+      sensitivity: [
+        {
+          variantId: 'WORST_CASE_CENSORED_ALL_FAIL',
+          state: 'observed',
+          value: { kind: 'proportion', numerator: 32, denominator: 50 },
+        },
+      ],
+    }
+
+    const validated = validateMetricResult(result)
+    expect(validated.definition).toBe(share)
+    expect(validated.result.counts).toMatchObject({ eligible: 50, censored: 10 })
+    expect(validated.result.value).toEqual({ kind: 'proportion', numerator: 32, denominator: 40 })
+    expect(validated.result.value.kind).toBe('proportion')
+    if (validated.result.value.kind === 'proportion') {
+      expect(validated.result.value.denominator).toBe(validated.result.counts.eligible - validated.result.counts.censored)
+    }
+    expect(validated.result.sensitivity).toContainEqual({
+      variantId: 'WORST_CASE_CENSORED_ALL_FAIL',
+      state: 'observed',
+      value: { kind: 'proportion', numerator: 32, denominator: 50 },
+    })
   })
 })
 
@@ -937,47 +974,75 @@ describe('comparison contract: #82 M-c proportion-delta unequal-censoring warnin
  * 11. Fixture-class census — every class named on the card has at least one exemplar.
  * ------------------------------------------------------------------------------------------ */
 
+type MetricFixtureClass = (typeof METRIC_FIXTURE_CLASSES)[number]
+
+/**
+ * Executable registration for every closed fixture class. The `Record` makes a newly added class
+ * a compile-time obligation, while the runtime key comparison below catches stale or extra rows.
+ */
+const FIXTURE_CLASS_EXEMPLARS: Record<MetricFixtureClass, () => void> = {
+  eligibility: () => {
+    expect(compute('becameReady').counts.eligible).toBeGreaterThan(0)
+  },
+  missingness: () => {
+    const result = computeIntegrationIntervalResult(MISSINGNESS_LIFECYCLES, JULY, 'becameReady')
+    expect(validateMetricResult(result).result.counts.excluded).toContainEqual({ reasonCode: 'MISSING_CREATION_TIMESTAMP', count: 1 })
+  },
+  censoring: () => {
+    const result = computeIntegrationIntervalResult(CENSORED_ONLY_LIFECYCLES, JULY, 'becameReady')
+    expect(validateMetricResult(result).result.state).toBe('censored_only')
+  },
+  boundary_dates: () => {
+    const result = validateMetricResult(computeIntegrationIntervalResult(BOUNDARY_LIFECYCLES, JULY, 'becameReady')).result
+    expect(result.counts.eligible).toBe(2)
+  },
+  empty_eligible_cohort: () => {
+    expect(validateMetricResult(compute('becameReady', SEPTEMBER)).result.state).toBe('empty_eligible_cohort')
+  },
+  truncation: () => {
+    const truncated = {
+      ...compute('becameReady'),
+      resultId: 'conformance-truncated-exemplar',
+      state: 'truncated' as const,
+      stateReasonCode: 'SOURCE_PAGE_LIMIT_REACHED',
+      counts: { eligible: 0, censored: 0, excluded: [] },
+      value: { kind: 'count' as const, observedCount: 0 },
+    }
+    expect(() => validateMetricResult(truncated)).toThrow(MetricRegistryError)
+  },
+  unsupported_definition: () => {
+    const parsed = MetricDefinitionSchema.safeParse(BLENDED_SCALAR_DEFINITION_FIXTURE)
+    expect(parsed.success).toBe(false)
+    if (!parsed.success) {
+      expect(parsed.error.issues.map((issue) => issue.path.join('.'))).toEqual(
+        expect.arrayContaining(['analyticalSubject', 'unit', 'semanticCategory']),
+      )
+    }
+  },
+  version_supersession: () => {
+    expect(getMetricDefinition('pull_request.integration_interval@1.0.0').status).toBe('superseded')
+    expect(() => resolveMetricForComputation('pull_request.integration_interval@1.0.0')).toThrow(/superseded by/)
+  },
+  sensitivity_variant: () => {
+    expect(getMetricDefinition(PASS_SHARE_REFERENCE).sensitivityVariants.map((variant) => variant.variantId)).toContain('WORST_CASE_CENSORED_ALL_FAIL')
+  },
+  counterexample: () => {
+    expect(conformsToGolden(compute('created'), compute('becameReady'))).toBe(false)
+  },
+}
+
 describe('fixture-class census', () => {
   it('pins the contract version', () => {
     expect(CONFORMANCE_CONTRACT_VERSION).toBe('1.0.0')
   })
 
-  it('every fixture class the card names is exercised above by at least one exemplar', () => {
-    // A fixture class may never be waived for a family without a recorded decision; this census is
-    // that record. Each entry points at the describe/it exemplar that discharges it.
-    const covered: Readonly<Record<string, string>> = {
-      goldens: 'goldens › the golden result is fully exposable',
-      'wrong-cohort counterexamples': 'acceptance criterion › catches a metric measuring the WRONG cohort',
-      'empty eligible cohorts': 'empty eligible cohorts (#67) + comparison empty value-class',
-      'null/unknown': 'missingness, null/unknown, and truncation › null/unknown',
-      missingness: 'missingness › excluded under MISSING_CREATION_TIMESTAMP',
-      truncation: 'truncation › truncated window may not report an observed zero + TRUNCATED_SIDE',
-      'right-censoring': 'right-censoring › censored at the window end + censored_only',
-      'alternate cohort definitions': 'alternate cohort › created vs became-ready',
-      'alternate window definitions': 'alternate window › calendar-week re-slice',
-      'sensitivity variants': 'sensitivity variants › interval + pass-share worst-case',
-      contradiction: 'finding contract › contradiction counter-evidence',
-      'source disagreement': 'comparison › source disagreement (different connectors)',
-      'boundary timestamps': 'boundary timestamps › half-open edges and offset-vs-Z',
-      'matched-partial comparison': 'comparison › MATCHED_PARTIAL',
-      'incomparable comparison': 'comparison › INCOMPARABLE (several structural reasons)',
-      'permutation/null baselines': 'permutation / null baseline for wave-like findings',
-    }
-    // The card's bound fold-ins are also each discharged by a named exemplar.
-    const boundDecisions: Readonly<Record<string, string>> = {
-      'N1 sample=1 on empty cohort': 'empty eligible cohorts › N1',
-      'M-a pass-share confounder + worst case': 'sensitivity/M-a exemplars',
-      'M-b competing-outcome relaxation': 'right-censoring/M-b exemplars',
-      'M-c proportion-delta unequal censoring': 'comparison › M-c both directions',
-      '5a real withdrawn metric': 'finding contract › 5a withdrawn primary + supporting',
-      '5b coverage-dimension cross-check': 'finding contract › 5b',
-      '5c truncated completeness cross-check': 'finding contract › 5c',
-      '5d robustness check causal-scan': 'finding contract › 5d issue #91',
-    }
-    expect(Object.keys(covered).length).toBeGreaterThanOrEqual(16)
-    expect(Object.keys(boundDecisions)).toHaveLength(8)
-    for (const description of [...Object.values(covered), ...Object.values(boundDecisions)]) {
-      expect(description.length).toBeGreaterThan(0)
+  it('executes exactly one registered exemplar for every fixture class', () => {
+    const expectedClasses = [...METRIC_FIXTURE_CLASSES].sort()
+    const registeredClasses = Object.keys(FIXTURE_CLASS_EXEMPLARS).sort()
+    expect(new Set(METRIC_FIXTURE_CLASSES).size).toBe(METRIC_FIXTURE_CLASSES.length)
+    expect(registeredClasses).toEqual(expectedClasses)
+    for (const fixtureClass of METRIC_FIXTURE_CLASSES) {
+      FIXTURE_CLASS_EXEMPLARS[fixtureClass]()
     }
   })
 })
