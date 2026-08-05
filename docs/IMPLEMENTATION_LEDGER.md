@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-j inert review-signature verification proposal)
+Last updated: **2026-08-05** (B2b-ii-j merged; q-7 required PR gate verified)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -2223,7 +2223,7 @@ disposition. Only then may a bounded renewal writer exist. The production import
 module, protected/generated paths remain uninspected, and every executable capability remains
 `never_authorized`.
 
-## 2026-08-05 — DL-LIFE-02 B2b-ii-j inert review-signature verification proposal (current slice)
+## 2026-08-05 — DL-LIFE-02 B2b-ii-j inert review-signature verification proposal (merged)
 
 B2b-ii-j isolates the smallest cryptographic prerequisite without converting the review anchor
 into authority. The caller supplies exact bounded anchor bytes and a candidate canonical Ed25519
@@ -2248,6 +2248,15 @@ typecheck, build, and diff checking; only the two existing Evidence Drawer Fast 
 and bundle-size advisory remain. Fresh cryptographic/parser plus privacy/authority reviews found no
 HIGH/CRITICAL defect.
 
+PR #125 head `96957f4` passed hosted run `31022622947`, merged as `2afaa609`, and exact-merge
+Pages/privacy run `31022859341` passed. A Codex P2 review comment arrived after merge and identified
+low-order/noncanonical Ed25519 public-key and signature-`R` encodings as a future forgery boundary.
+The current proposal has no production caller and treats the candidate key as untrusted, so the
+finding is not a reachable activation defect. It is tracked on issue #80 and is now a mandatory
+promotion condition: trust-root admission must reject low-order/noncanonical public keys, and any
+future verifier integration must reject low-order/noncanonical `R` and prove the identity-point
+key/`R` with `S = 0` forgery fails closed. The late review thread was replied to and resolved.
+
 Future promotion must first add a separate process-owned, owner-controlled trust-root and credential
 enrollment/rotation/revocation boundary that maps an approved key identity to canonical public-key
 bytes and fixed-path parsed anchor bytes. Only after that authority exists may another bounded slice
@@ -2256,25 +2265,37 @@ expiry/sweep, and CAS state under one writer lock. This proposal cannot seed a s
 extend retention, migrate the protected ignored card, authorize a capability, or establish owner
 identity. Every executable capability remains `never_authorized`.
 
+The owner completed HUMAN_TODO q-7 on 2026-08-05. Live REST and GraphQL reads prove classic `main`
+protection requires `Prove the pull request`; `strict=false` and administrator enforcement remains
+off, so the repository's no-red-CI law still binds privileged merges. Repository cleanup removed
+48 merged local branches and 58 merged remote branches; only `main` remains registered locally and
+remotely. The q-8 `dl-worktrees/value01` orphan remains unregistered and deliberately untouched.
+
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-ii-j in progress).** Finish the inert process-only review-signature
-verification proposal, full proof, hosted proof, exact-merge Pages/privacy, and late sweep. Preserve
-the candidate-key-only meaning, fixed domain and signing bytes, canonical Ed25519 encodings,
-closed/static outputs, content-free failure, production-import rejection, unchanged runtime posture,
-and the protected ignored-card boundary. Then add a separate owner-controlled trust-root and
-credential enrollment/rotation/revocation boundary before transactional same-scope retained
-C1/lifecycle/revocation plus continuity-epoch and C2-receipt binding or any true renewal writer;
-then take restart
-handling and the claim-reachable migration-origin retention events. Only then take canonical
-coverage/job absence resolution and its
-API/PresentationView/Evidence Drawer consumer migration. Continue B3-B4 exactly as
-`docs/analyser-program/10_LIFE_02B_DECISION.md` defines. Do not add a real-store/source-selection
-caller, persist identity input/mapping, or enter LIFE-03 backup/grace work. No intermediate slice may mark LIFE-02
-DONE or close #80. B4 only unblocks LIFE-03; the first real migration/connector additionally needs
-LIFE-03's backup/grace/restore/tombstone-replay proof and #86's alias-bearing V2 coverage remint.
-Carry LIFE-01's pending-revocation suspension/resume invariant into the first caller boundary.
-R7/R8 remain frozen; q-6/q-7/q-8 remain open; protected data remains out of scope.
+**Current 2026-08-05 (B2b-ii-j merged; B2b-ii-k next).** Add one inert, proposal-only validator for
+an externally provisioned `owner-trust-root.v1` snapshot. Accept only a closed own-data synthetic
+snapshot with one active key plus retired/revoked history; validate safe monotonic revisions,
+unique opaque key IDs and fingerprints, canonical Ed25519 SPKI bytes and recomputed digests, and
+reject low-order/noncanonical public keys. Return only a frozen static shape-valid result, never
+trust, owner identity, approval, enrollment, rotation, revocation, or authorization. Add no
+self-signed bootstrap, first-key enrollment, writer, path, environment, database, network, anchor,
+signature, production caller, or capability effect. Before any later verifier integration, also
+reject low-order/noncanonical signature `R` and prove the issue #80 identity-point/`S = 0` forgery
+fails closed.
+
+Only after that process-owned trust-root boundary exists may a later slice bind fixed-path anchor
+selection, current same-scope retained C1 identity, lifecycle/revocation, continuity epoch, C2
+receipt expiry/sweep, and CAS state under one writer lock or implement a true renewal writer. Then
+take restart handling and claim-reachable migration-origin retention events, followed by canonical
+coverage/job absence resolution and its API/PresentationView/Evidence Drawer consumer migration.
+Continue B3-B4 exactly as `docs/analyser-program/10_LIFE_02B_DECISION.md` defines. Do not add a
+real-store/source-selection caller, persist identity input/mapping, or enter LIFE-03 backup/grace
+work. No intermediate slice may mark LIFE-02 DONE or close #80. B4 only unblocks LIFE-03; the first
+real migration/connector additionally needs LIFE-03's backup/grace/restore/tombstone-replay proof
+and #86's alias-bearing V2 coverage remint. Carry LIFE-01's pending-revocation suspension/resume
+invariant into the first caller boundary. R7/R8 remain frozen; q-6/q-8 remain open; protected data
+remains out of scope.
 
 **Superseded 2026-08-04 (R1 wave 3 — active horizon COMPLETE).** DL-VALIDATE-01 (`df59bbc`, PR #92)
 and DL-VALUE-01 (`c632093`, PR #94) have merged, completing all 12 active-horizon cards. There is no
