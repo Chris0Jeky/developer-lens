@@ -1,13 +1,13 @@
 # Implementation Launcher
 
 Transient pointer — contains no policy, architecture, or gate text of its own.
-Reconciled 2026-08-05 after DL-LIFE-02 slice A. R1–R3 remains complete (12/12 cards),
+Reconciled 2026-08-05 after DL-LIFE-02 B1a. R1–R3 remains complete (12/12 cards),
 **DL-LIFE-01** and **DL-EVQ-03** are DONE, and **DL-LIFE-02** remains the only `horizon:active`
 card.
 
-**Exact next action:** implement B1a from
+**Exact next action:** implement the B1a late-review repair from
 [`10_LIFE_02B_DECISION.md` §5](./10_LIFE_02B_DECISION.md#5-reviewable-execution-sequence), then
-follow that record's B1b–B4 sequence. Slice-A evidence and the durable resume point live in
+follow B1b-i/ii/iii and B2–B4. Slice-A/B1a evidence and the durable resume point live in
 [`../IMPLEMENTATION_LEDGER.md`](../IMPLEMENTATION_LEDGER.md).
 
 Issues #71 and #93 are closed by their separate merged hygiene PRs. They are no longer execution
