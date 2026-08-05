@@ -49,9 +49,10 @@ export const STORE_LIFECYCLE_HELP = [
   'store:lifecycle — invented-data proof of the storage-v3 lifecycle (default off).',
   `usage: ${STORE_LIFECYCLE_ENV_FLAG}=1 npm run store:lifecycle -- <verb> --dir <path> [--as-of <timestamp>]`,
   `verbs: ${STORE_LIFECYCLE_VERBS.join(', ')}`,
-  'boundary: it reads and writes only files inside --dir, all of them built from',
-  'invented data by this command. It never defaults to a directory, never opens a',
-  'real store, performs no network call, and activates no capability.',
+  'boundary: it reads and writes only files inside --dir (creating --dir and any',
+  'missing parent directories), all of them built from invented data by this',
+  'command. It never defaults to a directory, never opens a real store, performs',
+  'no network call, and activates no capability.',
 ].join('\n')
 
 export const INVENTED_SOURCE_FILE_NAME = 'invented-v2-source.sqlite'
@@ -436,6 +437,7 @@ export interface StoreLifecycleDemoOptions {
   readonly directory: string
   readonly log?: (line: string) => void
   readonly failAfterStage?: StorageV3ShadowMigrationOptions['failAfterStage']
+  readonly sweepAsOf?: string
 }
 
 export interface StoreLifecycleDemoResult {
@@ -486,7 +488,7 @@ export function runStoreLifecycleDemo(
     emit(`selection: proven tables=${STORAGE_V3_SHADOW_TABLES.length}`)
     cas = proveContinuityCasRestart(store)
     emit(`cas: scope=${cas.scope} first=${cas.firstApply} restart=${cas.replayApply} revisions=${cas.revisions.join(',')}`)
-    sweep = sweepSelectedStore(store, STORE_LIFECYCLE_TIMELINE.sweepAsOf)
+    sweep = sweepSelectedStore(store, options.sweepAsOf ?? STORE_LIFECYCLE_TIMELINE.sweepAsOf)
     emit(`sweep: status=${sweep.status} cleared=${sweep.clearedTotal} lineage=${sweep.lineageEvents} ${counts(sweep.cleared)}`)
   } finally {
     store.close()
@@ -526,6 +528,7 @@ export function parseStoreLifecycleInvocation(
   }
   let directory: string | undefined
   let asOf: string = STORE_LIFECYCLE_TIMELINE.sweepAsOf
+  let asOfExplicit = false
   for (let index = 1; index < argv.length; index += 1) {
     const argument = argv[index]
     if (argument === '--dir' && argv[index + 1]) {
@@ -533,6 +536,7 @@ export function parseStoreLifecycleInvocation(
       index += 1
     } else if (argument === '--as-of' && argv[index + 1]) {
       asOf = argv[index + 1]
+      asOfExplicit = true
       index += 1
     } else {
       return { ok: false, message: `refused: unrecognized argument (expected --dir <path> [--as-of <timestamp>])` }
@@ -540,6 +544,9 @@ export function parseStoreLifecycleInvocation(
   }
   if (!directory) {
     return { ok: false, message: 'refused: --dir <path> is required; this command never defaults to a directory' }
+  }
+  if (asOfExplicit && verb !== 'sweep' && verb !== 'demo') {
+    return { ok: false, message: `refused: --as-of applies only to sweep and demo, not ${verb}` }
   }
   return { ok: true, invocation: { verb: verb as StoreLifecycleVerb, directory, asOf } }
 }
@@ -549,7 +556,7 @@ function runVerb(
   log: (line: string) => void,
 ): void {
   if (invocation.verb === 'demo') {
-    runStoreLifecycleDemo({ directory: invocation.directory, log })
+    runStoreLifecycleDemo({ directory: invocation.directory, log, sweepAsOf: invocation.asOf })
     return
   }
   if (invocation.verb === 'migrate') {

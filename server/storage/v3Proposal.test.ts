@@ -447,6 +447,16 @@ describe('storage-v3 B1a proposal', () => {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }
+        if (target && /(?:^|[\\/])v3StoreFiles(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (sourcePath !== 'scripts/storeLifecycle.ts') {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
+        }
+        if (target && /(?:^|[\\/])storeLifecycle(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          offenders.push(`${sourcePath} -> ${target}`)
+        }
         ts.forEachChild(node, check)
       }
       check(file)

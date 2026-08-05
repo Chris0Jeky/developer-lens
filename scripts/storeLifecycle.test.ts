@@ -3,8 +3,12 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createInstallationAliases } from '../server/storage/installationAliases.js'
-import { StorageV3ShadowMigrationError } from '../server/storage/v3ShadowMigration.js'
 import {
+  assertSelectableStorageV3Target,
+  StorageV3ShadowMigrationError,
+} from '../server/storage/v3ShadowMigration.js'
+import {
+  openSelectedStorageV3Store,
   STORAGE_V3_STORE_FILE_NAME,
   STORAGE_V3_TARGET_FILE_NAMES,
 } from '../server/storage/v3StoreFiles.js'
@@ -71,6 +75,17 @@ describe('store lifecycle command', () => {
     expect(existsSync(storePath(directory))).toBe(true)
     expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(false)
     expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.replay))).toBe(false)
+  })
+
+  it('admits accumulated CAS state on selection while acceptance-mode validation refuses it', () => {
+    runStoreLifecycleDemo({ directory })
+    const store = openSelectedStorageV3Store(directory)
+    try {
+      expect(() => assertSelectableStorageV3Target(store)).toThrow()
+      expect(() => assertSelectableStorageV3Target(store, { allowContinuityCasState: true })).not.toThrow()
+    } finally {
+      store.close()
+    }
   })
 
   it('prints counts and statuses without any invented identifier or key material', () => {

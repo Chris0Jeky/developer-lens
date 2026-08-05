@@ -89,7 +89,10 @@ function claimStorePath(attempt: string, store: string): void {
     renameSync(attempt, store)
     return
   }
-  removeDatabaseFiles(attempt)
+  // The store is published; a failure to unlink the tmp name must not turn a
+  // successful migration into a reported failure. The stale link is inert and
+  // the next run's create() removes it.
+  try { removeDatabaseFiles(attempt) } catch { /* published; tmp link is inert */ }
 }
 
 /** Real files for the two shadow attempts, plus acceptance of the proven one. */
