@@ -360,25 +360,24 @@
     },
     {
       "title": "DL-LIFE-01 - Capability lifecycle state machine + approval-never-activates invariant",
-      "description": "[DL-LIFE-01 | epic:lifecycle | contract | READY | risk:high | effort:M | M1]\nQuestion: Can a reviewed capability card move through consent safely while gate approval alone remains byte-identically inert?\nOutcome: One typed lifecycle (never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked) instantiated by every capability, with a registry-snapshot test proving gate approvals perform no transition.\nDeps: none | Unlock: -\nPaths: shared/capabilities.ts (extend); server lifecycle module; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route; formalises the existing P4/P12 card idiom\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no transition without hash-bound reviewed card\nBehavior: ADR-03: transitions require card binding, preview, exact-head proving checks; unknown state fails closed; consentRevision = card sha256 (existing idiom).\nAccept: Simulated G2/G3/G4 approvals leave every capability state byte-identical; illegal transitions rejected; P4 activation card parses into the new lifecycle unchanged.\nProve: npm test -- server/lifecycle.test.ts; npm run check\nFixtures: Invented cards, tampered hashes, replayed approvals.\nRollback: Lifecycle wraps the existing registry; remove wrapper, registry unchanged.\nDemo: State-machine diagram + invariant test output.",
-      "columnName": "Ready",
+      "description": "[DL-LIFE-01 | epic:lifecycle | contract | DONE | risk:high | effort:M | M1]\nQuestion: Can a reviewed capability card move through consent safely while gate approval alone remains byte-identically inert?\nOutcome: One typed lifecycle (never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked) instantiated by every capability, with a registry-snapshot test proving gate approvals perform no transition.\nDeps: none | Unlock: -\nPaths: shared/capabilities.ts (extend); server lifecycle module; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route; formalises the existing P4/P12 card idiom\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no transition without hash-bound reviewed card\nBehavior: ADR-03: transitions require card binding, preview, exact-head proving checks; unknown state fails closed; consentRevision = card sha256 (existing idiom).\nAccept: Simulated G2/G3/G4 approvals leave every capability state byte-identical; illegal transitions rejected; P4 activation card parses into the new lifecycle unchanged.\nProve: npm test -- server/lifecycle.test.ts; npm run check\nFixtures: Invented cards, tampered hashes, replayed approvals.\nRollback: Lifecycle wraps the existing registry; remove wrapper, registry unchanged.\nDemo: State-machine diagram + invariant test output.",
+      "columnName": "Done",
       "labels": [
-        "status:ready",
+        "status:done",
         "type:contract",
         "privacy:C1",
         "risk:high",
         "M1-spine",
         "epic:lifecycle",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {
       "title": "DL-LIFE-02 - Deletion enumeration from schema registry + cascade proof",
-      "description": "[DL-LIFE-02 | epic:lifecycle | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M1]\nQuestion: When consent is revoked, can the product prove every retained descendant is deleted without hand-maintained table lists?\nOutcome: Descendant deletion (facts, features, claims, graphs, caches, indexes, model outputs, app-controlled packs/backups) is generated from the schema registry, not hand lists; revocation leaves only a content-free tombstone.\nDeps: DL-LIFE-01 | Unlock: DL-LIFE-01 merged\nPaths: server/storage deletion planner; lineage_event writes; cascade tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no physical-erasure claims\nBehavior: Every registered table declares its capability lineage; planner enumerates + deletes in FK order; a canary table missing lineage fails CI.\nAccept: Fixture revocation deletes every descendant incl. planted deep dependents; tombstone content-free; missing-lineage canary fails the build.\nProve: npm test -- server/storage/deletionCascade.test.ts\nFixtures: Deep dependency chains; orphan attempts; pack/backup enumeration.\nRollback: Planner is read-only until executed in a transaction; abort restores state.\nDemo: Cascade log for one fixture revocation.",
-      "columnName": "Proposed",
+      "description": "[DL-LIFE-02 | epic:lifecycle | implementation | READY | risk:high | effort:M | M1]\nQuestion: When consent is revoked, can the product prove every retained descendant is deleted without hand-maintained table lists?\nOutcome: Descendant deletion (facts, features, claims, graphs, caches, indexes, model outputs, app-controlled packs/backups) is generated from the schema registry, not hand lists; revocation leaves only a content-free tombstone.\nDeps: DL-LIFE-01 | Unlock: DL-LIFE-01 merged\nPaths: server/storage deletion planner; lineage_event writes; cascade tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no physical-erasure claims\nBehavior: Every registered table declares its capability lineage; planner enumerates + deletes in FK order; a canary table missing lineage fails CI.\nAccept: Fixture revocation deletes every descendant incl. planted deep dependents; tombstone content-free; missing-lineage canary fails the build.\nProve: npm test -- server/storage/deletionCascade.test.ts\nFixtures: Deep dependency chains; orphan attempts; pack/backup enumeration.\nRollback: Planner is read-only until executed in a transaction; abort restores state.\nDemo: Cascade log for one fixture revocation.\nConstraints: DL#80 binds: class-appropriate domain-separated lineage IDs reject C2/C3 aliases in tombstones; scope/evidence binding; 13-month C2 sweep with an explicit series-fragmentation decision; coverage/job resolver lineage joins",
+      "columnName": "Ready",
       "labels": [
-        "status:blocked",
+        "status:ready",
         "type:implementation",
         "privacy:C1-C3",
         "risk:high",
@@ -1899,17 +1898,16 @@
     },
     {
       "title": "DL-EVQ-03 - Claim stability across re-collections (frontier C-03; stability key)",
-      "description": "[DL-EVQ-03 | epic:evidence-quality | implementation | READY | risk:medium | effort:M | M6]\nQuestion: How stable is each claim family across repeated collections, and is change driven by evidence coverage or measured value?\nOutcome: Stability series over the ADR-01 stability key: churn, oscillation, value range, coverage-vs-value attribution share; drift-dimension producer role stays research.\nDeps: DL-SPINE-01, DL-SPINE-02 | Unlock: claim tables + canonicalisation merged (stability key is in the ADR-01 contract)\nPaths: server/analysis/claimStability.ts; tests\nAuthority: G2 approved\nProhibited: Version ordinals + ISO-week grain only — never exact collection timestamps (ADR-14 floor applies to the product's own telemetry-shaped data); method-version churn stratified and disclosed\nBehavior: Frontier C-03: window functions over supersession chains grouped by stability key.\nAccept: Five-job replay with planted late events yields expected churn profiles; static-fixture zero-churn renders honestly.\nProve: npm test -- server/analysis/claimStability.test.ts\nFixtures: Replayed synthetic corpus with late-arriving events.\nRollback: Derived table deletion.\nDemo: Stability profile per claim family.",
-      "columnName": "Ready",
+      "description": "[DL-EVQ-03 | epic:evidence-quality | implementation | DONE | risk:medium | effort:M | M6]\nQuestion: How stable is each claim family across repeated collections, and is change driven by evidence coverage or measured value?\nOutcome: Stability series over the ADR-01 stability key: churn, oscillation, value range, coverage-vs-value attribution share; drift-dimension producer role stays research.\nDeps: DL-SPINE-01, DL-SPINE-02 | Unlock: claim tables + canonicalisation merged (stability key is in the ADR-01 contract)\nPaths: server/analysis/claimStability.ts; tests\nAuthority: G2 approved\nProhibited: Version ordinals + ISO-week grain only — never exact collection timestamps (ADR-14 floor applies to the product's own telemetry-shaped data); method-version churn stratified and disclosed\nBehavior: Frontier C-03: window functions over supersession chains grouped by stability key.\nAccept: Five-job replay with planted late events yields expected churn profiles; static-fixture zero-churn renders honestly.\nProve: npm test -- server/analysis/claimStability.test.ts\nFixtures: Replayed synthetic corpus with late-arriving events.\nRollback: Derived table deletion.\nDemo: Stability profile per claim family.",
+      "columnName": "Done",
       "labels": [
-        "status:ready",
+        "status:done",
         "type:implementation",
         "privacy:C1",
         "risk:medium",
         "M6-time-graph-wb",
         "epic:evidence-quality",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {

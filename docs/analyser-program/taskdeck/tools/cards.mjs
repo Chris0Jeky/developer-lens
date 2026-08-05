@@ -85,7 +85,7 @@ export const CARDS = [
   constraints: 'DL#76 binds: source_diversity clamp decision; producer-absence limiting codes; canonical coverage-code registration' },
 
 // ============ EP-LIFE ============
-{ id: 'DL-LIFE-01', title: 'Capability lifecycle state machine + approval-never-activates invariant', epic: 'lifecycle', type: 'contract', status: 'READY', risk: 'high', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-LIFE-01', title: 'Capability lifecycle state machine + approval-never-activates invariant', epic: 'lifecycle', type: 'contract', status: 'DONE', risk: 'high', effort: 'M', milestone: 'M1', privacy: 'C1', gate: 'gate:G2',
   question: 'Can a reviewed capability card move through consent safely while gate approval alone remains byte-identically inert?',
   outcome: 'One typed lifecycle (never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked) instantiated by every capability, with a registry-snapshot test proving gate approvals perform no transition.',
   deps: 'none', unlock: '',
@@ -98,7 +98,7 @@ export const CARDS = [
   rollback: 'Lifecycle wraps the existing registry; remove wrapper, registry unchanged.',
   demo: 'State-machine diagram + invariant test output.' },
 
-{ id: 'DL-LIFE-02', title: 'Deletion enumeration from schema registry + cascade proof', epic: 'lifecycle', type: 'implementation', status: 'BLOCKED_BY_DEPENDENCY', risk: 'high', effort: 'M', milestone: 'M1', privacy: 'C1-C3', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-LIFE-02', title: 'Deletion enumeration from schema registry + cascade proof', epic: 'lifecycle', type: 'implementation', status: 'READY', risk: 'high', effort: 'M', milestone: 'M1', privacy: 'C1-C3', gate: 'gate:G2', horizon: 'active',
   question: 'When consent is revoked, can the product prove every retained descendant is deleted without hand-maintained table lists?',
   outcome: 'Descendant deletion (facts, features, claims, graphs, caches, indexes, model outputs, app-controlled packs/backups) is generated from the schema registry, not hand lists; revocation leaves only a content-free tombstone.',
   deps: 'DL-LIFE-01', unlock: 'DL-LIFE-01 merged',
@@ -109,7 +109,8 @@ export const CARDS = [
   prove: 'npm test -- server/storage/deletionCascade.test.ts',
   fixtures: 'Deep dependency chains; orphan attempts; pack/backup enumeration.',
   rollback: 'Planner is read-only until executed in a transaction; abort restores state.',
-  demo: 'Cascade log for one fixture revocation.' },
+  demo: 'Cascade log for one fixture revocation.',
+  constraints: 'DL#80 binds: class-appropriate domain-separated lineage IDs reject C2/C3 aliases in tombstones; scope/evidence binding; 13-month C2 sweep with an explicit series-fragmentation decision; coverage/job resolver lineage joins' },
 
 { id: 'DL-LIFE-03', title: 'Backup/restore with tombstone replay', epic: 'lifecycle', type: 'implementation', status: 'BLOCKED_BY_DEPENDENCY', risk: 'high', effort: 'M', milestone: 'M3', privacy: 'C1-C3', gate: 'gate:G2',
   outcome: 'Application-controlled backup/restore that cannot resurrect revoked data: restore replays tombstones last; task-owned key continuity binds backups.',
@@ -1402,7 +1403,7 @@ export const CARDS = [
   rollback: 'On-demand only.',
   demo: 'Fragility profile for one claim.' },
 
-{ id: 'DL-EVQ-03', title: 'Claim stability across re-collections (frontier C-03; stability key)', epic: 'evidence-quality', type: 'implementation', status: 'READY', risk: 'medium', effort: 'M', milestone: 'M6', privacy: 'C1', gate: 'gate:G2', horizon: 'active',
+{ id: 'DL-EVQ-03', title: 'Claim stability across re-collections (frontier C-03; stability key)', epic: 'evidence-quality', type: 'implementation', status: 'DONE', risk: 'medium', effort: 'M', milestone: 'M6', privacy: 'C1', gate: 'gate:G2',
   question: 'How stable is each claim family across repeated collections, and is change driven by evidence coverage or measured value?',
   outcome: 'Stability series over the ADR-01 stability key: churn, oscillation, value range, coverage-vs-value attribution share; drift-dimension producer role stays research.',
   deps: 'DL-SPINE-01, DL-SPINE-02', unlock: 'claim tables + canonicalisation merged (stability key is in the ADR-01 contract)',

@@ -1,28 +1,29 @@
 # Implementation Launcher
 
 Transient pointer — contains no policy, architecture, or gate text of its own.
-Reconciled 2026-08-05 after the mandatory roadmap reassessment. R1–R3 remains complete (12/12
-cards); the bounded **R4 active horizon is now open** with exactly three dependency-closed cards:
-**DL-LIFE-01**, **DL-LIFE-02**, and **DL-EVQ-03**. Evidence and the admission rationale live in
-[`../IMPLEMENTATION_LEDGER.md`](../IMPLEMENTATION_LEDGER.md).
+Reconciled 2026-08-05 after R4 wave 1. R1–R3 remains complete (12/12 cards); **DL-LIFE-01** and
+**DL-EVQ-03** are now DONE, leaving **DL-LIFE-02** as the only `horizon:active` card. Evidence and
+the execution decision live in [`../IMPLEMENTATION_LEDGER.md`](../IMPLEMENTATION_LEDGER.md).
 
-**Exact next action — implement DL-LIFE-01.**
+**Exact next action — finish DL-LIFE-02 in two reviewable slices without weakening its acceptance.**
 
-1. Build the pure, immutable capability-lifecycle contract and the approval-never-activates
-   invariant. Keep every registry entry and the P4/P12 runners inert; do not add persistence,
-   connector wiring, credential access, real-data reads, or an external request. The exact card and
-   ADR-03 define the transitions and invented tamper/replay fixtures.
-2. **DL-EVQ-03 is READY and disjoint.** It may advance in a separate worktree while DL-LIFE-01 is
-   in flight. Preserve version ordinals and ISO-week grain; never introduce exact collection
-   timestamps or raw scope aliases.
-3. **DL-LIFE-02 remains dependency-blocked.** Start it only after DL-LIFE-01 merges and live base,
-   issue #80, storage lineage, checks, and review evidence are refreshed. It owns schema-derived
-   descendant enumeration, transactional deletion, the missing-lineage canary, and the content-free
-   tombstone; DL-LIFE-01 must not pre-build those storage mechanics.
+1. **Slice A — registered SQLite graph.** Build a fail-closed registry-derived planner over the
+   existing incremental + claim tables. Derive children-before-parents order, prove the current
+   `NO ACTION` seam, transaction rollback, idempotence, a missing-lineage canary, and a content-free
+   tombstone on invented in-memory rows. Require class-appropriate, domain-separated tombstone
+   `subject_id`/`caused_by` values and prove a caller cannot retain a C2/C3 alias through either
+   field. Keep the result explicitly incomplete: no production caller and no claim that V2, legacy
+   tables, filesystem packs, backups, caches, or indexes are covered.
+2. **Slice B — complete the declared deletion domain.** Add the scope-binding migration and C2
+   retention sweep required by issue #80, then explicit fail-closed adapters for V2 and every
+   app-controlled filesystem/index descendant named by the card. Only this slice may make the
+   whole-card cascade claim, close the relevant #80 conditions, or unlock sensitive connectors.
+3. Each slice gets its own exact-base proof, adversarial review, hosted gate, aging window, merge,
+   and state update. Use invented fixtures only; never inspect real/generated data, and never claim
+   physical erasure or provider-held-copy deletion.
 
-**Separate hygiene lanes.** Issue #93 (two vacuous conformance tests) and issue #71 (Pages Node 24
-alignment) remain self-contained candidates. Give either its own diff, proof, PR, and review; do not
-bundle it into a lifecycle or EVQ fix batch.
+Issues #71 and #93 are closed by their separate merged hygiene PRs. They are no longer execution
+lanes; any late review feedback is triaged once under the repository's post-merge rule.
 
 **Do not unfreeze on your own.** R7/R8 and every `horizon:frozen` card remain frozen by the current
 reassessment. Owner gates in `HUMAN_TODO.md` q-6 and `08_OPEN_QUESTIONS.md` §1 are unchanged; q-7
