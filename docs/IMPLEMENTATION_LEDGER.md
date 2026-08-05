@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 late contract correction before B1b-i)
+Last updated: **2026-08-05** (DL-LIFE-02 B1b-i shadow schema)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -8,9 +8,9 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 **Fast resume:** agents should read the compact state artifact
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
-for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, inert B1a, and its first
-late repair are merged; the current head corrects the second late contract review, and B1b-i/ii/iii
-then B2–B4 remain without marking the card DONE or unblocking sensitive connectors between slices.
+for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, and both late
+contract repairs are merged; the current head contains inert B1b-i, while B1b-ii/iii then B2–B4
+remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
@@ -1713,8 +1713,25 @@ the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
   threads. Live code proves `claim_scope.scope_alias` is the repository-provider-domain alias, not
   `analytical_key`; the decision must allow the verified aliases only in expiring C2 identity/link
   rows while keeping the raw ID and installation key process-only; and `index_deleted` is a
-  revocation-cascade event that must share the reviewed `del-` operation. The current head contains
-  the bounded proposal/documentation-only correction; B1b-i is the exact next slice after it merges.
+  revocation-cascade event that must share the reviewed `del-` operation.
+  [PR #108](https://github.com/Chris0Jeky/developer-lens/pull/108) landed final head `f05c5c3` as merge
+  `7a270f4`; hosted run `30977894384` and exact-merge Pages run `30978065710` passed. Its exact proof
+  was 8 focused tests and the full 61-file/922-test suite plus context verification, typecheck, and
+  build. Its late sweep was empty.
+- **B1b-i.** The current head adds a strict isolated storage-v3 shadow installer with a distinct
+  application/schema identity, literal-preserving deterministic schema fingerprint, exact
+  18-table disposition inventory, marker-only and populated v2-target refusal, and an explicit `completeB1b: false` /
+  `selectable: false` result. Invented in-memory proofs cover source immutability, C0 bridge rows,
+  expiring C2 groups, canonical scope/claim FKs, valid v3 claim material and coverage edges, alias
+  uniqueness, exact lineage operation/subject/week rules, idempotence, transactional schema
+  rollback, TEMP shadow rejection, extra schema-object rejection, and tamper refusal. The exact local
+  proof is 24 focused tests and the full 62-file/938-test suite plus context verification, typecheck,
+  lint, and build. Only this inert
+  module may import the B1a proposal; no production reader, selector, writer, capability, backup, or
+  source-copy caller imports either module. The schema keeps `subject_id`/`caused_by` free of hard
+  FKs because lineage must outlive deleted subjects; B1b-ii must use its transient ownership map to
+  abort a mapped live subject/cause whose scope differs from the event scope. The `obs-`, `pr-`, and
+  `event-` values are expiring C2 row IDs and are excluded from the closed C1 lineage registry.
 - **B1b identity correction.** Live-code feasibility proved the stored `provider_id` and
   `analytical_key` are independent domain-separated HMACs over the raw provider ID, so the original
   instruction to derive one from the other was impossible. The corrected binding requires an
@@ -1726,14 +1743,16 @@ the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
 
 ## Exact resume point
 
-**Current 2026-08-05 (second late contract correction in the current head; B1b-i next).** The current
-head independently verifies provider and analytical aliases from ephemeral raw identity, matches
-scope continuity only against the provider-domain alias, keeps aliases only in expiring C2 rows,
-and requires `del-` for `tombstone_cascade`, `index_deleted`, and `legacy_deletion_operation` while
-every other closed event uses `op-`. It preserves the absence of any production import, runtime,
-DDL, or caller edge. After it merges, implement B1b-i/ii/iii from live `origin/main`: isolated shadow
-schema, authenticated rewrite,
-and transactional selection proof respectively. Do not reuse the existing in-place target path,
+**Current 2026-08-05 (B1b-i in the current head; B1b-ii next).** Merge the isolated storage-v3
+shadow schema only after its exact local/hosted/review gates. It must remain caller-free and return
+an explicit incomplete, non-selectable result. Then implement B1b-ii from live `origin/main` as an
+invented-fixture-only authenticated rewrite: accept the ephemeral raw provider ID explicitly,
+recompute and byte-check both stored aliases, match scope continuity only against the provider-
+domain alias, populate the shadow target transactionally with an in-memory old/new map, rewrite the
+complete base/incremental/claim/lineage graph, remint every affected `claim-id.v3`, prove closure,
+destroy the map, and still return `completeB1b: false` / `selectable: false`. B1b-iii owns rollback
+injection, post-close reopen/integrity/privacy proof, replay-normalized checksums, and the first
+transactionally selected target. Do not reuse the existing in-place target path,
 add a real-store/source-selection caller, persist identity input/mapping, or enter LIFE-03 backup/
 grace work. Then continue B2-B4 exactly as
 `docs/analyser-program/10_LIFE_02B_DECISION.md` defines. No intermediate slice may mark LIFE-02
