@@ -26,7 +26,7 @@ phase *grouping*; execution order follows these waves:
 | R1 | V2 bootstrap: authenticated lazy coverage/capability API + Cockpit over a synthetic store | DL-BRIDGE-01 |
 | R2 | Analytical kernel: claim spine, coverage vector, metric registry, finding + comparison contracts, resolver | DL-SPINE-01/02/03/04, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-OPS-CI-01 |
 | R3 | First deterministic analytical value slice (integration shape, matched windows) | DL-VALUE-01, DL-VALIDATE-01, DL-UX-ED |
-| R4 | **Open:** lifecycle/deletion critical path plus one disjoint analytical-value lane; later flow/feedback cards remain outside the active horizon | Active now: DL-LIFE-01/02 + DL-EVQ-03. Later: DL-SPINE-05, DL-BRIDGE-02, DL-FLOW-01/02/04, DL-OBSV-01/03, DL-CI-01 (after deletion planner) |
+| R4 | **Open:** lifecycle/deletion critical path plus one disjoint analytical-value lane; later flow/feedback cards remain outside the active horizon | Completed: DL-LIFE-01 + DL-EVQ-03. Active now: DL-LIFE-02. Later: DL-SPINE-05, DL-BRIDGE-02, DL-FLOW-01/02/04, DL-OBSV-01/03, DL-CI-01 (after the complete deletion planner) |
 | R5 | Deterministic System Story + V1 retirement matrix | DL-BRIDGE-03/04, DL-LAB-01, DL-OPEN-01, then DL-UX-SS (deterministic beats), DL-UX-VG/CC — the Story's declared producer chain lands inside R4/R5 so the wave plan is dependency-true (corrected 2026-08-04) |
 | R6 | Packs + Query Lab (PresentationView) | DL-PACK-00/01/02/04/05/06, DL-QL-01 |
 | R7 | Optional interpretation (off the critical path; opens only through a future explicit reassessment) | DL-RAG-*, DL-HYP-*, and WB candidates only after their frozen labels are explicitly removed |
@@ -59,7 +59,7 @@ The 127-card programme is the long-term universe, **not** the standing execution
 horizon is the `horizon:active` label (≤ 12 cards, dependency-closed, every card states the user
 question it enables; enforced by `tools/generate.mjs`):
 
-> DL-LIFE-01 · DL-LIFE-02 · DL-EVQ-03
+> DL-LIFE-02
 
 One primary user-value critical path; at most one horizontal foundation slice in flight without a
 user-visible or analytical-validation slice beside it. "Ready" means contracts and dependencies
@@ -159,11 +159,12 @@ a card's seam can reach public/demo/export surfaces (BRIDGE-01 explicitly includ
 ## 4. Effort/risk distribution
 
 The canonical card source records every READY status. The 2026-08-05 reassessment selected only
-**DL-LIFE-01**, **DL-LIFE-02** (dependency-closed inside the horizon), and **DL-EVQ-03** for the
-bounded queue in §0a. READY is a dependency statement, not scheduling authority: other READY cards
-remain in the long-term programme until a later reassessment admits them. The launcher
-(`09_IMPLEMENTATION_LAUNCHER.md`) selects **DL-LIFE-01** first, permits **DL-EVQ-03** as its
-disjoint analytical lane, and keeps **DL-LIFE-02** blocked until DL-LIFE-01 merges.
+**DL-LIFE-01**, **DL-LIFE-02**, and **DL-EVQ-03** for the bounded queue. LIFE-01 and EVQ-03 are now
+DONE; LIFE-02 is the only remaining `horizon:active` card. READY is a dependency statement, not
+scheduling authority: other READY cards remain in the long-term programme until a later
+reassessment admits them. The launcher (`09_IMPLEMENTATION_LAUNCHER.md`) now selects LIFE-02's
+two reviewable deletion slices and keeps the card open until the schema/scope migration and all
+declared non-SQL descendant adapters are proved.
 
 High-risk cards (extra fresh-context review per T2 discipline + first-production-caller rule):
 LIFE-01/02/03, BRIDGE-05, GIT-01, ATLAS-01, DEP-01, SEC-01, GOV-03, CAD-01, LAB-02, PACK-05.
@@ -195,8 +196,8 @@ source, never this table. Horizon: A = active queue, F = frozen by the current r
 | DL-SPINE-03 | Why-am-I-seeing-this resolver | spine | implementation | DONE |  | DL-SPINE-01 | M2 | low/S |
 | DL-SPINE-04 | Coverage-vector dimension registry v2 | spine | contract | DONE |  | none | M1 | medium/M |
 | DL-SPINE-05 | Monotone abstention gates with degraded-fixture proof | spine | implementation | READY |  | DL-SPINE-04 | M1 | medium/M |
-| DL-LIFE-01 | Capability lifecycle state machine + approval-never-activates invariant | lifecycle | contract | READY | A | none | M1 | high/M |
-| DL-LIFE-02 | Deletion enumeration from schema registry + cascade proof | lifecycle | implementation | BLOCKED_BY_DEPENDENCY | A | DL-LIFE-01 | M1 | high/M |
+| DL-LIFE-01 | Capability lifecycle state machine + approval-never-activates invariant | lifecycle | contract | DONE |  | none | M1 | high/M |
+| DL-LIFE-02 | Deletion enumeration from schema registry + cascade proof | lifecycle | implementation | READY | A | DL-LIFE-01 | M1 | high/M |
 | DL-LIFE-03 | Backup/restore with tombstone replay | lifecycle | implementation | BLOCKED_BY_DEPENDENCY |  | DL-LIFE-02 | M3 | high/M |
 | DL-BRIDGE-01 | V2 bootstrap slice: /api/v2 coverage+capabilities over synthetic store + Coverage Cockpit panel | bridge | implementation | DONE |  | none | M2 | medium/M |
 | DL-BRIDGE-02 | V2 features + evidence endpoints with claim links | bridge | implementation | READY |  | DL-BRIDGE-01, DL-SPINE-01, DL-SPINE-02 | M2 | medium/M |
@@ -303,7 +304,7 @@ source, never this table. Horizon: A = active queue, F = frozen by the current r
 | DL-REL-01 | Release-train signature vocabulary (frontier A7) | portfolio | implementation | BLOCKED_BY_DEPENDENCY |  | DL-FLOW-04, DL-GIT-02 | M5 | medium/S |
 | DL-EVQ-01 | Adverse-tail counterfactual bounds + tipping fraction (frontier C-01) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY |  | DL-BRIDGE-02, DL-SPINE-04 | M5 | low/S |
 | DL-EVQ-02 | Evidence-degradation fragility profile (frontier C-02) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY |  | DL-SPINE-05 | M5 | low/S |
-| DL-EVQ-03 | Claim stability across re-collections (frontier C-03; stability key) | evidence-quality | implementation | READY | A | DL-SPINE-01, DL-SPINE-02 | M6 | medium/M |
+| DL-EVQ-03 | Claim stability across re-collections (frontier C-03; stability key) | evidence-quality | implementation | DONE |  | DL-SPINE-01, DL-SPINE-02 | M6 | medium/M |
 | DL-EVQ-04 | Calibration scoreboard for past hypotheses (frontier C-04) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY |  | DL-OPEN-01, DL-HYP-02 | M7 | medium/M |
 | DL-EVQ-05 | Replication SQL per claim family in packs (frontier C-05) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY |  | DL-PACK-04 | M5 | low/M |
 | DL-EVQ-06 | Coverage-horizon calendar (frontier C-06) | evidence-quality | implementation | BLOCKED_BY_DEPENDENCY |  | DL-LIFE-02 | M5 | low/S |
