@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B1b-iii orchestration)
+Last updated: **2026-08-05** (DL-LIFE-02 B2a-i shadow immutability enforcement)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,7 +9,7 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-and B1b-i/ii are merged; the current head contains inert B1b-iii orchestration, while B2–B4
+and B1b-i/ii/iii are merged; the current head contains inert B2a-i enforcement, while the rest of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
@@ -1803,16 +1803,46 @@ made the unchanged assertions pass under full-suite load. No production source s
 filesystem reader, identity mapping, or capability state changed. LIFE-02 remains incomplete;
 B2-B4 remain mandatory and HUMAN_TODO q-6/q-7/q-8 are unchanged.
 
+## 2026-08-05 — DL-LIFE-02 B2a-i shadow immutability enforcement (current slice)
+
+PR #111 B1b-iii head `e575059` merged as `202aebea`; hosted run `30990269529` and exact-merge
+Pages run `30990502000` passed with an empty late-comment sweep. B2a-i advances the caller-free,
+invented-fixture-only shadow schema to `3.0.0-shadow-b2a` / `user_version` 303 and adds a closed
+registry of null-safe BEFORE UPDATE triggers plus locator-bound BEFORE INSERT guards for canonical
+identity and parent keys. Dedicated alias-binding guards prevent SQLite `INSERT OR REPLACE` from
+moving a scope alias or authenticated repository identity between scopes. Trigger DDL
+is included in the object registry and fingerprint, with semicolon-safe parsing and fail-closed
+missing, altered, extra-main, and case-insensitive owned-TEMP object checks. Composite foreign keys
+enforce typed scope relationships; lineage-side history checks plus owner-side INSERT triggers bind
+single-scope subjects, causes, and `op-`/`del-` operations in either insertion order while still
+admitting the first content-free tombstone after an owner disappears. Claim supersession
+remains the only mutable claim relationship. Existing mixed C1/C2 rows remain
+transitional; B2a-ii will classify `claim.created_at` as C2 operational provenance and prove its
+expiry/retained form, while physical anchor-table separation is unnecessary unless later
+cardinality/lifecycle demands it. Invented tests cover the registry/fingerprint, hostile updates
+across every trigger family, enclosing-transaction rollback, both lineage/owner insertion orders,
+delete/rebind refusal while lineage survives, operation-cause binding, tombstone survival, and
+main/TEMP mismatch refusal and replacement-style identity/parent rebinding. The focused four-file
+storage seam passes 116 tests and the full local gate passes 64 files / 1,030 tests plus context
+verification, lint, typecheck, build, and diff checking. Fresh post-fix lineage, schema, and final
+replacement-focused lenses found no remaining HIGH/CRITICAL defect. Direct
+deletion of lineage history is deliberately not claimed here; B3 owns complete SQL deletion and
+tombstone replay. Hosted and exact-merge gates remain pending. LIFE-02
+and #80 remain incomplete; B2a is not complete. HUMAN_TODO q-6/q-7/q-8 are unchanged.
+
 ## Exact resume point
 
-**Current 2026-08-05 (B1b-iii in progress).** Complete the focused orchestration proof and exact
-local/hosted/fresh-review gates. Keep the caller-free authenticated rewrite and B1b-i/ii result
-`completeB1b: false` / `selectable: false`; only the new orchestration boundary may select a target
-after rollback, close/reopen, schema/integrity/privacy, and replay-normalized checksum proof. Do not
-reuse the existing in-place target path,
-add a real-store/source-selection caller, persist identity input/mapping, or enter LIFE-03 backup/
-grace work. Then continue B2-B4 exactly as
-`docs/analyser-program/10_LIFE_02B_DECISION.md` defines. No intermediate slice may mark LIFE-02
+**Current 2026-08-05 (B2a-i in progress).** Finish the full local, fresh post-fix review, hosted,
+exact-merge, and late-sweep gates for the caller-free v3 shadow enforcement seam. Preserve the
+conditional lineage rule: bind single-scope subjects, causes, and operations regardless of whether
+the owner or lineage row arrives first, but admit the first content-free tombstone after its owner
+disappears; do not replace it with a hard foreign key. Leave complete lineage-deletion enforcement
+to B3 rather than expanding B2a-i. Preserve both UPDATE and replacement-style INSERT enforcement.
+Then take B2a-ii as the next bounded slice: classify `claim.created_at` as expiring C2 operational
+provenance, make its C1-only retained form possible, and prove exact expiry/rewrite without
+activating a production caller. Continue the remainder of B2–B4 exactly as
+`docs/analyser-program/10_LIFE_02B_DECISION.md` defines. Do not add a real-store/source-selection
+caller, persist identity input/mapping, or enter LIFE-03 backup/grace work. No intermediate slice may mark LIFE-02
 DONE or close #80. B4 only unblocks LIFE-03; the first real migration/connector additionally needs
 LIFE-03's backup/grace/restore/tombstone-replay proof and #86's alias-bearing V2 coverage remint.
 Carry LIFE-01's pending-revocation suspension/resume invariant into the first caller boundary.

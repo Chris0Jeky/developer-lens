@@ -11,8 +11,14 @@ import {
   STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT,
   STORAGE_V3_SHADOW_SCHEMA_SQL,
   STORAGE_V3_SHADOW_SCHEMA_VERSION,
+  STORAGE_V3_SHADOW_IDENTITY_BINDING_TRIGGER_NAMES,
+  STORAGE_V3_SHADOW_IMMUTABLE_INSERT_TRIGGER_NAMES,
+  STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS,
+  STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES,
+  STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME,
   STORAGE_V3_SHADOW_TABLES,
   STORAGE_V3_SHADOW_USER_VERSION,
+  storageV3ShadowSchemaFingerprint,
   storageV3ShadowResult,
 } from './v3ShadowSchema.js'
 import { STORAGE_V3_DISPOSITIONS, STORAGE_V3_TABLES } from './v3Proposal.js'
@@ -26,7 +32,219 @@ const tables = (db: Database.Database): string[] => db.prepare(
   "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
 ).pluck().all() as string[]
 
-describe('storage-v3 B1b shadow schema', () => {
+describe('storage-v3 B2a shadow schema', () => {
+  it('installs the closed immutable-trigger registry in the schema fingerprint', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      const triggers = db.prepare(
+        "SELECT name, tbl_name, sql FROM sqlite_schema WHERE type = 'trigger' ORDER BY name",
+      ).all() as Array<{ name: string; tbl_name: string; sql: string }>
+      const immutableTriggerNames = STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS
+        .map(({ tableName }) => `storage_v3_immutable_${tableName}`)
+      expect(triggers.map(({ name }) => name)).toEqual(
+        [
+          ...immutableTriggerNames,
+          ...STORAGE_V3_SHADOW_IMMUTABLE_INSERT_TRIGGER_NAMES,
+          ...STORAGE_V3_SHADOW_IDENTITY_BINDING_TRIGGER_NAMES,
+          ...STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES,
+          STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME,
+        ].sort(),
+      )
+      expect(triggers
+        .filter(({ name }) => immutableTriggerNames.includes(name))
+        .every(({ sql }) => sql.includes('OLD.') && sql.includes(' IS NOT NEW.') && sql.includes("STORAGE_V3_SHADOW_IMMUTABLE_KEY"))).toBe(true)
+      expect(triggers
+        .filter(({ name }) => STORAGE_V3_SHADOW_IMMUTABLE_INSERT_TRIGGER_NAMES.includes(name))
+        .every(({ sql }) => sql.includes('BEFORE INSERT') && sql.includes("STORAGE_V3_SHADOW_IMMUTABLE_KEY"))).toBe(true)
+      expect(triggers
+        .filter(({ name }) => (STORAGE_V3_SHADOW_IDENTITY_BINDING_TRIGGER_NAMES as readonly string[]).includes(name))
+        .every(({ sql }) => sql.includes('BEFORE INSERT') && sql.includes("STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY"))).toBe(true)
+      expect(triggers.find(({ name }) => name === STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME)?.sql)
+        .toContain('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      expect(triggers
+        .filter(({ name }) => STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES.includes(name))
+        .every(({ sql }) => sql.includes('BEFORE INSERT') && sql.includes('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE'))).toBe(true)
+      expect(storageV3ShadowSchemaFingerprint(db)).toBe(STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT)
+    } finally {
+      db.close()
+    }
+  })
+
+  it('fails closed without repairing a missing required trigger', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      const missingTrigger = `storage_v3_immutable_${STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS[0].tableName}`
+      db.exec(`DROP TRIGGER ${missingTrigger}`)
+      const before = db.prepare(
+        "SELECT type, name, tbl_name, sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name",
+      ).all()
+      expect(() => installStorageV3ShadowSchema(db)).toThrow('STORAGE_V3_SHADOW_SCHEMA_MISMATCH')
+      expect(db.prepare(
+        "SELECT type, name, tbl_name, sql FROM sqlite_schema WHERE name NOT LIKE 'sqlite_%' ORDER BY type, name",
+      ).all()).toEqual(before)
+      expect(db.prepare("SELECT 1 FROM sqlite_schema WHERE type = 'trigger' AND name = ?").get(missingTrigger)).toBeUndefined()
+    } finally {
+      db.close()
+    }
+  })
+
+  it('fails closed for an extra main or TEMP trigger targeting an owned table', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.exec(`CREATE TRIGGER injected_extra AFTER INSERT ON claim
+        BEGIN SELECT RAISE(ABORT, 'injected'); END;`)
+      expect(() => installStorageV3ShadowSchema(db)).toThrow('STORAGE_V3_SHADOW_SCHEMA_MISMATCH')
+      db.exec('DROP TRIGGER injected_extra')
+      db.exec(`CREATE TEMP TRIGGER arbitrary_temp AFTER INSERT ON claim
+        BEGIN SELECT 1; END;`)
+      expect(() => installStorageV3ShadowSchema(db)).toThrow('STORAGE_V3_SHADOW_SCHEMA_MISMATCH')
+    } finally {
+      db.close()
+    }
+  })
+
+  it('fails closed for case-variant TEMP objects targeting an owned table', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.exec(`CREATE TEMP TRIGGER injected_case AFTER INSERT ON CLAIM
+        BEGIN SELECT RAISE(ABORT, 'injected'); END;`)
+      expect(() => installStorageV3ShadowSchema(db)).toThrow('STORAGE_V3_SHADOW_SCHEMA_MISMATCH')
+    } finally {
+      db.close()
+    }
+  })
+
+  it('rejects hostile identity updates across every immutable trigger family', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+      db.prepare('INSERT INTO repository_identity (scope_id, is_private, is_archived, is_fork) VALUES (?, 0, 0, 0)').run(scopeA)
+      db.prepare('INSERT INTO commit_observation (scope_id, observation_id, feature_type, is_revert, is_fixup, message_length) VALUES (?, ?, ?, 0, 0, 0)').run(scopeA, id('obs-'), 'other')
+      db.prepare('INSERT INTO pull_request_fact (scope_id, fact_id, state, is_draft, comments, reviews) VALUES (?, ?, ?, 0, 0, 0)').run(scopeA, id('pr-'), 'OPEN')
+      db.prepare('INSERT INTO coverage_observation (scope_id, coverage_id, capability_id, status, limitation_code, observed_units) VALUES (?, ?, ?, ?, ?, 0)').run(scopeA, id('cov-'), 'github.core', 'complete', 'NONE')
+      db.prepare('INSERT INTO dated_event_observation (scope_id, event_id, event_kind) VALUES (?, ?, ?)').run(scopeA, id('event-'), 'issue')
+      const jobId = id('job-')
+      const snapshotId = id('snap-')
+      const coverageId = id('cov-', 'b')
+      const evidenceId = id('ev-')
+      const claimId = id('cl_')
+      const checkpointId = id('ckpt-')
+      db.prepare('INSERT INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(scopeA, jobId, 'github.core', '2.2.0', 'query', 'api', 'consent', 'complete')
+      db.prepare('INSERT INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)').run(scopeA, snapshotId, jobId, 'github.core', 'closed')
+      db.prepare('INSERT INTO collection_checkpoint (scope_id, checkpoint_id, job_id, snapshot_id, capability_id, query_version, source_api_version, consent_revision, coverage_state, deletion_order, lineage_coverage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)').run(scopeA, checkpointId, jobId, snapshotId, 'github.core', 'query', 'api', 'consent', 'complete', 'complete')
+      db.prepare('INSERT INTO coverage_ledger (scope_id, coverage_id, job_id, snapshot_id, capability_id, status, observed_units, retryable, limitation_code) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?)').run(scopeA, coverageId, jobId, snapshotId, 'github.core', 'complete', 'NONE')
+      db.prepare('INSERT INTO evidence (scope_id, evidence_id, coverage_id, layer, schema_version) VALUES (?, ?, ?, ?, ?)').run(scopeA, evidenceId, coverageId, 'observed', '2.0.0')
+      db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(scopeA, claimId, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01', '2026-02-01', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
+      db.prepare('INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_evidence_id) VALUES (?, ?, ?, ?)').run(scopeA, claimId, 'supports', evidenceId)
+      db.prepare('INSERT INTO limitation_instance (scope_id, claim_id, limitation_code, dimension, copy_key) VALUES (?, ?, ?, ?, ?)').run(scopeA, claimId, 'COVERAGE_RESTRICTED', 'completeness', 'copy')
+      db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, event_kind, event_week) VALUES (?, ?, ?, ?, ?, ?, ?)').run(scopeA, 'claim', claimId, id('op-'), 'github.core', 'correction', '2026-W32')
+
+      const before = new Map<string, unknown[]>()
+      for (const { tableName } of STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS) {
+        before.set(tableName, db.prepare(`SELECT * FROM ${tableName}`).all())
+      }
+      const updates: Record<string, string> = {
+        claim_scope: `UPDATE claim_scope SET scope_id = '${scopeB}' WHERE scope_id = '${scopeA}'`,
+        repository_identity: `UPDATE repository_identity SET scope_id = '${scopeB}' WHERE scope_id = '${scopeA}'`,
+        commit_observation: `UPDATE commit_observation SET observation_id = '${id('obs-', 'b')}' WHERE scope_id = '${scopeA}'`,
+        pull_request_fact: `UPDATE pull_request_fact SET fact_id = '${id('pr-', 'b')}' WHERE scope_id = '${scopeA}'`,
+        coverage_observation: `UPDATE coverage_observation SET coverage_id = '${id('cov-', 'c')}' WHERE scope_id = '${scopeA}'`,
+        dated_event_observation: `UPDATE dated_event_observation SET event_id = '${id('event-', 'b')}' WHERE scope_id = '${scopeA}'`,
+        collection_job: `UPDATE collection_job SET job_id = '${id('job-', 'b')}' WHERE scope_id = '${scopeA}'`,
+        collection_checkpoint: `UPDATE collection_checkpoint SET checkpoint_id = '${id('ckpt-', 'b')}' WHERE scope_id = '${scopeA}'`,
+        source_snapshot: `UPDATE source_snapshot SET snapshot_id = '${id('snap-', 'b')}' WHERE scope_id = '${scopeA}'`,
+        coverage_ledger: `UPDATE coverage_ledger SET coverage_id = '${id('cov-', 'd')}' WHERE scope_id = '${scopeA}'`,
+        evidence: `UPDATE evidence SET evidence_id = '${id('ev-', 'b')}' WHERE scope_id = '${scopeA}'`,
+        claim: `UPDATE claim SET claim_id = '${id('cl_', 'b')}' WHERE scope_id = '${scopeA}'`,
+        claim_evidence_edge: `UPDATE claim_evidence_edge SET role = 'derives_from', target_claim_id = '${id('cl_', 'b')}', target_evidence_id = NULL WHERE scope_id = '${scopeA}'`,
+        limitation_instance: `UPDATE limitation_instance SET copy_key = 'other' WHERE scope_id = '${scopeA}'`,
+        lineage_event: `UPDATE lineage_event SET scope_id = '${scopeB}' WHERE subject_id = '${claimId}'`,
+      }
+      for (const { tableName } of STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS) {
+        expect(() => db.exec(updates[tableName])).toThrow('STORAGE_V3_SHADOW_IMMUTABLE_KEY')
+        expect(db.prepare(`SELECT * FROM ${tableName}`).all()).toEqual(before.get(tableName))
+      }
+    } finally {
+      db.close()
+    }
+  })
+
+  it('rolls back earlier mutable writes when a later immutable-key update aborts the transaction', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+      db.prepare('INSERT INTO repository_identity (scope_id, is_private, is_archived, is_fork) VALUES (?, 0, 0, 0)').run(scopeA)
+      const hostileTransaction = db.transaction(() => {
+        db.prepare('UPDATE repository_identity SET is_archived = 1 WHERE scope_id = ?').run(scopeA)
+        db.prepare('UPDATE repository_identity SET scope_id = ? WHERE scope_id = ?').run(scopeB, scopeA)
+      })
+      expect(hostileTransaction).toThrow('STORAGE_V3_SHADOW_IMMUTABLE_KEY')
+      expect(db.prepare('SELECT scope_id, is_archived FROM repository_identity').get()).toEqual({
+        scope_id: scopeA,
+        is_archived: 0,
+      })
+    } finally {
+      db.close()
+    }
+  })
+
+  it('rejects INSERT OR REPLACE identity rebinding and immutable parent changes', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      const insertScope = db.prepare('INSERT INTO claim_scope (scope_id, scope_alias, linked_at, alias_expires_at) VALUES (?, ?, ?, ?)')
+      insertScope.run(scopeA, 'provider-a', '2026-01-01T00:00:00.000Z', '2027-02-01T00:00:00.000Z')
+      insertScope.run(scopeB, 'provider-b', '2026-01-01T00:00:00.000Z', '2027-02-01T00:00:00.000Z')
+      expect(() => db.prepare('INSERT OR REPLACE INTO claim_scope (scope_id, scope_alias, linked_at, alias_expires_at) VALUES (?, ?, ?, ?)')
+        .run(scopeB, 'provider-a', '2026-01-01T00:00:00.000Z', '2027-02-01T00:00:00.000Z'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY')
+
+      db.prepare('INSERT INTO repository_identity (scope_id, provider_id, analytical_key, identity_expires_at, is_private, is_archived, is_fork) VALUES (?, ?, ?, ?, 0, 0, 0)')
+        .run(scopeA, 'provider-id-a', 'analytical-a', '2027-02-01T00:00:00.000Z')
+      expect(() => db.prepare('INSERT OR REPLACE INTO repository_identity (scope_id, provider_id, analytical_key, identity_expires_at, is_private, is_archived, is_fork) VALUES (?, ?, ?, ?, 0, 0, 0)')
+        .run(scopeB, 'provider-id-a', 'analytical-a', '2027-02-01T00:00:00.000Z'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY')
+
+      const insertJob = db.prepare('INSERT INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      const jobA = id('job-')
+      const jobB = id('job-', 'b')
+      const snapshotId = id('snap-')
+      insertJob.run(scopeA, jobA, 'github.core', '2.2.0', 'query-a', 'api', 'consent', 'complete')
+      insertJob.run(scopeA, jobB, 'github.core', '2.2.0', 'query-b', 'api', 'consent', 'complete')
+      db.prepare('INSERT INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)')
+        .run(scopeA, snapshotId, jobA, 'github.core', 'closed')
+      expect(() => db.prepare('INSERT OR REPLACE INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)')
+        .run(scopeA, snapshotId, jobB, 'github.core', 'closed'))
+        .toThrow('STORAGE_V3_SHADOW_IMMUTABLE_KEY')
+
+      expect(db.prepare('SELECT scope_id, scope_alias FROM claim_scope ORDER BY scope_id').all()).toEqual([
+        { scope_id: scopeA, scope_alias: 'provider-a' },
+        { scope_id: scopeB, scope_alias: 'provider-b' },
+      ])
+      expect(db.prepare('SELECT scope_id, provider_id, analytical_key FROM repository_identity').get()).toEqual({
+        scope_id: scopeA,
+        provider_id: 'provider-id-a',
+        analytical_key: 'analytical-a',
+      })
+      expect(db.prepare('SELECT scope_id, snapshot_id, job_id FROM source_snapshot').get()).toEqual({
+        scope_id: scopeA,
+        snapshot_id: snapshotId,
+        job_id: jobA,
+      })
+      expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+    } finally {
+      db.close()
+    }
+  })
+
   it('installs exactly the registered 18 tables and all dispositions', () => {
     const db = new Database(':memory:')
     try {
@@ -124,6 +342,121 @@ describe('storage-v3 B1b shadow schema', () => {
       expect(() => insert.run(scopeA, 'scope', scopeA, id('op-', 'd'), 'github.core', null, 'correction', '2026-W54')).toThrow()
       expect(() => insert.run(scopeA, 'scope', scopeA, id('op-', 'f'), 'github.core', null, 'correction', '2025-W53')).toThrow()
       expect(() => insert.run(scopeA, 'scope', scopeA, id('op-', 'e'), 'github.core', null, 'index_deleted', '2026-W32')).toThrow()
+      expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+    } finally {
+      db.close()
+    }
+  })
+
+  it('rejects cross-scope live lineage subjects and causes while retaining content-free tombstones', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+      const claimA = id('cl_')
+      const claimB = id('cl_', 'b')
+      const tombstoneClaim = id('cl_', 'c')
+      const insertClaim = db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      insertClaim.run(scopeA, claimA, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01', '2026-02-01', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
+      insertClaim.run(scopeB, claimB, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01', '2026-02-01', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
+      const insertLineage = db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+
+      expect(() => insertLineage.run(scopeA, 'claim', claimB, id('op-'), 'github.core', null, 'correction', '2026-W32'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      insertLineage.run(scopeB, 'claim', claimB, id('op-', 'b'), 'github.core', null, 'correction', '2026-W32')
+      expect(() => insertLineage.run(scopeA, 'claim', tombstoneClaim, id('op-', 'c'), 'github.core', claimB, 'correction', '2026-W32'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      insertLineage.run(scopeA, 'claim', tombstoneClaim, id('op-', 'd'), 'github.core', claimA, 'correction', '2026-W32')
+      insertLineage.run(scopeB, 'claim', id('cl_', 'd'), id('op-', 'e'), 'github.core', null, 'correction', '2026-W32')
+
+      expect(db.prepare('SELECT COUNT(*) FROM lineage_event').pluck().get()).toBe(3)
+      expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+    } finally {
+      db.close()
+    }
+  })
+
+  it('rejects later owner insertion, rebinding, and tombstone reuse across scopes', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+      const insertLineage = db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      const insertClaim = db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      const claimValues = (scopeId: string, claimId: string): readonly unknown[] => [
+        scopeId,
+        claimId,
+        'modelled',
+        'DELIVERY_FLOW',
+        'method',
+        '1.0.0',
+        '2026-01-01',
+        '2026-02-01',
+        '1.0.0',
+        'claim-id.v3',
+        '2026-02-01T00:00:00.000Z',
+      ]
+      const subjectClaim = id('cl_', 'c')
+      const causeClaim = id('cl_', 'd')
+      const tombstoneClaim = id('cl_', 'f')
+
+      insertLineage.run(scopeA, 'claim', subjectClaim, id('op-'), 'github.core', null, 'correction', '2026-W32')
+      expect(() => insertClaim.run(...claimValues(scopeB, subjectClaim)))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      insertClaim.run(...claimValues(scopeA, subjectClaim))
+      db.prepare('DELETE FROM claim WHERE scope_id = ? AND claim_id = ?').run(scopeA, subjectClaim)
+      expect(() => insertClaim.run(...claimValues(scopeB, subjectClaim)))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+
+      insertLineage.run(scopeA, 'claim', id('cl_', 'e'), id('op-', 'b'), 'github.core', causeClaim, 'correction', '2026-W32')
+      expect(() => insertClaim.run(...claimValues(scopeB, causeClaim)))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      expect(() => insertLineage.run(scopeB, 'claim', id('cl_', '1'), id('op-', 'c'), 'github.core', causeClaim, 'correction', '2026-W32'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      insertClaim.run(...claimValues(scopeA, causeClaim))
+
+      insertLineage.run(scopeA, 'claim', tombstoneClaim, id('op-', 'd'), 'github.core', null, 'correction', '2026-W32')
+      expect(() => insertLineage.run(scopeB, 'claim', tombstoneClaim, id('op-', 'e'), 'github.core', null, 'correction', '2026-W32'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+
+      expect(db.prepare('SELECT scope_id, claim_id FROM claim ORDER BY claim_id').all()).toEqual([
+        { scope_id: scopeA, claim_id: causeClaim },
+      ])
+      expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+    } finally {
+      db.close()
+    }
+  })
+
+  it('binds neutral and deletion operation causes to one scope in both insertion orders', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+      const insertLineage = db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      const operationB = id('op-', 'b')
+      const unbackedCause = id('op-', 'f')
+      const legacyDeletion = id('del-')
+
+      insertLineage.run(scopeB, 'claim', id('cl_', 'b'), operationB, 'github.core', null, 'correction', '2026-W32')
+      expect(() => insertLineage.run(scopeA, 'claim', id('cl_'), id('op-', 'c'), 'github.core', operationB, 'correction', '2026-W32'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      insertLineage.run(scopeB, 'claim', id('cl_', 'c'), id('op-', 'd'), 'github.core', operationB, 'correction', '2026-W32')
+
+      insertLineage.run(scopeA, 'claim', id('cl_', 'd'), id('op-', 'e'), 'github.core', unbackedCause, 'correction', '2026-W32')
+      expect(() => insertLineage.run(scopeB, 'claim', id('cl_', 'e'), id('op-', '1'), 'github.core', unbackedCause, 'correction', '2026-W32'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      expect(() => insertLineage.run(scopeB, 'claim', id('cl_', 'f'), unbackedCause, 'github.core', null, 'correction', '2026-W32'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+
+      insertLineage.run(null, 'deletion', legacyDeletion, legacyDeletion, 'github.core', null, 'legacy_deletion_operation', '2026-W32')
+      expect(() => insertLineage.run(scopeA, 'claim', id('cl_', '2'), id('op-', '2'), 'github.core', legacyDeletion, 'correction', '2026-W32'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+
+      expect(db.prepare('SELECT COUNT(*) FROM lineage_event').pluck().get()).toBe(4)
       expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
     } finally {
       db.close()
@@ -285,13 +618,16 @@ describe('storage-v3 B1b shadow schema', () => {
     }
   })
 
-  it('rejects the superseded B1b-i shadow identity before changing schema', () => {
+  it.each([
+    ['B1b-i', 301],
+    ['B1b-iii', 302],
+  ])('rejects the superseded %s shadow identity before changing schema', (_slice, userVersion) => {
     const db = new Database(':memory:')
     try {
       db.pragma(`application_id = ${STORAGE_V3_SHADOW_APPLICATION_ID}`)
-      db.pragma('user_version = 301')
+      db.pragma(`user_version = ${userVersion}`)
       expect(() => installStorageV3ShadowSchema(db)).toThrow('STORAGE_V3_SHADOW_TARGET_MISMATCH')
-      expect(Number(db.prepare('PRAGMA user_version').pluck().get())).toBe(301)
+      expect(Number(db.prepare('PRAGMA user_version').pluck().get())).toBe(userVersion)
       expect(tables(db)).toEqual([])
     } finally {
       db.close()

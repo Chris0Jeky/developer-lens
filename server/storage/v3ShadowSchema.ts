@@ -24,12 +24,224 @@ import {
 } from './v3Proposal.js'
 
 /**
- * B1b's target is deliberately a shadow database.  It is not the v2 store,
+ * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, selector, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b1b-ii' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b2a' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 302
+export const STORAGE_V3_SHADOW_USER_VERSION = 303
+
+/**
+ * Canonical identity columns are immutable after insertion.  This registry is
+ * the single source for both the generated triggers and the schema inventory
+ * fingerprint; keeping it declarative prevents trigger drift between tables.
+ */
+export const STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS = [
+  { tableName: 'claim_scope', columns: ['scope_id'] },
+  { tableName: 'repository_identity', columns: ['scope_id'] },
+  { tableName: 'commit_observation', columns: ['scope_id', 'observation_id'] },
+  { tableName: 'pull_request_fact', columns: ['scope_id', 'fact_id'] },
+  { tableName: 'coverage_observation', columns: ['scope_id', 'coverage_id'] },
+  { tableName: 'dated_event_observation', columns: ['scope_id', 'event_id'] },
+  { tableName: 'collection_job', columns: ['scope_id', 'job_id'] },
+  { tableName: 'collection_checkpoint', columns: ['scope_id', 'checkpoint_id', 'job_id', 'snapshot_id'] },
+  { tableName: 'source_snapshot', columns: ['scope_id', 'snapshot_id', 'job_id'] },
+  { tableName: 'coverage_ledger', columns: ['scope_id', 'coverage_id', 'job_id', 'snapshot_id'] },
+  { tableName: 'evidence', columns: ['scope_id', 'evidence_id', 'coverage_id'] },
+  { tableName: 'claim', columns: ['scope_id', 'claim_id'] },
+  {
+    tableName: 'claim_evidence_edge',
+    columns: ['scope_id', 'claim_id', 'role', 'target_evidence_id', 'target_claim_id', 'target_coverage_id'],
+  },
+  { tableName: 'limitation_instance', columns: ['scope_id', 'claim_id', 'limitation_code', 'dimension', 'copy_key'] },
+  {
+    tableName: 'lineage_event',
+    columns: ['scope_id', 'subject_kind', 'subject_id', 'operation_id', 'capability_id', 'caused_by', 'event_kind', 'event_week'],
+  },
+] as const
+
+export type StorageV3ShadowImmutableTrigger = (typeof STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS)[number]
+
+const immutableInsertLocators = {
+  claim_scope: ['scope_id'],
+  repository_identity: ['scope_id'],
+  commit_observation: ['scope_id', 'observation_id'],
+  pull_request_fact: ['scope_id', 'fact_id'],
+  coverage_observation: ['scope_id', 'coverage_id'],
+  dated_event_observation: ['scope_id', 'event_id'],
+  collection_job: ['scope_id', 'job_id'],
+  collection_checkpoint: ['scope_id', 'checkpoint_id'],
+  source_snapshot: ['scope_id', 'snapshot_id'],
+  coverage_ledger: ['scope_id', 'coverage_id'],
+  evidence: ['scope_id', 'evidence_id'],
+  claim: ['scope_id', 'claim_id'],
+  claim_evidence_edge: [
+    'scope_id',
+    'claim_id',
+    'role',
+    'target_evidence_id',
+    'target_claim_id',
+    'target_coverage_id',
+  ],
+  limitation_instance: ['scope_id', 'claim_id', 'limitation_code', 'dimension', 'copy_key'],
+  lineage_event: ['subject_kind', 'subject_id', 'event_kind', 'operation_id', 'event_week'],
+} as const satisfies Record<StorageV3ShadowImmutableTrigger['tableName'], readonly string[]>
+
+const immutableTriggerName = (tableName: string): string => `storage_v3_immutable_${tableName}`
+const immutableInsertTriggerName = (tableName: string): string => `storage_v3_immutable_insert_${tableName}`
+export const STORAGE_V3_SHADOW_IMMUTABLE_INSERT_TRIGGER_NAMES = Object.freeze(
+  STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS.map(({ tableName }) => immutableInsertTriggerName(tableName)),
+)
+const immutableTriggerSql = ({ tableName, columns }: StorageV3ShadowImmutableTrigger): string => {
+  const changes = columns.map((column) => `OLD.${column} IS NOT NEW.${column}`).join(' OR ')
+  return `CREATE TRIGGER IF NOT EXISTS ${immutableTriggerName(tableName)}
+BEFORE UPDATE OF ${columns.join(', ')} ON ${tableName}
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_IMMUTABLE_KEY') WHERE ${changes};
+END;`
+}
+
+const immutableInsertTriggerSql = ({ tableName, columns }: StorageV3ShadowImmutableTrigger): string => {
+  const locator = immutableInsertLocators[tableName]
+    .map((column) => `existing.${column} IS NEW.${column}`)
+    .join(' AND ')
+  const changes = columns.map((column) => `existing.${column} IS NOT NEW.${column}`).join(' OR ')
+  return `CREATE TRIGGER IF NOT EXISTS ${immutableInsertTriggerName(tableName)}
+BEFORE INSERT ON ${tableName}
+WHEN EXISTS (
+  SELECT 1 FROM ${tableName} AS existing
+  WHERE ${locator}
+    AND (${changes})
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_IMMUTABLE_KEY');
+END;`
+}
+
+const immutableTriggerSqlBlock = STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS.map(immutableTriggerSql).join('\n')
+const immutableInsertTriggerSqlBlock = STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS.map(immutableInsertTriggerSql).join('\n')
+
+export const STORAGE_V3_SHADOW_IDENTITY_BINDING_TRIGGER_NAMES = Object.freeze([
+  'storage_v3_scope_alias_binding',
+  'storage_v3_repository_identity_binding',
+] as const)
+
+const identityBindingTriggerSqlBlock = `CREATE TRIGGER IF NOT EXISTS storage_v3_scope_alias_binding
+BEFORE INSERT ON claim_scope
+WHEN NEW.scope_alias IS NOT NULL AND EXISTS (
+  SELECT 1 FROM claim_scope AS existing
+  WHERE existing.scope_alias = NEW.scope_alias AND existing.scope_id IS NOT NEW.scope_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_repository_identity_binding
+BEFORE INSERT ON repository_identity
+WHEN EXISTS (
+  SELECT 1 FROM repository_identity AS existing
+  WHERE existing.scope_id IS NOT NEW.scope_id
+    AND (
+      (NEW.provider_id IS NOT NULL AND existing.provider_id = NEW.provider_id)
+      OR (NEW.analytical_key IS NOT NULL AND existing.analytical_key = NEW.analytical_key)
+    )
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY');
+END;`
+
+export const STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME = 'storage_v3_lineage_scope_guard'
+
+const lineageOwnerRegistry = [
+  { subjectKind: 'scope', prefix: 'scope-', tableName: 'claim_scope', idColumn: 'scope_id' },
+  { subjectKind: 'claim', prefix: 'cl_', tableName: 'claim', idColumn: 'claim_id' },
+  { subjectKind: 'job', prefix: 'job-', tableName: 'collection_job', idColumn: 'job_id' },
+  { subjectKind: 'snapshot', prefix: 'snap-', tableName: 'source_snapshot', idColumn: 'snapshot_id' },
+  { subjectKind: 'checkpoint', prefix: 'ckpt-', tableName: 'collection_checkpoint', idColumn: 'checkpoint_id' },
+  { subjectKind: 'coverage', prefix: 'cov-', tableName: 'coverage_ledger', idColumn: 'coverage_id' },
+  { subjectKind: 'coverage', prefix: 'cov-', tableName: 'coverage_observation', idColumn: 'coverage_id' },
+  { subjectKind: 'evidence', prefix: 'ev-', tableName: 'evidence', idColumn: 'evidence_id' },
+] as const
+
+const lineageOwnerTriggerName = (tableName: string): string => `storage_v3_lineage_owner_${tableName}`
+export const STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES = Object.freeze(
+  lineageOwnerRegistry.map(({ tableName }) => lineageOwnerTriggerName(tableName)),
+)
+
+const lineageOwnerTriggerSql = ({ subjectKind, tableName, idColumn }: (typeof lineageOwnerRegistry)[number]): string =>
+  `CREATE TRIGGER IF NOT EXISTS ${lineageOwnerTriggerName(tableName)}
+BEFORE INSERT ON ${tableName}
+WHEN EXISTS (
+  SELECT 1 FROM lineage_event AS reference
+  WHERE reference.scope_id IS NOT NEW.scope_id
+    AND (
+      (reference.subject_kind = '${subjectKind}' AND reference.subject_id = NEW.${idColumn})
+      OR reference.caused_by = NEW.${idColumn}
+    )
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE');
+END;`
+
+const lineageOwnerTriggerSqlBlock = lineageOwnerRegistry.map(lineageOwnerTriggerSql).join('\n')
+
+const lineageSubjectMismatch = lineageOwnerRegistry.map(({ subjectKind, tableName, idColumn }) =>
+  `(NEW.subject_kind = '${subjectKind}' AND EXISTS (
+    SELECT 1 FROM ${tableName} AS owner
+    WHERE owner.${idColumn} = NEW.subject_id AND owner.scope_id IS NOT NEW.scope_id
+  ))`).join('\n  OR ')
+
+const lineageSubjectHistoryMismatch = [...new Set(lineageOwnerRegistry.map(({ subjectKind }) => subjectKind))]
+  .map((subjectKind) => `(NEW.subject_kind = '${subjectKind}' AND EXISTS (
+    SELECT 1 FROM lineage_event AS owner
+    WHERE (
+      (owner.subject_kind = '${subjectKind}' AND owner.subject_id = NEW.subject_id)
+      OR owner.caused_by = NEW.subject_id
+    )
+      AND owner.scope_id IS NOT NEW.scope_id
+  ))`).join('\n  OR ')
+
+const lineageCauseMismatch = lineageOwnerRegistry.map(({ prefix, tableName, idColumn }) =>
+  `(NEW.caused_by GLOB '${prefix}*' AND EXISTS (
+    SELECT 1 FROM ${tableName} AS owner
+    WHERE owner.${idColumn} = NEW.caused_by AND owner.scope_id IS NOT NEW.scope_id
+  ))`).join('\n  OR ')
+
+const lineageCauseHistoryMismatch = [...new Set(lineageOwnerRegistry.map(({ prefix }) => prefix))]
+  .map((prefix) => `(NEW.caused_by GLOB '${prefix}*' AND EXISTS (
+    SELECT 1 FROM lineage_event AS owner
+    WHERE (owner.subject_id = NEW.caused_by OR owner.caused_by = NEW.caused_by)
+      AND owner.scope_id IS NOT NEW.scope_id
+  ))`).join('\n  OR ')
+
+const lineageOperationMismatch = `EXISTS (
+    SELECT 1 FROM lineage_event AS owner
+    WHERE (owner.subject_id = NEW.operation_id OR owner.operation_id = NEW.operation_id OR owner.caused_by = NEW.operation_id)
+      AND owner.scope_id IS NOT NEW.scope_id
+  )`
+
+const lineageOperationCauseMismatch = `(
+    (NEW.caused_by GLOB 'op-*' OR NEW.caused_by GLOB 'del-*')
+    AND EXISTS (
+      SELECT 1 FROM lineage_event AS owner
+      WHERE (owner.subject_id = NEW.caused_by OR owner.operation_id = NEW.caused_by OR owner.caused_by = NEW.caused_by)
+        AND owner.scope_id IS NOT NEW.scope_id
+    )
+  )`
+
+/** Bind single-scope lineage keys while still allowing the first content-free tombstone. */
+const lineageScopeTriggerSql = `CREATE TRIGGER IF NOT EXISTS ${STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME}
+BEFORE INSERT ON lineage_event
+WHEN (
+  ${lineageSubjectMismatch}
+  OR ${lineageSubjectHistoryMismatch}
+  OR ${lineageCauseMismatch}
+  OR ${lineageCauseHistoryMismatch}
+  OR ${lineageOperationMismatch}
+  OR ${lineageOperationCauseMismatch}
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE');
+END;`
 
 const key = (column: string, prefix: string): string =>
   `length(${column}) = ${prefix.length + 64} AND ${column} GLOB '${prefix}*' AND substr(${column}, ${prefix.length + 1}) NOT GLOB '*[^0-9a-f]*'`
@@ -329,6 +541,11 @@ CREATE TABLE IF NOT EXISTS lineage_event (
   CHECK ((event_kind = 'legacy_deletion_operation' AND scope_id IS NULL) OR (event_kind <> 'legacy_deletion_operation' AND scope_id IS NOT NULL AND ${c1('scope_id')})),
   CHECK (event_kind <> 'scope_series_restarted' OR caused_by IS NULL)
 ) STRICT;
+${immutableTriggerSqlBlock}
+${immutableInsertTriggerSqlBlock}
+${identityBindingTriggerSqlBlock}
+${lineageScopeTriggerSql}
+${lineageOwnerTriggerSqlBlock}
 `
 
 export interface StorageV3ShadowResult {
@@ -346,7 +563,7 @@ export const STORAGE_V3_SHADOW_RESULT: StorageV3ShadowResult = Object.freeze({
 })
 
 interface ShadowSchemaObject {
-  readonly type: 'table' | 'index'
+  readonly type: 'table' | 'index' | 'trigger'
   readonly name: string
   readonly tableName: string
   readonly sql: string
@@ -380,18 +597,68 @@ function normalizeSchemaSql(sql: string): string {
   return parts.join('').replace(/^ | $/g, '')
 }
 
+/** Split DDL while retaining semicolons inside trigger BEGIN/END bodies. */
+function splitSchemaStatements(sql: string): string[] {
+  const statements: string[] = []
+  let start = 0
+  let quote: "'" | null = null
+  let beginDepth = 0
+  let wordStart = -1
+  const flushWord = (end: number): void => {
+    if (wordStart < 0) return
+    const word = sql.slice(wordStart, end).toUpperCase()
+    if (word === 'BEGIN') beginDepth += 1
+    else if (word === 'END' && beginDepth > 0) beginDepth -= 1
+    wordStart = -1
+  }
+  for (let index = 0; index < sql.length; index += 1) {
+    const character = sql[index]
+    if (quote !== null) {
+      if (character === quote) {
+        if (sql[index + 1] === quote) {
+          index += 1
+        } else {
+          quote = null
+        }
+      }
+      continue
+    }
+    if (character === "'") {
+      flushWord(index)
+      quote = character
+      continue
+    }
+    if (/[A-Za-z0-9_]/.test(character)) {
+      if (wordStart < 0) wordStart = index
+      continue
+    }
+    flushWord(index)
+    if (character === ';' && beginDepth === 0) {
+      const statement = sql.slice(start, index).trim()
+      if (statement.length > 0) statements.push(statement)
+      start = index + 1
+    }
+  }
+  flushWord(sql.length)
+  const trailing = sql.slice(start).trim()
+  if (trailing.length > 0) statements.push(trailing)
+  if (quote !== null || beginDepth !== 0) throw new Error('STORAGE_V3_SHADOW_SCHEMA_MISMATCH')
+  return statements
+}
+
 function parseShadowSchemaObjects(): readonly ShadowSchemaObject[] {
-  return STORAGE_V3_SHADOW_SCHEMA_SQL
-    .split(';')
-    .filter((statement) => /^\s*create\s+(?:unique\s+)?(?:table|index)\b/i.test(statement))
+  return splitSchemaStatements(STORAGE_V3_SHADOW_SCHEMA_SQL)
+    .filter((statement) => /^\s*create\s+(?:unique\s+)?(?:table|index|trigger)\b/i.test(statement))
     .map((sql) => {
       const match = sql.match(
-        /^\s*CREATE\s+(?:UNIQUE\s+)?(TABLE|INDEX)\s+IF\s+NOT\s+EXISTS\s+([A-Za-z_][A-Za-z0-9_]*)/i,
+        /^\s*CREATE\s+(?:UNIQUE\s+)?(TABLE|INDEX|TRIGGER)\s+IF\s+NOT\s+EXISTS\s+([A-Za-z_][A-Za-z0-9_]*)/i,
       )
       if (!match) throw new Error('STORAGE_V3_SHADOW_SCHEMA_MISMATCH')
       const type = match[1].toLowerCase() as ShadowSchemaObject['type']
       const name = match[2]
-      const tableName = type === 'table' ? name : sql.match(/\bON\s+([A-Za-z_][A-Za-z0-9_]*)/i)?.[1]
+      const tableName = type === 'table'
+        ? name
+        : sql.match(/\bON\s+([A-Za-z_][A-Za-z0-9_]*)/i)?.[1]
       if (!tableName) throw new Error('STORAGE_V3_SHADOW_SCHEMA_MISMATCH')
       return { type, name, tableName, sql }
     })
@@ -433,9 +700,9 @@ function hasOwnedTempSchemaObject(db: Database.Database): boolean {
   const tablePlaceholders = STORAGE_V3_TABLES.map(() => '?').join(', ')
   return db.prepare(
     `SELECT 1 FROM sqlite_temp_schema
-     WHERE name IN (${objectPlaceholders})
+     WHERE name COLLATE NOCASE IN (${objectPlaceholders})
         OR (
-          tbl_name IN (${tablePlaceholders})
+          tbl_name COLLATE NOCASE IN (${tablePlaceholders})
           AND type IN ('index', 'trigger')
           AND name NOT GLOB 'sqlite_autoindex_*'
         )
@@ -459,6 +726,13 @@ export function installStorageV3ShadowSchema(db: Database.Database): StorageV3Sh
   }
   if (existing && !hasExpectedIdentity) {
     throw new Error('STORAGE_V3_SHADOW_TARGET_MISMATCH')
+  }
+  if (
+    existing
+    && hasExpectedIdentity
+    && storageV3ShadowSchemaFingerprint(db) !== STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT
+  ) {
+    throw new Error('STORAGE_V3_SHADOW_SCHEMA_MISMATCH')
   }
   if (hasOwnedTempSchemaObject(db)) throw new Error('STORAGE_V3_SHADOW_SCHEMA_MISMATCH')
   db.pragma('foreign_keys = ON')
