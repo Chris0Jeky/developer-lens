@@ -11,6 +11,8 @@ import {
   type StorageV3ShadowRewriteStage,
 } from './v3ShadowRewrite.js'
 
+export { STORAGE_V3_SHADOW_TABLES } from './v3ShadowRewrite.js'
+
 /** A caller-owned target attempt. No filesystem path crosses this boundary. */
 export interface StorageV3ShadowTargetAttempt {
   readonly db: Database.Database
