@@ -1571,7 +1571,53 @@ one comparative Atlas panel, and the Evidence Drawer. This block is the horizon'
 - **Tests.** a ten-stage walkthrough is asserted by tests; the full suite is 884 green at the lane
   head; the alias->surrogate strip at the finding boundary is enforced with a leak guard.
 
+## 2026-08-05 — roadmap reassessment and R4 admission
+
+The mandatory horizon-exit reassessment completed before any new implementation. It admitted a
+three-card, dependency-closed R4 horizon: **DL-LIFE-01**, **DL-LIFE-02**, and **DL-EVQ-03**. This is
+small enough to finish through focused proof, hosted gate, high-risk review, merge, and state sync;
+it pairs the lifecycle/deletion critical path with one disjoint analytical-value lane. R7/R8 and
+every `horizon:frozen` card remain frozen.
+
+- **Live baseline.** After `git fetch --prune origin main`, clean `main == origin/main ==
+  e5e54923f782f160b13be38842324d4884ebe9b4` (PR #95 merge). Git registered only the primary
+  worktree. The q-8 directory `dl-worktrees/value01` still exists but is not registered; its
+  contents were not inspected. There were zero open PRs. PR #94 merged as `c632093` with the hosted
+  PR gate green after its one-HIGH review fix; PR #95 merged as `e5e5492` with the hosted PR gate
+  green. Its later edited-event run was skipped and is not the proof run.
+- **GitHub constraints.** Main branch protection was absent (`branches/main/protection` returned
+  404; rulesets were empty), so q-7 remains open and the hosted `PR gate / Prove the pull request`
+  success must be enforced manually at every exact head. Open issues were #5, #6, #41, #55, #57,
+  #59, #66, #68, #69, #71, #76, #78, #79, #80, #86, and #93. #86 remains a q-5 prerequisite;
+  #80 binds DL-LIFE-02; #71 and #93 are separate hygiene lanes; #66/#68/#69 remain frozen.
+- **Dependency proof.** The generated planning artifacts matched all 127 canonical cards. Both
+  declared DL-EVQ-03 dependencies (DL-SPINE-01 and DL-SPINE-02) are DONE, so its old
+  `BLOCKED_BY_DEPENDENCY` status was stale and is now `READY`. DL-LIFE-01 has no dependencies;
+  DL-LIFE-02 remains blocked only on DL-LIFE-01 and is dependency-closed inside the new horizon.
+- **Lifecycle admission boundary.** A Sol/Luna/Terra design pass found no owner or architecture
+  blocker. DL-LIFE-01 is a pure immutable contract: every registry definition and P4/P12 runner
+  stays inert/`never_authorized`; approvals perform no transition; invented cards, tampered hashes,
+  replay, exact-head proofs, suspension, revocation intent, and lifecycle epochs are tested without
+  persistence or a runtime activation path. DL-LIFE-02 alone owns schema-derived deletion,
+  transactionality, lineage/tombstone persistence, and issue #80's storage constraints.
+- **Analytical lane boundary.** DL-EVQ-03 uses the existing claim stability key and supersession
+  chain. It may run disjointly from lifecycle work, but emits only version ordinals and ISO-week
+  grain, never exact collection timestamps or raw scope aliases. Its five-job late-event replay and
+  honest static zero-churn output are acceptance conditions.
+- **Authority contradiction recorded.** The estate registry's dated 2026-08-03 Developer Lens row
+  still says G1-only. The repository's newer 2026-08-04 `HUMAN_TODO.md`, data charter, and capability
+  matrix explicitly approve G2/G3 and the bounded G4 design while keeping all executable
+  capabilities inactive. The project authorities bind this work; no estate-law edit was admitted
+  as a product detour.
+
 ## Exact resume point
+
+**Current 2026-08-05 (R4 horizon opened).** Start **DL-LIFE-01** from the live `origin/main` head,
+using the pure contract boundary above and `npm test -- server/lifecycle.test.ts` followed by
+`npm run check`. **DL-EVQ-03** is READY as the disjoint analytical lane, proved with
+`npm test -- server/analysis/claimStability.test.ts` then `npm run check`. **DL-LIFE-02** follows
+only after DL-LIFE-01 merges and its base/dependency evidence is refreshed. Issue #93 and #71 stay
+separate hygiene slices. R7/R8 remain frozen; q-6/q-7/q-8 remain open.
 
 **Superseded 2026-08-04 (R1 wave 3 — active horizon COMPLETE).** DL-VALIDATE-01 (`df59bbc`, PR #92)
 and DL-VALUE-01 (`c632093`, PR #94) have merged, completing all 12 active-horizon cards. There is no

@@ -2,7 +2,7 @@
   "schemaVersion": "1.0",
   "packId": "developer-lens-intelligence-platform",
   "displayName": "Developer Lens - Intelligence Platform",
-  "description": "Planning board for the Developer Lens intelligence-platform programme (seeded 2026-08-04; reconciled after PR #62). Cards carry full task contracts in a keyed compact format; dependencies are encoded on the \"Deps:\" line of each card description because Taskdeck has no native dependency field. horizon:active marks the bounded execution queue; horizon:frozen marks work parked until the first analytical value slice (DL-VALUE-01) is accepted. Source of truth for stable design: docs/DEVELOPER_LENS_V2_ARCHITECTURE.md + docs/analyser-program/. Template declarations are deliberately absent: the current apply path validates but never persists or materialises templates (verified 2026-08-04), so this pack relies only on labels, columns, and seedCards.",
+  "description": "Planning board for the Developer Lens intelligence-platform programme (seeded 2026-08-04; roadmap reassessed 2026-08-05). Cards carry full task contracts in a keyed compact format; dependencies are encoded on the \"Deps:\" line of each card description because Taskdeck has no native dependency field. horizon:active marks the bounded execution queue; horizon:frozen marks work explicitly parked by the current roadmap reassessment. Source of truth for stable design: docs/DEVELOPER_LENS_V2_ARCHITECTURE.md + docs/analyser-program/. Template declarations are deliberately absent: the current apply path validates but never persists or materialises templates (verified 2026-08-04), so this pack relies only on labels, columns, and seedCards.",
   "compatibility": {
     "minTaskdeckVersion": "0.1.0"
   },
@@ -299,8 +299,7 @@
         "risk:medium",
         "M1-spine",
         "epic:spine",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {
@@ -314,8 +313,7 @@
         "risk:medium",
         "M1-spine",
         "epic:spine",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {
@@ -329,8 +327,7 @@
         "risk:low",
         "M2-first-slice",
         "epic:spine",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {
@@ -344,8 +341,7 @@
         "risk:medium",
         "M1-spine",
         "epic:spine",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {
@@ -364,7 +360,7 @@
     },
     {
       "title": "DL-LIFE-01 - Capability lifecycle state machine + approval-never-activates invariant",
-      "description": "[DL-LIFE-01 | epic:lifecycle | contract | READY | risk:high | effort:M | M1]\nOutcome: One typed lifecycle (never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked) instantiated by every capability, with a registry-snapshot test proving gate approvals perform no transition.\nDeps: none | Unlock: -\nPaths: shared/capabilities.ts (extend); server lifecycle module; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route; formalises the existing P4/P12 card idiom\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no transition without hash-bound reviewed card\nBehavior: ADR-03: transitions require card binding, preview, exact-head proving checks; unknown state fails closed; consentRevision = card sha256 (existing idiom).\nAccept: Simulated G2/G3/G4 approvals leave every capability state byte-identical; illegal transitions rejected; P4 activation card parses into the new lifecycle unchanged.\nProve: npm test -- server/lifecycle.test.ts; npm run check\nFixtures: Invented cards, tampered hashes, replayed approvals.\nRollback: Lifecycle wraps the existing registry; remove wrapper, registry unchanged.\nDemo: State-machine diagram + invariant test output.",
+      "description": "[DL-LIFE-01 | epic:lifecycle | contract | READY | risk:high | effort:M | M1]\nQuestion: Can a reviewed capability card move through consent safely while gate approval alone remains byte-identically inert?\nOutcome: One typed lifecycle (never_authorized -> card_bound -> previewed -> active <-> suspended -> revoked) instantiated by every capability, with a registry-snapshot test proving gate approvals perform no transition.\nDeps: none | Unlock: -\nPaths: shared/capabilities.ts (extend); server lifecycle module; tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route; formalises the existing P4/P12 card idiom\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no transition without hash-bound reviewed card\nBehavior: ADR-03: transitions require card binding, preview, exact-head proving checks; unknown state fails closed; consentRevision = card sha256 (existing idiom).\nAccept: Simulated G2/G3/G4 approvals leave every capability state byte-identical; illegal transitions rejected; P4 activation card parses into the new lifecycle unchanged.\nProve: npm test -- server/lifecycle.test.ts; npm run check\nFixtures: Invented cards, tampered hashes, replayed approvals.\nRollback: Lifecycle wraps the existing registry; remove wrapper, registry unchanged.\nDemo: State-machine diagram + invariant test output.",
       "columnName": "Ready",
       "labels": [
         "status:ready",
@@ -373,12 +369,13 @@
         "risk:high",
         "M1-spine",
         "epic:lifecycle",
-        "gate:G2"
+        "gate:G2",
+        "horizon:active"
       ]
     },
     {
       "title": "DL-LIFE-02 - Deletion enumeration from schema registry + cascade proof",
-      "description": "[DL-LIFE-02 | epic:lifecycle | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M1]\nOutcome: Descendant deletion (facts, features, claims, graphs, caches, indexes, model outputs, app-controlled packs/backups) is generated from the schema registry, not hand lists; revocation leaves only a content-free tombstone.\nDeps: DL-LIFE-01 | Unlock: DL-LIFE-01 merged\nPaths: server/storage deletion planner; lineage_event writes; cascade tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no physical-erasure claims\nBehavior: Every registered table declares its capability lineage; planner enumerates + deletes in FK order; a canary table missing lineage fails CI.\nAccept: Fixture revocation deletes every descendant incl. planted deep dependents; tombstone content-free; missing-lineage canary fails the build.\nProve: npm test -- server/storage/deletionCascade.test.ts\nFixtures: Deep dependency chains; orphan attempts; pack/backup enumeration.\nRollback: Planner is read-only until executed in a transaction; abort restores state.\nDemo: Cascade log for one fixture revocation.",
+      "description": "[DL-LIFE-02 | epic:lifecycle | implementation | BLOCKED_BY_DEPENDENCY | risk:high | effort:M | M1]\nQuestion: When consent is revoked, can the product prove every retained descendant is deleted without hand-maintained table lists?\nOutcome: Descendant deletion (facts, features, claims, graphs, caches, indexes, model outputs, app-controlled packs/backups) is generated from the schema registry, not hand lists; revocation leaves only a content-free tombstone.\nDeps: DL-LIFE-01 | Unlock: DL-LIFE-01 merged\nPaths: server/storage deletion planner; lineage_event writes; cascade tests\nAuthority: G1/G2 approved; contract/fixture work only; no capability activation; read tracked source + invented fixtures; publish code/tests/docs via q-4 route\nProhibited: No real/private/generated-data reads; no person metrics; no X-class fields; no new sink or provider; no network; no physical-erasure claims\nBehavior: Every registered table declares its capability lineage; planner enumerates + deletes in FK order; a canary table missing lineage fails CI.\nAccept: Fixture revocation deletes every descendant incl. planted deep dependents; tombstone content-free; missing-lineage canary fails the build.\nProve: npm test -- server/storage/deletionCascade.test.ts\nFixtures: Deep dependency chains; orphan attempts; pack/backup enumeration.\nRollback: Planner is read-only until executed in a transaction; abort restores state.\nDemo: Cascade log for one fixture revocation.",
       "columnName": "Proposed",
       "labels": [
         "status:blocked",
@@ -387,7 +384,8 @@
         "risk:high",
         "M1-spine",
         "epic:lifecycle",
-        "gate:G2"
+        "gate:G2",
+        "horizon:active"
       ]
     },
     {
@@ -416,8 +414,7 @@
         "M2-first-slice",
         "epic:bridge",
         "gate:G2",
-        "demo:showcase",
-        "horizon:active"
+        "demo:showcase"
       ]
     },
     {
@@ -501,8 +498,7 @@
         "risk:medium",
         "M2-first-slice",
         "epic:analytics-core",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {
@@ -516,8 +512,7 @@
         "risk:medium",
         "M2-first-slice",
         "epic:analytics-core",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {
@@ -531,8 +526,7 @@
         "risk:medium",
         "M2-first-slice",
         "epic:analytics-core",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {
@@ -546,8 +540,7 @@
         "risk:medium",
         "M2-first-slice",
         "epic:analytics-core",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {
@@ -562,8 +555,7 @@
         "M2-first-slice",
         "epic:analytics-core",
         "gate:G2",
-        "demo:showcase",
-        "horizon:active"
+        "demo:showcase"
       ]
     },
     {
@@ -577,8 +569,7 @@
         "risk:low",
         "M1-spine",
         "epic:analytics-core",
-        "gate:G2",
-        "horizon:active"
+        "gate:G2"
       ]
     },
     {
@@ -1577,8 +1568,7 @@
         "M2-first-slice",
         "epic:ux-atlas",
         "gate:G2",
-        "demo:showcase",
-        "horizon:active"
+        "demo:showcase"
       ]
     },
     {
@@ -1909,16 +1899,17 @@
     },
     {
       "title": "DL-EVQ-03 - Claim stability across re-collections (frontier C-03; stability key)",
-      "description": "[DL-EVQ-03 | epic:evidence-quality | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: Stability series over the ADR-01 stability key: churn, oscillation, value range, coverage-vs-value attribution share; drift-dimension producer role stays research.\nDeps: DL-SPINE-01, DL-SPINE-02 | Unlock: claim tables + canonicalisation merged (stability key is in the ADR-01 contract)\nPaths: server/analysis/claimStability.ts; tests\nAuthority: G2 approved\nProhibited: Version ordinals + ISO-week grain only — never exact collection timestamps (ADR-14 floor applies to the product's own telemetry-shaped data); method-version churn stratified and disclosed\nBehavior: Frontier C-03: window functions over supersession chains grouped by stability key.\nAccept: Five-job replay with planted late events yields expected churn profiles; static-fixture zero-churn renders honestly.\nProve: npm test -- server/analysis/claimStability.test.ts\nFixtures: Replayed synthetic corpus with late-arriving events.\nRollback: Derived table deletion.\nDemo: Stability profile per claim family.",
-      "columnName": "Proposed",
+      "description": "[DL-EVQ-03 | epic:evidence-quality | implementation | READY | risk:medium | effort:M | M6]\nQuestion: How stable is each claim family across repeated collections, and is change driven by evidence coverage or measured value?\nOutcome: Stability series over the ADR-01 stability key: churn, oscillation, value range, coverage-vs-value attribution share; drift-dimension producer role stays research.\nDeps: DL-SPINE-01, DL-SPINE-02 | Unlock: claim tables + canonicalisation merged (stability key is in the ADR-01 contract)\nPaths: server/analysis/claimStability.ts; tests\nAuthority: G2 approved\nProhibited: Version ordinals + ISO-week grain only — never exact collection timestamps (ADR-14 floor applies to the product's own telemetry-shaped data); method-version churn stratified and disclosed\nBehavior: Frontier C-03: window functions over supersession chains grouped by stability key.\nAccept: Five-job replay with planted late events yields expected churn profiles; static-fixture zero-churn renders honestly.\nProve: npm test -- server/analysis/claimStability.test.ts\nFixtures: Replayed synthetic corpus with late-arriving events.\nRollback: Derived table deletion.\nDemo: Stability profile per claim family.",
+      "columnName": "Ready",
       "labels": [
-        "status:blocked",
+        "status:ready",
         "type:implementation",
         "privacy:C1",
         "risk:medium",
         "M6-time-graph-wb",
         "epic:evidence-quality",
-        "gate:G2"
+        "gate:G2",
+        "horizon:active"
       ]
     },
     {
