@@ -355,6 +355,24 @@ describe('storage-v3 B2a shadow schema', () => {
     }
   })
 
+  it('rejects empty coverage-ledger limitation and saturation codes', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(scopeA, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
+      db.prepare('INSERT INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)').run(scopeA, id('snap-'), id('job-'), 'github.core', 'closed')
+      const insert = db.prepare('INSERT INTO coverage_ledger (scope_id, coverage_id, job_id, snapshot_id, capability_id, status, observed_units, retryable, saturation_reason, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      expect(() => insert.run(scopeA, id('cov-'), id('job-'), id('snap-'), 'github.core', 'complete', 2, 0, null, ''))
+        .toThrow(/CHECK constraint failed/i)
+      expect(() => insert.run(scopeA, id('cov-'), id('job-'), id('snap-'), 'github.core', 'complete', 2, 0, '', 'NONE'))
+        .toThrow(/CHECK constraint failed/i)
+      insert.run(scopeA, id('cov-'), id('job-'), id('snap-'), 'github.core', 'complete', 2, 0, null, 'NONE')
+    } finally {
+      db.close()
+    }
+  })
+
   it('enforces exact lineage operation, subject, cause, and ISO-week invariants', () => {
     const db = new Database(':memory:')
     try {

@@ -244,6 +244,12 @@ describe('B1b-iii shadow orchestration', () => {
     ['C1 replay mismatch', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
       if (kind === 'replay') attempt.db.prepare('UPDATE repository_identity SET is_private = 1').run()
     }],
+    ['TEMP-table shadowing of a validated table', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
+      if (kind === 'primary') attempt.db.exec('CREATE TEMP TABLE claim_scope (scope_id TEXT)')
+    }],
+    ['retained C2 divergence invisible to the C1 checksum', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
+      if (kind === 'replay') attempt.db.prepare('UPDATE commit_observation SET sha = ?').run('tampered-sha')
+    }],
   ] as const)('refuses %s after reopen and discards both targets', (_label, onReopen) => {
     const { db: source, key, raw } = sourceFixture()
     const paths = fileFactory(onReopen)
@@ -260,7 +266,30 @@ describe('B1b-iii shadow orchestration', () => {
       expect(paths.state.accepted).toBeUndefined()
       expect(paths.records.get('primary')!.discardCount).toBeGreaterThan(0)
       expect(paths.records.get('replay')!.discardCount).toBeGreaterThan(0)
-    } finally { source.close(); paths.cleanup() }
+    } finally { closeAccepted(paths); source.close(); paths.cleanup() }
+  })
+
+  it('restores disabled CHECK enforcement on the reopened connection before acceptance', () => {
+    const { db: source, key, raw } = sourceFixture()
+    const paths = fileFactory((kind, attempt) => {
+      if (kind === 'primary') attempt.db.pragma('ignore_check_constraints = ON')
+    })
+    try {
+      orchestrateStorageV3ShadowMigration({
+        sourceDb: source,
+        identityBindings: [{ rawProviderId: raw }],
+        installationKey: key,
+        asOf: '2026-01-02T00:00:00.000Z',
+        targetFactory: paths.factory,
+        primaryRandomBytes: entropy(21),
+        replayRandomBytes: entropy(22),
+      })
+      const accepted = paths.state.accepted!
+      expect(accepted.db.prepare('PRAGMA ignore_check_constraints').pluck().get()).toBe(0)
+      expect(accepted.db.prepare('PRAGMA writable_schema').pluck().get()).toBe(0)
+      expect(() => accepted.db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)')
+        .run('not-a-scope')).toThrow(/CHECK constraint failed/i)
+    } finally { closeAccepted(paths); source.close(); paths.cleanup() }
   })
 
   it('fails closed if the source changes between the primary and replay reads', () => {

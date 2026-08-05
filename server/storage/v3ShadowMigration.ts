@@ -225,14 +225,27 @@ function assertSelectableTarget(db: Database.Database): void {
   if (db.inTransaction) throw new Error()
   db.pragma('foreign_keys = ON')
   if (Number(db.prepare('PRAGMA foreign_keys').pluck().get()) !== 1) throw new Error()
+  // A caller-owned reopen() could hand back a connection whose CHECK enforcement or
+  // schema writability is disabled; reset and read back before trusting any proof below.
+  // Other connection state (defer_foreign_keys, recursive_triggers, query_only) stays
+  // caller-owned: only CHECK enforcement and schema writability are proven here.
+  db.pragma('ignore_check_constraints = OFF')
+  if (Number(db.prepare('PRAGMA ignore_check_constraints').pluck().get()) !== 0) throw new Error()
+  db.pragma('writable_schema = OFF')
+  if (Number(db.prepare('PRAGMA writable_schema').pluck().get()) !== 0) throw new Error()
   if (Number(db.prepare('PRAGMA application_id').pluck().get()) !== STORAGE_V3_SHADOW_APPLICATION_ID) throw new Error()
   if (Number(db.prepare('PRAGMA user_version').pluck().get()) !== STORAGE_V3_SHADOW_USER_VERSION) throw new Error()
   const tables = (db.prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name").pluck().all() as string[])
   if (JSON.stringify(tables) !== JSON.stringify([...STORAGE_V3_SHADOW_TABLES].sort())) throw new Error()
+  // A TEMP object with a shadow-table name would shadow the main table for every
+  // unqualified read below, so any owned temp-schema object refuses the target.
+  if (db.prepare("SELECT 1 FROM sqlite_temp_schema WHERE name NOT GLOB 'sqlite_*' LIMIT 1").get()) throw new Error()
   if (storageV3ShadowSchemaFingerprint(db) !== STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT) throw new Error()
   if (String(db.prepare('PRAGMA integrity_check').pluck().get()) !== 'ok') throw new Error()
   if (String(db.prepare('PRAGMA quick_check').pluck().get()) !== 'ok') throw new Error()
   if (db.prepare('PRAGMA foreign_key_check').all().length !== 0) throw new Error()
+  // import_run's disposition is delete-at-migration and the rewrite never writes it.
+  if (Number(db.prepare('SELECT COUNT(*) FROM import_run').pluck().get()) !== 0) throw new Error()
 }
 
 /**
@@ -253,6 +266,56 @@ export function replayNormalizedShadowChecksum(db: Database.Database): string {
   }
   pieces.sort()
   const payload = `${lengthPrefix(C1_GRAPH_VERSION)}${pieces.map(lengthPrefix).join('')}`
+  return createHash('sha256').update(payload).digest('hex')
+}
+
+const FULL_EQUIVALENCE_VERSION = 'storage-v3-full-equivalence.v1'
+
+function fullRows(db: Database.Database): C1Row[] {
+  const projected: C1Row[] = []
+  for (const table of [...STORAGE_V3_SHADOW_TABLES].sort()) {
+    const columns = (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>)
+      .map(({ name }) => name)
+      .sort()
+    const rows = db.prepare(`SELECT ${columns.join(', ')} FROM ${table}`).all() as Array<Record<string, unknown>>
+    for (const row of rows) {
+      projected.push({
+        table,
+        cells: columns.map((column) => {
+          const value = row[column]
+          return {
+            column,
+            value,
+            id: typeof value === 'string' && RANDOM_KEY.test(value) ? value : undefined,
+          }
+        }),
+      })
+    }
+  }
+  return projected
+}
+
+/**
+ * Digest every column of every shadow table, with minted random keys alpha-renamed
+ * from their graph neighbourhoods. Retained C2 and preserved C0 bridge values are
+ * deterministic functions of the source rows, asOf and installation key, so the
+ * primary and replay targets must agree exactly; a target-side corruption of any
+ * alias, provenance, hash or exact-time column refuses acceptance. The digest binds
+ * alias-shaped material and must never enter the public result or any log.
+ */
+function fullEquivalenceShadowChecksum(db: Database.Database): string {
+  const rows = fullRows(db)
+  const colours = graphColours(rows)
+  const pieces: string[] = []
+  for (const { table, cells } of rows) {
+    const row = cells.map(({ column, value, id }) => {
+      const encoded = id ? `id${lengthPrefix(colours.get(id)!)}` : typedValue(value)
+      return `${lengthPrefix(column)}${lengthPrefix(encoded)}`
+    }).join('')
+    pieces.push(`${lengthPrefix(table)}${lengthPrefix(row)}`)
+  }
+  pieces.sort()
+  const payload = `${lengthPrefix(FULL_EQUIVALENCE_VERSION)}${pieces.map(lengthPrefix).join('')}`
   return createHash('sha256').update(payload).digest('hex')
 }
 
@@ -347,6 +410,7 @@ export function orchestrateStorageV3ShadowMigration(
     assertProcessInputsAbsent(replay.db, options.identityBindings, options.installationKey)
     const checksum = replayNormalizedShadowChecksum(primary.db)
     if (checksum !== replayNormalizedShadowChecksum(replay.db)) throw new Error()
+    if (fullEquivalenceShadowChecksum(primary.db) !== fullEquivalenceShadowChecksum(replay.db)) throw new Error()
     if (!sourceFingerprint(options.sourceDb).equals(sourceBefore)) throw new Error()
     replay.close()
     replay.discard()
