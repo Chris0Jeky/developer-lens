@@ -106,6 +106,27 @@ describe('evidence API resolver — accepting only contract-conformant matching 
     expect(result.current(P50)).toBe(resolveIntegrationShapeEvidence(P50))
   })
 
+  it('rejects an envelope that ECHOES the requested reference but attaches another claim\'s walk', async () => {
+    // The Codex PR #132 finding: reference echo and schema validity alone are not
+    // enough — the projection identity must answer the echoed reference too.
+    const other: AnalyticReference = { kind: 'claim', claimId: CLAIM_IDS.p75, claimLayer: 'deterministic' }
+    const body = envelope({ projection: wireCopy(other) })
+    const { result } = await settled(P50, respondWith(body))
+    expect(result.current(P50)).toBe(resolveIntegrationShapeEvidence(P50))
+  })
+
+  it('rejects an unresolvable that names a different claim than the echoed reference', async () => {
+    const body = envelope({ projection: { ...SERVED_UNRESOLVABLE, claimId: CLAIM_IDS.p75 } })
+    const { result } = await settled(P50, respondWith(body))
+    expect(result.current(P50)).toBe(resolveIntegrationShapeEvidence(P50))
+  })
+
+  it('rejects a projection carrying an undeclared nested field instead of stripping it', async () => {
+    const body = envelope({ projection: { ...SERVED_UNRESOLVABLE, surprise: 'undeclared' } })
+    const { result } = await settled(P50, respondWith(body))
+    expect(result.current(P50)).toBe(resolveIntegrationShapeEvidence(P50))
+  })
+
   it('rejects a VALID projection served for a different claim than requested, without caching it', async () => {
     const other: AnalyticReference = { kind: 'claim', claimId: CLAIM_IDS.p75, claimLayer: 'deterministic' }
     const body = envelope({ reference: wireReference(other), projection: wireCopy(other) })

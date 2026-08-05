@@ -320,9 +320,16 @@ const FULL_EQUIVALENCE_VERSION = 'storage-v3-full-equivalence.v1'
  * alpha-renamed in the equivalence digest; a retained C2 value that merely has a
  * reminted-key shape (source_job_id, source_snapshot_id, source_coverage_id, and
  * any other source-opaque token) is compared literally, so a same-shaped
- * substitution in one target still refuses acceptance. Column membership is
- * necessary but not sufficient: `SOURCE_DERIVED_ID_ROWS` exempts row kinds whose
- * values in these columns are source-derived rather than minted.
+ * substitution in one target refuses acceptance for those columns. Column
+ * membership is necessary but not sufficient: `SOURCE_DERIVED_ID_ROWS` exempts
+ * row kinds whose values in these columns are source-derived rather than minted.
+ *
+ * KNOWN RESIDUAL GAP (tracked): scope ids that the rewrite PRESERVES from an
+ * existing claim_scope row (rather than minting) are still alpha-renamed here,
+ * so a consistent same-shaped scope-id substitution in one target can escape
+ * both digests. Closing it needs per-run remint metadata from the rewrite (the
+ * planned equivalence redesign), not another static row predicate — the target
+ * rows alone cannot say whether a scope id was preserved or minted.
  */
 const ENTROPY_ID_COLUMNS = new Set([...C1_ID_COLUMNS, 'observation_id', 'fact_id', 'event_id'])
 

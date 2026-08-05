@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ClaimEdgeRoleSchema, ClaimEdgeTargetKindSchema } from './claims.js'
+import type { AnalyticReference } from './findings.js'
 import type {
   WhyCapabilityNode,
   WhyClaimNode,
@@ -84,12 +85,12 @@ export const WHY_WALK_TERMINATIONS = [
 ] as const
 export type WhyWalkTermination = typeof WHY_WALK_TERMINATIONS[number]
 
-export const WhyCoverageKeySchema = z.object({
+export const WhyCoverageKeySchema = z.strictObject({
   rangeStart: z.string(),
   jobId: z.string(),
 }) satisfies z.ZodType<WhyCoverageKey>
 
-export const WhyLineageEventSchema = z.object({
+export const WhyLineageEventSchema = z.strictObject({
   kind: z.literal('lineage_event'),
   subjectId: z.string(),
   eventKind: z.string(),
@@ -97,7 +98,7 @@ export const WhyLineageEventSchema = z.object({
   occurredAt: z.string(),
 }) satisfies z.ZodType<WhyLineageEvent>
 
-export const WhyMissingLinkSchema = z.object({
+export const WhyMissingLinkSchema = z.strictObject({
   kind: z.literal('missing_link'),
   reason: z.enum(WHY_MISSING_LINK_REASONS),
   targetKind: z.enum(WHY_TARGET_KINDS),
@@ -106,7 +107,7 @@ export const WhyMissingLinkSchema = z.object({
   lineage: z.array(WhyLineageEventSchema),
 }) satisfies z.ZodType<WhyMissingLink>
 
-export const WhyCapabilityNodeSchema = z.object({
+export const WhyCapabilityNodeSchema = z.strictObject({
   kind: z.literal('capability'),
   capabilityId: z.string(),
   purposeCode: z.string(),
@@ -115,7 +116,7 @@ export const WhyCapabilityNodeSchema = z.object({
   refusalStatus: z.string(),
 }) satisfies z.ZodType<WhyCapabilityNode>
 
-export const WhyCollectionJobNodeSchema = z.object({
+export const WhyCollectionJobNodeSchema = z.strictObject({
   kind: z.literal('collection_job'),
   jobId: z.string(),
   status: z.string(),
@@ -123,7 +124,7 @@ export const WhyCollectionJobNodeSchema = z.object({
   capability: z.discriminatedUnion('kind', [WhyCapabilityNodeSchema, WhyMissingLinkSchema]),
 }) satisfies z.ZodType<WhyCollectionJobNode>
 
-export const WhyCoverageNodeSchema = z.object({
+export const WhyCoverageNodeSchema = z.strictObject({
   kind: z.literal('coverage'),
   coverageKey: WhyCoverageKeySchema,
   rangeEnd: z.string(),
@@ -138,7 +139,7 @@ export const WhyCoverageNodeSchema = z.object({
   job: z.discriminatedUnion('kind', [WhyCollectionJobNodeSchema, WhyMissingLinkSchema]),
 }) satisfies z.ZodType<WhyCoverageNode>
 
-export const WhyEvidenceNodeSchema = z.object({
+export const WhyEvidenceNodeSchema = z.strictObject({
   kind: z.literal('evidence'),
   evidenceId: z.string(),
   layer: z.string(),
@@ -161,18 +162,18 @@ const whyClaimSummaryFields = {
   supersededBy: z.string().nullable(),
 }
 
-export const WhyClaimNodeSchema = z.object({
+export const WhyClaimNodeSchema = z.strictObject({
   kind: z.literal('claim'),
   ...whyClaimSummaryFields,
 }) satisfies z.ZodType<WhyClaimNode>
 
-export const WhyClaimReferenceNodeSchema = z.object({
+export const WhyClaimReferenceNodeSchema = z.strictObject({
   kind: z.literal('claim_reference'),
   expandsWith: z.literal('resolveWhy'),
   ...whyClaimSummaryFields,
 }) satisfies z.ZodType<WhyClaimReferenceNode>
 
-export const WhyScopeNodeSchema = z.object({
+export const WhyScopeNodeSchema = z.strictObject({
   kind: z.literal('scope'),
   scopeId: z.string(),
   hasAlias: z.boolean(),
@@ -180,7 +181,7 @@ export const WhyScopeNodeSchema = z.object({
   aliasLink: WhyMissingLinkSchema.nullable(),
 }) satisfies z.ZodType<WhyScopeNode>
 
-export const WhyEdgeSchema = z.object({
+export const WhyEdgeSchema = z.strictObject({
   kind: z.literal('edge'),
   role: ClaimEdgeRoleSchema,
   targetRef: z.string(),
@@ -192,27 +193,27 @@ export const WhyEdgeSchema = z.object({
   ]),
 }) satisfies z.ZodType<WhyEdge>
 
-export const WhyEdgeGroupSchema = z.object({
+export const WhyEdgeGroupSchema = z.strictObject({
   kind: z.literal('edge_group'),
   role: ClaimEdgeRoleSchema,
   targetKind: ClaimEdgeTargetKindSchema,
   edges: z.array(WhyEdgeSchema),
 }) satisfies z.ZodType<WhyEdgeGroup>
 
-export const WhyLimitationSchema = z.object({
+export const WhyLimitationSchema = z.strictObject({
   kind: z.literal('limitation'),
   limitationCode: z.string(),
   dimension: z.string(),
   copyKey: z.string(),
 }) satisfies z.ZodType<WhyLimitation>
 
-export const WhyWalkStepSchema = z.object({
+export const WhyWalkStepSchema = z.strictObject({
   kind: z.literal('walk_step'),
   depth: z.number(),
   ...whyClaimSummaryFields,
 }) satisfies z.ZodType<WhyWalkStep>
 
-export const WhyWalkSchema = z.object({
+export const WhyWalkSchema = z.strictObject({
   kind: z.literal('walk'),
   relation: z.enum(['supersession', 'derives_from_ancestry']),
   bound: z.number(),
@@ -221,12 +222,12 @@ export const WhyWalkSchema = z.object({
   missingLinks: z.array(WhyMissingLinkSchema),
 }) satisfies z.ZodType<WhyWalk>
 
-export const WhyElementRefSchema = z.object({
+export const WhyElementRefSchema = z.strictObject({
   kind: z.literal('ui_element'),
   elementId: z.string(),
 }) satisfies z.ZodType<WhyElementRef>
 
-export const WhyExplanationTreeSchema = z.object({
+export const WhyExplanationTreeSchema = z.strictObject({
   kind: z.literal('explanation'),
   resolverVersion: z.literal(WHY_RESOLVER_VERSION),
   bound: z.number(),
@@ -241,7 +242,7 @@ export const WhyExplanationTreeSchema = z.object({
   unresolvedEdges: z.array(WhyMissingLinkSchema),
 }) satisfies z.ZodType<WhyExplanationTree>
 
-export const WhyUnresolvableSchema = z.object({
+export const WhyUnresolvableSchema = z.strictObject({
   kind: z.literal('unresolvable'),
   resolverVersion: z.literal(WHY_RESOLVER_VERSION),
   reason: z.enum(WHY_UNRESOLVABLE_REASONS),
@@ -256,3 +257,34 @@ export const WhyResolutionSchema = z.discriminatedUnion('kind', [
   WhyEvidenceNodeSchema,
   WhyMissingLinkSchema,
 ]) satisfies z.ZodType<WhyExplanationTree | WhyUnresolvable | WhyEvidenceNode | WhyMissingLink>
+
+/**
+ * True only when the projection actually ANSWERS the reference: schema validity and an
+ * echoed reference are not enough, because a stale or squatting service can echo the
+ * requested reference while attaching another claim's contract-valid walk. A claim
+ * reference is answered by an explanation whose claim carries the same id and layer, or
+ * by an unresolvable echoing the same id; an observation reference by its own evidence
+ * anchor or a missing-link naming exactly that evidence id. Everything else is a
+ * mismatch, whatever it parses as. Typed against the readonly resolver interfaces so
+ * both parsed values and fixture compositions can be checked.
+ */
+export function whyResolutionAnswersReference(
+  reference: AnalyticReference,
+  projection: WhyExplanationTree | WhyUnresolvable | WhyEvidenceNode | WhyMissingLink,
+): boolean {
+  if (reference.kind === 'observation') {
+    if (projection.kind === 'evidence') return projection.evidenceId === reference.evidenceId
+    if (projection.kind === 'missing_link') {
+      return projection.targetKind === 'evidence' && projection.targetId === reference.evidenceId
+    }
+    return false
+  }
+  if (projection.kind === 'explanation') {
+    return (
+      projection.claim.claimId === reference.claimId
+      && projection.claim.layer === reference.claimLayer
+    )
+  }
+  if (projection.kind === 'unresolvable') return projection.claimId === reference.claimId
+  return false
+}

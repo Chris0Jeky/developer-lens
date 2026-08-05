@@ -6,6 +6,7 @@ import {
   WHY_UNRESOLVABLE_REASONS,
   WHY_WALK_TERMINATIONS,
   WhyResolutionSchema,
+  whyResolutionAnswersReference,
 } from './whyContract.js'
 import * as whyResolver from '../server/storage/whyResolver.js'
 import {
@@ -35,6 +36,28 @@ describe('why contract — the runtime schema mirrors the resolver projection ex
     expect(whyResolver.WHY_UNRESOLVABLE_REASONS).toBe(WHY_UNRESOLVABLE_REASONS)
     expect(whyResolver.WHY_WALK_TERMINATIONS).toBe(WHY_WALK_TERMINATIONS)
     expect(whyResolver.WHY_RESOLVER_VERSION).toBe(WHY_RESOLVER_VERSION)
+  })
+
+  it('rejects undeclared fields anywhere in the projection instead of stripping them', () => {
+    for (const reference of INTEGRATION_SHAPE_REFERENCES) {
+      const wire = JSON.parse(JSON.stringify(resolveIntegrationShapeEvidence(reference))) as Record<string, unknown>
+      wire.surprise = 'undeclared'
+      expect(WhyResolutionSchema.safeParse(wire).success, JSON.stringify(reference)).toBe(false)
+    }
+  })
+
+  it('binds a projection to the reference it answers', () => {
+    for (const reference of INTEGRATION_SHAPE_REFERENCES) {
+      const resolution = resolveIntegrationShapeEvidence(reference)
+      expect(whyResolutionAnswersReference(reference, resolution), JSON.stringify(reference)).toBe(true)
+      for (const other of INTEGRATION_SHAPE_REFERENCES) {
+        if (other === reference) continue
+        expect(
+          whyResolutionAnswersReference(other, resolution),
+          `${JSON.stringify(other)} must not be answered by ${JSON.stringify(reference)}'s walk`,
+        ).toBe(false)
+      }
+    }
   })
 
   it('rejects truncated and mislabelled projections', () => {

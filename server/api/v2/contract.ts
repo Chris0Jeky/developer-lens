@@ -14,7 +14,7 @@ import {
 import { AnalyticReferenceSchema } from '../../../shared/findings.js'
 import { ISO_WEEK_LABEL_PATTERN, isoWeekLabel } from '../../../shared/presentationGrain.js'
 import { DataClassSchema } from '../../../shared/privacy.js'
-import { WhyResolutionSchema } from '../../../shared/whyContract.js'
+import { WhyResolutionSchema, whyResolutionAnswersReference } from '../../../shared/whyContract.js'
 
 /**
  * Response contracts for the `/api/v2` bootstrap slice (card DL-BRIDGE-01, ADR-04).
@@ -249,6 +249,14 @@ export const V2EvidenceResolveResponseSchema = z
     projection: WhyResolutionSchema,
   })
   .strict()
+  .superRefine((body, ctx) => {
+    // Schema validity and an echoed reference are not enough: the projection must
+    // ANSWER the echoed reference, or a squatter could label another claim's valid
+    // walk with the reference the client asked for.
+    if (!whyResolutionAnswersReference(body.reference, body.projection)) {
+      ctx.addIssue({ code: 'custom', message: 'projection does not answer the echoed reference' })
+    }
+  })
 
 export type V2EvidenceResolveResponse = z.infer<typeof V2EvidenceResolveResponseSchema>
 
