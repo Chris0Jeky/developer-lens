@@ -93,7 +93,7 @@ export const CARDS = [
   authority: AUTH_CONTRACT + '; formalises the existing P4/P12 card idiom', prohibited: PROH_STD + '; no transition without hash-bound reviewed card',
   behavior: 'ADR-03: transitions require card binding, preview, exact-head proving checks; unknown state fails closed; consentRevision = card sha256 (existing idiom).',
   accept: 'Simulated G2/G3/G4 approvals leave every capability state byte-identical; illegal transitions rejected; P4 activation card parses into the new lifecycle unchanged.',
-  prove: 'npm test -- server/lifecycle.test.ts; npm run check',
+  prove: 'Historical: server/lifecycle.ts and its test were delivered by this card and later deleted by the 10_LIFE_02B_DECISION.md §7 simplification (2026-08-05); re-prove via git history if ever needed.',
   fixtures: 'Invented cards, tampered hashes, replayed approvals.',
   rollback: 'Lifecycle wraps the existing registry; remove wrapper, registry unchanged.',
   demo: 'State-machine diagram + invariant test output.' },

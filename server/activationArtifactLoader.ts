@@ -424,15 +424,3 @@ export async function loadHashBoundActivationTaskCardArtifact(
   const loaded = await loadFixedArtifactSnapshot(snapshot, TASK_CARD_SPEC, snapshot.expectedSha256, NO_HOOKS, invalid)
   return { taskId: loaded.taskId, parsed: loaded.parsed }
 }
-
-export const ACTIVATION_ARTIFACT_LOAD_ERROR_CODE = 'INVALID_ACTIVATION_ARTIFACT_LOAD' as const
-export class ActivationArtifactLoadError extends Error {
-  readonly code = ACTIVATION_ARTIFACT_LOAD_ERROR_CODE
-
-  constructor() {
-    super(ACTIVATION_ARTIFACT_LOAD_ERROR_CODE)
-    this.name = 'ActivationArtifactLoadError'
-  }
-}
-
-

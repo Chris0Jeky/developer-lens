@@ -380,7 +380,7 @@ describe('storage-v3 B1a proposal', () => {
     expect(liveClaims.LineageEventKindSchema.safeParse('legacy_deletion_operation').success).toBe(false)
   })
 
-  it('allows only the inert migration/rewrite/sweep/schema/proposal/composition chain and no production caller', () => {
+  it('allows only the inert migration/rewrite/sweep/schema/proposal chain and no production caller', () => {
     const root = resolve(__dirname, '../..')
     const roots = ['server', 'shared', 'src', 'scripts'].map((name) => join(root, name))
     const files: string[] = []
@@ -432,19 +432,10 @@ describe('storage-v3 B1a proposal', () => {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
-
-
-
-
-
         if (target && /(?:^|[\\/])v3ContinuityCasProposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
-
-
-
-
         ts.forEachChild(node, check)
       }
       check(file)

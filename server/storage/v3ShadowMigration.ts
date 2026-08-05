@@ -244,8 +244,10 @@ function assertSelectableTarget(db: Database.Database): void {
   if (String(db.prepare('PRAGMA integrity_check').pluck().get()) !== 'ok') throw new Error()
   if (String(db.prepare('PRAGMA quick_check').pluck().get()) !== 'ok') throw new Error()
   if (db.prepare('PRAGMA foreign_key_check').all().length !== 0) throw new Error()
-  // import_run's disposition is delete-at-migration and the rewrite never writes it.
-  if (Number(db.prepare('SELECT COUNT(*) FROM import_run').pluck().get()) !== 0) throw new Error()
+  // Delete-disposition tables: the rewrite never writes them, so any row is injected.
+  for (const table of ['import_run', 'coverage_observation']) {
+    if (Number(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get()) !== 0) throw new Error()
+  }
 }
 
 /**
@@ -271,6 +273,15 @@ export function replayNormalizedShadowChecksum(db: Database.Database): string {
 
 const FULL_EQUIVALENCE_VERSION = 'storage-v3-full-equivalence.v1'
 
+/**
+ * Columns whose values the rewrite mints from caller entropy. Only these are
+ * alpha-renamed in the equivalence digest; a retained C2 value that merely has a
+ * reminted-key shape (source_job_id, source_snapshot_id, source_coverage_id, and
+ * any other source-opaque token) is compared literally, so a same-shaped
+ * substitution in one target still refuses acceptance.
+ */
+const ENTROPY_ID_COLUMNS = new Set([...C1_ID_COLUMNS, 'observation_id', 'fact_id', 'event_id'])
+
 function fullRows(db: Database.Database): C1Row[] {
   const projected: C1Row[] = []
   for (const table of [...STORAGE_V3_SHADOW_TABLES].sort()) {
@@ -286,7 +297,9 @@ function fullRows(db: Database.Database): C1Row[] {
           return {
             column,
             value,
-            id: typeof value === 'string' && RANDOM_KEY.test(value) ? value : undefined,
+            id: ENTROPY_ID_COLUMNS.has(column) && typeof value === 'string' && RANDOM_KEY.test(value)
+              ? value
+              : undefined,
           }
         }),
       })
@@ -296,12 +309,13 @@ function fullRows(db: Database.Database): C1Row[] {
 }
 
 /**
- * Digest every column of every shadow table, with minted random keys alpha-renamed
- * from their graph neighbourhoods. Retained C2 and preserved C0 bridge values are
- * deterministic functions of the source rows, asOf and installation key, so the
- * primary and replay targets must agree exactly; a target-side corruption of any
- * alias, provenance, hash or exact-time column refuses acceptance. The digest binds
- * alias-shaped material and must never enter the public result or any log.
+ * Digest every column of every shadow table, with the minted identity columns
+ * alpha-renamed from their graph neighbourhoods and every other column compared
+ * literally. Retained C2 and preserved C0 bridge values are deterministic
+ * functions of the source rows, asOf and installation key, so the primary and
+ * replay targets must agree exactly; a target-side corruption of any alias,
+ * source-provenance, hash or exact-time column refuses acceptance. The digest
+ * binds alias-shaped material and must never enter the public result or any log.
  */
 function fullEquivalenceShadowChecksum(db: Database.Database): string {
   const rows = fullRows(db)

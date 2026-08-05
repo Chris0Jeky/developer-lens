@@ -72,15 +72,19 @@ residual_risks:
      separation, whyResolver lineage joins. The Ed25519 low-order condition is discharged as moot
      by the §7 deletion and reattaches only if signatures return'
   - 'late Codex findings from PRs #105/#109/#110/#112 are batch-triaged into tracking issues
-     (2026-08-05); two #109 findings were fixed directly (empty limitation_code CHECK; import_run
-     emptiness at acceptance), the rest await verification there'
+     #128/#129 (2026-08-05); two #109 findings were fixed directly (coverage_ledger empty-code
+     CHECKs — the preserved v2_coverage_record bridge table deliberately keeps byte-parity with
+     its v2 source; delete-disposition tables must be empty at acceptance), the rest await
+     verification there'
   - 'v2_store_provenance drift: api/v2/store.ts declares 6 columns including activation_card_id,
      v3ShadowSchema.ts declares 5 and pins mode=synthetic, yet v3Proposal.ts calls the table
      preserve — an activation_card-mode v2 store is unmigratable (SOURCE_BRIDGE_REFUSED)'
   - 'the C2 sweep has never run against a rewrite output (its fixtures are hand-seeded); the
      executable-core slice owes a sweep-after-rewrite integration test'
-  - 'replayNormalizedShadowChecksum/graphColours refinement is super-linear in identifier count;
-     fine for fixtures, unproven at multi-year scale — measure before the first real migration'
+  - 'graphColours refinement is super-linear in identifier count, and the acceptance-time
+     fullEquivalenceShadowChecksum (PR #127) is now the dominant term because it colours every
+     minted identity column across all tables; fine for fixtures, a practical hang risk at
+     multi-year scale — measure and budget in the executable-core slice before any real migration'
   - 'B4 completion only unblocks LIFE-03; a first real migration/connector also requires LIFE-03
      backup/grace/restore/tombstone-replay proof and #86 V2 alias-bearing coverage remint'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,

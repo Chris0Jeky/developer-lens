@@ -19,7 +19,7 @@ import {
   STORAGE_V3_SHADOW_TABLES,
   rewriteStorageV3Shadow,
 } from './v3ShadowRewrite.js'
-import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
+import { installStorageV3ShadowSchema, STORAGE_V3_SHADOW_SCHEMA_VERSION } from './v3ShadowSchema.js'
 
 function sourceFixture(): { db: Database.Database; key: Buffer; raw: string } {
   const db = openStorageDatabase(':memory:')
@@ -249,6 +249,18 @@ describe('B1b-iii shadow orchestration', () => {
     }],
     ['retained C2 divergence invisible to the C1 checksum', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
       if (kind === 'replay') attempt.db.prepare('UPDATE commit_observation SET sha = ?').run('tampered-sha')
+    }],
+    ['same-shaped key substitution in a literal C2 column', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
+      attempt.db.prepare('UPDATE commit_observation SET sha = ?')
+        .run(`job-${(kind === 'primary' ? 'a' : 'b').repeat(64)}`)
+    }],
+    ['identical injection into a delete-disposition table', (_kind: 'primary' | 'replay', attempt: FileAttempt) => {
+      attempt.db.prepare('INSERT INTO import_run (run_id, schema_version, status) VALUES (?, ?, ?)')
+        .run(`run-${'c'.repeat(64)}`, STORAGE_V3_SHADOW_SCHEMA_VERSION, 'complete')
+      const scope = attempt.db.prepare('SELECT scope_id FROM claim_scope LIMIT 1').pluck().get() as string
+      attempt.db.prepare(
+        'INSERT INTO coverage_observation (scope_id, coverage_id, capability_id, status, limitation_code, observed_units) VALUES (?, ?, ?, ?, ?, 0)',
+      ).run(scope, `cov-${'d'.repeat(64)}`, 'github.core', 'complete', 'NONE')
     }],
   ] as const)('refuses %s after reopen and discards both targets', (_label, onReopen) => {
     const { db: source, key, raw } = sourceFixture()
