@@ -148,12 +148,6 @@ function freezeDeep<T>(value: T): T {
   return value
 }
 
-function isDeepFrozen(value: unknown): boolean {
-  if (!value || typeof value !== 'object') return true
-  if (!Object.isFrozen(value)) return false
-  return Object.values(value as Record<string, unknown>).every(isDeepFrozen)
-}
-
 function stableJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(stableJson).join(',')}]`
   if (value && typeof value === 'object') {
@@ -168,19 +162,31 @@ export function capabilityLifecycleEventDigest(event: CapabilityLifecycleEvent):
 }
 
 function validSnapshot(input: unknown): CapabilityLifecycleSnapshot | null {
-  const parsed = CapabilityLifecycleSnapshotSchema.safeParse(input)
-  if (!parsed.success) return null
-  let reconstructed = createCapabilityLifecycleSnapshot(parsed.data.capabilityId, parsed.data.scopeAlias)
-  for (const record of parsed.data.eventHistory) {
-    if (record.digest !== capabilityLifecycleEventDigest(record.event)) return null
-    const replayed = reduceValidatedCapabilityLifecycle(reconstructed, record.event)
-    if (!replayed.ok) return null
-    reconstructed = replayed.snapshot
+  try {
+    const parsed = CapabilityLifecycleSnapshotSchema.safeParse(input)
+    if (!parsed.success) return null
+    let reconstructed = createCapabilityLifecycleSnapshot(parsed.data.capabilityId, parsed.data.scopeAlias)
+    for (const record of parsed.data.eventHistory) {
+      if (record.digest !== capabilityLifecycleEventDigest(record.event)) return null
+      const replayed = reduceValidatedCapabilityLifecycle(reconstructed, record.event)
+      if (!replayed.ok) return null
+      reconstructed = replayed.snapshot
+    }
+    if (stableJson(reconstructed) !== stableJson(parsed.data)) return null
+    return reconstructed
+  } catch {
+    return null
   }
-  if (stableJson(reconstructed) !== stableJson(parsed.data)) return null
-  return isDeepFrozen(input)
-    ? input as CapabilityLifecycleSnapshot
-    : reconstructed
+}
+
+/**
+ * Replay and validate an existing lifecycle transcript without applying an event.
+ * This is a structural check only; it does not authenticate any opaque digest or
+ * authorize a caller.
+ */
+export function replayValidateCapabilityLifecycleSnapshot(input: unknown): CapabilityLifecycleReduction {
+  const snapshot = validSnapshot(input)
+  return snapshot ? success(snapshot) : failure('INVALID_LIFECYCLE_SNAPSHOT')
 }
 
 function success(snapshot: CapabilityLifecycleSnapshot): CapabilityLifecycleReduction {

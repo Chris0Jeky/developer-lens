@@ -161,6 +161,43 @@ stale or different operation fails. If continuity is intentionally abandoned, a 
 a `scope_series_restarted` event without an old-scope ID or expired-alias link; this is the explicit
 series-fragmentation disposition.
 
+### B2b-i structural continuity candidate (current)
+
+B2b-i implements only a pure, caller-free structural candidate builder. It accepts a replay-valid
+`CapabilityLifecycleSnapshot` plus a claimed reviewed report digest/time, positive continuity epoch,
+nonnegative expected continuity revision, and a lowercase `op-` operation ID. Eligibility requires
+exact `ACTIVE` `github.core`, matching non-null card/consent digests, non-null preview and exact-head
+proof digests, no deletion receipt, and both deletion-intent fields null. The candidate and its
+domain-separated C2 receipt digest are deterministic and deeply frozen; refusal codes are stable and contain
+no receipt values. The result says only **replay-valid** and **structurally eligible** for the
+**claimed review digest/time**. It never says authorized, authenticated, verified review, renewal
+permitted, or retention extended. No raw provider ID or installation key is accepted or hashed, and no production module
+imports this proposal.
+
+The candidate records the existing capability-lifecycle epoch separately from the caller's proposed
+continuity epoch; it neither equates nor advances them. A later writer must compare the continuity
+epoch and revision with its own retained state. B2b-i performs no filesystem, clock, key, database,
+network, lifecycle, retention, or capability mutation.
+
+The success object omits the scope alias, card/preview/proof digests, claimed report digest/time,
+and event transcript. Its sole derived receipt is still classified local C2 because it binds those
+inputs; it is not a content-free proof or retained C1 key and may enter no log, API, export, model,
+or public sink. The trusted loader/writer must retain or revalidate its own ephemeral inputs rather
+than trying to recover identity or review metadata from this candidate.
+
+The next bounded slices are the trusted report/card/key/clock loader, then a compare-and-swap writer,
+then restart handling plus the migration-origin disposition for already-expired never-retained C2
+groups. Existing capability registry/API values remain `never_authorized` throughout.
+
+For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
+migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the
+original expiry week only when the retained same-scope C1 anchor is reachable from a retained claim:
+coverage is reached directly or through claim → evidence → coverage; its job and optional snapshot
+follow that coverage; a checkpoint follows only when both its job and snapshot are reachable. A
+claim remains retained for this test when its own `created_at` C2 provenance is NULL. Unreferenced,
+unbound/omitted, and base-observation anchors emit no origin event. Ambiguous ownership, reachability,
+or source expiry aborts instead of inferring lineage.
+
 ## 4. Lineage, resolver, and app-owned artifacts
 
 Storage v3 uses a versioned closed lineage schema with separate `subject_kind`, canonical

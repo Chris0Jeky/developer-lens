@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2a-iii ongoing C2 sweep)
+Last updated: **2026-08-05** (DL-LIFE-02 B2b-i structural continuity candidate)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,7 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-and B1b-i/ii/iii plus B2a-i/ii are merged; the current head contains the inert B2a-iii C2 sweep, while the rest of B2–B4
+and B1b-i/ii/iii plus B2a-i/ii/iii are merged; the current branch contains the inert B2b-i
+structural continuity candidate, while the rest of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
@@ -1856,7 +1857,7 @@ as a non-blocking residual. PR #113 head `d28bd9f` passed hosted run `3099601391
 No production caller, selector, capability state, or HUMAN_TODO item changes. LIFE-02/#80 and B2
 remain incomplete.
 
-## 2026-08-05 — DL-LIFE-02 B2a-iii ongoing C2 sweep (current slice)
+## 2026-08-05 — DL-LIFE-02 B2a-iii ongoing C2 sweep (merged)
 
 B2a-iii versions the caller-free shadow as `3.0.0-shadow-b2a-iii` / `user_version` 305 and adds the
 separate target-only `sweepStorageV3C2` seam. The sweep first acquires an immediate SQLite write
@@ -1897,16 +1898,53 @@ no sweep event; before any production migration/writer, the renewal/writer contr
 decide and prove whether that never-retained state needs an origin event. B3 deletion/lineage and B4
 app-owned artifacts remain separate. LIFE-02/#80 and B2 remain incomplete.
 
+PR #114 head `762f9f9` passed hosted run `30999010546`, merged as `6dad325`, and passed exact-merge
+Pages/privacy run `30999228603` plus an empty late-comment sweep.
+
+## 2026-08-05 — DL-LIFE-02 B2b-i structural continuity candidate (current slice)
+
+B2b-i adds only the caller-free structural continuity candidate: a replay-valid active
+`github.core` transcript, matching card/consent, preview/proof presence, no receipt, and no pending
+deletion intent are required alongside a claimed report digest/time, positive continuity epoch,
+nonnegative compare-and-swap revision, and lowercase `op-` operation ID. The output is deterministic and deeply
+frozen, with stable content-free refusal codes and a domain-separated C2 receipt digest. The
+capability-lifecycle epoch and proposed continuity epoch remain separate values. It claims only
+replay-valid, structurally eligible, claimed review digest/time; it never authorizes, authenticates,
+verifies review, permits renewal, or extends retention. No raw provider ID or installation key is accepted or hashed,
+no production caller imports the module, and capability registry/API values remain
+`never_authorized`.
+
+The candidate omits direct C2 identity, lifecycle-digest, report-digest, review-time, and transcript
+fields. Its opaque receipt digest remains local C2 because it binds those ephemeral inputs; it is
+neither a proof nor a retained C1 key and is forbidden from every log/API/export/model/public sink.
+The next writer must revalidate its trusted ephemeral inputs instead of treating the candidate as
+self-identifying.
+
+The focused lifecycle/candidate/proposal seam passes 21 tests. The full local gate passes 66 files /
+1,057 tests plus context verification, lint, typecheck, build, and diff checking; only the two
+pre-existing Evidence Drawer Fast Refresh warnings and the existing bundle-size advisory remain.
+Fresh authority, privacy/state, and narrow code lenses found no HIGH/CRITICAL defect after the
+closed-request, separate-epoch, C2-output, exact-transcript-receipt, inherited-snapshot, and AST
+guard corrections. Hosted and exact-merge gates remain pending.
+
+The next exact slices are the trusted report/card/key/clock loader, then the compare-and-swap writer,
+then restart handling plus migration-origin disposition for already-expired never-retained C2
+groups. “Never-retained” refers to the expired C2 payload: only a same-scope C1 anchor reachable
+from a retained claim emits `c2_retention_expired` at the original expiry week. Reachability is
+claim → coverage or claim → evidence → coverage, then that coverage's job/snapshot and a checkpoint
+only when both owners are reachable; unreferenced, omitted, and base anchors emit no origin event.
+Coverage/job absence resolution, B3 deletion, and B4 artifacts remain later dependencies.
+
 ## Exact resume point
 
-**Current 2026-08-05 (B2a-iii in progress).** Finish fresh post-fix review, hosted, exact-merge,
-and late-sweep gates for the target-only ongoing C2 sweep. Preserve the logical C2-group/C1-anchor
-split, inclusive canonical UTC expiry, immediate transaction, no-resurrection replay, claim-reachable
-retention lineage, and per-scope neutral operations. Do not add a source reader, production selector,
-or capability activation. Then take authenticated continuity renewal as the next bounded B2 slice,
-including the explicit migration-origin disposition for already-expired never-retained C2 groups,
-followed by canonical coverage/job absence resolution and its API/PresentationView/Evidence Drawer
-consumer migration. Continue B3-B4 exactly as
+**Current 2026-08-05 (B2b-i in progress).** Finish the local, fresh review, hosted, exact-merge,
+and late-sweep gates for the pure structural continuity candidate. Preserve its replay-valid-only
+wording, closed request shape, separate lifecycle/continuity epochs, pending-revocation refusal,
+caller-free AST gate, and absence of filesystem, clock, key, database, network, retention, or
+capability mutation. Then implement the trusted report/card/key/clock loader, followed by the
+compare-and-swap renewal writer, restart handling, and the claim-reachable migration-origin
+retention events. Only then take canonical coverage/job absence resolution and its
+API/PresentationView/Evidence Drawer consumer migration. Continue B3-B4 exactly as
 `docs/analyser-program/10_LIFE_02B_DECISION.md` defines. Do not add a real-store/source-selection
 caller, persist identity input/mapping, or enter LIFE-03 backup/grace work. No intermediate slice may mark LIFE-02
 DONE or close #80. B4 only unblocks LIFE-03; the first real migration/connector additionally needs
