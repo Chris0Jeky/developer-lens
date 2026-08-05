@@ -9,9 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e/f/g/h/i are merged;
-the current branch adds only an inert process-only signature-verification proposal, while the
-remainder of B2–B4
+B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e/f/g/h/i/j are merged; the next bounded
+slice is the inert B2b-ii-k `owner-trust-root.v1` snapshot validator, while B2b-ii-k through B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
@@ -2267,9 +2266,11 @@ identity. Every executable capability remains `never_authorized`.
 
 The owner completed HUMAN_TODO q-7 on 2026-08-05. Live REST and GraphQL reads prove classic `main`
 protection requires `Prove the pull request`; `strict=false` and administrator enforcement remains
-off, so the repository's no-red-CI law still binds privileged merges. Repository cleanup removed
-48 merged local branches and 58 merged remote branches; only `main` remains registered locally and
-remotely. The q-8 `dl-worktrees/value01` orphan remains unregistered and deliberately untouched.
+off, so the repository's no-red-CI law still binds privileged merges. At the pre-PR cleanup
+checkpoint, repository cleanup removed 48 merged local branches and 58 merged remote branches so
+only `main` remained registered locally and remotely. This transient state-sync branch/worktree is
+removed after merge. The q-8 `dl-worktrees/value01` orphan remains unregistered and deliberately
+untouched.
 
 ## Exact resume point
 
