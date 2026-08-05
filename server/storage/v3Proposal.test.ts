@@ -380,7 +380,7 @@ describe('storage-v3 B1a proposal', () => {
     expect(liveClaims.LineageEventKindSchema.safeParse('legacy_deletion_operation').success).toBe(false)
   })
 
-  it('allows only the inert migration/rewrite/sweep/schema/proposal chain and no production caller', () => {
+  it('allows only the inert migration/rewrite/sweep/schema/proposal/composition chain and no production caller', () => {
     const root = resolve(__dirname, '../..')
     const roots = ['server', 'shared', 'src', 'scripts'].map((name) => join(root, name))
     const files: string[] = []
@@ -439,9 +439,17 @@ describe('storage-v3 B1a proposal', () => {
         }
         if (target && /(?:^|[\\/])v3ContinuityReviewAnchorLoader(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          offenders.push(`${sourcePath} -> ${target}`)
+          if (sourcePath !== 'server/storage/v3ContinuityStructuralComposition.ts') {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
         }
         if (target && /(?:^|[\\/])trustedProcessClock(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (sourcePath !== 'server/storage/v3ContinuityStructuralComposition.ts') {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
+        }
+        if (target && /(?:^|[\\/])v3ContinuityStructuralComposition(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
@@ -459,7 +467,9 @@ describe('storage-v3 B1a proposal', () => {
         }
         if (target && /(?:^|[\\/])activationReportLoader(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          offenders.push(`${sourcePath} -> ${target}`)
+          if (sourcePath !== 'server/storage/v3ContinuityStructuralComposition.ts') {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
         }
         ts.forEachChild(node, check)
       }
@@ -593,6 +603,31 @@ describe('storage-v3 B1a proposal', () => {
     expect(activationReportLoaderImports).toEqual([
       '../../activationArtifactLoader.js',
       './activationReport.js',
+    ])
+    const continuityCompositionPath = join(
+      root,
+      'server',
+      'storage',
+      'v3ContinuityStructuralComposition.ts',
+    )
+    const continuityCompositionFile = ts.createSourceFile(
+      continuityCompositionPath,
+      readFileSync(continuityCompositionPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const continuityCompositionImports = continuityCompositionFile.statements.flatMap((statement) =>
+      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
+        ? [statement.moduleSpecifier.text]
+        : [])
+    expect(continuityCompositionImports).toEqual([
+      'node:path',
+      '../connectors/github/activationReportLoader.js',
+      '../connectors/github/activationTaskLoader.js',
+      '../lifecycle.js',
+      '../trustedProcessClock.js',
+      './taskInstallationKey.js',
+      './v3ContinuityReviewAnchorLoader.js',
     ])
     expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))
       .toMatch(/from ['"]\.\/v3ShadowRewrite\.js['"]/)
