@@ -65,6 +65,36 @@ function seedIncremental(db: Database.Database, scopeAlias: string, dates = {
   db.prepare('INSERT INTO collection_checkpoint (capability_id, scope_alias, query_version, source_api_version, high_watermark, cursor_hint, bounded_overlap_start, last_complete_snapshot_hash, consent_revision, committed_job_id, source_snapshot_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('github.core', scopeAlias, 'github.core.v1', '2026-03-10', dates.rangeEnd, 'cursor', dates.rangeStart, 'b'.repeat(64), 'consent-v3', 'job-seeded', 'snapshot-seeded')
 }
 
+function seedClaimGraph(
+  db: Database.Database,
+  raw: string,
+  key: Buffer,
+  createdAt: string,
+): { sourceClaimId: string; scope: string } {
+  const seeded = seedIdentity(db, raw, key, undefined, undefined, 'e')
+  seedIncremental(db, seeded.provider)
+  db.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)')
+    .run('evidence-seeded', 'observed', '2.0.0', 'coverage-seeded', '2026-01-01T00:00:00.000Z', 'job-seeded')
+  const sourceClaimId = computeClaimId({
+    layer: 'modelled',
+    statementCode: 'DELIVERY_FLOW',
+    methodId: 'method',
+    methodVersion: '1.0.0',
+    basis: [{ role: 'supports', targetEvidenceId: 'evidence-seeded' }],
+    windowStart: '2026-01-01T00:00:00.000Z',
+    windowEnd: '2026-02-01T00:00:00.000Z',
+    scopeId: seeded.scope,
+    schemaVersion: CLAIM_SCHEMA_VERSION,
+  })
+  db.prepare('INSERT INTO claim (claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+    .run(sourceClaimId, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', seeded.scope, CLAIM_SCHEMA_VERSION, 'claim-id.v2', createdAt)
+  db.prepare('INSERT INTO claim_evidence_edge (claim_id, role, target_evidence_id) VALUES (?, ?, ?)')
+    .run(sourceClaimId, 'supports', 'evidence-seeded')
+  db.prepare('INSERT INTO limitation_instance (claim_id, limitation_code, dimension, copy_key) VALUES (?, ?, ?, ?)')
+    .run(sourceClaimId, 'SAMPLE_TOO_SMALL', 'sample', 'copy')
+  return { sourceClaimId, scope: seeded.scope }
+}
+
 describe('B1b-ii shadow rewrite', () => {
   it('copies a bound repository and remains incomplete/non-selectable', () => {
     const source = sourceDb(), target = new Database(':memory:'), raw = 'invented-provider-1', key = Buffer.alloc(32, 7), aliases = createInstallationAliases(key), provider = aliases.repositoryProviderId(raw), analytical = aliases.repositoryAnalyticalKey(raw)
@@ -166,6 +196,50 @@ describe('B1b-ii shadow rewrite', () => {
     } finally { source.close(); target.close() }
   })
 
+  it('clears only expired claim provenance at the inclusive clamped boundary', () => {
+    const liveSource = sourceDb(), expiredSource = sourceDb()
+    const liveTarget = new Database(':memory:'), expiredTarget = new Database(':memory:')
+    const raw = 'claim-provenance-provider', key = Buffer.alloc(32, 113)
+    const createdAt = '2025-01-31T12:00:00.000Z'
+    const liveSeed = seedClaimGraph(liveSource, raw, key, createdAt)
+    const expiredSeed = seedClaimGraph(expiredSource, raw, key, createdAt)
+    try {
+      const options = {
+        identityBindings: [{ rawProviderId: raw }],
+        installationKey: key,
+        randomBytes: () => Buffer.alloc(32, 114),
+      }
+      rewriteStorageV3Shadow({
+        ...options,
+        sourceDb: liveSource,
+        targetDb: liveTarget,
+        asOf: '2026-02-28T11:59:59.999Z',
+      })
+      rewriteStorageV3Shadow({
+        ...options,
+        sourceDb: expiredSource,
+        targetDb: expiredTarget,
+        asOf: '2026-02-28T12:00:00.000Z',
+      })
+      const c1Columns = 'claim_id, scope_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, superseded_by'
+      expect(liveTarget.prepare(`SELECT ${c1Columns} FROM claim`).get())
+        .toEqual(expiredTarget.prepare(`SELECT ${c1Columns} FROM claim`).get())
+      expect(liveTarget.prepare('SELECT created_at FROM claim').pluck().get()).toBe(createdAt)
+      expect(expiredTarget.prepare('SELECT created_at FROM claim').pluck().get()).toBeNull()
+      expect(liveTarget.prepare('SELECT COUNT(*) FROM claim_evidence_edge').pluck().get()).toBe(1)
+      expect(expiredTarget.prepare('SELECT COUNT(*) FROM claim_evidence_edge').pluck().get()).toBe(1)
+      expect(liveTarget.prepare('SELECT COUNT(*) FROM limitation_instance').pluck().get()).toBe(1)
+      expect(expiredTarget.prepare('SELECT COUNT(*) FROM limitation_instance').pluck().get()).toBe(1)
+      expect(liveSource.prepare('SELECT created_at FROM claim WHERE claim_id = ?').pluck().get(liveSeed.sourceClaimId)).toBe(createdAt)
+      expect(expiredSource.prepare('SELECT created_at FROM claim WHERE claim_id = ?').pluck().get(expiredSeed.sourceClaimId)).toBe(createdAt)
+    } finally {
+      liveSource.close()
+      expiredSource.close()
+      liveTarget.close()
+      expiredTarget.close()
+    }
+  })
+
   it('refuses a collection job without its required snapshot and coverage graph', () => {
     const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, 121)
     const seeded = seedIdentity(source, 'incomplete-job', key)
@@ -262,6 +336,7 @@ describe('B1b-ii shadow rewrite', () => {
   it('keeps per-observation C2 data only before its exact expiry', () => {
     expect(addUtcMonthsClamped('2024-01-31T00:00:00.000Z')).toBe('2025-02-28T00:00:00.000Z')
     expect(addUtcMonthsClamped('2024-02-29T00:00:00.000Z')).toBe('2025-03-29T00:00:00.000Z')
+    expect(() => addUtcMonthsClamped('9999-12-31T00:00:00.000Z')).toThrow('INVALID_TIMESTAMP')
     const run = (asOf: string) => {
       const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, 17)
       seedIdentity(source, 'observation-expiry', key, '2025-01-01T00:00:00.000Z', '2025-01-01T00:00:00.000Z', 'c')

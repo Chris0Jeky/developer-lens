@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2a-i shadow immutability enforcement)
+Last updated: **2026-08-05** (DL-LIFE-02 B2a-ii claim-provenance retained form)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,7 +9,7 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-and B1b-i/ii/iii are merged; the current head contains inert B2a-i enforcement, while the rest of B2–B4
+and B1b-i/ii/iii plus B2a-i are merged; the current head contains inert B2a-ii claim-provenance expiry, while the rest of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
@@ -1803,7 +1803,7 @@ made the unchanged assertions pass under full-suite load. No production source s
 filesystem reader, identity mapping, or capability state changed. LIFE-02 remains incomplete;
 B2-B4 remain mandatory and HUMAN_TODO q-6/q-7/q-8 are unchanged.
 
-## 2026-08-05 — DL-LIFE-02 B2a-i shadow immutability enforcement (current slice)
+## 2026-08-05 — DL-LIFE-02 B2a-i shadow immutability enforcement (merged)
 
 PR #111 B1b-iii head `e575059` merged as `202aebea`; hosted run `30990269529` and exact-merge
 Pages run `30990502000` passed with an empty late-comment sweep. B2a-i advances the caller-free,
@@ -1827,20 +1827,42 @@ storage seam passes 116 tests and the full local gate passes 64 files / 1,030 te
 verification, lint, typecheck, build, and diff checking. Fresh post-fix lineage, schema, and final
 replacement-focused lenses found no remaining HIGH/CRITICAL defect. Direct
 deletion of lineage history is deliberately not claimed here; B3 owns complete SQL deletion and
-tombstone replay. Hosted and exact-merge gates remain pending. LIFE-02
+tombstone replay. PR #112 head `1c771cc` passed hosted run `30994203412`, merged as `e0f3894`,
+and passed exact-merge Pages/privacy run `30994446119` plus an empty late-comment sweep. LIFE-02
 and #80 remain incomplete; B2a is not complete. HUMAN_TODO q-6/q-7/q-8 are unchanged.
+
+## 2026-08-05 — DL-LIFE-02 B2a-ii claim-provenance retained form (current slice)
+
+B2a-ii advances only the caller-free shadow identity to `3.0.0-shadow-b2a-ii` / `user_version`
+304. It classifies `claim.created_at` as exact C2 operational provenance, keeps the active v2
+writer/parser/UI contract required and unchanged, and projects the target value with the existing
+UTC calendar-clamped rule: retain only while `asOf < addUtcMonthsClamped(created_at, 13)`, then
+write NULL at the inclusive boundary without deleting or reminting the C1 claim. A nullable field
+on the retained claim row is the smallest sufficient representation; no separate physical table is
+introduced before a second independently expiring claim field exists. `window_start` and
+`window_end` remain C1 analytical claim material because they define the claim ID and supersession
+series, rather than source-query provenance. The C1 checksum allowlist and claim-ID material remain
+unchanged and exclude `created_at`. Invented tests prove canonically shaped-or-NULL target storage, exact
+Jan-31 clamp behavior one millisecond before and at expiry, source immutability, retained claim/
+edge/limitation graph, old-303 refusal, and checksum invariance across two timestamps and NULL while
+still detecting a C1 claim change. The focused proposal/schema/rewrite/migration seam passes 120
+tests; the full local gate passes 64 files / 1,034 tests plus context verification, lint, typecheck,
+build, and diff checking. The target DDL deliberately enforces the exact UTC string shape only;
+semantic calendar validity remains enforced by the required source `ClaimRecordSchema` parse before
+the transactional rewrite. No direct target writer exists, and any future one must preserve that
+parser boundary. Fresh reviews found no HIGH/CRITICAL defect and retained this bounded distinction
+as a non-blocking residual. Hosted and exact-merge gates remain pending. No production caller,
+selector, capability state, or HUMAN_TODO item changes. LIFE-02/#80 and B2 remain incomplete.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B2a-i in progress).** Finish the full local, fresh post-fix review, hosted,
-exact-merge, and late-sweep gates for the caller-free v3 shadow enforcement seam. Preserve the
-conditional lineage rule: bind single-scope subjects, causes, and operations regardless of whether
-the owner or lineage row arrives first, but admit the first content-free tombstone after its owner
-disappears; do not replace it with a hard foreign key. Leave complete lineage-deletion enforcement
-to B3 rather than expanding B2a-i. Preserve both UPDATE and replacement-style INSERT enforcement.
-Then take B2a-ii as the next bounded slice: classify `claim.created_at` as expiring C2 operational
-provenance, make its C1-only retained form possible, and prove exact expiry/rewrite without
-activating a production caller. Continue the remainder of B2–B4 exactly as
+**Current 2026-08-05 (B2a-ii in progress).** Finish the full local, fresh review, hosted,
+exact-merge, and late-sweep gates for the target-only `claim.created_at` retained form. Keep the
+active v2 required timestamp contract and the C1 claim ID/checksum material unchanged. Expiry must
+clear only the target C2 value at the inclusive calendar-clamped boundary, preserving the full C1
+claim graph; do not add a production selector or a speculative side table. Then take the exact
+ongoing v3 C2 sweep as the next bounded B2 slice, including idempotent no-resurrection and
+transaction rollback, before authenticated continuity renewal and resolver/UI work. Continue B3-B4 exactly as
 `docs/analyser-program/10_LIFE_02B_DECISION.md` defines. Do not add a real-store/source-selection
 caller, persist identity input/mapping, or enter LIFE-03 backup/grace work. No intermediate slice may mark LIFE-02
 DONE or close #80. B4 only unblocks LIFE-03; the first real migration/connector additionally needs

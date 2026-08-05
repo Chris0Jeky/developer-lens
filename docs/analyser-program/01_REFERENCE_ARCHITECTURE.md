@@ -126,7 +126,12 @@ targets, as v1 did, made a re-derived successor collide with its own predecessor
 `derives_from` correction could not be expressed; and `layer` belongs in the material because a
 modelled and a hypothesis claim over identical inputs are different claims. `created_at` is
 deliberately excluded: replay of the same inputs at a later wall-clock reproduces identical claim
-IDs and is a no-op. A changed input set produces a new claim and a `superseded_by` link. "Why am I
+IDs and is a no-op. Storage v3 therefore classifies `created_at` itself as C2 operational
+provenance: the shadow rewrite retains it only while `asOf < addUtcMonthsClamped(created_at, 13)`
+and clears it at the inclusive boundary without changing the C1 claim row, ID, analytical window,
+edges, limitations, or supersession. `window_start`/`window_end` remain C1 analytical claim material,
+not source-query provenance, because they define claim identity and series. A changed input set
+produces a new claim and a `superseded_by` link. "Why am I
 seeing this?" resolves UI element → claim → edges → evidence → coverage → capability → consent
 revision in one deterministic walk.
 

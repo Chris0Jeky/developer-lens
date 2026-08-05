@@ -263,6 +263,37 @@ describe('storage-v3 B2a shadow schema', () => {
     }
   })
 
+  it('admits only canonically shaped or cleared claim operational provenance', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      const insertClaim = db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      const claimValues = (claimId: string, createdAt: string | null): readonly unknown[] => [
+        scopeA,
+        claimId,
+        'modelled',
+        'DELIVERY_FLOW',
+        'method',
+        '1.0.0',
+        '2026-01-01T00:00:00.000Z',
+        '2026-02-01T00:00:00.000Z',
+        '1.0.0',
+        'claim-id.v3',
+        createdAt,
+      ]
+      insertClaim.run(...claimValues(id('cl_'), null))
+      insertClaim.run(...claimValues(id('cl_', 'b'), '2026-02-01T00:00:00.000Z'))
+      expect(() => insertClaim.run(...claimValues(id('cl_', 'c'), '2026-02-01T00:00:00'))).toThrow()
+      expect(db.prepare('SELECT claim_id, created_at FROM claim ORDER BY claim_id').all()).toEqual([
+        { claim_id: id('cl_'), created_at: null },
+        { claim_id: id('cl_', 'b'), created_at: '2026-02-01T00:00:00.000Z' },
+      ])
+    } finally {
+      db.close()
+    }
+  })
+
   it('is idempotent in an isolated target', () => {
     const db = new Database(':memory:')
     try {
@@ -621,6 +652,7 @@ describe('storage-v3 B2a shadow schema', () => {
   it.each([
     ['B1b-i', 301],
     ['B1b-iii', 302],
+    ['B2a-i', 303],
   ])('rejects the superseded %s shadow identity before changing schema', (_slice, userVersion) => {
     const db = new Database(':memory:')
     try {

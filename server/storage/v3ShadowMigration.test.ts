@@ -332,6 +332,20 @@ function checksumFixture(
   return db
 }
 
+function insertChecksumClaim(db: Database.Database, scope: string, createdAt: string | null): void {
+  db.prepare(`INSERT INTO claim (
+    scope_id, claim_id, layer, statement_code, method_id, method_version,
+    window_start, window_end, schema_version, claim_id_material_version, created_at
+  ) VALUES (?, ?, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', ?, ?, '1.0.0', 'claim-id.v3', ?)`)
+    .run(
+      scope,
+      `cl_${'7'.repeat(64)}`,
+      '2026-01-01T00:00:00.000Z',
+      '2026-02-01T00:00:00.000Z',
+      createdAt,
+    )
+}
+
 describe('B1b-iii C1 replay checksum', () => {
   it('is invariant to fresh C2 IDs, C2 values, and row insertion order', () => {
     const first = checksumFixture(`scope-${'1'.repeat(64)}`, [
@@ -360,5 +374,26 @@ describe('B1b-iii C1 replay checksum', () => {
     try {
       expect(replayNormalizedShadowChecksum(second)).not.toBe(replayNormalizedShadowChecksum(first))
     } finally { first.close(); second.close() }
+  })
+
+  it('keeps claim IDs and C1 checksum stable when only C2 claim provenance changes or expires', () => {
+    const scope = `scope-${'1'.repeat(64)}`
+    const first = checksumFixture(scope, [])
+    const second = checksumFixture(scope, [])
+    const cleared = checksumFixture(scope, [])
+    try {
+      insertChecksumClaim(first, scope, '2025-01-31T12:00:00.000Z')
+      insertChecksumClaim(second, scope, '2025-02-01T12:00:00.000Z')
+      insertChecksumClaim(cleared, scope, null)
+      const checksum = replayNormalizedShadowChecksum(first)
+      expect(replayNormalizedShadowChecksum(second)).toBe(checksum)
+      expect(replayNormalizedShadowChecksum(cleared)).toBe(checksum)
+      second.prepare('UPDATE claim SET layer = ?').run('hypothesis')
+      expect(replayNormalizedShadowChecksum(second)).not.toBe(checksum)
+    } finally {
+      first.close()
+      second.close()
+      cleared.close()
+    }
   })
 })

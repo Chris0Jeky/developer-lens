@@ -198,7 +198,7 @@ describe('storage-v3 B1a proposal', () => {
   })
 
   it('keeps C2 observations out of every preserve disposition and aborts unsafe claim graphs', () => {
-    const c2Terms = /(?:\bsha\b|pull-request number|provider(?:_id| provenance| identity)|occurred_at|payload hash|snapshot hash|exact range|\brange\b|caller (?:job|snapshot) ID|provenance)/i
+    const c2Terms = /(?:\bsha\b|pull-request number|provider(?:_id| provenance| identity)|occurred_at|created_at|payload hash|snapshot hash|exact range|\brange\b|caller (?:job|snapshot) ID|provenance)/i
     for (const entry of STORAGE_V3_DISPOSITIONS) {
       expect(entry.preserve.some((field) => c2Terms.test(field) && !/C0 synthetic-only provenance/i.test(field)), `${entry.tableName} preserve`).toBe(false)
     }
@@ -208,6 +208,15 @@ describe('storage-v3 B1a proposal', () => {
     expect(byTable.dated_event_observation.preserve).toEqual(['event_kind'])
     expect(byTable.collection_job.preserve).toEqual(['capability_id', 'status'])
     expect(byTable.source_snapshot.preserve).toEqual(['validated C1 snapshot anchor and closed status'])
+    expect(byTable.claim.preserve).toEqual(expect.arrayContaining([
+      expect.stringMatching(/analytical window.*C1/i),
+    ]))
+    expect(byTable.claim.rewrite).toEqual(expect.arrayContaining([
+      expect.stringMatching(/created_at.*C2 operational provenance.*inclusive 13-month boundary.*C1 claim row remains/i),
+    ]))
+    expect(byTable.claim.delete).toEqual(expect.arrayContaining([
+      expect.stringMatching(/exact created_at value at C2 expiry, never the C1 claim row/i),
+    ]))
     expect(byTable.claim.refuse).toEqual(expect.arrayContaining([
       expect.stringMatching(/unremintable/i),
       expect.stringMatching(/mixed/i),
