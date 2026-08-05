@@ -3,12 +3,8 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { WhyMissingLinkReason } from '../../server/storage/whyResolver.js'
-import {
-  EvidenceDrawer,
-  MISSING_LINK_COPY,
-  UNRESOLVABLE_COPY,
-  type AnalyticReference,
-} from './EvidenceDrawer'
+import { EvidenceDrawer, type AnalyticReference } from './EvidenceDrawer'
+import { MISSING_LINK_COPY, UNRESOLVABLE_COPY } from './evidenceDrawerCopy'
 import {
   CLAIM_TREE_FIXTURES,
   CYCLE_REFERENCE,
