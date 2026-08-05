@@ -11,8 +11,10 @@ import {
   completeObservedUnits,
   type CoverageRecord,
 } from '../../../shared/coverage.js'
+import { AnalyticReferenceSchema } from '../../../shared/findings.js'
 import { ISO_WEEK_LABEL_PATTERN, isoWeekLabel } from '../../../shared/presentationGrain.js'
 import { DataClassSchema } from '../../../shared/privacy.js'
+import { WhyResolutionSchema } from '../../../shared/whyContract.js'
 
 /**
  * Response contracts for the `/api/v2` bootstrap slice (card DL-BRIDGE-01, ADR-04).
@@ -230,6 +232,25 @@ export const V2CoverageResponseSchema = z
   .strict()
 
 export type V2CoverageResponse = z.infer<typeof V2CoverageResponseSchema>
+
+/**
+ * The `/evidence/resolve` response contract, shared verbatim with the browser client
+ * (`src/lib/evidenceApiResolver.ts`). The endpoint asserts it before a byte is sent and
+ * the client accepts a response only when it parses here AND `reference` deep-equals the
+ * reference it asked for — a stale or squatting local service can neither blank the
+ * drawer with a partial projection nor have a valid walk cached under the wrong
+ * reference key (PR #131 late review).
+ */
+export const V2EvidenceResolveResponseSchema = z
+  .object({
+    apiContractVersion: z.literal(V2_API_CONTRACT_VERSION),
+    analysisVersion: SemanticVersionSchema,
+    reference: AnalyticReferenceSchema,
+    projection: WhyResolutionSchema,
+  })
+  .strict()
+
+export type V2EvidenceResolveResponse = z.infer<typeof V2EvidenceResolveResponseSchema>
 
 /**
  * Reports the registry as data. There is deliberately no transition, credential,

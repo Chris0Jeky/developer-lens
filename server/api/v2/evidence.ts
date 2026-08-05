@@ -8,8 +8,8 @@ import {
   assertPresentationSafe,
   resolveIntegrationShapeEvidenceSafe,
 } from '../../analysis/integrationShape.js'
-import type { AnalyticReference } from '../../../shared/findings.js'
-import { V2_API_CONTRACT_VERSION } from './contract.js'
+import { AnalyticReferenceSchema, type AnalyticReference } from '../../../shared/findings.js'
+import { V2_API_CONTRACT_VERSION, V2EvidenceResolveResponseSchema } from './contract.js'
 import { V2Error } from './errors.js'
 
 /**
@@ -77,16 +77,22 @@ export function registerEvidenceRoutes(router: express.Router): void {
       const parsed = EvidenceQuerySchema.safeParse(request.query)
       if (!parsed.success) throw new V2Error('V2_NOT_FOUND')
       const reference = toReference(parsed.data)
-      send(
-        response,
-        {
-          apiContractVersion: V2_API_CONTRACT_VERSION,
-          analysisVersion: INTEGRATION_SHAPE_ANALYSIS_VERSION,
-          reference,
-          projection: resolveIntegrationShapeEvidenceSafe(reference),
-        },
-        'evidence resolve response',
-      )
+      // An id that cannot even form a well-shaped reference is a malformed query, not an
+      // unknown claim: the response contract echoes the reference through the strict
+      // shared schema, so only well-formed unknowns reach the honest `unresolvable` path.
+      if (!AnalyticReferenceSchema.safeParse(reference).success) throw new V2Error('V2_NOT_FOUND')
+      const body = {
+        apiContractVersion: V2_API_CONTRACT_VERSION,
+        analysisVersion: INTEGRATION_SHAPE_ANALYSIS_VERSION,
+        reference,
+        projection: resolveIntegrationShapeEvidenceSafe(reference),
+      }
+      // The browser client parses this exact schema; serving a body it would reject
+      // is a contract violation here, never a silent client fallback in production.
+      if (!V2EvidenceResolveResponseSchema.safeParse(body).success) {
+        throw new V2Error('V2_RESPONSE_CONTRACT_VIOLATION')
+      }
+      send(response, body, 'evidence resolve response')
     } catch (error) {
       next(error)
     }

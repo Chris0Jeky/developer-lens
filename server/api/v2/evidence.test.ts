@@ -4,6 +4,7 @@ import express from 'express'
 import request from 'supertest'
 import { describe, expect, it } from 'vitest'
 import type { V2RuntimeConfig } from './config.js'
+import { V2EvidenceResolveResponseSchema } from './contract.js'
 import { createV2Router } from './router.js'
 import { CLAIM_IDS, EVIDENCE_IDS, INTEGRATION_SHAPE_SCOPE_ALIAS } from '../../../shared/integrationShape.js'
 import {
@@ -95,14 +96,16 @@ describe('V2 evidence endpoint — resolving one reference', () => {
     expect(response.body.projection.evidenceId).toBe(EVIDENCE_IDS.openTailCurrent)
   })
 
-  it('resolves an unknown reference to honest furniture, never an error and never a partial tree', async () => {
-    const response = await authorized('/api/v2/evidence/resolve?kind=claim&id=cl_absent').expect(200)
+  it('resolves a well-formed unknown reference to honest furniture, never an error and never a partial tree', async () => {
+    const response = await authorized(`/api/v2/evidence/resolve?kind=claim&id=cl_${'0'.repeat(64)}`).expect(200)
     expect(response.body.projection.kind).toBe('unresolvable')
   })
 
   it('rejects a malformed query with V2_NOT_FOUND', async () => {
     await authorized('/api/v2/evidence/resolve?kind=nonsense&id=x').expect(404)
     await authorized('/api/v2/evidence/resolve?id=cl_x').expect(404)
+    // Shaped like a claim id prefix but not a well-formed reference: malformed, not unknown.
+    await authorized('/api/v2/evidence/resolve?kind=claim&id=cl_absent').expect(404)
   })
 
   it('serves exactly what the Atlas resolves locally, so the client fallback is equivalent', async () => {
@@ -123,6 +126,9 @@ describe('V2 evidence endpoint — resolving one reference', () => {
           ? { kind: 'observation', evidenceId: reference.evidenceId }
           : { kind: 'claim', claimId: reference.claimId, claimLayer: 'deterministic' },
       )
+      // The browser client accepts only bodies that parse the shared contract; every
+      // served body must therefore parse it, or production would silently fall back.
+      expect(V2EvidenceResolveResponseSchema.safeParse(response.body).success).toBe(true)
     }
   })
 })

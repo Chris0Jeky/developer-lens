@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { V2EvidenceResolveResponseSchema } from '../../server/api/v2/contract.js'
 import type { AnalyticReference } from '../../shared/findings'
 import {
   resolveIntegrationShapeEvidence,
@@ -14,11 +15,13 @@ import {
  * an error path. The public showcase is a static Pages artifact with no API at all, and it must
  * keep working offline and identically.
  *
- * Shape check, not a schema. The endpoint returns
- * `{ apiContractVersion, analysisVersion, reference, projection }`, and `projection` is the same
- * `IntegrationShapeEvidenceResolution` union the drawer renders — already proven presentation-safe
- * server-side by `assertPresentationSafe` before a byte is sent. Only the discriminant is checked
- * here; anything else falls back rather than rendering something the drawer cannot switch on.
+ * A response is accepted only when it parses the shared `V2EvidenceResolveResponseSchema` — the
+ * exact contract the endpoint asserts before sending — AND its `reference` deep-equals the
+ * reference this client asked for. The fetch trusts a local port, so a stale or squatting process
+ * returning 200 JSON must be able to do exactly nothing: a partial `unresolvable`, an unknown
+ * reason code, malformed lineage, or a valid walk for a DIFFERENT claim all fall back to the local
+ * composition without caching anything (PR #131 late review). What the drawer renders is the
+ * PARSED value, so no field outside the contract can reach it.
  *
  * The failure path is deliberately silent. There is no degraded state to report: the served
  * projection and the local composition are the same data, so a user who cannot reach the API sees
@@ -28,8 +31,6 @@ import {
 
 /** Short on purpose: a slow answer is worth less than the local composition available now. */
 export const EVIDENCE_REQUEST_TIMEOUT_MS = 1_500
-
-const RESOLUTION_KINDS = new Set(['explanation', 'unresolvable', 'evidence', 'missing_link'])
 
 export function evidenceReferenceKey(reference: AnalyticReference): string {
   return reference.kind === 'observation'
@@ -48,33 +49,35 @@ export function evidenceResolvePath(reference: AnalyticReference): string {
   return `${base.endsWith('/') ? base.slice(0, -1) : base}/api/v2/evidence/resolve?${query.toString()}`
 }
 
-const isRecord = (value: unknown): value is Record<string, unknown> =>
-  typeof value === 'object' && value !== null && !Array.isArray(value)
+/** True only when the served reference names exactly the reference this client requested. */
+function referenceMatches(requested: AnalyticReference, served: AnalyticReference): boolean {
+  if (requested.kind === 'observation') {
+    return served.kind === 'observation' && served.evidenceId === requested.evidenceId
+  }
+  return (
+    served.kind === 'claim'
+    && served.claimId === requested.claimId
+    && served.claimLayer === requested.claimLayer
+  )
+}
 
 /**
- * Anything other than a well-formed resolution falls back to the local composition
- * rather than reaching the drawer: the fetch trusts a local port, and a squatting
- * process returning 200 JSON must not be able to blank the route. The checks cover
- * exactly the fields the drawer dereferences before React can escape them.
+ * Anything other than a contract-conformant resolution FOR THE REQUESTED REFERENCE falls
+ * back to the local composition rather than reaching the drawer. Returns the parsed
+ * value, never the raw body, so the drawer renders only schema-declared fields.
  */
-function servedProjection(body: unknown): IntegrationShapeEvidenceResolution {
-  const projection = isRecord(body) ? body.projection : undefined
-  if (!isRecord(projection)) throw new Error('evidence projection is not an object')
-  const { kind } = projection
-  if (typeof kind !== 'string' || !RESOLUTION_KINDS.has(kind)) {
-    throw new Error('evidence projection is not a resolution the drawer can render')
+function servedProjection(
+  body: unknown,
+  requested: AnalyticReference,
+): IntegrationShapeEvidenceResolution {
+  const parsed = V2EvidenceResolveResponseSchema.safeParse(body)
+  if (!parsed.success) {
+    throw new Error('evidence response does not satisfy the shared resolve contract')
   }
-  const wellFormed =
-    (kind === 'explanation'
-      && isRecord(projection.claim) && typeof projection.claim.statementCode === 'string')
-    || (kind === 'evidence'
-      && typeof projection.evidenceId === 'string' && isRecord(projection.coverage))
-    || (kind === 'missing_link' && Array.isArray(projection.lineage))
-    || kind === 'unresolvable'
-  if (!wellFormed) {
-    throw new Error('evidence projection is missing the fields its kind requires')
+  if (!referenceMatches(requested, parsed.data.reference)) {
+    throw new Error('evidence response answers a different reference than requested')
   }
-  return projection as unknown as IntegrationShapeEvidenceResolution
+  return parsed.data.projection
 }
 
 /**
@@ -103,7 +106,7 @@ export function useIntegrationShapeEvidenceResolver(
     void fetch(evidenceResolvePath(reference), { signal: controller.signal })
       .then(async (response) => {
         if (!response.ok) throw new Error('the V2 evidence endpoint refused this reference')
-        return servedProjection((await response.json()) as unknown)
+        return servedProjection((await response.json()) as unknown, reference)
       })
       .then((projection) => {
         setServed((current) => new Map(current).set(key, projection))
