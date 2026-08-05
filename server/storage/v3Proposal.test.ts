@@ -338,7 +338,7 @@ describe('storage-v3 B1a proposal', () => {
     expect(liveClaims.LineageEventKindSchema.safeParse('legacy_deletion_operation').success).toBe(false)
   })
 
-  it('allows only the inert shadow-schema edge to the proposal and no production caller of either module', () => {
+  it('allows only the inert rewrite-to-schema-to-proposal chain and no production caller', () => {
     const root = resolve(__dirname, '../..')
     const roots = ['server', 'shared', 'src', 'scripts'].map((name) => join(root, name))
     const files: string[] = []
@@ -351,7 +351,6 @@ describe('storage-v3 B1a proposal', () => {
     }
     for (const directory of roots) visit(directory)
     const offenders: string[] = []
-    const allowedShadowProposalEdge = 'server/storage/v3ShadowSchema.ts'
     for (const path of files) {
       const source = readFileSync(path, 'utf8')
       const file = ts.createSourceFile(path, source, ts.ScriptTarget.Latest, true)
@@ -367,9 +366,14 @@ describe('storage-v3 B1a proposal', () => {
         const target = moduleSpecifier ?? requireLiteral ?? dynamicLiteral
         if (target && /(?:^|[\\/])v3Proposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== allowedShadowProposalEdge) offenders.push(`${sourcePath} -> ${target}`)
+          const edge = `${sourcePath} -> ${target.split('/').at(-1)?.replace(/\.(?:[cm]?js|ts)$/, '') ?? target}`
+          if (sourcePath !== 'server/storage/v3ShadowSchema.ts') offenders.push(edge)
         }
         if (target && /(?:^|[\\/])v3ShadowSchema(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (sourcePath !== 'server/storage/v3ShadowRewrite.ts') offenders.push(`${sourcePath} -> ${target}`)
+        }
+        if (target && /(?:^|[\\/])v3ShadowRewrite(?:\.[cm]?js|\.ts)?$/.test(target)) {
           offenders.push(`${relative(root, path).replaceAll('\\', '/')} -> ${target}`)
         }
         ts.forEachChild(node, check)

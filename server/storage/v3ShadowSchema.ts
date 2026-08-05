@@ -24,12 +24,12 @@ import {
 } from './v3Proposal.js'
 
 /**
- * B1b-i's target is deliberately a shadow database.  It is not the v2 store,
+ * B1b's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, selector, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b1b-i' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b1b-ii' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 301
+export const STORAGE_V3_SHADOW_USER_VERSION = 302
 
 const key = (column: string, prefix: string): string =>
   `length(${column}) = ${prefix.length + 64} AND ${column} GLOB '${prefix}*' AND substr(${column}, ${prefix.length + 1}) NOT GLOB '*[^0-9a-f]*'`
@@ -293,7 +293,7 @@ CREATE TABLE IF NOT EXISTS limitation_instance (
   FOREIGN KEY (scope_id, claim_id) REFERENCES claim(scope_id, claim_id)
 ) STRICT;
 CREATE TABLE IF NOT EXISTS lineage_event (
-  scope_id TEXT NOT NULL CHECK (${c1('scope_id')}),
+  scope_id TEXT REFERENCES claim_scope(scope_id),
   subject_kind TEXT NOT NULL CHECK (subject_kind IN (${quoted(LINEAGE_V3_SUBJECT_KINDS)})),
   subject_id TEXT NOT NULL CHECK (${token('subject_id')}),
   operation_id TEXT NOT NULL CHECK (${token('operation_id')}),
@@ -319,14 +319,14 @@ CREATE TABLE IF NOT EXISTS lineage_event (
       )
     )
   ),
-  PRIMARY KEY (scope_id, subject_kind, subject_id, event_kind, operation_id, event_week),
-  FOREIGN KEY (scope_id) REFERENCES claim_scope(scope_id),
+  PRIMARY KEY (subject_kind, subject_id, event_kind, operation_id, event_week),
   CHECK ((event_kind IN (${quoted(LINEAGE_V3_DELETION_EVENT_KINDS)}) AND ${key('operation_id', 'del-')}) OR (event_kind NOT IN (${quoted(LINEAGE_V3_DELETION_EVENT_KINDS)}) AND ${key('operation_id', 'op-')})),
   CHECK ((subject_kind = 'scope' AND ${c1('subject_id')}) OR (subject_kind = 'claim' AND ${key('subject_id', 'cl_')}) OR (subject_kind = 'job' AND ${key('subject_id', 'job-')}) OR (subject_kind = 'snapshot' AND ${key('subject_id', 'snap-')}) OR (subject_kind = 'checkpoint' AND ${key('subject_id', 'ckpt-')}) OR (subject_kind = 'coverage' AND ${key('subject_id', 'cov-')}) OR (subject_kind = 'evidence' AND ${key('subject_id', 'ev-')}) OR (subject_kind = 'artifact' AND ${key('subject_id', 'art-')}) OR (subject_kind = 'deletion' AND ${key('subject_id', 'del-')})),
   CHECK (caused_by IS NULL OR ${c1('caused_by')} OR ${key('caused_by', 'cl_')} OR ${key('caused_by', 'job-')} OR ${key('caused_by', 'snap-')} OR ${key('caused_by', 'ckpt-')} OR ${key('caused_by', 'cov-')} OR ${key('caused_by', 'ev-')} OR ${key('caused_by', 'art-')} OR ${key('caused_by', 'op-')} OR ${key('caused_by', 'del-')}),
   CHECK ((event_kind = 'scope_alias_expired' AND subject_kind = 'scope') OR (event_kind <> 'scope_alias_expired')),
   CHECK ((event_kind = 'scope_series_restarted' AND subject_kind = 'scope') OR (event_kind <> 'scope_series_restarted')),
   CHECK ((event_kind = 'legacy_deletion_operation' AND subject_kind = 'deletion' AND operation_id = subject_id) OR (event_kind <> 'legacy_deletion_operation')),
+  CHECK ((event_kind = 'legacy_deletion_operation' AND scope_id IS NULL) OR (event_kind <> 'legacy_deletion_operation' AND scope_id IS NOT NULL AND ${c1('scope_id')})),
   CHECK (event_kind <> 'scope_series_restarted' OR caused_by IS NULL)
 ) STRICT;
 `

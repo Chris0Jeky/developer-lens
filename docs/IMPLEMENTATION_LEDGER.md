@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B1b-i shadow schema)
+Last updated: **2026-08-05** (DL-LIFE-02 B1b-ii authenticated rewrite)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -8,8 +8,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 **Fast resume:** agents should read the compact state artifact
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
-for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, and both late
-contract repairs are merged; the current head contains inert B1b-i, while B1b-ii/iii then B2–B4
+for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
+and B1b-i are merged; the current head contains inert B1b-ii, while B1b-iii then B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
@@ -1718,9 +1718,12 @@ the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
   `7a270f4`; hosted run `30977894384` and exact-merge Pages run `30978065710` passed. Its exact proof
   was 8 focused tests and the full 61-file/922-test suite plus context verification, typecheck, and
   build. Its late sweep was empty.
-- **B1b-i.** The current head adds a strict isolated storage-v3 shadow installer with a distinct
-  application/schema identity, literal-preserving deterministic schema fingerprint, exact
-  18-table disposition inventory, marker-only and populated v2-target refusal, and an explicit `completeB1b: false` /
+- **B1b-i.** [PR #109](https://github.com/Chris0Jeky/developer-lens/pull/109) landed the strict
+  isolated storage-v3 shadow installer at final head `eab066d` as merge `2a55b11`; hosted run
+  `30980483640` and exact-merge Pages run `30980674556` passed, and the late review sweep was empty.
+  It has a distinct application/schema identity, literal-preserving deterministic schema
+  fingerprint, exact 18-table disposition inventory, marker-only and populated v2-target refusal,
+  and an explicit `completeB1b: false` /
   `selectable: false` result. Invented in-memory proofs cover source immutability, C0 bridge rows,
   expiring C2 groups, canonical scope/claim FKs, valid v3 claim material and coverage edges, alias
   uniqueness, exact lineage operation/subject/week rules, idempotence, transactional schema
@@ -1732,6 +1735,42 @@ the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
   FKs because lineage must outlive deleted subjects; B1b-ii must use its transient ownership map to
   abort a mapped live subject/cause whose scope differs from the event scope. The `obs-`, `pr-`, and
   `event-` values are expiring C2 row IDs and are excluded from the closed C1 lineage registry.
+- **B1b-ii active decisions.** The slice-A compatibility event has no legitimate repository scope:
+  storage-v3 schema identity `3.0.0-shadow-b1b-ii` / user version 302 therefore permits a null
+  `scope_id` only for `legacy_deletion_operation`; every other lineage event remains scope-bound.
+  This preserves the required record without inventing a scope. The rewrite reads one exact,
+  transactionally consistent 18-table v2 image, validates every C0 bridge row under the singleton
+  synthetic provenance record, and refuses extra or shadow schema objects. Repository authentication uses the
+  latest valid commit/PR/dated-event descendant only; a generated scope link uses that repository's
+  own anchor. An unscoped identity without a live anchor cannot mint a scope: its validated
+  incremental descendants are omitted with the typed identity absence. Retention remains
+  field-specific: an existing alias link expires from first-link
+  `linked_at`; a scope-bound identity retains only its C1 lifecycle flags after its alias pair
+  expires, while each base or incremental operational C2 group expires from its own canonical row
+  anchor. At or after the boundary only its content-free C1 anchor survives. A legacy complete
+  checkpoint projects the new C1 fields as `coverage_state=complete`, `deletion_order=0`, and
+  `lineage_coverage=mapped`; its watermark/cursor/range/hash group remains C2.
+
+  A cleared legacy scope alias is never reconstructed from residual provider-bearing graph data.
+  If that erased link would make retained claims cross the newly generated scope, the rewrite
+  refuses the graph; B2 owns any future reviewed renewal or explicit series-restart path. Every
+  legacy collection job must still have exactly one coverage row, and a complete job exactly one
+  snapshot, including on an intentionally omitted unscoped descendant chain.
+
+  Before reminting, every source claim must reproduce its exact `claim-id.v2` and closed graph.
+  `claim-id.v3` is SHA-256 over the version plus B1a's exact ordered material fields, LF-separated;
+  rewritten typed basis tokens are unique, default-sorted, and carry only C1 evidence, claim, or
+  coverage targets. `created_at`, supersession, aliases, operational C2 ranges, and caller job IDs
+  stay outside the digest; the claim's own window bounds remain material. Recognized lineage
+  subjects and causes remap only through the transient ownership map;
+  cross-scope, ambiguous, dangling, conflicting deletion, and slice-A compatibility states abort,
+  while genuinely unclassified legacy events are omitted with a content-free count. The map and
+  source image are cleared on every return or failure. The implementation remains caller-free,
+  path-free, invented-fixture-only, incomplete, and non-selectable.
+
+  Current local proof is 65 focused storage tests and the full 63-file/979-test gate including
+  context verification, lint, typecheck, and build. Hosted and exact-merge evidence remain pending
+  publication.
 - **B1b identity correction.** Live-code feasibility proved the stored `provider_id` and
   `analytical_key` are independent domain-separated HMACs over the raw provider ID, so the original
   instruction to derive one from the other was impossible. The corrected binding requires an
@@ -1743,14 +1782,13 @@ the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B1b-i in the current head; B1b-ii next).** Merge the isolated storage-v3
-shadow schema only after its exact local/hosted/review gates. It must remain caller-free and return
-an explicit incomplete, non-selectable result. Then implement B1b-ii from live `origin/main` as an
+**Current 2026-08-05 (B1b-i merged; B1b-ii in the current head).** Finish the
 invented-fixture-only authenticated rewrite: accept the ephemeral raw provider ID explicitly,
 recompute and byte-check both stored aliases, match scope continuity only against the provider-
 domain alias, populate the shadow target transactionally with an in-memory old/new map, rewrite the
 complete base/incremental/claim/lineage graph, remint every affected `claim-id.v3`, prove closure,
-destroy the map, and still return `completeB1b: false` / `selectable: false`. B1b-iii owns rollback
+destroy the map, and still return `completeB1b: false` / `selectable: false`. Merge only after the
+exact local/hosted/fresh-review gates. B1b-iii then owns rollback
 injection, post-close reopen/integrity/privacy proof, replay-normalized checksums, and the first
 transactionally selected target. Do not reuse the existing in-place target path,
 add a real-store/source-selection caller, persist identity input/mapping, or enter LIFE-03 backup/
