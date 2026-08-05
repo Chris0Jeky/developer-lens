@@ -120,6 +120,7 @@ const localBoundarySchema = strictObject({
   installationKey: z.literal('installation-key.bin'),
   backupDirectory: z.literal('backup/'),
   report: z.literal('last-run-report.json'),
+  continuityReviewAnchor: z.literal('continuity-review-anchor.json'),
   trackedOrPublished: z.literal(false),
 })
 

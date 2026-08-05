@@ -287,7 +287,7 @@ supplied substitutes.
 PR #120 head `5a08fcf` passed hosted run `31011375033`, merged as `cdaa083`, and passed
 exact-merge Pages/privacy run `31011609025` plus an empty late-comment sweep.
 
-### B2b-ii-f stable continuity-anchor loading (current)
+### B2b-ii-f stable continuity-anchor loading (shipped)
 
 The review anchor lives only at the fixed ignored task path
 `continuity-review-anchor.json` under `.developer-lens/activation/<taskId>/`. Its loader reuses the
@@ -305,6 +305,25 @@ The loader has no caller, writer, database, clock, network, lifecycle mutation, 
 sink, or capability effect. Next composition may produce only a structural consistency proposal;
 owner authentication, same-scope C1 state, lifecycle freshness under race, next-epoch CAS, and the
 writer-owned operation remain mandatory before renewal or retention can be claimed.
+
+PR #121 head `cad4d73` passed hosted run `31013045188`, merged as `1706df1`, and passed
+exact-merge Pages/privacy run `31013362189` plus an empty late-comment sweep.
+
+### B2b-ii-g task-card anchor-path contract (current)
+
+Before the no-caller composer may load the B2b-ii-f artifact, the closed github.core task card must
+declare it. Its strict `localBoundary` therefore adds only
+`continuityReviewAnchor: "continuity-review-anchor.json"`. The parser rejects omission, alternate
+or absolute names, traversal, and extras, while invented parser/loader/runner/transport fixtures
+carry the literal. This closes a confused-deputy path where code could otherwise read an artifact
+that the reviewed task boundary never named.
+
+The change performs no filesystem read, protected-card migration, lifecycle replay, clock capture,
+database operation, renewal, retention extension, or activation. The ignored selected task card
+remains uninspected and must be updated only inside a later deliberately scoped real activation with
+its own exact-path and proving boundary. After this contract lands, the next composer may load the
+anchor first, use only its claimed card/report digests and key fingerprint as fixed loader inputs,
+replay lifecycle, and capture wall time internally, but may return only structural consistency.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the
