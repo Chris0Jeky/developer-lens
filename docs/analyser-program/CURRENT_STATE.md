@@ -35,9 +35,11 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'None for the executable core. A real migration/connector still requires LIFE-03
-  backup/grace/restore/tombstone-replay proof and the #86 coverage remint; #78/#79 bind before any
-  real-data V2 surface.'
+blockers: 'None for B3. A real migration/connector still requires LIFE-03
+  backup/grace/restore/tombstone-replay proof plus the #86 storage half (tighten the
+  incremental.ts coverage_id CHECK to the cov- registry and migrate alias-bearing fixture
+  stores); the #86 connector mint, #79 PresentationView, and #78 credential/launch surface are
+  resolved on fable/boundary-and-reachability.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
