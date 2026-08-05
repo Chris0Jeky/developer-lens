@@ -48,7 +48,7 @@ export async function loadGithubCoreActivationTaskCard(
   }
 }
 
-/** Load and validate the card only when its exact opened bytes match the reviewed SHA-256. */
+/** Load and validate the card only when its stable opened bytes match the supplied SHA-256. */
 export async function loadHashBoundGithubCoreActivationTaskCard(
   input: GithubCoreHashBoundActivationTaskCardLoadInput,
 ): Promise<GithubCoreActivationTaskCard> {

@@ -161,7 +161,7 @@ stale or different operation fails. If continuity is intentionally abandoned, a 
 a `scope_series_restarted` event without an old-scope ID or expired-alias link; this is the explicit
 series-fragmentation disposition.
 
-### B2b-i structural continuity candidate (current)
+### B2b-i structural continuity candidate (shipped)
 
 B2b-i implements only a pure, caller-free structural candidate builder. It accepts a replay-valid
 `CapabilityLifecycleSnapshot` plus a claimed reviewed report digest/time, positive continuity epoch,
@@ -185,9 +185,27 @@ inputs; it is not a content-free proof or retained C1 key and may enter no log, 
 or public sink. The trusted loader/writer must retain or revalidate its own ephemeral inputs rather
 than trying to recover identity or review metadata from this candidate.
 
-The next bounded slices are the trusted report/card/key/clock loader, then a compare-and-swap writer,
-then restart handling plus the migration-origin disposition for already-expired never-retained C2
-groups. Existing capability registry/API values remain `never_authorized` throughout.
+### B2b-ii-a stable task-card snapshot prerequisite (current)
+
+The next composition cannot honestly be called trusted yet. No independently anchored owner-reviewed
+report digest or trusted clock exists, and the pre-B2b-ii task-card reader sampled content only once.
+B2b-ii-a therefore hardens that prerequisite first: two exact bounded reads from one opened
+descriptor must agree; BigInt file identity, one-link state, stable file metadata, and all confined
+ancestor-directory identities are rechecked; owned buffers are zeroed; and decoding, hashing, and
+duplicate-key-safe parsing happen only after stability. Same-size mutation, parent replacement, and
+hard-link fixtures must fail with the existing content-free error.
+
+This proves a stable observed snapshot, not owner review, hostile-writer atomicity, or continuity
+authority. The loader still accepts a stable card that predates its read, and platform no-follow
+flags are only defence in depth. It performs no database, key, clock, network, lifecycle, retention,
+or capability mutation, and existing capability registry/API values remain `never_authorized`.
+
+Next define the strict inert run-report schema and stable exact-byte loader, then add a separately
+owner-reviewed anchor for report/card/key/lifecycle/time plus a trusted clock. A report self-hash or
+caller-supplied expected hash is not that anchor. CAS revision is read transactionally and the
+operation is writer-owned. Only then may a caller-free composer feed the compare-and-swap writer,
+followed by restart handling and the migration-origin disposition for already-expired never-retained
+C2 groups.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the

@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2b-i structural continuity candidate)
+Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-a stable task-card snapshot prerequisite)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,8 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-and B1b-i/ii/iii plus B2a-i/ii/iii are merged; the current branch contains the inert B2b-i
-structural continuity candidate, while the rest of B2–B4
+B1b-i/ii/iii, B2a-i/ii/iii, and the inert B2b-i structural candidate are merged; the current branch
+hardens the confined task-card snapshot prerequisite for B2b-ii, while the rest of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
@@ -107,7 +107,7 @@ BH family re-evaluation on growth, DL-VALUE-01 gated on DL-VALIDATE-01, the DL-Q
 card (127 cards), role→target CHECKs, and a non-mutating `generate.mjs --check` drift gate).
 
 Published P4 adds an inert, no-caller composition runner. It binds the exact opened task-
-card bytes to a caller-reviewed lowercase SHA-256, derives the repository alias before any request,
+card bytes to a caller-supplied lowercase SHA-256, derives the repository alias before any request,
 splits the declared request ceiling across two independent probes, persists only an actual
 noncomplete outcome or two hash-equal complete observations, and records fixed noncomplete coverage
 when two complete observations disagree. It returns only frozen stability, coverage, and numeric
@@ -1291,11 +1291,12 @@ unresolved review threads outrank it whenever they disagree.
   task-owned fingerprint but does not yet bind it to a durable reviewed report. Application-
   controlled backup/restore, installation-key lifecycle and mismatch enforcement, task-owned
   database binding, parity/fallback, tombstoned deletion/re-consent, and legacy
-  collector compatibility remain reviewed activation seams. The opened-handle proof closes path-
-  replacement redirection, but same-size in-place card writes can still race content bytes; a
-  published runner binds the exact opened card bytes to a supplied reviewed hash but a future caller
-  must source that hash from durable owner-reviewed state rather than claiming hostile concurrent-
-  writer integrity from the loader alone.
+  collector compatibility remain reviewed activation seams. The published opened-handle proof
+  closes path-replacement redirection, but its single byte read allowed a same-size in-place card
+  write to race content bytes. B2b-ii-a closes that observed seam with two exact reads from one
+  descriptor plus stable file and confined-directory identities. A future caller must still source
+  the expected hash from durable owner-reviewed state; snapshot stability is not owner authority or
+  a claim of atomicity against every hostile concurrent writer.
 - The legacy local producer still permits spaces/Unicode in remote paths or fallback basenames while
   this bounded importer accepts only the registered ASCII repository-reference alphabet; that P2
   compatibility gap remains tracked in
@@ -1901,7 +1902,7 @@ app-owned artifacts remain separate. LIFE-02/#80 and B2 remain incomplete.
 PR #114 head `762f9f9` passed hosted run `30999010546`, merged as `6dad325`, and passed exact-merge
 Pages/privacy run `30999228603` plus an empty late-comment sweep.
 
-## 2026-08-05 — DL-LIFE-02 B2b-i structural continuity candidate (current slice)
+## 2026-08-05 — DL-LIFE-02 B2b-i structural continuity candidate (merged)
 
 B2b-i adds only the caller-free structural continuity candidate: a replay-valid active
 `github.core` transcript, matching card/consent, preview/proof presence, no receipt, and no pending
@@ -1925,25 +1926,60 @@ The focused lifecycle/candidate/proposal seam passes 21 tests. The full local ga
 pre-existing Evidence Drawer Fast Refresh warnings and the existing bundle-size advisory remain.
 Fresh authority, privacy/state, and narrow code lenses found no HIGH/CRITICAL defect after the
 closed-request, separate-epoch, C2-output, exact-transcript-receipt, inherited-snapshot, and AST
-guard corrections. Hosted and exact-merge gates remain pending.
+guard corrections. PR #115 head `d4683c7` passed hosted run `31002017618`, merged as `bdf8e436`,
+and passed exact-merge Pages/privacy run `31002333681` plus an empty late-comment sweep.
 
-The next exact slices are the trusted report/card/key/clock loader, then the compare-and-swap writer,
-then restart handling plus migration-origin disposition for already-expired never-retained C2
-groups. “Never-retained” refers to the expired C2 payload: only a same-scope C1 anchor reachable
+Continuity renewal remains next only through the prerequisite sequence recorded below, not through
+a caller-claimed trusted-loader shortcut. For the later migration-origin disposition,
+“never-retained” refers to the expired C2 payload: only a same-scope C1 anchor reachable
 from a retained claim emits `c2_retention_expired` at the original expiry week. Reachability is
 claim → coverage or claim → evidence → coverage, then that coverage's job/snapshot and a checkpoint
 only when both owners are reachable; unreferenced, omitted, and base anchors emit no origin event.
 Coverage/job absence resolution, B3 deletion, and B4 artifacts remain later dependencies.
 
+## 2026-08-05 — DL-LIFE-02 B2b-ii-a stable task-card snapshot prerequisite (current slice)
+
+Post-B2b-i authority review found two blockers to honestly naming the next composition a trusted
+loader. There is no independently anchored owner-reviewed report digest or trusted clock, and the
+existing task-card reader sampled its opened descriptor only once. A same-size in-place write could
+therefore leave size/path/identity checks green while changing the bytes. The dependency-safe next
+slice hardens that existing reader before adding any continuity composition.
+
+B2b-ii-a reads the bounded card twice at exact positions from the same opened descriptor, compares
+the bytes, zeroes owned buffers, and only then decodes, hashes, and parses. It uses BigInt file
+identity, requires one link, checks stable file metadata, requests no-follow opening where the
+platform supports it, and pins the workspace, `.developer-lens`, activation, and task directories
+by identity before, between, and after the reads. Invented fixtures prove same-size mutation,
+parent-directory replacement, and hard-link refusal plus the unchanged-card path. The focused
+generic/GitHub/OpenAI loader stack passes 3 files / 20 tests. The full local gate passes 67 files /
+1,061 tests plus context verification, lint, typecheck, build, and diff checking; only the two
+pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size advisory remain. A
+fresh post-implementation file/race lens found no HIGH/CRITICAL defect. Hosted and exact-merge gates
+remain to be recorded.
+
+This is snapshot stability only. It neither authenticates a stable malicious card nor creates an
+owner-reviewed report anchor, trusted review time, trusted clock, key binding, continuity authority,
+database write, network call, lifecycle transition, retention extension, or capability activation.
+All executable capabilities remain `never_authorized`.
+
+The next exact prerequisite is a strict inert `last-run-report.json` schema and stable exact-byte
+loader whose expected digest is explicitly external to the report and still not authority by
+itself. Then add a separately owner-reviewed anchor binding the report digest, exact card digest,
+expected installation-key fingerprint, lifecycle/card epoch, and canonical review time, plus a
+trusted process-clock boundary. CAS revision comes from the database transaction and its operation
+ID is writer-owned, never trusted from the report. Only after those seams are proved may a caller-
+free composer feed the compare-and-swap continuity writer.
+
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-i in progress).** Finish the local, fresh review, hosted, exact-merge,
-and late-sweep gates for the pure structural continuity candidate. Preserve its replay-valid-only
-wording, closed request shape, separate lifecycle/continuity epochs, pending-revocation refusal,
-caller-free AST gate, and absence of filesystem, clock, key, database, network, retention, or
-capability mutation. Then implement the trusted report/card/key/clock loader, followed by the
-compare-and-swap renewal writer, restart handling, and the claim-reachable migration-origin
-retention events. Only then take canonical coverage/job absence resolution and its
+**Current 2026-08-05 (B2b-ii-a in progress).** Finish the full local, fresh review, hosted,
+exact-merge, and late-sweep gates for the stable task-card snapshot prerequisite. Preserve the
+content-free error, closed input, bounded duplicate-key-safe parsing, no-caller/default-off posture,
+and explicit statement that stable bytes are not owner authority. Then add the inert run-report
+schema/loader, the independently owner-reviewed report/card/key/time anchor and trusted clock, and
+only then the caller-free composition and compare-and-swap renewal writer. Follow with restart
+handling and the claim-reachable migration-origin retention events. Only then take canonical
+coverage/job absence resolution and its
 API/PresentationView/Evidence Drawer consumer migration. Continue B3-B4 exactly as
 `docs/analyser-program/10_LIFE_02B_DECISION.md` defines. Do not add a real-store/source-selection
 caller, persist identity input/mapping, or enter LIFE-03 backup/grace work. No intermediate slice may mark LIFE-02
