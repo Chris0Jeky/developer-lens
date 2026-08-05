@@ -596,9 +596,10 @@ keys, versioned schemas, and restart recovery over invented authority protocols.
    `v3ContinuityReviewSignatureProposal`, `trustedProcessClock`, the unpersisted capability
    lifecycle reducer (`server/lifecycle.ts`), and the activation result/report/report-loader
    chain, each with its tests and gate bookkeeping.
-3. **Kept:** `taskInstallationKey.ts` (it is the simplified model), the CAS primitive (to be
-   folded into the shadow store so it can guard the state it exists to guard — as shipped it is
-   a physically separate database that cannot coexist with the shadow store), the activation
+3. **Kept:** `taskInstallationKey.ts` (it is the simplified model), the CAS primitive (folded into
+   the shadow store so it can guard the state it exists to guard — at this decision it was still a
+   physically separate database that could not coexist with the shadow store; the executable-core
+   slice landed the fold as `continuity_cas_state`/`continuity_cas_operation`), the activation
    task-card loaders, and the entire `v3Shadow*` migration/rewrite/sweep engine.
 4. **Preserved invariant** for the first real renewal writer, lifted from B2b-ii-h before its
    deletion: card authorization no later than job start; card range start before job start; job

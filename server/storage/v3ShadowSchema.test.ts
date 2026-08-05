@@ -43,16 +43,28 @@ describe('storage-v3 B2a shadow schema', () => {
       ).all() as Array<{ name: string; tbl_name: string; sql: string }>
       const immutableTriggerNames = STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS
         .map(({ tableName }) => `storage_v3_immutable_${tableName}`)
+      const casTriggerNames = [
+        'continuity_cas_operation_matches_state',
+        'continuity_cas_operation_no_delete',
+        'continuity_cas_operation_no_update',
+        'continuity_cas_state_no_delete',
+        'continuity_cas_state_revision_step',
+        'continuity_cas_state_scope_immutable',
+      ]
       expect(triggers.map(({ name }) => name)).toEqual(
         [
           ...immutableTriggerNames,
           ...STORAGE_V3_SHADOW_IMMUTABLE_INSERT_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_IDENTITY_BINDING_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES,
+          ...casTriggerNames,
           STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
           STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME,
         ].sort(),
       )
+      expect(triggers
+        .filter(({ name }) => casTriggerNames.includes(name))
+        .every(({ sql }) => sql.includes('STORAGE_V3_CONTINUITY_CAS_INVALID'))).toBe(true)
       expect(triggers
         .filter(({ name }) => immutableTriggerNames.includes(name))
         .every(({ sql }) => sql.includes('OLD.') && sql.includes(' IS NOT NEW.') && sql.includes("STORAGE_V3_SHADOW_IMMUTABLE_KEY"))).toBe(true)
@@ -247,12 +259,16 @@ describe('storage-v3 B2a shadow schema', () => {
     }
   })
 
-  it('installs exactly the registered 18 tables and all dispositions', () => {
+  it('installs the registered 18 tables, the two CAS tables, and all dispositions', () => {
     const db = new Database(':memory:')
     try {
       expect(installStorageV3ShadowSchema(db)).toEqual(STORAGE_V3_SHADOW_RESULT)
-      expect(tables(db)).toEqual([...STORAGE_V3_TABLES].sort())
-      expect(STORAGE_V3_SHADOW_TABLES).toEqual(STORAGE_V3_TABLES)
+      expect(tables(db)).toEqual([...STORAGE_V3_SHADOW_TABLES].sort())
+      expect(STORAGE_V3_SHADOW_TABLES).toEqual([
+        ...STORAGE_V3_TABLES,
+        'continuity_cas_operation',
+        'continuity_cas_state',
+      ])
       expect(new Set(STORAGE_V3_DISPOSITIONS.map(({ tableName }) => tableName)).size).toBe(18)
       expect(STORAGE_V3_DISPOSITIONS.map(({ tableName }) => tableName).sort()).toEqual([...STORAGE_V3_TABLES].sort())
       expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])

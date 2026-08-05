@@ -418,7 +418,11 @@ describe('storage-v3 B1a proposal', () => {
         }
         if (target && /(?:^|[\\/])v3ShadowSchema(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (!['server/storage/v3ShadowRewrite.ts', 'server/storage/v3ShadowSweep.ts'].includes(sourcePath)) {
+          if (![
+            'server/storage/v3ShadowRewrite.ts',
+            'server/storage/v3ShadowSweep.ts',
+            'server/storage/v3ContinuityCasProposal.ts',
+          ].includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }
@@ -430,9 +434,26 @@ describe('storage-v3 B1a proposal', () => {
         }
         if (target && /(?:^|[\\/])v3ShadowSweep(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          offenders.push(`${sourcePath} -> ${target}`)
+          if (!['scripts/storeLifecycle.ts'].includes(sourcePath)) {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
         }
         if (target && /(?:^|[\\/])v3ContinuityCasProposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (![
+            'server/storage/v3StoreFiles.ts',
+            'scripts/storeLifecycle.ts',
+          ].includes(sourcePath)) {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
+        }
+        if (target && /(?:^|[\\/])v3StoreFiles(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (sourcePath !== 'scripts/storeLifecycle.ts') {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
+        }
+        if (target && /(?:^|[\\/])storeLifecycle(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
@@ -489,9 +510,9 @@ describe('storage-v3 B1a proposal', () => {
         ? [statement.moduleSpecifier.text]
         : [])
     expect(continuityCasProposalImports).toEqual([
-      'node:crypto',
       'better-sqlite3',
       './v3Proposal.js',
+      './v3ShadowSchema.js',
     ])
     expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))
       .toMatch(/from ['"]\.\/v3ShadowRewrite\.js['"]/)

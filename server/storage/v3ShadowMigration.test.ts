@@ -254,6 +254,10 @@ describe('B1b-iii shadow orchestration', () => {
       attempt.db.prepare('UPDATE commit_observation SET sha = ?')
         .run(`job-${(kind === 'primary' ? 'a' : 'b').repeat(64)}`)
     }],
+    ['injected continuity CAS state at acceptance', (_kind: 'primary' | 'replay', attempt: FileAttempt) => {
+      const scope = attempt.db.prepare('SELECT scope_id FROM claim_scope LIMIT 1').pluck().get() as string
+      attempt.db.prepare('INSERT INTO continuity_cas_state (scope_id, revision) VALUES (?, 0)').run(scope)
+    }],
     ['identical injection into a delete-disposition table', (_kind: 'primary' | 'replay', attempt: FileAttempt) => {
       attempt.db.prepare('INSERT INTO import_run (run_id, schema_version, status) VALUES (?, ?, ?)')
         .run(`run-${'c'.repeat(64)}`, STORAGE_V3_SHADOW_SCHEMA_VERSION, 'complete')
