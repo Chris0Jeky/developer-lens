@@ -29,7 +29,7 @@ phase *grouping*; execution order follows these waves:
 | R4 | **Open:** lifecycle/deletion critical path plus one disjoint analytical-value lane; later flow/feedback cards remain outside the active horizon | Active now: DL-LIFE-01/02 + DL-EVQ-03. Later: DL-SPINE-05, DL-BRIDGE-02, DL-FLOW-01/02/04, DL-OBSV-01/03, DL-CI-01 (after deletion planner) |
 | R5 | Deterministic System Story + V1 retirement matrix | DL-BRIDGE-03/04, DL-LAB-01, DL-OPEN-01, then DL-UX-SS (deterministic beats), DL-UX-VG/CC — the Story's declared producer chain lands inside R4/R5 so the wave plan is dependency-true (corrected 2026-08-04) |
 | R6 | Packs + Query Lab (PresentationView) | DL-PACK-00/01/02/04/05/06, DL-QL-01 |
-| R7 | Optional interpretation (off the critical path) | DL-RAG-*, DL-HYP-*, WB candidates as unfrozen |
+| R7 | Optional interpretation (off the critical path; opens only through a future explicit reassessment) | DL-RAG-*, DL-HYP-*, and WB candidates only after their frozen labels are explicitly removed |
 | R8 | Specialised lenses and remaining programme | structure/time/graph/portfolio depth, demos, frontier |
 
 **Revised critical path:**

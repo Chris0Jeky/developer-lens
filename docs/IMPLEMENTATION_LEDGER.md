@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-04** (post-PR #62 reconciliation)
+Last updated: **2026-08-05** (R4 roadmap reassessment)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -8,8 +8,9 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 **Fast resume:** agents should read the compact state artifact
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
-for the next task. Current phase in one line: planning reconciliation (wave R0) complete;
-implementation starts at card DL-BRIDGE-01 with DL-VALUE-01 as its analytical-value successor.
+for the next task. Current phase in one line: R1–R3 is complete and the bounded R4 horizon is open;
+start DL-LIFE-01, advance DL-EVQ-03 only as its disjoint analytical lane, and start DL-LIFE-02 only
+after DL-LIFE-01 merges.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
