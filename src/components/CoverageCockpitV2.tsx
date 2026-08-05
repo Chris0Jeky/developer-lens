@@ -1,17 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { CircleDashed, Lock, Sparkles } from 'lucide-react'
-import {
-  completeObservedUnits,
-  type CoverageRecord,
-  type CoverageStatus,
-} from '../../shared/coverage'
+import type { CoverageStatus } from '../../shared/coverage'
 import type {
+  CoveragePresentationView,
   V2CapabilitiesResponse,
   V2CoverageResponse,
 } from '../../server/api/v2/contract'
 import {
   cockpitStateForStatus,
-  isoWeekLabel,
   omittedLabel,
   refusalCode,
   type CoverageCockpitProblemKind,
@@ -84,29 +80,16 @@ interface ProblemView {
 }
 
 const PROBLEM_VIEWS: Readonly<Record<CoverageCockpitProblemKind, ProblemView>> = {
-  unconfigured: {
-    banner: 'The V2 bridge is mounted but this page holds no launch bearer.',
-    eyebrow: 'Coverage cockpit · no bearer',
-    heading: 'This page cannot see the V2 store yet.',
-    body: (
-      <p>
-        The API generates a bearer secret once per launch and prints it on the local launch banner.
-        Set the same value as <code>DEVELOPER_LENS_V2_TOKEN</code> and{' '}
-        <code>VITE_DEVELOPER_LENS_V2_TOKEN</code> to let this surface read it. Until then the
-        cockpit reports its own blindness rather than an empty result.
-      </p>
-    ),
-  },
   unauthorized: {
-    banner: 'The V2 bridge did not accept this page’s bearer.',
-    eyebrow: 'Coverage cockpit · bearer rejected',
-    heading: 'This page holds a bearer the bridge refused.',
+    banner: 'The V2 bridge did not accept this request.',
+    eyebrow: 'Coverage cockpit · request not authenticated',
+    heading: 'The bridge could not tell that this was a same-origin page request.',
     body: (
       <p>
-        The API mints a new bearer on every launch, so a page loaded against an earlier one goes
-        stale as soon as the server restarts. Set <code>DEVELOPER_LENS_V2_TOKEN</code> and{' '}
-        <code>VITE_DEVELOPER_LENS_V2_TOKEN</code> to the same fixed value, restart{' '}
-        <code>npm run dev</code>, and reload this page.
+        This page holds no credential by design. It is authenticated by the browser’s own
+        same-origin fetch metadata, which something between the page and the API stripped —
+        typically a proxy or extension that rewrites <code>Sec-Fetch-*</code> headers. Reach the
+        cockpit directly through <code>npm run dev</code> rather than through another hop.
       </p>
     ),
   },
@@ -193,46 +176,50 @@ function CockpitProblem({ view, code }: { view: ProblemView; code?: string }) {
   )
 }
 
-function CoverageRow({ record }: { record: CoverageRecord }) {
+/**
+ * One projected coverage row (#79). Everything it can render arrives already projected: the
+ * window labels are ISO-week strings computed server-side, and `observedUnits` is already null
+ * for every non-complete state. There is no scope alias and no coverage identifier to render,
+ * and the test hooks hang off the projection-local `rowKey` rather than a storage id.
+ */
+function CoverageRow({ record }: { record: CoveragePresentationView }) {
   const presentation = STATUS_PRESENTATION[record.status]
-  const observed = completeObservedUnits(record)
 
   return (
     <li className="cockpit-coverage__row" data-status={record.status}>
       <div className="cockpit-coverage__identity">
         <span className="cockpit-coverage__status">{presentation.label}</span>
         <strong>{record.capabilityId}</strong>
-        <small>{record.scopeAlias}</small>
       </div>
-      <p className="cockpit-coverage__observed" data-testid={`observed-${record.coverageId}`}>
-        {observed === null
+      <p className="cockpit-coverage__observed" data-testid={`observed-${record.rowKey}`}>
+        {record.observedUnits === null
           ? presentation.absence
-          : `${observed.toLocaleString('en-GB')} observed units`}
+          : `${record.observedUnits.toLocaleString('en-GB')} observed units`}
       </p>
       <dl className="cockpit-coverage__facts">
         <div>
           <dt>Limitation</dt>
-          <dd data-testid={`limitation-${record.coverageId}`}>{record.limitationCode}</dd>
+          <dd data-testid={`limitation-${record.rowKey}`}>{record.limitationCode}</dd>
         </div>
         <div>
           <dt>Omitted</dt>
-          <dd data-testid={`omitted-${record.coverageId}`}>{omittedLabel(record.omittedUnits)}</dd>
+          <dd data-testid={`omitted-${record.rowKey}`}>{omittedLabel(record.omittedUnits)}</dd>
         </div>
         <div>
           <dt>Window</dt>
           <dd>
-            {isoWeekLabel(record.rangeStart)} → {isoWeekLabel(record.rangeEnd)}
+            {record.windowStartLabel} → {record.windowEndLabel}
           </dd>
         </div>
         <div>
           <dt>Observed</dt>
-          <dd>{isoWeekLabel(record.observedAt)}</dd>
+          <dd>{record.observedAtLabel}</dd>
         </div>
         <div>
           <dt>Retryable</dt>
           <dd>{record.retryable ? 'yes' : 'no'}</dd>
         </div>
-        {record.saturationReason && (
+        {record.saturationReason !== null && (
           <div>
             <dt>Saturation</dt>
             <dd>{record.saturationReason}</dd>
@@ -322,7 +309,7 @@ export function CoverageCockpitV2({ state }: { state: CoverageCockpitState }) {
         ) : (
           <ol className="cockpit-coverage" aria-label="Recorded coverage states">
             {state.coverage.map((record) => (
-              <CoverageRow key={record.coverageId} record={record} />
+              <CoverageRow key={record.rowKey} record={record} />
             ))}
           </ol>
         )}
@@ -365,17 +352,11 @@ export function CoverageCockpitV2Route() {
   const [state, setState] = useState<CoverageCockpitState>({ kind: 'loading' })
 
   useEffect(() => {
-    const token: unknown = import.meta.env.VITE_DEVELOPER_LENS_V2_TOKEN
-    if (typeof token !== 'string' || token.length === 0) {
-      setState({ kind: 'unconfigured' })
-      return
-    }
-
+    // #78: no credential lives in this page. The requests are same-origin, so the browser sends
+    // the `Sec-Fetch-*` proof the guard authenticates on and no `Authorization` header exists to
+    // be inlined into a bundle.
     const controller = new AbortController()
-    const init = {
-      headers: { Authorization: `Bearer ${token}` },
-      signal: controller.signal,
-    }
+    const init = { signal: controller.signal }
 
     Promise.all([fetch('/api/v2/coverage', init), fetch('/api/v2/capabilities', init)])
       .then(async ([coverageResponse, capabilitiesResponse]) => {

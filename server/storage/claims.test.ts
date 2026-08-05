@@ -94,6 +94,8 @@ function claimGraphDatabase(): { db: Database.Database; coverage: CoverageTarget
     completedAt: '2026-04-06T00:00:02.000Z',
     transition: reconcileGithubCoreReceipts({
       checkpoint: null,
+      // #86: caller-owned content-free coverage key; the connector no longer mints one.
+      coverageId: `cov-${'a'.repeat(64)}`,
       scopeAlias: 'scope-a',
       rangeStart: '2026-01-05T00:00:00.000Z',
       rangeEnd: '2026-01-06T00:00:00.000Z',

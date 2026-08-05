@@ -28,12 +28,18 @@ active_slice: 'DL-LIFE-02 B3 — complete SQL deletion on the v3 domain (the exe
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
-  bridge, not another fixture module'
+  bridge, not another fixture module. The reachability half is done on
+  fable/boundary-and-reachability: the Atlas is linked from the dashboard coverage section and its
+  Evidence Drawer is /api/v2/evidence''s first client (served projection preferred, local
+  composition the silent offline fallback), so the second lens extends a surface users can reach
+  rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'None for the executable core. A real migration/connector still requires LIFE-03
-  backup/grace/restore/tombstone-replay proof and the #86 coverage remint; #78/#79 bind before any
-  real-data V2 surface.'
+blockers: 'None for B3. A real migration/connector still requires LIFE-03
+  backup/grace/restore/tombstone-replay proof plus the #86 storage half (tighten the
+  incremental.ts coverage_id CHECK to the cov- registry and migrate alias-bearing fixture
+  stores); the #86 connector mint, #79 PresentationView, and #78 credential/launch surface are
+  resolved on fable/boundary-and-reachability.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -65,9 +71,19 @@ local_board: seeded Taskdeck board outside Git; restart runbook in untracked RES
 residual_risks:
   - 'q-7 protection has strict=false and enforce_admins=false; repository law still forbids
      privileged merges with red or stale exact-head CI'
-  - '#78 dev-credential surface (bundle-safe bearer channel, no token/path logging, port-drift-proof
-     allowlist) binds before any real-data surface'
-  - '#79 BRIDGE-02 must serve a PresentationView, not the canonical record shape'
+  - '#78 RESOLVED on fable/boundary-and-reachability: the browser holds no bearer at all (the guard
+     accepts a proven same-origin Sec-Fetch triple on an allowlisted Host OR a bearer for
+     non-browser callers), the launch token and importer store path are no longer printed,
+     vite.config.ts pins strictPort and derives the proxy target from DEVELOPER_LENS_PORT, and the
+     plain build now ends in a dist credential canary. Reviewed posture change - read that branch
+     head before any real-data surface'
+  - '#79 RESOLVED on fable/boundary-and-reachability: /api/v2/coverage serves
+     CoveragePresentationViewSchema (status/codes, ISO-week window labels computed server-side,
+     complete-only observed units, per-response row key), enforced by the strict projection schema
+     plus the assertPresentationSafe key/alias canary (which checks leaked key names and the demo
+     alias only — the schema is the real gate) and a direct alias-absence test;
+     the canonical record is validated on the way in and never served. /api/v2/evidence grain is
+     NOT in scope and stays as it was'
   - '#80 remains open: v1 deletion-seam FK decision, C2 sweeper on the live path, lineage ID class
      separation, whyResolver lineage joins. The Ed25519 low-order condition is discharged as moot
      by the §7 deletion and reattaches only if signatures return'
@@ -98,9 +114,15 @@ residual_risks:
      backup/grace/restore/tombstone-replay proof and #86 V2 alias-bearing coverage remint'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,
      producer-absence limiting codes, canonical coverage-code registration'
-  - '#86 coverage_id embeds the collection scope_alias and travels inside C1 claim-graph
-     identifiers; re-mint content-free before the q-5 github.core real-collection runs (the mint
-     must stay deterministic per (alias, rangeEnd) or replay idempotency breaks)'
+  - '#86 RESOLVED at the connector on fable/boundary-and-reachability: coverageId is a required
+     caller input validated as cov- plus 64 lowercase hex, minted from fresh entropy by
+     mintGithubCoreCoverageId() and never derived from an alias, provider id, timestamp, or range.
+     The replay-determinism constraint still binds and is now the CALLER''s: a replayed job must
+     supply the same (jobId, coverageId, jobStartedAt) it supplied the first time, or the storage
+     payload hash changes and persistIncrementalGithubCoreTransition fails closed on
+     COLLECTION_JOB_ID_COLLISION. STILL OPEN: the incremental.ts coverage_id CHECK is deliberately
+     unchanged and existing fixture stores keep alias-bearing ids, so the migration remains owed
+     before the q-5 github.core real-collection runs'
   - 'LIFE-01 transcript replay proves structural lineage only; external authenticity of opaque
      digests remains a future trusted-adapter boundary, with no runtime caller'
   - 'frozen or tracked-only: #68, #69'

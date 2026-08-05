@@ -34,6 +34,7 @@ export const GITHUB_CORE_ACTIVATION_RUNNER_ERROR_CODE =
 
 const LOWERCASE_SHA_256 = /^[0-9a-f]{64}$/
 const OPAQUE_ID = /^[A-Za-z0-9:._-]{1,128}$/
+const CONTENT_FREE_COVERAGE_ID = /^cov-[0-9a-f]{64}$/
 const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 
 export class GithubCoreActivationRunnerError extends Error {
@@ -53,6 +54,14 @@ export interface GithubCoreActivationRunnerInput {
   readonly installationKey: Buffer
   readonly fetch: GithubCoreRestFetch
   readonly jobId: string
+  /**
+   * Content-free coverage key for this run's collection window (#86): `cov-` plus 64 lowercase
+   * hex, minted from fresh entropy by `mintGithubCoreCoverageId()` and never derived from the
+   * alias, provider ID, or range. It is part of the job identity the caller owns, alongside
+   * `jobId` and `jobStartedAt`: replaying a job supplies the same three values, which is what
+   * keeps the storage payload hash — and therefore replay idempotency — stable.
+   */
+  readonly coverageId: string
   /** Canonical logical observation time and range end, not a wall-clock duration measurement. */
   readonly jobStartedAt: string
 }
@@ -129,6 +138,7 @@ function snapshotRunnerInput(value: unknown): SnapshottedRunnerInput {
     'installationKey',
     'fetch',
     'jobId',
+    'coverageId',
     'jobStartedAt',
   ]
   const keys = Reflect.ownKeys(value)
@@ -141,6 +151,7 @@ function snapshotRunnerInput(value: unknown): SnapshottedRunnerInput {
   const installationKey = dataProperty(value, 'installationKey')
   const fetch = dataProperty(value, 'fetch')
   const jobId = dataProperty(value, 'jobId')
+  const coverageId = dataProperty(value, 'coverageId')
   const jobStartedAt = dataProperty(value, 'jobStartedAt')
   if (
     typeof workspaceRoot !== 'string' ||
@@ -151,6 +162,7 @@ function snapshotRunnerInput(value: unknown): SnapshottedRunnerInput {
     !Buffer.isBuffer(installationKey) ||
     typeof fetch !== 'function' ||
     typeof jobId !== 'string' || !OPAQUE_ID.test(jobId) ||
+    typeof coverageId !== 'string' || !CONTENT_FREE_COVERAGE_ID.test(coverageId) ||
     typeof jobStartedAt !== 'string' || !isCanonicalTimestamp(jobStartedAt)
   ) fail()
 
@@ -162,6 +174,7 @@ function snapshotRunnerInput(value: unknown): SnapshottedRunnerInput {
     installationKey: Buffer.from(installationKey),
     fetch: fetch as GithubCoreRestFetch,
     jobId,
+    coverageId,
     jobStartedAt,
   }
 }
@@ -185,6 +198,7 @@ function compositionContext(
 ): GithubCoreRestCompositionContext {
   return freezeDeep({
     checkpoint,
+    coverageId: input.coverageId,
     scopeAlias,
     rangeStart: card.readBoundary.rangeStart,
     rangeEnd: input.jobStartedAt,
@@ -215,6 +229,7 @@ function unstableTransition(
 ): GithubCoreNonCompleteCheckpointTransition {
   return reconcileGithubCoreNonComplete({
     checkpoint: context.checkpoint,
+    coverageId: context.coverageId,
     scopeAlias: context.scopeAlias,
     rangeStart: context.rangeStart,
     rangeEnd: context.rangeEnd,

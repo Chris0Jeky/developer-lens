@@ -259,8 +259,8 @@ function validateNonCompleteResult(
 ): ValidatedNonCompleteFacts {
   const context = assertPlainRecord(input)
   assertKeys(context, [
-    'checkpoint', 'scopeAlias', 'rangeStart', 'rangeEnd', 'observedAt', 'jobId', 'consentRevision',
-    'pageCap', 'result', 'attempt', 'retryAfterMs',
+    'checkpoint', 'coverageId', 'scopeAlias', 'rangeStart', 'rangeEnd', 'observedAt', 'jobId',
+    'consentRevision', 'pageCap', 'result', 'attempt', 'retryAfterMs',
   ])
   assertOpaque(input.scopeAlias)
   assertOpaque(input.jobId)
@@ -439,6 +439,7 @@ export function composeGithubCoreRestNoncomplete(
       : undefined
     const transitionInput: GithubCoreNonCompleteReconciliationInput = {
       checkpoint: input.checkpoint,
+      coverageId: input.coverageId,
       scopeAlias: input.scopeAlias,
       rangeStart: input.rangeStart,
       rangeEnd: input.rangeEnd,

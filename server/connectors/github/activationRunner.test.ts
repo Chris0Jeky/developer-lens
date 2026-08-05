@@ -25,6 +25,9 @@ const rangeStart = '2026-07-01T00:00:00.000Z'
 const firstJobStart = '2026-08-01T00:00:00.000Z'
 const secondJobStart = '2026-08-02T00:00:00.000Z'
 const installationKey = Buffer.alloc(32, 0x5a)
+/** Invented content-free coverage keys (#86), one per logical collection window. */
+const firstCoverageId = `cov-${'1a2b3c4d'.repeat(8)}`
+const secondCoverageId = `cov-${'5e6f7089'.repeat(8)}`
 
 const roots: string[] = []
 const databases: Database.Database[] = []
@@ -253,6 +256,7 @@ function runnerInput(
     installationKey,
     fetch,
     jobId: 'fixture-job-1',
+    coverageId: firstCoverageId,
     jobStartedAt: firstJobStart,
     ...overrides,
   }
@@ -316,6 +320,63 @@ describe('default-off github.core activation runner', () => {
     expect(transport.calls).toHaveLength(4)
   })
 
+  it('persists the caller-owned content-free coverage key and never an alias-bearing one (#86)', async () => {
+    const fixture = await cardFixture(card(5))
+    const db = database()
+    const seedTransport = fetchFixture([
+      ...completeProbe('invented-node-a'),
+      ...completeProbe('invented-node-a'),
+    ])
+    await runGithubCoreActivation(runnerInput(fixture, db, seedTransport.fetch))
+    const scopeAlias = createInstallationAliases(installationKey).githubCoreAlias('repository', '101')
+    const secondTransport = fetchFixture([
+      ...completeProbe('invented-node-a'),
+      ...completeProbe('invented-node-a'),
+    ])
+    await runGithubCoreActivation(runnerInput(fixture, db, secondTransport.fetch, {
+      jobId: 'fixture-second-window',
+      coverageId: secondCoverageId,
+      jobStartedAt: secondJobStart,
+    }))
+
+    const rows = db
+      .prepare('SELECT job_id, coverage_id FROM coverage_ledger ORDER BY job_id')
+      .all() as { job_id: string; coverage_id: string }[]
+
+    expect(rows).toEqual([
+      { job_id: 'fixture-job-1', coverage_id: firstCoverageId },
+      { job_id: 'fixture-second-window', coverage_id: secondCoverageId },
+    ])
+    for (const row of rows) {
+      expect(row.coverage_id).toMatch(/^cov-[0-9a-f]{64}$/)
+      expect(row.coverage_id).not.toContain(scopeAlias)
+      expect(row.coverage_id).not.toContain('github.core')
+      expect(row.coverage_id).not.toContain(firstJobStart)
+      expect(row.coverage_id).not.toContain(secondJobStart)
+    }
+  })
+
+  it('refuses a missing or non-registry coverage key before any fetch or write (#86)', async () => {
+    const fixture = await cardFixture(card(5))
+    const db = database()
+    const transport = fetchFixture([])
+    const { coverageId: _omitted, ...withoutCoverageId } = runnerInput(fixture, db, transport.fetch)
+
+    await expectRunnerFailure(withoutCoverageId)
+    for (const coverageId of [
+      `github.core:repo-alias:${firstJobStart}`,
+      'cov-not-hex',
+      `cov-${'a'.repeat(63)}`,
+      `cov-${'A'.repeat(64)}`,
+    ]) {
+      await expectRunnerFailure(runnerInput(fixture, db, transport.fetch, { coverageId }))
+    }
+
+    expect(transport.calls).toHaveLength(0)
+    expect(count(db, 'collection_job')).toBe(0)
+    expect(count(db, 'coverage_ledger')).toBe(0)
+  })
+
   it('persists the first bound noncomplete result only and never performs the second probe', async () => {
     const fixture = await cardFixture(card(5))
     const db = database()
@@ -360,6 +421,7 @@ describe('default-off github.core activation runner', () => {
 
     const result = await runGithubCoreActivation(runnerInput(fixture, db, transport.fetch, {
       jobId: 'fixture-unstable-job',
+      coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
     }))
 
@@ -411,6 +473,7 @@ describe('default-off github.core activation runner', () => {
     ])
     const result = await runGithubCoreActivation(runnerInput(fixture, db, transport.fetch, {
       jobId: 'fixture-followup-job',
+      coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
     }))
 
@@ -458,6 +521,7 @@ describe('default-off github.core activation runner', () => {
 
     await expectRunnerFailure(runnerInput(changedFixture, db, transport.fetch, {
       jobId: 'fixture-reconsent-required',
+      coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
     }))
 

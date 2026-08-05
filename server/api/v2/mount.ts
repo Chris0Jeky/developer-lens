@@ -10,31 +10,23 @@ import { v2ErrorBody } from './errors.js'
  * `/api/v2` request, so the legacy API, the offline demo, and the showcase build
  * never load a native module.
  *
- * Bearer delivery: the token is generated once per launch and printed on the
- * local launch banner (out-of-band, never in a URL). A dev session that wants
- * the Coverage Cockpit to reach the API sets the same value as
- * `DEVELOPER_LENS_V2_TOKEN` (server) and `VITE_DEVELOPER_LENS_V2_TOKEN` (Vite),
- * which is the existing `.env` / `import.meta.env` channel the dev UI already
- * uses for `VITE_STATIC_DEMO`. With no token configured the cockpit renders an
- * explicit unauthorized state — the surface fails closed, never open.
+ * Credential boundary (#78, reviewed posture change). The browser holds NO credential. The
+ * cockpit fetches `/api/v2/*` same-origin with no `Authorization` header at all, and `guard.ts`
+ * authenticates it on the exact Host allowlist plus the unforgeable `Sec-Fetch-*` same-origin
+ * proof. Nothing is read from `import.meta.env`, so there is no longer a delivery channel that
+ * Vite could inline into a built bundle — the P1 finding this replaced.
  *
- * Accepted deviation — "per-launch" and "usable by the UI" are mutually
- * exclusive here. `VITE_DEVELOPER_LENS_V2_TOKEN` is resolved by Vite at dev-server
- * start or build time, so a freshly generated per-launch token can never reach
- * the page: the only configuration in which the cockpit works is a fixed token
- * supplied to both processes. The generated token is therefore the fail-closed
- * default (API reachable only by a deliberate local caller), and the working
- * cockpit configuration is a fixed, session-scoped secret rather than a
- * per-launch one. A real per-launch channel needs a server-rendered handoff,
- * which is a later card.
+ * The bearer survives as one of two equivalent channels for callers that are not a browser. It
+ * is generated per launch and deliberately NOT printed: the charter's log sink denies tokens,
+ * and an unset `DEVELOPER_LENS_V2_TOKEN` therefore closes the bearer channel only — a local
+ * caller can always present the same-origin fetch-metadata proof instead, exactly as the
+ * paragraph below states.
  *
- * Honest security property — this bearer is not a secret against a local HTTP
- * requester. Once it is inlined into the built or dev-served JavaScript, any
- * local process can fetch that asset and read it. What it defends is the
- * browser drive-by surface: a page on another origin cannot read a response it
- * is not allowed to see, and together with the exact Host allowlist, the exact
- * Origin allowlist, and the `Sec-Fetch-*` gate it keeps a hostile web page from
- * driving this API. It is not a defence against a local attacker.
+ * Honest security property — neither channel is a defence against a local attacker, and none is
+ * claimed. A local process can set `Sec-Fetch-*` freely, just as it could previously read the
+ * inlined token out of a served asset. What both channels defend is the browser drive-by
+ * surface: together with the exact Host and Origin allowlists and no CORS headers anywhere, a
+ * page on another origin cannot drive this API or read its responses.
  */
 const SUPPLIED_TOKEN_PATTERN = /^[A-Za-z0-9._-]{32,256}$/
 
@@ -42,14 +34,13 @@ function resolveLaunchToken(): string {
   const supplied = process.env.DEVELOPER_LENS_V2_TOKEN
   if (supplied !== undefined && SUPPLIED_TOKEN_PATTERN.test(supplied)) return supplied
 
+  // Never printed, written, or returned (#78): the charter's log sink denies tokens, and an
+  // unreadable per-launch value is the fail-closed default for the non-browser channel.
   const generated = randomBytes(32).toString('hex')
-  if (process.env.NODE_ENV !== 'test') {
-    if (supplied !== undefined) {
-      console.warn(
-        'DEVELOPER_LENS_V2_TOKEN was ignored: it must be 32-256 characters of [A-Za-z0-9._-].',
-      )
-    }
-    console.log(`Developer Lens V2 bridge bearer (this launch only): ${generated}`)
+  if (supplied !== undefined && process.env.NODE_ENV !== 'test') {
+    console.warn(
+      'DEVELOPER_LENS_V2_TOKEN was ignored: it must be 32-256 characters of [A-Za-z0-9._-].',
+    )
   }
   return generated
 }

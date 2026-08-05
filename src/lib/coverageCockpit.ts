@@ -1,6 +1,5 @@
-import { getISOWeek, getISOWeekYear, parseISO } from 'date-fns'
-import type { CoverageRecord } from '../../shared/coverage'
 import type {
+  CoveragePresentationView,
   V2CapabilityView,
   V2StoreProvenance,
 } from '../../server/api/v2/contract'
@@ -13,12 +12,14 @@ import type {
 
 /**
  * Every way this surface can fail is its own state. Collapsing them into one
- * "refused" would tell a user whose bearer went stale to go looking at store
+ * "refused" would tell a user whose request was not authenticated to go looking at store
  * provenance, which is exactly the wrong repair.
+ *
+ * There is no `unconfigured` state any more (#78): the page holds no credential to be missing,
+ * so "this page was never given a bearer" stopped being a way this surface can fail.
  */
 export type CoverageCockpitState =
   | { readonly kind: 'loading' }
-  | { readonly kind: 'unconfigured' }
   | { readonly kind: 'unauthorized'; readonly code: string }
   | { readonly kind: 'guard-refused'; readonly code: string }
   | { readonly kind: 'provenance-refused'; readonly code: string }
@@ -28,7 +29,11 @@ export type CoverageCockpitState =
   | {
       readonly kind: 'ready'
       readonly provenance: V2StoreProvenance
-      readonly coverage: readonly CoverageRecord[]
+      /**
+       * The projected view, never the canonical record (#79). The cockpit cannot render a scope
+       * alias, a coverage identifier, or an exact timestamp because it is never given one.
+       */
+      readonly coverage: readonly CoveragePresentationView[]
       readonly capabilities: readonly V2CapabilityView[]
     }
 
@@ -38,25 +43,12 @@ export type CoverageCockpitProblemKind = Exclude<
 >
 
 /**
- * Operational timestamps render at ISO-week grain or coarser (Appendix I.1).
- *
- * `getISOWeek`/`getISOWeekYear` read the LOCAL calendar fields of a Date, so
- * passing a parsed instant straight in would make the rendered week depend on
- * the viewer's timezone — `2026-08-03T00:00:00Z` is still 2026-08-02 in any
- * negative-offset zone, which is a different ISO week. The UTC calendar date is
- * therefore rebuilt as a local date first, so every viewer sees the same week
- * for the same instant.
+ * The ISO-week grain floor (Appendix I.1) now lives in `shared/presentationGrain.ts` so the
+ * server projection behind `/api/v2/coverage` and the client surfaces that still receive raw
+ * instants (the Evidence Drawer's resolver output) apply the identical function. Re-exported
+ * here because this module remains the drawer's import site.
  */
-export function isoWeekLabel(timestamp: string): string {
-  const parsed = parseISO(timestamp)
-  if (Number.isNaN(parsed.getTime())) return 'unknown'
-  const utcCalendarDate = new Date(
-    parsed.getUTCFullYear(),
-    parsed.getUTCMonth(),
-    parsed.getUTCDate(),
-  )
-  return `${getISOWeekYear(utcCalendarDate)}-W${String(getISOWeek(utcCalendarDate)).padStart(2, '0')}`
-}
+export { isoWeekLabel } from '../../shared/presentationGrain'
 
 export function omittedLabel(omittedUnits: number | null): string {
   if (omittedUnits === null) return 'unknown'
@@ -65,8 +57,8 @@ export function omittedLabel(omittedUnits: number | null): string {
 }
 
 /**
- * Each HTTP outcome maps to the state whose remediation actually fixes it: a
- * rejected bearer is a restart, a rejected origin is a different URL, a refused
+ * Each HTTP outcome maps to the state whose remediation actually fixes it: an unauthenticated
+ * request is a stripped `Sec-Fetch-*` proof, a rejected origin is a different URL, a refused
  * store is a reseed, and a missing store is a first seed.
  */
 export function cockpitStateForStatus(status: number, code: string): CoverageCockpitState {

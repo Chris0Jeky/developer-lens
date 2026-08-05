@@ -14,6 +14,7 @@ import {
 const OPAQUE_ID = /^[A-Za-z0-9:._-]+$/
 const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 const LOWERCASE_SHA_256 = /^[0-9a-f]{64}$/
+const CONTENT_FREE_COVERAGE_ID = /^cov-[0-9a-f]{64}$/
 export const GITHUB_CORE_SYNTHETIC_MAX_PAGE_CAP = 1_000 as const
 const FAILURE_KINDS = new Set<GithubCoreFailureKind>([
   'rate_limited',
@@ -61,6 +62,8 @@ export type GithubCoreSyntheticPageAcquirer = (
 export interface GithubCoreSyntheticCollectionInput {
   readonly execution: 'invented_fixture'
   readonly capabilityId: 'github.core'
+  /** Caller-owned content-free coverage key (#86); see `GithubCoreReconciliationInput`. */
+  readonly coverageId: string
   readonly scopeAlias: string
   readonly consentRevision: string
   readonly queryVersion: typeof GITHUB_CORE_QUERY_VERSION
@@ -138,11 +141,15 @@ function validateCheckpoint(value: GithubCoreCheckpoint | null): void {
 function validateInput(input: GithubCoreSyntheticCollectionInput): void {
   const value = record(input, 'input')
   keys(value, [
-    'execution', 'capabilityId', 'scopeAlias', 'consentRevision', 'queryVersion', 'sourceApiVersion',
-    'rangeStart', 'rangeEnd', 'observedAt', 'jobId', 'pageCap', 'checkpoint', 'snapshotHash',
+    'execution', 'capabilityId', 'coverageId', 'scopeAlias', 'consentRevision', 'queryVersion',
+    'sourceApiVersion', 'rangeStart', 'rangeEnd', 'observedAt', 'jobId', 'pageCap', 'checkpoint',
+    'snapshotHash',
   ], 'input')
   if (value.execution !== 'invented_fixture') throw new Error('input.execution must be invented_fixture')
   if (value.capabilityId !== 'github.core') throw new Error('input.capabilityId mismatch')
+  if (typeof value.coverageId !== 'string' || !CONTENT_FREE_COVERAGE_ID.test(value.coverageId)) {
+    throw new Error('coverageId must be a content-free coverage key of cov- plus 64 lowercase hex')
+  }
   if (value.queryVersion !== GITHUB_CORE_QUERY_VERSION || value.sourceApiVersion !== GITHUB_CORE_REST_API_VERSION) throw new Error('input version mismatch')
   opaque(value.scopeAlias, 'scopeAlias')
   opaque(value.consentRevision, 'consentRevision')
@@ -222,6 +229,7 @@ function transition(
   const classification = classifyGithubCoreRetry(failure.kind, failure.attempt, failure.retryAfterMs)
   const reconciled = reconcileGithubCoreReceipts({
     checkpoint: input.checkpoint,
+    coverageId: input.coverageId,
     scopeAlias: input.scopeAlias,
     rangeStart: input.rangeStart,
     rangeEnd: input.rangeEnd,
@@ -250,6 +258,7 @@ function successfulTransition(
 ): GithubCoreSyntheticCollectionResult {
   const reconciled = reconcileGithubCoreReceipts({
     checkpoint: input.checkpoint,
+    coverageId: input.coverageId,
     scopeAlias: input.scopeAlias,
     rangeStart: input.rangeStart,
     rangeEnd: input.rangeEnd,

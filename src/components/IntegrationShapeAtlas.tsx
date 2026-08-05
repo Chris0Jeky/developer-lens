@@ -1,7 +1,7 @@
 import { Fragment, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { EvidenceDrawer } from './EvidenceDrawer'
-import { resolveIntegrationShapeEvidence } from '../../shared/integrationShapeEvidence'
+import { useIntegrationShapeEvidenceResolver } from '../lib/evidenceApiResolver'
 import {
   buildIntegrationShapePresentation,
   secondsToDayLabel,
@@ -22,9 +22,14 @@ import './IntegrationShapeAtlas.css'
  * discriminate them, a censoring-aware sensitivity variant, and every limitation. Every rendered
  * analytic number is a button that opens the Evidence Drawer and resolves the complete walk.
  *
- * All facts are the invented C1 composition in `shared/integrationShape.ts`; the panel never
- * fetches. The finding it renders is the same object `server/analysis/integrationShape.ts` proves
- * renderable through `validateFinding`/`assertRenderableFinding`.
+ * All rendered facts are the invented C1 composition in `shared/integrationShape.ts`. The finding
+ * it renders is the same object `server/analysis/integrationShape.ts` proves renderable through
+ * `validateFinding`/`assertRenderableFinding`.
+ *
+ * The one network touch is the Evidence Drawer's resolver: when a mark is opened, the panel tries
+ * `/api/v2/evidence/resolve` for that reference and falls back to the identical local composition
+ * when the endpoint does not answer (see `lib/evidenceApiResolver.ts`). Nothing else fetches, and
+ * the offline public showcase renders exactly the same walk.
  */
 
 const QUANTILE_LABEL: Readonly<Record<number, string>> = { 0.5: 'p50 (median)', 0.75: 'p75', 0.9: 'p90 (tail)' }
@@ -286,6 +291,7 @@ function OutcomeTable({ outcomes }: { outcomes: readonly IntegrationShapeOutcome
 
 export function IntegrationShapeAtlasPanel({ presentation }: { presentation: IntegrationShapePresentation }) {
   const [drawerReference, setDrawerReference] = useState<AnalyticReference | null>(null)
+  const resolveEvidence = useIntegrationShapeEvidenceResolver(drawerReference)
   const finding = presentation.finding
   const headline = presentation.headline
   const open = drawerReference !== null
@@ -474,7 +480,7 @@ export function IntegrationShapeAtlasPanel({ presentation }: { presentation: Int
       <EvidenceDrawer
         open={open}
         reference={drawerReference ?? { kind: 'claim', claimId: '', claimLayer: 'deterministic' }}
-        resolve={resolveIntegrationShapeEvidence}
+        resolve={resolveEvidence}
         onClose={() => setDrawerReference(null)}
         discriminatingQuestion={finding.discriminatingEvidence?.statement ?? null}
       />
@@ -490,7 +496,9 @@ export function IntegrationShapeAtlasRoute() {
       <div className="ambient ambient--one" aria-hidden="true" />
       <div className="ambient ambient--two" aria-hidden="true" />
       <header className="app-header">
-        <span className="atlas-route__brand">Developer Lens · integration shape</span>
+        <a className="atlas-route__brand" href="?">
+          ← Developer Lens · integration shape
+        </a>
         <span className="local-pill local-pill--public">Invented C1 · offline</span>
       </header>
       <main className="atlas-route__main">

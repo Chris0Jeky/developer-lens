@@ -1,4 +1,4 @@
-import { useCallback, useState, type PointerEvent as ReactPointerEvent } from 'react'
+import { Suspense, lazy, useCallback, useState, type PointerEvent as ReactPointerEvent } from 'react'
 import {
   Activity,
   ArrowRight,
@@ -19,8 +19,6 @@ import {
 import type { PullRequestMetric, RangeKey } from '../shared/types'
 import './App.css'
 import { ActivityHeatmap } from './components/ActivityHeatmap'
-import { CoverageCockpitV2Route } from './components/CoverageCockpitV2'
-import { IntegrationShapeAtlasRoute } from './components/IntegrationShapeAtlas'
 import { CoveragePanel } from './components/CoveragePanel'
 import { DnaPanel } from './components/DnaPanel'
 import { InsightStack } from './components/InsightStack'
@@ -34,7 +32,6 @@ import { RepoLedger } from './components/RepoLedger'
 import { ShareStudio } from './components/ShareStudio'
 import { SignalLab } from './components/SignalLab'
 import { WrappedExperience } from './components/WrappedExperience'
-import { V2Demo } from './components/V2Demo'
 import { useDashboard } from './hooks/useDashboard'
 import {
   compactNumber,
@@ -460,6 +457,23 @@ function DashboardApp() {
               <article className="panel coverage-wrap">
                 <CoveragePanel meta={data.meta} />
               </article>
+              {/*
+                The Atlas and the cockpit were reachable only by typing a query string, which
+                meant the deepest evidence surfaces in the product were, in practice, unreachable.
+                They belong under coverage: both are about what the lens can and cannot see.
+              */}
+              <nav className="section-links" aria-label="Evidence surfaces">
+                <a href="?view=integration-shape">
+                  <Layers3 size={13} aria-hidden="true" /> Integration Shape Atlas — one finding,
+                  every number traced to its evidence
+                </a>
+                {!publicShowcase && (
+                  <a href="?view=cockpit-v2">
+                    <ShieldCheck size={13} aria-hidden="true" /> Coverage cockpit — the V2 coverage
+                    and capability boundary
+                  </a>
+                )}
+              </nav>
             </section>
           </main>
 
@@ -503,12 +517,42 @@ function DashboardApp() {
   )
 }
 
+/**
+ * The three non-default routes are lazy so the dashboard's chunk carries only the dashboard.
+ * Each is a whole surface with its own dependency subtree — the V2 story, the coverage cockpit,
+ * and the Atlas with the Evidence Drawer behind it — and a visitor loads exactly one of the four.
+ * Statically importing all of them put every surface in one chunk that everyone downloaded.
+ */
+const V2Demo = lazy(() => import('./components/V2Demo').then((module) => ({ default: module.V2Demo })))
+const CoverageCockpitV2Route = lazy(() =>
+  import('./components/CoverageCockpitV2').then((module) => ({ default: module.CoverageCockpitV2Route })),
+)
+const IntegrationShapeAtlasRoute = lazy(() =>
+  import('./components/IntegrationShapeAtlas').then((module) => ({ default: module.IntegrationShapeAtlasRoute })),
+)
+
+/**
+ * Deliberately blank rather than a spinner. Each route renders its own honest loading state once
+ * its chunk arrives, and a second, different loading treatment in front of that would be a claim
+ * about progress this boundary cannot make.
+ */
+function RouteFallback() {
+  return <div className="app" id="top" aria-busy="true" />
+}
+
 function App() {
   const route = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search)
-  if (route?.get('demo') === 'v2') return <V2Demo />
-  if (route?.get('view') === 'cockpit-v2') return <CoverageCockpitV2Route />
-  if (route?.get('view') === 'integration-shape') return <IntegrationShapeAtlasRoute />
-  return <DashboardApp />
+  const lazyRoute =
+    route?.get('demo') === 'v2' ? (
+      <V2Demo />
+    ) : route?.get('view') === 'cockpit-v2' ? (
+      <CoverageCockpitV2Route />
+    ) : route?.get('view') === 'integration-shape' ? (
+      <IntegrationShapeAtlasRoute />
+    ) : null
+
+  if (lazyRoute === null) return <DashboardApp />
+  return <Suspense fallback={<RouteFallback />}>{lazyRoute}</Suspense>
 }
 
 export default App

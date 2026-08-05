@@ -92,7 +92,11 @@ npm run collect -- --local-root "C:\path\to\repos"
 npm run dev
 ```
 
-Open the Vite URL shown in the terminal. The API stays on `http://127.0.0.1:4141`; Vite proxies `/api` during development.
+Open <http://127.0.0.1:5173>. The web port is pinned, so a busy 5173 makes Vite refuse to start
+rather than move to 5174 — a moved port is not on the V2 Host allowlist and every `/api/v2` request
+would fail closed for a reason that looks nothing like a port collision. The API stays on
+`http://127.0.0.1:4141` (set `DEVELOPER_LENS_PORT` to move it; the dev proxy follows), and Vite
+proxies `/api` during development.
 
 ### Try the offline V2 demo
 
@@ -112,10 +116,38 @@ npm run test:demo:v2
 
 Run `npm run seed:v2` to write the invented coverage fixtures into
 `.developer-lens-synthetic/` (a gitignored directory kept separate from the private
-`.developer-lens/` runtime data), then export the same value as `DEVELOPER_LENS_V2_TOKEN` and
-`VITE_DEVELOPER_LENS_V2_TOKEN`, start `npm run dev`, and open
-<http://127.0.0.1:5173/?view=cockpit-v2>; without both variables the cockpit reports that it holds
-no bearer instead of rendering an empty panel.
+`.developer-lens/` runtime data), start `npm run dev`, and open
+<http://127.0.0.1:5173/?view=cockpit-v2>.
+
+The browser needs no token. The cockpit fetches `/api/v2` same-origin and the API authenticates it
+on the exact Host allowlist plus the browser's own `Sec-Fetch-*` metadata, which a page on another
+origin cannot forge. Nothing credential-shaped is read from `import.meta.env`, so nothing can be
+inlined into a bundle.
+
+A **non-browser** caller (curl, a script) can either send a bearer — export
+`DEVELOPER_LENS_V2_TOKEN` (32-256 characters from `[A-Za-z0-9._-]`) before starting the server,
+then send `Authorization: Bearer <that value>` **plus an allowlisted `Origin` header** (the guard
+rejects a metadata-free request with no Origin before it reads any credential) — or simply set
+the three same-origin `Sec-Fetch-*` headers itself; the two channels are deliberately equivalent.
+A working example against the API's own origin:
+
+```bash
+curl -H "Sec-Fetch-Site: same-origin" -H "Sec-Fetch-Mode: cors" -H "Sec-Fetch-Dest: empty" http://127.0.0.1:4141/api/v2/coverage
+```
+
+Neither channel is a defence against a process already on your machine, and none is claimed:
+what the Host/Origin allowlists and the fetch-metadata proof defend is the browser drive-by
+surface, where a page on another origin cannot forge those headers. The API binds to `127.0.0.1`
+and serves only the synthetic store.
+
+### Try the Integration Shape Atlas
+
+<http://127.0.0.1:5173/?view=integration-shape> renders one deterministic comparative finding end to
+end — the question, the matched-window comparison, the distribution and its tail, every honest
+count, and the limitations — where every analytic number is a button that opens the Evidence Drawer
+on its complete evidence walk. It needs no API and no data: the facts are the invented C1
+composition in `shared/integrationShape.ts`, so it works on the hosted showcase too. Both this route
+and the cockpit are linked from the dashboard's *Coverage & privacy* section.
 
 For a prepared 3-5 minute walkthrough, use the
 [`showcase demo runbook`](docs/SHOWCASE_DEMO.md). It gives the exact hosted and local routes, a short

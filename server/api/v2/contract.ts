@@ -5,7 +5,13 @@ import {
   CAPABILITY_REGISTRY,
   CapabilityIdSchema,
 } from '../../../shared/capabilities.js'
-import { COVERAGE_CONTRACT_VERSION, CoverageRecordSchema } from '../../../shared/coverage.js'
+import {
+  CoverageRecordSchema,
+  CoverageStatusSchema,
+  completeObservedUnits,
+  type CoverageRecord,
+} from '../../../shared/coverage.js'
+import { ISO_WEEK_LABEL_PATTERN, isoWeekLabel } from '../../../shared/presentationGrain.js'
 import { DataClassSchema } from '../../../shared/privacy.js'
 
 /**
@@ -99,11 +105,13 @@ export const V2CapabilitiesResponseSchema = z
 export type V2CapabilitiesResponse = z.infer<typeof V2CapabilitiesResponseSchema>
 
 /**
- * The served coverage record. `CoverageRecordSchema` accepts any non-empty
- * string for `coverageId` and `scopeAlias`; at the API boundary both must also
- * be opaque identifiers, so prose, a path, or a person-shaped label cannot
- * reach a caller. The authority for that property is this boundary, not the
- * storage CHECK constraint.
+ * The canonical coverage record as READ FROM THE STORE. It is server-side only and is never
+ * served: the charter's frontend sink accepts a `PresentationView` and denies canonical records.
+ *
+ * `CoverageRecordSchema` accepts any non-empty string for `coverageId` and `scopeAlias`; at this
+ * boundary both must also be opaque identifiers, so prose, a path, or a person-shaped label
+ * cannot even reach the projection step. The authority for that property is this boundary, not
+ * the storage CHECK constraint.
  */
 export const V2CoverageRecordSchema = CoverageRecordSchema.superRefine((record, context) => {
   for (const field of ['coverageId', 'scopeAlias'] as const) {
@@ -117,12 +125,107 @@ export const V2CoverageRecordSchema = CoverageRecordSchema.superRefine((record, 
   }
 })
 
+const IsoWeekLabelSchema = z.string().regex(ISO_WEEK_LABEL_PATTERN)
+
+/**
+ * The coverage `PresentationView` (#79, DL-BRIDGE-02).
+ *
+ * What it drops is the point. The canonical record's `coverageId` is a storage identifier,
+ * `scopeAlias` is a C2 installation-scoped value, and `rangeStart`/`rangeEnd`/`observedAt` are
+ * exact-millisecond operational timestamps — none of which the charter's frontend sink admits.
+ * The projection therefore carries:
+ *
+ * - the coverage state and the codes that explain it, which is the whole product claim;
+ * - ISO-week window LABELS computed server-side, so the grain floor is enforced at the
+ *   projection rather than trusted to a renderer that was handed exact instants;
+ * - `observedUnits` under the complete-only rule (`completeObservedUnits`): a missing, refused,
+ *   or restricted state is `null`, never a numeric zero;
+ * - `rowKey`, an ordinal that is stable only WITHIN one response. It exists so React can key a
+ *   list without a storage identifier, and it is deliberately not addressable: it names nothing
+ *   outside the response that produced it.
+ */
+export const CoveragePresentationViewSchema = z
+  .object({
+    rowKey: z.string().regex(/^coverage-row-\d+$/),
+    capabilityId: CapabilityIdSchema,
+    status: CoverageStatusSchema,
+    limitationCode: UpperSnakeCodeSchema,
+    saturationReason: UpperSnakeCodeSchema.nullable(),
+    retryable: z.boolean(),
+    expectedUnits: z.number().int().nonnegative().nullable(),
+    /** Complete-only; `null` for every other state so absence never reads as zero. */
+    observedUnits: z.number().int().nonnegative().nullable(),
+    omittedUnits: z.number().int().nonnegative().nullable(),
+    windowStartLabel: IsoWeekLabelSchema,
+    windowEndLabel: IsoWeekLabelSchema,
+    observedAtLabel: IsoWeekLabelSchema,
+  })
+  .strict()
+  .superRefine((view, context) => {
+    if (view.status !== 'complete' && view.observedUnits !== null) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Only complete coverage may present an observed-unit count',
+        path: ['observedUnits'],
+      })
+    }
+    if (view.status === 'truncated' && view.saturationReason === null) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Truncated coverage requires a saturation reason',
+        path: ['saturationReason'],
+      })
+    }
+    if (view.status !== 'truncated' && view.saturationReason !== null) {
+      context.addIssue({
+        code: 'custom',
+        message: 'Only truncated coverage may have a saturation reason',
+        path: ['saturationReason'],
+      })
+    }
+  })
+
+export type CoveragePresentationView = z.infer<typeof CoveragePresentationViewSchema>
+
+/**
+ * Projects validated canonical records into the served view. The ordinal is assigned here, from
+ * the response's own ordering, so no storage identifier is needed to key a row.
+ */
+export function buildCoveragePresentationViews(
+  records: readonly CoverageRecord[],
+): CoveragePresentationView[] {
+  return records.map((record, index) =>
+    CoveragePresentationViewSchema.parse({
+      rowKey: `coverage-row-${index + 1}`,
+      capabilityId: record.capabilityId,
+      status: record.status,
+      limitationCode: record.limitationCode,
+      saturationReason: record.saturationReason ?? null,
+      retryable: record.retryable,
+      expectedUnits: record.expectedUnits,
+      observedUnits: completeObservedUnits(record),
+      omittedUnits: record.omittedUnits,
+      windowStartLabel: isoWeekLabel(record.rangeStart),
+      windowEndLabel: isoWeekLabel(record.rangeEnd),
+      observedAtLabel: isoWeekLabel(record.observedAt),
+    }),
+  )
+}
+
+/**
+ * Version of the coverage PRESENTATION projection served below. Deliberately not
+ * `COVERAGE_CONTRACT_VERSION`: that names the canonical record contract, which this
+ * response stopped serving when #79 landed. A caller that pinned the old field name
+ * fails its parse loudly instead of silently receiving a different shape.
+ */
+export const V2_COVERAGE_PRESENTATION_VERSION = '1.0.0' as const
+
 export const V2CoverageResponseSchema = z
   .object({
     apiContractVersion: z.literal(V2_API_CONTRACT_VERSION),
-    coverageContractVersion: z.literal(COVERAGE_CONTRACT_VERSION),
+    coveragePresentationVersion: z.literal(V2_COVERAGE_PRESENTATION_VERSION),
     provenance: V2StoreProvenanceSchema,
-    records: z.array(V2CoverageRecordSchema),
+    records: z.array(CoveragePresentationViewSchema),
   })
   .strict()
 

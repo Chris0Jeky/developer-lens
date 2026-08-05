@@ -13,11 +13,14 @@ import {
 const rangeStart = '2026-01-01T00:00:00.000Z'
 const rangeEnd = '2026-01-02T00:00:00.000Z'
 const observedAt = '2026-01-03T00:00:00.000Z'
+/** Invented content-free coverage key (#86): `cov-` plus 64 lowercase hex. */
+const coverageId = `cov-${'9b8a7c6d'.repeat(8)}`
 
 function input(overrides: Partial<GithubCoreSyntheticCollectionInput> = {}): GithubCoreSyntheticCollectionInput {
   return {
     execution: 'invented_fixture',
     capabilityId: 'github.core',
+    coverageId,
     scopeAlias: 'scope-01',
     consentRevision: 'consent-01',
     queryVersion: GITHUB_CORE_QUERY_VERSION,

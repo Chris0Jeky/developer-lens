@@ -7,6 +7,8 @@ import request from 'supertest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { CAPABILITY_REGISTRY } from '../../../shared/capabilities.js'
 import { COVERAGE_STATUSES, completeObservedUnits } from '../../../shared/coverage.js'
+import { isoWeekLabel } from '../../../shared/presentationGrain.js'
+import { PresentationLeakError, assertPresentationSafe } from '../../analysis/integrationShape.js'
 import type { V2RuntimeConfig } from './config.js'
 import {
   SYNTHETIC_STORE_MARKER,
@@ -96,14 +98,73 @@ describe('V2 bridge coverage endpoint', () => {
     const response = await authorized(appFor(syntheticStore), '/api/v2/coverage').expect(200)
     const body = V2CoverageResponseSchema.parse(response.body)
 
-    for (const record of body.records) {
-      const observed = completeObservedUnits(record)
-      if (record.status === 'complete') expect(observed).toBe(record.observedUnits)
-      else expect(observed).toBeNull()
+    for (const view of body.records) {
+      const canonical = SYNTHETIC_COVERAGE_RECORDS.find((record) => record.status === view.status)!
+      // The projection applies the complete-only rule itself, so the client never has to.
+      expect(view.observedUnits).toBe(completeObservedUnits(canonical))
+      if (view.status !== 'complete') expect(view.observedUnits).toBeNull()
     }
     const neverAuthorized = body.records.find((record) => record.status === 'never_authorized')
     expect(neverAuthorized?.expectedUnits).toBeNull()
     expect(neverAuthorized?.omittedUnits).toBeNull()
+  })
+
+  it('serves a PresentationView, never the canonical coverage record (#79)', async () => {
+    const response = await authorized(appFor(syntheticStore), '/api/v2/coverage').expect(200)
+    const body = V2CoverageResponseSchema.parse(response.body)
+    const serialized = JSON.stringify(body)
+
+    // The canonical shape would fail the presentation guard on `coverageId` alone; the
+    // projection is what makes this response servable.
+    expect(() => assertPresentationSafe(body, 'coverage response')).not.toThrow()
+    expect(() =>
+      assertPresentationSafe(
+        { records: SYNTHETIC_COVERAGE_RECORDS },
+        'canonical coverage records',
+      ),
+    ).toThrow(PresentationLeakError)
+
+    for (const record of SYNTHETIC_COVERAGE_RECORDS) {
+      expect(serialized).not.toContain(record.coverageId)
+      expect(serialized).not.toContain(record.scopeAlias)
+      expect(serialized).not.toContain(record.rangeStart)
+      expect(serialized).not.toContain(record.rangeEnd)
+      expect(serialized).not.toContain(record.observedAt)
+    }
+    for (const view of body.records) {
+      expect(Object.keys(view).sort()).toEqual([
+        'capabilityId',
+        'expectedUnits',
+        'limitationCode',
+        'observedAtLabel',
+        'observedUnits',
+        'omittedUnits',
+        'retryable',
+        'rowKey',
+        'saturationReason',
+        'status',
+        'windowEndLabel',
+        'windowStartLabel',
+      ])
+      for (const label of [view.windowStartLabel, view.windowEndLabel, view.observedAtLabel]) {
+        expect(label).toMatch(/^\d{4}-W\d{2}$/)
+      }
+    }
+    expect(body.records.map((view) => view.rowKey)).toEqual(
+      body.records.map((_view, index) => `coverage-row-${index + 1}`),
+    )
+  })
+
+  it('computes the ISO-week window labels server-side from the UTC calendar date (#79)', async () => {
+    const response = await authorized(appFor(syntheticStore), '/api/v2/coverage').expect(200)
+    const body = V2CoverageResponseSchema.parse(response.body)
+
+    for (const view of body.records) {
+      const canonical = SYNTHETIC_COVERAGE_RECORDS.find((record) => record.status === view.status)!
+      expect(view.windowStartLabel).toBe(isoWeekLabel(canonical.rangeStart))
+      expect(view.windowEndLabel).toBe(isoWeekLabel(canonical.rangeEnd))
+      expect(view.observedAtLabel).toBe(isoWeekLabel(canonical.observedAt))
+    }
   })
 
   it('reports capability lifecycle without transitioning anything', async () => {
@@ -119,7 +180,7 @@ describe('V2 bridge coverage endpoint', () => {
 })
 
 describe('V2 bridge request guard', () => {
-  it('rejects a wrong or missing bearer', async () => {
+  it('rejects a wrong or missing bearer when nothing proves a same-origin browser fetch', async () => {
     const app = appFor(syntheticStore)
     const wrong = await request(app)
       .get('/api/v2/coverage')
@@ -141,6 +202,61 @@ describe('V2 bridge request guard', () => {
       .set('Origin', WEB_ORIGIN)
       .set('Authorization', TOKEN)
       .expect(401)
+  })
+
+  it('accepts a proven same-origin browser fetch with no credential at all (#78)', async () => {
+    const app = appFor(syntheticStore)
+
+    // The cockpit's exact request shape: same-origin, so no Origin header and no Authorization.
+    await request(app)
+      .get('/api/v2/coverage')
+      .set('Host', API_HOST)
+      .set(SAME_ORIGIN_METADATA)
+      .expect(200)
+
+    // ...and the same proof alongside an allowlisted Origin.
+    await request(app)
+      .get('/api/v2/capabilities')
+      .set('Host', API_HOST)
+      .set('Origin', WEB_ORIGIN)
+      .set(SAME_ORIGIN_METADATA)
+      .expect(200)
+
+    // A stale or wrong bearer is irrelevant once the fetch proof stands on its own.
+    await request(app)
+      .get('/api/v2/coverage')
+      .set('Host', API_HOST)
+      .set('Authorization', `Bearer ${'0'.repeat(64)}`)
+      .set(SAME_ORIGIN_METADATA)
+      .expect(200)
+  })
+
+  it('never accepts a credential-free request that cannot prove same-origin fetch metadata', async () => {
+    const app = appFor(syntheticStore)
+
+    for (const metadata of [
+      { ...SAME_ORIGIN_METADATA, 'Sec-Fetch-Site': 'cross-site' },
+      { ...SAME_ORIGIN_METADATA, 'Sec-Fetch-Site': 'same-site' },
+      { ...SAME_ORIGIN_METADATA, 'Sec-Fetch-Mode': 'no-cors' },
+      { ...SAME_ORIGIN_METADATA, 'Sec-Fetch-Dest': 'document' },
+    ]) {
+      // With an allowlisted Origin the request clears the origin gate and is refused on the
+      // credential instead, which is the fail-closed half of the two-channel rule.
+      await request(app)
+        .get('/api/v2/coverage')
+        .set('Host', API_HOST)
+        .set('Origin', WEB_ORIGIN)
+        .set(metadata)
+        .expect(401)
+    }
+
+    // A cross-origin page cannot reach the credential check at all.
+    await request(app)
+      .get('/api/v2/coverage')
+      .set('Host', API_HOST)
+      .set('Origin', 'http://evil.example')
+      .set({ ...SAME_ORIGIN_METADATA, 'Sec-Fetch-Site': 'cross-site' })
+      .expect(403)
   })
 
   it('rejects a wrong or malformed Host', async () => {
@@ -417,11 +533,12 @@ describe('V2 bridge mount', () => {
         CAPABILITY_REGISTRY.length,
       )
 
+      // A non-browser caller (no same-origin fetch proof) still needs the right bearer.
       await request(app)
         .get('/api/v2/coverage')
         .set('Host', API_HOST)
+        .set('Origin', WEB_ORIGIN)
         .set('Authorization', `Bearer ${'0'.repeat(64)}`)
-        .set(SAME_ORIGIN_METADATA)
         .expect(401)
     } finally {
       if (previousStore === undefined) delete process.env.DEVELOPER_LENS_V2_STORE

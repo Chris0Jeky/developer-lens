@@ -138,6 +138,9 @@ function persistJob(
     completedAt: '2026-04-06T00:00:02.000Z',
     transition: reconcileGithubCoreReceipts({
       checkpoint: null,
+      // #86: the connector now takes a caller-owned content-free key instead of minting an
+      // alias-bearing one. The per-job digit keeps these distinct without deriving anything.
+      coverageId: `cov-${snapshotDigit.repeat(64)}`,
       scopeAlias,
       rangeStart,
       rangeEnd,
@@ -174,8 +177,9 @@ function claimInput(overrides: Record<string, unknown> = {}): Record<string, unk
 }
 
 /**
- * The alias-bearing identifiers the connector minted for this store. Asserted absent from
- * every tree, so the resolver cannot regress into transporting them.
+ * The coverage identifiers this store recorded. Asserted absent from every tree, so the resolver
+ * cannot regress into transporting them — that holds after #86 made them content-free too: a
+ * storage identifier is not presentation material regardless of what it does or does not embed.
  */
 function MINTED_COVERAGE_IDS(fixture: Fixture): string[] {
   return [fixture.coverageA, fixture.coverageB, fixture.coverageC].map((key) => key.coverageId)
@@ -903,10 +907,13 @@ describe('why resolver — the C2 boundary', () => {
     ).toBe(COVERAGE_SCOPE_ALIASES[0])
   })
 
-  it('names a coverage row by (rangeStart, jobId), never by the alias-bearing coverage_id', () => {
+  it('names a coverage row by (rangeStart, jobId), never by the stored coverage_id', () => {
     const fixture = whyFixture()
-    // The minted id really does carry the alias — that is the property being defended.
-    expect(fixture.coverageA.coverageId).toContain(COVERAGE_SCOPE_ALIASES[0])
+    // #86 made the stored id content-free, so the alias is no longer IN it. The naming rule is
+    // unchanged and independently defended: the resolver addresses a coverage row by its
+    // (rangeStart, jobId) key, never by the storage identifier.
+    expect(fixture.coverageA.coverageId).toMatch(/^cov-[0-9a-f]{64}$/)
+    expect(fixture.coverageA.coverageId).not.toContain(COVERAGE_SCOPE_ALIASES[0])
 
     const tree = explanation(resolveWhy(fixture.db, { claimId: fixture.demoClaimId }))
     const coverageEdge = group(tree, 'coverage_basis').edges[0]
