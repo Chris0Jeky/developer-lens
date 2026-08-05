@@ -14,6 +14,11 @@ export type LoadedActivationArtifact = Readonly<{
   taskId: string
   parsed: unknown
 }>
+export type LoadedHashBoundActivationArtifact = Readonly<{
+  taskId: string
+  sha256: string
+  parsed: unknown
+}>
 export type ActivationArtifactLoadInput = Readonly<{
   workspaceRoot: string
   taskId: string
@@ -47,6 +52,10 @@ const TASK_CARD_SPEC: ArtifactSpec = Object.freeze({
 })
 const LAST_RUN_REPORT_SPEC: ArtifactSpec = Object.freeze({
   fileName: 'last-run-report.json',
+  maxBytes: MAX_ACTIVATION_ARTIFACT_BYTES,
+})
+const CONTINUITY_REVIEW_ANCHOR_SPEC: ArtifactSpec = Object.freeze({
+  fileName: 'continuity-review-anchor.json',
   maxBytes: MAX_ACTIVATION_ARTIFACT_BYTES,
 })
 
@@ -341,7 +350,7 @@ async function loadFixedArtifactSnapshot(
   expectedSha256: string | undefined,
   hooks: ActivationArtifactLoaderHooks,
   invalid: InvalidLoad,
-): Promise<LoadedActivationArtifact> {
+): Promise<LoadedHashBoundActivationArtifact> {
   if (snapshot.workspaceRoot.length === 0 || !isAbsolute(snapshot.workspaceRoot)) invalid()
   assertSafeTaskId(snapshot.taskId, invalid)
   const canonicalWorkspaceRoot = await realpath(resolve(snapshot.workspaceRoot))
@@ -397,7 +406,11 @@ async function loadFixedArtifactSnapshot(
       invalid,
     )
     if (expectedSha256 !== undefined && artifact.sha256 !== expectedSha256) invalid()
-    return { taskId: snapshot.taskId, parsed: parseJsonWithoutDuplicateKeys(artifact.text) }
+    return {
+      taskId: snapshot.taskId,
+      sha256: artifact.sha256,
+      parsed: parseJsonWithoutDuplicateKeys(artifact.text),
+    }
   } finally { await handle.close() }
 }
 
@@ -407,7 +420,8 @@ export async function loadActivationTaskCardArtifact(
   hooks: ActivationArtifactLoaderHooks = NO_HOOKS,
 ): Promise<LoadedActivationArtifact> {
   const snapshot = snapshotClosedInput(input, invalid)
-  return loadFixedArtifactSnapshot(snapshot, TASK_CARD_SPEC, undefined, hooks, invalid)
+  const loaded = await loadFixedArtifactSnapshot(snapshot, TASK_CARD_SPEC, undefined, hooks, invalid)
+  return { taskId: loaded.taskId, parsed: loaded.parsed }
 }
 
 export async function loadHashBoundActivationTaskCardArtifact(
@@ -415,7 +429,8 @@ export async function loadHashBoundActivationTaskCardArtifact(
   invalid: InvalidLoad,
 ): Promise<LoadedActivationArtifact> {
   const snapshot = snapshotHashBoundClosedInput(input, invalid)
-  return loadFixedArtifactSnapshot(snapshot, TASK_CARD_SPEC, snapshot.expectedSha256, NO_HOOKS, invalid)
+  const loaded = await loadFixedArtifactSnapshot(snapshot, TASK_CARD_SPEC, snapshot.expectedSha256, NO_HOOKS, invalid)
+  return { taskId: loaded.taskId, parsed: loaded.parsed }
 }
 
 export const ACTIVATION_ARTIFACT_LOAD_ERROR_CODE = 'INVALID_ACTIVATION_ARTIFACT_LOAD' as const
@@ -436,13 +451,14 @@ function invalidArtifactLoad(): never {
 export async function loadHashBoundActivationLastRunReport(input: unknown): Promise<LoadedActivationArtifact> {
   try {
     const snapshot = snapshotHashBoundClosedInput(input, invalidArtifactLoad)
-    return await loadFixedArtifactSnapshot(
+    const loaded = await loadFixedArtifactSnapshot(
       snapshot,
       LAST_RUN_REPORT_SPEC,
       snapshot.expectedSha256,
       NO_HOOKS,
       invalidArtifactLoad,
     )
+    return { taskId: loaded.taskId, parsed: loaded.parsed }
   } catch (error) {
     if (error instanceof ActivationArtifactLoadError) throw error
     invalidArtifactLoad()
@@ -463,6 +479,24 @@ export const activationArtifactLoaderTestSeams = Object.freeze({
         snapshot.expectedSha256,
         hooks,
         invalidArtifactLoad,
+      ).then((loaded) => ({ taskId: loaded.taskId, parsed: loaded.parsed }))
+    } catch (error) {
+      if (error instanceof ActivationArtifactLoadError) throw error
+      invalidArtifactLoad()
+    }
+  },
+  loadAnchorWithHooks: async (
+    input: unknown,
+    hooks: ActivationArtifactLoaderHooks,
+  ): Promise<LoadedHashBoundActivationArtifact> => {
+    try {
+      const snapshot = snapshotHashBoundClosedInput(input, invalidArtifactLoad)
+      return await loadFixedArtifactSnapshot(
+        snapshot,
+        CONTINUITY_REVIEW_ANCHOR_SPEC,
+        snapshot.expectedSha256,
+        hooks,
+        invalidArtifactLoad,
       )
     } catch (error) {
       if (error instanceof ActivationArtifactLoadError) throw error
@@ -470,3 +504,29 @@ export const activationArtifactLoaderTestSeams = Object.freeze({
     }
   },
 })
+
+/**
+ * Load the fixed, hash-bound continuity review-anchor artifact.
+ *
+ * Equality between the externally supplied SHA-256 and the digest of the observed stable bytes
+ * proves those bytes only. It does not authenticate owner identity, review or approval; prove
+ * trusted time; bind a report, task card, key, lifecycle, CAS state, retention, or completeness;
+ * authorize, renew, or activate continuity; or establish provenance of this artifact.
+ */
+export async function loadHashBoundContinuityReviewAnchorArtifact(
+  input: unknown,
+): Promise<LoadedHashBoundActivationArtifact> {
+  try {
+    const snapshot = snapshotHashBoundClosedInput(input, invalidArtifactLoad)
+    return await loadFixedArtifactSnapshot(
+      snapshot,
+      CONTINUITY_REVIEW_ANCHOR_SPEC,
+      snapshot.expectedSha256,
+      NO_HOOKS,
+      invalidArtifactLoad,
+    )
+  } catch (error) {
+    if (error instanceof ActivationArtifactLoadError) throw error
+    invalidArtifactLoad()
+  }
+}
