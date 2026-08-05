@@ -9,6 +9,17 @@ import {
   type ClaimEdgeTargetKind,
 } from '../../shared/claims.js'
 import { CAPABILITY_REGISTRY } from '../../shared/capabilities.js'
+import {
+  WHY_MISSING_LINK_REASONS,
+  WHY_RESOLVER_VERSION,
+  WHY_TARGET_KINDS,
+  WHY_UNRESOLVABLE_REASONS,
+  WHY_WALK_TERMINATIONS,
+  type WhyMissingLinkReason,
+  type WhyTargetKind,
+  type WhyUnresolvableReason,
+  type WhyWalkTermination,
+} from '../../shared/whyContract.js'
 
 /**
  * "Why am I seeing this number?" — the ADR-01 walk as one deterministic, read-only
@@ -67,56 +78,29 @@ import { CAPABILITY_REGISTRY } from '../../shared/capabilities.js'
  * helper, so the claim-writer rewrite in DL-SPINE-02 cannot silently change what a
  * "why" answer means.
  */
-export const WHY_RESOLVER_VERSION = '1.0.0' as const
+/**
+ * The reason/termination vocabularies and resolver version live in
+ * `shared/whyContract.ts` — the runtime schema the browser client parses responses
+ * with — and are re-exported here so this module remains their server-side import
+ * site. One source; the schema cannot drift from the resolver.
+ */
+export {
+  WHY_MISSING_LINK_REASONS,
+  WHY_RESOLVER_VERSION,
+  WHY_TARGET_KINDS,
+  WHY_UNRESOLVABLE_REASONS,
+  WHY_WALK_TERMINATIONS,
+  type WhyMissingLinkReason,
+  type WhyTargetKind,
+  type WhyUnresolvableReason,
+  type WhyWalkTermination,
+}
 
 /** Depth applied when a request does not name one. */
 export const WHY_DEFAULT_DEPTH_BOUND = 64
 
 /** Hard clamp. No request can ask the resolver to walk further than this. */
 export const WHY_MAX_DEPTH_BOUND = 512
-
-export const WHY_MISSING_LINK_REASONS = [
-  'CYCLE_DETECTED',
-  'DEPTH_LIMIT_REACHED',
-  'MALFORMED_EDGE',
-  'MISSING_CAPABILITY_BINDING',
-  'MISSING_CLAIM',
-  'MISSING_COVERAGE',
-  'MISSING_EVIDENCE',
-  'MISSING_SCOPE',
-  'SCOPE_ALIAS_CLEARED',
-  'TOMBSTONED_CLAIM',
-  'TOMBSTONED_EVIDENCE',
-  'UNREGISTERED_CAPABILITY',
-] as const
-export type WhyMissingLinkReason = typeof WHY_MISSING_LINK_REASONS[number]
-
-export const WHY_TARGET_KINDS = [
-  'capability',
-  'claim',
-  'collection_job',
-  'coverage',
-  'edge',
-  'evidence',
-  'scope',
-] as const
-export type WhyTargetKind = typeof WHY_TARGET_KINDS[number]
-
-export const WHY_UNRESOLVABLE_REASONS = [
-  'INVALID_REQUEST',
-  'MALFORMED_CLAIM_ID',
-  'STORAGE_UNAVAILABLE',
-  'UNKNOWN_CLAIM',
-] as const
-export type WhyUnresolvableReason = typeof WHY_UNRESOLVABLE_REASONS[number]
-
-export const WHY_WALK_TERMINATIONS = [
-  'terminal',
-  'cycle_detected',
-  'depth_limit_reached',
-  'missing_link',
-] as const
-export type WhyWalkTermination = typeof WHY_WALK_TERMINATIONS[number]
 
 /**
  * How the tree names a `coverage_ledger` row. Deliberately NOT the row's `coverage_id`:

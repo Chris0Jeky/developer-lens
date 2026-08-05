@@ -39,6 +39,15 @@ import type {
  */
 export const INTEGRATION_SHAPE_EVIDENCE_VERSION = '1.0.0' as const
 
+/**
+ * The analysis version the evidence endpoint serves and the resolve contract PINS
+ * (`V2EvidenceResolveResponseSchema`): an older local service that predates the bundled
+ * analysis cannot answer with valid absence furniture for a claim this bundle renders —
+ * its stale version literal fails the parse and the client falls back (PR #132 review).
+ * Defined here (client-safe) and re-exported by `server/analysis/integrationShape.ts`.
+ */
+export const INTEGRATION_SHAPE_ANALYSIS_VERSION = '1.0.0' as const
+
 /** The union the drawer's `resolve` callback returns (mirrors `EvidenceDrawer.EvidenceResolution`). */
 export type IntegrationShapeEvidenceResolution =
   | WhyExplanationTree

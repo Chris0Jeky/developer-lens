@@ -132,6 +132,22 @@ const C1_GRAPH_COLUMNS = {
   continuity_cas_operation: [],
 } as const satisfies Record<ShadowTable, readonly string[]>
 
+/**
+ * Rows whose key-shaped identifiers are DERIVED from the source, not minted from caller
+ * entropy. The slice-A legacy tombstone is rewritten as `del-${suffix}` with the suffix
+ * taken verbatim from the source `scope_tombstone_<64hex>` subject, so the primary and
+ * replay targets must agree on those values LITERALLY; alpha-renaming them like minted
+ * identities would give a same-shaped substitution in one target the same colour and let
+ * it slip through both digests (PR #127 late review). Minted `del-` operation IDs on
+ * ordinary deletion-kind lineage rows keep their entropy classification — this predicate
+ * is per row kind, not per column.
+ */
+const SOURCE_DERIVED_ID_ROWS: Partial<
+  Record<ShadowTable, (row: Record<string, unknown>) => boolean>
+> = {
+  lineage_event: (row) => row.event_kind === 'legacy_deletion_operation',
+}
+
 const lengthPrefix = (value: string): string => `${value.length}:${value}`
 
 function typedValue(value: unknown): string {
@@ -165,6 +181,7 @@ function c1Rows(db: Database.Database): C1Row[] {
     if (columns.some((column) => !installed.has(column))) throw new Error()
     const rows = db.prepare(`SELECT ${columns.join(', ')} FROM ${table}`).all() as Array<Record<string, unknown>>
     for (const row of rows) {
+      const sourceDerivedIds = SOURCE_DERIVED_ID_ROWS[table]?.(row) ?? false
       projected.push({
         table,
         cells: columns.map((column) => {
@@ -172,7 +189,8 @@ function c1Rows(db: Database.Database): C1Row[] {
           return {
             column,
             value,
-            id: C1_ID_COLUMNS.has(column) && typeof value === 'string' && RANDOM_KEY.test(value)
+            id: !sourceDerivedIds
+              && C1_ID_COLUMNS.has(column) && typeof value === 'string' && RANDOM_KEY.test(value)
               ? value
               : undefined,
           }
@@ -302,7 +320,16 @@ const FULL_EQUIVALENCE_VERSION = 'storage-v3-full-equivalence.v1'
  * alpha-renamed in the equivalence digest; a retained C2 value that merely has a
  * reminted-key shape (source_job_id, source_snapshot_id, source_coverage_id, and
  * any other source-opaque token) is compared literally, so a same-shaped
- * substitution in one target still refuses acceptance.
+ * substitution in one target refuses acceptance for those columns. Column
+ * membership is necessary but not sufficient: `SOURCE_DERIVED_ID_ROWS` exempts
+ * row kinds whose values in these columns are source-derived rather than minted.
+ *
+ * KNOWN RESIDUAL GAP (tracked): scope ids that the rewrite PRESERVES from an
+ * existing claim_scope row (rather than minting) are still alpha-renamed here,
+ * so a consistent same-shaped scope-id substitution in one target can escape
+ * both digests. Closing it needs per-run remint metadata from the rewrite (the
+ * planned equivalence redesign), not another static row predicate — the target
+ * rows alone cannot say whether a scope id was preserved or minted.
  */
 const ENTROPY_ID_COLUMNS = new Set([...C1_ID_COLUMNS, 'observation_id', 'fact_id', 'event_id'])
 
@@ -314,6 +341,7 @@ function fullRows(db: Database.Database): C1Row[] {
       .sort()
     const rows = db.prepare(`SELECT ${columns.join(', ')} FROM ${table}`).all() as Array<Record<string, unknown>>
     for (const row of rows) {
+      const sourceDerivedIds = SOURCE_DERIVED_ID_ROWS[table]?.(row) ?? false
       projected.push({
         table,
         cells: columns.map((column) => {
@@ -321,7 +349,8 @@ function fullRows(db: Database.Database): C1Row[] {
           return {
             column,
             value,
-            id: ENTROPY_ID_COLUMNS.has(column) && typeof value === 'string' && RANDOM_KEY.test(value)
+            id: !sourceDerivedIds
+              && ENTROPY_ID_COLUMNS.has(column) && typeof value === 'string' && RANDOM_KEY.test(value)
               ? value
               : undefined,
           }

@@ -219,12 +219,22 @@ describe('IntegrationShapeAtlas — the evidence API is the drawer resolver, loc
       claimId: CLAIM_IDS.p50,
       lineage: [],
     }
+    // The full shared-contract envelope: the client now rejects anything less — a bare
+    // `{ projection }` body or a mismatched reference falls back to the local walk.
     const fetchMock = vi.fn(
       async () =>
-        new Response(JSON.stringify({ projection: served }), {
-          status: 200,
-          headers: { 'content-type': 'application/json' },
-        }),
+        new Response(
+          JSON.stringify({
+            apiContractVersion: '1.0.0',
+            analysisVersion: '1.0.0',
+            reference: { kind: 'claim', claimId: CLAIM_IDS.p50, claimLayer: 'deterministic' },
+            projection: served,
+          }),
+          {
+            status: 200,
+            headers: { 'content-type': 'application/json' },
+          },
+        ),
     )
     vi.stubGlobal('fetch', fetchMock)
     const user = userEvent.setup()
