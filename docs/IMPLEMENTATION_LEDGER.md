@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-f stable continuity-anchor loading)
+Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-g task-card anchor-path contract)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,8 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e are merged;
-the current branch adds only an inert fixed-path, hash-bound continuity review-anchor loader, while the
+B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e/f are merged;
+the current branch adds only the strict task-card declaration for that fixed anchor path, while the
 remainder of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
@@ -2081,7 +2081,7 @@ there is still no production caller. PR #120 head `5a08fcf` passed hosted run `3
 as `cdaa083`, and exact-merge Pages/privacy run `31011609025` plus the late-comment sweep were green
 and empty.
 
-## 2026-08-05 — DL-LIFE-02 B2b-ii-f stable continuity-anchor loading (current slice)
+## 2026-08-05 — DL-LIFE-02 B2b-ii-f stable continuity-anchor loading (merged)
 
 B2b-ii-f adds exactly one canonical ignored artifact path:
 `.developer-lens/activation/<taskId>/continuity-review-anchor.json`. The shared loader applies the
@@ -2104,15 +2104,38 @@ or capability activation. Every executable capability remains `never_authorized`
 
 The focused artifact/anchor-loader/proposal proof passes 3 files / 16 tests. The full local gate
 passes 74 files / 1,099 tests plus context verification, lint, typecheck, build, and diff checking;
-only the two pre-existing Evidence Drawer Fast Refresh warnings remain.
+only the two pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size advisory
+remain. Fresh loader-core, privacy/authority, and inertness reviews found no HIGH/CRITICAL defect.
+PR #121 head `cad4d73` passed hosted run `31013045188`, merged as `1706df1`, and exact-merge
+Pages/privacy run `31013362189` plus the late-comment sweep were green and empty.
+
+## 2026-08-05 — DL-LIFE-02 B2b-ii-g task-card anchor-path contract (current slice)
+
+B2b-ii-g closes the path declaration that B2b-ii-f deliberately left unresolved. The strict
+`github-core-activation-task-card.v1` local boundary now requires the exact literal
+`continuityReviewAnchor: "continuity-review-anchor.json"` alongside its existing fixed card,
+database, key, backup, and report paths. Omission, alternate names, absolute paths, traversal, and
+extra fields fail closed through the existing parser. Invented card fixtures across the parser,
+loader, runner, and REST transport adopt the new required field.
+
+This is contract closure only. It reads or writes no anchor, changes no runtime default, and adds no
+composer, writer, network call, database access, lifecycle transition, retention extension, sink,
+or capability activation. The existing ignored task card was not inspected or updated; a later
+deliberately scoped activation task must migrate and re-prove that protected file before any caller.
+Every executable capability remains `never_authorized`.
+
+The focused task-card/parser/loader/runner/transport proof passes 4 files / 31 tests. The full
+local gate passes 74 files / 1,099 tests plus context verification, lint, typecheck, build, and diff
+checking; only the two pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size
+advisory remain.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-ii-f in progress).** Finish the fixed-path, hash-bound continuity-anchor
-loader, observed-digest return, task/path cross-check, exact caller AST chain, focused/full proof,
-fresh artifact/authority review, hosted proof, exact-merge Pages/privacy, and late sweep. Preserve
-the existing card/report public shapes, fixed 64 KiB path contract, shared stable-loader guarantees,
-content-free failures, and explicit byte-integrity-only boundary. Then add caller-free
+**Current 2026-08-05 (B2b-ii-g in progress).** Finish the strict task-card
+`continuityReviewAnchor` literal, invented-fixture migration, focused/full proof, fresh contract/
+authority review, hosted proof, exact-merge Pages/privacy, and late sweep. Preserve the fixed
+filename, closed local-boundary object, unchanged runtime posture, and protected ignored-card
+boundary. Then add caller-free
 report/card/key/lifecycle/anchor structural composition and the
 compare-and-swap renewal writer,
 then restart

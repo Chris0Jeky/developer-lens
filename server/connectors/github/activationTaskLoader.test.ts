@@ -56,6 +56,7 @@ const validCard = () => ({
   localBoundary: {
     root: `.developer-lens/activation/${taskId}/`, taskCard: 'task-card.json', database: 'github-core.sqlite',
     installationKey: 'installation-key.bin', backupDirectory: 'backup/', report: 'last-run-report.json',
+    continuityReviewAnchor: 'continuity-review-anchor.json',
     trackedOrPublished: false,
   },
   retention: {

@@ -45,6 +45,7 @@ const validCard = () => ({
     installationKey: 'installation-key.bin',
     backupDirectory: 'backup/',
     report: 'last-run-report.json',
+    continuityReviewAnchor: 'continuity-review-anchor.json',
     trackedOrPublished: false,
   },
   retention: {
@@ -112,6 +113,7 @@ describe('github.core activation task card', () => {
     expect(parsed.schemaVersion).toBe('github-core-activation-task-card.v1')
     expect(parsed.selectedRepository.expectedVisibility).toBe('public')
     expect(parsed.readBoundary.maximumRequests).toBe(10)
+    expect(parsed.localBoundary.continuityReviewAnchor).toBe('continuity-review-anchor.json')
     expect(Object.isFrozen(parsed)).toBe(true)
     expect(Object.isFrozen(parsed.readBoundary)).toBe(true)
   })
@@ -137,6 +139,11 @@ describe('github.core activation task card', () => {
     expectInvalid({ ...validCard(), localBoundary: { ...validCard().localBoundary, report: '../report.json' } })
     expectInvalid({ ...validCard(), localBoundary: { ...validCard().localBoundary, database: 'C:/private/records.sqlite' } })
     expectInvalid({ ...validCard(), localBoundary: { ...validCard().localBoundary, taskCard: '..\\task-card.json' } })
+    const { continuityReviewAnchor: _omitted, ...withoutAnchor } = validCard().localBoundary
+    expectInvalid({ ...validCard(), localBoundary: withoutAnchor })
+    expectInvalid({ ...validCard(), localBoundary: { ...validCard().localBoundary, continuityReviewAnchor: 'review.json' } })
+    expectInvalid({ ...validCard(), localBoundary: { ...validCard().localBoundary, continuityReviewAnchor: 'C:/private/anchor.json' } })
+    expectInvalid({ ...validCard(), localBoundary: { ...validCard().localBoundary, continuityReviewAnchor: '../continuity-review-anchor.json' } })
     expectInvalid({ ...validCard(), localBoundary: { ...validCard().localBoundary, trackedOrPublished: true } })
   })
 

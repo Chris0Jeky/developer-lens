@@ -113,6 +113,7 @@ function card(maximumRequests = 5): Record<string, unknown> {
       installationKey: 'installation-key.bin',
       backupDirectory: 'backup/',
       report: 'last-run-report.json',
+      continuityReviewAnchor: 'continuity-review-anchor.json',
       trackedOrPublished: false,
     },
     retention: {
