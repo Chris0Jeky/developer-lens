@@ -26,7 +26,7 @@ phase *grouping*; execution order follows these waves:
 | R1 | V2 bootstrap: authenticated lazy coverage/capability API + Cockpit over a synthetic store | DL-BRIDGE-01 |
 | R2 | Analytical kernel: claim spine, coverage vector, metric registry, finding + comparison contracts, resolver | DL-SPINE-01/02/03/04, DL-METRIC-01, DL-FINDING-01, DL-COMPARE-01, DL-OPS-CI-01 |
 | R3 | First deterministic analytical value slice (integration shape, matched windows) | DL-VALUE-01, DL-VALIDATE-01, DL-UX-ED |
-| R4 | **Open:** lifecycle/deletion critical path plus one disjoint analytical-value lane; later flow/feedback cards remain outside the active horizon | Completed: DL-LIFE-01 + DL-EVQ-03. Active now: DL-LIFE-02. Later: DL-SPINE-05, DL-BRIDGE-02, DL-FLOW-01/02/04, DL-OBSV-01/03, DL-CI-01 (after the complete deletion planner) |
+| R4 | **Open:** lifecycle/deletion critical path; the admitted disjoint analytical-value lane is complete, while later flow/feedback cards remain outside the active horizon | Completed: DL-LIFE-01 + DL-EVQ-03 + LIFE-02 slice A. Active now: DL-LIFE-02 B1a–B4. Later: DL-SPINE-05, DL-BRIDGE-02, DL-FLOW-01/02/04, DL-OBSV-01/03, DL-CI-01 (after the complete deletion planner) |
 | R5 | Deterministic System Story + V1 retirement matrix | DL-BRIDGE-03/04, DL-LAB-01, DL-OPEN-01, then DL-UX-SS (deterministic beats), DL-UX-VG/CC — the Story's declared producer chain lands inside R4/R5 so the wave plan is dependency-true (corrected 2026-08-04) |
 | R6 | Packs + Query Lab (PresentationView) | DL-PACK-00/01/02/04/05/06, DL-QL-01 |
 | R7 | Optional interpretation (off the critical path; opens only through a future explicit reassessment) | DL-RAG-*, DL-HYP-*, and WB candidates only after their frozen labels are explicitly removed |
@@ -162,9 +162,10 @@ The canonical card source records every READY status. The 2026-08-05 reassessmen
 **DL-LIFE-01**, **DL-LIFE-02**, and **DL-EVQ-03** for the bounded queue. LIFE-01 and EVQ-03 are now
 DONE; LIFE-02 is the only remaining `horizon:active` card. READY is a dependency statement, not
 scheduling authority: other READY cards remain in the long-term programme until a later
-reassessment admits them. The launcher (`09_IMPLEMENTATION_LAUNCHER.md`) now selects LIFE-02's
-two reviewable deletion slices and keeps the card open until the schema/scope migration and all
-declared non-SQL descendant adapters are proved.
+reassessment admits them. LIFE-02's registered-SQLite slice A is merged, but the launcher
+(`09_IMPLEMENTATION_LAUNCHER.md`) keeps the card open through B1a/B1b identity and migration, B2
+retention/resolver, B3 complete SQL deletion, and B4 app-owned artifacts as bound by
+`10_LIFE_02B_DECISION.md`.
 
 High-risk cards (extra fresh-context review per T2 discipline + first-production-caller rule):
 LIFE-01/02/03, BRIDGE-05, GIT-01, ATLAS-01, DEP-01, SEC-01, GOV-03, CAD-01, LAB-02, PACK-05.

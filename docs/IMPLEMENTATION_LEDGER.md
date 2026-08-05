@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (R4 wave 1 and LIFE-02 execution)
+Last updated: **2026-08-05** (DL-LIFE-02A merge and binding B decision)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -8,9 +8,9 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 **Fast resume:** agents should read the compact state artifact
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
-for the next task. Current phase in one line: R1–R3 is complete; R4's DL-LIFE-01 and DL-EVQ-03 are
-merged; finish DL-LIFE-02 as the registered-SQLite planner slice followed by the scope/adapters
-slice, without marking the card complete or unblocking sensitive connectors between them.
+for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A is merged but the card
+remains active; start B1a's inert identity/migration contracts, then complete B1b–B4 without marking
+the card DONE or unblocking sensitive connectors between slices.
 
 Archived phase narrative (2026-08-03/04, pre-reconciliation): **D1-D3, the synthetic P2 SQLite/importer proof, the bounded synthetic P3
 analysis-pack foundation, and the durable continuation/context-verifier foundation are published.
@@ -1667,18 +1667,42 @@ the public synthetic boundary. The remaining active card is **DL-LIFE-02**.
   orphan directory and all protected/generated/private-data paths remained uninspected and
   unchanged.
 
+## 2026-08-05 — DL-LIFE-02 slice A and binding B decision
+
+- **State checkpoint.** [PR #102](https://github.com/Chris0Jeky/developer-lens/pull/102) recorded R4
+  wave 1 and the two-slice deletion decision at final head `1a12c01`; hosted run `30970967410`
+  passed, it merged as `62ea683`, and exact-merge Pages run `30971142650` passed. Independent review
+  found and fixed one HIGH before publication: a vague content-free-tombstone acceptance could
+  retain C2/C3 aliases in lineage IDs. The final review and post-merge sweep were clean.
+- **Slice A.** [PR #103](https://github.com/Chris0Jeky/developer-lens/pull/103) landed final head
+  `8e29f9e` as merge `5e6304e`; hosted run `30972206800` and exact-merge Pages run `30972364522`
+  passed. Its exact local proof was 14 planner tests, 58 focused storage tests, and the full
+  60-file/914-test suite plus context verification, typecheck, and build. Two bounded adversarial
+  rounds reproduced and fixed four HIGH false-success paths: tombstone reuse across scopes;
+  alias-cleared claim survivors; alias/`caused_by` lineage residue plus cross-scope dependencies;
+  and an unbound no-claim scope survivor. The result remains `completeProduct:false`, has no caller,
+  and fails closed on any unbound claim scope until B supplies durable binding.
+- **B decision.** Sol/Luna/Terra mapping and adversarial review rejected a permanent legacy refusal,
+  retained old/new identity maps, alias-derived C1 lineage, unowned pack deletion, and backup/restore
+  scope creep. The binding implementation record is
+  [`docs/analyser-program/10_LIFE_02B_DECISION.md`](./analyser-program/10_LIFE_02B_DECISION.md): B1a
+  inert contracts, B1b copy migration, B2 retention/continuity/resolver, B3 complete SQL deletion,
+  and B4 confined app-owned artifacts. The card and #80 remain open through B4.
+- **Boundary.** No protected/generated/private data was inspected. Every capability remains
+  `never_authorized`; q-6/q-7/q-8 and the q-8 orphan directory are unchanged.
+
 ## Exact resume point
 
-**Current 2026-08-05 (R4 wave 1 merged; DL-LIFE-02 active).** Continue **DL-LIFE-02 slice A** from
-live `origin/main`: the registered-SQLite planner, fail-closed lineage canary, atomic rollback,
-idempotence, and content-free tombstone described above, including domain-separated lineage IDs
-and the no-C2/C3-alias retention regression. Integrate the live base before publication
-and prove focused storage tests plus `npm run check`; this is a high-risk lifecycle seam and needs
-fresh adversarial review, hosted exact-head gate, and the post-push aging floor. Then execute
-**slice B** — scope-binding migration, C2 sweep, and the complete declared non-SQL adapter set —
-before marking LIFE-02 DONE, closing #80's covered conditions, or unblocking any sensitive
-connector. Also carry LIFE-01's pending-revocation suspension/resume invariant into the first
-caller boundary. R7/R8 remain frozen; q-6/q-7/q-8 remain open; protected data remains out of scope.
+**Current 2026-08-05 (DL-LIFE-02A merged; B1a next).** Implement **B1a** from live `origin/main`:
+isolated proposal-only typed C1 identity/lineage, storage-v3/claim-material-v3, and exhaustive
+present-table migration-disposition contracts with invented canaries. Do not append them to live
+version/kind registries; preserve existing v2 installers, writers, resolver, capability state,
+accepted schemas, and on-disk behavior. Then continue B1b-B4 exactly as
+`docs/analyser-program/10_LIFE_02B_DECISION.md` defines. No intermediate slice may mark LIFE-02
+DONE or close #80. B4 only unblocks LIFE-03; the first real migration/connector additionally needs
+LIFE-03's backup/grace/restore/tombstone-replay proof and #86's alias-bearing V2 coverage remint.
+Carry LIFE-01's pending-revocation suspension/resume invariant into the first caller boundary.
+R7/R8 remain frozen; q-6/q-7/q-8 remain open; protected data remains out of scope.
 
 **Superseded 2026-08-04 (R1 wave 3 — active horizon COMPLETE).** DL-VALIDATE-01 (`df59bbc`, PR #92)
 and DL-VALUE-01 (`c632093`, PR #94) have merged, completing all 12 active-horizon cards. There is no
