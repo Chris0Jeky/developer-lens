@@ -58,6 +58,71 @@ export const CLAIM_GRAPH_TABLES = [
 ] as const
 export type ClaimGraphTable = typeof CLAIM_GRAPH_TABLES[number]
 
+/**
+ * Canonical lifecycle metadata for ADR-01 claim-graph storage.  These entries are
+ * intentionally adjacent to the table registry rather than copied into a procedural
+ * deletion list.
+ */
+export interface ClaimGraphTableRegistryEntry {
+  readonly tableName: ClaimGraphTable
+  readonly capabilityId: 'github.core'
+  readonly deletionRole: 'scope-root' | 'dependent' | 'lineage'
+  /** Parent tables referenced by this table's cross-table foreign keys. */
+  readonly dependsOn: readonly string[]
+  /** SQLite enforces this dependency within one DELETE statement, not planner order. */
+  readonly selfReferentialForeignKeys: boolean
+  /** An affected row identifier that may be removed before the tombstone is written. */
+  readonly lineageSubjectColumn?: string
+}
+
+export const CLAIM_GRAPH_TABLE_REGISTRY = [
+  {
+    tableName: 'evidence',
+    capabilityId: 'github.core',
+    deletionRole: 'dependent',
+    dependsOn: ['coverage_ledger'],
+    selfReferentialForeignKeys: false,
+    lineageSubjectColumn: 'evidence_id',
+  },
+  {
+    tableName: 'claim_scope',
+    capabilityId: 'github.core',
+    deletionRole: 'scope-root',
+    dependsOn: [],
+    selfReferentialForeignKeys: false,
+    lineageSubjectColumn: 'scope_id',
+  },
+  {
+    tableName: 'claim',
+    capabilityId: 'github.core',
+    deletionRole: 'dependent',
+    dependsOn: ['claim_scope'],
+    selfReferentialForeignKeys: true,
+    lineageSubjectColumn: 'claim_id',
+  },
+  {
+    tableName: 'claim_evidence_edge',
+    capabilityId: 'github.core',
+    deletionRole: 'dependent',
+    dependsOn: ['claim', 'evidence', 'coverage_ledger'],
+    selfReferentialForeignKeys: false,
+  },
+  {
+    tableName: 'limitation_instance',
+    capabilityId: 'github.core',
+    deletionRole: 'dependent',
+    dependsOn: ['claim'],
+    selfReferentialForeignKeys: false,
+  },
+  {
+    tableName: 'lineage_event',
+    capabilityId: 'github.core',
+    deletionRole: 'lineage',
+    dependsOn: [],
+    selfReferentialForeignKeys: false,
+  },
+] as const satisfies readonly ClaimGraphTableRegistryEntry[]
+
 /** The existing coverage table every claim-graph coverage reference resolves against. */
 export const CLAIM_GRAPH_COVERAGE_TABLE = 'coverage_ledger' as const
 
@@ -363,6 +428,14 @@ export function installClaimGraphStorage(db: Database.Database): void {
     if (error instanceof ClaimStorageError) throw error
     throw new ClaimStorageError('CLAIM_GRAPH_SCHEMA_MISMATCH')
   }
+}
+
+/** Read-only schema assertion used by lifecycle planning before any deletion is attempted. */
+export function assertClaimGraphStorageSchema(db: Database.Database): void {
+  if (!hasExpectedSchema(readOwnedSchemaRows(db))) {
+    throw new ClaimStorageError('CLAIM_GRAPH_SCHEMA_MISMATCH')
+  }
+  assertHealthyStorage(db)
 }
 
 function parseOrThrow<T>(schema: z.ZodType<T>, value: unknown): T {
