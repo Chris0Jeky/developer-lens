@@ -50,14 +50,6 @@ const TASK_CARD_SPEC: ArtifactSpec = Object.freeze({
   fileName: 'task-card.json',
   maxBytes: MAX_ACTIVATION_ARTIFACT_BYTES,
 })
-const LAST_RUN_REPORT_SPEC: ArtifactSpec = Object.freeze({
-  fileName: 'last-run-report.json',
-  maxBytes: MAX_ACTIVATION_ARTIFACT_BYTES,
-})
-const CONTINUITY_REVIEW_ANCHOR_SPEC: ArtifactSpec = Object.freeze({
-  fileName: 'continuity-review-anchor.json',
-  maxBytes: MAX_ACTIVATION_ARTIFACT_BYTES,
-})
 
 function snapshotClosedInput(value: unknown, invalid: InvalidLoad): ActivationArtifactLoadInput {
   if (!value || typeof value !== 'object' || Array.isArray(value)) invalid()
@@ -443,90 +435,4 @@ export class ActivationArtifactLoadError extends Error {
   }
 }
 
-function invalidArtifactLoad(): never {
-  throw new ActivationArtifactLoadError()
-}
 
-/** Load the fixed, hash-bound last-run-report artifact; parsing is intentionally caller-owned. */
-export async function loadHashBoundActivationLastRunReport(input: unknown): Promise<LoadedActivationArtifact> {
-  try {
-    const snapshot = snapshotHashBoundClosedInput(input, invalidArtifactLoad)
-    const loaded = await loadFixedArtifactSnapshot(
-      snapshot,
-      LAST_RUN_REPORT_SPEC,
-      snapshot.expectedSha256,
-      NO_HOOKS,
-      invalidArtifactLoad,
-    )
-    return { taskId: loaded.taskId, parsed: loaded.parsed }
-  } catch (error) {
-    if (error instanceof ActivationArtifactLoadError) throw error
-    invalidArtifactLoad()
-  }
-}
-
-/** @internal Invented-fixture seam only; production callers cannot select filenames or limits. */
-export const activationArtifactLoaderTestSeams = Object.freeze({
-  loadReportWithHooks: async (
-    input: unknown,
-    hooks: ActivationArtifactLoaderHooks,
-  ): Promise<LoadedActivationArtifact> => {
-    try {
-      const snapshot = snapshotHashBoundClosedInput(input, invalidArtifactLoad)
-      return await loadFixedArtifactSnapshot(
-        snapshot,
-        LAST_RUN_REPORT_SPEC,
-        snapshot.expectedSha256,
-        hooks,
-        invalidArtifactLoad,
-      ).then((loaded) => ({ taskId: loaded.taskId, parsed: loaded.parsed }))
-    } catch (error) {
-      if (error instanceof ActivationArtifactLoadError) throw error
-      invalidArtifactLoad()
-    }
-  },
-  loadAnchorWithHooks: async (
-    input: unknown,
-    hooks: ActivationArtifactLoaderHooks,
-  ): Promise<LoadedHashBoundActivationArtifact> => {
-    try {
-      const snapshot = snapshotHashBoundClosedInput(input, invalidArtifactLoad)
-      return await loadFixedArtifactSnapshot(
-        snapshot,
-        CONTINUITY_REVIEW_ANCHOR_SPEC,
-        snapshot.expectedSha256,
-        hooks,
-        invalidArtifactLoad,
-      )
-    } catch (error) {
-      if (error instanceof ActivationArtifactLoadError) throw error
-      invalidArtifactLoad()
-    }
-  },
-})
-
-/**
- * Load the fixed, hash-bound continuity review-anchor artifact.
- *
- * Equality between the externally supplied SHA-256 and the digest of the observed stable bytes
- * proves those bytes only. It does not authenticate owner identity, review or approval; prove
- * trusted time; bind a report, task card, key, lifecycle, CAS state, retention, or completeness;
- * authorize, renew, or activate continuity; or establish provenance of this artifact.
- */
-export async function loadHashBoundContinuityReviewAnchorArtifact(
-  input: unknown,
-): Promise<LoadedHashBoundActivationArtifact> {
-  try {
-    const snapshot = snapshotHashBoundClosedInput(input, invalidArtifactLoad)
-    return await loadFixedArtifactSnapshot(
-      snapshot,
-      CONTINUITY_REVIEW_ANCHOR_SPEC,
-      snapshot.expectedSha256,
-      NO_HOOKS,
-      invalidArtifactLoad,
-    )
-  } catch (error) {
-    if (error instanceof ActivationArtifactLoadError) throw error
-    invalidArtifactLoad()
-  }
-}
