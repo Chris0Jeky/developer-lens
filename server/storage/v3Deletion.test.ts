@@ -183,7 +183,9 @@ function expectCode(run: () => unknown, code: string): void {
   }
 }
 
-describe('B3 v3 scope deletion', () => {
+// Every test migrates a full two-scope fixture through the production rewrite, which
+// legitimately exceeds the 5s default under a loaded parallel run.
+describe('B3 v3 scope deletion', { timeout: 30_000 }, () => {
   it('deletes one scope completely, tombstones every subject, and leaves the other scope byte-intact', () => {
     const fixture = migratedFixture()
     try {

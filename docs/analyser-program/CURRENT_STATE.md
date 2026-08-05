@@ -8,15 +8,23 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-05
-current_slice_override: 'LIFE-02 executable core (10_LIFE_02B_DECISION.md §7.6): the production
-  StorageV3ShadowTargetFactory and store selector (server/storage/v3StoreFiles.ts), the CAS folded
-  into the shadow store as continuity_cas_state/continuity_cas_operation with an exported scope
-  initializer, and the owner-controlled default-off entrypoint (scripts/storeLifecycle.ts,
-  npm run store:lifecycle) driving build -> delete -> migrate -> select -> CAS restart -> sweep ->
-  re-validate on invented data only. Delivered on branch fable/life02-executable-core.'
-phase: 'R4 active horizon OPEN — DL-LIFE-02 executable core delivered; the next LIFE-02 work is
-  B3 (complete SQL deletion on the v3 domain) and then B4 (app-owned artifacts) per
-  10_LIFE_02B_DECISION.md §5. LIFE-02/#80 remain incomplete.'
+current_slice_override: 'LIFE-02 B3 core (10_LIFE_02B_DECISION.md §5 item 4): complete v3-domain
+  scope deletion in server/storage/v3Deletion.ts — one IMMEDIATE transaction over a closed
+  20-table registry, child-first deletes, CAS no-delete triggers dropped and byte-identically
+  recreated in-transaction, scope-unbound per-subject tombstone_cascade lineage under one del-
+  operation, replay idempotence, conflict fail-closed, injected-failure rollback at every stage,
+  and the WAL-checkpoint/VACUUM completion saga. Schema v3.1.0-shadow-b3 (user_version 306):
+  deletion-kind lineage may be scope-unbound; continuity_cas_operation gains applied_week and a
+  nullable clear-only payload receipt. CAS scope init refuses phantom scopes; the sweep clears
+  receipts at the 13-month boundary; replay of a cleared receipt fails closed as
+  receipt_expired. v2_coverage_record flipped to delete disposition (the v2 reader refuses v3
+  stores, so the preserved copy was unreadable dead weight) — the bridge/planner workaround is
+  gone and the CLI journey runs the product order: build (bridge present) -> migrate -> select
+  -> CAS restart -> sweep -> delete one scope -> explain tombstones -> reopen intact.'
+phase: 'R4 active horizon OPEN — B3 core delivered on fable/life02-b3-deletion. Remaining before
+  LIFE-02 close: PR B-2 (#86 storage half, remaining #128/#129 discriminating verifications,
+  v2_store_provenance drift, generated scale corpus + equivalence budget incl. #133) and B4
+  app-owned artifacts per §5 item 5. LIFE-02/#80 remain incomplete.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -24,9 +32,14 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'DL-LIFE-02 chain PRs #103, #105, #107-#125 (slice A, B1a+repairs, B1b-i..iii, B2a-i..iii,
   B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
   their engineering record stays in the ledger', 'state syncs #126']
-active_slice: 'DL-LIFE-02 B3 — complete SQL deletion on the v3 domain (the executable core it
-  depends on is delivered), then B4 app-owned artifacts per 10_LIFE_02B_DECISION.md §5. Inert-code
-  budget stays zero: every new module lands with its consumer in the same PR.'
+active_slice: 'DL-LIFE-02 PR B-2 — #86 storage half (tighten incremental.ts coverage_id CHECK to
+  the cov- registry + migrate alias-bearing fixtures), discriminating verification of every open
+  #128/#129 finding, v2_store_provenance drift resolution, and the generated scale corpus with an
+  equivalence budget (fold in the #133 remint-metadata redesign) — then B4 app-owned artifacts.
+  Resolver deletion-lineage scoping decision (recorded on #80): B3 ships the v3 deletion-lineage
+  reader consumed by the CLI; the whyResolver coverage/job lineage joins land with the Phase-4
+  stored-observation bridge, because v2 stores carry no per-subject tombstones for such joins to
+  find. Inert-code budget stays zero: every new module lands with its consumer in the same PR.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -100,11 +113,13 @@ residual_risks:
      #128/#129 (2026-08-05); two #109 findings were fixed directly (coverage_ledger empty-code
      CHECKs — the preserved v2_coverage_record bridge table deliberately keeps byte-parity with
      its v2 source; delete-disposition tables must be empty at acceptance), the rest await
-     verification there. The PR #130 post-merge findings (phantom CAS scope initialization, CAS
-     payload_sha256 receipt retention) are tracked on #128 as B3 promotion conditions; the PR
-     #127/#131 post-merge findings are fixed by the late-review truth-repair PR (row-kind-aware
-     equivalence classifier + shared runtime evidence contract in shared/whyContract.ts with
-     requested-reference binding)'
+     verification there. The PR #130 post-merge findings are FIXED by B3: phantom CAS scope
+     initialization refuses (claim_scope existence rule inside the init transaction) and CAS
+     payload receipts expire at the 13-month boundary via the sweep with fail-closed
+     receipt_expired replay. The PR #127/#131 post-merge findings were fixed by PR #132
+     (row-kind-aware equivalence classifier + shared runtime evidence contract in
+     shared/whyContract.ts with requested-reference binding). Also fixed by B3 from the #128
+     list: duplicate deletion identities per subject fail closed (OPERATION_CONFLICT)'
   - 'v2_store_provenance drift: api/v2/store.ts declares 6 columns including activation_card_id,
      v3ShadowSchema.ts declares 5 and pins mode=synthetic, yet v3Proposal.ts calls the table
      preserve — an activation_card-mode v2 store is unmigratable (SOURCE_BRIDGE_REFUSED)'
@@ -114,15 +129,20 @@ residual_risks:
      The CAS is no longer a separate database either — it is two tables inside the shadow store,
      empty at acceptance and asserted against the shadow application_id, user_version and schema
      fingerprint'
-  - 'measured by the executable-core slice and binding on B3: planRegisteredGithubCoreDeletion
-     refuses any store that carries an unregistered table with a capability_id or scope_alias
-     column, and v2_coverage_record is exactly that, so the slice-A planner cannot run on a store
-     with the C0 bridge installed (DELETION_REGISTRY_UNREGISTERED_MANAGED_TABLE). The CLI journey
-     therefore deletes before it installs the bridge'
+  - 'RESOLVED by B3: the bridge/planner conflict is gone at the root — v2_coverage_record is
+     delete-disposition in the v3 target (empty at acceptance, asserted), the v3 deletion
+     registry closes over all 20 shadow tables, and the CLI exercises bridge-present migration
+     followed by selected-store deletion. The slice-A v2 planner remains only as the v2-era seam
+     under its own unit tests'
   - 'graphColours refinement is super-linear in identifier count, and the acceptance-time
      fullEquivalenceShadowChecksum (PR #127) is now the dominant term because it colours every
      minted identity column across all tables; fine for fixtures, a practical hang risk at
-     multi-year scale — measure and budget in the executable-core slice before any real migration'
+     multi-year scale — measure and budget in PR B-2 before any real migration, folding in the
+     #133 preserved-scope-id remint-metadata redesign (confirmed digest escape, reproduced
+     2026-08-05)'
+  - '#135 tracks eight residual semantic-coherence refinements to the evidence resolve contract
+     (PR #132 round-three review) — MEDIUM defense-in-depth, natural slice when the contract is
+     next touched'
   - 'B4 completion only unblocks LIFE-03; a first real migration/connector also requires LIFE-03
      backup/grace/restore/tombstone-replay proof and #86 V2 alias-bearing coverage remint'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,
