@@ -8,8 +8,8 @@ facts and commands.
 ## Cold start
 
 1. Read `.agent-harness/tier.json` and `HUMAN_TODO.md` on every resume.
-2. Read `docs/IMPLEMENTATION_LEDGER.md` for current phase/evidence; refresh Git and GitHub because
-   live state outranks it.
+2. Read `docs/analyser-program/CURRENT_STATE.md` (the single resume artifact); refresh Git and
+   GitHub because live state outranks it. The ledger is the history archive.
 3. Invoke `$developer-lens-continuation` for implementation, migration, sensitive-source,
    architecture, or handoff work.
 4. Read `docs/data-charter.md` and `docs/source-capability-matrix.md` before any persistence,
@@ -26,7 +26,8 @@ facts and commands.
 | `docs/data-charter.md` | Product boundary, data classes, retention, migration and sinks |
 | `docs/source-capability-matrix.md` | Per-source purpose, class, consent, deletion and refusal |
 | `docs/DEVELOPER_LENS_V2_ARCHITECTURE.md` | Stable design and phase dependencies |
-| `docs/IMPLEMENTATION_LEDGER.md` | Current implementation evidence and exact resume point |
+| `docs/analyser-program/CURRENT_STATE.md` | Live state and exact resume point (single artifact) |
+| `docs/IMPLEMENTATION_LEDGER.md` | Historical evidence archive (per-slice proofs and run IDs) |
 | `README.md` | User-facing product, run and verification instructions |
 
 ## Current authority boundary

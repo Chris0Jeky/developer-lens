@@ -199,16 +199,18 @@ The durable document roles are deliberately separate:
   consent, class, retention, deletion, and refusal behavior.
 - [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](docs/DEVELOPER_LENS_V2_ARCHITECTURE.md) — stable design
   and phase dependencies.
-- [`docs/IMPLEMENTATION_LEDGER.md`](docs/IMPLEMENTATION_LEDGER.md) — current evidence, residual
-  risks, and exact resume point.
+- [`docs/analyser-program/CURRENT_STATE.md`](docs/analyser-program/CURRENT_STATE.md) — live state
+  and the exact resume point (the single resume artifact).
+- [`docs/IMPLEMENTATION_LEDGER.md`](docs/IMPLEMENTATION_LEDGER.md) — historical evidence archive
+  (per-slice proofs, run IDs, residual risks).
 - [`docs/SHOWCASE_DEMO.md`](docs/SHOWCASE_DEMO.md) — the concise synthetic-demo talk track,
   verification commands, and honest claim boundary.
 - [`docs/POST_DEMO_HARDENING.md`](docs/POST_DEMO_HARDENING.md) — deferred security, privacy,
   resilience, and distribution work.
 - [`docs/analyser-program/`](docs/analyser-program/00_PRODUCT_BRIEF.md) — the 2026-08-04
   intelligence-platform planning programme (non-authoritative proposal space): product brief,
-  ADRs, catalogs, delivery roadmap, Taskdeck starter pack, and the implementation launcher naming
-  the next bounded slice. Accepted stable deltas live in the architecture document's Appendix I.
+  ADRs, catalogs, delivery roadmap, and the Taskdeck starter pack. Accepted stable deltas live in
+  the architecture document's Appendix I.
 - [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](docs/OVERNIGHT_EXECUTION_PROMPT.md) — a copy-ready Sol
   Ultra dynamic-swarm launcher that saturates useful Luna lanes and replenishes them without
   becoming a competing policy/state file.
@@ -229,8 +231,12 @@ npm run verify:context
 - `scripts/verifyShowcase.ts` — structural privacy assertions and artifact scanning.
 - `server/github.ts` — authenticated GitHub ingestion.
 - `server/localGit.ts` — explicitly scoped local Git enrichment.
-- `server/storage/` — V2 SQLite contracts and synthetic importer proof.
-- `server/analysisPack/` — deterministic C1 Parquet pack/replay foundation.
+- `server/storage/` — V2 SQLite contracts and synthetic importer proof, plus the storage-v3
+  shadow migration/sweep engine, deletion planner, and installation-key seam (tested, not yet on
+  any production path — see `docs/analyser-program/CURRENT_STATE.md`).
+- `server/connectors/`, `server/externalModel/` — the bounded github.core and external-model
+  activation foundations (default-off; no production caller).
+- `server/analysisPack/` — deterministic C1 Parquet pack/replay foundation (no production caller).
 - `server/analytics.ts` — deterministic statistics, classifications, and higher-order rules.
 - `server/index.ts` — localhost-only API and production host.
 - `src/` — responsive dashboard, Wrapped experience, and offline V2 demo.

@@ -29,8 +29,9 @@ STARTUP — REFRESH BEFORE SCHEDULING OR MUTATION
    declaration exists, the strictest declaration binds.
 2. Refresh Git status, current/upstream heads, remotes, registered worktrees, open PRs, linked
    issues, checks, review decisions, unresolved threads, and late comments on recently merged PRs.
-3. Read docs/IMPLEMENTATION_LEDGER.md for current phase, dependencies, residual risks, and exact
-   resume point. Git, executable checks, CI, and review threads outrank its snapshot.
+3. Read docs/analyser-program/CURRENT_STATE.md for current phase, dependencies, residual risks,
+   and the exact resume point (docs/IMPLEMENTATION_LEDGER.md is the history archive). Git,
+   executable checks, CI, and review threads outrank its snapshot.
 4. Read docs/data-charter.md and docs/source-capability-matrix.md before any persistence, migration,
    connector, sensitive-source, export, or private-data change. Read only objective-relevant
    architecture, code, and tests after that.

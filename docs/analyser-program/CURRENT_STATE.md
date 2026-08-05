@@ -6,215 +6,93 @@ file disagrees with Git, CI, or the ledger's live evidence, those win.
 
 ```yaml
 updated: 2026-08-05
-current_slice_override: 'B2b-ii-j PR #125 head 96957f4 passed hosted run 31022622947, merged as
-  2afaa609, and exact-merge Pages/privacy run 31022859341 passed; its late Ed25519 low-order finding
-  is tracked on #80, and main protection now requires Prove the pull request'
-phase: 'R4 active horizon OPEN — DL-LIFE-02 B2b-ii-j is merged; B2b-ii-k trust-root snapshot validation is next and LIFE-02/#80 remain incomplete'
-head: see `git log -1 origin/main` — live Git outranks the merge SHAs recorded below
-merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
-  'DL-SPINE-01 #74/75e7c39', 'DL-BRIDGE-01 #72/a6fcae1', 'DL-METRIC-01 #75/d1e29dd',
-  'DL-SPINE-02 #84/b52c458', 'DL-SPINE-03 #85/610188c', 'DL-UX-ED #87/4c3f476',
-  'DL-FINDING-01 #88/2208fcf', 'DL-COMPARE-01 #89/d407cb1',
-  'DL-VALIDATE-01 #92/df59bbc', 'DL-VALUE-01 #94/c632093',
-  'DL-LIFE-01 #100/41a1804', 'DL-EVQ-03 #99/cad0a11',
-  'DL-LIFE-02 slice A #103/5e6304e', 'DL-LIFE-02 B1a #105/f9cc008',
-  'DL-LIFE-02 B1a late repair #107/263839d',
-  'DL-LIFE-02 contract correction #108/7a270f4',
-  'DL-LIFE-02 B1b-i #109/2a55b11', 'DL-LIFE-02 B1b-ii #110/2cf2236 -> ed413dc',
-  'DL-LIFE-02 B1b-iii #111/e575059 -> 202aebea',
-  'DL-LIFE-02 B2a-i #112/1c771cc -> e0f3894',
-  'DL-LIFE-02 B2a-ii #113/d28bd9f -> ad8ba9a',
-  'DL-LIFE-02 B2a-iii #114/762f9f9 -> 6dad325',
-  'DL-LIFE-02 B2b-i #115/d4683c7 -> bdf8e436',
-  'DL-LIFE-02 B2b-ii-a #116/d939e1b -> 8e8b0bc',
-  'DL-LIFE-02 B2b-ii-b #117/f910137 -> 8aa19b3',
-  'DL-LIFE-02 B2b-ii-c #118/c393bd1 -> cb9161c',
-  'DL-LIFE-02 B2b-ii-d #119/02094d2 -> 8cabc53',
-  'DL-LIFE-02 B2b-ii-e #120/5a08fcf -> cdaa083',
-  'DL-LIFE-02 B2b-ii-f #121/cad4d73 -> 1706df1',
-  'DL-LIFE-02 B2b-ii-g #122/16f4c7d -> c66d602',
-  'DL-LIFE-02 B2b-ii-h #123/c5256bb -> 65dfd155',
-  'DL-LIFE-02 B2b-ii-i #124/006728e -> 34af993',
-  'DL-LIFE-02 B2b-ii-j #125/96957f4 -> 2afaa60'] # card stays active through B4
-active_slice: 'DL-LIFE-02 B2b-ii-k — next inert owner-trust-root.v1 snapshot validator;
-  no trust admission, enrollment/rotation/revocation writer, owner identity, protected-card migration,
-  scope seed, renewal writer, production caller, or capability activation'
-next_task: validate a closed externally provisioned trust-root snapshot with exactly one active
-  canonical non-low-order Ed25519 key plus retired/revoked history; then add the separate
-  owner-controlled credential enrollment/rotation/revocation boundary before transactional same-scope retained C1/lifecycle/revocation,
-  continuity-epoch, C2 receipt, and CAS binding or a true renewal writer;
-  then restart and migration-origin retention events,
-  coverage/job absence resolver, B3 complete SQL deletion, and B4 app-owned artifacts; only the B4 state refresh may mark DONE, and
-  the first real migration/connector still requires LIFE-03 plus #86 coverage remint
-next_value_slice: 'DL-EVQ-03 is DONE; no second value card is admitted while the deletion critical
-  path remains active'
+current_slice_override: 'LIFE-02 simplification (10_LIFE_02B_DECISION.md §7): the inert
+  continuity/owner-PKI chain (B2b-i..B2b-ii-j descendants) is deleted, the PR #111 acceptance-seam
+  defects and the PR #109 empty-limitation-code defect are fixed, and the late-review-timing defect
+  in the ledger is corrected. The revised stopping point is executable, not contractual.'
+phase: 'R4 active horizon OPEN — DL-LIFE-02 simplified; the next slice is the executable core
+  (production target factory, v3 selector, CAS folded into the shadow store, one owner-controlled
+  default-off local entrypoint for migrate/select/sweep/delete with restart proof); then B3/B4 per
+  10_LIFE_02B_DECISION.md §5. LIFE-02/#80 remain incomplete.'
+head: see `git log -1 origin/main` — live Git outranks anything recorded here
+merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
+  DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
+  DL-COMPARE-01 #89, DL-VALIDATE-01 #92, DL-VALUE-01 #94, DL-LIFE-01 #100, DL-EVQ-03 #99',
+  'DL-LIFE-02 chain PRs #103, #105, #107-#125 (slice A, B1a+repairs, B1b-i..iii, B2a-i..iii,
+  B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
+  their engineering record stays in the ledger', 'state syncs #126']
+active_slice: 'DL-LIFE-02 executable core — production StorageV3ShadowTargetFactory + selector,
+  CAS-in-store with an exported scope initializer, owner-controlled default-off local entrypoint
+  driving migrate -> select -> sweep -> delete on invented stores, interruption/restart proof.
+  Inert-code budget is zero: every new module lands with its consumer in the same PR.'
+next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
+  honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
+  stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
+  bridge, not another fixture module'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No dependency or owner gate blocks the next invented-fixture trust-root snapshot validator.
-  A signature against a caller-selected key is not owner authentication, and issue #80 now requires
-  low-order/noncanonical public-key and signature-R rejection before promotion. Trusted renewal remains
-  blocked by an absent owner-controlled trust root and credential boundary, transactional same-scope
-  C1/lifecycle/revocation and continuity-epoch state, receipt C2 expiry/sweep, composer/writer boundaries,
-  and deliberate migration of the protected ignored card; none may be inferred.'
-open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) + 08_OPEN_QUESTIONS.md §1 unchanged; q-8
-  (process/orphan-directory cleanup — human) remains open; q-7 is directly verified complete'
+blockers: 'None for the executable core. A real migration/connector still requires LIFE-03
+  backup/grace/restore/tombstone-replay proof and the #86 coverage remint; #78/#79 bind before any
+  real-data V2 surface.'
+open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
+  cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
+  strict mode and admin enforcement off)'
 frozen_by_reassessment: horizon:frozen label (WB candidates, vector retrieval, GOV/SEC/PORT-02/
   PROV-01 sources, ATLAS-03 parsers, EVQ-09/10, TRACE-03) — 07 §0a
 authority_order: [AGENTS.md, .agent-harness/tier.json, HUMAN_TODO.md, data-charter.md,
   source-capability-matrix.md, DEVELOPER_LENS_V2_ARCHITECTURE.md (incl. Appendix I.1-I.4)]
-last_verified_checks: hosted PR gate green at every merged R1-R3 head above; LIFE-01 head 25326bf
-  passed run 30969544413 and merged as 41a1804; EVQ-03 final head 2f1909d passed run 30969742520
-  and merged as cad0a11. Exact-merge Pages runs 30969712337 and 30969909632 passed. EVQ follow-up
-  head c6ff6b5 passed hosted run 30970321092 and merged as d2dfb36; exact-merge Pages run
-  30970482370 passed. LIFE-02A head 8e29f9e passed hosted run 30972206800 and merged as 5e6304e;
-  exact-merge Pages run 30972364522 passed. Its final local proof was 14 planner tests, 58 focused
-  storage tests, and 60 files/914 tests plus context/typecheck/build. B1a head 38c85a4 passed hosted
-  run 30975235029 and merged as f9cc008; exact-merge Pages run 30975430150 passed. Its final proof
-  was 7 focused tests and 61 files/921 tests plus context/typecheck/build. The first late repair head
-  d7acb10 passed hosted run 30976889901 and merged as 263839d; exact-merge Pages run 30977063643
-  passed. Its final proof was 8 focused tests and 61 files/922 tests plus context/typecheck/build.
-  The second contract correction head f05c5c3 passed hosted run 30977894384 and merged as 7a270f4;
-  exact-merge Pages run 30978065710 passed. Its proof was the same 8 focused tests and 61 files/922
-  tests plus context/typecheck/build. B1b-i head eab066d passed 24 focused tests and the full
-  62-file/938-test local gate plus hosted run 30980483640, then merged as 2a55b11; exact-merge Pages
-  run 30980674556 and its late review sweep passed. B1b-ii PR #110 head 2cf2236 merged as ed413dc;
-  hosted run 30987156228 and exact-merge Pages run 30987394372 passed with an empty late sweep.
-  PR #111 B1b-iii head e575059 merged as 202aebea; hosted run 30990269529 and exact-merge Pages
-  run 30990502000 passed with an empty late-comment sweep. B2a-i currently passes 116 focused
-  storage tests for immutable keys, both lineage/owner insertion orders, operation-cause scope
-  binding, transaction rollback, replacement-style identity/parent rebinding, case-insensitive
-  TEMP refusal, and exact schema fingerprinting, plus the full 64-file/1,030-test local gate with
-  context, lint, typecheck, build, and diff checking. Fresh post-fix lineage, schema, and final
-  replacement-focused lenses found no remaining HIGH/CRITICAL defect. B2a-i PR #112 head 1c771cc
-  passed hosted run 30994203412 and merged as e0f3894; exact-merge Pages/privacy run 30994446119
-  passed with an empty late-comment sweep. B2a-ii passes 120 focused proposal/schema/rewrite/
-  migration tests and the full 64-file/1,034-test local gate with context, lint, typecheck, build,
-  and diff checking. Fresh reviews found no HIGH/CRITICAL defect; the target DDL checks exact UTC
-  string shape while semantic calendar validity remains at the required source parser boundary.
-  B2a-ii PR #113 head d28bd9f passed hosted run 30996013913 and merged as ad8ba9a;
-  exact-merge Pages/privacy run 30996264276 passed with an empty late-comment sweep. B2a-iii passes
-  137 focused proposal/schema/rewrite/migration/sweep tests and the full 65-file/1,051-test local
-  gate with context, lint, typecheck, build, and diff checking. Fresh authority, SQL/concurrency,
-  and test-gap reviews found no remaining HIGH/CRITICAL defect after the C1-anchor wording and
-  claim-reachability corrections. PR #114 head 762f9f9 passed hosted run 30999010546, merged as
-  6dad325, and exact-merge Pages/privacy run 30999228603 passed with an empty late-comment sweep.
-  B2b-i passes 21 focused lifecycle/candidate/proposal tests and the full 66-file/1,057-test local
-  gate with context, lint, typecheck, build, and diff checking. Fresh authority, privacy/state,
-  and narrow code reviews found no HIGH/CRITICAL defect after the integration corrections. PR #115
-  head d4683c7 passed hosted run 31002017618, merged as bdf8e436, and exact-merge Pages/privacy run
-  31002333681 passed with an empty late-comment sweep. B2b-ii-a passes 3 focused card-
-  loader files / 20 tests and the full 67-file/1,061-test local gate with context, lint, typecheck,
-  build, and diff checking. Fresh file/race review found no HIGH/CRITICAL defect. PR #116 head
-  d939e1b passed hosted run 31003641095, merged as 8e8b0bc, and exact-merge Pages/privacy run
-  31003872271 passed with an empty late-comment sweep. B2b-ii-b passes 2 focused parser/proposal
-  files / 17 tests and the full 68-file/1,070-test local gate with context, lint, typecheck, build,
-  and diff checking. Fresh code, authority, and transport-invariant reviews found no HIGH/CRITICAL
-  defect after the strict producer-count fixes. PR #117 head f910137 passed hosted run 31005511635,
-  merged as 8aa19b3, and exact-merge Pages/privacy run 31005770546 passed with an empty late-comment
-  sweep. B2b-ii-c passes 6 focused loader/report/proposal files / 34 tests and the full 71-file/
-  1,082-test local gate with context, lint, typecheck, build, and diff checking. Fresh artifact-core
-  and integrated code, test, privacy, and authority reviews found no HIGH/CRITICAL defect. PR #118
-  head c393bd1 passed hosted run 31008061712, merged as cb9161c, and exact-merge Pages/privacy run
-  31008333181 passed with an empty late-comment sweep. B2b-ii-d passes 2 focused anchor/proposal
-  files / 13 tests and the full 72-file/1,087-test local gate with context, lint, typecheck, build,
-  and diff checking. Fresh code, privacy/authority, and inertness reviews found no HIGH/CRITICAL
-  defect. PR #119 head 02094d2 passed hosted run 31010122666, merged as 8cabc53, and exact-merge
-  Pages/privacy run 31010364274 passed with an empty late-comment sweep. B2b-ii-e passes 2 focused
-  clock/proposal files / 15 tests and the full 73-file/1,094-test local gate with context, lint,
-  typecheck, build, and diff checking. Fresh clock, privacy/authority, and inertness reviews found
-  no HIGH/CRITICAL defect. PR #120 head 5a08fcf passed hosted run 31011375033, merged as cdaa083,
-  and exact-merge Pages/privacy run 31011609025 passed with an empty late-comment sweep. B2b-ii-f
-  passes 3 focused artifact/anchor-loader/proposal files / 16 tests and the full 74-file/1,099-test
-  local gate with context, lint, typecheck, build, and diff checking. Fresh loader-core,
-  privacy/authority, and inertness reviews found no HIGH/CRITICAL defect. PR #121 head cad4d73
-  passed hosted run 31013045188, merged as 1706df1, and exact-merge Pages/privacy run 31013362189
-  passed with an empty late-comment sweep. B2b-ii-g passes 4 focused task-card/parser/loader/runner/
-  transport files / 31 tests and the full 74-file/1,099-test local gate with context, lint,
-  typecheck, build, and diff checking. Fresh contract/authority reviews found no HIGH/CRITICAL
-  defect. PR #122 head 16f4c7d passed hosted run 31014606288, merged as c66d602, and exact-merge
-  Pages/privacy run 31014845736 passed with an empty late-comment sweep. B2b-ii-h passes 2 focused
-  composition/proposal files / 23 tests and the full 75-file/1,114-test local gate with context,
-  lint, typecheck, build, and diff checking. Fresh implementation/privacy reviews found no
-  HIGH/CRITICAL product defect; their reproduced multi-fixture timeout was fixed by splitting every
-  filesystem-heavy adversarial scenario and the scoped full gate was re-proved. PR #123 head
-  c5256bb passed hosted run 31017359944, merged as 65dfd155, and exact-merge Pages/privacy run
-  31017611856 passed with an empty late-comment sweep. B2b-ii-i currently passes 2 focused CAS/
-  proposal files / 21 tests and the full 76-file/1,128-test local gate with context, lint, typecheck,
-  build, and diff checking. Fresh correctness/concurrency and privacy/authority reviews found no
-  HIGH/CRITICAL defect after exact replay identity, safe revision increment, unknown-scope refusal,
-  rollback, lock contention, immutable history, and the fixture-only C2 boundary were proved.
-  PR #124 head 006728e passed hosted run 31020379782, merged as 34af993, and exact-merge
-  Pages/privacy run 31020694799 passed with an empty late-comment sweep. B2b-ii-j passes
-  2 focused proposal/import-guard files / 17 tests and the full 77-file/1,137-test local gate with
-  context, lint, typecheck, build, and diff checking. Fresh cryptographic/parser and privacy/authority
-  reviews found no HIGH/CRITICAL defect. PR #125 head 96957f4 passed hosted run 31022622947,
-  merged as 2afaa609, and exact-merge Pages/privacy run 31022859341 passed. A late Codex P2 about
-  low-order Ed25519 public-key/signature-R encodings is tracked on #80 and its thread is resolved.
-  Main protection now requires Prove the pull request; strict mode and administrator enforcement are off.
-capabilities: every executable capability remains never_authorized; cap.external.model uncalled
-b2b_i: 'merged structural-only continuity candidate; PR #115 head d4683c7 merged as bdf8e436 after
-  hosted run 31002017618; exact-merge run 31002333681 and the late-comment sweep passed'
-next_task_b2b: 'add the inert owner-trust-root.v1 snapshot validator with one active canonical
-  non-low-order Ed25519 key plus retired/revoked history; then add a separate owner-controlled
-  credential enrollment/rotation/revocation contract before transactional same-scope
-  retained C1/lifecycle/revocation/epoch/C2 receipt/CAS state or a renewal writer; then restart plus
-  claim-reachable migration-origin retention events'
+last_verified_checks: 'Every merged R1-R4 head above passed the hosted PR gate at its exact head,
+  and every merge passed the exact-merge Pages/privacy run; per-slice run IDs and focused-test
+  counts are recorded per slice in docs/IMPLEMENTATION_LEDGER.md. Before the simplification the
+  full local gate was 77 files / 1,137 tests plus context verification, lint, typecheck, build,
+  and diff checking.'
+review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently posts review comments
+  3-10 minutes AFTER merge. The ledger sentences claiming an "empty late-comment sweep" for PRs
+  #104-#125 were measured before the bot posted and are not evidence of clean reviews; 20 late
+  comments across PRs #104-#112 were untriaged until the 2026-08-05 batch triage (see the linked
+  tracking issues on each thread). Merges must now wait for the Codex review to arrive or a
+  15-minute post-ready window, whichever is first.'
+capabilities: every executable capability remains never_authorized; cap.external.model uncalled.
+  Note the enforcement inversion measured 2026-08-05 - the registry literal gates only the /api/v2
+  reporting surface; the real collection boundary is the ignored task card + installation key +
+  the absence of any activationRunner caller (activationRunner.ts asserts the registry still says
+  never_authorized and would otherwise proceed)
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
-  127 cards; `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
+  `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
   or 07 §6 index by hand)
 local_board: seeded Taskdeck board outside Git; restart runbook in untracked RESUME.md beside its
   database (06_TASKDECK_DEMO_PLAN.md §1 describes it without paths)
 residual_risks:
-  - 'q-7 is complete, but classic protection has strict=false and enforce_admins=false; repository
-     law still forbids privileged merges with red or stale exact-head CI'
+  - 'q-7 protection has strict=false and enforce_admins=false; repository law still forbids
+     privileged merges with red or stale exact-head CI'
   - '#78 dev-credential surface (bundle-safe bearer channel, no token/path logging, port-drift-proof
      allowlist) binds before any real-data surface'
   - '#79 BRIDGE-02 must serve a PresentationView, not the canonical record shape'
-  - '#80 carries binding constraints on DL-LIFE-02 (open): PR #103 covers registered SQLite slice A,
-     PR #105 covers inert B1a, PRs #107/#108 correct its late contracts, PR #109 covers B1b-i,
-     PR #110 covers B1b-ii, PR #111 covers B1b-iii, PR #112 covers B2a-i, PR #113 covers B2a-ii,
-     PR #114 covers B2a-iii, PR #115 covers B2b-i, PR #116 covers B2b-ii-a, PR #117 covers
-     B2b-ii-b, PR #118 covers B2b-ii-c, PR #119 covers B2b-ii-d, PR #120 covers B2b-ii-e,
-     PR #121 covers B2b-ii-f, PR #122 covers B2b-ii-g, PR #123 covers B2b-ii-h, PR #124
-     covers B2b-ii-i, and PR #125 covers B2b-ii-j; B2b-ii-k through B4 remain mandatory'
-  - 'B1b must enforce the corrected PR #106 contract: match scope continuity against the provider-
-     domain alias, retain aliases only in expiring C2 rows, and bind index_deleted to del-'
-  - 'B1b-ii must use its transient ownership map to abort mapped live lineage subjects/causes whose
-     scope differs from the event scope; hard lineage FKs are forbidden because tombstones outlive subjects'
-  - 'B1b-ii never reconstructs a cleared source alias from residual provider-bearing graph data;
-     a resulting cross-scope retained graph refuses, and B2 owns reviewed renewal/series restart'
-  - 'stored provider_id and analytical_key are independent domain-separated HMACs; B1b must verify
-     both from an ephemeral raw provider ID or fail closed, and must never derive one alias from the other'
+  - '#80 remains open: v1 deletion-seam FK decision, C2 sweeper on the live path, lineage ID class
+     separation, whyResolver lineage joins. The Ed25519 low-order condition is discharged as moot
+     by the §7 deletion and reattaches only if signatures return'
+  - 'late Codex findings from PRs #105/#109/#110/#112 are batch-triaged into tracking issues
+     #128/#129 (2026-08-05); two #109 findings were fixed directly (coverage_ledger empty-code
+     CHECKs — the preserved v2_coverage_record bridge table deliberately keeps byte-parity with
+     its v2 source; delete-disposition tables must be empty at acceptance), the rest await
+     verification there'
+  - 'v2_store_provenance drift: api/v2/store.ts declares 6 columns including activation_card_id,
+     v3ShadowSchema.ts declares 5 and pins mode=synthetic, yet v3Proposal.ts calls the table
+     preserve — an activation_card-mode v2 store is unmigratable (SOURCE_BRIDGE_REFUSED)'
+  - 'the C2 sweep has never run against a rewrite output (its fixtures are hand-seeded); the
+     executable-core slice owes a sweep-after-rewrite integration test'
+  - 'graphColours refinement is super-linear in identifier count, and the acceptance-time
+     fullEquivalenceShadowChecksum (PR #127) is now the dominant term because it colours every
+     minted identity column across all tables; fine for fixtures, a practical hang risk at
+     multi-year scale — measure and budget in the executable-core slice before any real migration'
   - 'B4 completion only unblocks LIFE-03; a first real migration/connector also requires LIFE-03
      backup/grace/restore/tombstone-replay proof and #86 V2 alias-bearing coverage remint'
-  - 'B2a-i binds lineage on INSERT/UPDATE but does not prevent direct deletion of lineage history;
-     B3 owns complete SQL deletion, tombstone replay, and the final no-rebind proof'
-  - 'B2a-ii target DDL validates the nullable claim.created_at UTC string shape, while the required
-     source ClaimRecordSchema parser enforces semantic calendar validity; no direct target writer exists'
-  - 'B2a-iii expiry markers remain mutable shadow C2 values; the sweep validates canonical form and
-     only clears, but a first production writer/renewal path must enforce one-way authenticated clocks'
-  - 'B2b-ii-i payload_sha256 is local C2 in a disposable fixture database with no expiry/sweeper;
-     production promotion must add explicit 13-month deletion plus owner-authenticated same-scope lifecycle/C1 binding'
-  - 'B2b-ii-j signature_matches proves only consistency against a caller-selected candidate key;
-     production promotion requires low-order/noncanonical public-key and signature-R rejection,
-     a separate owner-controlled trust root and credential lifecycle, fixed-path parsed anchor loading,
-     13-month local-C2 deletion, and transactional same-scope binding'
-  - 'A fresh shadow migration can materialize an already-expired incremental anchor with NULL C2 and
-     no sweep event; the pre-production renewal/writer contract must prove its explicit origin disposition'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,
      producer-absence limiting codes, canonical coverage-code registration'
-  - '#86 coverage_id embeds the collection scope_alias and now travels inside C1 claim-graph
-     identifiers (surfaced by PR #85, flagged not fixed); re-mint content-free before the q-5
-     github.core real-collection runs, or record a reviewed charter decision — a q-5 precondition'
+  - '#86 coverage_id embeds the collection scope_alias and travels inside C1 claim-graph
+     identifiers; re-mint content-free before the q-5 github.core real-collection runs (the mint
+     must stay deterministic per (alias, rangeEnd) or replay idempotency breaks)'
   - 'LIFE-01 transcript replay proves structural lineage only; external authenticity of opaque
-     card/preview/proof digests remains a future trusted-adapter boundary, with no runtime caller'
-  - 'Before the first lifecycle caller, request_revocation must suspend an active capability and
-     resume must fail while revocation intent remains pending (late PR #100 review; no caller today)'
-  - 'EVQ-03 retains lower-severity input-contract notes from review; post-merge feedback is triaged
-     once and any confirmed correctness defect takes the smallest linked follow-up PR'
-  - '#71 and #93 are closed by PRs #97 and #98 respectively'
-  - 'closed this wave (R1 wave 3): #67 typed empty cohorts — four-part disposition, PRs #75/#89/#92/#94;
-     #82 metric-result hardening incl. N1 — PR #92; #91 robustness-scan exemption — PR #92 (evidence in
-     the ledger R1 wave 3 section)'
+     digests remains a future trusted-adapter boundary, with no runtime caller'
   - 'frozen or tracked-only: #68, #69'
 ```

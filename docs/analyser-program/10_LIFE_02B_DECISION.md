@@ -1,7 +1,7 @@
 # DL-LIFE-02B execution decision
 
 Status: **accepted for bounded implementation; not a completion or activation record**
-Date: 2026-08-05
+Date: 2026-08-05 · **§7 (2026-08-05, later the same day) supersedes the B2b-ii continuation plan**
 Authority: `HUMAN_TODO.md` q-1/q-2, `docs/data-charter.md`,
 `docs/source-capability-matrix.md`, architecture revocation/retention rules, canonical card
 DL-LIFE-02, and issue #80.
@@ -572,3 +572,48 @@ deletion needs a scan or unconstrained path; backup restore enters this card; #8
 resolved by C0-only V2; a stored HMAC alias is treated as raw provider identity; an unexpired
 repository migrates without exact ephemeral raw-ID verification of both aliases; or any proof would
 require protected/private/generated data.
+
+## 7. 2026-08-05 simplification decision — the owner-PKI chain stops here
+
+Status: **accepted; supersedes the B2b-ii continuation (trust root, credential lifecycle,
+signature verification) recorded in §3 and §5. The B2b-i through B2b-ii-j sections above stand
+as historical record only.**
+
+The B2b-ii sequence ended at ten consecutive caller-free modules whose remaining roadmap —
+trust-root snapshot validation, owner credential enrollment/rotation/revocation, Ed25519
+review-signature verification — was building a simulated multi-party authority system for a
+single-owner, single-process, local-first application. That contradicts the architecture's own
+local-first rule: prefer transactions, file ownership, process ownership, installation-scoped
+keys, versioned schemas, and restart recovery over invented authority protocols.
+
+1. **The process is the trust boundary.** Continuity/renewal authority is the existing
+   installation key (`server/storage/taskInstallationKey.ts`: 0o600, exclusive create,
+   anti-swap identity checks), OS file permissions over `.developer-lens/`, and a
+   same-transaction SQLite compare-and-swap. No owner PKI, no review signatures, no trust-root
+   snapshots, no external reviewer artifacts.
+2. **Deleted as inert** (recoverable from git history): `v3ContinuityAuthorization`,
+   `v3ContinuityReviewAnchor` and its loader, `v3ContinuityStructuralComposition`,
+   `v3ContinuityReviewSignatureProposal`, `trustedProcessClock`, the unpersisted capability
+   lifecycle reducer (`server/lifecycle.ts`), and the activation result/report/report-loader
+   chain, each with its tests and gate bookkeeping.
+3. **Kept:** `taskInstallationKey.ts` (it is the simplified model), the CAS primitive (to be
+   folded into the shadow store so it can guard the state it exists to guard — as shipped it is
+   a physically separate database that cannot coexist with the shadow store), the activation
+   task-card loaders, and the entire `v3Shadow*` migration/rewrite/sweep engine.
+4. **Preserved invariant** for the first real renewal writer, lifted from B2b-ii-h before its
+   deletion: card authorization no later than job start; card range start before job start; job
+   start no later than review; review no later than the writer's internally captured process
+   wall time — enforced inside the CAS transaction, never from caller-supplied time.
+5. **Ed25519 hardening (late PR #125 finding, tracked on #80) is discharged as moot**: with no
+   signature verifier and no trust root there is nothing to harden. If a future decision
+   reintroduces signatures, the low-order/noncanonical public-key and signature-`R` rejection
+   conditions reattach before any key admission.
+6. **Revised stopping point.** LIFE-02's remaining work is executable, not contractual: a
+   production target factory and selector for the shadow migration, CAS-in-store with an
+   exported scope initializer, the C2 sweep and deletion behind one owner-controlled,
+   default-off local entrypoint, and restart/interruption recovery proof — then B3 (complete
+   SQL deletion) and B4 (app-owned artifacts) exactly as §5 defines. The inert-code budget is
+   zero: no new module lands without its consumer in the same PR.
+
+The task-card `localBoundary.continuityReviewAnchor` literal remains accepted by the card
+parser so existing hand-authored cards stay parseable; it is now a declared-but-unused name.

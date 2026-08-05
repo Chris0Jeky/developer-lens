@@ -380,7 +380,7 @@ describe('storage-v3 B1a proposal', () => {
     expect(liveClaims.LineageEventKindSchema.safeParse('legacy_deletion_operation').success).toBe(false)
   })
 
-  it('allows only the inert migration/rewrite/sweep/schema/proposal/composition chain and no production caller', () => {
+  it('allows only the inert migration/rewrite/sweep/schema/proposal chain and no production caller', () => {
     const root = resolve(__dirname, '../..')
     const roots = ['server', 'shared', 'src', 'scripts'].map((name) => join(root, name))
     const files: string[] = []
@@ -432,57 +432,9 @@ describe('storage-v3 B1a proposal', () => {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
-        if (target && /(?:^|[\\/])v3ContinuityAuthorization(?:\.[cm]?js|\.ts)?$/.test(target)) {
-          const sourcePath = relative(root, path).replaceAll('\\', '/')
-          offenders.push(`${sourcePath} -> ${target}`)
-        }
-        if (target && /(?:^|[\\/])v3ContinuityReviewAnchor(?:\.[cm]?js|\.ts)?$/.test(target)) {
-          const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'server/storage/v3ContinuityReviewAnchorLoader.ts') {
-            offenders.push(`${sourcePath} -> ${target}`)
-          }
-        }
-        if (target && /(?:^|[\\/])v3ContinuityReviewAnchorLoader(?:\.[cm]?js|\.ts)?$/.test(target)) {
-          const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'server/storage/v3ContinuityStructuralComposition.ts') {
-            offenders.push(`${sourcePath} -> ${target}`)
-          }
-        }
-        if (target && /(?:^|[\\/])trustedProcessClock(?:\.[cm]?js|\.ts)?$/.test(target)) {
-          const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'server/storage/v3ContinuityStructuralComposition.ts') {
-            offenders.push(`${sourcePath} -> ${target}`)
-          }
-        }
-        if (target && /(?:^|[\\/])v3ContinuityStructuralComposition(?:\.[cm]?js|\.ts)?$/.test(target)) {
-          const sourcePath = relative(root, path).replaceAll('\\', '/')
-          offenders.push(`${sourcePath} -> ${target}`)
-        }
         if (target && /(?:^|[\\/])v3ContinuityCasProposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
-        }
-        if (target && /(?:^|[\\/])v3ContinuityReviewSignatureProposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
-          const sourcePath = relative(root, path).replaceAll('\\', '/')
-          offenders.push(`${sourcePath} -> ${target}`)
-        }
-        if (target && /(?:^|[\\/])activationResult(?:\.[cm]?js|\.ts)?$/.test(target)) {
-          const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'server/connectors/github/activationReport.ts') {
-            offenders.push(`${sourcePath} -> ${target}`)
-          }
-        }
-        if (target && /(?:^|[\\/])activationReport(?:\.[cm]?js|\.ts)?$/.test(target)) {
-          const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'server/connectors/github/activationReportLoader.ts') {
-            offenders.push(`${sourcePath} -> ${target}`)
-          }
-        }
-        if (target && /(?:^|[\\/])activationReportLoader(?:\.[cm]?js|\.ts)?$/.test(target)) {
-          const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'server/storage/v3ContinuityStructuralComposition.ts') {
-            offenders.push(`${sourcePath} -> ${target}`)
-          }
         }
         ts.forEachChild(node, check)
       }
@@ -520,128 +472,6 @@ describe('storage-v3 B1a proposal', () => {
       './v3ShadowSchema.js',
       './v3ShadowRewrite.js',
     ])
-    const continuityPath = join(root, 'server', 'storage', 'v3ContinuityAuthorization.ts')
-    const continuityFile = ts.createSourceFile(
-      continuityPath,
-      readFileSync(continuityPath, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    )
-    const continuityImports = continuityFile.statements.flatMap((statement) =>
-      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
-        ? [statement.moduleSpecifier.text]
-        : [])
-    expect(continuityImports).toEqual([
-      'node:crypto',
-      '../../shared/claims.js',
-      '../../shared/capabilities.js',
-      '../lifecycle.js',
-    ])
-    const reviewAnchorPath = join(root, 'server', 'storage', 'v3ContinuityReviewAnchor.ts')
-    const reviewAnchorFile = ts.createSourceFile(
-      reviewAnchorPath,
-      readFileSync(reviewAnchorPath, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    )
-    const reviewAnchorImports = reviewAnchorFile.statements.flatMap((statement) =>
-      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
-      statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)
-        ? [statement.moduleSpecifier.text]
-        : [])
-    expect(reviewAnchorImports).toEqual([])
-    const reviewAnchorLoaderPath = join(root, 'server', 'storage', 'v3ContinuityReviewAnchorLoader.ts')
-    const reviewAnchorLoaderFile = ts.createSourceFile(
-      reviewAnchorLoaderPath,
-      readFileSync(reviewAnchorLoaderPath, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    )
-    const reviewAnchorLoaderImports = reviewAnchorLoaderFile.statements.flatMap((statement) =>
-      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
-        ? [statement.moduleSpecifier.text]
-        : [])
-    expect(reviewAnchorLoaderImports).toEqual([
-      '../activationArtifactLoader.js',
-      './v3ContinuityReviewAnchor.js',
-    ])
-    const trustedClockPath = join(root, 'server', 'trustedProcessClock.ts')
-    const trustedClockFile = ts.createSourceFile(
-      trustedClockPath,
-      readFileSync(trustedClockPath, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    )
-    const trustedClockImports = trustedClockFile.statements.flatMap((statement) =>
-      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
-        ? [statement.moduleSpecifier.text]
-        : [])
-    expect(trustedClockImports).toEqual(['node:perf_hooks'])
-    const activationResultPath = join(root, 'server', 'connectors', 'github', 'activationResult.ts')
-    const activationResultFile = ts.createSourceFile(
-      activationResultPath,
-      readFileSync(activationResultPath, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    )
-    const activationResultImports = activationResultFile.statements.flatMap((statement) =>
-      (ts.isImportDeclaration(statement) || ts.isExportDeclaration(statement)) &&
-      statement.moduleSpecifier && ts.isStringLiteral(statement.moduleSpecifier)
-        ? [statement.moduleSpecifier.text]
-        : [])
-    expect(activationResultImports).toEqual([])
-    const activationReportPath = join(root, 'server', 'connectors', 'github', 'activationReport.ts')
-    const activationReportFile = ts.createSourceFile(
-      activationReportPath,
-      readFileSync(activationReportPath, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    )
-    const activationReportImports = activationReportFile.statements.flatMap((statement) =>
-      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
-        ? [statement.moduleSpecifier.text]
-        : [])
-    expect(activationReportImports).toEqual(['./activationResult.js'])
-    const activationReportLoaderPath = join(root, 'server', 'connectors', 'github', 'activationReportLoader.ts')
-    const activationReportLoaderFile = ts.createSourceFile(
-      activationReportLoaderPath,
-      readFileSync(activationReportLoaderPath, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    )
-    const activationReportLoaderImports = activationReportLoaderFile.statements.flatMap((statement) =>
-      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
-        ? [statement.moduleSpecifier.text]
-        : [])
-    expect(activationReportLoaderImports).toEqual([
-      '../../activationArtifactLoader.js',
-      './activationReport.js',
-    ])
-    const continuityCompositionPath = join(
-      root,
-      'server',
-      'storage',
-      'v3ContinuityStructuralComposition.ts',
-    )
-    const continuityCompositionFile = ts.createSourceFile(
-      continuityCompositionPath,
-      readFileSync(continuityCompositionPath, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    )
-    const continuityCompositionImports = continuityCompositionFile.statements.flatMap((statement) =>
-      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
-        ? [statement.moduleSpecifier.text]
-        : [])
-    expect(continuityCompositionImports).toEqual([
-      'node:path',
-      '../connectors/github/activationReportLoader.js',
-      '../connectors/github/activationTaskLoader.js',
-      '../lifecycle.js',
-      '../trustedProcessClock.js',
-      './taskInstallationKey.js',
-      './v3ContinuityReviewAnchorLoader.js',
-    ])
     const continuityCasProposalPath = join(
       root,
       'server',
@@ -662,36 +492,6 @@ describe('storage-v3 B1a proposal', () => {
       'node:crypto',
       'better-sqlite3',
       './v3Proposal.js',
-    ])
-    const continuityReviewSignatureProposalPath = join(
-      root,
-      'server',
-      'storage',
-      'v3ContinuityReviewSignatureProposal.ts',
-    )
-    const continuityReviewSignatureProposalFile = ts.createSourceFile(
-      continuityReviewSignatureProposalPath,
-      readFileSync(continuityReviewSignatureProposalPath, 'utf8'),
-      ts.ScriptTarget.Latest,
-      true,
-    )
-    const continuityReviewSignatureProposalImports =
-      continuityReviewSignatureProposalFile.statements.flatMap((statement) =>
-        ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
-          ? [statement.moduleSpecifier.text]
-          : [])
-    expect(continuityReviewSignatureProposalImports).toEqual(['node:crypto'])
-    const continuityReviewSignatureProposalNamedImports =
-      continuityReviewSignatureProposalFile.statements.flatMap((statement) =>
-        ts.isImportDeclaration(statement)
-          && statement.importClause?.namedBindings
-          && ts.isNamedImports(statement.importClause.namedBindings)
-          ? statement.importClause.namedBindings.elements.map((element) => element.name.text)
-          : [])
-    expect(continuityReviewSignatureProposalNamedImports.sort()).toEqual([
-      'createHash',
-      'createPublicKey',
-      'verify',
     ])
     expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))
       .toMatch(/from ['"]\.\/v3ShadowRewrite\.js['"]/)
