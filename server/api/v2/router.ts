@@ -1,11 +1,15 @@
 import express from 'express'
+import { z } from 'zod'
 import { CAPABILITY_CONTRACT_VERSION } from '../../../shared/capabilities.js'
 import { COVERAGE_CONTRACT_VERSION } from '../../../shared/coverage.js'
 import { resolveV2RuntimeConfig, type V2RuntimeConfig } from './config.js'
+import { PresentationLeakError, assertPresentationSafe } from '../../analysis/integrationShape.js'
 import {
   buildCapabilityViews,
+  buildCoveragePresentationViews,
   V2_API_CONTRACT_VERSION,
   V2CapabilitiesResponseSchema,
+  V2CoverageRecordSchema,
   V2CoverageResponseSchema,
 } from './contract.js'
 import { V2Error, v2ErrorBody } from './errors.js'
@@ -56,16 +60,28 @@ export function createV2Router(config: V2RuntimeConfig): express.Router {
     }
   })
 
+  // #79: the canonical `CoverageRecord` is validated on the way IN and projected before it is
+  // served. The charter's frontend sink admits a `PresentationView` only, and the canonical shape
+  // would fail `assertPresentationSafe` on its `coverageId` alone — the projection is what makes
+  // the response servable, not a relaxation of the check.
   router.get('/coverage', (_request, response, next) => {
     try {
       const { provenance, coverage } = readSyntheticCoverageStore(config.storePath)
+      const canonical = z.array(V2CoverageRecordSchema).safeParse(coverage)
+      if (!canonical.success) throw new V2Error('V2_RESPONSE_CONTRACT_VIOLATION')
       const body = V2CoverageResponseSchema.safeParse({
         apiContractVersion: V2_API_CONTRACT_VERSION,
         coverageContractVersion: COVERAGE_CONTRACT_VERSION,
         provenance,
-        records: coverage,
+        records: buildCoveragePresentationViews(canonical.data),
       })
       if (!body.success) throw new V2Error('V2_RESPONSE_CONTRACT_VIOLATION')
+      try {
+        assertPresentationSafe(body.data, 'coverage response')
+      } catch (leak) {
+        if (leak instanceof PresentationLeakError) throw new V2Error('V2_RESPONSE_CONTRACT_VIOLATION')
+        throw leak
+      }
       response.json(body.data)
     } catch (error) {
       next(error)

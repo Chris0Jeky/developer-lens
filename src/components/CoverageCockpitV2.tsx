@@ -1,17 +1,13 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { CircleDashed, Lock, Sparkles } from 'lucide-react'
-import {
-  completeObservedUnits,
-  type CoverageRecord,
-  type CoverageStatus,
-} from '../../shared/coverage'
+import type { CoverageStatus } from '../../shared/coverage'
 import type {
+  CoveragePresentationView,
   V2CapabilitiesResponse,
   V2CoverageResponse,
 } from '../../server/api/v2/contract'
 import {
   cockpitStateForStatus,
-  isoWeekLabel,
   omittedLabel,
   refusalCode,
   type CoverageCockpitProblemKind,
@@ -193,46 +189,50 @@ function CockpitProblem({ view, code }: { view: ProblemView; code?: string }) {
   )
 }
 
-function CoverageRow({ record }: { record: CoverageRecord }) {
+/**
+ * One projected coverage row (#79). Everything it can render arrives already projected: the
+ * window labels are ISO-week strings computed server-side, and `observedUnits` is already null
+ * for every non-complete state. There is no scope alias and no coverage identifier to render,
+ * and the test hooks hang off the projection-local `rowKey` rather than a storage id.
+ */
+function CoverageRow({ record }: { record: CoveragePresentationView }) {
   const presentation = STATUS_PRESENTATION[record.status]
-  const observed = completeObservedUnits(record)
 
   return (
     <li className="cockpit-coverage__row" data-status={record.status}>
       <div className="cockpit-coverage__identity">
         <span className="cockpit-coverage__status">{presentation.label}</span>
         <strong>{record.capabilityId}</strong>
-        <small>{record.scopeAlias}</small>
       </div>
-      <p className="cockpit-coverage__observed" data-testid={`observed-${record.coverageId}`}>
-        {observed === null
+      <p className="cockpit-coverage__observed" data-testid={`observed-${record.rowKey}`}>
+        {record.observedUnits === null
           ? presentation.absence
-          : `${observed.toLocaleString('en-GB')} observed units`}
+          : `${record.observedUnits.toLocaleString('en-GB')} observed units`}
       </p>
       <dl className="cockpit-coverage__facts">
         <div>
           <dt>Limitation</dt>
-          <dd data-testid={`limitation-${record.coverageId}`}>{record.limitationCode}</dd>
+          <dd data-testid={`limitation-${record.rowKey}`}>{record.limitationCode}</dd>
         </div>
         <div>
           <dt>Omitted</dt>
-          <dd data-testid={`omitted-${record.coverageId}`}>{omittedLabel(record.omittedUnits)}</dd>
+          <dd data-testid={`omitted-${record.rowKey}`}>{omittedLabel(record.omittedUnits)}</dd>
         </div>
         <div>
           <dt>Window</dt>
           <dd>
-            {isoWeekLabel(record.rangeStart)} → {isoWeekLabel(record.rangeEnd)}
+            {record.windowStartLabel} → {record.windowEndLabel}
           </dd>
         </div>
         <div>
           <dt>Observed</dt>
-          <dd>{isoWeekLabel(record.observedAt)}</dd>
+          <dd>{record.observedAtLabel}</dd>
         </div>
         <div>
           <dt>Retryable</dt>
           <dd>{record.retryable ? 'yes' : 'no'}</dd>
         </div>
-        {record.saturationReason && (
+        {record.saturationReason !== null && (
           <div>
             <dt>Saturation</dt>
             <dd>{record.saturationReason}</dd>
@@ -322,7 +322,7 @@ export function CoverageCockpitV2({ state }: { state: CoverageCockpitState }) {
         ) : (
           <ol className="cockpit-coverage" aria-label="Recorded coverage states">
             {state.coverage.map((record) => (
-              <CoverageRow key={record.coverageId} record={record} />
+              <CoverageRow key={record.rowKey} record={record} />
             ))}
           </ol>
         )}

@@ -1,17 +1,31 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { buildCapabilityViews } from '../../server/api/v2/contract'
+import { buildCapabilityViews, buildCoveragePresentationViews } from '../../server/api/v2/contract'
 import {
   SYNTHETIC_COVERAGE_RECORDS,
   SYNTHETIC_STORE_PROVENANCE,
 } from '../../server/api/v2/syntheticCoverageFixtures'
-import { COVERAGE_STATUSES } from '../../shared/coverage'
+import { COVERAGE_STATUSES, type CoverageStatus } from '../../shared/coverage'
 import { cockpitStateForStatus, isoWeekLabel } from '../lib/coverageCockpit'
 import { CoverageCockpitV2, CoverageCockpitV2Route } from './CoverageCockpitV2'
 
 const capabilities = buildCapabilityViews()
 
-function renderReady(coverage = SYNTHETIC_COVERAGE_RECORDS) {
+/**
+ * The cockpit now consumes the projection the API serves (#79), not the canonical record. The
+ * test builds it through the same function the router uses, so a projection change that dropped
+ * a field the surface renders would fail here rather than only in production.
+ */
+const COVERAGE_VIEWS = buildCoveragePresentationViews(SYNTHETIC_COVERAGE_RECORDS)
+
+/** Each synthetic fixture carries a distinct status, so status addresses exactly one row. */
+function rowKey(status: CoverageStatus): string {
+  const view = COVERAGE_VIEWS.find((entry) => entry.status === status)
+  if (!view) throw new Error(`no synthetic coverage row for status ${status}`)
+  return view.rowKey
+}
+
+function renderReady(coverage = COVERAGE_VIEWS) {
   return render(
     <CoverageCockpitV2
       state={{
@@ -59,50 +73,60 @@ describe('Coverage Cockpit V2', () => {
   it('renders absence as a coverage state and never as a numeric zero', () => {
     renderReady()
 
-    for (const coverageId of [
-      'synthetic-coverage-never-authorized',
-      'synthetic-coverage-refused',
-      'synthetic-coverage-unavailable',
-      'synthetic-coverage-failed',
-    ]) {
-      const observed = screen.getByTestId(`observed-${coverageId}`)
+    for (const status of ['never_authorized', 'refused', 'unavailable', 'failed'] as const) {
+      const observed = screen.getByTestId(`observed-${rowKey(status)}`)
       expect(observed.textContent).not.toMatch(/\d/)
     }
 
-    expect(screen.getByTestId('observed-synthetic-coverage-never-authorized')).toHaveTextContent(
+    expect(screen.getByTestId(`observed-${rowKey('never_authorized')}`)).toHaveTextContent(
       /never authorized — nothing was ever collected/i,
     )
-    expect(screen.getByTestId('observed-synthetic-coverage-refused')).toHaveTextContent(
+    expect(screen.getByTestId(`observed-${rowKey('refused')}`)).toHaveTextContent(
       /refused — the owner declined this source/i,
     )
     // A deleted row holds zero observed units in the store and must still read as a state.
-    expect(screen.getByTestId('observed-synthetic-coverage-deleted')).toHaveTextContent(
+    expect(screen.getByTestId(`observed-${rowKey('deleted')}`)).toHaveTextContent(
       /deleted — records were removed on request/i,
     )
-    expect(screen.getByTestId('observed-synthetic-coverage-deleted').textContent).not.toMatch(/\d/)
+    expect(screen.getByTestId(`observed-${rowKey('deleted')}`).textContent).not.toMatch(/\d/)
     // A restricted row observed some units, but a partial state is never a rendered count.
-    expect(screen.getByTestId('observed-synthetic-coverage-restricted').textContent).not.toMatch(
-      /\d/,
-    )
+    expect(screen.getByTestId(`observed-${rowKey('restricted')}`).textContent).not.toMatch(/\d/)
   })
 
   it('renders a count only for complete coverage and names the limitation everywhere else', () => {
     renderReady()
 
-    expect(screen.getByTestId('observed-synthetic-coverage-complete')).toHaveTextContent(
+    expect(screen.getByTestId(`observed-${rowKey('complete')}`)).toHaveTextContent(
       '128 observed units',
     )
-    expect(screen.getByTestId('limitation-synthetic-coverage-never-authorized')).toHaveTextContent(
+    expect(screen.getByTestId(`limitation-${rowKey('never_authorized')}`)).toHaveTextContent(
       'CAPABILITY_NEVER_AUTHORIZED',
     )
-    expect(screen.getByTestId('omitted-synthetic-coverage-never-authorized')).toHaveTextContent(
-      'unknown',
-    )
-    expect(screen.getByTestId('omitted-synthetic-coverage-stale')).toHaveTextContent('none')
-    expect(screen.getByTestId('omitted-synthetic-coverage-restricted')).toHaveTextContent(
-      '28 units',
-    )
+    expect(screen.getByTestId(`omitted-${rowKey('never_authorized')}`)).toHaveTextContent('unknown')
+    expect(screen.getByTestId(`omitted-${rowKey('stale')}`)).toHaveTextContent('none')
+    expect(screen.getByTestId(`omitted-${rowKey('restricted')}`)).toHaveTextContent('28 units')
     expect(screen.getByText('RESULT_WINDOW_SATURATED')).toBeInTheDocument()
+  })
+
+  it('renders the projection only — no alias, no coverage id, no exact timestamp (#79)', () => {
+    const { container } = renderReady()
+    const rendered = container.textContent ?? ''
+
+    for (const record of SYNTHETIC_COVERAGE_RECORDS) {
+      expect(rendered).not.toContain(record.scopeAlias)
+      expect(rendered).not.toContain(record.coverageId)
+      for (const instant of [record.rangeStart, record.rangeEnd, record.observedAt]) {
+        expect(rendered).not.toContain(instant)
+      }
+    }
+    // What it does render is the week label the server computed.
+    const complete = SYNTHETIC_COVERAGE_RECORDS.find((record) => record.status === 'complete')!
+    expect(rendered).toContain(isoWeekLabel(complete.rangeStart))
+    expect(rendered).toContain(isoWeekLabel(complete.rangeEnd))
+    // The row key names nothing outside this response: it is a per-response ordinal.
+    expect(COVERAGE_VIEWS.map((view) => view.rowKey)).toEqual(
+      COVERAGE_VIEWS.map((_view, index) => `coverage-row-${index + 1}`),
+    )
   })
 
   it('reports capability lifecycle without offering any transition', () => {
