@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-h structural continuity composition)
+Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-i isolated continuity CAS proposal)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,8 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e/f/g are merged;
-the current branch adds only caller-free structural composition of the fixed task-local inputs, while the
+B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e/f/g/h are merged;
+the current branch adds only an isolated fixture-only continuity CAS proposal, while the
 remainder of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
@@ -2131,7 +2131,7 @@ advisory remain. Fresh contract and authority reviews found no HIGH/CRITICAL def
 `16f4c7d` passed hosted run `31014606288`, merged as `c66d602`, and exact-merge Pages/privacy run
 `31014845736` plus the late-comment sweep were green and empty.
 
-## 2026-08-05 — DL-LIFE-02 B2b-ii-h structural continuity composition (current slice)
+## 2026-08-05 — DL-LIFE-02 B2b-ii-h structural continuity composition (merged)
 
 B2b-ii-h adds one caller-free composer with the exact own-data input
 `workspaceRoot`, `taskId`, `expectedAnchorSha256`, and `lifecycleSnapshot`. Before its first async
@@ -2173,14 +2173,63 @@ was split into its own test instead of increasing the timeout; the final focused
 Fresh implementation and privacy/authority reviews found no HIGH/CRITICAL product defect; their only
 actionable proving finding was that reproduced timeout, now fixed and re-proved.
 
+PR #123 head `c5256bb` passed hosted run `31017359944`, merged as `65dfd155`, and exact-merge
+Pages/privacy run `31017611856` plus the late-comment sweep were green and empty.
+
+## 2026-08-05 — DL-LIFE-02 B2b-ii-i isolated continuity CAS proposal (current slice)
+
+B2b-ii-i deliberately implements the CAS mechanism without pretending the structural composition
+is authority. A true renewal writer remains blocked by the unowned anchor origin, individually
+stable rather than atomic artifacts, missing same-scope C1/lifecycle transaction, alias rebind risk,
+and concurrent revocation. The new module therefore owns no path, artifact, source, identity input,
+clock, lifecycle, continuity epoch, retention deadline, lineage event, API, network call, capability
+state, or production caller.
+
+The fixture-only database accepts one closed C1 `scope-` ID, safe expected revision, C1 `op-` ID,
+and opaque lowercase receipt digest. The digest is local C2 and receives no production retention
+claim; every fixture database is invented and disposable. The schema has a distinct application ID,
+user version, exact fingerprint, strict revision and operation tables, immutable operation history,
+monotonic state triggers, and cross-checks the current revision against a contiguous operation
+history. Installation refuses a nonempty main or temporary schema. Every connection re-enables and
+checks foreign keys and recursive triggers, and every target validates identity, DDL, integrity,
+quick check, and foreign keys before use.
+
+Apply uses one immediate transaction. Exact replay requires the same operation, scope,
+expected/applied revisions, and digest; any operation reuse mismatch is `conflict`, while a new
+operation at the wrong or absent scope revision is `stale`. The guarded state update must change one
+row before the operation insert and final history check. Hooked failures after each mutation roll
+back logical state; a real second-connection lock fails through the single generic error and retries
+after release. Expected revision `Number.MAX_SAFE_INTEGER` is rejected before addition. The only
+returned values are frozen static `applied`, `replayed`, `stale`, and `conflict` objects, and every
+failure maps to one content-free error.
+
+The focused CAS/proposal proof passes 2 files / 21 tests. The first full gate reproduced a
+pre-existing composer-test timeout under suite load. Its fixture had redundantly run the
+durability-heavy installation-key creation workflow before every composer scenario even though the
+key seam has its own focused proof. Writing the invented 32-byte key fixture directly at mode 0600
+reduced the focused composer suite to 16 tests in about 0.5 seconds and allowed preview/proof
+mismatches to be covered separately, without raising the timeout. The final full local gate passes
+76 files / 1,128 tests plus context verification, lint, typecheck, build, and diff checking; only
+the two existing Evidence Drawer Fast Refresh warnings and bundle-size advisory remain. Fresh
+SQL/concurrency, correctness, and privacy/authority reviews found no HIGH/CRITICAL defect.
+
+The proposal cannot seed a scope. Future promotion must first add owner-authenticated anchor
+provenance, current same-scope retained C1 and lifecycle/revocation state under the writer lock,
+continuity-epoch comparison, explicit receipt expiry/sweep, and the expired-alias/new-series
+disposition. Only then may a bounded renewal writer exist. The production import graph rejects this
+module, protected/generated paths remain uninspected, and every executable capability remains
+`never_authorized`.
+
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-ii-h in progress).** Finish caller-free
-report/card/key/lifecycle/anchor structural composition, focused/full proof, fresh implementation/
-privacy review, hosted proof, exact-merge Pages/privacy, and late sweep. Preserve the fixed paths,
-provider-domain scope binding, closed input and static output, one content-free error, unchanged
-runtime posture, and protected ignored-card boundary. Then add the compare-and-swap renewal writer,
-then restart
+**Current 2026-08-05 (B2b-ii-i in progress).** Finish the isolated fixture-only continuity CAS
+proposal, focused/full proof, fresh correctness/privacy review, hosted proof, exact-merge
+Pages/privacy, and late sweep. Preserve strict empty-database installation, exact replay identity,
+immediate locking, single-row guarded mutation, rollback, immutable history, unknown-scope refusal,
+closed/static outputs, the local-C2 receipt classification, unchanged runtime posture, and the
+protected ignored-card boundary. Then add owner-authenticated anchor provenance and transactional
+same-scope C1/lifecycle/revocation plus continuity-epoch binding before any true renewal writer;
+then take restart
 handling and the claim-reachable migration-origin retention events. Only then take canonical
 coverage/job absence resolution and its
 API/PresentationView/Evidence Drawer consumer migration. Continue B3-B4 exactly as
