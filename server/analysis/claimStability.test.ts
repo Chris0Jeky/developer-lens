@@ -114,6 +114,32 @@ describe('analyseClaimStability', () => {
     expect(report.profiles[0].methodVersionChurn).toEqual({ transitionCount: 0, changedCount: 0, share: null })
   })
 
+  it('accepts a same-claim replay when only createdAt differs', () => {
+    const first = observation(1, '2026-W01', 1, null, 4, 'coverage-static')
+    const replay = {
+      ...observation(2, '2026-W02', 1, null, 4, 'coverage-static'),
+      claim: { ...first.claim, createdAt: '2026-02-01T00:00:00.000Z' },
+    }
+
+    const report = analyseClaimStability([first, replay])
+    const series = report.profiles[0].series[0]
+    expect(series.snapshots).toEqual([
+      { versionOrdinal: 1, isoWeek: '2026-W01', change: 'initial' },
+      { versionOrdinal: 1, isoWeek: '2026-W02', change: 'unchanged' },
+    ])
+    expect(series.counts).toMatchObject({
+      collectionCount: 2,
+      transitionCount: 1,
+      churnCount: 0,
+      versionChurnCount: 0,
+      coverageChurnCount: 0,
+      valueChurnCount: 0,
+      evidenceOnlyChurnCount: 0,
+      oscillationCount: 0,
+    })
+    expect(series.attribution).toEqual({ coverageShare: null, valueShare: null, bothShare: null })
+  })
+
   it('counts value oscillation and keeps combined attribution explicit', () => {
     const v2 = `cl_${'2'.repeat(64)}`
     const v3 = `cl_${'3'.repeat(64)}`
