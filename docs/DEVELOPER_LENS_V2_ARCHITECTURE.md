@@ -1714,8 +1714,9 @@ corrected reading.
 12. **Bounded execution.** The active horizon is ≤ 12 dependency-closed cards
     (`horizon:active`); the freeze list (`horizon:frozen`, 07 §0a) parks external models, generic ML
     promotion, vector retrieval, Projects/security/rulesets/attestation sources, and broad parser
-    rollout until DL-VALUE-01 is accepted. Backlog expansion is closed for this planning cycle;
-    new analytical ideas enter through evidence-backed questions after the value slice is
-    evaluated. Hosted PR CI (DL-OPS-CI-01) precedes broad autonomous merge lanes. A compact
+    rollout until an explicit roadmap reassessment admits them. DL-VALUE-01's acceptance triggers
+    that reassessment but never unfreezes a card automatically. Backlog expansion is closed for
+    this planning cycle; new analytical ideas enter through evidence-backed questions after the
+    value slice is evaluated. Hosted PR CI (DL-OPS-CI-01) precedes broad autonomous merge lanes. A compact
     machine-readable state artifact (`docs/analyser-program/CURRENT_STATE.md`) replaces
     full-ledger reads at resume.
