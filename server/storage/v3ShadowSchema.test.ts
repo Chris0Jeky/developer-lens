@@ -26,7 +26,7 @@ const tables = (db: Database.Database): string[] => db.prepare(
   "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT LIKE 'sqlite_%' ORDER BY name",
 ).pluck().all() as string[]
 
-describe('storage-v3 B1b-i shadow schema', () => {
+describe('storage-v3 B1b shadow schema', () => {
   it('installs exactly the registered 18 tables and all dispositions', () => {
     const db = new Database(':memory:')
     try {
@@ -109,10 +109,16 @@ describe('storage-v3 B1b-i shadow schema', () => {
     try {
       installStorageV3ShadowSchema(db)
       db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
       const insert = db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
       insert.run(scopeA, 'scope', scopeA, id('del-'), 'github.core', null, 'index_deleted', '2026-W32')
-      insert.run(scopeA, 'deletion', id('del-', 'b'), id('del-', 'b'), 'github.core', null, 'legacy_deletion_operation', '2026-W32')
+      insert.run(null, 'deletion', id('del-', 'b'), id('del-', 'b'), 'github.core', null, 'legacy_deletion_operation', '2026-W32')
+      expect(() => insert.run(null, 'deletion', id('del-', 'b'), id('del-', 'b'), 'github.core', null, 'legacy_deletion_operation', '2026-W32')).toThrow()
       expect(() => insert.run(scopeA, 'deletion', id('del-', 'c'), id('del-', 'd'), 'github.core', null, 'legacy_deletion_operation', '2026-W32')).toThrow()
+      expect(() => insert.run(scopeA, 'deletion', id('del-', 'c'), id('del-', 'c'), 'github.core', null, 'legacy_deletion_operation', '2026-W32')).toThrow()
+      expect(() => insert.run(null, 'scope', scopeA, id('op-', 'a'), 'github.core', null, 'correction', '2026-W32')).toThrow()
+      insert.run(scopeA, 'claim', id('cl_', 'c'), id('op-', '9'), 'github.core', null, 'correction', '2026-W32')
+      expect(() => insert.run(scopeB, 'claim', id('cl_', 'c'), id('op-', '9'), 'github.core', null, 'correction', '2026-W32')).toThrow()
       expect(() => insert.run(scopeA, 'scope', scopeA, id('op-', 'b'), 'github.core', scopeB, 'scope_series_restarted', '2026-W32')).toThrow()
       expect(() => insert.run(scopeA, 'scope', scopeA, id('op-', 'c'), 'github.core', null, 'correction', '2026-W00')).toThrow()
       expect(() => insert.run(scopeA, 'scope', scopeA, id('op-', 'd'), 'github.core', null, 'correction', '2026-W54')).toThrow()
@@ -279,7 +285,20 @@ describe('storage-v3 B1b-i shadow schema', () => {
     }
   })
 
-  it('returns the exact incomplete and non-selectable B1b-i result', () => {
+  it('rejects the superseded B1b-i shadow identity before changing schema', () => {
+    const db = new Database(':memory:')
+    try {
+      db.pragma(`application_id = ${STORAGE_V3_SHADOW_APPLICATION_ID}`)
+      db.pragma('user_version = 301')
+      expect(() => installStorageV3ShadowSchema(db)).toThrow('STORAGE_V3_SHADOW_TARGET_MISMATCH')
+      expect(Number(db.prepare('PRAGMA user_version').pluck().get())).toBe(301)
+      expect(tables(db)).toEqual([])
+    } finally {
+      db.close()
+    }
+  })
+
+  it('returns the exact incomplete and non-selectable B1b result', () => {
     expect(storageV3ShadowResult()).toBe(STORAGE_V3_SHADOW_RESULT)
     expect(STORAGE_V3_SHADOW_RESULT).toEqual({
       completeB1b: false,

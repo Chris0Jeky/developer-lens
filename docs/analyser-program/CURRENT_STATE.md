@@ -6,7 +6,7 @@ file disagrees with Git, CI, or the ledger's live evidence, those win.
 
 ```yaml
 updated: 2026-08-05
-phase: 'R4 active horizon OPEN — DL-LIFE-02 slice A, B1a, and both late contract repairs are merged; the current head contains inert B1b-i and the card remains incomplete'
+phase: 'R4 active horizon OPEN — DL-LIFE-02 B1b-i is merged; the current head implements inert B1b-ii and the card remains incomplete'
 head: see `git log -1 origin/main` — live Git outranks the merge SHAs recorded below
 merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-SPINE-01 #74/75e7c39', 'DL-BRIDGE-01 #72/a6fcae1', 'DL-METRIC-01 #75/d1e29dd',
@@ -16,10 +16,11 @@ merged: ['DL-OPS-CI-01 #70/6cd30d1 (+#77/08fca14)', 'DL-SPINE-04 #73/090dd48',
   'DL-LIFE-01 #100/41a1804', 'DL-EVQ-03 #99/cad0a11',
   'DL-LIFE-02 slice A #103/5e6304e', 'DL-LIFE-02 B1a #105/f9cc008',
   'DL-LIFE-02 B1a late repair #107/263839d',
-  'DL-LIFE-02 contract correction #108/7a270f4'] # card stays active through B4
-active_slice: 'DL-LIFE-02 B1b-i in the current head — isolated, caller-free, non-selectable
-  storage-v3 shadow schema over all 18 dispositions; no source copy or selector'
-next_task: merge the current B1b-i head, then B1b-ii authenticated rewrite, B1b-iii orchestration,
+  'DL-LIFE-02 contract correction #108/7a270f4',
+  'DL-LIFE-02 B1b-i #109/2a55b11'] # card stays active through B4
+active_slice: 'DL-LIFE-02 B1b-ii in the current head — invented-fixture-only authenticated,
+  transactional rewrite into the still caller-free and non-selectable storage-v3 shadow target'
+next_task: finish and merge the current B1b-ii authenticated rewrite, then B1b-iii orchestration,
   then B2 retention/continuity/resolver and B3
   complete SQL deletion, and B4 app-owned artifacts; only the B4 state refresh may mark DONE, and
   the first real migration/connector still requires LIFE-03 plus #86 coverage remint
@@ -50,9 +51,11 @@ last_verified_checks: hosted PR gate green at every merged R1-R3 head above; LIF
   passed. Its final proof was 8 focused tests and 61 files/922 tests plus context/typecheck/build.
   The second contract correction head f05c5c3 passed hosted run 30977894384 and merged as 7a270f4;
   exact-merge Pages run 30978065710 passed. Its proof was the same 8 focused tests and 61 files/922
-  tests plus context/typecheck/build. The current B1b-i head passes 24 focused tests and the full
-  62-file/938-test local gate including context verification, typecheck, lint, and build; hosted and
-  exact-merge evidence remain pending until publication.
+  tests plus context/typecheck/build. B1b-i head eab066d passed 24 focused tests and the full
+  62-file/938-test local gate plus hosted run 30980483640, then merged as 2a55b11; exact-merge Pages
+  run 30980674556 and its late review sweep passed. The current B1b-ii head passes 65 focused
+  storage tests and the full 63-file/979-test local gate including context verification, lint,
+  typecheck, and build; hosted and exact-merge evidence remain pending publication.
 capabilities: every executable capability remains never_authorized; cap.external.model uncalled
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
   127 cards; `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
@@ -65,11 +68,14 @@ residual_risks:
      allowlist) binds before any real-data surface'
   - '#79 BRIDGE-02 must serve a PresentationView, not the canonical record shape'
   - '#80 carries binding constraints on DL-LIFE-02 (open): PR #103 covers registered SQLite slice A,
-     PR #105 covers inert B1a, and PRs #107/#108 correct its late contracts; B1b-B4 remain mandatory'
+     PR #105 covers inert B1a, PRs #107/#108 correct its late contracts, and PR #109 covers B1b-i;
+     B1b-ii through B4 remain mandatory'
   - 'B1b must enforce the corrected PR #106 contract: match scope continuity against the provider-
      domain alias, retain aliases only in expiring C2 rows, and bind index_deleted to del-'
   - 'B1b-ii must use its transient ownership map to abort mapped live lineage subjects/causes whose
      scope differs from the event scope; hard lineage FKs are forbidden because tombstones outlive subjects'
+  - 'B1b-ii never reconstructs a cleared source alias from residual provider-bearing graph data;
+     a resulting cross-scope retained graph refuses, and B2 owns reviewed renewal/series restart'
   - 'stored provider_id and analytical_key are independent domain-separated HMACs; B1b must verify
      both from an ephemeral raw provider ID or fail closed, and must never derive one alias from the other'
   - 'B4 completion only unblocks LIFE-03; a first real migration/connector also requires LIFE-03
