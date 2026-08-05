@@ -124,10 +124,14 @@ on the exact Host allowlist plus the browser's own `Sec-Fetch-*` metadata, which
 origin cannot forge. Nothing credential-shaped is read from `import.meta.env`, so nothing can be
 inlined into a bundle.
 
-A **non-browser** caller (curl, a script) does need a bearer, and must set it deliberately: export
-`DEVELOPER_LENS_V2_TOKEN` to a value of 32-256 characters from `[A-Za-z0-9._-]` before starting the
-server, then send `Authorization: Bearer <that value>`. With the variable unset the API generates
-an unreadable per-launch value and never prints it, so it answers no non-browser caller at all.
+A **non-browser** caller (curl, a script) can either send a bearer — export
+`DEVELOPER_LENS_V2_TOKEN` (32-256 characters from `[A-Za-z0-9._-]`) before starting the server,
+then send `Authorization: Bearer <that value>` — or simply set the three same-origin
+`Sec-Fetch-*` headers itself; the two channels are deliberately equivalent. Neither is a defence
+against a process already on your machine, and none is claimed: what the Host/Origin allowlists
+and the fetch-metadata proof defend is the browser drive-by surface, where a page on another
+origin cannot forge those headers. The API binds to `127.0.0.1` and serves only the synthetic
+store.
 
 ### Try the Integration Shape Atlas
 

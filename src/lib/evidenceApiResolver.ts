@@ -43,16 +43,38 @@ export function evidenceResolvePath(reference: AnalyticReference): string {
       ? { kind: 'observation', id: reference.evidenceId }
       : { kind: 'claim', id: reference.claimId },
   )
-  return `/api/v2/evidence/resolve?${query.toString()}`
+  // Respect Vite's base so the showcase never requests outside its deployment root.
+  const base = import.meta.env.BASE_URL ?? '/'
+  return `${base.endsWith('/') ? base.slice(0, -1) : base}/api/v2/evidence/resolve?${query.toString()}`
 }
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null && !Array.isArray(value)
+
+/**
+ * Anything other than a well-formed resolution falls back to the local composition
+ * rather than reaching the drawer: the fetch trusts a local port, and a squatting
+ * process returning 200 JSON must not be able to blank the route. The checks cover
+ * exactly the fields the drawer dereferences before React can escape them.
+ */
 function servedProjection(body: unknown): IntegrationShapeEvidenceResolution {
-  const projection = (body as { projection?: unknown } | null)?.projection
-  const kind = (projection as { kind?: unknown } | null)?.kind
+  const projection = isRecord(body) ? body.projection : undefined
+  if (!isRecord(projection)) throw new Error('evidence projection is not an object')
+  const { kind } = projection
   if (typeof kind !== 'string' || !RESOLUTION_KINDS.has(kind)) {
     throw new Error('evidence projection is not a resolution the drawer can render')
   }
-  return projection as IntegrationShapeEvidenceResolution
+  const wellFormed =
+    (kind === 'explanation'
+      && isRecord(projection.claim) && typeof projection.claim.statementCode === 'string')
+    || (kind === 'evidence'
+      && typeof projection.evidenceId === 'string' && isRecord(projection.coverage))
+    || (kind === 'missing_link' && Array.isArray(projection.lineage))
+    || kind === 'unresolvable'
+  if (!wellFormed) {
+    throw new Error('evidence projection is missing the fields its kind requires')
+  }
+  return projection as unknown as IntegrationShapeEvidenceResolution
 }
 
 /**

@@ -87,6 +87,11 @@ export interface GithubCoreReconciliationInput {
    * supplies the same `coverageId` it supplied the first time, exactly as it must already supply
    * the same `jobId`, `observedAt`, and range. A different value under an already-committed job ID
    * fails closed on the storage payload hash rather than writing a second coverage row.
+   *
+   * NON-PROPERTY: the old derived key was distinct per window by construction; the caller-owned
+   * key is not, and nothing yet detects one key reused across two logical windows (lookups use
+   * the full composite, so this is latent). The #86 storage half owns closing it — a
+   * UNIQUE(coverage_id) or a mint-per-window assertion — before q-5 real collection.
    */
   readonly coverageId: string
   readonly scopeAlias: string

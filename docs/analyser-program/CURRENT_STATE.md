@@ -79,7 +79,9 @@ residual_risks:
      head before any real-data surface'
   - '#79 RESOLVED on fable/boundary-and-reachability: /api/v2/coverage serves
      CoveragePresentationViewSchema (status/codes, ISO-week window labels computed server-side,
-     complete-only observed units, per-response row key) and is proven through assertPresentationSafe;
+     complete-only observed units, per-response row key), enforced by the strict projection schema
+     plus the assertPresentationSafe key/alias canary (which checks leaked key names and the demo
+     alias only — the schema is the real gate) and a direct alias-absence test;
      the canonical record is validated on the way in and never served. /api/v2/evidence grain is
      NOT in scope and stays as it was'
   - '#80 remains open: v1 deletion-seam FK decision, C2 sweeper on the live path, lineage ID class

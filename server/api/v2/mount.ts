@@ -16,10 +16,11 @@ import { v2ErrorBody } from './errors.js'
  * proof. Nothing is read from `import.meta.env`, so there is no longer a delivery channel that
  * Vite could inline into a built bundle — the P1 finding this replaced.
  *
- * The bearer survives only for callers that are not a browser. It is generated per launch and
- * deliberately NOT printed: the charter's log sink denies tokens, and a generated value nobody
- * can read is exactly the fail-closed default — the API answers no non-browser caller unless the
- * operator sets `DEVELOPER_LENS_V2_TOKEN` themselves and uses that value.
+ * The bearer survives as one of two equivalent channels for callers that are not a browser. It
+ * is generated per launch and deliberately NOT printed: the charter's log sink denies tokens,
+ * and an unset `DEVELOPER_LENS_V2_TOKEN` therefore closes the bearer channel only — a local
+ * caller can always present the same-origin fetch-metadata proof instead, exactly as the
+ * paragraph below states.
  *
  * Honest security property — neither channel is a defence against a local attacker, and none is
  * claimed. A local process can set `Sec-Fetch-*` freely, just as it could previously read the
