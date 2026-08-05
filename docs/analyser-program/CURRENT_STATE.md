@@ -2,7 +2,9 @@
 
 Machine-readable summary for agent resume. Updated at every phase boundary and merge. History
 lives in `docs/IMPLEMENTATION_LEDGER.md` (archive); durable decisions live in the ADRs. If this
-file disagrees with Git, CI, or the ledger's live evidence, those win.
+file disagrees with live Git or CI, those win. The ledger never overrides this artifact: it is
+the historical record of how past slices were proven, and a fresh agent following it over this
+file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-05
@@ -56,8 +58,15 @@ review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently pos
   3-10 minutes AFTER merge. The ledger sentences claiming an "empty late-comment sweep" for PRs
   #104-#125 were measured before the bot posted and are not evidence of clean reviews; 20 late
   comments across PRs #104-#112 were untriaged until the 2026-08-05 batch triage (see the linked
-  tracking issues on each thread). Merges must now wait for the Codex review to arrive or a
-  15-minute post-ready window, whichever is first.'
+  tracking issues on each thread). The defect recurred the same day it was measured: PRs #127 and
+  #131 merged minutes before their next Codex review, leaving four untriaged post-merge findings
+  (legacy deletion-ID equivalence escape, ledger-override authority sentence, evidence-client
+  validation, requested-reference binding) — all four fixed by the late-review truth-repair PR.
+  Binding protocol: do not merge until the Codex review for the exact final head has arrived and
+  every finding is fixed/tracked/rejected, OR 15 minutes have passed since the LAST push with a
+  fresh sweep showing no new review; any fix push restarts that clock, and a later exact-head
+  finding is still a finding — there is no two-rounds-means-ship exception for it. After merge,
+  sweep again beyond the measured delay before calling the review clean.'
 capabilities: every executable capability remains never_authorized; cap.external.model uncalled.
   Note the enforcement inversion measured 2026-08-05 - the registry literal gates only the /api/v2
   reporting surface; the real collection boundary is the ignored task card + installation key +
@@ -91,7 +100,11 @@ residual_risks:
      #128/#129 (2026-08-05); two #109 findings were fixed directly (coverage_ledger empty-code
      CHECKs — the preserved v2_coverage_record bridge table deliberately keeps byte-parity with
      its v2 source; delete-disposition tables must be empty at acceptance), the rest await
-     verification there'
+     verification there. The PR #130 post-merge findings (phantom CAS scope initialization, CAS
+     payload_sha256 receipt retention) are tracked on #128 as B3 promotion conditions; the PR
+     #127/#131 post-merge findings are fixed by the late-review truth-repair PR (row-kind-aware
+     equivalence classifier + shared runtime evidence contract in shared/whyContract.ts with
+     requested-reference binding)'
   - 'v2_store_provenance drift: api/v2/store.ts declares 6 columns including activation_card_id,
      v3ShadowSchema.ts declares 5 and pins mode=synthetic, yet v3Proposal.ts calls the table
      preserve — an activation_card-mode v2 store is unmigratable (SOURCE_BRIDGE_REFUSED)'
