@@ -195,12 +195,13 @@ describe('IntegrationShapeAtlas — copy discipline', () => {
 })
 
 describe('IntegrationShapeAtlas — routed in App and never fetches to render', () => {
-  it('renders at ?view=integration-shape without a network call', () => {
+  it('renders at ?view=integration-shape without a network call', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     window.history.replaceState({}, '', '/?view=integration-shape')
     render(<App />)
-    expect(screen.getByTestId('integration-shape-atlas')).toBeInTheDocument()
+    // The route is lazy, so it arrives on the Suspense boundary rather than the first paint.
+    expect(await screen.findByTestId('integration-shape-atlas')).toBeInTheDocument()
     expect(fetchMock).not.toHaveBeenCalled()
   })
 })
