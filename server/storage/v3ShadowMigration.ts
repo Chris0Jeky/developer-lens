@@ -285,8 +285,8 @@ export function assertSelectableStorageV3Target(
   if (db.prepare('PRAGMA foreign_key_check').all().length !== 0) throw new Error()
   // Delete-disposition and CAS tables: the rewrite never writes them, so any row is injected.
   const empty = options.allowContinuityCasState
-    ? ['import_run', 'coverage_observation']
-    : ['import_run', 'coverage_observation', 'continuity_cas_state', 'continuity_cas_operation']
+    ? ['import_run', 'coverage_observation', 'v2_coverage_record']
+    : ['import_run', 'coverage_observation', 'v2_coverage_record', 'continuity_cas_state', 'continuity_cas_operation']
   for (const table of empty) {
     if (Number(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get()) !== 0) throw new Error()
   }

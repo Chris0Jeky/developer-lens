@@ -41,7 +41,7 @@ const EXPECTED_DISPOSITION_SHAPE = {
   coverage_observation: ['base', 'delete'],
   dated_event_observation: ['base', 'rewrite'],
   v2_store_provenance: ['bridge', 'preserve'],
-  v2_coverage_record: ['bridge', 'preserve'],
+  v2_coverage_record: ['bridge', 'delete'],
   collection_job: ['incremental', 'rewrite'],
   collection_checkpoint: ['incremental', 'rewrite'],
   source_snapshot: ['incremental', 'rewrite'],
@@ -412,6 +412,7 @@ describe('storage-v3 B1a proposal', () => {
           if (![
             'server/storage/v3ShadowSchema.ts',
             'server/storage/v3ContinuityCasProposal.ts',
+            'server/storage/v3Deletion.ts',
           ].includes(sourcePath)) {
             offenders.push(edge)
           }
@@ -422,13 +423,19 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3ShadowRewrite.ts',
             'server/storage/v3ShadowSweep.ts',
             'server/storage/v3ContinuityCasProposal.ts',
+            'server/storage/v3Deletion.ts',
           ].includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }
         if (target && /(?:^|[\\/])v3ShadowRewrite(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (!['server/storage/v3ShadowMigration.ts', 'server/storage/v3ShadowSweep.ts'].includes(sourcePath)) {
+          if (![
+            'server/storage/v3ShadowMigration.ts',
+            'server/storage/v3ShadowSweep.ts',
+            'server/storage/v3ContinuityCasProposal.ts',
+            'server/storage/v3Deletion.ts',
+          ].includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }
@@ -442,8 +449,15 @@ describe('storage-v3 B1a proposal', () => {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           if (![
             'server/storage/v3StoreFiles.ts',
+            'server/storage/v3Deletion.ts',
             'scripts/storeLifecycle.ts',
           ].includes(sourcePath)) {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
+        }
+        if (target && /(?:^|[\\/])v3Deletion(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (sourcePath !== 'scripts/storeLifecycle.ts') {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }
@@ -512,6 +526,7 @@ describe('storage-v3 B1a proposal', () => {
     expect(continuityCasProposalImports).toEqual([
       'better-sqlite3',
       './v3Proposal.js',
+      './v3ShadowRewrite.js',
       './v3ShadowSchema.js',
     ])
     expect(readFileSync(join(root, 'server', 'storage', 'v3ShadowMigration.ts'), 'utf8'))

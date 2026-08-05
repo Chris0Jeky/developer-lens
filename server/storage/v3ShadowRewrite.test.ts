@@ -580,12 +580,17 @@ describe('B1b-ii shadow rewrite', () => {
     } finally { source.close(); target.close() }
   })
 
-  it('preserves valid synthetic bridge coverage whose alias is independent of claim scope', () => {
+  it('validates bridge coverage but copies none of it — the v3 target keeps the delete disposition', () => {
     const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, 30)
     source.prepare('INSERT INTO v2_coverage_record (coverage_id, capability_id, scope_alias, range_start, range_end, status, expected_units, observed_units, omitted_units, saturation_reason, retryable, observed_at, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('bridge-valid', 'github.core', 'synthetic-independent-alias', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', 'complete', 1, 1, 0, null, 0, '2026-02-01T00:00:00.000Z', 'NONE')
     try {
       rewriteStorageV3Shadow({ sourceDb: source, targetDb: target, identityBindings: [], installationKey: key, asOf: '2026-01-01T00:00:00.000Z' })
-      expect(target.prepare('SELECT coverage_id, scope_alias FROM v2_coverage_record').get()).toEqual({ coverage_id: 'bridge-valid', scope_alias: 'synthetic-independent-alias' })
+      // B3 decision: the v2 reader refuses v3 stores, so a preserved copy would be
+      // unreadable dead weight carrying a verbatim C2 alias. Source rows are still
+      // contract-validated (the refusal test below), the target stays empty, and the
+      // untouched SOURCE keeps its bridge for the v2 API.
+      expect(target.prepare('SELECT COUNT(*) FROM v2_coverage_record').pluck().get()).toBe(0)
+      expect(source.prepare('SELECT COUNT(*) FROM v2_coverage_record').pluck().get()).toBe(1)
       expect(target.prepare('SELECT COUNT(*) FROM claim_scope').pluck().get()).toBe(0)
     } finally { source.close(); target.close() }
   })
