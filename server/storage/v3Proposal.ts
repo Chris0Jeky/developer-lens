@@ -19,6 +19,7 @@ export const C1_KEY_PREFIXES = {
   coverage: 'cov-',
   evidence: 'ev-',
   artifact: 'art-',
+  operation: 'op-',
   deletion: 'del-',
 } as const
 
@@ -33,6 +34,7 @@ export const C1_KEY_GENERATION = {
   coverage: 'fresh-random',
   evidence: 'fresh-random',
   artifact: 'fresh-random',
+  operation: 'fresh-random',
   deletion: 'fresh-random',
 } as const satisfies Readonly<Record<C1KeyKind, 'fresh-random' | 'versioned-claim-material'>>
 
@@ -46,8 +48,10 @@ export const SnapshotIdV3Schema = c1KeySchema(C1_KEY_PREFIXES.snapshot)
 export const CheckpointIdV3Schema = c1KeySchema(C1_KEY_PREFIXES.checkpoint)
 export const CoverageIdV3Schema = c1KeySchema(C1_KEY_PREFIXES.coverage)
 export const EvidenceIdV3Schema = c1KeySchema(C1_KEY_PREFIXES.evidence)
+export const OperationIdV3Schema = c1KeySchema(C1_KEY_PREFIXES.operation)
 export const ArtifactIdV3Schema = c1KeySchema(C1_KEY_PREFIXES.artifact)
 export const DeletionOperationIdV3Schema = c1KeySchema(C1_KEY_PREFIXES.deletion)
+export const LineageOperationIdV3Schema = z.union([OperationIdV3Schema, DeletionOperationIdV3Schema])
 
 // Short aliases keep callers readable while retaining the explicit v3 suffix above.
 export const C1KeyKindSchema = z.enum([
@@ -59,6 +63,7 @@ export const C1KeyKindSchema = z.enum([
   'coverage',
   'evidence',
   'artifact',
+  'operation',
   'deletion',
 ] as const)
 
@@ -70,6 +75,7 @@ export const C1KeySchema = z.union([
   CheckpointIdV3Schema,
   CoverageIdV3Schema,
   EvidenceIdV3Schema,
+  OperationIdV3Schema,
   ArtifactIdV3Schema,
   DeletionOperationIdV3Schema,
 ])
@@ -83,6 +89,7 @@ export const C1_KEY_SCHEMAS: Readonly<Record<C1KeyKind, z.ZodString>> = {
   checkpoint: CheckpointIdV3Schema,
   coverage: CoverageIdV3Schema,
   evidence: EvidenceIdV3Schema,
+  operation: OperationIdV3Schema,
   artifact: ArtifactIdV3Schema,
   deletion: DeletionOperationIdV3Schema,
 }
@@ -170,7 +177,7 @@ export const LineageV3EventSchema = z.object({
   subjectKind: LineageV3SubjectKindSchema,
   subjectId: C1KeySchema,
   eventKind: LineageV3EventKindSchema,
-  operationId: DeletionOperationIdV3Schema,
+  operationId: LineageOperationIdV3Schema,
   capabilityId: z.literal('github.core'),
   eventWeek: IsoWeekV3Schema,
   causedBy: C1KeySchema.nullable().optional(),
@@ -186,6 +193,11 @@ export const LineageV3EventSchema = z.object({
   }
   if (value.eventKind === 'legacy_deletion_operation' && value.operationId !== value.subjectId) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['operationId'], message: 'Legacy deletion operation identity mismatch' })
+  }
+  const deletionEvent = value.eventKind === 'tombstone_cascade' || value.eventKind === 'legacy_deletion_operation'
+  const expectedOperationPrefix = deletionEvent ? C1_KEY_PREFIXES.deletion : C1_KEY_PREFIXES.operation
+  if (!value.operationId.startsWith(expectedOperationPrefix)) {
+    context.addIssue({ code: z.ZodIssueCode.custom, path: ['operationId'], message: `${value.eventKind} requires ${expectedOperationPrefix} operation identity` })
   }
   if (value.eventKind === 'scope_series_restarted' && value.causedBy != null) {
     context.addIssue({ code: z.ZodIssueCode.custom, path: ['causedBy'], message: 'Restarted scope must not link an old series' })
@@ -214,7 +226,8 @@ export const LINEAGE_V3_PROPOSAL = {
   subjectKinds: LINEAGE_V3_SUBJECT_KINDS,
   capabilityIds: ['github.core'] as const,
   eventGrain: 'iso-week',
-  operationPrefix: C1_KEY_PREFIXES.deletion,
+  operationPrefix: C1_KEY_PREFIXES.operation,
+  deletionOperationPrefix: C1_KEY_PREFIXES.deletion,
   legacyDeletionCompatibility: LEGACY_DELETION_OPERATION_COMPATIBILITY,
 } as const
 
@@ -275,20 +288,20 @@ const disposition = <T extends StorageV3Disposition>(value: T): T => value
 export const STORAGE_V3_DISPOSITIONS = [
   disposition({ tableName: 'import_run', family: 'base', action: 'delete', preserve: [], rewrite: [], delete: ['all legacy rows lacking scope and import-time ownership'] }),
   disposition({ tableName: 'repository_identity', family: 'base', action: 'rewrite', preserve: ['is_private', 'is_archived', 'is_fork'], rewrite: ['provider identity -> scope- C1 anchor', 'analytical alias remains transient C2 link'], delete: ['provider_id', 'analytical_key after C2 expiry'] }),
-  disposition({ tableName: 'commit_observation', family: 'base', action: 'rewrite', preserve: ['sha', 'source', 'aggregate counters', 'feature classification'], rewrite: ['repository_provider_id -> canonical scope_id'], delete: ['rows whose repository binding is unverifiable'] }),
-  disposition({ tableName: 'pull_request_fact', family: 'base', action: 'rewrite', preserve: ['number', 'lifecycle state', 'aggregate counters'], rewrite: ['repository_provider_id -> canonical scope_id'], delete: ['rows whose repository binding is unverifiable'] }),
+  disposition({ tableName: 'commit_observation', family: 'base', action: 'rewrite', preserve: ['aggregate counters', 'feature classification'], rewrite: ['repository_provider_id -> canonical scope_id', 'commit sha as an expiring C2 observation'], delete: ['commit sha, source provenance, and row at C2 expiry', 'rows whose repository binding is unverifiable'] }),
+  disposition({ tableName: 'pull_request_fact', family: 'base', action: 'rewrite', preserve: ['lifecycle state', 'aggregate counters'], rewrite: ['repository_provider_id -> canonical scope_id', 'pull-request number as an expiring C2 observation'], delete: ['pull-request number, provider provenance, and row at C2 expiry', 'rows whose repository binding is unverifiable'] }),
   disposition({ tableName: 'coverage_observation', family: 'base', action: 'delete', preserve: [], rewrite: [], delete: ['all legacy aggregate rows without complete member-scope ownership'] }),
-  disposition({ tableName: 'dated_event_observation', family: 'base', action: 'rewrite', preserve: ['event_kind', 'occurred_at'], rewrite: ['repository_provider_id -> canonical scope_id'], delete: ['rows whose repository binding is unverifiable'] }),
+  disposition({ tableName: 'dated_event_observation', family: 'base', action: 'rewrite', preserve: ['event_kind'], rewrite: ['repository_provider_id -> canonical scope_id', 'occurred_at as an expiring C2 observation'], delete: ['exact occurred_at and row at C2 expiry', 'rows whose repository binding is unverifiable'] }),
   disposition({ tableName: 'v2_store_provenance', family: 'bridge', action: 'preserve', preserve: ['validated C0 synthetic-only provenance'], rewrite: [], delete: [], refuse: ['activation_card or unverifiable provenance'] }),
   disposition({ tableName: 'v2_coverage_record', family: 'bridge', action: 'preserve', preserve: ['rows covered by validated C0 synthetic-only provenance'], rewrite: [], delete: [], refuse: ['orphan rows or rows under activation_card/unverifiable provenance'] }),
-  disposition({ tableName: 'collection_job', family: 'incremental', action: 'rewrite', preserve: ['capability_id', 'status', 'content-free payload hash'], rewrite: ['job- anchor and scope_id'], delete: ['caller job ID and exact operational timestamps at C2 expiry'] }),
+  disposition({ tableName: 'collection_job', family: 'incremental', action: 'rewrite', preserve: ['capability_id', 'status'], rewrite: ['job- anchor and scope_id', 'payload hash as an expiring C2 observation'], delete: ['caller job ID, payload hash, and exact operational timestamps at C2 expiry'] }),
   disposition({ tableName: 'collection_checkpoint', family: 'incremental', action: 'rewrite', preserve: ['query/source version', 'checkpoint coverage state'], rewrite: ['ckpt- anchor, scope_id, retention/deletion order, lineage coverage'], delete: ['cursor, exact watermark, and operational row at C2 expiry'] }),
-  disposition({ tableName: 'source_snapshot', family: 'incremental', action: 'rewrite', preserve: ['snapshot hash', 'coverage range facts'], rewrite: ['snap- anchor bound to canonical scope/job'], delete: ['caller snapshot ID, exact provenance and times at C2 expiry'] }),
+  disposition({ tableName: 'source_snapshot', family: 'incremental', action: 'rewrite', preserve: ['validated C1 snapshot anchor and closed status'], rewrite: ['snap- anchor bound to canonical scope/job', 'snapshot hash and coverage range as expiring C2 observations'], delete: ['caller snapshot ID, snapshot hash, exact range, provenance, and times at C2 expiry'] }),
   disposition({ tableName: 'coverage_ledger', family: 'incremental', action: 'rewrite', preserve: ['status and content-free coverage facts'], rewrite: ['cov- anchor bound to canonical scope/job/snapshot'], delete: ['coverage_id alias, exact range, and job observation at C2 expiry'] }),
-  disposition({ tableName: 'evidence', family: 'claim', action: 'rewrite', preserve: ['C1 evidence anchor and closed layer/schema'], rewrite: ['ev- anchor and C1 coverage reference'], delete: ['alias-bearing or exact operational references'] }),
+  disposition({ tableName: 'evidence', family: 'claim', action: 'rewrite', preserve: ['C1 evidence anchor and closed layer/schema'], rewrite: ['ev- anchor and C1 coverage reference'], delete: ['alias-bearing or exact operational references at C2 expiry', 'evidence attached to claims removed by a validated cascade'], refuse: ['unanchored, dangling, or cross-scope evidence rows'] }),
   disposition({ tableName: 'claim_scope', family: 'claim', action: 'rewrite', preserve: ['scope- series identity'], rewrite: ['scope alias as expiring C2 link'], delete: ['scope_alias and linked_at on C2 expiry'] }),
-  disposition({ tableName: 'claim', family: 'claim', action: 'rewrite', preserve: ['claim layer, statement and stability facts'], rewrite: ['cl_ ID under claim-id.v3 and canonical scope'], delete: ['old material-version rows that cannot be reminted'] }),
-  disposition({ tableName: 'claim_evidence_edge', family: 'claim', action: 'rewrite', preserve: ['typed edge role'], rewrite: ['all affected target references and reminted claim IDs'], delete: ['dangling, cross-scope, or retired C2 target edges'] }),
+  disposition({ tableName: 'claim', family: 'claim', action: 'rewrite', preserve: ['claim layer, statement and stability facts'], rewrite: ['cl_ ID under claim-id.v3 and canonical scope'], delete: ['claims intentionally removed by a validated retention cascade'], refuse: ['unremintable, mixed-version, or colliding claim material'] }),
+  disposition({ tableName: 'claim_evidence_edge', family: 'claim', action: 'rewrite', preserve: ['typed edge role'], rewrite: ['all affected target references and reminted claim IDs'], delete: ['edges attached to claims removed by a validated cascade'], refuse: ['dangling, cross-scope, unanchored, or retired C2 target edges'] }),
   disposition({ tableName: 'limitation_instance', family: 'claim', action: 'rewrite', preserve: ['closed limitation code, dimension and copy key'], rewrite: ['claim_id after claim-material remint'], delete: ['instances attached to deleted claims'] }),
   disposition({ tableName: 'lineage_event', family: 'claim', action: 'rewrite', preserve: ['recognized C1 event time at ISO-week grain'], rewrite: ['subject_kind, C1 subject_id, operation_id and capability_id', 'slice-A scope_tombstone_<64hex> + cap_github_core -> legacy_deletion_operation on del-<same hex> with the same operation ID, github.core capability and ISO-week-floored time'], delete: ['alias-bearing subjects/causes and unclassified legacy rows'], refuse: ['conflicting slice-A compatibility event or recognized subject-class mismatch'] }),
 ] as const satisfies readonly StorageV3Disposition[]

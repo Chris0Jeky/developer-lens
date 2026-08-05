@@ -9,6 +9,7 @@ import {
   C1_KEY_SCHEMAS,
   ClaimIdV3Schema,
   LEGACY_DELETION_OPERATION_COMPATIBILITY,
+  LineageOperationIdV3Schema,
   LineageV3EventSchema,
   LINEAGE_V3_EVENT_SUBJECT_KINDS,
   LINEAGE_V3_EVENT_KINDS,
@@ -16,6 +17,7 @@ import {
   STORAGE_V3_BRIDGE_TABLES,
   STORAGE_V3_CLAIM_TABLES,
   STORAGE_V3_DISPOSITIONS,
+  type StorageV3Disposition,
   STORAGE_V3_INCREMENTAL_TABLES,
   STORAGE_V3_PROPOSAL,
   STORAGE_V3_TABLES,
@@ -72,6 +74,7 @@ describe('storage-v3 B1a proposal', () => {
       coverage: 'fresh-random',
       evidence: 'fresh-random',
       artifact: 'fresh-random',
+      operation: 'fresh-random',
       deletion: 'fresh-random',
     })
   })
@@ -85,7 +88,7 @@ describe('storage-v3 B1a proposal', () => {
       subjectKind: 'scope',
       subjectId: `scope-${hex}`,
       eventKind: 'scope_alias_expired',
-      operationId: `del-${hex}`,
+      operationId: `op-${hex}`,
       capabilityId: 'github.core',
       eventWeek: '2026-W32',
       causedBy: null,
@@ -103,11 +106,18 @@ describe('storage-v3 B1a proposal', () => {
       subjectId: `ev-${hex}`,
       eventKind: 'correction',
     }).success).toBe(true)
+    expect(LineageOperationIdV3Schema.safeParse(`op-${hex}`).success).toBe(true)
+    expect(LineageOperationIdV3Schema.safeParse(`del-${hex}`).success).toBe(true)
+    expect(LineageOperationIdV3Schema.safeParse(`scope-${hex}`).success).toBe(false)
+    expect(LineageV3EventSchema.safeParse({ ...event, eventKind: 'tombstone_cascade', operationId: `del-${hex}` }).success).toBe(true)
+    expect(LineageV3EventSchema.safeParse({ ...event, eventKind: 'tombstone_cascade', operationId: `op-${hex}` }).success).toBe(false)
+    expect(LineageV3EventSchema.safeParse({ ...event, eventKind: 'correction', operationId: `del-${hex}` }).success).toBe(false)
     expect(LineageV3EventSchema.safeParse({
       ...event,
       subjectKind: 'deletion',
       subjectId: `del-${hex}`,
       eventKind: 'legacy_deletion_operation',
+      operationId: `del-${hex}`,
     }).success).toBe(true)
     expect(LineageV3EventSchema.safeParse({
       ...event,
@@ -170,6 +180,37 @@ describe('storage-v3 B1a proposal', () => {
     expect(lineage && 'refuse' in lineage ? lineage.refuse : undefined).toContain(
       'conflicting slice-A compatibility event or recognized subject-class mismatch',
     )
+  })
+
+  it('keeps C2 observations out of every preserve disposition and aborts unsafe claim graphs', () => {
+    const c2Terms = /(?:\bsha\b|pull-request number|provider(?:_id| provenance| identity)|occurred_at|payload hash|snapshot hash|exact range|\brange\b|caller (?:job|snapshot) ID|provenance)/i
+    for (const entry of STORAGE_V3_DISPOSITIONS) {
+      expect(entry.preserve.some((field) => c2Terms.test(field) && !/C0 synthetic-only provenance/i.test(field)), `${entry.tableName} preserve`).toBe(false)
+    }
+    const byTable = Object.fromEntries(STORAGE_V3_DISPOSITIONS.map((entry) => [entry.tableName, entry])) as Record<string, StorageV3Disposition>
+    expect(byTable.commit_observation.preserve).toEqual(['aggregate counters', 'feature classification'])
+    expect(byTable.pull_request_fact.preserve).toEqual(['lifecycle state', 'aggregate counters'])
+    expect(byTable.dated_event_observation.preserve).toEqual(['event_kind'])
+    expect(byTable.collection_job.preserve).toEqual(['capability_id', 'status'])
+    expect(byTable.source_snapshot.preserve).toEqual(['validated C1 snapshot anchor and closed status'])
+    expect(byTable.claim.refuse).toEqual(expect.arrayContaining([
+      expect.stringMatching(/unremintable/i),
+      expect.stringMatching(/mixed/i),
+      expect.stringMatching(/colliding/i),
+    ]))
+    expect(byTable.claim_evidence_edge.refuse).toEqual(expect.arrayContaining([
+      expect.stringMatching(/dangling/i),
+      expect.stringMatching(/cross-scope/i),
+      expect.stringMatching(/unanchored/i),
+    ]))
+    expect(byTable.evidence.refuse).toEqual(expect.arrayContaining([
+      expect.stringMatching(/dangling/i),
+      expect.stringMatching(/cross-scope/i),
+      expect.stringMatching(/unanchored/i),
+    ]))
+    for (const table of ['claim', 'claim_evidence_edge', 'evidence'] as const) {
+      expect(byTable[table].delete.some((entry) => /dangling|cross-scope|unanchored|unremintable|mixed-version|colliding/i.test(entry))).toBe(false)
+    }
   })
 
   it('does not alter live v2 versions, kinds, DDL, or inventory across proposal import', async () => {
