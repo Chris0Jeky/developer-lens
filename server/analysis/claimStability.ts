@@ -157,7 +157,6 @@ function sameClaimRecord(left: ClaimRecord, right: ClaimRecord): boolean {
     && left.scopeId === right.scopeId
     && left.schemaVersion === right.schemaVersion
     && left.claimIdMaterialVersion === right.claimIdMaterialVersion
-    && left.createdAt === right.createdAt
     && left.supersededBy === right.supersededBy
 }
 
