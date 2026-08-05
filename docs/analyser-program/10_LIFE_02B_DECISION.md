@@ -309,7 +309,7 @@ writer-owned operation remain mandatory before renewal or retention can be claim
 PR #121 head `cad4d73` passed hosted run `31013045188`, merged as `1706df1`, and passed
 exact-merge Pages/privacy run `31013362189` plus an empty late-comment sweep.
 
-### B2b-ii-g task-card anchor-path contract (current)
+### B2b-ii-g task-card anchor-path contract (shipped)
 
 Before the no-caller composer may load the B2b-ii-f artifact, the closed github.core task card must
 declare it. Its strict `localBoundary` therefore adds only
@@ -324,6 +324,47 @@ remains uninspected and must be updated only inside a later deliberately scoped 
 its own exact-path and proving boundary. After this contract lands, the next composer may load the
 anchor first, use only its claimed card/report digests and key fingerprint as fixed loader inputs,
 replay lifecycle, and capture wall time internally, but may return only structural consistency.
+
+PR #122 head `16f4c7d` passed hosted run `31014606288`, merged as `c66d602`, and passed
+exact-merge Pages/privacy run `31014845736` plus an empty late-comment sweep.
+
+### B2b-ii-h structural continuity composition (current)
+
+The no-caller composer accepts only one path/task-selected anchor digest and a lifecycle transcript.
+It synchronously copies the transcript through recursive own-data inspection with explicit depth,
+node, field, array-item, and string budgets before replay, so async artifact loading cannot observe a
+later caller mutation and an unbounded history cannot drive unbounded replay. Those limits are depth
+8, 8,192 object/array nodes, 32 own fields per object, 1,024 items per array, and 262,144 total
+string code units; any excess gets the same refusal and a future runtime must revisit compaction
+before increasing them. The first fixed artifact load is the anchor; its exact claimed card/report
+digests and installation-key fingerprint are then the only
+inputs to the existing hash/fingerprint-bound task-local loaders.
+
+Structural consistency requires one task throughout; card/consent, active epoch, preview, proof, and
+deletion-null equality; no pending revocation; and the report request ceiling matching the reviewed
+card. It also closes a repository-scope confused-deputy path: the composer derives the exact
+provider-domain repository alias used by the runner from the card's ephemeral provider repository
+ID and task-owned key, then matches it to the replayed lifecycle scope. Chronology is strengthened
+to require card authorization no later than job start, the card range start before job start, job
+start no later than review, and review no later than the internally captured process wall time.
+
+Every failure is one content-free error. Success is a frozen static structural-consistency object;
+it contains no task/path/scope, card/report/key/lifecycle value, digest, epoch, time, operation, or
+revision. A direct-import gate admits only the closed loaders, lifecycle replay, process wall clock,
+and path validation, and rejects every production caller of the composer.
+
+This slice deliberately cannot authenticate the anchor's owner or origin, make a claimed report
+start trusted, bind a persisted same-scope C1 identity row, make four individually stable reads one
+atomic snapshot, lock lifecycle freshness against concurrent revocation, compare a continuity epoch
+or CAS revision, own an operation ID, write state, renew a link, or extend retention. `Date.now()` is
+also mutable inside the process. Those are hard promotion stops: no writer, API, runtime, or caller
+may treat this structural result as authority. Every executable capability remains
+`never_authorized`.
+
+The focused composition/proposal proof passes 2 files / 23 tests and the full local gate passes 75
+files / 1,114 tests plus context verification, lint, typecheck, build, and diff checking. Fresh
+implementation and privacy/authority reviews found no HIGH/CRITICAL product defect after every
+filesystem-heavy adversarial scenario was isolated to remove a reproduced test-timeout blocker.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the

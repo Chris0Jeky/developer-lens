@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-g task-card anchor-path contract)
+Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-h structural continuity composition)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,8 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e/f are merged;
-the current branch adds only the strict task-card declaration for that fixed anchor path, while the
+B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d/e/f/g are merged;
+the current branch adds only caller-free structural composition of the fixed task-local inputs, while the
 remainder of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
@@ -2109,7 +2109,7 @@ remain. Fresh loader-core, privacy/authority, and inertness reviews found no HIG
 PR #121 head `cad4d73` passed hosted run `31013045188`, merged as `1706df1`, and exact-merge
 Pages/privacy run `31013362189` plus the late-comment sweep were green and empty.
 
-## 2026-08-05 — DL-LIFE-02 B2b-ii-g task-card anchor-path contract (current slice)
+## 2026-08-05 — DL-LIFE-02 B2b-ii-g task-card anchor-path contract (merged)
 
 B2b-ii-g closes the path declaration that B2b-ii-f deliberately left unresolved. The strict
 `github-core-activation-task-card.v1` local boundary now requires the exact literal
@@ -2127,17 +2127,59 @@ Every executable capability remains `never_authorized`.
 The focused task-card/parser/loader/runner/transport proof passes 4 files / 31 tests. The full
 local gate passes 74 files / 1,099 tests plus context verification, lint, typecheck, build, and diff
 checking; only the two pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size
-advisory remain.
+advisory remain. Fresh contract and authority reviews found no HIGH/CRITICAL defect. PR #122 head
+`16f4c7d` passed hosted run `31014606288`, merged as `c66d602`, and exact-merge Pages/privacy run
+`31014845736` plus the late-comment sweep were green and empty.
+
+## 2026-08-05 — DL-LIFE-02 B2b-ii-h structural continuity composition (current slice)
+
+B2b-ii-h adds one caller-free composer with the exact own-data input
+`workspaceRoot`, `taskId`, `expectedAnchorSha256`, and `lifecycleSnapshot`. Before its first async
+boundary it recursively snapshots the lifecycle transcript without evaluating accessors and applies
+closed depth, node, object-field, array-item, and string budgets, then replay-validates the detached
+snapshot. The exact limits are depth 8, 8,192 object/array nodes, 32 own fields per object, 1,024
+items per array, and 262,144 total string code units; any excess gets the same refusal. The first
+fixed artifact load is the hash-bound anchor, and only its claimed card/report
+digests and installation-key fingerprint for the existing stable loaders. No caller may select an
+artifact filename, and the input exposes no separate time, scope, revision, operation, current
+continuity epoch, or raw-key field.
+
+Composition binds every artifact to one task; recomputes the runner's exact provider-domain
+repository alias from the selected card repository with the task-owned key and matches it to the
+lifecycle scope; matches card/consent, active lifecycle epoch, preview, exact-head proof, and all
+three deletion-null fields; matches the report request ceiling to the card; and requires
+`card.authorizedAt <= report.jobStartedAt`, `card.readBoundary.rangeStart < report.jobStartedAt`, and
+`report.jobStartedAt <= anchor.reviewedAt <=` the internally captured process wall time. Pending
+revocation refuses even while lifecycle state remains `active`. Every lower failure maps to one
+content-free error, and success is only one frozen static `structurally_consistent` object containing
+no task, path, alias, digest, key, epoch, time, operation, or revision.
+
+This remains structural consistency, not trusted continuity. The expected anchor digest and review
+literal are unowned claims; the report start is claimed; `Date.now()` is process-local and mutable;
+the file snapshots are individually stable rather than cross-file atomic; and no same-scope C1 row,
+owner-authenticated anchor origin, lifecycle-freshness lock, continuity epoch, CAS revision, writer
+operation, renewal, retention extension, or production caller exists. The dependency gate makes the
+composer's seven direct imports exact and rejects every production import of the composer. Every
+executable capability remains `never_authorized`; protected and generated paths remain uninspected.
+
+The focused composition/proposal proof passes 2 files / 23 tests. The full local gate passes 75
+files / 1,114 tests plus context verification, lint, typecheck, build, and diff checking; only the
+two pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size advisory remain.
+The first full run exposed one over-bundled six-fixture test timeout; splitting it into independent
+cases made all tests green. The second run then exposed only a readonly poison-fixture cast at
+compile time; the cast was narrowed and the next full gate passed. Fresh review reproduced the same
+load sensitivity in a remaining three-fixture case, so every filesystem-heavy adversarial scenario
+was split into its own test instead of increasing the timeout; the final focused and full gates pass.
+Fresh implementation and privacy/authority reviews found no HIGH/CRITICAL product defect; their only
+actionable proving finding was that reproduced timeout, now fixed and re-proved.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-ii-g in progress).** Finish the strict task-card
-`continuityReviewAnchor` literal, invented-fixture migration, focused/full proof, fresh contract/
-authority review, hosted proof, exact-merge Pages/privacy, and late sweep. Preserve the fixed
-filename, closed local-boundary object, unchanged runtime posture, and protected ignored-card
-boundary. Then add caller-free
-report/card/key/lifecycle/anchor structural composition and the
-compare-and-swap renewal writer,
+**Current 2026-08-05 (B2b-ii-h in progress).** Finish caller-free
+report/card/key/lifecycle/anchor structural composition, focused/full proof, fresh implementation/
+privacy review, hosted proof, exact-merge Pages/privacy, and late sweep. Preserve the fixed paths,
+provider-domain scope binding, closed input and static output, one content-free error, unchanged
+runtime posture, and protected ignored-card boundary. Then add the compare-and-swap renewal writer,
 then restart
 handling and the claim-reachable migration-origin retention events. Only then take canonical
 coverage/job absence resolution and its
