@@ -415,7 +415,7 @@ caveat is the deliberate promotion stop around the local-C2 digest lifetime desc
 PR #124 head `006728e` passed hosted run `31020379782`, merged as `34af993`, and passed
 exact-merge Pages/privacy run `31020694799` plus an empty late-comment sweep.
 
-### B2b-ii-j inert review-signature verification proposal (current)
+### B2b-ii-j inert review-signature verification proposal (merged)
 
 Cryptographic consistency is the next separable prerequisite, not owner authentication. The
 process-only verifier accepts exact bounded anchor bytes, one caller-supplied candidate canonical
@@ -440,6 +440,14 @@ requires a separate process-owned, owner-controlled
 trust-root and credential enrollment/rotation/revocation contract that selects the canonical key
 and fixed-path parsed anchor; it then requires same-scope retained C1, current lifecycle/revocation,
 continuity epoch, C2 receipt expiry/sweep, and CAS state under the same writer lock.
+
+PR #125 head `96957f4` passed hosted run `31022622947`, merged as `2afaa609`, and passed
+exact-merge Pages/privacy run `31022859341`. A Codex P2 arrived after merge: low-order or
+noncanonical Ed25519 public-key and signature-`R` encodings can invalidate the private-key-possession
+meaning of a successful verification. Issue #80 now carries the mandatory promotion condition.
+Before a trust root admits a key, reject low-order/noncanonical public keys; before any production
+signature integration, also reject low-order/noncanonical `R` and prove the identity-point key/`R`
+with `S = 0` forgery fails closed. The current caller-free proposal remains inert and untrusted.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the
@@ -545,8 +553,8 @@ Only B4's merged state refresh may mark DL-LIFE-02 DONE or close the covered #80
 unblocks LIFE-03; it does **not** by itself schedule a retained C2/C3 connector. The first real
 migration/connector additionally requires LIFE-03's timestamped backup, seven-day grace/fallback,
 restore/tombstone-replay proof, and resolution of #86's V2 alias-bearing coverage surface. No new
-owner decision blocks B1a-B4 inside the approved charter; q-6 is non-blocking and q-7/q-8 are
-unrelated admin/hygiene actions.
+owner decision blocks B1a-B4 inside the approved charter; q-6 is non-blocking, q-7 is complete, and
+q-8 is an unrelated hygiene action.
 
 ## 6. Stop conditions
 

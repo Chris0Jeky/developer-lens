@@ -84,16 +84,12 @@ publication route remains active.
   implementation critical path depends on any of these; refusing all of them leaves a complete
   deterministic product.
 
-- [ ] **q-7 — Make the `PR gate / Prove the pull request` check required in branch protection.**
-  `.github/workflows/pr-gate.yml` now runs the proving commands (context verification, generated
-  planning-artifact drift check, lint, unit tests, type-check/build, and the synthetic showcase
-  privacy canary) on every pull request targeting `main`. A red run is visible on the pull request
-  but does **not** block merging until an admin marks the check required: GitHub repository
-  settings -> Branches -> the `main` protection rule -> "Require status checks to pass before
-  merging" -> add `Prove the pull request`. Marking a check required is a repository-administration
-  action; agents must never self-perform it. Until you do, the gate is advisory only — DL-OPS-CI-01's
-  "no human babysitter" outcome is only half-delivered. Add the check after at least one run has
-  reported, so the name is selectable in the settings picker.
+- [x] **q-7 — `PR gate / Prove the pull request` is required on `main`.** On 2026-08-05 the
+  owner configured classic branch protection for `main` to require the exact
+  `Prove the pull request` check. Direct REST and GraphQL reads confirm that context is required;
+  force pushes and branch deletion are disabled. The rule does not require an up-to-date branch
+  (`strict=false`) and does not enforce administrator inclusion, so repository law still supplies
+  the no-red-CI rule for privileged merges. The stated q-7 action is complete.
 
 - [ ] **q-8 — Check for and terminate any leaked Claude session processes from the pre-handoff
   session.** On 2026-08-04 the handed-off session kept executing for over an hour after handoff —
@@ -116,6 +112,9 @@ publication route remains active.
 
 ## Changelog
 
+- 2026-08-05: closed q-7 after the owner configured `main` branch protection and live REST plus
+  GraphQL reads confirmed `Prove the pull request` is required. No capability was activated;
+  q-6 and q-8 remain open.
 - 2026-08-04 (R1 wave 3 state-sync): expanded q-8 with a second leaked-process instance observed
   this run — a lane worker's `vite` dev server survived its worker and blocked a worktree removal,
   identified by command line and terminated — plus the orphaned partial worktree directory
