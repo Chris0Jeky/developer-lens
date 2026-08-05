@@ -49,12 +49,12 @@ describe('analyseClaimStability', () => {
   it('replays five collections deterministically and separates coverage, value, overlap, and method-version churn', () => {
     const v2 = `cl_${'2'.repeat(64)}`
     const v3 = `cl_${'3'.repeat(64)}`
-    const v4 = `cl_${'4'.repeat(64)}`
     const replay = [
       observation(3, '2026-W03', 2, v3, 10, 'coverage-b'), // input order is intentionally late
       observation(1, '2026-W01', 1, v2, 10, 'coverage-a'),
       observation(5, '2026-W05', 4, null, 10, 'coverage-c', '2.0.0'),
-      observation(4, '2026-W04', 3, v4, 8, 'coverage-b'),
+      // A method-version stratum starts a new chain; storage forbids cross-version supersession.
+      observation(4, '2026-W04', 3, null, 8, 'coverage-b'),
       observation(2, '2026-W02', 1, v2, 10, 'coverage-a'),
     ]
 
@@ -146,5 +146,39 @@ describe('analyseClaimStability', () => {
       ...observation(1, '2026-W01', 1, v2, 1, 'coverage-a'),
       collectionTimestamp: '2026-01-01T00:00:00.000Z',
     }])).toThrow(new ClaimStabilityError('INVALID_INPUT'))
+  })
+
+  it('validates the complete supersession graph before accepting a successor', () => {
+    const v1 = `cl_${'1'.repeat(64)}`
+    const v2 = `cl_${'2'.repeat(64)}`
+    const v3 = `cl_${'3'.repeat(64)}`
+
+    // The observed transition A -> B is real, but B -> A makes the complete chain cyclic.
+    expect(() => analyseClaimStability([
+      observation(1, '2026-W01', 1, v2, 1, 'coverage-a'),
+      observation(2, '2026-W02', 2, v1, 2, 'coverage-b'),
+    ])).toThrow(new ClaimStabilityError('BROKEN_SUPERSESSION_CHAIN'))
+
+    // Missing successors and links that cross a method-version stratum are broken chains too.
+    expect(() => analyseClaimStability([
+      observation(1, '2026-W01', 1, v2, 1, 'coverage-a'),
+    ])).toThrow(new ClaimStabilityError('BROKEN_SUPERSESSION_CHAIN'))
+    expect(() => analyseClaimStability([
+      observation(1, '2026-W01', 1, v2, 1, 'coverage-a'),
+      observation(2, '2026-W02', 2, null, 1, 'coverage-a', '2.0.0'),
+    ])).toThrow(new ClaimStabilityError('BROKEN_SUPERSESSION_CHAIN'))
+    expect(() => analyseClaimStability([
+      observation(1, '2026-W01', 2, null, 1, 'coverage-a'),
+      observation(2, '2026-W02', 1, v2, 1, 'coverage-a'),
+    ])).toThrow(new ClaimStabilityError('BROKEN_SUPERSESSION_CHAIN'))
+
+    // A complete A -> B -> C chain remains legal and advances three version ordinals.
+    const legal = analyseClaimStability([
+      observation(1, '2026-W01', 1, v2, 1, 'coverage-a'),
+      observation(2, '2026-W02', 2, v3, 2, 'coverage-b'),
+      observation(3, '2026-W03', 3, null, 3, 'coverage-c'),
+    ])
+    expect(legal.profiles[0].series[0].snapshots.map(({ versionOrdinal }) => versionOrdinal))
+      .toEqual([1, 2, 3])
   })
 })

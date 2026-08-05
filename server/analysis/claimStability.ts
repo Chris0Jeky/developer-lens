@@ -161,6 +161,39 @@ function sameClaimRecord(left: ClaimRecord, right: ClaimRecord): boolean {
     && left.supersededBy === right.supersededBy
 }
 
+function claimSeriesToken(claim: ClaimRecord): string {
+  return `${claimStabilityKeyToken(claimStabilityKey(claim))}|${claim.layer}`
+}
+
+/**
+ * Validates every supplied supersession chain to its terminal node before any observed transition
+ * is accepted. The graph has out-degree at most one, so an iterative walk gives deterministic
+ * missing-link, cross-series, and cycle refusal without recursion depth becoming another input.
+ */
+function validateSupersessionGraph(claims: ReadonlyMap<string, ClaimRecord>): void {
+  const complete = new Set<string>()
+  for (const start of [...claims.keys()].sort()) {
+    if (complete.has(start)) continue
+    const path: string[] = []
+    const inPath = new Set<string>()
+    let cursor = start
+    while (!complete.has(cursor)) {
+      if (inPath.has(cursor)) throw new ClaimStabilityError('BROKEN_SUPERSESSION_CHAIN')
+      const current = claims.get(cursor)
+      if (!current) throw new ClaimStabilityError('BROKEN_SUPERSESSION_CHAIN')
+      path.push(cursor)
+      inPath.add(cursor)
+      if (current.supersededBy === null) break
+      const successor = claims.get(current.supersededBy)
+      if (!successor || claimSeriesToken(current) !== claimSeriesToken(successor)) {
+        throw new ClaimStabilityError('BROKEN_SUPERSESSION_CHAIN')
+      }
+      cursor = successor.claimId
+    }
+    for (const claimId of path) complete.add(claimId)
+  }
+}
+
 function validateReplay(observations: readonly ParsedObservation[]): Map<string, ClaimRecord> {
   const claims = new Map<string, ClaimRecord>()
   const familyCollections = new Set<string>()
@@ -179,19 +212,21 @@ function validateReplay(observations: readonly ParsedObservation[]): Map<string,
     }
     familyCollections.add(collectionKey)
   }
+  validateSupersessionGraph(claims)
   return claims
 }
 
 function isSuccessor(previous: ClaimRecord, current: ClaimRecord, claims: ReadonlyMap<string, ClaimRecord>): boolean {
   const visited = new Set<string>([previous.claimId])
   let cursor = previous.supersededBy
+  let found = false
   while (cursor !== null) {
     if (visited.has(cursor)) return false
-    if (cursor === current.claimId) return true
+    if (cursor === current.claimId) found = true
     visited.add(cursor)
     cursor = claims.get(cursor)?.supersededBy ?? null
   }
-  return false
+  return found
 }
 
 function changeFor(previous: ParsedObservation | null, current: ParsedObservation): ClaimStabilityChange {
