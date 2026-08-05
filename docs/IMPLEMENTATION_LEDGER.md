@@ -1,6 +1,6 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-d continuity review anchor)
+Last updated: **2026-08-05** (DL-LIFE-02 B2b-ii-e trusted process clock)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -9,8 +9,8 @@ evidence/design version 2026-08-03 + Appendix I.1–I.4.
 [`docs/analyser-program/CURRENT_STATE.md`](./analyser-program/CURRENT_STATE.md) first (DL-CONTEXT-01);
 this ledger's phase narratives below are the **archive** — consult them for history and audit, not
 for the next task. Current phase in one line: R1–R3 is complete; DL-LIFE-02A, B1a, its late repairs,
-B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c are merged;
-the current branch adds only an inert local-C2 continuity review-anchor parser, while the
+B1b-i/ii/iii, B2a-i/ii/iii, B2b-i, and B2b-ii-a/b/c/d are merged;
+the current branch adds only an inert trusted process clock boundary, while the
 remainder of B2–B4
 remain without marking the card DONE or unblocking sensitive connectors between slices.
 
@@ -2025,7 +2025,7 @@ and exact-merge Pages/privacy run `31008333181` plus the late-comment sweep were
 Stable bytes and a matching external report digest still prove neither origin nor owner authority.
 Every executable capability remains `never_authorized`.
 
-## 2026-08-05 — DL-LIFE-02 B2b-ii-d continuity review anchor (current slice)
+## 2026-08-05 — DL-LIFE-02 B2b-ii-d continuity review anchor (merged)
 
 B2b-ii-d adds only the pure `github-core-continuity-review-anchor.v1` syntax boundary for a
 caller-claimed local-C2 review record. Its closed shape binds the reviewed report, task card,
@@ -2049,14 +2049,40 @@ slice intentionally performs none of those checks. All executable capabilities r
 The focused anchor/proposal proof passes 2 files / 13 tests. The full local gate passes 72 files /
 1,087 tests plus context verification, lint, typecheck, build, and diff checking; only the two
 pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size advisory remain.
+Fresh code, privacy/authority, and inertness reviews found no HIGH/CRITICAL defect. The one
+non-blocking AST-form coverage note was explicitly triaged without overclaiming the gate. PR #119
+head `02094d2` passed hosted run `31010122666`, merged as `8cabc53`, and exact-merge Pages/privacy
+run `31010364274` plus the late-comment sweep were green and empty.
+
+## 2026-08-05 — DL-LIFE-02 B2b-ii-e trusted process clock (current slice)
+
+B2b-ii-e adds two separate zero-argument process-owned captures. Wall time is validated as a
+nonnegative safe-integer millisecond reading and returned only as canonical millisecond UTC for the
+later persisted chronology check. Monotonic time comes from Node's performance clock, accepts only
+a finite nonnegative reading, and is explicitly process-local: it may govern elapsed request
+budgets but must never be persisted or compared across restarts. The API deliberately exposes no
+caller-supplied time, injected runtime source, combined persistable record, or conversion between
+the two domains.
+
+Both sources fail closed through one content-free error if they throw or return invalid values.
+The module imports only Node's monotonic clock and has no caller, anchor, artifact, lifecycle,
+database, writer, network, retention, sink, or capability dependency. The no-caller AST gate keeps
+the repository's current direct/literal dependency forms closed, and the live tree has no caller.
+Capturing process time does not authenticate an owner
+anchor or authorize continuity, renewal, retention, collection, or capability activation. Every
+executable capability remains `never_authorized`.
+
+The focused clock/proposal proof passes 2 files / 15 tests. The full local gate passes 73 files /
+1,094 tests plus context verification, lint, typecheck, build, and diff checking; only the two
+pre-existing Evidence Drawer Fast Refresh warnings and existing bundle-size advisory remain.
 
 ## Exact resume point
 
-**Current 2026-08-05 (B2b-ii-d in progress).** Finish the inert continuity review-anchor parser,
-its no-caller AST gate, focused/full proof, fresh privacy/authority review, hosted proof,
-exact-merge Pages/privacy, and late sweep. Preserve the fixed caller-claimed shape, exact-null
-deletion triplet, content-free failures, and explicit non-authority boundary. Then add the trusted
-process clock, followed by caller-free report/card/key/lifecycle/anchor composition and the
+**Current 2026-08-05 (B2b-ii-e in progress).** Finish the inert trusted process clock, its
+no-caller AST gate, focused/full proof, fresh clock/authority review, hosted proof, exact-merge
+Pages/privacy, and late sweep. Preserve the separate zero-argument wall/monotonic captures,
+wall-only persisted chronology, process-local monotonic boundary, content-free failures, and
+explicit non-authority posture. Then add caller-free report/card/key/lifecycle/anchor composition and the
 compare-and-swap renewal writer,
 then restart
 handling and the claim-reachable migration-origin retention events. Only then take canonical

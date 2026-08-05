@@ -435,6 +435,10 @@ describe('storage-v3 B1a proposal', () => {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           offenders.push(`${sourcePath} -> ${target}`)
         }
+        if (target && /(?:^|[\\/])trustedProcessClock(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          offenders.push(`${sourcePath} -> ${target}`)
+        }
         if (target && /(?:^|[\\/])activationResult(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           if (sourcePath !== 'server/connectors/github/activationReport.ts') {
@@ -517,6 +521,18 @@ describe('storage-v3 B1a proposal', () => {
         ? [statement.moduleSpecifier.text]
         : [])
     expect(reviewAnchorImports).toEqual([])
+    const trustedClockPath = join(root, 'server', 'trustedProcessClock.ts')
+    const trustedClockFile = ts.createSourceFile(
+      trustedClockPath,
+      readFileSync(trustedClockPath, 'utf8'),
+      ts.ScriptTarget.Latest,
+      true,
+    )
+    const trustedClockImports = trustedClockFile.statements.flatMap((statement) =>
+      ts.isImportDeclaration(statement) && ts.isStringLiteral(statement.moduleSpecifier)
+        ? [statement.moduleSpecifier.text]
+        : [])
+    expect(trustedClockImports).toEqual(['node:perf_hooks'])
     const activationResultPath = join(root, 'server', 'connectors', 'github', 'activationResult.ts')
     const activationResultFile = ts.createSourceFile(
       activationResultPath,
