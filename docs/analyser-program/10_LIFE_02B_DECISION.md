@@ -245,7 +245,7 @@ C2 groups.
 PR #118 head `c393bd1` passed hosted run `31008061712`, merged as `cb9161c`, and passed
 exact-merge Pages/privacy run `31008333181` plus an empty late-comment sweep.
 
-### B2b-ii-d continuity review anchor (current)
+### B2b-ii-d continuity review anchor (shipped)
 
 The pure `github-core-continuity-review-anchor.v1` parser accepts only one fixed local-C2 syntactic
 record. It binds caller claims for the reviewed report, task card, installation-key fingerprint,
@@ -264,6 +264,25 @@ and deletion-null equality. It must enforce
 `reviewedContinuityEpoch === currentContinuityEpoch + 1` inside the writer's CAS transaction. The
 composer must reject pending revocation even while lifecycle state remains `active`. This parser
 intentionally performs none of those checks and activates nothing.
+
+PR #119 head `02094d2` passed hosted run `31010122666`, merged as `8cabc53`, and passed
+exact-merge Pages/privacy run `31010364274` plus an empty late-comment sweep.
+
+### B2b-ii-e trusted process clock (current)
+
+The clock boundary exposes separate zero-argument captures for canonical millisecond UTC wall time
+and Node's finite nonnegative monotonic milliseconds. The wall reading is the only value that may
+feed the later persisted `reviewedAt <= trustedNow` chronology check. The monotonic reading is only
+for in-process elapsed budgets; it must never be persisted, treated as wall time, or compared across
+process restarts. There is no caller-supplied or injectable time source and no combined record that
+encourages the two clock domains to cross a sink together.
+
+Invalid or throwing runtime sources map to one content-free error. The module has no production
+caller and no anchor, artifact, lifecycle, database, writer, network, retention, or capability
+dependency. Its source import is limited to Node's monotonic performance clock. This boundary does
+not authenticate the review anchor or authorize continuity, renewal, retention, collection, or
+activation. The later composer must capture wall time internally and continue to reject caller-
+supplied substitutes.
 
 For that migration-origin disposition, “never-retained” describes a C2 payload already expired at
 migration time, not an omitted C1 anchor. Emit the existing `c2_retention_expired` event at the
