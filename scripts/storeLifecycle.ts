@@ -34,6 +34,7 @@ import {
   registerStorageV3Artifact,
   type StorageV3ArtifactDeletionStage,
   type StorageV3PublicationFailureStage,
+  type StorageV3RecoveryFailureStage,
 } from '../server/storage/v3StoreFiles.js'
 
 /**
@@ -542,6 +543,7 @@ export interface StoreLifecycleDemoOptions {
   readonly log?: (line: string) => void
   readonly failAfterStage?: StorageV3ShadowMigrationOptions['failAfterStage']
   readonly failAtPublicationStage?: StorageV3PublicationFailureStage
+  readonly failAtRecoveryStage?: StorageV3RecoveryFailureStage
   readonly includeSharedArtifactFixture?: boolean
   readonly failAfterArtifactStage?: (
     stage: StorageV3ArtifactDeletionStage,
@@ -597,7 +599,9 @@ export function runStoreLifecycleDemo(
     source.db.close()
   }
 
-  const store = openSelectedStorageV3Store(options.directory)
+  const store = openSelectedStorageV3Store(options.directory, {
+    failAtRecoveryStage: options.failAtRecoveryStage,
+  })
   let cas: ContinuityCasProof
   let sweep: SweepProof
   let deletion: ScopeDeletionProof
@@ -626,7 +630,9 @@ export function runStoreLifecycleDemo(
     store.close()
   }
 
-  const revalidated = openSelectedStorageV3Store(options.directory)
+  const revalidated = openSelectedStorageV3Store(options.directory, {
+    failAtRecoveryStage: options.failAtRecoveryStage,
+  })
   try {
     const report = reportSelectedStore(revalidated)
     emit(`store: rows=${report.rows} cas-scopes=${report.casScopes} cas-operations=${report.casOperations} ${counts(report.tableCounts)}`)

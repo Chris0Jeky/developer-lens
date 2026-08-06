@@ -1,6 +1,7 @@
 import {
   existsSync,
   linkSync,
+  lstatSync,
   mkdtempSync,
   readFileSync,
   readdirSync,
@@ -27,6 +28,8 @@ import {
   INVENTED_COHORTS,
   INVENTED_INSTALLATION_KEY_BYTE,
   INVENTED_SOURCE_FILE_NAME,
+  createInventedV2Source,
+  migrateInventedSource,
   runStoreLifecycleCli,
   runStoreLifecycleDemo,
   STORE_LIFECYCLE_ENV_FLAG,
@@ -196,7 +199,7 @@ describe('store lifecycle command', () => {
       expect(() => runStoreLifecycleDemo({ directory })).toThrow(StorageV3ShadowMigrationError)
       expect(existsSync(outside)).toBe(false)
       expect(existsSync(storePath(directory))).toBe(false)
-      expect(existsSync(selectedWal)).toBe(false)
+      expect(() => lstatSync(selectedWal)).toThrow()
     },
   )
 
@@ -277,17 +280,25 @@ describe('store lifecycle command', () => {
     'leaves one unambiguous publication result after injected %s failure',
     (stage) => {
       if (stage === 'rollback-unlink') {
-        const result = runStoreLifecycleDemo({
-          directory,
-          failAtPublicationStage: stage,
-        })
-        expect(result.migration.status).toBe('complete')
-        expect(existsSync(storePath(directory))).toBe(true)
-        expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(false)
-        const reopened = openSelectedStorageV3Store(directory)
+        const source = createInventedV2Source(directory)
         try {
-          expect(reopened.prepare('SELECT COUNT(*) FROM claim_scope').pluck().get()).toBe(2)
+          expect(migrateInventedSource(source, directory, undefined, stage).status).toBe('complete')
+        } finally { source.db.close() }
+        expect(existsSync(storePath(directory))).toBe(true)
+        expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(true)
+        const reopened = openSelectedStorageV3Store(directory, { failAtRecoveryStage: 'primary-unlink' })
+        try {
+          expect(reopened.prepare('SELECT COUNT(*) FROM claim_scope').pluck().get()).toBe(3)
         } finally { reopened.close() }
+        expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(true)
+        const reopenedAgain = openSelectedStorageV3Store(directory, { failAtRecoveryStage: 'primary-unlink' })
+        try {
+          expect(reopenedAgain.prepare('SELECT COUNT(*) FROM claim_scope').pluck().get()).toBe(3)
+        } finally { reopenedAgain.close() }
+        expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(true)
+        const cleaned = openSelectedStorageV3Store(directory)
+        cleaned.close()
+        expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(false)
       } else {
         expect(() => runStoreLifecycleDemo({
           directory,
