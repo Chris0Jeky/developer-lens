@@ -7,7 +7,7 @@ the historical record of how past slices were proven, and a fresh agent followin
 file can resume deleted work (PR #127 late review).
 
 ```yaml
-updated: 2026-08-05
+updated: 2026-08-06
 current_slice_override: 'LIFE-02 B3 core (10_LIFE_02B_DECISION.md §5 item 4): complete v3-domain
   scope deletion in server/storage/v3Deletion.ts — one IMMEDIATE transaction over a closed
   20-table registry, child-first deletes, CAS no-delete triggers dropped and byte-identically
@@ -21,10 +21,12 @@ current_slice_override: 'LIFE-02 B3 core (10_LIFE_02B_DECISION.md §5 item 4): c
   stores, so the preserved copy was unreadable dead weight) — the bridge/planner workaround is
   gone and the CLI journey runs the product order: build (bridge present) -> migrate -> select
   -> CAS restart -> sweep -> delete one scope -> explain tombstones -> reopen intact.'
-phase: 'R4 active horizon OPEN — B3 core delivered on fable/life02-b3-deletion. Remaining before
-  LIFE-02 close: PR B-2 (#86 storage half, remaining #128/#129 discriminating verifications,
-  v2_store_provenance drift, generated scale corpus + equivalence budget incl. #133) and B4
-  app-owned artifacts per §5 item 5. LIFE-02/#80 remain incomplete.'
+phase: 'R4 active horizon OPEN — B3 scope deletion and the B-2 promotion hardening are MERGED
+  to main (per-slice proofs, heads, and run IDs live in the ledger, not here): mint-order
+  equivalence, the #86 storage half, the #128/#129 dispositions, activation_card provenance
+  support, and the measured scale budget all hold. The ONLY remaining LIFE-02 work is B4
+  app-owned artifacts per 10_LIFE_02B_DECISION.md §5 item 5 (including the durable
+  maintenance-pending marker). LIFE-02/#80 remain incomplete until B4 lands.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -35,7 +37,7 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
 active_slice: 'DL-LIFE-02 B4 — app-owned artifact catalogue and deletion saga per
   10_LIFE_02B_DECISION.md §4/§5 item 5, including the durable maintenance-pending marker owed
   from the PR #136 round-three triage. PR B-2 (this branch) completed: #133 mint-order
-  equivalence proof (graph colouring deleted, linear, measured), #86 storage half (cov- registry
+  equivalence proof (graph colouring deleted, near-linear sort-bound, measured), #86 storage half (cov- registry
   CHECK + UNIQUE(coverage_id) + fixture migration), all ten open #128/#129 findings dispositioned
   with discriminating fixtures (eight real, fixed; two disproved, pinned), v2_store_provenance
   activation_card SUPPORT for migration (serving gate untouched), and the Phase-1c scale corpus
@@ -135,7 +137,7 @@ residual_risks:
      150 jobs with per-job snapshot/coverage, 600 evidence, 600 claims, 603 lineage rows incl. 3
      legacy tombstones, C0 bridge present) and times build -> migration -> sweep -> B3 deletion ->
      reopen. Budget: 120 s total / 90 s migration; measured on one Windows dev box at 6.2-6.4 s
-     total with 4.1-4.2 s migration, i.e. ~19-21x headroom — the mint-order proof is linear in
+     total with 4.1-4.2 s migration, i.e. ~19-21x headroom — the mint-order proof is near-linear (sort-bound) in
      practice, not only on paper. `npm test` runs only the always-on ~1/20 smoke lane; the full
      lane is gated on DEVELOPER_LENS_SCALE=1'
   - 'closed by the executable core: the C2 sweep now runs against a real rewrite output in
@@ -151,7 +153,7 @@ residual_risks:
      under its own unit tests'
   - 'RESOLVED by PR B-2: graphColours and both alpha-rename digests are DELETED — the mint-order
      equivalence proof (rewrite reports created identifiers through a private collector channel;
-     digest index-encodes them, everything else literal) is linear, closes the #133 preserved-id
+     digest index-encodes them, everything else literal) is near-linear (sort-bound O(R log R), #139), closes the #133 preserved-id
      escape, and is measured: 25,469 source rows through the full journey in ~6.3 s on this box,
      budgets asserted in the opt-in DEVELOPER_LENS_SCALE lane plus an always-on smoke variant'
   - '#135 tracks eight residual semantic-coherence refinements to the evidence resolve contract
