@@ -196,13 +196,18 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
   const manifestTemp = `${temp}.manifest.json`
   const replay = replayIfExact(input, locator, manifestLocator)
   if (replay) return replay
-  for (const path of [storageV3ArtifactFilePath(input.root, locator), storageV3ArtifactFilePath(input.root, manifestLocator), storageV3ArtifactFilePath(input.root, temp), storageV3ArtifactFilePath(input.root, manifestTemp)]) assertAbsent(path)
-  beginStorageV3MigrationBackupArtifact({ db: input.db, artifactId: input.artifactId, finalLocator: locator, scopeIds: input.ownerScopeIds })
+  for (const path of [storageV3ArtifactFilePath(input.root, locator), storageV3ArtifactFilePath(input.root, manifestLocator)]) assertAbsent(path)
+  const stagedRow = input.db.prepare("SELECT artifact_id, content_sha256 FROM app_artifact WHERE kind = 'migration_backup_v1' AND relative_locator = ? AND state = 'active'").get(temp) as { artifact_id: string; content_sha256: string } | undefined
+  if (stagedRow && stagedRow.artifact_id !== input.artifactId) fail()
+  if (!stagedRow) {
+    assertAbsent(storageV3ArtifactFilePath(input.root, temp)); assertAbsent(storageV3ArtifactFilePath(input.root, manifestTemp))
+    beginStorageV3MigrationBackupArtifact({ db: input.db, artifactId: input.artifactId, finalLocator: locator, scopeIds: input.ownerScopeIds })
+  }
   const tempPath = storageV3ArtifactFilePath(input.root, temp)
   const finalPath = storageV3ArtifactFilePath(input.root, locator)
   const manifestPath = storageV3ArtifactFilePath(input.root, manifestLocator)
   const manifestTempPath = storageV3ArtifactFilePath(input.root, manifestTemp)
-  const descriptor = openSync(tempPath, constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | NO_FOLLOW, 0o600)
+  const descriptor = openSync(tempPath, stagedRow ? constants.O_RDWR | NO_FOLLOW : constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | NO_FOLLOW, 0o600)
   const initial = fstatSync(descriptor, { bigint: true })
   if (!initial.isFile() || initial.isSymbolicLink() || initial.nlink !== 1n || initial.dev === 0n || initial.ino === 0n) {
     closeSync(descriptor)
@@ -216,12 +221,13 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
       const contentSha256 = physicalHash(tempPath)
       validateBackupDb(tempPath)
       const manifest = makeManifest(input, locator, contentSha256)
+      if (stagedRow && stat(manifestTempPath) !== undefined) unlinkSync(manifestTempPath)
       writeFileSync(manifestTempPath, manifest.bytes, { flag: 'wx', mode: 0o600 })
       const manifestSha256 = sha256(readFileSync(manifestTempPath))
-      linkSync(tempPath, finalPath)
+      if (stat(finalPath) === undefined) linkSync(tempPath, finalPath)
       const tempStat = assertRegular(tempPath, 2n); const finalStat = assertRegular(finalPath, 2n)
       if (tempStat.dev !== finalStat.dev || tempStat.ino !== finalStat.ino || tempStat.nlink !== 2n) fail()
-      linkSync(manifestTempPath, manifestPath)
+      if (stat(manifestPath) === undefined) linkSync(manifestTempPath, manifestPath)
       const manifestTempStat = assertRegular(manifestTempPath, 2n); const manifestFinalStat = assertRegular(manifestPath, 2n)
       if (manifestTempStat.dev !== manifestFinalStat.dev || manifestTempStat.ino !== manifestFinalStat.ino || manifestTempStat.nlink !== 2n) fail()
       if (physicalHash(finalPath, 2n) !== contentSha256 || sha256(readFileSync(manifestPath)) !== manifestSha256) fail()
@@ -241,3 +247,6 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
 export function createStorageV3MigrationBackup(input: StorageV3BackupInput): Promise<StorageV3BackupResult> {
   try { return Promise.resolve(withStorageV3WriterLease(input.root, () => attempt(input))) } catch { return Promise.reject(new StorageV3BackupError()) }
 }
+
+/** Restart/recovery entrypoint: exact same closed input resumes a staged intent under the lease. */
+export const recoverStorageV3MigrationBackup = createStorageV3MigrationBackup
