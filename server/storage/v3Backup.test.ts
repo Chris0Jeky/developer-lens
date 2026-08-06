@@ -59,6 +59,17 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       expect(backup.prepare('SELECT scope_id FROM claim_scope ORDER BY scope_id').pluck().all()).toEqual([SCOPE_A, SCOPE_B])
       backup.close()
       expect(fx.db.prepare('SELECT kind, content_sha256, manifest_sha256 FROM app_artifact WHERE artifact_id = ?').get(result.artifactId)).toMatchObject({ kind: 'migration_backup_v1', content_sha256: result.contentSha256, manifest_sha256: result.manifestSha256 })
+      expect(() => fx.db.prepare(`INSERT OR REPLACE INTO app_artifact (
+          artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator
+        ) VALUES (?, 'migration_backup_v1', 'active', ?, ?, ?)`)
+        .run(
+          `art-${'2'.repeat(64)}`,
+          'e'.repeat(64),
+          'f'.repeat(64),
+          'migration-backup-20260806T123455Z.sqlite',
+        )).toThrow(/STORAGE_V3_ARTIFACT_INVALID/)
+      expect(fx.db.prepare("SELECT artifact_id FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().all())
+        .toEqual([result.artifactId])
     } finally { fx.cleanup() }
   })
 
