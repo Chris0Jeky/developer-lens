@@ -17,11 +17,14 @@ import Database from 'better-sqlite3'
 import {
   assertPublishedStorageV3ArtifactCatalogue,
   assertStorageV3ArtifactCatalogue,
+  assertStorageV3ArtifactRootInstallationKey,
   beginStorageV3MigrationBackupArtifact,
   bindStorageV3ArtifactRoot,
   promoteStorageV3MigrationBackupArtifact,
+  proveStorageV3MigrationBackupPublication,
   storageV3ArtifactFilePath,
   storageV3MigrationBackupIntentSha256,
+  storageV3MigrationBackupManifest,
   type StorageV3ArtifactRoot,
 } from './v3ArtifactCatalogue.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
@@ -38,7 +41,6 @@ import {
 
 export const STORAGE_V3_BACKUP_ERROR = 'STORAGE_V3_BACKUP_INVALID' as const
 const BACKUP_DOMAIN = 'developer-lens.storage-v3-backup-manifest.v1' as const
-const OWNER_DOMAIN = 'developer-lens.storage-v3-backup-owner-set.v1' as const
 const SQLITE_HEADER = Buffer.from('SQLite format 3\0', 'binary')
 const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
 
@@ -87,8 +89,6 @@ interface BackupSnapshotIdentity {
 function sha256(bytes: Buffer | string): string {
   return createHash('sha256').update(bytes).digest('hex')
 }
-
-function canonicalJson(value: unknown): string { return JSON.stringify(value) }
 
 function stat(path: string): BigIntStats | undefined {
   try { return lstatSync(path, { bigint: true }) } catch (error) {
@@ -244,30 +244,15 @@ function makeManifest(
   contentSha256: string,
   selectedArtifactId: string,
 ): { bytes: Buffer; bodySha256: string } {
-  const ownerScopeIds = [...input.ownerScopeIds]
-  const ownerScopeHash = sha256(`${OWNER_DOMAIN}\0${ownerScopeIds.join('\0')}`)
-  const body = {
-    version: 'migration_backup_v1',
+  return storageV3MigrationBackupManifest({
     locator,
     backupAt: input.backupAt,
     artifactId: input.artifactId,
     selectedArtifactId,
-    applicationId: STORAGE_V3_SHADOW_APPLICATION_ID,
-    userVersion: STORAGE_V3_SHADOW_USER_VERSION,
-    schemaFingerprint: STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT,
     contentSha256,
-    ownerScopeIds,
-    ownerScopeHash,
-    taskId: input.installationKey.taskId,
-    taskFingerprint: input.installationKey.fingerprint,
-  }
-  const bodySha256 = sha256(`${BACKUP_DOMAIN}\0${canonicalJson(body)}`)
-  const manifest = {
-    ...body,
-    bodySha256,
-    installationKeyBinding: bindTaskInstallationKeyBody(input.installationKey, bodySha256),
-  }
-  return { bytes: Buffer.from(`${canonicalJson(manifest)}\n`, 'utf8'), bodySha256 }
+    ownerScopeIds: input.ownerScopeIds,
+    installationKey: input.installationKey,
+  })
 }
 
 function inspectBackupDb(
@@ -390,6 +375,7 @@ function replayIfExact(
 function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<StorageV3BackupResult> {
   assertInput(input)
   bindStorageV3ArtifactRoot(input.db, input.root)
+  assertStorageV3ArtifactRootInstallationKey(input.root, input.installationKey)
   const source = storageV3ArtifactFilePath(input.root, 'v3-store.sqlite')
   if (typeof input.db.name !== 'string' || input.db.name !== source) fail()
   sidecarsAbsent(source)
@@ -512,14 +498,19 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
         || !readDescriptorExactly(manifestDescriptor, expectedManifest.bytes.length).equals(expectedManifest.bytes)) fail()
       input.failAfterStage?.('manifestFinalLinked')
 
-      promoteStorageV3MigrationBackupArtifact({
+      const publicationProof = proveStorageV3MigrationBackupPublication({
         db: input.db,
         artifactId: input.artifactId,
         stagedLocator: tempLocator,
         finalLocator: locator,
+        backupAt: input.backupAt,
+        selectedArtifactId: snapshot.selectedArtifactId,
         contentSha256,
         manifestSha256,
+        ownerScopeIds: input.ownerScopeIds,
+        installationKey: input.installationKey,
       })
+      promoteStorageV3MigrationBackupArtifact(publicationProof)
       input.failAfterStage?.('cataloguePromoted')
 
       unlinkSync(tempPath)

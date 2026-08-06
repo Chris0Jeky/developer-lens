@@ -33,6 +33,11 @@ import {
   type StorageV3ArtifactKind,
   type StorageV3ArtifactState,
 } from './v3ShadowSchema.js'
+import {
+  assertTaskInstallationKeyTaskDirectory,
+  bindTaskInstallationKeyBody,
+  type TaskInstallationKeyHandle,
+} from './taskInstallationKey.js'
 
 export { STORAGE_V3_ARTIFACT_LOCATORS }
 
@@ -68,6 +73,8 @@ const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
 const SAFE_LOCATOR = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const MIGRATION_BACKUP_LOCATOR = /^migration-backup-[0-9]{8}T[0-9]{6}Z\.sqlite$/
 const MIGRATION_BACKUP_STAGED_LOCATOR = /^migration-backup-[0-9]{8}T[0-9]{6}Z\.sqlite\.tmp$/
+const MIGRATION_BACKUP_DOMAIN = 'developer-lens.storage-v3-backup-manifest.v1' as const
+const MIGRATION_BACKUP_OWNER_DOMAIN = 'developer-lens.storage-v3-backup-owner-set.v1' as const
 
 interface RootIdentity {
   readonly path: string
@@ -85,9 +92,18 @@ export interface StorageV3ArtifactFileProof {
   readonly __storageV3ArtifactFileProof: never
 }
 
+/** Single-use proof that the exact key-bound backup pair is ready for catalogue promotion. */
+export interface StorageV3MigrationBackupPublicationProof {
+  readonly __storageV3MigrationBackupPublicationProof: never
+}
+
 const ROOT_IDENTITIES = new WeakMap<StorageV3ArtifactRoot, RootIdentity>()
 const STORE_ROOTS = new WeakMap<Database.Database, StorageV3ArtifactRoot>()
 const FILE_PROOFS = new WeakMap<StorageV3ArtifactFileProof, StableFile>()
+const MIGRATION_BACKUP_PUBLICATION_PROOFS = new WeakMap<
+  StorageV3MigrationBackupPublicationProof,
+  MigrationBackupPublication
+>()
 
 const identityAvailable = (value: Readonly<{ dev: bigint; ino: bigint }>): boolean =>
   value.dev !== 0n || value.ino !== 0n
@@ -116,6 +132,18 @@ function rootIdentity(root: StorageV3ArtifactRoot): RootIdentity {
   const actual = captureRoot(expected.path)
   if (!sameIdentity(expected, actual)) fail()
   return expected
+}
+
+/** Bind a task-owned installation key to the exact reviewed artifact/task directory. */
+export function assertStorageV3ArtifactRootInstallationKey(
+  root: StorageV3ArtifactRoot,
+  installationKey: TaskInstallationKeyHandle,
+): void {
+  try {
+    assertTaskInstallationKeyTaskDirectory(installationKey, rootIdentity(root))
+  } catch {
+    fail()
+  }
 }
 
 function lstatEntry(path: string): BigIntStats | undefined {
@@ -208,6 +236,63 @@ export function storageV3MigrationBackupIntentSha256(
   return createHash('sha256')
     .update(`developer-lens.storage-v3-backup-intent.v1\0${artifactId}\0${finalLocator}`, 'utf8')
     .digest('hex')
+}
+
+export type StorageV3MigrationBackupManifestInput = Readonly<{
+  locator: string
+  backupAt: string
+  artifactId: string
+  selectedArtifactId: string
+  contentSha256: string
+  ownerScopeIds: readonly string[]
+  installationKey: TaskInstallationKeyHandle
+}>
+
+export function storageV3MigrationBackupManifest(
+  input: StorageV3MigrationBackupManifestInput,
+): Readonly<{ bytes: Buffer; bodySha256: string }> {
+  validateLocator('migration_backup_v1', input.locator)
+  const parsedBackupAt = new Date(input.backupAt)
+  if (input.locator.endsWith('.sqlite.tmp')
+    || !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/.test(input.backupAt)
+    || Number.isNaN(parsedBackupAt.getTime())
+    || parsedBackupAt.toISOString() !== input.backupAt.replace('Z', '.000Z')
+    || input.locator !== `migration-backup-${input.backupAt.replace(/[-:]/g, '')}.sqlite`
+    || !ArtifactIdV3Schema.safeParse(input.artifactId).success
+    || !ArtifactIdV3Schema.safeParse(input.selectedArtifactId).success
+    || input.artifactId === input.selectedArtifactId
+    || !/^[a-f0-9]{64}$/.test(input.contentSha256)) fail()
+  const ownerScopeIds = [...input.ownerScopeIds]
+  if (ownerScopeIds.length === 0
+    || ownerScopeIds.some((scope, index) => !ScopeIdV3Schema.safeParse(scope).success
+      || scope !== [...ownerScopeIds].sort()[index])) fail()
+  const ownerScopeHash = createHash('sha256')
+    .update(`${MIGRATION_BACKUP_OWNER_DOMAIN}\0${ownerScopeIds.join('\0')}`)
+    .digest('hex')
+  const body = {
+    version: 'migration_backup_v1',
+    locator: input.locator,
+    backupAt: input.backupAt,
+    artifactId: input.artifactId,
+    selectedArtifactId: input.selectedArtifactId,
+    applicationId: STORAGE_V3_SHADOW_APPLICATION_ID,
+    userVersion: STORAGE_V3_SHADOW_USER_VERSION,
+    schemaFingerprint: STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT,
+    contentSha256: input.contentSha256,
+    ownerScopeIds,
+    ownerScopeHash,
+    taskId: input.installationKey.taskId,
+    taskFingerprint: input.installationKey.fingerprint,
+  }
+  const bodySha256 = createHash('sha256')
+    .update(`${MIGRATION_BACKUP_DOMAIN}\0${JSON.stringify(body)}`)
+    .digest('hex')
+  const manifest = {
+    ...body,
+    bodySha256,
+    installationKeyBinding: bindTaskInstallationKeyBody(input.installationKey, bodySha256),
+  }
+  return Object.freeze({ bytes: Buffer.from(`${JSON.stringify(manifest)}\n`, 'utf8'), bodySha256 })
 }
 
 interface StableFile {
@@ -333,6 +418,60 @@ function physicalFileSha256(path: string, expectedNlink: bigint): string {
   }
   assertSameFile(stable)
   return hash.digest('hex')
+}
+
+function assertPhysicalFileBytes(path: string, expectedNlink: bigint, expected: Buffer): void {
+  if (expected.length < 1 || expected.length > 1024 * 1024) fail()
+  const stable = captureStableFile(path, expectedNlink)
+  if (stable.size !== BigInt(expected.length)) fail()
+  const descriptor = openSync(path, constants.O_RDONLY | NO_FOLLOW)
+  try {
+    const actual = Buffer.alloc(expected.length)
+    let offset = 0
+    while (offset < actual.length) {
+      const count = readSync(descriptor, actual, offset, actual.length - offset, offset)
+      if (count === 0) fail()
+      offset += count
+    }
+    const overflow = Buffer.alloc(1)
+    if (readSync(descriptor, overflow, 0, 1, expected.length) !== 0 || !actual.equals(expected)) fail()
+  } finally { closeSync(descriptor) }
+  assertSameFile(stable)
+}
+
+function inspectMigrationBackupSnapshot(path: string, expectedNlink: bigint): Readonly<{
+  selectedArtifactId: string
+  ownerScopeIds: readonly string[]
+}> {
+  const stable = assertSqliteKind(path, 'migration_backup_v1', expectedNlink)
+  let backup: Database.Database | undefined
+  try {
+    backup = new Database(path, { fileMustExist: true, readonly: true })
+    backup.pragma('foreign_keys = ON')
+    if (Number(backup.pragma('application_id', { simple: true })) !== STORAGE_V3_SHADOW_APPLICATION_ID
+      || Number(backup.pragma('user_version', { simple: true })) !== STORAGE_V3_SHADOW_USER_VERSION
+      || storageV3ShadowSchemaFingerprint(backup) !== STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT
+      || String(backup.pragma('integrity_check', { simple: true })) !== 'ok'
+      || (backup.pragma('foreign_key_check') as unknown[]).length !== 0) fail()
+    const selected = backup.prepare(
+      "SELECT artifact_id FROM app_artifact WHERE kind = 'selected_store' AND state = 'active'",
+    ).all() as Array<{ artifact_id: string }>
+    if (selected.length !== 1 || !ArtifactIdV3Schema.safeParse(selected[0]?.artifact_id).success) fail()
+    const ownerScopeIds = backup.prepare(
+      'SELECT scope_id FROM claim_scope ORDER BY scope_id',
+    ).pluck().all() as string[]
+    if (ownerScopeIds.length === 0) fail()
+    return Object.freeze({
+      selectedArtifactId: selected[0]!.artifact_id,
+      ownerScopeIds: Object.freeze(ownerScopeIds),
+    })
+  } catch (error) {
+    if (error instanceof StorageV3ArtifactError) throw error
+    return fail()
+  } finally {
+    if (backup?.open) backup.close()
+    assertSameFile(stable)
+  }
 }
 
 /**
@@ -813,18 +952,88 @@ export function beginStorageV3MigrationBackupArtifact(input: Readonly<{
   return Object.freeze({ artifactId: input.artifactId, stagedLocator, placeholderSha256 })
 }
 
-export function promoteStorageV3MigrationBackupArtifact(input: Readonly<{
+interface MigrationBackupPublication {
   db: Database.Database
   artifactId: string
   stagedLocator: string
   finalLocator: string
+  backupAt: string
+  selectedArtifactId: string
   contentSha256: string
   manifestSha256: string
-}>): void {
+  ownerScopeIds: readonly string[]
+  installationKey: TaskInstallationKeyHandle
+}
+
+function validateMigrationBackupPublication(input: MigrationBackupPublication): void {
+  if (!input.db?.open || input.db.inTransaction) fail()
   validateLocator('migration_backup_v1', input.stagedLocator)
   validateLocator('migration_backup_v1', input.finalLocator)
-  if (input.stagedLocator !== `${input.finalLocator}.tmp`) fail()
-  if (!/^[a-f0-9]{64}$/.test(input.contentSha256) || !/^[a-f0-9]{64}$/.test(input.manifestSha256)) fail()
+  if (input.stagedLocator !== `${input.finalLocator}.tmp`
+    || !/^[a-f0-9]{64}$/.test(input.contentSha256)
+    || !/^[a-f0-9]{64}$/.test(input.manifestSha256)) fail()
+  assertSelectedStoreIdentity(input.db)
+  assertStorageV3ArtifactCatalogue(input.db)
+  if (readMaintenance(input.db).state !== 'complete') fail()
+  const root = boundRoot(input.db)
+  assertStorageV3ArtifactRootInstallationKey(root, input.installationKey)
+  const intentSha256 = storageV3MigrationBackupIntentSha256(input.artifactId, input.finalLocator)
+  const staged = input.db.prepare(
+    `SELECT content_sha256, manifest_sha256 FROM app_artifact
+     WHERE artifact_id = ? AND kind = 'migration_backup_v1' AND state = 'active' AND relative_locator = ?`,
+  ).get(input.artifactId, input.stagedLocator) as { content_sha256: string; manifest_sha256: string } | undefined
+  if (staged?.content_sha256 !== intentSha256 || staged.manifest_sha256 !== intentSha256) fail()
+  const catalogueScopeIds = input.db.prepare(
+    'SELECT scope_id FROM app_artifact_scope WHERE artifact_id = ? ORDER BY scope_id',
+  ).pluck().all(input.artifactId) as string[]
+  if (catalogueScopeIds.length !== input.ownerScopeIds.length
+    || catalogueScopeIds.some((scope, index) => scope !== input.ownerScopeIds[index])) fail()
+  const manifestTempLocator = `${input.stagedLocator}.manifest.json`
+  const manifestFinalLocator = `${input.finalLocator}.manifest.json`
+  const sqlitePair = inspectMigrationBackupPair(root, input.stagedLocator, input.finalLocator, true, false)
+  const manifestPair = inspectMigrationBackupPair(root, manifestTempLocator, manifestFinalLocator, true, false)
+  if (sqlitePair.temp === undefined || sqlitePair.final === undefined
+    || manifestPair.temp === undefined || manifestPair.final === undefined) fail()
+  const sqliteFinal = sqlitePair.final ?? fail()
+  const manifestFinal = manifestPair.final ?? fail()
+  for (const locator of [input.stagedLocator, input.finalLocator]) {
+    if (['-wal', '-shm', '-journal'].some((suffix) => lstatEntry(artifactPath(root, `${locator}${suffix}`)) !== undefined)) fail()
+  }
+  if (physicalContentSha256(sqliteFinal.path, 'migration_backup_v1', 2n) !== input.contentSha256) fail()
+  const snapshot = inspectMigrationBackupSnapshot(sqliteFinal.path, 2n)
+  if (snapshot.selectedArtifactId !== input.selectedArtifactId
+    || snapshot.ownerScopeIds.length !== input.ownerScopeIds.length
+    || snapshot.ownerScopeIds.some((scope, index) => scope !== input.ownerScopeIds[index])) fail()
+  const expectedManifest = storageV3MigrationBackupManifest({
+    locator: input.finalLocator,
+    backupAt: input.backupAt,
+    artifactId: input.artifactId,
+    selectedArtifactId: input.selectedArtifactId,
+    contentSha256: input.contentSha256,
+    ownerScopeIds: input.ownerScopeIds,
+    installationKey: input.installationKey,
+  })
+  if (createHash('sha256').update(expectedManifest.bytes).digest('hex') !== input.manifestSha256) fail()
+  assertPhysicalFileBytes(manifestFinal.path, 2n, expectedManifest.bytes)
+}
+
+export function proveStorageV3MigrationBackupPublication(input: Readonly<MigrationBackupPublication>): StorageV3MigrationBackupPublicationProof {
+  const closed = Object.freeze({
+    ...input,
+    ownerScopeIds: Object.freeze([...input.ownerScopeIds]),
+  })
+  validateMigrationBackupPublication(closed)
+  const proof = Object.freeze({}) as StorageV3MigrationBackupPublicationProof
+  MIGRATION_BACKUP_PUBLICATION_PROOFS.set(proof, closed)
+  return proof
+}
+
+export function promoteStorageV3MigrationBackupArtifact(
+  proof: StorageV3MigrationBackupPublicationProof,
+): void {
+  const input = MIGRATION_BACKUP_PUBLICATION_PROOFS.get(proof) ?? fail()
+  MIGRATION_BACKUP_PUBLICATION_PROOFS.delete(proof)
+  validateMigrationBackupPublication(input)
   const intentSha256 = storageV3MigrationBackupIntentSha256(input.artifactId, input.finalLocator)
   if (input.db.prepare(`UPDATE app_artifact SET relative_locator = ?, content_sha256 = ?, manifest_sha256 = ?
       WHERE artifact_id = ? AND kind = 'migration_backup_v1' AND state = 'active' AND relative_locator = ?

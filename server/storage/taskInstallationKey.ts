@@ -50,7 +50,12 @@ export type TaskInstallationKeyHandle = Readonly<{
   aliases: InstallationAliases
 }>
 
-const HANDLE_KEYS = new WeakMap<object, Buffer>()
+type HandleRecord = Readonly<{
+  key: Buffer
+  taskDirectory: DirectoryIdentity
+}>
+
+const HANDLE_KEYS = new WeakMap<object, HandleRecord>()
 const TASK_INSTALLATION_BINDING_DOMAIN = 'developer-lens.storage-v3-backup-key-binding.v1' as const
 
 type ClosedInput = Readonly<{
@@ -261,7 +266,7 @@ async function readExactKey(handle: FileHandle): Promise<Buffer> {
 }
 
 function createOpaqueHandle(
-  taskId: string,
+  path: CanonicalKeyPath,
   key: Buffer,
   expectedFingerprint?: string,
 ): TaskInstallationKeyHandle {
@@ -278,9 +283,30 @@ function createOpaqueHandle(
   }
   const aliases = createInstallationAliases(key)
   for (const aliasFunction of Object.values(aliases)) Object.freeze(aliasFunction)
-  const handle = Object.freeze({ taskId, fingerprint, aliases: Object.freeze(aliases) })
-  HANDLE_KEYS.set(handle, Buffer.from(key))
+  const handle = Object.freeze({ taskId: path.taskId, fingerprint, aliases: Object.freeze(aliases) })
+  const taskDirectory = path.directories.at(-1)
+  if (taskDirectory === undefined) invalidKey()
+  HANDLE_KEYS.set(handle, Object.freeze({ key: Buffer.from(key), taskDirectory }))
   return handle
+}
+
+export type TaskInstallationKeyDirectoryIdentity = Readonly<{
+  path: string
+  dev: bigint
+  ino: bigint
+}>
+
+/** Prove that an opaque handle was loaded from this exact canonical task directory. */
+export function assertTaskInstallationKeyTaskDirectory(
+  handle: TaskInstallationKeyHandle,
+  directory: TaskInstallationKeyDirectoryIdentity,
+): void {
+  if (!handle || typeof handle !== 'object' || !directory || typeof directory !== 'object') invalidKey()
+  const record = HANDLE_KEYS.get(handle)
+  if (record === undefined
+    || !TASK_ID.test(handle.taskId)
+    || directory.path !== record.taskDirectory.path
+    || !portableIdentityMatches(directory, record.taskDirectory)) invalidKey()
 }
 
 /** Bind one canonical body digest to the opaque task key; no raw-key or general HMAC oracle. */
@@ -289,10 +315,10 @@ export function bindTaskInstallationKeyBody(
   bodySha256: string,
 ): string {
   if (!handle || typeof handle !== 'object' || !/^[a-f0-9]{64}$/.test(bodySha256)) invalidKey()
-  const key = HANDLE_KEYS.get(handle)
-  if (!key || handle.fingerprint !== createHash('sha256').update(key).digest('hex')) invalidKey()
+  const record = HANDLE_KEYS.get(handle)
+  if (!record || handle.fingerprint !== createHash('sha256').update(record.key).digest('hex')) invalidKey()
   try {
-    return createHmac('sha256', key)
+    return createHmac('sha256', record.key)
       .update(`${TASK_INSTALLATION_BINDING_DOMAIN}\0${bodySha256}`, 'utf8')
       .digest('hex')
   } finally {
@@ -355,7 +381,7 @@ async function setupTaskInstallationKeyCore(
       await handle.close()
     }
     if (snapshot === undefined) invalidKey()
-    return createOpaqueHandle(path.taskId, snapshot)
+    return createOpaqueHandle(path, snapshot)
   } catch (error) {
     if (error instanceof TaskInstallationKeyError) throw error
     return invalidKey()
@@ -407,7 +433,7 @@ async function loadTaskInstallationKeyCore(
       await handle.close()
     }
     if (snapshot === undefined) invalidKey()
-    return createOpaqueHandle(path.taskId, snapshot, closedInput.expectedFingerprint)
+    return createOpaqueHandle(path, snapshot, closedInput.expectedFingerprint)
   } catch (error) {
     if (error instanceof TaskInstallationKeyError) throw error
     return invalidKey()
