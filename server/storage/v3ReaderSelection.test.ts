@@ -185,13 +185,20 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       const proofPath = join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)
       const foreign = Buffer.from('invented foreign selection proof\n')
       writeFileSync(proofPath, foreign, { flag: 'wx', mode: 0o600 })
+      expect(v3ReaderSelectionTestSeams.selectWithProofPreflight(fx.input, () => {
+        throw new Error('invented proof preflight failure')
+      })).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      const beforeReceipt = openSelectedStorageV3Store(fx.root)
+      expect(readStorageV3MigrationSelection(beforeReceipt)).toBeUndefined()
+      beforeReceipt.close()
       expect(selectStorageV3Reader(fx.input)).toEqual({
         reader: 'unavailable', code: 'v3-selection-selected-refused',
       })
       expect(readFileSync(proofPath)).toEqual(foreign)
       const selected = openSelectedStorageV3Store(fx.root)
-      expect(readStorageV3MigrationSelection(selected)).toBeDefined()
+      expect(readStorageV3MigrationSelection(selected)).toBeUndefined()
       selected.close()
+      expect(existsSync(storageV3WriterLeasePath(openStorageV3ArtifactRoot(fx.root)))).toBe(false)
     } finally { fx.cleanup() }
   })
 

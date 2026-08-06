@@ -1,5 +1,6 @@
 import Database from 'better-sqlite3'
-import { lstatSync } from 'node:fs'
+import { lstatSync, readdirSync } from 'node:fs'
+import { dirname } from 'node:path'
 import {
   assertStorageV3ArtifactDirectorySyncSupported,
   assertStorageV3ArtifactRootInstallationKey,
@@ -30,6 +31,7 @@ import {
 } from './v3WriterLease.js'
 import {
   publishStorageV3MigrationSelectionProof,
+  STORAGE_V3_SELECTION_PROOF_NAMES,
   v3SelectionProofTestSeams,
   type StorageV3MigrationSelectionProofPublication,
   type StorageV3SelectionProofPublicationStage,
@@ -91,6 +93,15 @@ class StorageV3SelectedRefusalError extends Error {
 }
 
 type ReceiptPresence = 'absent' | 'present' | 'ambiguous'
+
+function probeSelectionProofMarker(root: ReturnType<typeof openStorageV3ArtifactRoot>): ReceiptPresence {
+  const finalPath = storageV3ArtifactFilePath(root, STORAGE_V3_SELECTION_PROOF_NAMES.final)
+  let names: string[]
+  try { names = readdirSync(dirname(finalPath)) } catch { return 'ambiguous' }
+  return names.some((name) => name.startsWith(STORAGE_V3_SELECTION_PROOF_NAMES.final))
+    ? 'present'
+    : 'absent'
+}
 
 /**
  * A deliberately small, read-only probe used before any selector fallback. It does
@@ -229,18 +240,22 @@ function selectStorageV3ReaderInternal(
     const artifactRoot = openStorageV3ArtifactRoot(closed.directory)
     root = artifactRoot
     const initialPresence = probeSelectionReceipt(artifactRoot)
-    if (initialPresence === 'ambiguous') return selectedUnavailable()
-    protectedSelection = initialPresence === 'present'
+    const initialProofPresence = probeSelectionProofMarker(artifactRoot)
+    if (initialPresence === 'ambiguous' || initialProofPresence === 'ambiguous') return selectedUnavailable()
+    protectedSelection = initialPresence === 'present' || initialProofPresence === 'present'
+    stage = 'proof'
+    preflightProof()
     stage = 'lease'
     const selected = withStorageV3WriterLease(artifactRoot, () => {
       const leasePresence = probeSelectionReceipt(artifactRoot)
-      if (leasePresence === 'ambiguous') throw new StorageV3SelectedRefusalError()
-      if (leasePresence === 'present') protectedSelection = true
+      const leaseProofPresence = probeSelectionProofMarker(artifactRoot)
+      if (leasePresence === 'ambiguous' || leaseProofPresence === 'ambiguous') {
+        throw new StorageV3SelectedRefusalError()
+      }
+      if (leasePresence === 'present' || leaseProofPresence === 'present') protectedSelection = true
       stage = 'store'
       const db = openSelectedStorageV3Store(closed.directory)
       openedDb = db
-      stage = 'proof'
-      preflightProof()
       const existing = readStorageV3MigrationSelection(db)
       let receipt: StorageV3MigrationSelection
       if (existing !== undefined) {
@@ -296,7 +311,8 @@ function selectStorageV3ReaderInternal(
   } catch (error) {
     if (openedDb?.open) openedDb.close()
     if (error instanceof StorageV3WriterLeaseError) return selectedUnavailable()
-    if (protectedSelection || (root !== undefined && probeSelectionReceipt(root) !== 'absent')) {
+    if (protectedSelection || (root !== undefined
+      && (probeSelectionReceipt(root) !== 'absent' || probeSelectionProofMarker(root) !== 'absent'))) {
       return selectedUnavailable()
     }
     if (error instanceof StorageV3SelectedRefusalError) return selectedUnavailable()
@@ -344,6 +360,20 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, synchronizer,
       ),
       () => {},
+    )
+  },
+  selectWithProofPreflight(
+    input: StorageV3ReaderSelectionInput,
+    preflight: () => void,
+  ): StorageV3ReaderSelection {
+    if (typeof preflight !== 'function') return fallback('v3-selection-request-invalid')
+    return selectStorageV3ReaderInternal(
+      input,
+      undefined,
+      (db, root, installationKey) => v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        db, root, installationKey, () => {},
+      ),
+      preflight,
     )
   },
 })
