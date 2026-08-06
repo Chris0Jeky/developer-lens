@@ -30,6 +30,7 @@ import {
   storageV3ArtifactFilePath,
   storageV3MigrationBackupIntentSha256,
   storageV3MigrationBackupManifest,
+  storageV3MaintenanceStatus,
   syncStorageV3ArtifactDirectory,
   type StorageV3ArtifactRoot,
 } from './v3ArtifactCatalogue.js'
@@ -107,6 +108,26 @@ export type StorageV3BackupResult = Readonly<{
   artifactId: string
   locator: string
   manifestLocator: string
+  contentSha256: string
+  manifestSha256: string
+}>
+
+/** Caller-owned inputs for the read-only finalized-backup verifier. */
+export type StorageV3MigrationBackupVerificationInput = Readonly<{
+  db: Database.Database
+  root: StorageV3ArtifactRoot
+  backupAt: string
+  artifactId: string
+  installationKey: TaskInstallationKeyHandle
+}>
+
+/** Proof returned after every physical/catalogue/manifest/snapshot check passes. */
+export type StorageV3MigrationBackupVerification = Readonly<{
+  artifactId: string
+  locator: string
+  backupAt: string
+  selectedArtifactId: string
+  ownerScopeIds: readonly string[]
   contentSha256: string
   manifestSha256: string
 }>
@@ -370,6 +391,40 @@ function captureInput(input: unknown, allowHooks: boolean, retainHooks = allowHo
   return closed
 }
 
+function captureVerificationInput(input: unknown): StorageV3MigrationBackupVerificationInput {
+  if (!input || typeof input !== 'object' || Array.isArray(input)
+    || Object.getPrototypeOf(input) !== Object.prototype) fail()
+  const objectInput = input as object
+  const expected = ['db', 'root', 'backupAt', 'artifactId', 'installationKey']
+  const keys = Reflect.ownKeys(objectInput)
+  if (keys.length !== expected.length
+    || keys.some((key) => typeof key !== 'string' || !expected.includes(key))) fail()
+  const value = (key: string): unknown => {
+    const descriptor = Object.getOwnPropertyDescriptor(objectInput, key)
+    if (!descriptor || !Object.hasOwn(descriptor, 'value')) fail()
+    return (descriptor as PropertyDescriptor & { value: unknown }).value
+  }
+  const closed = Object.freeze({
+    db: value('db'),
+    root: value('root'),
+    backupAt: value('backupAt'),
+    artifactId: value('artifactId'),
+    installationKey: value('installationKey'),
+  }) as StorageV3MigrationBackupVerificationInput
+  if (!closed.db?.open || closed.db.inTransaction
+    || typeof closed.root !== 'object' || closed.root === null
+    || typeof closed.backupAt !== 'string'
+    || typeof closed.artifactId !== 'string'
+    || !closed.installationKey || typeof closed.installationKey !== 'object'
+    || !isCanonicalTaskId(closed.installationKey.taskId)
+    || !/^[a-f0-9]{64}$/.test(closed.installationKey.fingerprint)) fail()
+  validateAt(closed.backupAt)
+  if (!/^art-[0-9a-f]{64}$/.test(closed.artifactId)) fail()
+  // This binds continuity without exposing key bytes or making the verifier an HMAC oracle.
+  bindTaskInstallationKeyBody(closed.installationKey, sha256(`${BACKUP_DOMAIN}\0closed-verifier-input`))
+  return closed
+}
+
 function sidecarsAbsent(path: string): void {
   for (const suffix of ['-wal', '-shm', '-journal']) if (stat(`${path}${suffix}`)) fail()
 }
@@ -437,6 +492,108 @@ function openExactManifest(
   } catch {
     closeSync(descriptor)
     return fail()
+  }
+}
+
+/**
+ * Verify one already-finalized singleton backup without taking a lease or mutating state.
+ *
+ * The caller supplies only the opaque task identity and backup timestamp.  The selected
+ * artifact and owner set are read from the open store, and every returned field is derived
+ * from the exact catalogue row and physically re-proven files.
+ */
+export function verifyStorageV3MigrationBackup(
+  input: StorageV3MigrationBackupVerificationInput,
+): StorageV3MigrationBackupVerification {
+  let sqliteDescriptor: number | undefined
+  let manifestDescriptor: number | undefined
+  try {
+    const closed = captureVerificationInput(input)
+    const locator = `migration-backup-${closed.backupAt.replace(/[-:]/g, '')}.sqlite`
+    const manifestLocator = `${locator}.manifest.json`
+    const tempLocator = `${locator}.tmp`
+    const manifestTempLocator = `${tempLocator}.manifest.json`
+    const source = storageV3ArtifactFilePath(closed.root, 'v3-store.sqlite')
+    if (typeof closed.db.name !== 'string' || closed.db.name !== source) fail()
+    assertStorageV3ArtifactRootInstallationKey(closed.root, closed.installationKey)
+    sidecarsAbsent(source)
+    // A finalized backup cannot coexist with an open/expired migration or any catalogue
+    // state other than the immutable active selected store and one active final backup.
+    if (storageV3MaintenanceStatus(closed.db) !== 'complete') fail()
+    assertPublishedStorageV3ArtifactCatalogue(closed.db)
+    const selected = closed.db.prepare(
+      `SELECT artifact_id, state, relative_locator
+       FROM app_artifact WHERE kind = 'selected_store'`,
+    ).all() as Array<{ artifact_id: string; state: string; relative_locator: string }>
+    if (selected.length !== 1 || selected[0]?.state !== 'active'
+      || selected[0].relative_locator !== 'v3-store.sqlite') fail()
+    const selectedArtifactId = selected[0]!.artifact_id
+    const liveOwnerScopeIds = liveOwners(closed.db)
+    if (liveOwnerScopeIds.length === 0) fail()
+    assertOwners(catalogueOwners(closed.db, selectedArtifactId), liveOwnerScopeIds)
+
+    const backups = closed.db.prepare(
+      `SELECT artifact_id, kind, state, manifest_sha256, content_sha256,
+              relative_locator, deletion_operation_id, deletion_scope_id, deletion_week
+       FROM app_artifact WHERE kind = 'migration_backup_v1'`,
+    ).all() as Array<{
+      artifact_id: string; kind: string; state: string; manifest_sha256: string; content_sha256: string
+      relative_locator: string; deletion_operation_id: string | null; deletion_scope_id: string | null
+      deletion_week: string | null
+    }>
+    if (backups.length !== 1) fail()
+    const row = backups[0]!
+    if (row.artifact_id !== closed.artifactId || row.kind !== 'migration_backup_v1'
+      || row.state !== 'active' || row.relative_locator !== locator
+      || row.relative_locator.endsWith('.sqlite.tmp')
+      || row.deletion_operation_id !== null || row.deletion_scope_id !== null || row.deletion_week !== null) fail()
+    assertOwners(catalogueOwners(closed.db, row.artifact_id), liveOwnerScopeIds)
+
+    const finalPath = storageV3ArtifactFilePath(closed.root, locator)
+    const manifestPath = storageV3ArtifactFilePath(closed.root, manifestLocator)
+    const tempPath = storageV3ArtifactFilePath(closed.root, tempLocator)
+    const manifestTempPath = storageV3ArtifactFilePath(closed.root, manifestTempLocator)
+    // Published cleanup is part of the finalized state.  Refuse orphaned provisional names
+    // instead of silently selecting through a staged or foreign pair.
+    sidecarsAbsent(tempPath)
+    assertAbsent(tempPath)
+    assertAbsent(manifestTempPath)
+    sidecarsAbsent(finalPath)
+
+    sqliteDescriptor = openBoundDescriptor(finalPath, constants.O_RDONLY, 1n)
+    const contentSha256 = hashSqliteDescriptor(sqliteDescriptor)
+    if (row.content_sha256 !== contentSha256) fail()
+    const snapshot = inspectBackupDb(finalPath, sqliteDescriptor, 1n)
+    if (snapshot.selectedArtifactId !== selectedArtifactId) fail()
+    assertOwners(snapshot.ownerScopeIds, liveOwnerScopeIds)
+
+    const expectedManifest = storageV3MigrationBackupManifest({
+      locator,
+      backupAt: closed.backupAt,
+      artifactId: closed.artifactId,
+      selectedArtifactId,
+      contentSha256,
+      ownerScopeIds: liveOwnerScopeIds,
+      installationKey: closed.installationKey,
+    })
+    const manifestSha256 = sha256(expectedManifest.bytes)
+    if (row.manifest_sha256 !== manifestSha256) fail()
+    manifestDescriptor = openExactManifest(manifestPath, expectedManifest.bytes, 1n)
+    return Object.freeze({
+      artifactId: closed.artifactId,
+      locator,
+      backupAt: closed.backupAt,
+      selectedArtifactId,
+      ownerScopeIds: Object.freeze([...liveOwnerScopeIds]),
+      contentSha256,
+      manifestSha256,
+    })
+  } catch (error) {
+    if (error instanceof StorageV3BackupError) throw error
+    return fail()
+  } finally {
+    if (manifestDescriptor !== undefined) closeSync(manifestDescriptor)
+    if (sqliteDescriptor !== undefined) closeSync(sqliteDescriptor)
   }
 }
 
