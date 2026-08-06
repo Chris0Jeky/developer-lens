@@ -538,6 +538,33 @@ describe('LIFE-03 external revocation replay', { timeout: 120_000 }, () => {
     } finally { fx.close() }
   })
 
+  it('refuses hidden scope-unbound deletion lineage for an applied non-scope subject', async () => {
+    const fx = await fixture()
+    try {
+      expect(deleteScope(fx).maintenance).toBe('complete')
+      const state = withStorageV3WriterLease(openStorageV3ArtifactRoot(fx.root), (lease) => (
+        verifyStorageV3RevocationReplay(
+          openStorageV3ArtifactRoot(fx.root),
+          fx.key,
+          fx.selection,
+          lease,
+        )
+      ))
+      const subject = state.entries[0]?.subjects.find((candidate) => candidate.subjectKind !== 'scope')
+      expect(subject).toBeDefined()
+      const selected = openSelectedStorageV3Store(fx.root)
+      try {
+        selected.prepare(`INSERT INTO lineage_event (
+          scope_id, subject_kind, subject_id, operation_id, capability_id,
+          caused_by, event_kind, event_week
+        ) VALUES (NULL, ?, ?, ?, 'github.core', NULL, ?, '2026-W31')`)
+          .run(subject!.subjectKind, subject!.subjectId, `del-${'c'.repeat(64)}`, subject!.eventKind)
+        expect(() => assertStorageV3RevocationReplayApplied(selected, state))
+          .toThrowError(new StorageV3RevocationReplayError())
+      } finally { selected.close() }
+    } finally { fx.close() }
+  })
+
   it('resumes a durable intent after interruption before SQL deletion', async () => {
     const fx = await fixture()
     try {

@@ -99,6 +99,7 @@ const TEMP = /^revocation-replay-v1-(\d{8})\.json\.tmp$/
 const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
 const MAX_RECORD_BYTES = 16 * 1024 * 1024
 const MAX_SUBJECTS_PER_RECORD = 4_096
+const APPLIED_SUBJECT_QUERY_BATCH = 400
 const GRACE_MS = 7 * 24 * 60 * 60 * 1000
 const SUBJECTS_DOMAIN = 'developer-lens.storage-v3-revocation-subjects.v1' as const
 
@@ -1316,18 +1317,35 @@ function canonicalTimestampForIsoWeek(eventWeek: string): string {
 
 function assertEntryApplied(db: Database.Database, entry: StorageV3RevocationReplayEntry): void {
   if (db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(entry.scopeId)) return fail()
-  const rows = db.prepare(
-    `SELECT subject_kind, subject_id, operation_id, caused_by, event_kind, event_week, capability_id
-     FROM lineage_event
-     WHERE scope_id IS NULL AND event_kind IN ('tombstone_cascade', 'index_deleted')
-       AND (subject_id = ? OR caused_by = ?)`,
-  ).all(entry.scopeId, entry.scopeId) as Array<Record<string, unknown>>
   const byIdentity = new Map<string, Array<Record<string, unknown>>>()
-  for (const row of rows) {
-    const identity = `${String(row.subject_kind)}\0${String(row.subject_id)}`
-    const matching = byIdentity.get(identity) ?? []
-    matching.push(row)
-    byIdentity.set(identity, matching)
+  const statements = new Map<number, Database.Statement>()
+  for (let offset = 0; offset < entry.subjects.length; offset += APPLIED_SUBJECT_QUERY_BATCH) {
+    const batch = entry.subjects.slice(offset, offset + APPLIED_SUBJECT_QUERY_BATCH)
+    let statement = statements.get(batch.length)
+    if (statement === undefined) {
+      statement = db.prepare(
+        `WITH expected(subject_kind, subject_id) AS (
+           VALUES ${batch.map(() => '(?, ?)').join(', ')}
+         )
+         SELECT actual.subject_kind, actual.subject_id, actual.operation_id, actual.caused_by,
+                actual.event_kind, actual.event_week, actual.capability_id
+         FROM lineage_event AS actual
+         INNER JOIN expected
+           ON expected.subject_kind = actual.subject_kind AND expected.subject_id = actual.subject_id
+         WHERE actual.scope_id IS NULL
+           AND actual.event_kind IN ('tombstone_cascade', 'index_deleted')`,
+      )
+      statements.set(batch.length, statement)
+    }
+    const rows = statement.all(
+      ...batch.flatMap((subject) => [subject.subjectKind, subject.subjectId]),
+    ) as Array<Record<string, unknown>>
+    for (const row of rows) {
+      const identity = `${String(row.subject_kind)}\0${String(row.subject_id)}`
+      const matching = byIdentity.get(identity) ?? []
+      matching.push(row)
+      byIdentity.set(identity, matching)
+    }
   }
   for (const subject of entry.subjects) {
     const matching = byIdentity.get(
