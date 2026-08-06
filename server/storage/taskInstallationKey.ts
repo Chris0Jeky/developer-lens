@@ -155,14 +155,16 @@ function snapshotGithubCoreGrantInput(value: unknown): Readonly<{
     || keys.some((key) => typeof key !== 'string' || !['workspaceRoot', 'grant'].includes(key))) {
     invalidKey()
   }
-  const workspaceRoot = ownDataValue(value, 'workspaceRoot')
   const grantValue = ownDataValue(value, 'grant')
-  if (typeof workspaceRoot !== 'string') invalidKey()
+  let grant: GithubCoreActivationGrant
   try {
-    return Object.freeze({ workspaceRoot, grant: assertGithubCoreActivationGrant(grantValue) })
+    grant = assertGithubCoreActivationGrant(grantValue)
   } catch {
     return invalidKey()
   }
+  const workspaceRoot = ownDataValue(value, 'workspaceRoot')
+  if (typeof workspaceRoot !== 'string') invalidKey()
+  return Object.freeze({ workspaceRoot, grant })
 }
 
 function portableIdentityMatches(left: PortableIdentity, right: PortableIdentity): boolean {
