@@ -62,6 +62,21 @@ export interface StorageV3MigrationSelectionResult {
   readonly selection: StorageV3MigrationSelection
 }
 
+/** Runtime-only, single-use authority to initialize replay state for a newly committed receipt. */
+export interface StorageV3MigrationSelectionInitializationGrant {
+  readonly __storageV3MigrationSelectionInitializationGrant: never
+}
+
+const INITIALIZATION_GRANTS = new WeakMap<
+  StorageV3MigrationSelectionInitializationGrant,
+  StorageV3MigrationSelection
+>()
+
+export type StorageV3MigrationSelectionInitializer = (
+  selection: StorageV3MigrationSelection,
+  grant: StorageV3MigrationSelectionInitializationGrant,
+) => void
+
 export type StorageV3MigrationGraceStatus = 'active' | 'expired' | 'absent'
 
 export class StorageV3MigrationSelectionError extends Error {
@@ -252,7 +267,7 @@ function readRow(db: Database.Database): StorageV3MigrationSelection | undefined
 function executeRecord(
   db: Database.Database,
   rawInput: unknown,
-  beforeCommit?: () => void,
+  beforeCommit?: (selection: StorageV3MigrationSelection) => void,
 ): StorageV3MigrationSelectionResult {
   const input = parseInput(rawInput)
   const report = reportFor(input.successReportProof)
@@ -292,8 +307,12 @@ function executeRecord(
     if (inserted.changes !== 1) return fail()
     const selection = readRow(db)
     if (selection === undefined) return fail()
-    beforeCommit?.()
-    return Object.freeze({ kind: 'v3_migration_selection' as const, status: 'recorded' as const, selection })
+    beforeCommit?.(selection)
+    return Object.freeze({
+      kind: 'v3_migration_selection' as const,
+      status: 'recorded' as const,
+      selection,
+    })
   })
   return record.immediate()
 }
@@ -308,6 +327,31 @@ export function recordStorageV3MigrationSelection(
     if (error instanceof StorageV3MigrationSelectionError) throw error
     return fail()
   }
+}
+
+/** Commit a new receipt only after its exact external initialization completes. */
+export function recordStorageV3MigrationSelectionWithInitialization(
+  db: Database.Database,
+  input: StorageV3MigrationSelectionInput,
+  initialize: StorageV3MigrationSelectionInitializer,
+): StorageV3MigrationSelectionResult {
+  if (typeof initialize !== 'function') return fail()
+  return executeRecord(db, input, (selection) => {
+    const grant = Object.freeze({}) as StorageV3MigrationSelectionInitializationGrant
+    INITIALIZATION_GRANTS.set(grant, selection)
+    try { initialize(selection, grant) } finally { INITIALIZATION_GRANTS.delete(grant) }
+  })
+}
+
+/** Consume the exact grant; copied or replayed receipt values have no authority. */
+export function consumeStorageV3MigrationSelectionInitialization(
+  grant: StorageV3MigrationSelectionInitializationGrant,
+  selection: StorageV3MigrationSelection,
+): void {
+  if (!grant || typeof grant !== 'object') return fail()
+  const expected = INITIALIZATION_GRANTS.get(grant)
+  INITIALIZATION_GRANTS.delete(grant)
+  if (expected === undefined || expected !== selection) return fail()
 }
 
 export function readStorageV3MigrationSelection(
@@ -336,6 +380,12 @@ export function evaluateStorageV3MigrationGrace(
 
 /** Test-only rollback seam. The production recorder has no callback or mutation bypass. */
 export const v3SelectionReceiptTestSeams = Object.freeze({
-  recordWithBeforeCommit: executeRecord,
+  recordWithBeforeCommit(
+    db: Database.Database,
+    input: StorageV3MigrationSelectionInput,
+    beforeCommit: () => void,
+  ): StorageV3MigrationSelectionResult {
+    return executeRecord(db, input, () => beforeCommit())
+  },
   issueSuccessReportAt: issueSuccessReport,
 })

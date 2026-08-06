@@ -12,13 +12,14 @@ import {
   verifyStorageV3MigrationBackup,
 } from './v3Backup.js'
 import {
-  recordStorageV3MigrationSelection,
+  recordStorageV3MigrationSelectionWithInitialization,
   issueStorageV3MigrationSuccessReport,
   storageV3MigrationRootBinding,
   readStorageV3MigrationSelection,
   StorageV3MigrationSelectionError,
   v3SelectionReceiptTestSeams,
   type StorageV3MigrationSelection,
+  type StorageV3MigrationSelectionInitializationGrant,
   type StorageV3MigrationSuccessReportProof,
 } from './v3SelectionReceipt.js'
 import {
@@ -30,6 +31,7 @@ import type { TaskInstallationKeyHandle } from './taskInstallationKey.js'
 import {
   StorageV3WriterLeaseError,
   withStorageV3WriterLease,
+  type StorageV3WriterLease,
 } from './v3WriterLease.js'
 import {
   publishStorageV3MigrationSelectionProof,
@@ -39,6 +41,16 @@ import {
   type StorageV3MigrationSelectionProofPublication,
   type StorageV3SelectionProofPublicationStage,
 } from './v3SelectionProof.js'
+import {
+  STORAGE_V3_REVOCATION_REPLAY_NAMES,
+  assertStorageV3RevocationReplayApplied,
+  commitStorageV3RevocationReplayInitialization,
+  initializeStorageV3RevocationReplay,
+  v3RevocationReplayTestSeams,
+  verifyStorageV3RevocationReplay,
+  type StorageV3RevocationReplayPublicationStage,
+  type StorageV3RevocationReplayState,
+} from './v3RevocationReplay.js'
 
 export const STORAGE_V3_READER_SELECTION_CODES = [
   'v3-selection-request-invalid',
@@ -74,13 +86,26 @@ export type StorageV3ReaderSelection =
     }>
 
 type ClosedSelectionInput = StorageV3ReaderSelectionInput
-type SelectionStage = 'request' | 'root' | 'lease' | 'store' | 'backup' | 'receipt' | 'proof'
+type SelectionStage = 'request' | 'root' | 'lease' | 'store' | 'backup' | 'receipt' | 'proof' | 'revocation'
 type SelectionProofPublisher = (
   db: Database.Database,
   root: ReturnType<typeof openStorageV3ArtifactRoot>,
   installationKey: TaskInstallationKeyHandle,
 ) => StorageV3MigrationSelectionProofPublication
 type SelectionProofPreflight = (root: ReturnType<typeof openStorageV3ArtifactRoot>) => void
+type RevocationReplayInitializer = (
+  root: ReturnType<typeof openStorageV3ArtifactRoot>,
+  installationKey: TaskInstallationKeyHandle,
+  selection: StorageV3MigrationSelection,
+  initializationGrant: StorageV3MigrationSelectionInitializationGrant,
+  lease: StorageV3WriterLease,
+) => StorageV3RevocationReplayState
+type RevocationReplayCommitter = (
+  root: ReturnType<typeof openStorageV3ArtifactRoot>,
+  installationKey: TaskInstallationKeyHandle,
+  selection: StorageV3MigrationSelection,
+  lease: StorageV3WriterLease,
+) => StorageV3RevocationReplayState
 
 const fallback = (code: StorageV3ReaderSelectionCode): StorageV3ReaderSelection =>
   Object.freeze({ reader: 'legacy-json' as const, code })
@@ -105,6 +130,15 @@ function probeSelectionProofMarker(root: ReturnType<typeof openStorageV3Artifact
   return names.some((name) => name.toLowerCase().startsWith(reservedPrefix))
     ? 'present'
     : 'absent'
+}
+
+function probeRevocationReplay(root: ReturnType<typeof openStorageV3ArtifactRoot>): ReceiptPresence {
+  const anchorPath = storageV3ArtifactFilePath(root, STORAGE_V3_REVOCATION_REPLAY_NAMES.anchor)
+  let names: string[]
+  try { names = readdirSync(dirname(anchorPath)) } catch { return 'ambiguous' }
+  return names.some((name) => name.toLowerCase().startsWith(
+    STORAGE_V3_REVOCATION_REPLAY_NAMES.prefix,
+  )) ? 'present' : 'absent'
 }
 
 /**
@@ -220,6 +254,7 @@ function codeForFailure(error: unknown, stage: SelectionStage): StorageV3ReaderS
     case 'backup': return 'v3-selection-backup-refused'
     case 'receipt': return 'v3-selection-receipt-refused'
     case 'proof': return 'v3-selection-receipt-refused'
+    case 'revocation': return 'v3-selection-receipt-refused'
   }
 }
 
@@ -237,6 +272,8 @@ function selectStorageV3ReaderInternal(
     taskFingerprint: string
     rootBinding: string
   }) => StorageV3MigrationSuccessReportProof = issueStorageV3MigrationSuccessReport,
+  initializeRevocationReplay: RevocationReplayInitializer = initializeStorageV3RevocationReplay,
+  commitRevocationReplay: RevocationReplayCommitter = commitStorageV3RevocationReplayInitialization,
 ): StorageV3ReaderSelection {
   const rootBindingFor = storageV3MigrationRootBinding
   let stage: SelectionStage = 'request'
@@ -250,17 +287,26 @@ function selectStorageV3ReaderInternal(
     root = artifactRoot
     const initialPresence = probeSelectionReceipt(artifactRoot)
     const initialProofPresence = probeSelectionProofMarker(artifactRoot)
-    if (initialPresence === 'ambiguous' || initialProofPresence === 'ambiguous') return selectedUnavailable()
+    const initialRevocationPresence = probeRevocationReplay(artifactRoot)
+    if (initialPresence === 'ambiguous' || initialProofPresence === 'ambiguous'
+      || initialRevocationPresence === 'ambiguous') return selectedUnavailable()
     protectedSelection = initialPresence === 'present' || initialProofPresence === 'present'
+      || initialRevocationPresence === 'present'
     stage = 'lease'
-    const selected = withStorageV3WriterLease(artifactRoot, () => {
+    const selected = withStorageV3WriterLease(artifactRoot, (lease) => {
       const leasePresence = probeSelectionReceipt(artifactRoot)
       const leaseProofPresence = probeSelectionProofMarker(artifactRoot)
-      if (leasePresence === 'ambiguous' || leaseProofPresence === 'ambiguous') {
+      const leaseRevocationPresence = probeRevocationReplay(artifactRoot)
+      if (leasePresence === 'ambiguous' || leaseProofPresence === 'ambiguous'
+        || leaseRevocationPresence === 'ambiguous') {
         throw new StorageV3SelectedRefusalError()
       }
-      if (leasePresence === 'present' || leaseProofPresence === 'present') protectedSelection = true
-      if (leasePresence === 'absent' && leaseProofPresence === 'absent') {
+      if (leasePresence === 'present' || leaseProofPresence === 'present'
+        || leaseRevocationPresence === 'present') protectedSelection = true
+      const resumableEmptyInitialization = leasePresence === 'absent'
+        && leaseProofPresence === 'absent' && leaseRevocationPresence === 'present'
+      if (leasePresence === 'absent' && leaseProofPresence === 'absent'
+        && leaseRevocationPresence === 'absent') {
         stage = 'proof'
         preflightProof(artifactRoot)
       }
@@ -275,7 +321,9 @@ function selectStorageV3ReaderInternal(
         assertReplayRequest(existing, closed, selectedArtifactId)
         receipt = existing
       } else {
-        if (protectedSelection) throw new StorageV3SelectedRefusalError()
+        if (protectedSelection && !resumableEmptyInitialization) {
+          throw new StorageV3SelectedRefusalError()
+        }
         stage = 'backup'
         const backup = verifyStorageV3MigrationBackup({
           db,
@@ -303,14 +351,29 @@ function selectStorageV3ReaderInternal(
             rootBinding: rootBindingFor(closed.directory),
           }),
         })
-        const recorded = beforeReceiptCommit === undefined
-          ? recordStorageV3MigrationSelection(db, receiptInput)
-          : v3SelectionReceiptTestSeams.recordWithBeforeCommit(db, receiptInput, beforeReceiptCommit)
+        const recorded = recordStorageV3MigrationSelectionWithInitialization(
+          db,
+          receiptInput,
+          (selection, initializationGrant) => {
+            beforeReceiptCommit?.()
+            initializeRevocationReplay(
+              artifactRoot,
+              closed.installationKey,
+              selection,
+              initializationGrant,
+              lease,
+            )
+          },
+        )
+        if (recorded.status !== 'recorded') throw new StorageV3SelectedRefusalError()
         receipt = recorded.selection
         // From this point on the durable receipt is the source of truth. Any later
         // open/revalidation failure must not hand control back to a legacy reader.
         protectedSelection = true
       }
+      stage = 'revocation'
+      let revocations = commitRevocationReplay(artifactRoot, closed.installationKey, receipt, lease)
+      assertStorageV3RevocationReplayApplied(db, revocations)
       stage = 'proof'
       const proof = publishProof(db, artifactRoot, closed.installationKey)
       assertReplayRequest(proof.selection, closed, activeSelectedArtifactId(db))
@@ -327,6 +390,14 @@ function selectStorageV3ReaderInternal(
       if (durableSelection === undefined) throw new StorageV3SelectedRefusalError()
       assertReplayRequest(durableSelection, closed, activeSelectedArtifactId(readerDb))
       if (durableSelection.graceDeadlineAt !== receipt.graceDeadlineAt) throw new StorageV3SelectedRefusalError()
+      stage = 'revocation'
+      revocations = verifyStorageV3RevocationReplay(
+        artifactRoot,
+        closed.installationKey,
+        durableSelection,
+        lease,
+      )
+      assertStorageV3RevocationReplayApplied(readerDb, revocations)
       return Object.freeze({ reader: 'sqlite-v3' as const, db: readerDb, selection: durableSelection })
     })
     openedDb = undefined
@@ -335,7 +406,8 @@ function selectStorageV3ReaderInternal(
     if (openedDb?.open) openedDb.close()
     if (error instanceof StorageV3WriterLeaseError) return selectedUnavailable()
     if (protectedSelection || (root !== undefined
-      && (probeSelectionReceipt(root) !== 'absent' || probeSelectionProofMarker(root) !== 'absent'))) {
+      && (probeSelectionReceipt(root) !== 'absent' || probeSelectionProofMarker(root) !== 'absent'
+        || probeRevocationReplay(root) !== 'absent'))) {
       return selectedUnavailable()
     }
     if (error instanceof StorageV3SelectedRefusalError) return selectedUnavailable()
@@ -371,6 +443,14 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         report,
         successfulReportAt,
       ),
+      (root, installationKey, selection, initializationGrant, lease) =>
+        v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+          root, installationKey, selection, initializationGrant, lease, () => {},
+        ),
+      (root, installationKey, selection, lease) =>
+        v3RevocationReplayTestSeams.commitInitializationWithDirectorySynchronizer(
+          root, installationKey, selection, lease, () => {},
+        ),
     )
   },
   selectWithProofDirectorySynchronizer(
@@ -393,6 +473,14 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         report,
         successfulReportAt,
       ),
+      (root, installationKey, selection, initializationGrant, lease) =>
+        v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+          root, installationKey, selection, initializationGrant, lease, () => {},
+        ),
+      (root, installationKey, selection, lease) =>
+        v3RevocationReplayTestSeams.commitInitializationWithDirectorySynchronizer(
+          root, installationKey, selection, lease, () => {},
+        ),
     )
   },
   selectWithProofPreflight(
@@ -412,6 +500,14 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         report,
         successfulReportAt,
       ),
+      (root, installationKey, selection, initializationGrant, lease) =>
+        v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+          root, installationKey, selection, initializationGrant, lease, () => {},
+        ),
+      (root, installationKey, selection, lease) =>
+        v3RevocationReplayTestSeams.commitInitializationWithDirectorySynchronizer(
+          root, installationKey, selection, lease, () => {},
+        ),
     )
   },
   selectWithRuntimeSuccessReport(input: StorageV3ReaderSelectionInput): StorageV3ReaderSelection {
@@ -422,6 +518,54 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, () => {},
       ),
       () => {},
+      issueStorageV3MigrationSuccessReport,
+      (root, installationKey, selection, initializationGrant, lease) =>
+        v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+          root, installationKey, selection, initializationGrant, lease, () => {},
+        ),
+      (root, installationKey, selection, lease) =>
+        v3RevocationReplayTestSeams.commitInitializationWithDirectorySynchronizer(
+          root, installationKey, selection, lease, () => {},
+        ),
+    )
+  },
+  selectWithRevocationDirectorySynchronizer(
+    input: StorageV3ReaderSelectionInput,
+    synchronizer: (
+      root: ReturnType<typeof openStorageV3ArtifactRoot>,
+      stage: StorageV3RevocationReplayPublicationStage,
+    ) => void,
+    successfulReportAt: string,
+  ): StorageV3ReaderSelection {
+    if (typeof synchronizer !== 'function') return fallback('v3-selection-request-invalid')
+    return selectStorageV3ReaderInternal(
+      input,
+      undefined,
+      (db, root, installationKey) => v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        db, root, installationKey, () => {},
+      ),
+      () => {},
+      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        report,
+        successfulReportAt,
+      ),
+      (root, installationKey, selection, initializationGrant, lease) =>
+        v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+          root,
+          installationKey,
+          selection,
+          initializationGrant,
+          lease,
+          synchronizer,
+        ),
+      (root, installationKey, selection, lease) =>
+        v3RevocationReplayTestSeams.commitInitializationWithDirectorySynchronizer(
+          root,
+          installationKey,
+          selection,
+          lease,
+          synchronizer,
+        ),
     )
   },
 })
