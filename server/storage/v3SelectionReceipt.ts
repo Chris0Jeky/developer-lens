@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3'
 import { createHash } from 'node:crypto'
+import { isCanonicalTaskId } from '../taskId.js'
 import {
   STORAGE_V3_SHADOW_APPLICATION_ID,
   STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT,
@@ -102,6 +103,11 @@ function opaque(value: unknown): string {
   return value
 }
 
+function canonicalTaskId(value: unknown): string {
+  if (!isCanonicalTaskId(value)) return fail()
+  return value
+}
+
 type SuccessReportInput = Readonly<{
   legacySourceId: string
   selectedArtifactId: string
@@ -123,7 +129,7 @@ function issueSuccessReport(input: SuccessReportInput, reportAt: string): Storag
     || !ARTIFACT_ID.test(input.selectedArtifactId)
     || !ARTIFACT_ID.test(input.backupArtifactId)) return fail()
   const backupAt = canonicalBackupTimestamp(input.backupAt)
-  const taskId = opaque(input.taskId)
+  const canonicalTask = canonicalTaskId(input.taskId)
   const taskFingerprint = opaque(input.taskFingerprint)
   const rootBinding = opaque(input.rootBinding)
   const successfulReportAt = canonicalTimestamp(reportAt)
@@ -134,7 +140,7 @@ function issueSuccessReport(input: SuccessReportInput, reportAt: string): Storag
     selectedArtifactId: input.selectedArtifactId,
     backupArtifactId: input.backupArtifactId,
     backupAt,
-    taskId,
+    taskId: canonicalTask,
     taskFingerprint,
     rootBinding,
     successfulReportAt,
@@ -197,7 +203,7 @@ function parseInput(raw: unknown): StorageV3MigrationSelectionInput {
     || report.selectedArtifactId !== selectedArtifactId
     || report.backupArtifactId !== backupArtifactId
     || report.backupAt !== canonicalBackupAt
-    || report.taskId !== opaque(taskId)
+    || report.taskId !== canonicalTaskId(taskId)
     || report.taskFingerprint !== opaque(taskFingerprint)
     || report.rootBinding !== opaque(rootBinding)) return fail()
   return Object.freeze({

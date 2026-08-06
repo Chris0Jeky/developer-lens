@@ -53,7 +53,6 @@ export type StorageV3ReaderSelectionCode = typeof STORAGE_V3_READER_SELECTION_CO
 export type StorageV3ReaderSelectionInput = Readonly<{
   directory: string
   legacySourceId: string
-  successfulReportAt: string
   backupArtifactId: string
   backupAt: string
   installationKey: TaskInstallationKeyHandle
@@ -162,8 +161,7 @@ function assertReplayRequest(
 ): void {
   if (selection.legacySourceId !== input.legacySourceId
     || selection.selectedArtifactId !== selectedArtifactId
-    || selection.backupArtifactId !== input.backupArtifactId
-    || selection.successfulReportAt !== input.successfulReportAt) {
+    || selection.backupArtifactId !== input.backupArtifactId) {
     throw new StorageV3SelectedRefusalError()
   }
 }
@@ -174,7 +172,6 @@ function closeInput(input: unknown): ClosedSelectionInput {
   const expected = [
     'directory',
     'legacySourceId',
-    'successfulReportAt',
     'backupArtifactId',
     'backupAt',
     'installationKey',
@@ -191,20 +188,17 @@ function closeInput(input: unknown): ClosedSelectionInput {
   }
   const directory = value('directory')
   const legacySourceId = value('legacySourceId')
-  const successfulReportAt = value('successfulReportAt')
   const backupArtifactId = value('backupArtifactId')
   const backupAt = value('backupAt')
   const installationKey = value('installationKey')
   if (typeof directory !== 'string' || directory.length === 0
     || typeof legacySourceId !== 'string'
-    || typeof successfulReportAt !== 'string'
     || typeof backupArtifactId !== 'string'
     || typeof backupAt !== 'string'
     || !installationKey || typeof installationKey !== 'object') throw new Error('INVALID')
   return Object.freeze({
     directory,
     legacySourceId,
-    successfulReportAt,
     backupArtifactId,
     backupAt,
     installationKey: installationKey as TaskInstallationKeyHandle,
@@ -359,6 +353,7 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
   selectWithBeforeReceiptCommit(
     input: StorageV3ReaderSelectionInput,
     beforeReceiptCommit: () => void,
+    successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof beforeReceiptCommit !== 'function') return fallback('v3-selection-request-invalid')
     return selectStorageV3ReaderInternal(
@@ -370,7 +365,7 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
       () => {},
       (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
         report,
-        input.successfulReportAt,
+        successfulReportAt,
       ),
     )
   },
@@ -380,6 +375,7 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
       root: ReturnType<typeof openStorageV3ArtifactRoot>,
       stage: StorageV3SelectionProofPublicationStage,
     ) => void,
+    successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof synchronizer !== 'function') return fallback('v3-selection-request-invalid')
     return selectStorageV3ReaderInternal(
@@ -391,13 +387,14 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
       () => {},
       (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
         report,
-        input.successfulReportAt,
+        successfulReportAt,
       ),
     )
   },
   selectWithProofPreflight(
     input: StorageV3ReaderSelectionInput,
     preflight: () => void,
+    successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof preflight !== 'function') return fallback('v3-selection-request-invalid')
     return selectStorageV3ReaderInternal(
@@ -409,8 +406,18 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
       preflight,
       (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
         report,
-        input.successfulReportAt,
+        successfulReportAt,
       ),
+    )
+  },
+  selectWithRuntimeSuccessReport(input: StorageV3ReaderSelectionInput): StorageV3ReaderSelection {
+    return selectStorageV3ReaderInternal(
+      input,
+      undefined,
+      (db, root, installationKey) => v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        db, root, installationKey, () => {},
+      ),
+      () => {},
     )
   },
 })
