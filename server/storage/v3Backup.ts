@@ -16,6 +16,7 @@ import {
 import Database from 'better-sqlite3'
 import {
   assertPublishedStorageV3ArtifactCatalogue,
+  assertStorageV3ArtifactDirectorySyncSupported,
   assertStorageV3ArtifactCatalogue,
   assertStorageV3ArtifactRootInstallationKey,
   beginStorageV3MigrationBackupArtifact,
@@ -25,6 +26,7 @@ import {
   storageV3ArtifactFilePath,
   storageV3MigrationBackupIntentSha256,
   storageV3MigrationBackupManifest,
+  syncStorageV3ArtifactDirectory,
   type StorageV3ArtifactRoot,
 } from './v3ArtifactCatalogue.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
@@ -68,11 +70,23 @@ export const STORAGE_V3_BACKUP_STAGES = [
   'manifestTempDurable',
   'sqliteFinalLinked',
   'manifestFinalLinked',
+  'finalNamesDurable',
   'cataloguePromoted',
   'sqliteTempUnlinked',
   'manifestTempUnlinked',
 ] as const
 export type StorageV3BackupStage = typeof STORAGE_V3_BACKUP_STAGES[number]
+
+/** @internal invented-fixture process-fault phases; these are not durability claims. */
+export type StorageV3BackupDirectorySyncPhase =
+  | 'finalNames'
+  | 'sqliteTempRemoval'
+  | 'manifestTempRemoval'
+
+type StorageV3BackupDirectorySynchronizer = (
+  root: StorageV3ArtifactRoot,
+  phase: StorageV3BackupDirectorySyncPhase,
+) => void
 
 export type StorageV3BackupResult = Readonly<{
   artifactId: string
@@ -306,11 +320,17 @@ function openExactManifest(
 }
 
 function cleanupPublishedTemp(
+  root: StorageV3ArtifactRoot,
   tempPath: string,
   finalPath: string,
   finalDescriptor: number,
+  phase: StorageV3BackupDirectorySyncPhase,
+  syncDirectory: StorageV3BackupDirectorySynchronizer,
 ): void {
   if (stat(tempPath) === undefined) {
+    assertDescriptorPath(finalPath, finalDescriptor, 1n)
+    syncDirectory(root, phase)
+    assertAbsent(tempPath)
     assertDescriptorPath(finalPath, finalDescriptor, 1n)
     return
   }
@@ -318,12 +338,16 @@ function cleanupPublishedTemp(
   assertHardLinkToDescriptor(tempPath, finalDescriptor)
   unlinkSync(tempPath)
   assertDescriptorPath(finalPath, finalDescriptor, 1n)
+  syncDirectory(root, phase)
+  assertAbsent(tempPath)
+  assertDescriptorPath(finalPath, finalDescriptor, 1n)
 }
 
 function replayIfExact(
   input: StorageV3BackupInput,
   locator: string,
   manifestLocator: string,
+  syncDirectory: StorageV3BackupDirectorySynchronizer,
 ): StorageV3BackupResult | undefined {
   const tempLocator = `${locator}.tmp`
   const manifestTempLocator = `${tempLocator}.manifest.json`
@@ -364,8 +388,22 @@ function replayIfExact(
     if (manifestNlink === 2n) assertHardLinkToDescriptor(manifestTempPath, manifestDescriptor)
     const manifestSha256 = sha256(expectedManifest.bytes)
     if (row.content_sha256 !== contentSha256 || row.manifest_sha256 !== manifestSha256) fail()
-    cleanupPublishedTemp(tempPath, finalPath, finalDescriptor)
-    cleanupPublishedTemp(manifestTempPath, manifestPath, manifestDescriptor)
+    cleanupPublishedTemp(
+      input.root,
+      tempPath,
+      finalPath,
+      finalDescriptor,
+      'sqliteTempRemoval',
+      syncDirectory,
+    )
+    cleanupPublishedTemp(
+      input.root,
+      manifestTempPath,
+      manifestPath,
+      manifestDescriptor,
+      'manifestTempRemoval',
+      syncDirectory,
+    )
     return Object.freeze({ artifactId: input.artifactId, locator, manifestLocator, contentSha256, manifestSha256 })
   } finally {
     if (manifestDescriptor !== undefined) closeSync(manifestDescriptor)
@@ -373,7 +411,10 @@ function replayIfExact(
   }
 }
 
-function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<StorageV3BackupResult> {
+function attempt(
+  input: StorageV3BackupInput,
+  syncDirectory: StorageV3BackupDirectorySynchronizer,
+): StorageV3BackupResult | Promise<StorageV3BackupResult> {
   assertInput(input)
   bindStorageV3ArtifactRoot(input.db, input.root)
   assertStorageV3ArtifactRootInstallationKey(input.root, input.installationKey)
@@ -384,7 +425,7 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
   const manifestLocator = `${locator}.manifest.json`
   const tempLocator = `${locator}.tmp`
   const manifestTempLocator = `${tempLocator}.manifest.json`
-  const replay = replayIfExact(input, locator, manifestLocator)
+  const replay = replayIfExact(input, locator, manifestLocator, syncDirectory)
   if (replay) return replay
 
   const stagedRow = input.db.prepare(
@@ -504,6 +545,15 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
         || !readDescriptorExactly(manifestDescriptor, expectedManifest.bytes.length).equals(expectedManifest.bytes)) fail()
       input.failAfterStage?.('manifestFinalLinked')
 
+      syncDirectory(input.root, 'finalNames')
+      assertDescriptorPath(tempPath, sqliteDescriptor, 2n)
+      assertHardLinkToDescriptor(finalPath, sqliteDescriptor)
+      assertDescriptorPath(manifestTempPath, manifestDescriptor, 2n)
+      assertHardLinkToDescriptor(manifestPath, manifestDescriptor)
+      if (hashSqliteDescriptor(sqliteDescriptor) !== contentSha256
+        || !readDescriptorExactly(manifestDescriptor, expectedManifest.bytes.length).equals(expectedManifest.bytes)) fail()
+      input.failAfterStage?.('finalNamesDurable')
+
       const publicationProof = proveStorageV3MigrationBackupPublication({
         db: input.db,
         artifactId: input.artifactId,
@@ -519,11 +569,23 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
       promoteStorageV3MigrationBackupArtifact(publicationProof)
       input.failAfterStage?.('cataloguePromoted')
 
-      unlinkSync(tempPath)
-      assertDescriptorPath(finalPath, sqliteDescriptor, 1n)
+      cleanupPublishedTemp(
+        input.root,
+        tempPath,
+        finalPath,
+        sqliteDescriptor,
+        'sqliteTempRemoval',
+        syncDirectory,
+      )
       input.failAfterStage?.('sqliteTempUnlinked')
-      unlinkSync(manifestTempPath)
-      assertDescriptorPath(manifestPath, manifestDescriptor, 1n)
+      cleanupPublishedTemp(
+        input.root,
+        manifestTempPath,
+        manifestPath,
+        manifestDescriptor,
+        'manifestTempRemoval',
+        syncDirectory,
+      )
       input.failAfterStage?.('manifestTempUnlinked')
       return Object.freeze({ artifactId: input.artifactId, locator, manifestLocator, contentSha256, manifestSha256 })
     } catch (error) {
@@ -537,15 +599,43 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
   return run()
 }
 
-/** Create one immutable selected-store backup while holding the app writer lease for all async work. */
-export function createStorageV3MigrationBackup(input: StorageV3BackupInput): Promise<StorageV3BackupResult> {
+function createWithDirectorySynchronizer(
+  input: StorageV3BackupInput,
+  syncDirectory: StorageV3BackupDirectorySynchronizer,
+  requireNativeSupport: boolean,
+): Promise<StorageV3BackupResult> {
   try {
     const closed = closeInput(input)
-    return Promise.resolve(withStorageV3WriterLease(closed.root, () => attempt(closed)))
+    if (typeof syncDirectory !== 'function') fail()
+    if (requireNativeSupport) assertStorageV3ArtifactDirectorySyncSupported()
+    return Promise.resolve(withStorageV3WriterLease(
+      closed.root,
+      () => attempt(closed, syncDirectory),
+    ))
   } catch {
     return Promise.reject(new StorageV3BackupError())
   }
 }
 
+/** Create one immutable selected-store backup while holding the app writer lease for all async work. */
+export function createStorageV3MigrationBackup(input: StorageV3BackupInput): Promise<StorageV3BackupResult> {
+  return createWithDirectorySynchronizer(input, syncStorageV3ArtifactDirectory, true)
+}
+
 /** Restart/recovery entrypoint: exact same closed input resumes a staged intent under the lease. */
 export const recoverStorageV3MigrationBackup = createStorageV3MigrationBackup
+
+/**
+ * @internal Invented-fixture seam. Callback success proves only userspace
+ * ordering, never persistence across host power loss; hosted POSIX must run
+ * the native entrypoint above.
+ */
+export const v3BackupTestSeams = Object.freeze({
+  createWithDirectorySynchronizer(
+    input: StorageV3BackupInput,
+    synchronizer: (phase: StorageV3BackupDirectorySyncPhase) => void,
+  ): Promise<StorageV3BackupResult> {
+    if (typeof synchronizer !== 'function') return Promise.reject(new StorageV3BackupError())
+    return createWithDirectorySynchronizer(input, (_root, phase) => synchronizer(phase), false)
+  },
+})

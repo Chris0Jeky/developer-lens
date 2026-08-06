@@ -28,7 +28,15 @@ import {
   STORAGE_V3_ARTIFACT_LOCATORS,
   StorageV3ArtifactError,
 } from './v3ArtifactCatalogue.js'
-import { createStorageV3MigrationBackup, recoverStorageV3MigrationBackup, STORAGE_V3_BACKUP_STAGES, StorageV3BackupError, type StorageV3BackupStage } from './v3Backup.js'
+import {
+  createStorageV3MigrationBackup as createNativeStorageV3MigrationBackup,
+  STORAGE_V3_BACKUP_STAGES,
+  StorageV3BackupError,
+  v3BackupTestSeams,
+  type StorageV3BackupDirectorySyncPhase,
+  type StorageV3BackupInput,
+  type StorageV3BackupStage,
+} from './v3Backup.js'
 import { completeStorageV3DeletionMaintenance, deleteStorageV3Scope } from './v3Deletion.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 import {
@@ -41,6 +49,17 @@ import {
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
 const SCOPE_C = `scope-${'c'.repeat(64)}`
+
+const noOpDirectorySynchronizer = (_phase: StorageV3BackupDirectorySyncPhase): void => {}
+
+function createStorageV3MigrationBackup(
+  input: StorageV3BackupInput,
+  synchronizer = noOpDirectorySynchronizer,
+) {
+  return v3BackupTestSeams.createWithDirectorySynchronizer(input, synchronizer)
+}
+
+const recoverStorageV3MigrationBackup = createStorageV3MigrationBackup
 
 async function fixture(taskId = 'invented-backup-task'): Promise<{ workspaceRoot: string; taskId: string; root: string; db: Database.Database; key: Awaited<ReturnType<typeof setupTaskInstallationKey>>; cleanup(): void }> {
   const workspaceRoot = mkdtempSync(join(tmpdir(), 'developer-lens-life03-backup-'))
@@ -77,6 +96,41 @@ async function withTestGrant<T>(operation: () => Promise<T>): Promise<T> {
 }
 
 describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () => {
+  it.skipIf(process.platform !== 'win32')('fails closed before intent or bytes when native directory durability is unsupported', async () => {
+    const fx = await fixture()
+    try {
+      const root = createStorageV3ArtifactRoot(fx.root)
+      await expect(createNativeStorageV3MigrationBackup({
+        db: fx.db,
+        root,
+        backupAt: '2026-08-06T12:34:55Z',
+        artifactId: `art-${'0'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      })).rejects.toMatchObject({
+        code: 'STORAGE_V3_BACKUP_INVALID',
+        message: 'STORAGE_V3_BACKUP_INVALID',
+      })
+      expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(0)
+      expect(existsSync(join(fx.root, 'migration-backup-20260806T123455Z.sqlite.tmp'))).toBe(false)
+      expect(existsSync(storageV3WriterLeasePath(root))).toBe(false)
+    } finally { fx.cleanup() }
+  })
+
+  it.skipIf(process.platform === 'win32')('proves the native POSIX directory-sync path with invented files', async () => {
+    const fx = await fixture()
+    try {
+      await expect(createNativeStorageV3MigrationBackup({
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:34:55Z',
+        artifactId: `art-${'0'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      })).resolves.toMatchObject({ locator: 'migration-backup-20260806T123455Z.sqlite' })
+    } finally { fx.cleanup() }
+  })
+
   it('backs up through SQLite backup API and preserves invented C1 rows', async () => {
     const fx = await fixture()
     try {
@@ -402,6 +456,125 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
     } finally { fx.cleanup() }
   })
 
+  it('orders durable final names before promotion and durable cleanup after each exact unlink', async () => {
+    const fx = await fixture()
+    try {
+      const artifactId = `art-${'4'.repeat(64)}`
+      const locator = 'migration-backup-20260806T123555Z.sqlite'
+      const phases: StorageV3BackupDirectorySyncPhase[] = []
+      const result = await createStorageV3MigrationBackup({
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:35:55Z',
+        artifactId,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }, (phase) => {
+        phases.push(phase)
+        const row = fx.db.prepare(
+          'SELECT relative_locator FROM app_artifact WHERE artifact_id = ?',
+        ).pluck().get(artifactId)
+        if (phase === 'finalNames') {
+          expect(row).toBe(`${locator}.tmp`)
+          expect(existsSync(join(fx.root, locator))).toBe(true)
+          expect(existsSync(join(fx.root, `${locator}.manifest.json`))).toBe(true)
+          expect(existsSync(join(fx.root, `${locator}.tmp`))).toBe(true)
+          expect(existsSync(join(fx.root, `${locator}.tmp.manifest.json`))).toBe(true)
+        } else if (phase === 'sqliteTempRemoval') {
+          expect(row).toBe(locator)
+          expect(existsSync(join(fx.root, `${locator}.tmp`))).toBe(false)
+          expect(existsSync(join(fx.root, `${locator}.tmp.manifest.json`))).toBe(true)
+        } else {
+          expect(row).toBe(locator)
+          expect(existsSync(join(fx.root, `${locator}.tmp`))).toBe(false)
+          expect(existsSync(join(fx.root, `${locator}.tmp.manifest.json`))).toBe(false)
+        }
+      })
+      expect(result.locator).toBe(locator)
+      expect(phases).toEqual(['finalNames', 'sqliteTempRemoval', 'manifestTempRemoval'])
+    } finally { fx.cleanup() }
+  })
+
+  it.each([
+    'finalNames',
+    'sqliteTempRemoval',
+    'manifestTempRemoval',
+  ] as const)('recovers an invented process fault before %s directory sync without touching unrelated files', async (faultPhase) => {
+    const fx = await fixture()
+    try {
+      const artifactId = `art-${'4'.repeat(64)}`
+      const locator = 'migration-backup-20260806T123555Z.sqlite'
+      const unrelated = join(fx.root, 'invented-unrelated.keep')
+      const unrelatedBytes = Buffer.from('invented unrelated bytes', 'utf8')
+      writeFileSync(unrelated, unrelatedBytes, { flag: 'wx', mode: 0o600 })
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:35:55Z',
+        artifactId,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      await expect(createStorageV3MigrationBackup(input, (phase) => {
+        if (phase === faultPhase) throw new Error('invented process fault')
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+
+      const publishedLocator = fx.db.prepare(
+        'SELECT relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).pluck().get(artifactId)
+      if (faultPhase === 'finalNames') {
+        expect(publishedLocator).toBe(`${locator}.tmp`)
+        expect(existsSync(join(fx.root, `${locator}.tmp`))).toBe(true)
+        expect(existsSync(join(fx.root, `${locator}.tmp.manifest.json`))).toBe(true)
+      } else {
+        expect(publishedLocator).toBe(locator)
+        expect(existsSync(join(fx.root, `${locator}.tmp`))).toBe(false)
+        expect(existsSync(join(fx.root, `${locator}.tmp.manifest.json`)))
+          .toBe(faultPhase === 'sqliteTempRemoval')
+      }
+      expect(readFileSync(unrelated).equals(unrelatedBytes)).toBe(true)
+
+      const recoveryPhases: StorageV3BackupDirectorySyncPhase[] = []
+      const recovered = await recoverStorageV3MigrationBackup(input, (phase) => {
+        recoveryPhases.push(phase)
+      })
+      expect(recovered.locator).toBe(locator)
+      expect(existsSync(join(fx.root, `${locator}.tmp`))).toBe(false)
+      expect(existsSync(join(fx.root, `${locator}.tmp.manifest.json`))).toBe(false)
+      expect(readFileSync(unrelated).equals(unrelatedBytes)).toBe(true)
+      expect(recoveryPhases.at(-2)).toBe('sqliteTempRemoval')
+      expect(recoveryPhases.at(-1)).toBe('manifestTempRemoval')
+    } finally { fx.cleanup() }
+  })
+
+  it('refuses to report cleanup complete if a temp name is replaced during directory sync', async () => {
+    const fx = await fixture()
+    try {
+      const locator = 'migration-backup-20260806T123554Z.sqlite'
+      const tempPath = join(fx.root, `${locator}.tmp`)
+      const replacement = Buffer.from('invented replacement temp', 'utf8')
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:35:54Z',
+        artifactId: `art-${'d'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      await expect(createStorageV3MigrationBackup(input, (phase) => {
+        if (phase === 'sqliteTempRemoval') {
+          writeFileSync(tempPath, replacement, { flag: 'wx', mode: 0o600 })
+        }
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(readFileSync(tempPath).equals(replacement)).toBe(true)
+      expect(fx.db.prepare(
+        'SELECT relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).pluck().get(input.artifactId)).toBe(locator)
+      await expect(recoverStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(readFileSync(tempPath).equals(replacement)).toBe(true)
+    } finally { fx.cleanup() }
+  })
+
   it.each(STORAGE_V3_BACKUP_STAGES)('recovers after durable stage %s', async (stage) => {
     const fx = await fixture()
     let reopened: Database.Database | undefined
@@ -416,6 +589,11 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
         for (const suffix of ['', '.tmp', '.manifest.json', '.tmp.manifest.json']) {
           expect(existsSync(join(fx.root, `migration-backup-20260806T123557Z.sqlite${suffix}`))).toBe(false)
         }
+      }
+      if (stage === 'finalNamesDurable') {
+        expect(fx.db.prepare(
+          'SELECT relative_locator FROM app_artifact WHERE artifact_id = ?',
+        ).pluck().get(input.artifactId)).toBe(`${locator}.tmp`)
       }
       if (stage === 'sqliteTempUnlinked') {
         expect(existsSync(join(fx.root, `${locator}.tmp`))).toBe(false)
