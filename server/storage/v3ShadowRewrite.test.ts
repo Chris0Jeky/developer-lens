@@ -298,6 +298,96 @@ describe('B1b-ii shadow rewrite', () => {
     } finally { source.close(); target.close() }
   })
 
+  it('requires the aliased provider its own binding even when another provider is bound', () => {
+    const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, 142)
+    seedIdentity(source, 'aliased-provider', key, undefined, undefined, 'a')
+    seedIdentity(source, 'other-provider', key, undefined, undefined, 'b')
+    try {
+      // The alias-side variant of the binding matrix: a binding IS supplied, but it
+      // recomputes to a different provider than the one claim_scope.scope_alias names.
+      const error = rewriteError(source, target, key, [{ rawProviderId: 'other-provider' }])
+      expect(error.code).toBe('IDENTITY_BINDING_UNVERIFIABLE')
+      expect(error.message).not.toContain('aliased-provider')
+      expect(target.prepare('SELECT COUNT(*) FROM claim_scope').pluck().get()).toBe(0)
+    } finally { source.close(); target.close() }
+  })
+
+  it.each(['orphan alias', 'expired identity'] as const)('retains no alias or C2 for an unverified scope alias (%s)', (kind) => {
+    const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, kind === 'orphan alias' ? 143 : 144)
+    const aliases = createInstallationAliases(key)
+    const alias = kind === 'orphan alias'
+      ? aliases.repositoryProviderId('orphan-provider')
+      : seedIdentity(source, 'expired-provider', key, '2026-01-01T00:00:00.000Z', '2024-01-01T00:00:00.000Z', 'a').provider
+    if (kind === 'orphan alias') {
+      source.prepare('INSERT INTO claim_scope (scope_id, scope_alias, linked_at) VALUES (?, ?, ?)').run(scopeId('a'), alias, '2026-01-01T00:00:00.000Z')
+    }
+    seedIncremental(source, alias)
+    try {
+      // An incremental row's scope_alias matching a legacy claim_scope alias moves the
+      // rows onto the retained C1 scope, but authenticates nothing: no alias link, no
+      // identity aliases, and every C2 field of every incremental row stays NULL.
+      rewriteStorageV3Shadow({ sourceDb: source, targetDb: target, identityBindings: [], installationKey: key, asOf: '2026-03-01T00:00:00.000Z', randomBytes: (() => { let n = 0; return () => Buffer.alloc(32, ++n) })() })
+      expect(target.prepare('SELECT scope_alias, linked_at, alias_expires_at FROM claim_scope').all())
+        .toEqual([{ scope_alias: null, linked_at: null, alias_expires_at: null }])
+      expect(target.prepare('SELECT provider_id, analytical_key, identity_expires_at FROM repository_identity').all())
+        .toEqual(kind === 'orphan alias' ? [] : [{ provider_id: null, analytical_key: null, identity_expires_at: null }])
+      expect(target.prepare('SELECT source_job_id, payload_hash, range_start, observed_at, c2_expires_at FROM collection_job').all())
+        .toEqual([{ source_job_id: null, payload_hash: null, range_start: null, observed_at: null, c2_expires_at: null }])
+      expect(target.prepare('SELECT source_snapshot_id, snapshot_hash, c2_expires_at FROM source_snapshot').all())
+        .toEqual([{ source_snapshot_id: null, snapshot_hash: null, c2_expires_at: null }])
+      expect(target.prepare('SELECT source_coverage_id, range_start, c2_expires_at FROM coverage_ledger').all())
+        .toEqual([{ source_coverage_id: null, range_start: null, c2_expires_at: null }])
+      expect(target.prepare('SELECT high_watermark, cursor_hint, bounded_overlap_start, c2_expires_at FROM collection_checkpoint').all())
+        .toEqual([{ high_watermark: null, cursor_hint: null, bounded_overlap_start: null, c2_expires_at: null }])
+    } finally { source.close(); target.close() }
+  })
+
+  it('drops the identity aliases when the scope link has already expired', () => {
+    const key = Buffer.alloc(32, 145)
+    for (const [asOf, expectAliases] of [['2026-06-01T00:00:00.000Z', false], ['2026-01-15T00:00:00.000Z', true]] as const) {
+      const source = sourceDb(), target = new Database(':memory:')
+      const seeded = seedIdentity(source, 'stale-link', key, '2025-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'a')
+      try {
+        // linked_at + 13 months = 2026-02-01; the identity anchor is far younger. The
+        // identity row carries the SAME provider alias, so it must not outlive the link.
+        rewriteStorageV3Shadow({ sourceDb: source, targetDb: target, identityBindings: [{ rawProviderId: 'stale-link' }], installationKey: key, asOf })
+        expect(target.prepare('SELECT scope_alias FROM claim_scope').pluck().get())
+          .toBe(expectAliases ? seeded.provider : null)
+        expect(target.prepare('SELECT provider_id, analytical_key, identity_expires_at, is_private FROM repository_identity').get())
+          .toEqual(expectAliases
+            ? { provider_id: seeded.provider, analytical_key: seeded.analytical, identity_expires_at: '2027-02-01T00:00:00.000Z', is_private: 0 }
+            : { provider_id: null, analytical_key: null, identity_expires_at: null, is_private: 0 })
+        expect(target.prepare('SELECT scope_id FROM claim_scope').pluck().get()).toBe(seeded.scope)
+      } finally { source.close(); target.close() }
+    }
+  })
+
+  it('derives every retention clock from source anchors, never from as-of', () => {
+    const key = Buffer.alloc(32, 146)
+    for (const asOf of ['2026-02-01T00:00:00.000Z', '2026-12-01T00:00:00.000Z']) {
+      const source = sourceDb(), target = new Database(':memory:')
+      seedIdentity(source, 'clock-provider', key, '2026-01-01T00:00:00.000Z', '2026-01-05T00:00:00.000Z', 'a')
+      try {
+        rewriteStorageV3Shadow({ sourceDb: source, targetDb: target, identityBindings: [{ rawProviderId: 'clock-provider' }], installationKey: key, asOf })
+        expect(target.prepare('SELECT linked_at, alias_expires_at FROM claim_scope').get())
+          .toEqual({ linked_at: '2026-01-01T00:00:00.000Z', alias_expires_at: addUtcMonthsClamped('2026-01-01T00:00:00.000Z') })
+        expect(target.prepare('SELECT identity_expires_at FROM repository_identity').pluck().get())
+          .toBe(addUtcMonthsClamped('2026-01-05T00:00:00.000Z'))
+      } finally { source.close(); target.close() }
+    }
+    const source = sourceDb(), target = new Database(':memory:')
+    seedIdentity(source, 'clock-provider', key, '2024-01-01T00:00:00.000Z', '2024-01-05T00:00:00.000Z', 'a')
+    try {
+      // An unverifiable/expired identity is never given a fresh thirteen-month clock.
+      const result = rewriteStorageV3Shadow({ sourceDb: source, targetDb: target, identityBindings: [], installationKey: key, asOf: '2026-02-01T00:00:00.000Z' })
+      expect(result.omittedExpiredIdentities).toBe(1)
+      expect(target.prepare('SELECT scope_alias, linked_at, alias_expires_at FROM claim_scope').get())
+        .toEqual({ scope_alias: null, linked_at: null, alias_expires_at: null })
+      expect(target.prepare('SELECT provider_id, analytical_key, identity_expires_at FROM repository_identity').get())
+        .toEqual({ provider_id: null, analytical_key: null, identity_expires_at: null })
+    } finally { source.close(); target.close() }
+  })
+
   it('creates one generated scope per eligible provider using its own latest anchor', () => {
     const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, 15)
     const first = seedIdentity(source, 'first-provider', key, '2026-01-01T00:00:00.000Z', '2026-01-03T00:00:00.000Z', '1')

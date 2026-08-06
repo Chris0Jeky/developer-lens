@@ -669,6 +669,10 @@ export function rewriteStorageV3Shadow(
     const usedKeys = track(new Set<string>())
     const newClaimOwners = track(new Map<string, string>())
     const sourceJobs = track(new Map<string, Row>())
+    /** Providers whose source scope alias link is not retained at `asOf`. */
+    const expiredAliasLinks = track(new Set<string>())
+    /** Source snapshot id -> the source job that produced it, for job-pinned edges. */
+    const sourceSnapshotJobs = track(new Map<string, string>())
     const sourceSnapshotCountByJob = track(new Map<string, number>())
     const sourceCoverageCountByJob = track(new Map<string, number>())
     const omittedJobs = track(new Map<string, string>())
@@ -735,6 +739,11 @@ export function rewriteStorageV3Shadow(
         const state = scope.scopeAlias === null ? undefined : identityStates.get(scope.scopeAlias)
         const aliasExpiresAt = addUtcMonthsClamped(scope.linkedAt)
         const retainAlias = state?.eligible === true && asOf < aliasExpiresAt
+        // The identity row carries the SAME provider alias as this link, so keeping it
+        // after the link expired would reconstitute the very scope-to-provider binding
+        // the link expiry removed (#129 late review). All alias material — the link and
+        // the identity aliases — follows the earlier of the two thirteen-month clocks.
+        if (state !== undefined && !retainAlias) expiredAliasLinks.add(state.providerId)
         insertScope.run(
           scope.scopeId,
           retainAlias ? scope.scopeAlias : null,
@@ -763,8 +772,8 @@ export function rewriteStorageV3Shadow(
         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       for (const state of identityStates.values()) {
-        if (!state.eligible) {
-          omittedExpiredIdentities += 1
+        if (!state.eligible || expiredAliasLinks.has(state.providerId)) {
+          if (!state.eligible) omittedExpiredIdentities += 1
           if (state.targetScopeId === undefined) continue
           insertIdentity.run(
             state.targetScopeId,
@@ -975,6 +984,7 @@ export function rewriteStorageV3Shadow(
         const scopeAlias = requiredText(row.scope_alias)
         const targetScopeId = targetScopeForAlias(scopeAlias)
         const oldJobId = requiredText(row.job_id)
+        sourceSnapshotJobs.set(oldSnapshotId, oldJobId)
         sourceSnapshotCountByJob.set(oldJobId, (sourceSnapshotCountByJob.get(oldJobId) ?? 0) + 1)
         const rangeStart = parseTime(row.range_start)
         const rangeEnd = parseTime(row.range_end)
@@ -1045,6 +1055,11 @@ export function rewriteStorageV3Shadow(
         const snapshot = oldSnapshotId === undefined ? undefined : snapshotMap.get(oldSnapshotId)
         if ((record.status === 'complete') !== (snapshot !== undefined)) fail('GRAPH_REFUSED')
         if (snapshot && snapshot.scopeId !== targetScopeId) fail('GRAPH_REFUSED')
+        // The target binds a coverage row to the snapshot of its OWN job; refuse a
+        // cross-job source edge with a typed code rather than a raw FK abort.
+        if (oldSnapshotId !== undefined && sourceSnapshotJobs.get(oldSnapshotId) !== oldJobId) {
+          fail('GRAPH_REFUSED')
+        }
         const expiresAt = addUtcMonthsClamped(record.observedAt)
         const live = retainAuthenticatedC2(record.scopeAlias, expiresAt)
         const targetId = mintId('cov-')
@@ -1119,6 +1134,7 @@ export function rewriteStorageV3Shadow(
         const job = jobMap.get(oldJobId) ?? fail('GRAPH_REFUSED')
         const snapshot = snapshotMap.get(oldSnapshotId) ?? fail('GRAPH_REFUSED')
         if (job.scopeId !== targetScopeId || snapshot.scopeId !== targetScopeId) fail('GRAPH_REFUSED')
+        if (sourceSnapshotJobs.get(oldSnapshotId) !== oldJobId) fail('GRAPH_REFUSED')
         const expiresAt = addUtcMonthsClamped(completedAt)
         const live = retainAuthenticatedC2(scopeAlias, expiresAt)
         const targetId = mintId('ckpt-')
