@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { tmpdir } from 'node:os'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD_ERROR_CODE,
   loadHashBoundGithubCoreActivationTaskCard,
@@ -11,8 +11,23 @@ import {
 } from './activationTaskLoader.js'
 import {
   assertGithubCoreActivationGrant,
-  githubCoreActivationGrantTestSeam,
+  type GithubCoreActivationGrant,
 } from './activationGrant.js'
+
+// #151: production ships no grant issuer. This file mixes negative paths (which must keep hitting
+// the real default-deny validator) with one success path, so the mock delegates to the real
+// validator unless a test opts in by flipping `acceptTestGrants`.
+const grantValidation = vi.hoisted(() => ({ acceptTestGrants: false }))
+vi.mock('./activationGrant.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('./activationGrant.js')>()
+  return {
+    ...actual,
+    assertGithubCoreActivationGrant: (input: unknown): GithubCoreActivationGrant =>
+      grantValidation.acceptTestGrants
+        ? (input as GithubCoreActivationGrant)
+        : actual.assertGithubCoreActivationGrant(input),
+  }
+})
 
 const taskId = 'fixture-loader-01'
 
@@ -101,6 +116,7 @@ const validCard = () => ({
 let roots: string[] = []
 
 afterEach(async () => {
+  grantValidation.acceptTestGrants = false
   await Promise.all(roots.map((root) => rm(root, { force: true, recursive: true })))
   roots = []
 })
@@ -128,9 +144,8 @@ async function expectInvalidHashBound(input: unknown): Promise<void> {
   })
 }
 
-function inventedGrant(expectedSha256: string) {
-  return githubCoreActivationGrantTestSeam.issueInventedGrant({
-    fixture: 'invented',
+function inventedGrant(expectedSha256: string): GithubCoreActivationGrant {
+  return Object.freeze({
     capabilityId: 'github.core',
     taskId,
     taskCardSha256: expectedSha256,
@@ -157,6 +172,7 @@ describe('github.core activation task card loader', () => {
   })
 
   it('binds exact opened-handle bytes to a lowercase SHA-256', async () => {
+    grantValidation.acceptTestGrants = true
     const root = await fixtureRoot()
     const cardPath = join(root, '.developer-lens', 'activation', taskId, 'task-card.json')
     const originalBytes = await readFile(cardPath)

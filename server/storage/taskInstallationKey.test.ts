@@ -13,8 +13,25 @@ import {
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, sep } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
-import { githubCoreActivationGrantTestSeam } from '../connectors/github/activationGrant.js'
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { GithubCoreActivationGrant } from '../connectors/github/activationGrant.js'
+
+// #151: production ships no grant issuer. Negative paths (forged grant, accessor grant) keep hitting
+// the real default-deny validator; the one grant-backed continuity success path opts in by flipping
+// `acceptTestGrants` to inject a test-owned validator.
+const grantValidation = vi.hoisted(() => ({ acceptTestGrants: false, validatorCalls: 0 }))
+vi.mock('../connectors/github/activationGrant.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../connectors/github/activationGrant.js')>()
+  return {
+    ...actual,
+    assertGithubCoreActivationGrant: (input: unknown): GithubCoreActivationGrant => {
+      grantValidation.validatorCalls += 1
+      return grantValidation.acceptTestGrants
+        ? input as GithubCoreActivationGrant
+        : actual.assertGithubCoreActivationGrant(input)
+    },
+  }
+})
 import {
   bindTaskInstallationKeyBody,
   loadTaskInstallationKey,
@@ -35,6 +52,8 @@ const SCOPE_ALIAS = `repo-${'c'.repeat(64)}`
 let roots: string[] = []
 
 afterEach(async () => {
+  grantValidation.acceptTestGrants = false
+  grantValidation.validatorCalls = 0
   await Promise.all(roots.map((root) => rm(root, { force: true, recursive: true })))
   roots = []
 })
@@ -63,9 +82,8 @@ async function setupWithKey(root: string, bytes = KEY): ReturnType<
   )
 }
 
-function inventedGrant(fingerprint: string, taskId = TASK_ID) {
-  return githubCoreActivationGrantTestSeam.issueInventedGrant({
-    fixture: 'invented',
+function inventedGrant(fingerprint: string, taskId = TASK_ID): GithubCoreActivationGrant {
+  return Object.freeze({
     capabilityId: 'github.core',
     taskId,
     taskCardSha256: CARD_SHA256,
@@ -210,6 +228,7 @@ describe('task-owned installation-key continuity', () => {
   })
 
   it('authorizes backup signing only for setup or an opaque grant-backed fingerprint', async () => {
+    grantValidation.acceptTestGrants = true
     const root = await fixtureRoot()
     const created = await setupWithKey(root)
     const body = 'a'.repeat(64)
@@ -271,6 +290,24 @@ describe('task-owned installation-key continuity', () => {
       accessor as unknown as Parameters<typeof loadTaskInstallationKeyForGithubCoreGrant>[0],
     ))
     expect(getterCalled).toBe(false)
+  })
+
+  it('invokes the default-deny validator before inspecting a workspace-root accessor', async () => {
+    let workspaceRootReads = 0
+    const input = { grant: inventedGrant('b'.repeat(64)) } as Record<string, unknown>
+    Object.defineProperty(input, 'workspaceRoot', {
+      enumerable: true,
+      get: () => {
+        workspaceRootReads += 1
+        throw new Error('workspace root must stay unread')
+      },
+    })
+
+    await expectInvalid(loadTaskInstallationKeyForGithubCoreGrant(
+      input as unknown as Parameters<typeof loadTaskInstallationKeyForGithubCoreGrant>[0],
+    ))
+    expect(grantValidation.validatorCalls).toBe(1)
+    expect(workspaceRootReads).toBe(0)
   })
 
   it('snapshots closed data properties before awaiting and rejects accessors or mutations', async () => {

@@ -3,13 +3,37 @@ import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   GITHUB_CORE_ACTIVATION_RUNNER_ERROR_CODE,
   runGithubCoreActivation,
   type GithubCoreActivationRunnerInput,
 } from './activationRunner.js'
-import { githubCoreActivationGrantTestSeam } from './activationGrant.js'
+import type { GithubCoreActivationGrant } from './activationGrant.js'
+
+const grantMock = vi.hoisted(() => ({ acceptTestGrant: false }))
+
+// #151: production ships no grant issuer. The mock delegates to the production default-deny
+// validator unless a success path explicitly opts into a test-owned acceptance seam.
+vi.mock('./activationGrant.js', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./activationGrant.js')>()
+  return {
+    ...original,
+    assertGithubCoreActivationGrant: (input: unknown): GithubCoreActivationGrant =>
+      grantMock.acceptTestGrant
+        ? input as GithubCoreActivationGrant
+        : original.assertGithubCoreActivationGrant(input),
+  }
+})
+
+function testGrant(fields: {
+  taskId: string
+  taskCardSha256: string
+  installationKeyFingerprint: string
+  scopeAlias: string
+}): GithubCoreActivationGrant {
+  return Object.freeze({ capabilityId: 'github.core', ...fields })
+}
 import type {
   GithubCoreRestFetch,
   GithubCoreRestResponse,
@@ -34,11 +58,21 @@ const roots: string[] = []
 const databases: Database.Database[] = []
 
 afterEach(async () => {
+  grantMock.acceptTestGrant = false
   for (const db of databases.splice(0)) {
     if (db.open) db.close()
   }
   await Promise.all(roots.splice(0).map((root) => rm(root, { force: true, recursive: true })))
 })
+
+async function runWithTestGrant(input: GithubCoreActivationRunnerInput) {
+  grantMock.acceptTestGrant = true
+  try {
+    return await runGithubCoreActivation(input)
+  } finally {
+    grantMock.acceptTestGrant = false
+  }
+}
 
 function database(): Database.Database {
   const db = openStorageDatabase(':memory:')
@@ -181,7 +215,7 @@ async function cardFixture(value: unknown = card()): Promise<{
   readonly expectedTaskCardSha256: string
   readonly installationKeyFingerprint: string
   readonly scopeAlias: string
-  readonly grant: ReturnType<typeof githubCoreActivationGrantTestSeam.issueInventedGrant>
+  readonly grant: GithubCoreActivationGrant
 }> {
   const root = await mkdtemp(join(tmpdir(), 'developer-lens-runner-'))
   roots.push(root)
@@ -195,9 +229,7 @@ async function cardFixture(value: unknown = card()): Promise<{
   )
   const expectedTaskCardSha256 = createHash('sha256').update(bytes).digest('hex')
   const scopeAlias = key.aliases.githubCoreAlias('repository', '101')
-  const grant = githubCoreActivationGrantTestSeam.issueInventedGrant({
-    fixture: 'invented',
-    capabilityId: 'github.core',
+  const grant = testGrant({
     taskId,
     taskCardSha256: expectedTaskCardSha256,
     installationKeyFingerprint: key.fingerprint,
@@ -290,12 +322,21 @@ async function expectRunnerFailure(input: unknown): Promise<void> {
   })
 }
 
+async function expectRunnerFailureWithTestGrant(input: unknown): Promise<void> {
+  grantMock.acceptTestGrant = true
+  try {
+    await expectRunnerFailure(input)
+  } finally {
+    grantMock.acceptTestGrant = false
+  }
+}
+
 function count(db: Database.Database, table: string): number {
   return Number(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get())
 }
 
 describe('default-off github.core activation runner', () => {
-  it('denies a forged or non-github grant before reading inputs or invoking any dependency', async () => {
+  it('uses production default-deny before reading workspace/card/key/store/fetch inputs', async () => {
     for (const grant of [
       {
         capabilityId: 'github.core',
@@ -306,23 +347,22 @@ describe('default-off github.core activation runner', () => {
       },
       { capabilityId: 'cap.external.model' },
     ]) {
-      let workspaceReads = 0
+      const dependencyReads: string[] = []
       let storeOpens = 0
       let fetches = 0
-      const input: Record<string, unknown> = {
-        grant,
-        taskId,
-        expectedTaskCardSha256: 'a'.repeat(64),
-        openStore: () => { storeOpens += 1; throw new Error('store must stay closed') },
-        fetch: async () => { fetches += 1; throw new Error('fetch must not run') },
-        jobId: 'fixture-denied-job',
-        coverageId: firstCoverageId,
-        jobStartedAt: firstJobStart,
+      const input: Record<string, unknown> = { grant }
+      for (const property of [
+        'workspaceRoot', 'taskId', 'expectedTaskCardSha256', 'openStore', 'fetch', 'jobId',
+        'coverageId', 'jobStartedAt',
+      ]) {
+        Object.defineProperty(input, property, {
+          enumerable: true,
+          get: () => {
+            dependencyReads.push(property)
+            throw new Error(`${property} must stay unread`)
+          },
+        })
       }
-      Object.defineProperty(input, 'workspaceRoot', {
-        enumerable: true,
-        get: () => { workspaceReads += 1; throw new Error('path must not be read') },
-      })
 
       let denial: unknown
       try {
@@ -335,8 +375,8 @@ describe('default-off github.core activation runner', () => {
         message: GITHUB_CORE_ACTIVATION_RUNNER_ERROR_CODE,
       })
       expect(JSON.stringify(denial)).not.toMatch(/fixture-denied|PRIVATE|repo-|task-card|sha256/i)
-      expect({ workspaceReads, storeOpens, fetches }).toEqual({
-        workspaceReads: 0,
+      expect({ dependencyReads, storeOpens, fetches }).toEqual({
+        dependencyReads: [],
         storeOpens: 0,
         fetches: 0,
       })
@@ -351,7 +391,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
     ])
 
-    const result = await runGithubCoreActivation(runnerInput(fixture, db, transport.fetch))
+    const result = await runWithTestGrant(runnerInput(fixture, db, transport.fetch))
 
     expect(result).toEqual({
       stability: 'stable',
@@ -396,13 +436,13 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
     ])
-    await runGithubCoreActivation(runnerInput(fixture, db, seedTransport.fetch))
+    await runWithTestGrant(runnerInput(fixture, db, seedTransport.fetch))
     const scopeAlias = fixture.scopeAlias
     const secondTransport = fetchFixture([
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
     ])
-    await runGithubCoreActivation(runnerInput(fixture, db, secondTransport.fetch, {
+    await runWithTestGrant(runnerInput(fixture, db, secondTransport.fetch, {
       jobId: 'fixture-second-window',
       coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
@@ -431,14 +471,14 @@ describe('default-off github.core activation runner', () => {
     const transport = fetchFixture([])
     const { coverageId: _omitted, ...withoutCoverageId } = runnerInput(fixture, db, transport.fetch)
 
-    await expectRunnerFailure(withoutCoverageId)
+    await expectRunnerFailureWithTestGrant(withoutCoverageId)
     for (const coverageId of [
       `github.core:repo-alias:${firstJobStart}`,
       'cov-not-hex',
       `cov-${'a'.repeat(63)}`,
       `cov-${'A'.repeat(64)}`,
     ]) {
-      await expectRunnerFailure(runnerInput(fixture, db, transport.fetch, { coverageId }))
+      await expectRunnerFailureWithTestGrant(runnerInput(fixture, db, transport.fetch, { coverageId }))
     }
 
     expect(transport.calls).toHaveLength(0)
@@ -451,7 +491,7 @@ describe('default-off github.core activation runner', () => {
     const db = database()
     const transport = fetchFixture([response(404, { message: 'POISON_NOT_FOUND' })])
 
-    const result = await runGithubCoreActivation(runnerInput(fixture, db, transport.fetch))
+    const result = await runWithTestGrant(runnerInput(fixture, db, transport.fetch))
 
     expect(result).toMatchObject({
       stability: 'not_observed',
@@ -477,7 +517,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
     ])
-    await runGithubCoreActivation(runnerInput(fixture, db, seedTransport.fetch, {
+    await runWithTestGrant(runnerInput(fixture, db, seedTransport.fetch, {
       jobId: 'fixture-seed-job',
     }))
     const scopeAlias = fixture.scopeAlias
@@ -488,7 +528,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-b'),
     ])
 
-    const result = await runGithubCoreActivation(runnerInput(fixture, db, transport.fetch, {
+    const result = await runWithTestGrant(runnerInput(fixture, db, transport.fetch, {
       jobId: 'fixture-unstable-job',
       coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
@@ -528,7 +568,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
     ])
-    await runGithubCoreActivation(runnerInput(fixture, db, seedTransport.fetch, {
+    await runWithTestGrant(runnerInput(fixture, db, seedTransport.fetch, {
       jobId: 'fixture-seed-job',
     }))
     const scopeAlias = fixture.scopeAlias
@@ -540,7 +580,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
       response(403, { message: 'POISON_PERMISSION' }),
     ])
-    const result = await runGithubCoreActivation(runnerInput(fixture, db, transport.fetch, {
+    const result = await runWithTestGrant(runnerInput(fixture, db, transport.fetch, {
       jobId: 'fixture-followup-job',
       coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
@@ -575,7 +615,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
     ])
-    await runGithubCoreActivation(runnerInput(originalFixture, db, seedTransport.fetch, {
+    await runWithTestGrant(runnerInput(originalFixture, db, seedTransport.fetch, {
       jobId: 'fixture-seed-job',
     }))
     const scopeAlias = originalFixture.scopeAlias
@@ -588,7 +628,7 @@ describe('default-off github.core activation runner', () => {
     }
     const transport = fetchFixture([])
 
-    await expectRunnerFailure(runnerInput(changedFixture, db, transport.fetch, {
+    await expectRunnerFailureWithTestGrant(runnerInput(changedFixture, db, transport.fetch, {
       jobId: 'fixture-reconsent-required',
       coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
@@ -613,29 +653,25 @@ describe('default-off github.core activation runner', () => {
     let storeOpens = 0
     const openStore = () => { storeOpens += 1; return db }
     const validInput = runnerInput(validFixture, db, transport.fetch, { openStore })
-    const wrongKeyGrant = githubCoreActivationGrantTestSeam.issueInventedGrant({
-      fixture: 'invented',
-      capabilityId: 'github.core',
+    const wrongKeyGrant = testGrant({
       taskId,
       taskCardSha256: validFixture.expectedTaskCardSha256,
       installationKeyFingerprint: '0'.repeat(64),
       scopeAlias: validFixture.scopeAlias,
     })
-    const wrongScopeGrant = githubCoreActivationGrantTestSeam.issueInventedGrant({
-      fixture: 'invented',
-      capabilityId: 'github.core',
+    const wrongScopeGrant = testGrant({
       taskId,
       taskCardSha256: validFixture.expectedTaskCardSha256,
       installationKeyFingerprint: validFixture.installationKeyFingerprint,
       scopeAlias: `repo-${'0'.repeat(64)}`,
     })
 
-    await expectRunnerFailure({ ...validInput, grant: wrongKeyGrant })
-    await expectRunnerFailure({ ...validInput, grant: wrongScopeGrant })
-    await expectRunnerFailure({ ...validInput, expectedTaskCardSha256: '0'.repeat(64) })
-    await expectRunnerFailure(runnerInput(invalidCardFixture, db, transport.fetch, { openStore }))
-    await expectRunnerFailure({ ...validInput, card: card(5) })
-    await expectRunnerFailure(runnerInput(unsplittableFixture, db, transport.fetch, { openStore }))
+    await expectRunnerFailureWithTestGrant({ ...validInput, grant: wrongKeyGrant })
+    await expectRunnerFailureWithTestGrant({ ...validInput, grant: wrongScopeGrant })
+    await expectRunnerFailureWithTestGrant({ ...validInput, expectedTaskCardSha256: '0'.repeat(64) })
+    await expectRunnerFailureWithTestGrant(runnerInput(invalidCardFixture, db, transport.fetch, { openStore }))
+    await expectRunnerFailureWithTestGrant({ ...validInput, card: card(5) })
+    await expectRunnerFailureWithTestGrant(runnerInput(unsplittableFixture, db, transport.fetch, { openStore }))
 
     expect(storeOpens).toBe(0)
     expect(transport.calls).toHaveLength(0)
