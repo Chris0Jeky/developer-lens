@@ -32,6 +32,11 @@ import {
 } from './taskInstallationKey.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
 import { STORAGE_V3_SELECTION_PROOF_NAMES } from './v3SelectionProof.js'
+import {
+  STORAGE_V3_REVOCATION_REPLAY_NAMES,
+  resumeStorageV3RevocationReplay,
+  v3RevocationReplayTestSeams,
+} from './v3RevocationReplay.js'
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -131,6 +136,7 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       })
       first.db.close()
       expect(existsSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final))).toBe(true)
+      expect(existsSync(join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.anchor))).toBe(true)
 
       const replay = expectSelected(selectStorageV3Reader(fx.input))
       expect(replay.selection).toEqual(first.selection)
@@ -141,6 +147,31 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
         ...fx.input,
         installationKey: Object.freeze({}) as TaskInstallationKeyHandle,
       })).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+    } finally { fx.cleanup() }
+  })
+
+  it('refuses reads with a durable unapplied revocation and resumes before service', async () => {
+    const fx = await fixture()
+    try {
+      const selected = expectSelected(selectStorageV3Reader(fx.input))
+      selected.db.close()
+      expect(() => v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
+        directory: fx.root,
+        installationKey: fx.key,
+        scopeId: SCOPE_A,
+        asOf: '2026-08-06T13:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 9),
+      }, () => {}, (stage) => {
+        if (stage === 'intentDurable') throw new Error('invented process interruption')
+      })).toThrow('invented process interruption')
+
+      expect(selectStorageV3Reader(fx.input))
+        .toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      expect(resumeStorageV3RevocationReplay(fx.root, fx.key)).toBe(1)
+      const replay = expectSelected(selectStorageV3Reader(fx.input))
+      expect(replay.db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(SCOPE_A))
+        .toBeUndefined()
+      replay.db.close()
     } finally { fx.cleanup() }
   })
 

@@ -29,6 +29,8 @@ import {
 } from './v3RevocationReplay.js'
 import {
   recordStorageV3MigrationSelection,
+  storageV3MigrationRootBinding,
+  v3SelectionReceiptTestSeams,
   type StorageV3MigrationSelection,
 } from './v3SelectionReceipt.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
@@ -86,11 +88,21 @@ async function fixture(): Promise<Fixture> {
       ownerScopeIds: [SCOPE_A, SCOPE_B],
       installationKey: key,
     }, () => {})
-    const selection = recordStorageV3MigrationSelection(db, {
+    const reportInput = Object.freeze({
       legacySourceId: `legacy-${'5'.repeat(64)}`,
       selectedArtifactId,
       backupArtifactId: backup.artifactId,
-      successfulReportAt: SUCCESS_AT,
+      backupAt: BACKUP_AT,
+      taskId,
+      taskFingerprint: key.fingerprint,
+      rootBinding: storageV3MigrationRootBinding(root),
+    })
+    const selection = recordStorageV3MigrationSelection(db, {
+      ...reportInput,
+      successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        reportInput,
+        SUCCESS_AT,
+      ),
     }).selection
     db.close()
     return Object.freeze({
