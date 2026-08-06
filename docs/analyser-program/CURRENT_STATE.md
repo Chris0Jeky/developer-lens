@@ -14,7 +14,9 @@ current_slice_override: 'Activation enforcement, the single-writer lease, the LI
   crash-durability work under an explicit owner gate exception during a declared GitHub Actions
   outage. PR #164 merged #162 atomic selection/fallback and the owner-approved seven-day grace under
   the same explicitly documented outage posture. PR #167 merged the bounded #166 rollback-floor
-  follow-up. External immutable selection proof #168 is the active prerequisite to restore #163.'
+  follow-up. PR #169 merged the committed-receipt-bound external selection marker; restore #163 is
+  the active slice and consumes its opaque proof. #168 stays open for the late #170 marker-hardening
+  checklist and hosted proof.'
 phase: 'R4 active horizon OPEN. B4 storage, PR #149 lifecycle safety, PR #150 tracked-source activation enforcement, PR #152 single-writer enforcement, and PR #153 selected-store backup are the foundation; LIFE-03 hardening is active. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
@@ -27,9 +29,10 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   lifecycle safety #149, tracked-source activation enforcement #150, single-writer lease #152,
   selected-store backup #153, migration-backup singleton #158, task-key continuity #156/PR #159,
   activation default-deny/assert-only PR #160, crash durability #154/#155/PR #161,
-  atomic reader selection/grace #162/PR #164, rollback floor #166/PR #167',
+  atomic reader selection/grace #162/PR #164, rollback floor #166/PR #167,
+  external immutable selection marker PR #169',
   'state syncs #126']
-active_slice: 'DL-LIFE-03 immutable selection proof (#168) then restore (#163): PR #167 makes every writer-lease contention and missing/moved selected store non-legacy unavailable. The active proof slice publishes one key-bound local C2 marker only from the committed selected-store receipt; exact replay can reconstruct a missing marker, while foreign bytes fail closed. Restore #163 is decomposed into standalone final-backup verification, exact copied-snapshot normalization, opaque-proof consumption, and atomic publication/reopen. Cleanup and tombstone replay remain later LIFE-03 slices. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
+active_slice: 'DL-LIFE-03 restore (#163; advances #168): the merged selector publishes one key-bound local C2 marker only from the committed receipt. The active restore candidate independently verifies an immutable final backup after selected-store loss, copies and normalizes only provisional backup metadata, consumes a fresh opaque marker handle, records the exact original receipt, and publishes/reopens the selected name durably. Caller-minted timestamps/receipts, detected name replacement, sync laundering, foreign paths, and source mutation fail closed. Hostile same-user pathname ABA remains explicitly outside the containment claim and tracked in #142 for native handle/VFS work. #168/#170 retain the late marker-minimization and filesystem-durability follow-ups. Cleanup and tombstone replay remain later LIFE-03 slices. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -40,7 +43,7 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No owner blocker for invented-fixture work. #156/PR #159 task-key authority, PR #160 activation default-deny, #154/#155/PR #161 crash durability, #162/PR #164 reader selection, and #166/PR #167 rollback floor are merged. A real migration/connector still requires external immutable proof #168, success-report/grace hardening #165, LIFE-03 restore #163, tombstone replay, expiry cleanup, and a separately reviewed production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a pre-LIFE-03 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
+blockers: 'No owner blocker for invented-fixture work. #156/PR #159 task-key authority, PR #160 activation default-deny, #154/#155/PR #161 crash durability, #162/PR #164 reader selection, #166/PR #167 rollback floor, and PR #169 external marker publication are merged. A real migration/connector still requires #163 opaque restore consumption, #168/#170 marker hardening, success-report/grace hardening #165, tombstone replay, expiry cleanup, and a separately reviewed production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a pre-LIFE-03 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
