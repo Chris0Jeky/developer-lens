@@ -21,6 +21,7 @@ import {
   assertStorageV3ArtifactDirectorySyncSupported,
   assertStorageV3ArtifactRootInstallationKey,
   openStorageV3ArtifactRoot,
+  storageV3MaintenanceStatus,
   storageV3ArtifactFilePath,
   syncStorageV3ArtifactDirectory,
   type StorageV3ArtifactRoot,
@@ -798,6 +799,9 @@ export function replayStorageV3Revocations(
   state: StorageV3RevocationReplayState,
 ): number {
   if (!db?.open || db.readonly || db.inTransaction) return fail()
+  if (storageV3MaintenanceStatus(db) === 'pending') {
+    completeStorageV3DeletionMaintenance(db)
+  }
   let applied = 0
   for (const entry of state.entries) {
     let alreadyApplied = true

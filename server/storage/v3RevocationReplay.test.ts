@@ -15,6 +15,7 @@ import {
   createStorageV3ArtifactRoot,
   openStorageV3ArtifactRoot,
   registerSelectedStorageV3Artifact,
+  storageV3MaintenanceStatus,
   STORAGE_V3_ARTIFACT_LOCATORS,
 } from './v3ArtifactCatalogue.js'
 import { v3BackupTestSeams } from './v3Backup.js'
@@ -200,6 +201,35 @@ describe('LIFE-03 external revocation replay', { timeout: 30_000 }, () => {
           "SELECT 1 FROM lineage_event WHERE subject_kind = 'scope' AND subject_id = ? AND event_kind = 'tombstone_cascade'",
         ).get(SCOPE_A)).toBeDefined()
       } finally { after.close() }
+    } finally { fx.close() }
+  })
+
+  it('completes pending maintenance after interruption following SQL deletion', async () => {
+    const fx = await fixture()
+    try {
+      expect(() => deleteScope(fx, (stage) => {
+        if (stage === 'deletionCommitted') throw new Error('invented post-commit crash')
+      })).toThrow('invented post-commit crash')
+
+      const pending = openSelectedStorageV3Store(fx.root)
+      try {
+        expect(pending.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(SCOPE_A))
+          .toBeUndefined()
+        expect(storageV3MaintenanceStatus(pending)).toBe('pending')
+        expect(pending.prepare(
+          "SELECT state FROM app_artifact WHERE kind = 'migration_backup_v1'",
+        ).pluck().get()).toBe('pending')
+      } finally { pending.close() }
+
+      expect(resumeStorageV3RevocationReplay(fx.root, fx.key)).toBe(0)
+      const recovered = openSelectedStorageV3Store(fx.root)
+      try {
+        expect(storageV3MaintenanceStatus(recovered)).toBe('complete')
+        expect(recovered.prepare(
+          "SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'",
+        ).pluck().get()).toBe(0)
+      } finally { recovered.close() }
+      expect(resumeStorageV3RevocationReplay(fx.root, fx.key)).toBe(0)
     } finally { fx.close() }
   })
 

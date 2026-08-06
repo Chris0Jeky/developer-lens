@@ -484,6 +484,11 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, () => {},
       ),
       () => {},
+      issueStorageV3MigrationSuccessReport,
+      (root, installationKey, selection, lease) =>
+        v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+          root, installationKey, selection, lease, () => {},
+        ),
     )
   },
 })
