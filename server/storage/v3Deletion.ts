@@ -104,6 +104,7 @@ const V3_DELETION_REGISTRY = {
   app_artifact_scope: 'global',
   migration_backup_attempt: 'global',
   storage_maintenance_state: 'global',
+  migration_selection_state: 'global',
 } as const satisfies Record<(typeof STORAGE_V3_SHADOW_TABLES)[number], V3DeletionHandling>
 
 /** Children strictly before parents; claim_scope last among scope-bound rows. */
