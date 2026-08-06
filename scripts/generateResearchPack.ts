@@ -6,6 +6,7 @@ import { z } from 'zod'
 import {
   RELATION_NAMES,
   RESEARCH_PACK_PRODUCER_CODE,
+  REQUIRED_NO_PERSON_INTERPRETATION,
   ResearchPackSchema,
   type ResearchPack,
 } from '../shared/researchPack.js'
@@ -26,6 +27,43 @@ function stableValue(value: unknown): unknown {
 
 export function stableJson(value: unknown): string {
   return `${JSON.stringify(stableValue(value), null, 2)}\n`
+}
+
+type JsonSchemaObject = Record<string, unknown>
+
+function schemaObject(value: unknown, label: string): JsonSchemaObject {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) {
+    throw new Error(`generated ResearchPack schema is missing ${label}`)
+  }
+  return value as JsonSchemaObject
+}
+
+function enrichStandaloneSchema(value: unknown): JsonSchemaObject {
+  const schema = schemaObject(value, 'root object')
+  const properties = schemaObject(schema.properties, 'root properties')
+  const featureRegistry = schemaObject(properties.feature_registry, 'feature_registry')
+  const feature = schemaObject(featureRegistry.items, 'feature_registry items')
+  const featureProperties = schemaObject(feature.properties, 'feature properties')
+  const interpretationCodes = schemaObject(
+    featureProperties.prohibited_interpretation_codes,
+    'prohibited_interpretation_codes',
+  )
+
+  interpretationCodes.contains = { const: REQUIRED_NO_PERSON_INTERPRETATION }
+  schema.allOf = [
+    {
+      if: {
+        properties: { classification: { const: 'C1' } },
+        required: ['classification'],
+      },
+      then: {
+        $comment: 'Runtime and typed consumers additionally require this UTC midnight to be a Monday.',
+        properties: { generated_at: { pattern: '^\\d{4}-\\d{2}-\\d{2}T00:00:00Z$' } },
+        required: ['generated_at'],
+      },
+    },
+  ]
+  return schema
 }
 
 function omittedRelation() {
@@ -83,7 +121,7 @@ export function createInventedResearchPack(contractSha256: string): ResearchPack
 }
 
 export function renderResearchPackFiles(): { schema: string; fixture: string } {
-  const schema = z.toJSONSchema(ResearchPackSchema)
+  const schema = enrichStandaloneSchema(z.toJSONSchema(ResearchPackSchema))
   const schemaText = stableJson(schema)
   const contractSha256 = `sha256:${createHash('sha256').update(schemaText, 'utf8').digest('hex')}`
   const fixtureText = stableJson(createInventedResearchPack(contractSha256))

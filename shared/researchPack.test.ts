@@ -1,7 +1,12 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { RELATION_NAMES, ResearchPackSchema, TimeWindowSchema } from './researchPack.js'
+import {
+  RELATION_NAMES,
+  RESEARCH_PACK_INTERPRETATION_CODES,
+  ResearchPackSchema,
+  TimeWindowSchema,
+} from './researchPack.js'
 import { renderResearchPackFiles } from '../scripts/generateResearchPack.js'
 
 const fixturePath = resolve('research-contracts', 'research-pack', 'v1', 'invented.fixture.json')
@@ -92,7 +97,92 @@ describe('ResearchPack v1 producer contract', () => {
     const featureId = new RegExp(pattern)
 
     expect(featureId.test('DL.PERSON.PRODUCTIVITY.v1')).toBe(false)
+    expect(featureId.test('DL.DEVELOPER.OUTPUT.v1')).toBe(false)
+    expect(featureId.test('DL.CONTRIBUTOR.OUTPUT.v1')).toBe(false)
+    expect(featureId.test('DL.AUTHOR.OUTPUT.v1')).toBe(false)
+    expect(featureId.test('DL.REVIEWER.OUTPUT.v1')).toBe(false)
+    expect(featureId.test('DL.INDIVIDUAL.OUTPUT.v1')).toBe(false)
+    expect(featureId.test('DL.WEEK.HOURS.WORKED.v1')).toBe(false)
+    expect(featureId.test('DL.WEEK.BUS.FACTOR.v1')).toBe(false)
     expect(featureId.test('DL.WEEK.CHANGE_COUNT.v1')).toBe(true)
+    expect(featureId.test('DL.WEEK.AUTHORIZATION_STATE.v1')).toBe(true)
+  })
+
+  it('rejects person-oriented feature tokens in every separator and requires a recognized no-person code', async () => {
+    const fixture = await fixtureValue()
+    const feature = fixture.feature_registry[0]
+
+    for (const featureId of [
+      'DL.DEVELOPER.OUTPUT.v1',
+      'DL.CONTRIBUTOR.OUTPUT.v1',
+      'DL.AUTHOR.OUTPUT.v1',
+      'DL.REVIEWER.OUTPUT.v1',
+      'DL.INDIVIDUAL.OUTPUT.v1',
+      'DL.WEEK.HOURS.WORKED.v1',
+      'DL.WEEK.BUS.FACTOR.v1',
+    ]) {
+      expect(() =>
+        ResearchPackSchema.parse({
+          ...fixture,
+          feature_registry: [{ ...feature, feature_id: featureId }],
+        }),
+      ).toThrow()
+    }
+
+    expect(() =>
+      ResearchPackSchema.parse({
+        ...fixture,
+        feature_registry: [{ ...feature, feature_id: 'DL.WEEK.AUTHORIZATION_STATE.v1' }],
+      }),
+    ).not.toThrow()
+    expect(() =>
+      ResearchPackSchema.parse({
+        ...fixture,
+        feature_registry: [{ ...feature, prohibited_interpretation_codes: ['ALLOW_PERSON_RANKING'] }],
+      }),
+    ).toThrow()
+    expect(() =>
+      ResearchPackSchema.parse({
+        ...fixture,
+        feature_registry: [
+          { ...feature, prohibited_interpretation_codes: ['NOT_PRODUCTIVITY', 'NOT_EFFORT'] },
+        ],
+      }),
+    ).toThrow()
+  })
+
+  it('publishes the closed interpretation-code vocabulary and required no-person code in JSON Schema', async () => {
+    const schema = JSON.parse(await readFile(schemaPath, 'utf8')) as Record<string, any>
+    const codes = schema.properties.feature_registry.items.properties.prohibited_interpretation_codes
+
+    expect(codes.items.enum).toEqual([...RESEARCH_PACK_INTERPRETATION_CODES])
+    expect(codes.contains).toEqual({ const: 'NOT_PERSON_MEASURE' })
+  })
+
+  it('anchors C1 generated_at to the UTC Monday start of its ISO week', async () => {
+    const fixture = await fixtureValue()
+
+    expect(() =>
+      ResearchPackSchema.parse({
+        ...fixture,
+        classification: 'C1',
+        generated_at: '2026-08-03T00:00:00Z',
+      }),
+    ).not.toThrow()
+    for (const generatedAt of ['2026-08-03T12:00:00Z', '2026-08-04T00:00:00Z']) {
+      expect(() =>
+        ResearchPackSchema.parse({
+          ...fixture,
+          classification: 'C1',
+          generated_at: generatedAt,
+        }),
+      ).toThrow()
+    }
+
+    const schema = JSON.parse(await readFile(schemaPath, 'utf8')) as Record<string, any>
+    expect(schema.allOf[0].then.properties.generated_at.pattern).toBe(
+      '^\\d{4}-\\d{2}-\\d{2}T00:00:00Z$',
+    )
   })
 
   it('orders far-future microseconds exactly and rejects invalid calendar dates', () => {

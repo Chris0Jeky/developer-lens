@@ -1,7 +1,14 @@
 import { z } from 'zod'
+import { FORBIDDEN_PERSON_SUBJECT_TERMS } from './metrics.js'
 
 export const RESEARCH_PACK_SCHEMA_VERSION = 'DeveloperLensResearchPack.v1' as const
 export const RESEARCH_PACK_PRODUCER_CODE = 'developer-lens.research-pack.v1' as const
+export const REQUIRED_NO_PERSON_INTERPRETATION = 'NOT_PERSON_MEASURE' as const
+export const RESEARCH_PACK_INTERPRETATION_CODES = [
+  REQUIRED_NO_PERSON_INTERPRETATION,
+  'NOT_PRODUCTIVITY',
+  'NOT_EFFORT',
+] as const
 
 export const RELATION_NAMES = [
   'coverage',
@@ -73,6 +80,18 @@ export const CanonicalUtcSchema = z.string().regex(canonicalUtcPattern).superRef
     ctx.addIssue({ code: 'custom', message: 'timestamp must be a valid RFC 3339 UTC instant ending in Z' })
   }
 })
+
+const isoWeekFloorTimePattern = /^\d{4}-\d{2}-\d{2}T00:00:00Z$/
+
+function isIsoWeekFloor(value: string): boolean {
+  const micros = canonicalUtcMicros(value)
+  return (
+    micros !== undefined &&
+    isoWeekFloorTimePattern.test(value) &&
+    new Date(Number(micros / 1000n)).getUTCDay() === 1
+  )
+}
+
 export const CodeSchema = z.string().regex(/^[A-Za-z][A-Za-z0-9_.-]{0,95}$/)
 export const OpaqueIdSchema = z.string().regex(/^[a-z][a-z0-9_]{2,63}$/)
 export const Sha256Schema = z.string().regex(/^sha256:[0-9a-f]{64}$/)
@@ -157,27 +176,35 @@ function caseFoldPattern(value: string): string {
   return [...value].map((character) => `[${character.toLowerCase()}${character.toUpperCase()}]`).join('')
 }
 
+function caseFoldTokenPattern(value: string, prefix = false): string {
+  const core = value.split('_').map(caseFoldPattern).join('[._-]+')
+  return `(?:^|[._-])${core}${prefix ? '[A-Za-z0-9]*' : ''}(?:$|[._-])`
+}
+
 const forbiddenFeatureTokenPattern = [
-  caseFoldPattern('person'),
-  caseFoldPattern('productiv'),
-  caseFoldPattern('performance'),
-  caseFoldPattern('effort'),
-  caseFoldPattern('attendance'),
-  `${caseFoldPattern('hours')}[_-]?${caseFoldPattern('worked')}`,
-  caseFoldPattern('availability'),
-  caseFoldPattern('diligence'),
-  caseFoldPattern('quality'),
-  caseFoldPattern('worth'),
-  caseFoldPattern('personality'),
-  caseFoldPattern('sentiment'),
-  caseFoldPattern('burnout'),
-  caseFoldPattern('surveillance'),
-  `${caseFoldPattern('bus')}[_-]?${caseFoldPattern('factor')}`,
-  `${caseFoldPattern('individual')}[_-]?${caseFoldPattern('output')}`,
+  ...FORBIDDEN_PERSON_SUBJECT_TERMS.map((term) => caseFoldTokenPattern(term)),
+  caseFoldTokenPattern('productiv', true),
+  ...[
+    'performance',
+    'effort',
+    'attendance',
+    'hours_worked',
+    'availability',
+    'diligence',
+    'quality',
+    'worth',
+    'personality',
+    'sentiment',
+    'burnout',
+    'surveillance',
+    'bus_factor',
+    'individual_output',
+  ].map((term) => caseFoldTokenPattern(term)),
 ].join('|')
 const featureIdPattern = new RegExp(
   `^(?!.*(?:${forbiddenFeatureTokenPattern}))[A-Za-z][A-Za-z0-9_.-]{0,95}$`,
 )
+const forbiddenFeaturePattern = new RegExp(forbiddenFeatureTokenPattern)
 
 export const FeatureDefinitionSchema = z
   .strictObject({
@@ -186,12 +213,19 @@ export const FeatureDefinitionSchema = z
     value_kind: z.enum(['count', 'duration_hours', 'ratio', 'category', 'boolean']),
     unit_code: CodeSchema,
     evidence_layer: z.enum(['observed', 'deterministic']),
-    prohibited_interpretation_codes: z.array(CodeSchema).min(1).max(12),
+    prohibited_interpretation_codes: z.array(z.enum(RESEARCH_PACK_INTERPRETATION_CODES)).min(1).max(12),
   })
   .superRefine((value, ctx) => {
     // Feature identifiers are system features, never person/productivity measures.
-    if (/(?:person|productiv|performance|effort|attendance|diligence|sentiment|personality|surveillance|bus[_-]?factor)/i.test(value.feature_id)) {
+    if (forbiddenFeaturePattern.test(value.feature_id)) {
       ctx.addIssue({ code: 'custom', path: ['feature_id'], message: 'person-scoring and productivity features are prohibited' })
+    }
+    if (!value.prohibited_interpretation_codes.includes(REQUIRED_NO_PERSON_INTERPRETATION)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['prohibited_interpretation_codes'],
+        message: `${REQUIRED_NO_PERSON_INTERPRETATION} is required`,
+      })
     }
   })
 
@@ -214,6 +248,13 @@ export const ResearchPackSchema = z
     feature_registry: z.array(FeatureDefinitionSchema).max(128),
   })
   .superRefine((value, ctx) => {
+    if (value.classification === 'C1' && !isIsoWeekFloor(value.generated_at)) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['generated_at'],
+        message: 'C1 generated_at must be the UTC Monday start of an ISO week',
+      })
+    }
     const featureIds = value.feature_registry.map((feature) => feature.feature_id)
     if (new Set(featureIds).size !== featureIds.length) {
       ctx.addIssue({ code: 'custom', path: ['feature_registry'], message: 'feature_registry contains duplicate feature_id values' })
