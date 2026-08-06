@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { existsSync, linkSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -241,6 +242,58 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
         contentSha256: backup.contentSha256,
         manifestSha256: backup.manifestSha256,
       })
+    } finally { fx.cleanup() }
+  })
+
+  it('rejects a correctly re-signed restore image with an extra catalogue artifact', async () => {
+    const fx = await fixture()
+    try {
+      const root = createStorageV3ArtifactRoot(fx.root)
+      const backupAt = '2026-08-06T12:35:04Z'
+      const backup = await createStorageV3MigrationBackup({
+        db: fx.db,
+        root,
+        backupAt,
+        artifactId: `art-${'4'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      })
+      const backupPath = join(fx.root, backup.locator)
+      const image = new Database(backupPath)
+      const selectedArtifactId = image.prepare(
+        "SELECT artifact_id FROM app_artifact WHERE kind = 'selected_store'",
+      ).pluck().get() as string
+      const extraArtifactId = `art-${'5'.repeat(64)}`
+      image.prepare(
+        `INSERT INTO app_artifact (
+          artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator
+        ) VALUES (?, 'invented_fixture_store', 'active', ?, ?, 'invented-extra.sqlite')`,
+      ).run(extraArtifactId, '5'.repeat(64), '6'.repeat(64))
+      image.prepare('INSERT INTO app_artifact_scope (artifact_id, scope_id) VALUES (?, ?)')
+        .run(extraArtifactId, SCOPE_A)
+      image.close()
+
+      const contentSha256 = createHash('sha256').update(readFileSync(backupPath)).digest('hex')
+      const manifest = storageV3MigrationBackupManifest({
+        locator: backup.locator,
+        backupAt,
+        artifactId: backup.artifactId,
+        selectedArtifactId,
+        contentSha256,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      })
+      writeFileSync(join(fx.root, backup.manifestLocator), manifest.bytes)
+      fx.db.close()
+      unlinkSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))
+
+      expect(() => verifyStorageV3MigrationBackupForRestore({
+        root,
+        backupAt,
+        artifactId: backup.artifactId,
+        installationKey: fx.key,
+      })).toThrow(StorageV3BackupError)
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))).toBe(false)
     } finally { fx.cleanup() }
   })
 

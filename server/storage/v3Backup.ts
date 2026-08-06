@@ -575,6 +575,7 @@ function inspectRestoreBackupDb(
     const selection = backup.prepare('SELECT 1 FROM migration_selection_state').all()
     if (selection.length !== 0) fail()
     if (backup.prepare("SELECT 1 FROM app_artifact WHERE state <> 'active' LIMIT 1").get() !== undefined) fail()
+    if (Number(backup.prepare('SELECT COUNT(*) FROM app_artifact').pluck().get()) !== 2) fail()
 
     const selected = backup.prepare(
       `SELECT artifact_id, kind, state, relative_locator,
@@ -625,6 +626,19 @@ function inspectRestoreBackupDb(
         .pluck().all(artifactId) as string[],
       ownerScopeIds,
     )
+    const ownership = backup.prepare(
+      'SELECT artifact_id, scope_id FROM app_artifact_scope ORDER BY artifact_id, scope_id',
+    ).all() as Array<{ artifact_id: string; scope_id: string }>
+    const expectedOwnership = [selectedArtifactId, artifactId]
+      .flatMap((ownedArtifactId) => ownerScopeIds.map((scopeId) => ({
+        artifact_id: ownedArtifactId,
+        scope_id: scopeId,
+      })))
+      .sort((left, right) => left.artifact_id.localeCompare(right.artifact_id)
+        || left.scope_id.localeCompare(right.scope_id))
+    if (ownership.length !== expectedOwnership.length
+      || ownership.some((row, index) => row.artifact_id !== expectedOwnership[index]?.artifact_id
+        || row.scope_id !== expectedOwnership[index]?.scope_id)) fail()
 
     const attempts = backup.prepare(
       `SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino,
