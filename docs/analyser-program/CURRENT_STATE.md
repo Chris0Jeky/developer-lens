@@ -11,10 +11,11 @@ updated: 2026-08-06
 current_slice_override: 'Post-B4 storage hardening (#143) is the immediate LIFE-03 prerequisite:
   immutable app-root binding, REPLACE-resistant artifact identity, no-follow selected-sidecar
   checks, unambiguous publication recovery, and post-maintenance/shared-artifact lineage proof.
-  Keep fixtures invented and the runtime unactivated. The isolated #128 CAS-clock slice moves the
-  caller clock read under the existing IMMEDIATE writer lock without expanding that boundary.'
+  Keep fixtures invented and the runtime unactivated. The isolated #137 retention slice couples
+  alias expiry to same-scope identity clearing without changing independent C2 clocks.'
 phase: 'R4 active horizon OPEN — PR #141 merged B4 as d77b247 and exact-merge Pages/privacy run
-  31072706976 is green. Issue #143 now hardens the seven exact-head review seams before LIFE-03.
+  31072706976 is green. PR #144 merged the #128 CAS-clock repair as b007f96 and exact-merge run
+  31073820158 is green. Issue #143 now hardens the seven exact-head review seams before LIFE-03.
   LIFE-02 and #80 MUST remain open after B4: the recorded whyResolver coverage/job deletion-
   lineage joins land with the Phase-E stored-observation bridge, and #80 also tracks the C1-window
   expiry path for scope-unbound deletion lineage. B4 permits the next bounded work; it does not
@@ -31,8 +32,8 @@ active_slice: 'Land #143, then start DL-LIFE-03 as a separate vertical: timestam
   app-controlled backup, untouched source, atomic selection/fallback, seven-day grace, restart at
   every stage, restore plus tombstone replay, grace-boundary cleanup, exact WAL/SHM handling, and
   content-free results plus default-deny activation enforcement. Keep all fixtures invented. The
-  #128 CAS-clock repair is an independent wait-window slice; #137 and #139 remain bounded hardening
-  lanes. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
+  #137 alias/identity retention repair is the active independent wait-window slice; #139 remains a
+  bounded hardening lane. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -62,9 +63,9 @@ last_verified_checks: 'The B4 final head 9a875ae passed the full local gate: lin
   scale corpus and POSIX dangling-symlink fixture on Windows), TypeScript/build, and credential
   scan over 13 build outputs. Its focused storage and analysis-pack proof passed 9 files / 163
   tests plus the same 2 skips. Exact-head PR run 31071892180 and exact-merge Pages/privacy/deploy
-  run 31072706976 are green at merge d77b247. The isolated CAS-clock repair passes its focused
-  2 files / 40 tests and the full local gate (73 files / 1,196 passed / 2 skipped) after rebasing
-  to that merge.'
+  run 31072706976 are green at merge d77b247. PR #144 exact-head run 31073068026 and exact-merge
+  run 31073820158 are green at b007f96. The rebased #137 candidate passes 20 focused sweep tests,
+  4 integration tests, and the full local gate (73 files / 1,197 passed / 2 skipped).'
 review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently posts review comments
   3-10 minutes AFTER merge. The ledger sentences claiming an "empty late-comment sweep" for PRs
   #104-#125 were measured before the bot posted and are not evidence of clean reviews; 20 late
@@ -114,9 +115,9 @@ residual_risks:
      #128/#129 (2026-08-05); two #109 findings were fixed directly (coverage_ledger empty-code
      CHECKs — the preserved v2_coverage_record bridge table deliberately keeps byte-parity with
      its v2 source; delete-disposition tables must be empty at acceptance). PR #138 completed every
-     original #128/#129 verification with discriminating fixtures; #128 remains open only for the
-     separately added CAS clock-read placement, while #137 tracks the adjacent in-service alias-
-     clock hazard. The PR #130 post-merge findings are FIXED by B3: phantom CAS scope
+     original #128/#129 verification with discriminating fixtures; #128 is CLOSED by PR #144,
+     which captures the CAS clock under the writer lock. #137 tracks the adjacent in-service alias-
+     clock hazard and has a reviewed candidate. The PR #130 post-merge findings are FIXED by B3: phantom CAS scope
      initialization refuses (claim_scope existence rule inside the init transaction) and CAS
      payload receipts expire at the 13-month boundary via the sweep with fail-closed
      receipt_expired replay. The PR #127/#131 post-merge findings were fixed by PR #132
