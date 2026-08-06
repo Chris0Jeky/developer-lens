@@ -2845,20 +2845,40 @@ application/schema/fingerprint/integrity/foreign-key/selected-ID state. It retur
 from those re-proven rows/files and closes every descriptor/readonly snapshot handle on refusal.
 
 `selectStorageV3Reader` accepts no legacy path and performs no legacy read, write, delete, or fallback
-open. It validates closed own-data input, opens the reviewed v3 root, holds the existing exclusive
-writer lease, opens and proves the selected store, proves the finalized backup, commits/replays the
-receipt, closes the writable provisional connection, then reopens and revalidates both store and
-receipt as a true read-only SQLite handle before returning `sqlite-v3`. Every request/root/lease/store/
-backup/receipt failure closes the provisional handle and returns a content-free `legacy-json` reason.
-The invented integration proves exact replay, pre-commit interruption/restart, no grace extension,
-lease contention, invalid root/store/backup fallback, no legacy-path input, and write refusal on the
-returned reader.
+open. It validates closed own-data input, opens the reviewed v3 root, and uses a deliberately narrow
+read-only receipt-presence probe before and inside the writer lease. First selection opens and proves
+the selected store, proves the finalized backup, commits the receipt, closes the writable provisional
+connection, then reopens read-only. Exact receipt replay revalidates the selected store and live
+task-key/root continuity but skips backup revalidation because normal scope revocation may validly
+delete that backup. Present or ambiguous durable-selection state returns only
+`v3-selection-selected-refused` on failure; only a plainly absent receipt may retain the content-free
+`legacy-json` fallback. The invented integration proves exact replay, pre-commit interruption/restart,
+no grace extension, forged-handle refusal, lease contention, invalid root/store/backup fallback, no
+legacy-path input, write refusal, and selection -> both-scope revocation -> backup deletion -> restart
+without legacy resurrection.
 
-Exact product-code head `6bc1db2` passed `npm run check`: lint, context verification (27 Markdown / 12
-required), 79 files / 1,323 tests / 10 declared skips, TypeScript/Vite build, and credential scanning
-over 13 outputs. The combined focused selection/schema/backup/deletion/import-boundary proof passed
-145 assertions / 2 platform skips. Independent Luna reviews found no CRITICAL/HIGH verifier or
-receipt/selector defect; the final Terra/exact-hosted/connector/merge gates remain pending. No real
-store, legacy source/path, connector, production issuer/caller, external-model request, generated
-output, credential, or private input was inspected or used. Restore/reopen (#163), tombstone replay,
-and physical legacy/backup/WAL/SHM/journal cleanup remain dependent LIFE-03 slices.
+The original product-code head `6bc1db2` passed `npm run check`: lint, context verification (27
+Markdown / 12 required), 79 files / 1,323 tests / 10 declared skips, TypeScript/Vite build, and
+credential scanning over 13 outputs. The combined focused selection/schema/backup/deletion/import-
+boundary proof passed 145 assertions / 2 platform skips. Independent Luna reviews found no
+CRITICAL/HIGH verifier or receipt/selector defect.
+
+Fresh Terra review at published head `12cfd36` then reproduced one HIGH privacy/durability defect:
+scope revocation validly deleted the finalized backup, restart re-ran backup proof before receipt
+replay, and the refusal returned `legacy-json` while the seven-day source could still contain the
+revoked scope. Fix head `dabbb10` makes durable or ambiguous selection state non-legacy and replays an
+exact receipt without requiring the deleted backup. Integration review then found that skipping the
+backup verifier also skipped its task-key/root continuity proof; `0c37ef2` restores that proof and
+adds a forged-handle regression. The exact code head passes `npm run check`: lint, context verification
+(27 Markdown / 12 required), 79 files / 1,324 tests / 10 declared skips, TypeScript/Vite build, and
+credential scanning over 13 outputs. Focused selector proof passes 5 tests and range whitespace is
+clean. Hosted run `31119973871` remains queued without a step start during GitHub's declared critical
+Actions incident; this is not green hosted proof. Fresh fix review, push, merge, and post-merge sweep
+remain pending.
+
+The exported backup verifier's selected-store structural assumptions remain bounded to its current
+selector caller; #163 requires a separate standalone restore verifier rather than reusing it when the
+selected store is absent. No real store, legacy source/path, connector, production issuer/caller,
+external-model request, generated output, credential, or private input was inspected or used.
+Restore/reopen (#163), tombstone replay, and physical legacy/backup/WAL/SHM/journal cleanup remain
+dependent LIFE-03 slices.
