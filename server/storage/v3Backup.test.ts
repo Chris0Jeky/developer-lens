@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, linkSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
@@ -613,8 +613,9 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
   })
 
   it.each([
+    ['zero bytes', Buffer.alloc(0)],
     ['exact SQLite header', Buffer.from('SQLite format 3\0', 'binary')],
-    ['header-valid larger partial', Buffer.concat([Buffer.from('SQLite format 3\0', 'binary'), Buffer.from('partial')])],
+    ['header-valid larger partial', Buffer.concat([Buffer.from('SQLite format 3\0', 'binary'), Buffer.alloc(100, 0x42)])],
   ])('converges a %s SQLite provisional on the original inode', async (_label, partial) => {
     const fx = await fixture()
     try {
@@ -642,7 +643,11 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
     } finally { fx.cleanup() }
   })
 
-  it('repairs an owned partial manifest on the same inode and rejects overlong bytes', async () => {
+  it.each([
+    ['zero bytes', Buffer.alloc(0)],
+    ['first byte', Buffer.from('{')],
+    ['strict version prefix', Buffer.from('{"version":"migration_backup_v1",')],
+  ])('repairs an owned %s manifest on the same inode', async (_label, partial) => {
     const fx = await fixture()
     try {
       const input = {
@@ -658,7 +663,7 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
         ...input,
         failAtPhase: (phase) => {
           if (phase === 'partialManifestWrite') {
-            writeFileSync(join(fx.root, `${locator}.tmp.manifest.json`), Buffer.from('{"version":"', 'utf8'))
+            writeFileSync(join(fx.root, `${locator}.tmp.manifest.json`), partial)
             throw new Error('invented partial manifest')
           }
         },
@@ -668,6 +673,240 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       expect(recovered.manifestLocator).toBe(`${locator}.manifest.json`)
       expect(statSync(join(fx.root, `${locator}.manifest.json`)).ino).toBe(inode)
       expect(JSON.parse(readFileSync(join(fx.root, `${locator}.manifest.json`), 'utf8'))).toMatchObject({ version: 'migration_backup_v1' })
+    } finally { fx.cleanup() }
+  })
+
+  it.each([
+    ['nonprefix', Buffer.from('{"versx"')],
+    ['overlength', Buffer.concat([Buffer.from('{"version":"'), Buffer.alloc(4096, 0x78)])],
+  ])('rejects an owned %s manifest without changing bytes, inode, attempt, or catalogue', async (_label, corrupted) => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:36:03Z',
+        artifactId: `art-${'1'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123603Z.sqlite'
+      const manifestTempPath = join(fx.root, `${locator}.tmp.manifest.json`)
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAtPhase: (phase) => {
+          if (phase === 'partialManifestWrite') {
+            writeFileSync(manifestTempPath, Buffer.from('{"version":"migration_backup_v1",'))
+            throw new Error('invented partial manifest')
+          }
+        },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const inode = statSync(manifestTempPath).ino
+      writeFileSync(manifestTempPath, corrupted)
+      const bytes = readFileSync(manifestTempPath)
+      const attemptBefore = fx.db.prepare(
+        'SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt',
+      ).get()
+      const catalogueBefore = fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)
+      await expect(recoverStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(readFileSync(manifestTempPath).equals(bytes)).toBe(true)
+      expect(statSync(manifestTempPath).ino).toBe(inode)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt',
+      ).get()).toEqual(attemptBefore)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)).toEqual(catalogueBefore)
+      expect(existsSync(join(fx.root, locator))).toBe(false)
+      expect(existsSync(join(fx.root, `${locator}.manifest.json`))).toBe(false)
+    } finally { fx.cleanup() }
+  })
+
+  it('rejects an unbound staged provisional without changing its bytes, inode, or catalogue', async () => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:36:04Z',
+        artifactId: `art-${'2'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123604Z.sqlite'
+      beginStorageV3MigrationBackupArtifact({
+        db: fx.db,
+        artifactId: input.artifactId,
+        finalLocator: locator,
+        scopeIds: input.ownerScopeIds,
+        installationKey: input.installationKey,
+      })
+      const tempPath = join(fx.root, `${locator}.tmp`)
+      const bytes = Buffer.from('invented unbound provisional', 'utf8')
+      writeFileSync(tempPath, bytes, { flag: 'wx', mode: 0o600 })
+      const inode = statSync(tempPath).ino
+      const catalogueBefore = fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)
+      await expect(recoverStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(readFileSync(tempPath).equals(bytes)).toBe(true)
+      expect(statSync(tempPath).ino).toBe(inode)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)).toEqual(catalogueBefore)
+      expect(existsSync(join(fx.root, locator))).toBe(false)
+      expect(existsSync(join(fx.root, `${locator}.manifest.json`))).toBe(false)
+    } finally { fx.cleanup() }
+  })
+
+  it.each([
+    ['valid same-schema replacement inode', (_fx: Awaited<ReturnType<typeof fixture>>, tempPath: string, sourcePath: string) => {
+      const source = readFileSync(sourcePath)
+      unlinkSync(tempPath)
+      writeFileSync(tempPath, source, { mode: 0o600 })
+      return { bytes: source, inode: statSync(tempPath).ino }
+    }],
+    ['hardlink collision', (_fx: Awaited<ReturnType<typeof fixture>>, tempPath: string) => {
+      const hardlinkPath = `${tempPath}.collision`
+      linkSync(tempPath, hardlinkPath)
+      return { bytes: readFileSync(tempPath), inode: statSync(tempPath).ino }
+    }],
+    ['non-SQLite same-inode overwrite', (_fx: Awaited<ReturnType<typeof fixture>>, tempPath: string) => {
+      const bytes = Buffer.from('invented non-SQLite collision', 'utf8')
+      writeFileSync(tempPath, bytes)
+      return { bytes, inode: statSync(tempPath).ino }
+    }],
+  ] as const)('rejects a bound collision after beforeSqliteBackup: %s', async (_label, construct) => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:36:05Z',
+        artifactId: `art-${'3'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123605Z.sqlite'
+      const tempPath = join(fx.root, `${locator}.tmp`)
+      const sourcePath = join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAtPhase: (phase) => { if (phase === 'beforeSqliteBackup') throw new Error('invented before backup crash') },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const collision = construct(fx, tempPath, sourcePath)
+      const attemptBefore = fx.db.prepare(
+        'SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt',
+      ).get()
+      const catalogueBefore = fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)
+      await expect(recoverStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(readFileSync(tempPath).equals(collision.bytes)).toBe(true)
+      expect(statSync(tempPath).ino).toBe(collision.inode)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt',
+      ).get()).toEqual(attemptBefore)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)).toEqual(catalogueBefore)
+      if (existsSync(`${tempPath}.collision`)) unlinkSync(`${tempPath}.collision`)
+    } finally { fx.cleanup() }
+  })
+
+  it.skipIf(process.platform === 'win32')('rejects a bound symlink collision after beforeSqliteBackup', async () => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:36:06Z',
+        artifactId: `art-${'4'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123606Z.sqlite'
+      const tempPath = join(fx.root, `${locator}.tmp`)
+      const sourcePath = join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAtPhase: (phase) => { if (phase === 'beforeSqliteBackup') throw new Error('invented before backup crash') },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      unlinkSync(tempPath)
+      symlinkSync(sourcePath, tempPath)
+      const source = readFileSync(sourcePath)
+      const catalogueBefore = fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)
+      await expect(recoverStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(lstatSync(tempPath).isSymbolicLink()).toBe(true)
+      expect(readFileSync(sourcePath).equals(source)).toBe(true)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)).toEqual(catalogueBefore)
+    } finally { fx.cleanup() }
+  })
+
+  it('rejects hash-recorded temp corruption without promoting or changing the recorded hash', async () => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:36:07Z',
+        artifactId: `art-${'5'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123607Z.sqlite'
+      const tempPath = join(fx.root, `${locator}.tmp`)
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAfterStage: (stage) => { if (stage === 'sqliteTempDurable') throw new Error('invented hash-recorded crash') },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const attemptBefore = fx.db.prepare(
+        'SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt',
+      ).get() as Record<string, unknown>
+      expect(attemptBefore.sqlite_content_sha256).toEqual(expect.any(String))
+      const corrupted = Buffer.from('invented hash corruption', 'utf8')
+      writeFileSync(tempPath, corrupted)
+      const inode = statSync(tempPath).ino
+      await expect(recoverStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(readFileSync(tempPath).equals(corrupted)).toBe(true)
+      expect(statSync(tempPath).ino).toBe(inode)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt',
+      ).get()).toEqual(attemptBefore)
+      expect(existsSync(join(fx.root, locator))).toBe(false)
+      expect(existsSync(join(fx.root, `${locator}.manifest.json`))).toBe(false)
+    } finally { fx.cleanup() }
+  })
+
+  it('native entrypoint never invokes test failure callbacks', async () => {
+    const fx = await fixture()
+    let afterStageCalls = 0
+    let atPhaseCalls = 0
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:36:08Z',
+        artifactId: `art-${'6'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+        failAfterStage: () => { afterStageCalls += 1 },
+        failAtPhase: () => { atPhaseCalls += 1 },
+      }
+      if (process.platform === 'win32') {
+        await expect(createNativeStorageV3MigrationBackup(input)).rejects.toMatchObject({ code: 'STORAGE_V3_BACKUP_INVALID' })
+        expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(0)
+      } else {
+        await expect(createNativeStorageV3MigrationBackup(input)).resolves.toMatchObject({ locator: 'migration-backup-20260806T123608Z.sqlite' })
+      }
+      expect(afterStageCalls).toBe(0)
+      expect(atPhaseCalls).toBe(0)
     } finally { fx.cleanup() }
   })
 
