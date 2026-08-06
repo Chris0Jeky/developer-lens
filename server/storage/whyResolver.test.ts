@@ -1,4 +1,4 @@
-import type Database from 'better-sqlite3'
+import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import { CLAIM_EDGE_ROLES, type ClaimEdgeRole } from '../../shared/claims.js'
 import { reconcileGithubCoreReceipts } from '../connectors/github/core.js'
@@ -28,6 +28,7 @@ import {
   type WhyMissingLink,
   type WhyUnresolvable,
 } from './whyResolver.js'
+import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 
 /**
  * Every value in this file is invented. No real, private, or generated data is read, no
@@ -954,5 +955,131 @@ describe('why resolver — the C2 boundary', () => {
       targetKind: 'scope',
       targetId: GAMMA_SCOPE,
     })
+  })
+})
+
+const v3Id = (prefix: string, fill = 'a'): string => `${prefix}${fill.repeat(64)}`
+
+function v3Fixture(): {
+  db: Database.Database
+  scopeA: string
+  scopeB: string
+  claimId: string
+  evidenceId: string
+  coverageId: string
+  jobId: string
+} {
+  const db = new Database(':memory:')
+  databases.push(db)
+  installStorageV3ShadowSchema(db)
+  const scopeA = `scope-${'1'.repeat(64)}`
+  const scopeB = `scope-${'2'.repeat(64)}`
+  const claimId = v3Id('cl_')
+  const evidenceId = v3Id('ev-')
+  const coverageId = v3Id('cov-')
+  const jobId = v3Id('job-')
+  const snapshotId = v3Id('snap-')
+  db.prepare('INSERT INTO claim_scope (scope_id, scope_alias, linked_at, alias_expires_at) VALUES (?, ?, ?, ?)')
+    .run(scopeA, 'private-alias-a', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z')
+  db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+  db.prepare(`INSERT INTO collection_job (
+    scope_id, job_id, capability_id, storage_contract_version, query_version,
+    source_api_version, consent_revision, status
+  ) VALUES (?, ?, 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')`)
+    .run(scopeA, jobId)
+  db.prepare('INSERT INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)')
+    .run(scopeA, snapshotId, jobId, 'github.core', 'closed')
+  db.prepare(`INSERT INTO coverage_ledger (
+    scope_id, coverage_id, job_id, snapshot_id, capability_id, status,
+    range_start, range_end, observed_at, expected_units, observed_units,
+    omitted_units, retryable, limitation_code, source_coverage_id, c2_expires_at
+  ) VALUES (?, ?, ?, ?, 'github.core', 'complete', ?, ?, ?, 2, 2, 0, 0, 'NONE', ?, ?)`)
+    .run(scopeA, coverageId, jobId, snapshotId, WINDOW_START, WINDOW_END, CREATED_AT, coverageId, '2026-05-01T00:00:00.000Z')
+  db.prepare('INSERT INTO evidence (scope_id, evidence_id, coverage_id, layer, schema_version) VALUES (?, ?, ?, ?, ?)')
+    .run(scopeA, evidenceId, coverageId, 'observed', '2.0.0')
+  db.prepare(`INSERT INTO claim (
+    scope_id, claim_id, layer, statement_code, method_id, method_version,
+    window_start, window_end, schema_version, claim_id_material_version, created_at
+  ) VALUES (?, ?, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', ?, ?, '1.0.0', 'claim-id.v3', ?)`)
+    .run(scopeA, claimId, WINDOW_START, WINDOW_END, CREATED_AT)
+  db.prepare('INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_evidence_id) VALUES (?, ?, ?, ?)')
+    .run(scopeA, claimId, 'supports', evidenceId)
+  return { db, scopeA, scopeB, claimId, evidenceId, coverageId, jobId }
+}
+
+describe('why resolver — native storage-v3 dialect', () => {
+  it('walks a complete v3 claim graph without aliases or storage coverage ids', () => {
+    const fixture = v3Fixture()
+    const tree = explanation(resolveWhy(fixture.db, { claimId: fixture.claimId }))
+    expect(tree.claim.scopeId).toBe(fixture.scopeA)
+    expect(tree.scope).toMatchObject({ kind: 'scope', hasAlias: true, linkedAt: '2026-01-01T00:00:00.000Z' })
+    const evidence = soleTarget(tree, 'supports') as Record<string, any>
+    expect(evidence.coverage).toMatchObject({
+      kind: 'coverage',
+      coverageKey: { rangeStart: WINDOW_START, jobId: fixture.jobId },
+      rangeEnd: WINDOW_END,
+      observedAt: CREATED_AT,
+    })
+    expect(JSON.stringify(tree)).not.toContain('private-alias-a')
+    expect(JSON.stringify(tree)).not.toContain(fixture.coverageId)
+  })
+
+  it('refuses a cross-scope edge target instead of joining by id alone', () => {
+    const fixture = v3Fixture()
+    fixture.db.pragma('foreign_keys = OFF')
+    fixture.db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, \'modelled\', \'DELIVERY_FLOW\', \'method\', \'1.0.0\', ?, ?, \'1.0.0\', \'claim-id.v3\', ?)')
+      .run(fixture.scopeB, v3Id('cl_', 'b'), WINDOW_START, WINDOW_END, CREATED_AT)
+    fixture.db.prepare('INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_evidence_id) VALUES (?, ?, ?, ?)')
+      .run(fixture.scopeB, v3Id('cl_', 'b'), 'supports', fixture.evidenceId)
+    fixture.db.pragma('foreign_keys = ON')
+    const tree = explanation(resolveWhy(fixture.db, { claimId: v3Id('cl_', 'b') }))
+    const link = missing(soleTarget(tree, 'supports'))
+    expect(link.reason).toBe('MISSING_EVIDENCE')
+    expect(link.targetId).toBe(fixture.evidenceId)
+  })
+
+  it('carries v3 tombstone lineage for missing coverage and job rows', () => {
+    const fixture = v3Fixture()
+    fixture.db.pragma('foreign_keys = OFF')
+    fixture.db.prepare('DELETE FROM coverage_ledger WHERE scope_id = ? AND coverage_id = ?').run(fixture.scopeA, fixture.coverageId)
+    fixture.db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (NULL, \'coverage\', ?, ?, \'github.core\', NULL, \'tombstone_cascade\', \'2026-W05\')')
+      .run(fixture.coverageId, v3Id('del-'))
+    fixture.db.pragma('foreign_keys = ON')
+    const tree = explanation(resolveWhy(fixture.db, { claimId: fixture.claimId }))
+    const link = missing((soleTarget(tree, 'supports') as Record<string, any>).coverage)
+    expect(link.reason).toBe('MISSING_COVERAGE')
+    expect(link.lineage).toMatchObject([{ eventKind: 'tombstone_cascade', occurredAt: '2026-W05' }])
+  })
+
+  it('carries ISO-week expiry lineage when a v3 capability job is gone', () => {
+    const fixture = v3Fixture()
+    fixture.db.pragma('foreign_keys = OFF')
+    fixture.db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (?, \'job\', ?, ?, \'github.core\', NULL, \'c2_retention_expired\', \'2026-W06\')')
+      .run(fixture.scopeA, fixture.jobId, v3Id('op-'))
+    fixture.db.prepare('DELETE FROM collection_job WHERE scope_id = ? AND job_id = ?').run(fixture.scopeA, fixture.jobId)
+    fixture.db.pragma('foreign_keys = ON')
+    const tree = explanation(resolveWhy(fixture.db, { claimId: fixture.claimId }))
+    const coverage = soleTarget(tree, 'supports') as Record<string, any>
+    const link = missing((coverage.coverage as Record<string, any>).job)
+    expect(link.reason).toBe('MISSING_CAPABILITY_BINDING')
+    expect(link.lineage).toMatchObject([{ eventKind: 'c2_retention_expired', occurredAt: '2026-W06' }])
+  })
+
+  it('renders a cleared v3 alias as furniture without echoing an alias', () => {
+    const fixture = v3Fixture()
+    fixture.db.prepare('UPDATE claim_scope SET scope_alias = NULL, linked_at = NULL, alias_expires_at = NULL WHERE scope_id = ?').run(fixture.scopeA)
+    const tree = explanation(resolveWhy(fixture.db, { claimId: fixture.claimId }))
+    expect(tree.scope).toMatchObject({ kind: 'scope', hasAlias: false, linkedAt: 'non-retained' })
+    expect(JSON.stringify(tree)).not.toContain('private-alias-a')
+  })
+
+  it('refuses duplicate v3 claim ids across scopes rather than mixing scopes', () => {
+    const fixture = v3Fixture()
+    fixture.db.pragma('foreign_keys = OFF')
+    fixture.db.exec('DROP TRIGGER storage_v3_owner_identity_guard_claim; DROP INDEX storage_v3_owner_identity_claim')
+    fixture.db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, \'modelled\', \'DELIVERY_FLOW\', \'method\', \'1.0.0\', ?, ?, \'1.0.0\', \'claim-id.v3\', ?)')
+      .run(fixture.scopeB, fixture.claimId, WINDOW_START, WINDOW_END, CREATED_AT)
+    fixture.db.pragma('foreign_keys = ON')
+    expect(resolveWhy(fixture.db, { claimId: fixture.claimId })).toMatchObject({ kind: 'unresolvable', reason: 'UNKNOWN_CLAIM', claimId: fixture.claimId })
   })
 })

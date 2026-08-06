@@ -359,17 +359,18 @@ interface ClaimRow {
   readonly window_end: string
   readonly scope_id: string
   readonly schema_version: string
-  readonly created_at: string
+  readonly created_at: string | null
   readonly superseded_by: string | null
 }
 
 interface ScopeRow {
   readonly scope_id: string
-  readonly linked_at: string
+  readonly linked_at: string | null
   readonly has_alias: number
 }
 
 interface EdgeRow {
+  readonly scope_id?: string
   readonly role: string
   readonly target_evidence_id: string | null
   readonly target_claim_id: string | null
@@ -379,30 +380,33 @@ interface EdgeRow {
 }
 
 interface EvidenceRow {
+  readonly scope_id?: string
   readonly evidence_id: string
   readonly layer: string
   readonly schema_version: string
   readonly coverage_id: string
-  readonly coverage_range_start: string
-  readonly coverage_job_id: string
+  readonly coverage_range_start: string | null
+  readonly coverage_job_id: string | null
 }
 
 interface CoverageRow {
+  readonly scope_id?: string
   readonly coverage_id: string
-  readonly range_start: string
+  readonly range_start: string | null
   readonly job_id: string
-  readonly range_end: string
+  readonly range_end: string | null
   readonly status: string
   readonly expected_units: number | null
   readonly observed_units: number
   readonly omitted_units: number | null
   readonly saturation_reason: string | null
   readonly retryable: number
-  readonly observed_at: string
+  readonly observed_at: string | null
   readonly limitation_code: string
 }
 
 interface JobRow {
+  readonly scope_id?: string
   readonly job_id: string
   readonly status: string
   readonly consent_revision: string
@@ -416,10 +420,13 @@ interface LimitationRow {
 }
 
 interface LineageRow {
+  readonly scope_id?: string | null
+  readonly subject_kind?: string
   readonly subject_id: string
   readonly event_kind: string
   readonly caused_by: string | null
-  readonly occurred_at: string
+  readonly occurred_at?: string
+  readonly event_week?: string
 }
 
 interface AncestorRow {
@@ -427,6 +434,7 @@ interface AncestorRow {
 }
 
 interface WhyStatements {
+  readonly dialect: 'legacy' | 'v3'
   readonly claim: Database.Statement
   readonly scope: Database.Statement
   readonly edges: Database.Statement
@@ -438,13 +446,50 @@ interface WhyStatements {
   readonly lineage: Database.Statement
 }
 
+const V3_NON_RETAINED = 'non-retained'
+
 /**
  * Prepared once per request and reused by every hop, so a 100-link chain costs 100 binds
  * rather than 100 compilations. Note what the scope statement does NOT select: the C2
  * alias value is reduced to a boolean inside SQLite.
  */
 function prepareStatements(db: Database.Database): WhyStatements {
+  const edgeColumns = db.prepare('PRAGMA table_info(claim_evidence_edge)').all() as Array<{ name: string }>
+  const v3 = edgeColumns.some((column) => column.name === 'scope_id')
+  if (v3) {
+    return {
+      dialect: 'v3',
+      claim: db.prepare(
+        'SELECT claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, created_at, superseded_by FROM claim WHERE claim_id = ? ORDER BY scope_id',
+      ),
+      scope: db.prepare(
+        'SELECT scope_id, linked_at, (scope_alias IS NOT NULL) AS has_alias FROM claim_scope WHERE scope_id = ?',
+      ),
+      edges: db.prepare(
+        'SELECT scope_id, role, target_evidence_id, target_claim_id, target_coverage_id, NULL AS target_coverage_range_start, NULL AS target_coverage_job_id FROM claim_evidence_edge WHERE scope_id = ? AND claim_id = ?',
+      ),
+      ancestors: db.prepare(
+        "SELECT target_claim_id FROM claim_evidence_edge WHERE scope_id = ? AND claim_id = ? AND role = 'derives_from' AND target_claim_id IS NOT NULL",
+      ),
+      evidence: db.prepare(
+        'SELECT scope_id, evidence_id, layer, schema_version, coverage_id, NULL AS coverage_range_start, NULL AS coverage_job_id FROM evidence WHERE scope_id = ? AND evidence_id = ?',
+      ),
+      coverage: db.prepare(
+        'SELECT scope_id, coverage_id, range_start, job_id, range_end, status, expected_units, observed_units, omitted_units, saturation_reason, retryable, observed_at, limitation_code FROM coverage_ledger WHERE scope_id = ? AND coverage_id = ? AND (? IS NULL OR job_id = ?)',
+      ),
+      job: db.prepare(
+        'SELECT scope_id, job_id, status, consent_revision, capability_id FROM collection_job WHERE scope_id = ? AND job_id = ?',
+      ),
+      limitations: db.prepare(
+        'SELECT limitation_code, dimension, copy_key FROM limitation_instance WHERE scope_id = ? AND claim_id = ?',
+      ),
+      lineage: db.prepare(
+        'SELECT scope_id, subject_kind, subject_id, event_kind, caused_by, event_week FROM lineage_event WHERE subject_id = ? AND (? IS NULL OR subject_kind = ?) AND (? IS NULL OR scope_id = ? OR scope_id IS NULL)',
+      ),
+    }
+  }
   return {
+    dialect: 'legacy',
     claim: db.prepare(
       'SELECT claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, created_at, superseded_by FROM claim WHERE claim_id = ?',
     ),
@@ -528,19 +573,44 @@ function normalizeMissingLinks(links: readonly WhyMissingLink[]): WhyMissingLink
   return [...unique.values()].sort(byKey(missingLinkKey))
 }
 
-function readClaimRow(statements: WhyStatements, claimId: string): ClaimRow | null {
-  return (statements.claim.get(claimId) as ClaimRow | undefined) ?? null
+function readClaimCandidates(statements: WhyStatements, claimId: string, scopeId?: string): ClaimRow[] {
+  const rows = statements.dialect === 'v3'
+    ? (scopeId === undefined
+      ? statements.claim.all(claimId)
+      : statements.claim.all(claimId).filter((row) => (row as ClaimRow).scope_id === scopeId))
+    : statements.claim.all(claimId)
+  return rows as ClaimRow[]
 }
 
-function readLineage(statements: WhyStatements, subjectId: string): WhyLineageEvent[] {
-  const rows = statements.lineage.all(subjectId) as LineageRow[]
+function readClaimRow(statements: WhyStatements, claimId: string, scopeId?: string): ClaimRow | null {
+  const rows = readClaimCandidates(statements, claimId, scopeId)
+  return rows.length === 1 ? rows[0] : null
+}
+
+function readLineage(
+  statements: WhyStatements,
+  subjectId: string,
+  scopeId?: string,
+  subjectKind?: string,
+): WhyLineageEvent[] {
+  const rows = (statements.dialect === 'v3'
+    ? statements.lineage.all(
+      subjectId,
+      subjectKind ?? null,
+      subjectKind ?? null,
+      scopeId ?? null,
+      scopeId ?? null,
+    )
+    : statements.lineage.all(subjectId)) as LineageRow[]
   return rows
     .map((row): WhyLineageEvent => ({
       kind: 'lineage_event',
       subjectId: row.subject_id,
       eventKind: row.event_kind,
       causedBy: row.caused_by,
-      occurredAt: row.occurred_at,
+      // storage-v3 intentionally retains lineage only at ISO-week grain. Keep that
+      // exact value rather than manufacturing a timestamp with a false precision.
+      occurredAt: row.event_week ?? row.occurred_at ?? V3_NON_RETAINED,
     }))
     .sort(byKey((event) => `${event.occurredAt}|${event.eventKind}|${event.causedBy ?? ''}`))
 }
@@ -560,14 +630,14 @@ function claimSummary(row: ClaimRow): WhyClaimSummary {
     windowEnd: row.window_end,
     scopeId: row.scope_id,
     schemaVersion: row.schema_version,
-    createdAt: row.created_at,
+    createdAt: row.created_at ?? V3_NON_RETAINED,
     supersededBy: row.superseded_by,
   }
 }
 
 /** An absent claim is either a recorded revocation or an unexplained dangling reference. */
-function absentClaimLink(statements: WhyStatements, claimId: string): WhyMissingLink {
-  const lineage = readLineage(statements, claimId)
+function absentClaimLink(statements: WhyStatements, claimId: string, scopeId?: string): WhyMissingLink {
+  const lineage = readLineage(statements, claimId, scopeId, 'claim')
   return missingLink(
     isTombstoned(lineage) ? 'TOMBSTONED_CLAIM' : 'MISSING_CLAIM',
     'claim',
@@ -597,9 +667,14 @@ function resolveCapability(capabilityId: string): WhyCapabilityNode | WhyMissing
 function resolveJob(
   statements: WhyStatements,
   jobId: string,
+  scopeId?: string,
 ): WhyCollectionJobNode | WhyMissingLink {
-  const row = statements.job.get(jobId) as JobRow | undefined
-  if (!row) return missingLink('MISSING_CAPABILITY_BINDING', 'collection_job', jobId)
+  const row = (statements.dialect === 'v3'
+    ? statements.job.get(scopeId, jobId)
+    : statements.job.get(jobId)) as JobRow | undefined
+  if (!row) return missingLink('MISSING_CAPABILITY_BINDING', 'collection_job', jobId, {
+    lineage: readLineage(statements, jobId, scopeId, 'job'),
+  })
   return {
     kind: 'collection_job',
     jobId: row.job_id,
@@ -617,19 +692,31 @@ function resolveJob(
 function resolveCoverage(
   statements: WhyStatements,
   lookup: CoverageLookup,
+  scopeId?: string,
 ): WhyCoverageNode | WhyMissingLink {
-  const row = statements.coverage.get(lookup.coverageId, lookup.rangeStart, lookup.jobId) as
+  const row = (statements.dialect === 'v3'
+    ? statements.coverage.get(
+      scopeId,
+      lookup.coverageId,
+      lookup.jobId === V3_NON_RETAINED ? null : lookup.jobId,
+      lookup.jobId === V3_NON_RETAINED ? null : lookup.jobId,
+    )
+    : statements.coverage.get(lookup.coverageId, lookup.rangeStart, lookup.jobId)) as
     | CoverageRow
     | undefined
   if (!row) {
     return missingLink('MISSING_COVERAGE', 'coverage', lookup.jobId, {
       coverageKey: emittedCoverageKey(lookup),
+      lineage: readLineage(statements, lookup.coverageId, scopeId, 'coverage'),
     })
   }
+  const rangeStart = row.range_start ?? V3_NON_RETAINED
+  const rangeEnd = row.range_end ?? V3_NON_RETAINED
+  const observedAt = row.observed_at ?? V3_NON_RETAINED
   return {
     kind: 'coverage',
-    coverageKey: { rangeStart: row.range_start, jobId: row.job_id },
-    rangeEnd: row.range_end,
+    coverageKey: { rangeStart, jobId: row.job_id },
+    rangeEnd,
     status: row.status,
     limitationCode: row.limitation_code,
     retryable: row.retryable !== 0,
@@ -637,17 +724,20 @@ function resolveCoverage(
     observedUnits: row.observed_units,
     omittedUnits: row.omitted_units,
     saturationReason: row.saturation_reason,
-    observedAt: row.observed_at,
-    job: resolveJob(statements, row.job_id),
+    observedAt,
+    job: resolveJob(statements, row.job_id, scopeId ?? row.scope_id),
   }
 }
 
 function resolveEvidence(
   statements: WhyStatements,
   evidenceId: string,
+  scopeId?: string,
 ): WhyEvidenceNode | WhyMissingLink {
-  const row = statements.evidence.get(evidenceId) as EvidenceRow | undefined
-  const lineage = readLineage(statements, evidenceId)
+  const row = (statements.dialect === 'v3'
+    ? statements.evidence.get(scopeId, evidenceId)
+    : statements.evidence.get(evidenceId)) as EvidenceRow | undefined
+  const lineage = readLineage(statements, evidenceId, scopeId, 'evidence')
   if (!row) {
     return missingLink(
       isTombstoned(lineage) ? 'TOMBSTONED_EVIDENCE' : 'MISSING_EVIDENCE',
@@ -663,9 +753,9 @@ function resolveEvidence(
     schemaVersion: row.schema_version,
     coverage: resolveCoverage(statements, {
       coverageId: row.coverage_id,
-      rangeStart: row.coverage_range_start,
-      jobId: row.coverage_job_id,
-    }),
+      rangeStart: row.coverage_range_start ?? V3_NON_RETAINED,
+      jobId: row.coverage_job_id ?? V3_NON_RETAINED,
+    }, scopeId ?? row.scope_id),
     lineage,
   }
 }
@@ -673,9 +763,10 @@ function resolveEvidence(
 function resolveClaimReference(
   statements: WhyStatements,
   claimId: string,
+  scopeId?: string,
 ): WhyClaimReferenceNode | WhyMissingLink {
-  const row = readClaimRow(statements, claimId)
-  if (!row) return absentClaimLink(statements, claimId)
+  const row = readClaimRow(statements, claimId, scopeId)
+  if (!row) return absentClaimLink(statements, claimId, scopeId)
   return { kind: 'claim_reference', ...claimSummary(row), expandsWith: 'resolveWhy' }
 }
 
@@ -690,8 +781,12 @@ function resolveScope(
     kind: 'scope',
     scopeId: row.scope_id,
     hasAlias,
-    linkedAt: row.linked_at,
-    aliasLink: hasAlias ? null : missingLink('SCOPE_ALIAS_CLEARED', 'scope', row.scope_id),
+    linkedAt: row.linked_at ?? V3_NON_RETAINED,
+    aliasLink: hasAlias
+      ? null
+      : missingLink('SCOPE_ALIAS_CLEARED', 'scope', row.scope_id, {
+        lineage: readLineage(statements, row.scope_id, row.scope_id, 'scope'),
+      }),
   }
 }
 
@@ -716,14 +811,14 @@ function resolveEdgeTarget(
     if (row.target_evidence_id === null) return null
     return {
       targetRef: row.target_evidence_id,
-      target: resolveEvidence(statements, row.target_evidence_id),
+      target: resolveEvidence(statements, row.target_evidence_id, row.scope_id),
     }
   }
   if (expected === 'claim') {
     if (row.target_claim_id === null) return null
     return {
       targetRef: row.target_claim_id,
-      target: resolveClaimReference(statements, row.target_claim_id),
+      target: resolveClaimReference(statements, row.target_claim_id, row.scope_id),
     }
   }
   if (
@@ -735,12 +830,15 @@ function resolveEdgeTarget(
   }
   const lookup: CoverageLookup = {
     coverageId: row.target_coverage_id,
-    rangeStart: row.target_coverage_range_start,
-    jobId: row.target_coverage_job_id,
+    rangeStart: row.target_coverage_range_start ?? V3_NON_RETAINED,
+    jobId: row.target_coverage_job_id ?? V3_NON_RETAINED,
   }
+  const target = resolveCoverage(statements, lookup, row.scope_id)
   return {
-    targetRef: coverageRef(emittedCoverageKey(lookup)),
-    target: resolveCoverage(statements, lookup),
+    targetRef: target.kind === 'coverage'
+      ? coverageRef(target.coverageKey)
+      : coverageRef(emittedCoverageKey(lookup)),
+    target,
   }
 }
 
@@ -755,8 +853,10 @@ interface ResolvedEdges {
   readonly unresolved: readonly WhyMissingLink[]
 }
 
-function resolveEdges(statements: WhyStatements, claimId: string): ResolvedEdges {
-  const rows = statements.edges.all(claimId) as EdgeRow[]
+function resolveEdges(statements: WhyStatements, claimId: string, scopeId?: string): ResolvedEdges {
+  const rows = (statements.dialect === 'v3'
+    ? statements.edges.all(scopeId, claimId)
+    : statements.edges.all(claimId)) as EdgeRow[]
   const byRole = new Map<ClaimEdgeRole, WhyEdge[]>()
   const unresolved: WhyMissingLink[] = []
 
@@ -788,8 +888,10 @@ function resolveEdges(statements: WhyStatements, claimId: string): ResolvedEdges
   return { groups, unresolved: normalizeMissingLinks(unresolved) }
 }
 
-function resolveLimitations(statements: WhyStatements, claimId: string): WhyLimitation[] {
-  const rows = statements.limitations.all(claimId) as LimitationRow[]
+function resolveLimitations(statements: WhyStatements, claimId: string, scopeId?: string): WhyLimitation[] {
+  const rows = (statements.dialect === 'v3'
+    ? statements.limitations.all(scopeId, claimId)
+    : statements.limitations.all(claimId)) as LimitationRow[]
   return rows
     .map((row): WhyLimitation => ({
       kind: 'limitation',
@@ -840,9 +942,9 @@ function walkSupersession(
       limited = true
       break
     }
-    const row = readClaimRow(statements, nextId)
+    const row = readClaimRow(statements, nextId, origin.scope_id)
     if (!row) {
-      links.push(absentClaimLink(statements, nextId))
+      links.push(absentClaimLink(statements, nextId, origin.scope_id))
       missing = true
       break
     }
@@ -878,7 +980,9 @@ function walkAncestry(statements: WhyStatements, origin: ClaimRow, bound: number
   let missing = false
 
   const ancestorIds = (claimId: string): string[] => {
-    const rows = statements.ancestors.all(claimId) as AncestorRow[]
+    const rows = (statements.dialect === 'v3'
+      ? statements.ancestors.all(origin.scope_id, claimId)
+      : statements.ancestors.all(claimId)) as AncestorRow[]
     return [...new Set(rows.map((row) => row.target_claim_id))].sort()
   }
 
@@ -897,9 +1001,9 @@ function walkAncestry(statements: WhyStatements, origin: ClaimRow, bound: number
         limited = true
         continue
       }
-      const ancestor = readClaimRow(statements, ancestorId)
+      const ancestor = readClaimRow(statements, ancestorId, origin.scope_id)
       if (!ancestor) {
-        links.push(absentClaimLink(statements, ancestorId))
+        links.push(absentClaimLink(statements, ancestorId, origin.scope_id))
         expanded.add(ancestorId)
         missing = true
         continue
@@ -957,10 +1061,14 @@ export function resolveWhy(db: Database.Database, request: unknown): WhyExplanat
     return unresolvable('STORAGE_UNAVAILABLE', claimId)
   }
 
-  const row = readClaimRow(statements, claimId)
-  if (!row) return unresolvable('UNKNOWN_CLAIM', claimId, readLineage(statements, claimId))
+  const candidates = readClaimCandidates(statements, claimId)
+  // V3 keeps claim IDs scoped. The request deliberately has no scope selector, so
+  // duplicate IDs cannot be guessed at or joined across scopes.
+  if (candidates.length > 1) return unresolvable('UNKNOWN_CLAIM', claimId)
+  const row = candidates[0] ?? null
+  if (!row) return unresolvable('UNKNOWN_CLAIM', claimId, readLineage(statements, claimId, undefined, 'claim'))
 
-  const edges = resolveEdges(statements, claimId)
+  const edges = resolveEdges(statements, claimId, row.scope_id)
   return {
     kind: 'explanation',
     resolverVersion: WHY_RESOLVER_VERSION,
@@ -971,8 +1079,8 @@ export function resolveWhy(db: Database.Database, request: unknown): WhyExplanat
     claim: { kind: 'claim', ...claimSummary(row) },
     scope: resolveScope(statements, row.scope_id),
     edges: edges.groups,
-    limitations: resolveLimitations(statements, claimId),
-    lineage: readLineage(statements, claimId),
+    limitations: resolveLimitations(statements, claimId, row.scope_id),
+    lineage: readLineage(statements, claimId, row.scope_id, 'claim'),
     supersession: walkSupersession(statements, row, bound),
     ancestry: walkAncestry(statements, row, bound),
     unresolvedEdges: edges.unresolved,
