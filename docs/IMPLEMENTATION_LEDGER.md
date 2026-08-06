@@ -2663,7 +2663,7 @@ connector, activation caller, external-model request, or private input was inspe
 next vertical after backup is atomic selection/fallback and the seven-day grace boundary;
 restore/tombstone replay and cleanup remain separate slices.
 
-## 2026-08-06 — LIFE-03 selected-store backup merged; singleton hardening candidate
+## 2026-08-06 — LIFE-03 selected-store backup and singleton merged; task-key hardening candidate
 
 PR #153 merged final head `982f6fbcb835526d9b0d13cdb9fc0469d84ce337` as
 `d0bac814006bada9669d1e414cf741e883131df3`. Exact-head `Prove the pull request` run
@@ -2687,11 +2687,35 @@ SQL fixture proves REPLACE cannot bypass the singleton or disturb the original r
 proof passes 24 tests. The exact code/state working head passed the full local gate: 76 files / 1,248
 tests / 6 declared skips, lint, context verification (27 Markdown / 12 required), TypeScript/build,
 credential scanning over 13 outputs, and range whitespace checks. Three fresh Terra lenses at exact
-candidate head
-`2574c28062b984dd36fcfe4bceb0a23c6fa68cd9` found no CRITICAL/HIGH schema/fingerprint,
+candidate head `2574c28062b984dd36fcfe4bceb0a23c6fa68cd9` found no CRITICAL/HIGH schema/fingerprint,
 lifecycle/crash-recovery, or privacy/authority defect. Their focused invented-fixture proofs covered
 84 tests / 1 declared skip, 82 tests, and 24 tests respectively; all confirmed that #154-#156 stay
-accurately tracked rather than being overclaimed by this singleton slice. Hosted proof remains
-pending. No real store, legacy source, connector, activation caller, external-model
-request, or private input was inspected or used. Issues #154-#156 and the full grace/restore path
+accurately tracked rather than being overclaimed by this singleton slice. All three rebound the same
+conclusion to the docs-only final head. PR #158 final head
+`994bb6e8e20a5c6cb6e16926b0eec7cd2ba8ac2c` passed exact-head `Prove the pull request` run
+`31089644527`. No connector review arrived, so the immutable head remained open from its 09:34:00Z
+ready creation through the 09:49:29Z final thread-aware sweep before merge. It merged as
+`cafd699360f13902f04092b98603c0f7cb81a0a0`; exact-merge Pages/privacy/deploy run `31090730918`
+passed.
+
+The #156 candidate is code heads `103a2c8` and `708ba71`. A dependency-free shared validator now
+defines the exact case-preserving `[A-Za-z0-9_-]{1,128}` task-ID grammar for activation artifacts,
+GitHub and OpenAI task cards, grants, task-owned installation keys, and backup input without Unicode
+or case normalization. A private `WeakSet` capability authorizes only current-session setup handles
+and reloads that match an exact expected fingerprint. Backup entry and direct-intent paths reject
+ordinary, replacement, copied, forged, or cross-root handles before a catalogue or file side effect;
+the direct manifest and publication seams independently reject the same handles. Invented-fixture
+proof covers uppercase success, malformed grammar, anchored reload and recovery, direct manifest/
+intent refusal, key replacement, and shared activation-card compatibility. Focused review suites
+passed 63, 67, and 90
+tests across the three lenses; the full gate passed 77 files / 1,262 tests / 6 declared skips plus
+lint, context, TypeScript/build, credential scanning, and range whitespace checks. Three fresh Terra
+lenses at exact rebased head `708ba719e2126684e470c5b4f1524753eabbcff9` found no CRITICAL/HIGH
+schema/compatibility, lifecycle/direct-seam, or privacy/authority defect. The privacy lens retained
+one non-blocking hostile-writer residual: an already-authorized in-process key handle is not
+revalidated after an on-disk key replacement; it is tracked on #142 and does not authorize a forged
+handle or production caller. Hosted proof, connector-or-15-minute timing, and merge remain pending.
+
+No real store, legacy source, connector, activation caller, external-model request, generated
+output, or private input was inspected or used. Issues #154-#156 and the full grace/restore path
 remain prerequisites to any real invocation.
