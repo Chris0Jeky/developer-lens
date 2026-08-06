@@ -2975,3 +2975,17 @@ tracked remedy. Hosted proof, PR/merge, issue closure, and post-merge sweep rema
 separately blocks authority for the initially supplied
 successful-report timestamp. No real source, store, legacy path, private/generated data, connector,
 credential, or production caller was inspected or activated.
+
+## 2026-08-06 — ResearchPack v1 C0 producer contract
+
+The product-owned additive producer seam lives in `shared/researchPack.ts` and
+`scripts/generateResearchPack.ts`; it is intentionally separate from AnalysisPack 1.0/2.0. The
+deterministic generator writes only `research-contracts/research-pack/v1/schema.json` and
+`invented.fixture.json`, and `npm run check:research-pack` detects byte drift. The fixture is
+invented C0 with all seven relation slots explicitly `intentionally_omitted`, path-free relation
+artifact metadata, opaque bundle-local IDs, fixed synthetic provenance, and no private or Git
+reads. The sibling lab sync path is `dllab contracts sync --from <checkout> --ref <40-hex-commit>`;
+the generated files are the only producer boundary it may copy. Focused contract tests cover
+round-trip, strict rejection, feature/person-scoring prohibitions, deterministic bytes, and the
+fixture was validated by the lab's Pydantic consumer. No AnalysisPack or runtime source activation
+was changed.
