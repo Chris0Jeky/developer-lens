@@ -142,7 +142,6 @@ function migratedFixture(options: { casOnBoth?: boolean } = {}): MigratedFixture
         expectedRevision: 0,
         operationId: `op-${seed.toString(16).padStart(2, '0').repeat(32)}`,
         payloadSha256: 'c'.repeat(64),
-        appliedAt: AS_OF,
       })
     }
   }
@@ -263,6 +262,11 @@ describe('B3 v3 scope deletion', { timeout: 30_000 }, () => {
       expectCode(() => deleteStorageV3Scope({
         db: fixture.target, scopeId: fixture.scopeA, asOf: DELETE_AT,
         operationId: `del-${'f'.repeat(64)}`,
+      }), 'OPERATION_CONFLICT')
+      // A replay in a materially different week is a different request: conflict.
+      expectCode(() => deleteStorageV3Scope({
+        db: fixture.target, scopeId: fixture.scopeA, asOf: '2026-05-01T00:00:00.000Z',
+        operationId: first.operationId,
       }), 'OPERATION_CONFLICT')
       expect(fixture.target.serialize()).toEqual(before)
     } finally { fixture.cleanup() }

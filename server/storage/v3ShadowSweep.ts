@@ -362,7 +362,7 @@ function plannedLineageEvents(
 /** Monday 00:00:00.000Z of an ISO week label — the earliest instant the week covers. */
 function isoWeekMondayTimestamp(week: string): string {
   const match = /^(\d{4})-W(\d{2})$/.exec(week)
-  if (!match) fail('SWEEP_STATE_REFUSED')
+  if (!match) return fail('SWEEP_STATE_REFUSED')
   const year = Number(match[1])
   const weekNumber = Number(match[2])
   const jan4 = Date.UTC(year, 0, 4)

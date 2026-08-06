@@ -24,7 +24,6 @@ import {
 const scope = (character = 'a'): string => `scope-${character.repeat(64)}`
 const operation = (character = 'a'): string => `op-${character.repeat(64)}`
 const payload = (character = 'a'): string => character.repeat(64)
-const APPLIED_AT = '2026-03-01T00:00:00.000Z'
 const request = (
   overrides: Partial<ContinuityCasInput> = {},
 ): ContinuityCasInput => ({
@@ -32,7 +31,6 @@ const request = (
   expectedRevision: 0,
   operationId: operation(),
   payloadSha256: payload(),
-  appliedAt: APPLIED_AT,
   ...overrides,
 })
 
@@ -397,14 +395,34 @@ describe('v3 continuity CAS in the shadow store', () => {
     }
   })
 
-  it('conflicts a replay whose applied week disagrees with the recorded one', () => {
+  it('replays across a week boundary — applied_week is a retention record, not replay identity', () => {
+    const db = openFixture()
+    try {
+      expect(applyContinuityCasOperation(db, request(), () => '2026-03-01T00:00:00.000Z').status)
+        .toBe('applied')
+      // A crash-restart retry of the byte-identical operation next week still replays.
+      expect(applyContinuityCasOperation(db, request(), () => '2026-03-09T00:00:00.000Z').status)
+        .toBe('replayed')
+      expect(db.prepare('SELECT applied_week FROM continuity_cas_operation').pluck().get())
+        .toBe('2026-W09')
+    } finally {
+      db.close()
+    }
+  })
+
+  it('refuses to advance an orphaned CAS scope whose claim_scope row is gone (PR #136 review)', () => {
     const db = openFixture()
     try {
       expect(applyContinuityCasOperation(db, request()).status).toBe('applied')
-      expect(applyContinuityCasOperation(
-        db,
-        request({ appliedAt: '2026-03-20T00:00:00.000Z' }),
-      ).status).toBe('conflict')
+      db.prepare('DELETE FROM claim_scope WHERE scope_id = ?').run(scope())
+      expect(() => assertContinuityCasConsistency(db)).toThrow(ContinuityCasError)
+      expect(() => applyContinuityCasOperation(db, request({
+        expectedRevision: 1,
+        operationId: operation('c'),
+      }))).toThrow(ContinuityCasError)
+      expect(() => initializeContinuityCasScope(db, scope())).toThrow(ContinuityCasError)
+      expect(stateRevision(db)).toBe(1)
+      expect(operationCount(db)).toBe(1)
     } finally {
       db.close()
     }

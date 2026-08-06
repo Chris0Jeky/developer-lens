@@ -212,14 +212,14 @@ export function deleteStorageV3Scope(
   options: StorageV3ScopeDeletionOptions,
 ): Readonly<StorageV3ScopeDeletionResult> {
   const scope = ScopeIdV3Schema.safeParse(options.scopeId)
-  if (!scope.success) fail('INVALID_REQUEST')
+  if (!scope.success) return fail('INVALID_REQUEST')
   const scopeId = scope.data
   const asOf = parseAsOf(options.asOf)
   const eventWeek = isoWeekFromCanonicalTimestamp(asOf)
   let requestedOperation: string | undefined
   if (options.operationId !== undefined) {
     const parsed = DeletionOperationIdV3Schema.safeParse(options.operationId)
-    if (!parsed.success) fail('INVALID_REQUEST')
+    if (!parsed.success) return fail('INVALID_REQUEST')
     requestedOperation = parsed.data
   }
   const entropy = options.randomBytes ?? cryptoRandomBytes
@@ -233,23 +233,29 @@ export function deleteStorageV3Scope(
 
       const scopeExists = db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(scopeId) !== undefined
       const recordedScopeTombstones = db.prepare(
-        `SELECT DISTINCT operation_id FROM lineage_event
+        `SELECT DISTINCT operation_id, event_week FROM lineage_event
          WHERE event_kind = 'tombstone_cascade' AND subject_kind = 'scope' AND subject_id = ?`,
-      ).pluck().all(scopeId) as string[]
+      ).all(scopeId) as Array<{ operation_id: string; event_week: string }>
 
       if (!scopeExists) {
+        // Exact replay only: one unambiguous recorded (operation, week) pair, the
+        // requested operation matching it when named, and the SAME deletion week —
+        // a materially different request is a conflict, never a silent replay
+        // (PR #136 review).
         if (recordedScopeTombstones.length === 0) fail('UNKNOWN_SCOPE')
         if (recordedScopeTombstones.length > 1) fail('OPERATION_CONFLICT')
         const recorded = recordedScopeTombstones[0]
-        if (requestedOperation !== undefined && requestedOperation !== recorded) {
+        if (recorded === undefined) return fail('DELETION_FAILED')
+        if (requestedOperation !== undefined && requestedOperation !== recorded.operation_id) {
           fail('OPERATION_CONFLICT')
         }
+        if (recorded.event_week !== eventWeek) fail('OPERATION_CONFLICT')
         return Object.freeze({
           completeB3: true as const,
           status: 'replayed' as const,
           deletedRows: Object.freeze({}),
           tombstonesWritten: 0,
-          operationId: recorded,
+          operationId: recorded.operation_id,
           maintenance: 'pending' as const,
         })
       }

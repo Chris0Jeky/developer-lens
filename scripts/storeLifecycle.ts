@@ -350,7 +350,6 @@ export function proveContinuityCasRestart(
     expectedRevision: 0,
     operationId: `op-${randomBytes(32).toString('hex')}`,
     payloadSha256: hex('cas-receipt'),
-    appliedAt: STORE_LIFECYCLE_TIMELINE.migrationAsOf,
   }
   const firstApply = applyContinuityCasOperation(store, request).status
   const replayApply = applyContinuityCasOperation(store, request).status
@@ -427,6 +426,7 @@ export function proveScopeDeletion(
 export interface SweepProof {
   readonly status: 'complete' | 'noop'
   readonly cleared: Readonly<Record<string, number>>
+  readonly casReceiptsCleared: number
   readonly clearedTotal: number
   readonly lineageEvents: number
 }
@@ -436,7 +436,9 @@ export function sweepSelectedStore(store: Database.Database, asOf: string): Swee
   return {
     status: result.status,
     cleared: result.cleared,
-    clearedTotal: Object.values(result.cleared).reduce((total, count) => total + count, 0),
+    casReceiptsCleared: result.casReceiptsCleared,
+    clearedTotal: Object.values(result.cleared).reduce((total, count) => total + count, 0)
+      + result.casReceiptsCleared,
     lineageEvents: result.lineageEvents,
   }
 }
@@ -529,7 +531,7 @@ export function runStoreLifecycleDemo(
     cas = proveContinuityCasRestart(store, deletableScopeId)
     emit(`cas: scopes=${cas.scopes} first=${cas.firstApply} restart=${cas.replayApply} revisions=${cas.revisions.join(',')}`)
     sweep = sweepSelectedStore(store, options.sweepAsOf ?? STORE_LIFECYCLE_TIMELINE.sweepAsOf)
-    emit(`sweep: status=${sweep.status} cleared=${sweep.clearedTotal} lineage=${sweep.lineageEvents} ${counts(sweep.cleared)}`)
+    emit(`sweep: status=${sweep.status} cleared=${sweep.clearedTotal} cas-receipts=${sweep.casReceiptsCleared} lineage=${sweep.lineageEvents} ${counts(sweep.cleared)}`)
     deletion = proveScopeDeletion(store, deletableScopeId)
     emit(`deletion: status=${deletion.status} replay=${deletion.replay} rows-removed=${deletion.rowsRemoved} tombstones=${deletion.tombstonesWritten} remaining-scopes=${deletion.remainingScopes} others-intact=${deletion.otherScopesIntact ? 'yes' : 'NO'} cas-remaining=${deletion.casScopesRemaining} maintenance=${deletion.maintenance} ${counts(deletion.deletionRecords)}`)
   } finally {
@@ -604,7 +606,6 @@ function runVerb(
   if (invocation.verb === 'migrate') {
     const source = createInventedV2Source(invocation.directory)
     try {
-      installInventedV2Bridge(source)
       const migration = migrateInventedSource(source, invocation.directory)
       log(`migration: status=${migration.status} checksum-digits=${migration.checksumLength}`)
     } finally {

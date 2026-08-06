@@ -476,16 +476,16 @@ describe('storage-v3 B2a-iii ongoing C2 sweep', () => {
         expectedRevision: 0,
         operationId: `op-${'a'.repeat(64)}`,
         payloadSha256: 'b'.repeat(64),
-        appliedAt: '2025-01-15T00:00:00.000Z',
       }
       const young = {
         ...aged,
         expectedRevision: 1,
         operationId: `op-${'b'.repeat(64)}`,
-        appliedAt: '2026-03-01T00:00:00.000Z',
       }
-      expect(applyContinuityCasOperation(db, aged).status).toBe('applied')
-      expect(applyContinuityCasOperation(db, young).status).toBe('applied')
+      expect(applyContinuityCasOperation(db, aged, () => '2025-01-15T00:00:00.000Z').status)
+        .toBe('applied')
+      expect(applyContinuityCasOperation(db, young, () => '2026-03-01T00:00:00.000Z').status)
+        .toBe('applied')
 
       // Under the boundary: nothing clears.
       const early = sweepStorageV3C2({

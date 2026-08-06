@@ -60,21 +60,23 @@ export interface ContinuityCasInput {
   readonly operationId: string
   /** Opaque local-C2 receipt digest; the 13-month sweep clears it in place. */
   readonly payloadSha256: string
-  /**
-   * The writer's process wall time as a canonical millisecond timestamp. Only its
-   * ISO-week floor is stored (`applied_week`, ADR-01 grain rule); an exact replay
-   * must land in the same week or it is a conflict.
-   */
-  readonly appliedAt: string
 }
 
-const CANONICAL_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
+/**
+ * `applied_week` records the WRITER's process wall time, captured inside the CAS
+ * transaction and floored to ISO week (§7.4: never caller-supplied — a caller-chosen
+ * time could stretch the receipt's 13-month lifetime or expire a live one). It is a
+ * retention record, not replay identity: replay is discriminated by the payload
+ * digest, so a crash-restart replay across a week boundary still replays. The seam
+ * exists for deterministic tests only; production callers use the process clock.
+ */
+export type ContinuityCasClockForTest = () => string
 
-function parseAppliedAt(value: unknown): string {
-  if (typeof value !== 'string' || !CANONICAL_TIMESTAMP.test(value)) fail()
-  const time = Date.parse(value)
-  if (!Number.isFinite(time) || new Date(time).toISOString() !== value) fail()
-  return value
+function capturedWeek(nowForTest?: ContinuityCasClockForTest): string {
+  const timestamp = nowForTest ? nowForTest() : new Date().toISOString()
+  const time = Date.parse(timestamp)
+  if (!Number.isFinite(time) || new Date(time).toISOString() !== timestamp) fail()
+  return isoWeekFromCanonicalTimestamp(timestamp)
 }
 
 function parseInput(input: unknown): ContinuityCasInput {
@@ -82,7 +84,7 @@ function parseInput(input: unknown): ContinuityCasInput {
   const prototype = Object.getPrototypeOf(input)
   if (prototype !== Object.prototype && prototype !== null) fail()
   const keys = Reflect.ownKeys(input)
-  const expectedKeys = ['appliedAt', 'expectedRevision', 'operationId', 'payloadSha256', 'scopeId']
+  const expectedKeys = ['expectedRevision', 'operationId', 'payloadSha256', 'scopeId']
   if (keys.some((key) => typeof key !== 'string') || keys.length !== expectedKeys.length) fail()
   if ([...keys].sort().some((key, index) => key !== expectedKeys[index])) fail()
 
@@ -110,7 +112,6 @@ function parseInput(input: unknown): ContinuityCasInput {
     expectedRevision: values.expectedRevision,
     operationId: operation.data,
     payloadSha256: values.payloadSha256,
-    appliedAt: parseAppliedAt(values.appliedAt),
   })
 }
 
@@ -137,7 +138,10 @@ function enableConnectionGuards(db: Database.Database): void {
 
 /**
  * Every scope's revision must equal both its operation count and its highest
- * applied revision. Divergence means the history was edited around the CAS.
+ * applied revision, AND every CAS scope must still be owned by a claim_scope row:
+ * an orphaned state (its scope deleted around the CAS, which the deliberate
+ * absence of an FK permits) must refuse further advancement rather than guard
+ * nothing (PR #136 review). Divergence means the history was edited around the CAS.
  */
 export function assertContinuityCasConsistency(db: Database.Database): void {
   const inconsistent = db.prepare(
@@ -150,6 +154,7 @@ export function assertContinuityCasConsistency(db: Database.Database): void {
      ) AS history ON history.scope_id = state.scope_id
      WHERE state.revision != COALESCE(history.operation_count, 0)
         OR state.revision != COALESCE(history.maximum_revision, 0)
+        OR NOT EXISTS (SELECT 1 FROM claim_scope WHERE claim_scope.scope_id = state.scope_id)
      LIMIT 1`,
   ).get()
   if (inconsistent !== undefined) fail()
@@ -258,11 +263,12 @@ function executeApply(
   db: Database.Database,
   rawInput: unknown,
   testHooks?: ContinuityCasTestHooks,
+  nowForTest?: ContinuityCasClockForTest,
 ): ContinuityCasResult {
   const input = parseInput(rawInput)
   if (db.inTransaction) fail()
   enableConnectionGuards(db)
-  const appliedWeek = isoWeekFromCanonicalTimestamp(input.appliedAt)
+  const appliedWeek = capturedWeek(nowForTest)
   const apply = db.transaction((): ContinuityCasResult => {
     assertShadowStore(db)
     const existingOperation = db.prepare(
@@ -276,7 +282,6 @@ function executeApply(
         existingOperation.scope_id !== input.scopeId
         || existingOperation.expected_revision !== input.expectedRevision
         || existingOperation.applied_revision !== appliedRevision
-        || existingOperation.applied_week !== appliedWeek
       ) return RESULTS.conflict
       // The sweep cleared this receipt at the 13-month boundary: replay identity can
       // no longer be verified, so refuse rather than guess in either direction.
@@ -323,9 +328,10 @@ function executeApply(
 export function applyContinuityCasOperation(
   db: Database.Database,
   input: ContinuityCasInput,
+  nowForTest?: ContinuityCasClockForTest,
 ): ContinuityCasResult {
   try {
-    return executeApply(db, input)
+    return executeApply(db, input, undefined, nowForTest)
   } catch (error) {
     if (error instanceof ContinuityCasError) throw error
     return fail()
