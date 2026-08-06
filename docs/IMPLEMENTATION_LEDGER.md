@@ -2946,7 +2946,32 @@ fix round repaired restart-stuck empty provisionals and directory-sync replay la
 standalone head `441f5cb` then received a clean CRITICAL/HIGH review. Fresh integration review found
 and the fix head `00e6161` repaired two preflight/foreign-marker legacy-fallback paths; its final
 17-test review, TypeScript check, and whitespace check found no remaining CRITICAL/HIGH blocker.
-Hosted proof, PR/merge, restore consumption, and post-merge sweep remain pending. #165 still
+PR #169 final head `b8592ec343ba09df108a3e83d55736d89701545c` merged as
+`93a342c85ba8a4bee96f18f71c0b269f5e536234` at 2026-08-06T18:04:46Z. The PR had no
+reported hosted checks, connector review, comments, or review threads while GitHub Status continued
+to classify Actions as a critical major outage. After more than three minutes at the pushed head,
+the owner-directed pre-release outage exception carried the green local gate and independent reviews;
+this is explicitly not hosted proof. A late connector review then raised five P2 marker-hardening
+findings. They were triaged once, replied to, resolved on PR #169, and recorded in #170: task-ID
+minimization, exact-root primitive probing, durable-publication/verification coordination,
+case-variant reserved-name detection, and recovered-final re-sync ordering. Issue #168 remains open
+because those follow-ups refine its original acceptance criteria; restore consumes the handle but does
+not claim the complete marker contract or hosted proof.
+
+Restore code head `90ff38f` composes standalone signed-backup verification, exact copied-snapshot
+normalization, identity-safe publication/recovery, and opaque single-use proof consumption. A real
+filesystem fixture deletes the selected store, restores only from the immutable backup plus marker,
+preserves backup/manifest/marker bytes, removes only staged backup catalogue state in the copy,
+records the exact original receipt, and reopens read-only. Caller-minted receipts, extra re-signed
+catalogue artifacts, pre/post-link name replacement, and repeated directory-sync failure all refuse.
+The focused storage chain passes 117 tests / 2 platform skips; restore itself passes 22 tests.
+`npm run check` passes lint, context verification, 81 files / 1,362 tests / 10 declared skips,
+TypeScript/Vite build, and credential scanning over 13 outputs. Fresh exact-head Terra review found no
+CRITICAL/HIGH blocker within the declared single-owner boundary. It recorded two remaining pathname
+TOCTOU windows under #142: a hostile same-user process can race the native path-only link/unlink APIs,
+so this slice makes no hostile-writer containment claim; the writer lease excludes compliant writers,
+post-link identity failure refuses without legacy fallback, and native handle/VFS binding remains the
+tracked remedy. Hosted proof, PR/merge, issue closure, and post-merge sweep remain pending. #165 still
 separately blocks authority for the initially supplied
 successful-report timestamp. No real source, store, legacy path, private/generated data, connector,
 credential, or production caller was inspected or activated.
