@@ -210,6 +210,8 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
           code: 'v3-selection-selected-refused',
         })
       })
+      const winner = expectSelected(selectStorageV3Reader(fx.input))
+      winner.db.close()
     } finally { fx.cleanup() }
   })
 
