@@ -2872,13 +2872,16 @@ backup verifier also skipped its task-key/root continuity proof; `0c37ef2` resto
 adds a forged-handle regression. The exact code head passes `npm run check`: lint, context verification
 (27 Markdown / 12 required), 79 files / 1,324 tests / 10 declared skips, TypeScript/Vite build, and
 credential scanning over 13 outputs. Focused selector proof passes 5 tests and range whitespace is
-clean. Hosted run `31119973871` remains queued without a step start during GitHub's declared critical
-Actions incident; this is not green hosted proof. Fresh fix review, push, merge, and post-merge sweep
-remain pending.
+clean. Initial hosted run `31119973871` remained queued without a step start and was automatically
+cancelled when the repaired head was pushed. Exact-head run `31121191791` is likewise queued without
+a step start during GitHub's declared critical Actions incident; this is not green hosted proof.
+Fresh fix review, merge, and post-merge sweep remain pending.
 
 The exported backup verifier's selected-store structural assumptions remain bounded to its current
 selector caller; #163 requires a separate standalone restore verifier rather than reusing it when the
-selected store is absent. No real store, legacy source/path, connector, production issuer/caller,
+selected store is absent. Connector review's lower findings on runtime-opaque success-report binding
+and a NULL-producing upper timestamp boundary are tracked together by #165; neither is hidden or
+treated as activation-ready. No real store, legacy source/path, connector, production issuer/caller,
 external-model request, generated output, credential, or private input was inspected or used.
-Restore/reopen (#163), tombstone replay, and physical legacy/backup/WAL/SHM/journal cleanup remain
-dependent LIFE-03 slices.
+Success-report/grace hardening (#165), restore/reopen (#163), tombstone replay, and physical
+legacy/backup/WAL/SHM/journal cleanup remain dependent LIFE-03 slices.

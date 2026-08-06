@@ -28,7 +28,7 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   selected-store backup #153, migration-backup singleton #158, task-key continuity #156/PR #159,
   activation default-deny/assert-only PR #160, crash durability #154/#155/PR #161',
   'state syncs #126']
-active_slice: 'DL-LIFE-03 selection/grace (#162): schema 3.2.4/user_version 311 adds one immutable global migration_selection_state receipt with no artifact FK, exact replay, and an injected-UTC seven-day boundary. First selection holds the writer lease, proves the published selected store and finalized task-key-bound backup, commits the receipt under BEGIN IMMEDIATE, then reopens read-only. Restart with an exact durable receipt revalidates the selected store plus task-key/root continuity but deliberately does not require a backup that scope revocation may have validly deleted. A read-only preflight protects present or ambiguous selection state with one content-free unavailable result; only a plainly absent receipt may return the legacy fallback, and the selector never accepts a legacy path. The exact local full gate is green at 79 files / 1,324 tests / 10 declared skips; hosted run 31119973871 remains queued without starting during GitHub''s declared critical Actions incident, and exact-head review/push/merge remain pending. Restore remains #163; cleanup and tombstone replay remain later LIFE-03 slices. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
+active_slice: 'DL-LIFE-03 selection/grace (#162): schema 3.2.4/user_version 311 adds one immutable global migration_selection_state receipt with no artifact FK, exact replay, and an injected-UTC seven-day boundary. First selection holds the writer lease, proves the published selected store and finalized task-key-bound backup, commits the receipt under BEGIN IMMEDIATE, then reopens read-only. Restart with an exact durable receipt revalidates the selected store plus task-key/root continuity but deliberately does not require a backup that scope revocation may have validly deleted. A read-only preflight protects present or ambiguous selection state with one content-free unavailable result; only a plainly absent receipt may return the legacy fallback, and the selector never accepts a legacy path. Local proof, hosted-outage evidence, and exact heads live only in the implementation ledger; exact-head review and merge remain pending. Restore remains #163; cleanup and tombstone replay remain later LIFE-03 slices. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -39,7 +39,7 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No owner blocker for invented-fixture work. #156/PR #159 task-key authority, PR #160 activation default-deny, and #154/#155/PR #161 crash durability are merged. A real migration/connector still requires #162 to merge, then LIFE-03 restore (#163), tombstone replay, expiry cleanup, and a separately reviewed production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a pre-LIFE-03 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
+blockers: 'No owner blocker for invented-fixture work. #156/PR #159 task-key authority, PR #160 activation default-deny, and #154/#155/PR #161 crash durability are merged. A real migration/connector still requires #162 to merge, the success-report/grace hardening tracked by #165, LIFE-03 restore (#163), tombstone replay, expiry cleanup, and a separately reviewed production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a pre-LIFE-03 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -76,11 +76,9 @@ local_board: seeded Taskdeck board outside Git; restart runbook in untracked RES
 residual_risks:
   - 'q-7 protection has strict=false and enforce_admins=false; repository law still forbids
      privileged merges with red or stale exact-head CI'
-  - 'PR #161 is an explicit 2026-08-06 owner exception to that gate: merge `faa548c` landed while
-     exact-head run `31115867132` was red only because both hosted attempts failed in Set up job on
-     repeated action-metadata Service Unavailable responses during GitHub''s declared Actions
-     incident. Local/full and independent review proof were green; hosted exact-head proof was NOT
-     green and is not inferred retroactively.'
+  - 'PR #161 is an explicit owner-directed exception during GitHub''s declared Actions incident.
+     Local/full and independent review proof were green; hosted exact-head proof was NOT green and
+     is not inferred retroactively. Exact merge, run, and incident evidence lives in the ledger.'
   - '#78 RESOLVED on fable/boundary-and-reachability: the browser holds no bearer at all (the guard
      accepts a proven same-origin Sec-Fetch triple on an allowlisted Host OR a bearer for
      non-browser callers), the launch token and importer store path are no longer printed,
