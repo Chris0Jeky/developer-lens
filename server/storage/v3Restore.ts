@@ -137,9 +137,11 @@ function validateAttempt(row: Record<string, unknown>, artifactId: string): void
   }
   identity(row.sqlite_dev)
   identity(row.sqlite_ino)
-  identity(row.manifest_dev)
-  identity(row.manifest_ino)
-  if (typeof row.sqlite_content_sha256 !== 'string' || !SHA256.test(row.sqlite_content_sha256)) return fail()
+  // SQLite backup captures the live catalogue after the SQLite provisional
+  // identity is bound but before the manifest exists or the copied bytes can
+  // be hashed without creating a self-referential snapshot.
+  if (row.manifest_dev !== null || row.manifest_ino !== null
+    || row.sqlite_content_sha256 !== null) return fail()
 }
 
 function validateProofAndRows(input: ClosedProof): { scopeId: string; eventWeek: string; opId: string } {
@@ -191,6 +193,7 @@ function validateProofAndRows(input: ClosedProof): { scopeId: string; eventWeek:
   ).all() as Array<{ artifact_id: string; state: string }>
   if (selected.length !== 1 || selected[0]!.artifact_id !== input.selectedArtifactId
     || selected[0]!.state !== 'active') return fail()
+  if (Number(input.db.prepare('SELECT COUNT(*) FROM app_artifact').pluck().get()) !== 2) return fail()
   if (Number(input.db.prepare('SELECT COUNT(*) FROM migration_selection_state').pluck().get()) !== 0) return fail()
   validateMaintenance(input.db)
   return Object.freeze({ scopeId, eventWeek, opId: operationId(input.artifactId, input.stagedLocator) })

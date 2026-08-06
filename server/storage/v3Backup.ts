@@ -145,9 +145,11 @@ export type StorageV3MigrationBackupRestoreVerificationInput = Readonly<{
 export type StorageV3MigrationBackupRestoreVerification = Readonly<{
   artifactId: string
   locator: string
+  stagedLocator: string
   backupAt: string
   selectedArtifactId: string
   ownerScopeIds: readonly string[]
+  intentSha256: string
   contentSha256: string
   manifestSha256: string
 }>
@@ -687,8 +689,9 @@ export function verifyStorageV3MigrationBackup(
   try {
     const closed = captureVerificationInput(input)
     const locator = `migration-backup-${closed.backupAt.replace(/[-:]/g, '')}.sqlite`
+    const stagedLocator = `${locator}.tmp`
     const manifestLocator = `${locator}.manifest.json`
-    const tempLocator = `${locator}.tmp`
+    const tempLocator = stagedLocator
     const manifestTempLocator = `${tempLocator}.manifest.json`
     const source = storageV3ArtifactFilePath(closed.root, 'v3-store.sqlite')
     if (typeof closed.db.name !== 'string' || closed.db.name !== source) fail()
@@ -788,8 +791,9 @@ export function verifyStorageV3MigrationBackupForRestore(
   try {
     const closed = captureRestoreVerificationInput(input)
     const locator = `migration-backup-${closed.backupAt.replace(/[-:]/g, '')}.sqlite`
+    const stagedLocator = `${locator}.tmp`
     const manifestLocator = `${locator}.manifest.json`
-    const tempLocator = `${locator}.tmp`
+    const tempLocator = stagedLocator
     const manifestTempLocator = `${tempLocator}.manifest.json`
     assertStorageV3ArtifactRootInstallationKey(closed.root, closed.installationKey)
 
@@ -830,9 +834,15 @@ export function verifyStorageV3MigrationBackupForRestore(
     return Object.freeze({
       artifactId: closed.artifactId,
       locator,
+      stagedLocator,
       backupAt: closed.backupAt,
       selectedArtifactId: snapshot.selectedArtifactId,
       ownerScopeIds: Object.freeze([...snapshot.ownerScopeIds]),
+      intentSha256: storageV3MigrationBackupIntentSha256(
+        closed.artifactId,
+        locator,
+        closed.installationKey.fingerprint,
+      ),
       contentSha256,
       manifestSha256,
     })

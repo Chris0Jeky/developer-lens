@@ -26,6 +26,7 @@ import {
   proveStorageV3MigrationBackupPublication,
   readStorageV3MigrationBackupAttempt,
   recordStorageV3MigrationBackupAttemptContentSha256,
+  storageV3MigrationBackupIntentSha256,
   storageV3MigrationBackupManifest,
   storageV3WriterLeasePath,
   STORAGE_V3_ARTIFACT_LOCATORS,
@@ -229,8 +230,14 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       })).toMatchObject({
         artifactId: backup.artifactId,
         locator: backup.locator,
+        stagedLocator: `${backup.locator}.tmp`,
         selectedArtifactId: expect.stringMatching(/^art-[0-9a-f]{64}$/),
         ownerScopeIds: [SCOPE_A, SCOPE_B],
+        intentSha256: storageV3MigrationBackupIntentSha256(
+          backup.artifactId,
+          backup.locator,
+          fx.key.fingerprint,
+        ),
         contentSha256: backup.contentSha256,
         manifestSha256: backup.manifestSha256,
       })

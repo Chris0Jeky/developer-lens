@@ -42,8 +42,8 @@ function fixture(): { db: Database.Database; proof: StorageV3RestoreSnapshotProo
   }
   db.prepare(`INSERT INTO migration_backup_attempt (
     artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256
-  ) VALUES (?, '11', '22', '33', '44', ?)`)
-    .run(BACKUP, 'b'.repeat(64))
+  ) VALUES (?, '11', '22', NULL, NULL, NULL)`)
+    .run(BACKUP)
   db.prepare(`INSERT INTO storage_maintenance_state (
     singleton, state, operation_id, scope_id, event_week
   ) VALUES (1, 'complete', NULL, NULL, NULL)`).run()
@@ -120,6 +120,16 @@ describe('LIFE-03 restore snapshot normalization', () => {
       expect(fx.db.prepare('SELECT state FROM app_artifact WHERE artifact_id = ?').pluck().get(BACKUP)).toBe('active')
       expect(fx.db.prepare('SELECT COUNT(*) FROM migration_backup_attempt').pluck().get()).toBe(1)
       expect(storageV3MaintenanceStatus(fx.db)).toBe('complete')
+    } finally { fx.close() }
+  })
+
+  it('refuses replay after the exact copied snapshot was already normalized', () => {
+    const fx = fixture()
+    try {
+      normalizeStorageV3RestoredSnapshot(fx.proof)
+      const normalized = fx.db.serialize()
+      expectRefusal(() => normalizeStorageV3RestoredSnapshot(fx.proof))
+      expect(fx.db.serialize()).toEqual(normalized)
     } finally { fx.close() }
   })
 })
