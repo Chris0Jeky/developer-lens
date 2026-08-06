@@ -59,6 +59,9 @@ const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
 
 export const STORAGE_V3_SELECTION_PROOF_NAMES = Object.freeze({ final: FINAL_NAME, temp: TEMP_NAME })
 
+const PREFLIGHT_SOURCE_NAME = 'selection-proof-preflight-source'
+const PREFLIGHT_LINK_NAME = 'selection-proof-preflight-link'
+
 export type StorageV3SelectionProofPublicationStage =
   | 'tempClaim'
   | 'tempDurable'
@@ -84,7 +87,6 @@ type MarkerBody = Readonly<{
   backupArtifactId: string
   successfulReportAt: string
   graceDeadlineAt: string
-  taskId: string
   taskFingerprint: string
 }>
 
@@ -97,8 +99,7 @@ type HandleRecord = Readonly<{
   finalPath: string
   selection: StorageV3MigrationSelection
   bytes: Buffer
-  taskId: string
-  taskFingerprint: string
+  installationKeyFingerprint: string
 }>
 
 const HANDLES = new WeakMap<StorageV3MigrationSelectionProofHandle, HandleRecord>()
@@ -161,6 +162,11 @@ function selectionValue(raw: unknown): StorageV3MigrationSelection {
 
 function bodyFor(selection: StorageV3MigrationSelection, key: TaskInstallationKeyHandle): MarkerBody {
   if (!isCanonicalTaskId(key.taskId) || !HEX.test(key.fingerprint)) return fail()
+  const taskIdDigest = createHash('sha256')
+    .update(`developer-lens.storage-v3-selection-task.v1\0${key.taskId}`, 'utf8')
+    .digest('hex')
+  const taskFingerprint = bindTaskInstallationKeyBody(key, taskIdDigest)
+  if (!HEX.test(taskFingerprint)) return fail()
   return Object.freeze({
     version: VERSION,
     readerState: READER_STATE,
@@ -169,8 +175,7 @@ function bodyFor(selection: StorageV3MigrationSelection, key: TaskInstallationKe
     backupArtifactId: selection.backupArtifactId,
     successfulReportAt: selection.successfulReportAt,
     graceDeadlineAt: selection.graceDeadlineAt,
-    taskId: key.taskId,
-    taskFingerprint: key.fingerprint,
+    taskFingerprint,
   })
 }
 
@@ -296,8 +301,12 @@ function removeReservedEmptyProvisional(
 function rejectSidecars(rootPath: string): void {
   let names: string[]
   try { names = readdirSync(rootPath) } catch { return fail() }
+  const finalLower = FINAL_NAME.toLowerCase()
+  const tempLower = TEMP_NAME.toLowerCase()
   for (const name of names) {
-    if (name.startsWith(FINAL_NAME) && name !== FINAL_NAME && name !== TEMP_NAME) return fail()
+    const lower = name.toLowerCase()
+    if (lower.startsWith(finalLower) && name !== FINAL_NAME && name !== TEMP_NAME) return fail()
+    if (lower === tempLower && name !== TEMP_NAME) return fail()
   }
 }
 
@@ -311,6 +320,60 @@ function injectFailure(stage: StorageV3SelectionProofPublicationStage, configure
 
 type StorageV3SelectionProofStageFailure = StorageV3SelectionProofPublicationStage
 type DirectorySynchronizer = (root: StorageV3ArtifactRoot, stage: StorageV3SelectionProofPublicationStage) => void
+
+/**
+ * Exercise the exact selected-root primitives used by publication before a
+ * selector can commit its immutable receipt. Probe names are app-owned and
+ * never replace an existing entry; foreign bytes therefore remain untouched.
+ */
+export function assertStorageV3SelectionProofDurability(root: StorageV3ArtifactRoot): void {
+  let descriptor: number | undefined
+  let sourceIdentity: BigIntStats | undefined
+  let linkIdentity: BigIntStats | undefined
+  const sourcePath = storageV3ArtifactFilePath(root, PREFLIGHT_SOURCE_NAME)
+  const linkPath = storageV3ArtifactFilePath(root, PREFLIGHT_LINK_NAME)
+  const cleanup = (path: string, expected: BigIntStats | undefined): void => {
+    if (expected === undefined) return
+    try {
+      const current = stat(path)
+      if (current === undefined || current.dev !== expected.dev || current.ino !== expected.ino
+        || current.isSymbolicLink() || !current.isFile()) return
+      unlinkSync(path)
+      syncStorageV3ArtifactDirectory(root)
+    } catch { /* the original failure remains the only public result */ }
+  }
+  try {
+    assertStorageV3ArtifactDirectorySyncSupported()
+    if (stat(sourcePath) !== undefined || stat(linkPath) !== undefined) return fail()
+    descriptor = openSync(sourcePath, constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | NO_FOLLOW, 0o600)
+    const byte = Buffer.from([0x01])
+    if (writeSync(descriptor, byte, 0, byte.length, 0) !== byte.length) return fail()
+    fsyncSync(descriptor)
+    sourceIdentity = assertDescriptorPath(sourcePath, descriptor, 1n, 1n)
+    closeDescriptorOrFail(descriptor)
+    descriptor = undefined
+    syncStorageV3ArtifactDirectory(root)
+    linkSync(sourcePath, linkPath)
+    linkIdentity = stat(linkPath)
+    if (linkIdentity === undefined || sourceIdentity === undefined
+      || linkIdentity.dev !== sourceIdentity.dev || linkIdentity.ino !== sourceIdentity.ino) return fail()
+    assertFileStat(linkIdentity, 2n)
+    syncStorageV3ArtifactDirectory(root)
+    unlinkSync(linkPath)
+    syncStorageV3ArtifactDirectory(root)
+    unlinkSync(sourcePath)
+    syncStorageV3ArtifactDirectory(root)
+  } catch (error) {
+    if (error instanceof StorageV3SelectionProofError) throw error
+    return fail()
+  } finally {
+    if (descriptor !== undefined) {
+      try { closeSync(descriptor) } catch { /* cleanup below remains best-effort */ }
+    }
+    cleanup(linkPath, linkIdentity)
+    cleanup(sourcePath, sourceIdentity)
+  }
+}
 
 function publishInternal(
   root: StorageV3ArtifactRoot,
@@ -344,6 +407,10 @@ function publishInternal(
       return Object.freeze({ kind: 'v3_migration_selection_proof', status: 'replayed', selection })
     }
     exactPair(tempPath, finalPath, expected)
+    // A recovered pair may have survived after the final-link sync but before
+    // the temporary name was durably removed. Re-sync the final name before
+    // unlinking the temporary name on every replay.
+    syncDirectory(root, synchronizer, 'finalLink')
   } else if (existingTemp !== undefined) {
     assertFileStat(existingTemp, 1n)
     readDescriptor(tempPath, expected, 1n)
@@ -439,7 +506,7 @@ function parseMarker(bytes: Buffer, key: TaskInstallationKeyHandle, selection?: 
   try { raw = JSON.parse(bytes.toString('utf8')) } catch { return fail() }
   const object = assertPlain(raw, [
     'version', 'readerState', 'legacySourceId', 'selectedArtifactId', 'backupArtifactId',
-    'successfulReportAt', 'graceDeadlineAt', 'taskId', 'taskFingerprint', 'bodySha256', 'installationKeyBinding',
+    'successfulReportAt', 'graceDeadlineAt', 'taskFingerprint', 'bodySha256', 'installationKeyBinding',
   ])
   const parsedSelection = selectionValue({
     readerState: own(object, 'readerState'),
@@ -449,15 +516,14 @@ function parseMarker(bytes: Buffer, key: TaskInstallationKeyHandle, selection?: 
     successfulReportAt: own(object, 'successfulReportAt'),
     graceDeadlineAt: own(object, 'graceDeadlineAt'),
   })
-  const taskId = own(object, 'taskId')
   const taskFingerprint = own(object, 'taskFingerprint')
   const bodySha256 = own(object, 'bodySha256')
   const installationKeyBinding = own(object, 'installationKeyBinding')
-  if (own(object, 'version') !== VERSION || typeof taskId !== 'string' || !isCanonicalTaskId(taskId)
-    || taskId !== key.taskId || typeof taskFingerprint !== 'string' || !HEX.test(taskFingerprint)
-    || taskFingerprint !== key.fingerprint || typeof bodySha256 !== 'string' || !HEX.test(bodySha256)
+  if (own(object, 'version') !== VERSION || typeof taskFingerprint !== 'string' || !HEX.test(taskFingerprint)
+    || typeof bodySha256 !== 'string' || !HEX.test(bodySha256)
     || typeof installationKeyBinding !== 'string' || !HEX.test(installationKeyBinding)) return fail()
   const body = bodyFor(parsedSelection, key)
+  if (body.taskFingerprint !== taskFingerprint) return fail()
   if (digestBody(body) !== bodySha256 || bindTaskInstallationKeyBody(key, bodySha256) !== installationKeyBinding) return fail()
   const marker = Object.freeze({ ...body, bodySha256, installationKeyBinding })
   compareBytes(markerBytes(marker), bytes)
@@ -477,13 +543,16 @@ export function verifyStorageV3MigrationSelectionProof(
     const entry = stat(finalPath)
     if (entry === undefined) return fail()
     const tempEntry = stat(tempPath)
-    assertFileStat(entry, tempEntry === undefined ? 1n : 2n)
+    // A temporary/final pair is still an in-progress publication. Do not mint
+    // a restore handle until the durable final-only state is established.
+    if (tempEntry !== undefined) return fail()
+    assertFileStat(entry, 1n)
     let descriptor: number | undefined
     const bytes = Buffer.alloc(4096)
     try {
       descriptor = openSync(finalPath, constants.O_RDONLY | NO_FOLLOW)
       const opened = fstatSync(descriptor, { bigint: true })
-      assertFileStat(opened, tempEntry === undefined ? 1n : 2n)
+      assertFileStat(opened, 1n)
       if (opened.size <= 0n || opened.size > BigInt(bytes.length)) return fail()
       const exact = Buffer.alloc(Number(opened.size))
       let offset = 0
@@ -493,9 +562,8 @@ export function verifyStorageV3MigrationSelectionProof(
         offset += count
       }
       if (readSync(descriptor, bytes, 0, 1, exact.length) !== 0) return fail()
-      assertDescriptorPath(finalPath, descriptor, tempEntry === undefined ? 1n : 2n, BigInt(exact.length))
+      assertDescriptorPath(finalPath, descriptor, 1n, BigInt(exact.length))
       parseMarker(exact, installationKey)
-      if (tempEntry !== undefined) exactPair(tempPath, finalPath, exact)
       const parsed = JSON.parse(exact.toString('utf8')) as Record<string, unknown>
       const selection = selectionValue({
         readerState: parsed.readerState,
@@ -506,7 +574,7 @@ export function verifyStorageV3MigrationSelectionProof(
         graceDeadlineAt: parsed.graceDeadlineAt,
       })
       const handle = Object.freeze({}) as StorageV3MigrationSelectionProofHandle
-      HANDLES.set(handle, Object.freeze({ finalPath, selection, bytes: Buffer.from(exact), taskId: installationKey.taskId, taskFingerprint: installationKey.fingerprint }))
+      HANDLES.set(handle, Object.freeze({ finalPath, selection, bytes: Buffer.from(exact), installationKeyFingerprint: installationKey.fingerprint }))
       return handle
     } finally { if (descriptor !== undefined) closeSync(descriptor) }
   } catch (error) {
@@ -525,8 +593,7 @@ export function consumeStorageV3MigrationSelectionProof(
     if (record === undefined || CONSUMED.has(handle)) return fail()
     assertStorageV3ArtifactRootInstallationKey(root, installationKey)
     const finalPath = storageV3ArtifactFilePath(root, FINAL_NAME)
-    if (record.finalPath !== finalPath || record.taskId !== installationKey.taskId
-      || record.taskFingerprint !== installationKey.fingerprint) return fail()
+    if (record.finalPath !== finalPath || record.installationKeyFingerprint !== installationKey.fingerprint) return fail()
     const tempPath = storageV3ArtifactFilePath(root, TEMP_NAME)
     rejectSidecars(dirname(finalPath))
     const tempEntry = stat(tempPath)
