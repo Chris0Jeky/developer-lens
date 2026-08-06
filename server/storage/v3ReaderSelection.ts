@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import { lstatSync } from 'node:fs'
 import {
+  assertStorageV3ArtifactDirectorySyncSupported,
   assertStorageV3ArtifactRootInstallationKey,
   openStorageV3ArtifactRoot,
   storageV3ArtifactFilePath,
@@ -27,6 +28,12 @@ import {
   StorageV3WriterLeaseError,
   withStorageV3WriterLease,
 } from './v3WriterLease.js'
+import {
+  publishStorageV3MigrationSelectionProof,
+  v3SelectionProofTestSeams,
+  type StorageV3MigrationSelectionProofPublication,
+  type StorageV3SelectionProofPublicationStage,
+} from './v3SelectionProof.js'
 
 export const STORAGE_V3_READER_SELECTION_CODES = [
   'v3-selection-request-invalid',
@@ -63,7 +70,12 @@ export type StorageV3ReaderSelection =
     }>
 
 type ClosedSelectionInput = StorageV3ReaderSelectionInput
-type SelectionStage = 'request' | 'root' | 'lease' | 'store' | 'backup' | 'receipt'
+type SelectionStage = 'request' | 'root' | 'lease' | 'store' | 'backup' | 'receipt' | 'proof'
+type SelectionProofPublisher = (
+  db: Database.Database,
+  root: ReturnType<typeof openStorageV3ArtifactRoot>,
+  installationKey: TaskInstallationKeyHandle,
+) => StorageV3MigrationSelectionProofPublication
 
 const fallback = (code: StorageV3ReaderSelectionCode): StorageV3ReaderSelection =>
   Object.freeze({ reader: 'legacy-json' as const, code })
@@ -197,12 +209,15 @@ function codeForFailure(error: unknown, stage: SelectionStage): StorageV3ReaderS
     case 'store': return 'v3-selection-store-refused'
     case 'backup': return 'v3-selection-backup-refused'
     case 'receipt': return 'v3-selection-receipt-refused'
+    case 'proof': return 'v3-selection-receipt-refused'
   }
 }
 
 function selectStorageV3ReaderInternal(
   input: StorageV3ReaderSelectionInput,
   beforeReceiptCommit?: () => void,
+  publishProof: SelectionProofPublisher = publishStorageV3MigrationSelectionProof,
+  preflightProof: () => void = assertStorageV3ArtifactDirectorySyncSupported,
 ): StorageV3ReaderSelection {
   let stage: SelectionStage = 'request'
   let openedDb: Database.Database | undefined
@@ -224,6 +239,8 @@ function selectStorageV3ReaderInternal(
       stage = 'store'
       const db = openSelectedStorageV3Store(closed.directory)
       openedDb = db
+      stage = 'proof'
+      preflightProof()
       const existing = readStorageV3MigrationSelection(db)
       let receipt: StorageV3MigrationSelection
       if (existing !== undefined) {
@@ -255,6 +272,12 @@ function selectStorageV3ReaderInternal(
         // From this point on the durable receipt is the source of truth. Any later
         // open/revalidation failure must not hand control back to a legacy reader.
         protectedSelection = true
+      }
+      stage = 'proof'
+      const proof = publishProof(db, artifactRoot, closed.installationKey)
+      assertReplayRequest(proof.selection, closed, activeSelectedArtifactId(db))
+      if (proof.selection.graceDeadlineAt !== receipt.graceDeadlineAt) {
+        throw new StorageV3SelectedRefusalError()
       }
       db.close()
       openedDb = undefined
@@ -297,6 +320,30 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
     beforeReceiptCommit: () => void,
   ): StorageV3ReaderSelection {
     if (typeof beforeReceiptCommit !== 'function') return fallback('v3-selection-request-invalid')
-    return selectStorageV3ReaderInternal(input, beforeReceiptCommit)
+    return selectStorageV3ReaderInternal(
+      input,
+      beforeReceiptCommit,
+      (db, root, installationKey) => v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        db, root, installationKey, () => {},
+      ),
+      () => {},
+    )
+  },
+  selectWithProofDirectorySynchronizer(
+    input: StorageV3ReaderSelectionInput,
+    synchronizer: (
+      root: ReturnType<typeof openStorageV3ArtifactRoot>,
+      stage: StorageV3SelectionProofPublicationStage,
+    ) => void,
+  ): StorageV3ReaderSelection {
+    if (typeof synchronizer !== 'function') return fallback('v3-selection-request-invalid')
+    return selectStorageV3ReaderInternal(
+      input,
+      undefined,
+      (db, root, installationKey) => v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        db, root, installationKey, synchronizer,
+      ),
+      () => {},
+    )
   },
 })

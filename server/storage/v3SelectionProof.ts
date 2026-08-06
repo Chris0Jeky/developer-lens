@@ -15,18 +15,24 @@ import {
   type BigIntStats,
 } from 'node:fs'
 import { dirname } from 'node:path'
+import type Database from 'better-sqlite3'
 import {
+  assertStorageV3ArtifactCatalogue,
   assertStorageV3ArtifactRootInstallationKey,
   assertStorageV3ArtifactDirectorySyncSupported,
   storageV3ArtifactFilePath,
   syncStorageV3ArtifactDirectory,
+  STORAGE_V3_ARTIFACT_LOCATORS,
   type StorageV3ArtifactRoot,
 } from './v3ArtifactCatalogue.js'
 import {
   bindTaskInstallationKeyBody,
   type TaskInstallationKeyHandle,
 } from './taskInstallationKey.js'
-import type { StorageV3MigrationSelection } from './v3SelectionReceipt.js'
+import {
+  readStorageV3MigrationSelection,
+  type StorageV3MigrationSelection,
+} from './v3SelectionReceipt.js'
 import { isCanonicalTaskId } from '../taskId.js'
 
 export const STORAGE_V3_SELECTION_PROOF_ERROR = 'STORAGE_V3_SELECTION_PROOF_INVALID' as const
@@ -88,7 +94,7 @@ type Marker = MarkerBody & Readonly<{
 }>
 
 type HandleRecord = Readonly<{
-  root: StorageV3ArtifactRoot
+  finalPath: string
   selection: StorageV3MigrationSelection
   bytes: Buffer
   taskId: string
@@ -393,13 +399,34 @@ function publishInternal(
   return Object.freeze({ kind: 'v3_migration_selection_proof', status: existingFinal === undefined ? 'published' : 'replayed', selection })
 }
 
-export function publishStorageV3MigrationSelectionProof(
+function committedSelection(
+  db: Database.Database,
   root: StorageV3ArtifactRoot,
-  selection: StorageV3MigrationSelection,
+): StorageV3MigrationSelection {
+  if (!db?.open || db.readonly || db.inTransaction) return fail()
+  const selectedPath = storageV3ArtifactFilePath(root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+  let openedPath: string
+  try { openedPath = realpathSync.native(db.name) } catch { return fail() }
+  if (openedPath !== selectedPath) return fail()
+  assertStorageV3ArtifactCatalogue(db)
+  const selection = readStorageV3MigrationSelection(db)
+  if (selection === undefined) return fail()
+  const selected = db.prepare(
+    "SELECT artifact_id, state FROM app_artifact WHERE kind = 'selected_store' ORDER BY artifact_id",
+  ).all() as Array<{ artifact_id: string; state: string }>
+  if (selected.length !== 1 || selected[0]?.artifact_id !== selection.selectedArtifactId
+    || selected[0]?.state !== 'active') return fail()
+  return selection
+}
+
+export function publishStorageV3MigrationSelectionProof(
+  db: Database.Database,
+  root: StorageV3ArtifactRoot,
   installationKey: TaskInstallationKeyHandle,
 ): StorageV3MigrationSelectionProofPublication {
   try {
     assertStorageV3ArtifactDirectorySyncSupported()
+    const selection = committedSelection(db, root)
     return publishInternal(root, selection, installationKey, (artifactRoot) => syncStorageV3ArtifactDirectory(artifactRoot))
   } catch (error) {
     if (error instanceof StorageV3SelectionProofError) throw error
@@ -479,7 +506,7 @@ export function verifyStorageV3MigrationSelectionProof(
         graceDeadlineAt: parsed.graceDeadlineAt,
       })
       const handle = Object.freeze({}) as StorageV3MigrationSelectionProofHandle
-      HANDLES.set(handle, Object.freeze({ root, selection, bytes: Buffer.from(exact), taskId: installationKey.taskId, taskFingerprint: installationKey.fingerprint }))
+      HANDLES.set(handle, Object.freeze({ finalPath, selection, bytes: Buffer.from(exact), taskId: installationKey.taskId, taskFingerprint: installationKey.fingerprint }))
       return handle
     } finally { if (descriptor !== undefined) closeSync(descriptor) }
   } catch (error) {
@@ -497,8 +524,9 @@ export function consumeStorageV3MigrationSelectionProof(
     const record = HANDLES.get(handle)
     if (record === undefined || CONSUMED.has(handle)) return fail()
     assertStorageV3ArtifactRootInstallationKey(root, installationKey)
-    if (record.root !== root || record.taskId !== installationKey.taskId || record.taskFingerprint !== installationKey.fingerprint) return fail()
     const finalPath = storageV3ArtifactFilePath(root, FINAL_NAME)
+    if (record.finalPath !== finalPath || record.taskId !== installationKey.taskId
+      || record.taskFingerprint !== installationKey.fingerprint) return fail()
     const tempPath = storageV3ArtifactFilePath(root, TEMP_NAME)
     rejectSidecars(dirname(finalPath))
     const tempEntry = stat(tempPath)
@@ -525,6 +553,28 @@ export const v3SelectionProofTestSeams = Object.freeze({
     if (typeof synchronizer !== 'function') return fail()
     try {
       return publishInternal(root, selection, installationKey, synchronizer, failAtStage)
+    } catch (error) {
+      if (error instanceof StorageV3SelectionProofError) throw error
+      return fail()
+    }
+  },
+  publishCommittedWithDirectorySynchronizer(
+    db: Database.Database,
+    root: StorageV3ArtifactRoot,
+    installationKey: TaskInstallationKeyHandle,
+    synchronizer: DirectorySynchronizer,
+    failAtStage?: StorageV3SelectionProofStageFailure,
+  ): StorageV3MigrationSelectionProofPublication {
+    if (typeof synchronizer !== 'function') return fail()
+    try {
+      assertStorageV3ArtifactRootInstallationKey(root, installationKey)
+      return publishInternal(
+        root,
+        committedSelection(db, root),
+        installationKey,
+        synchronizer,
+        failAtStage,
+      )
     } catch (error) {
       if (error instanceof StorageV3SelectionProofError) throw error
       return fail()
