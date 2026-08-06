@@ -126,7 +126,10 @@ function assertDurableSelectedPublication(attempt: string, store: string): void 
   }
   const db = new Database(store, { fileMustExist: true })
   try {
-    assertSelectableStorageV3Target(db)
+    // The selected link is already the durable publication during retained
+    // recovery, so valid service CAS state is expected. Virgin rollback
+    // validation remains strict in the target acceptance path.
+    assertSelectableStorageV3Target(db, { allowContinuityCasState: true })
   } finally { db.close() }
 }
 
