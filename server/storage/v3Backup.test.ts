@@ -35,6 +35,7 @@ import {
   createStorageV3MigrationBackup as createNativeStorageV3MigrationBackup,
   STORAGE_V3_BACKUP_STAGES,
   StorageV3BackupError,
+  verifyStorageV3MigrationBackup,
   v3BackupTestSeams,
   type StorageV3BackupDirectorySyncPhase,
   type StorageV3BackupInput,
@@ -167,6 +168,105 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
         )).toThrow(/STORAGE_V3_ARTIFACT_INVALID/)
       expect(fx.db.prepare("SELECT artifact_id FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().all())
         .toEqual([result.artifactId])
+    } finally { fx.cleanup() }
+  })
+
+  it('verifies one finalized backup read-only and returns the live selected-store proof', async () => {
+    const fx = await fixture()
+    try {
+      const backup = await createStorageV3MigrationBackup({
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:34:59Z',
+        artifactId: `art-${'a'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      })
+      const beforeCatalogue = fx.db.prepare(
+        'SELECT artifact_id, state, relative_locator, content_sha256, manifest_sha256 FROM app_artifact ORDER BY artifact_id',
+      ).all()
+      const proof = verifyStorageV3MigrationBackup({
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:34:59Z',
+        artifactId: backup.artifactId,
+        installationKey: fx.key,
+      })
+      expect(proof).toMatchObject({
+        artifactId: backup.artifactId,
+        locator: backup.locator,
+        backupAt: '2026-08-06T12:34:59Z',
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        contentSha256: backup.contentSha256,
+        manifestSha256: backup.manifestSha256,
+      })
+      expect(fx.db.prepare(
+        'SELECT artifact_id, state, relative_locator, content_sha256, manifest_sha256 FROM app_artifact ORDER BY artifact_id',
+      ).all()).toEqual(beforeCatalogue)
+    } finally { fx.cleanup() }
+  })
+
+  it.each([
+    ['missing final file', (fx: Awaited<ReturnType<typeof fixture>>, locator: string) => unlinkSync(join(fx.root, locator))],
+    ['sqlite sidecar', (fx: Awaited<ReturnType<typeof fixture>>, locator: string) => writeFileSync(join(fx.root, `${locator}-wal`), Buffer.from('invented sidecar'), { flag: 'wx', mode: 0o600 })],
+    ['foreign task manifest', (fx: Awaited<ReturnType<typeof fixture>>, locator: string) => {
+      const path = join(fx.root, `${locator}.manifest.json`)
+      const manifest = JSON.parse(readFileSync(path, 'utf8')) as Record<string, unknown>
+      manifest.taskId = 'foreign-backup-task'
+      writeFileSync(path, `${JSON.stringify(manifest)}\n`, { mode: 0o600 })
+    }],
+    ['owner drift', (fx: Awaited<ReturnType<typeof fixture>>) => fx.db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(SCOPE_C)],
+  ] as const)('rejects %s without catalogue mutation', async (_label, mutate) => {
+    const fx = await fixture()
+    try {
+      const result = await createStorageV3MigrationBackup({
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:35:09Z',
+        artifactId: `art-${'b'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      })
+      const rowBefore = fx.db.prepare(
+        'SELECT artifact_id, state, relative_locator, content_sha256, manifest_sha256 FROM app_artifact ORDER BY artifact_id',
+      ).all()
+      const locator = result.locator
+      mutate(fx, locator)
+      await expect(Promise.resolve().then(() => verifyStorageV3MigrationBackup({
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:35:09Z',
+        artifactId: result.artifactId,
+        installationKey: fx.key,
+      }))).rejects.toMatchObject({ code: 'STORAGE_V3_BACKUP_INVALID' })
+      expect(fx.db.prepare(
+        'SELECT artifact_id, state, relative_locator, content_sha256, manifest_sha256 FROM app_artifact ORDER BY artifact_id',
+      ).all()).toEqual(rowBefore)
+    } finally {
+      // The sidecar is deliberately left as an invented refusal input; the fixture cleanup
+      // removes it with the rest of the synthetic workspace.
+      fx.cleanup()
+    }
+  })
+
+  it('rejects an unfinalized staged singleton before reading files', async () => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:35:10Z',
+        artifactId: `art-${'c'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAfterStage: (stage) => { if (stage === 'intentCommitted') throw new Error('invented staged state') },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const before = fx.db.prepare('SELECT artifact_id, state, relative_locator FROM app_artifact ORDER BY artifact_id').all()
+      await expect(Promise.resolve().then(() => verifyStorageV3MigrationBackup(input))).rejects.toMatchObject({ code: 'STORAGE_V3_BACKUP_INVALID' })
+      expect(fx.db.prepare('SELECT artifact_id, state, relative_locator FROM app_artifact ORDER BY artifact_id').all()).toEqual(before)
     } finally { fx.cleanup() }
   })
 

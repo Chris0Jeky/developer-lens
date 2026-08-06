@@ -22,6 +22,10 @@ import {
   StorageV3DeletionError,
   type StorageV3DeletionStage,
 } from './v3Deletion.js'
+import {
+  readStorageV3MigrationSelection,
+  recordStorageV3MigrationSelection,
+} from './v3SelectionReceipt.js'
 import { rewriteStorageV3Shadow } from './v3ShadowRewrite.js'
 import { STORAGE_V3_SHADOW_TABLES } from './v3ShadowSchema.js'
 
@@ -257,6 +261,25 @@ describe('B3 v3 scope deletion', { timeout: 30_000 }, () => {
       const lineage = readStorageV3DeletionLineage(fixture.target)
       expect(lineage.filter((entry) => entry.operationId === result.operationId)).toHaveLength(7)
       expect(lineage.some((entry) => entry.eventKind === 'legacy_deletion_operation')).toBe(true)
+    } finally { fixture.cleanup() }
+  })
+
+  it('preserves the global migration selection receipt when a scope is revoked', () => {
+    const fixture = migratedFixture()
+    try {
+      const selection = recordStorageV3MigrationSelection(fixture.target, {
+        legacySourceId: `legacy-${'a'.repeat(64)}`,
+        selectedArtifactId: `art-${'b'.repeat(64)}`,
+        backupArtifactId: `art-${'c'.repeat(64)}`,
+        successfulReportAt: '2026-03-05T00:00:00.000Z',
+      }).selection
+      deleteStorageV3Scope({
+        db: fixture.target,
+        scopeId: fixture.scopeA,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 200),
+      })
+      expect(readStorageV3MigrationSelection(fixture.target)).toEqual(selection)
     } finally { fixture.cleanup() }
   })
 

@@ -2814,3 +2814,74 @@ seams, not physically induced on this machine. Same-user ABA/native-VFS strength
 sidecar/WAL identity, seven-day expiry cleanup, restore/reopen, and tombstone replay remain dependent
 LIFE-03 slices. No real store, legacy source, connector, production issuer/caller, external-model
 request, generated output, or private input was inspected or used.
+
+## 2026-08-06 — crash-durability owner exception; atomic selection/grace candidate
+
+PR #161 final head `7a23f62a7e01f49e7b052b6338f0f773d2da3cbf` merged as
+`faa548cc2020def9bf363de8ccf65c1d553f3b67` at 2026-08-06T16:03:34Z and closed #154/#155 under an
+explicit owner-directed gate exception. Exact-head hosted run `31115867132` never reached checkout
+or repository code: attempts 1 and 2 each exhausted action-metadata download retries on `Service
+Unavailable` during GitHub's declared Actions partial outage. The merge therefore has green local
+full proof and fresh-context review, but **no green exact-head hosted proof**; this is recorded as a
+deliberate exception, not recast as compliance. The delayed thread-aware sweep found no new connector
+review and all three earlier threads remained resolved. Restore-bound provisional metadata stays
+tracked by #163, and the conditional all-zero native identity boundary stays tracked by #142.
+
+The #162 candidate advances schema `3.2.4-shadow-life03-selection` (`user_version=311`). A strict
+singleton `migration_selection_state` records only `v3_selected`, an opaque `legacy-` identifier,
+the selected and backup `art-` identifiers, a canonical successful-report timestamp, and its exact
+seven-day deadline. It has no SQL foreign key to `app_artifact`, is registered `global` in the
+exhaustive deletion inventory, survives scope revocation, and rejects replacement, update, or delete.
+The recorder uses `BEGIN IMMEDIATE`; exact replay preserves the original time/deadline, while a
+mismatch or injected pre-commit interruption fails closed without a row. Injected UTC proof covers
+just-before, exact-boundary, just-after, clock rollback, and clock advance. This slice records expiry
+eligibility only and performs no cleanup.
+
+`verifyStorageV3MigrationBackup` is a dedicated synchronous read-only proof for the already-finalized
+singleton backup. Under the selected-store writer lease it revalidates the live task key, maintenance
+state, active final catalogue rows, selected and backup owner equality, absent provisional names and
+SQLite sidecars, stable no-follow physical hashes, exact task-key HMAC manifest, and backup snapshot
+application/schema/fingerprint/integrity/foreign-key/selected-ID state. It returns only values derived
+from those re-proven rows/files and closes every descriptor/readonly snapshot handle on refusal.
+
+`selectStorageV3Reader` accepts no legacy path and performs no legacy read, write, delete, or fallback
+open. It validates closed own-data input, opens the reviewed v3 root, and uses a deliberately narrow
+read-only receipt-presence probe before and inside the writer lease. First selection opens and proves
+the selected store, proves the finalized backup, commits the receipt, closes the writable provisional
+connection, then reopens read-only. Exact receipt replay revalidates the selected store and live
+task-key/root continuity but skips backup revalidation because normal scope revocation may validly
+delete that backup. Present or ambiguous durable-selection state returns only
+`v3-selection-selected-refused` on failure; only a plainly absent receipt may retain the content-free
+`legacy-json` fallback. The invented integration proves exact replay, pre-commit interruption/restart,
+no grace extension, forged-handle refusal, lease contention, invalid root/store/backup fallback, no
+legacy-path input, write refusal, and selection -> both-scope revocation -> backup deletion -> restart
+without legacy resurrection.
+
+The original product-code head `6bc1db2` passed `npm run check`: lint, context verification (27
+Markdown / 12 required), 79 files / 1,323 tests / 10 declared skips, TypeScript/Vite build, and
+credential scanning over 13 outputs. The combined focused selection/schema/backup/deletion/import-
+boundary proof passed 145 assertions / 2 platform skips. Independent Luna reviews found no
+CRITICAL/HIGH verifier or receipt/selector defect.
+
+Fresh Terra review at published head `12cfd36` then reproduced one HIGH privacy/durability defect:
+scope revocation validly deleted the finalized backup, restart re-ran backup proof before receipt
+replay, and the refusal returned `legacy-json` while the seven-day source could still contain the
+revoked scope. Fix head `dabbb10` makes durable or ambiguous selection state non-legacy and replays an
+exact receipt without requiring the deleted backup. Integration review then found that skipping the
+backup verifier also skipped its task-key/root continuity proof; `0c37ef2` restores that proof and
+adds a forged-handle regression. The exact code head passes `npm run check`: lint, context verification
+(27 Markdown / 12 required), 79 files / 1,324 tests / 10 declared skips, TypeScript/Vite build, and
+credential scanning over 13 outputs. Focused selector proof passes 5 tests and range whitespace is
+clean. Initial hosted run `31119973871` remained queued without a step start and was automatically
+cancelled when the repaired head was pushed. Exact-head run `31121191791` is likewise queued without
+a step start during GitHub's declared critical Actions incident; this is not green hosted proof.
+Fresh fix review, merge, and post-merge sweep remain pending.
+
+The exported backup verifier's selected-store structural assumptions remain bounded to its current
+selector caller; #163 requires a separate standalone restore verifier rather than reusing it when the
+selected store is absent. Connector review's lower findings on runtime-opaque success-report binding
+and a NULL-producing upper timestamp boundary are tracked together by #165; neither is hidden or
+treated as activation-ready. No real store, legacy source/path, connector, production issuer/caller,
+external-model request, generated output, credential, or private input was inspected or used.
+Success-report/grace hardening (#165), restore/reopen (#163), tombstone replay, and physical
+legacy/backup/WAL/SHM/journal cleanup remain dependent LIFE-03 slices.

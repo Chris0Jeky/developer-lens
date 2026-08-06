@@ -10,9 +10,11 @@ file can resume deleted work (PR #127 late review).
 updated: 2026-08-06
 current_slice_override: 'Activation enforcement, the single-writer lease, the LIFE-03 selected-store
   backup, singleton identity enforcement, task-key continuity (#156/PR #159), and assert-only
-  activation default-deny (PR #160) are in merged history. The cohesive #154/#155 crash-durability
-  PR #161 candidate is locally complete and in its final publication gate. Atomic selection/fallback plus the
-  owner-approved seven-day grace contract is next only after that candidate merges.'
+  activation default-deny (PR #160) are in merged history. PR #161 merged the cohesive #154/#155
+  crash-durability work under an explicit owner gate exception during a declared GitHub Actions
+  outage. The #162 atomic selection/fallback and owner-approved seven-day grace candidate is locally
+  complete, including the fail-closed post-selection restart repair, and remains in its publication
+  gate while hosted Actions is unavailable.'
 phase: 'R4 active horizon OPEN. B4 storage, PR #149 lifecycle safety, PR #150 tracked-source activation enforcement, PR #152 single-writer enforcement, and PR #153 selected-store backup are the foundation; LIFE-03 hardening is active. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
@@ -24,9 +26,9 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'wait-window hardening #144/#145, mint-order hardening #148, post-B4 hardening #146,
   lifecycle safety #149, tracked-source activation enforcement #150, single-writer lease #152,
   selected-store backup #153, migration-backup singleton #158, task-key continuity #156/PR #159,
-  activation default-deny/assert-only PR #160',
+  activation default-deny/assert-only PR #160, crash durability #154/#155/PR #161',
   'state syncs #126']
-active_slice: 'DL-LIFE-03 backup hardening: PR #161 for #154/#155 now proves parent-directory publication/cleanup ordering, persisted provisional identity and SQLite hash state, deterministic recovery of owned zero/partial SQLite and manifest attempts, owner-continuity revalidation before destructive partial recovery, and identity-safe staged revocation. The exact local full gate is green; hosted Linux/POSIX proof for the final pushed head, exact-head review reconciliation, and merge remain pending. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
+active_slice: 'DL-LIFE-03 selection/grace (#162): schema 3.2.4/user_version 311 adds one immutable global migration_selection_state receipt with no artifact FK, exact replay, and an injected-UTC seven-day boundary. First selection holds the writer lease, proves the published selected store and finalized task-key-bound backup, commits the receipt under BEGIN IMMEDIATE, then reopens read-only. Restart with an exact durable receipt revalidates the selected store plus task-key/root continuity but deliberately does not require a backup that scope revocation may have validly deleted. A read-only preflight protects present or ambiguous selection state with one content-free unavailable result; only a plainly absent receipt may return the legacy fallback, and the selector never accepts a legacy path. Local proof, hosted-outage evidence, and exact heads live only in the implementation ledger; exact-head review and merge remain pending. Restore remains #163; cleanup and tombstone replay remain later LIFE-03 slices. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -37,7 +39,7 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No owner blocker for invented-fixture work. #156/PR #159 task-key authority and PR #160 activation default-deny are merged and independently verified sound. A real migration/connector still requires the exact-head #154/#155 candidate to merge, then LIFE-03 grace/restore/tombstone-replay proof and a separately reviewed production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a pre-LIFE-03 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
+blockers: 'No owner blocker for invented-fixture work. #156/PR #159 task-key authority, PR #160 activation default-deny, and #154/#155/PR #161 crash durability are merged. A real migration/connector still requires #162 to merge, the success-report/grace hardening tracked by #165, LIFE-03 restore (#163), tombstone replay, expiry cleanup, and a separately reviewed production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a pre-LIFE-03 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -74,6 +76,9 @@ local_board: seeded Taskdeck board outside Git; restart runbook in untracked RES
 residual_risks:
   - 'q-7 protection has strict=false and enforce_admins=false; repository law still forbids
      privileged merges with red or stale exact-head CI'
+  - 'PR #161 is an explicit owner-directed exception during GitHub''s declared Actions incident.
+     Local/full and independent review proof were green; hosted exact-head proof was NOT green and
+     is not inferred retroactively. Exact merge, run, and incident evidence lives in the ledger.'
   - '#78 RESOLVED on fable/boundary-and-reachability: the browser holds no bearer at all (the guard
      accepts a proven same-origin Sec-Fetch triple on an allowlisted Host OR a bearer for
      non-browser callers), the launch token and importer store path are no longer printed,
@@ -140,7 +145,7 @@ residual_risks:
      (PR #132 round-three review) — MEDIUM defense-in-depth, natural slice when the contract is
      next touched'
   - 'B4 completion only unblocks LIFE-03; a first real migration/connector also requires LIFE-03
-     backup/grace/restore/tombstone-replay proof and the activation-enforcement alignment. The
+     selection/grace/restore/tombstone-replay/cleanup proof and the activation-enforcement alignment. The
      #86 storage half is CLOSED by PR B-2 (cov- registry CHECK + UNIQUE(coverage_id) + fixture
      migration); both halves of #86 now hold'
   - '#147 is CLOSED by PR #149: retained-publication CAS recovery, cause-aware artifact lineage cleanup, survivor ownership/lineage snapshots, and exclusive invented fixture claims merged with exact-head and exact-merge gates. No real store or production caller was added.'
@@ -155,7 +160,7 @@ residual_risks:
      connector triage, and a clean delayed post-merge sweep. Connector findings are executable
      follow-ups: #154 parent-directory durability, #155 pre-durable temp recovery, #156 canonical
      task-ID/key continuity, and #157 singleton backup identity. None authorizes real activation.'
-  - 'The #154/#155 candidate addresses process-crash ordering and owned provisional recovery only.
+  - 'Merged PR #161 addresses process-crash ordering and owned provisional recovery only.
      Userspace fault injection cannot reproduce host power loss; hosted POSIX proof is still owed.
      The O_EXCL-name-to-attempt-bind gap deliberately fails closed and may require trusted manual
      reconciliation. Same-user ABA/native-VFS strength stays #142, and sidecar/WAL identity plus

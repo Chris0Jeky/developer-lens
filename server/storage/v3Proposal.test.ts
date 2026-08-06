@@ -427,6 +427,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3Deletion.ts',
             'server/storage/v3ArtifactCatalogue.ts',
             'server/storage/v3Backup.ts',
+            'server/storage/v3SelectionReceipt.ts',
           ].includes(sourcePath)) {
             offenders.push(edge)
           }
@@ -440,6 +441,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3Deletion.ts',
             'server/storage/v3ArtifactCatalogue.ts',
             'server/storage/v3Backup.ts',
+            'server/storage/v3SelectionReceipt.ts',
           ].includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
           }
@@ -485,6 +487,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3StoreFiles.ts',
             'server/storage/v3WriterLease.ts',
             'server/storage/v3Backup.ts',
+            'server/storage/v3ReaderSelection.ts',
           ]
           if (!allowedSourcePaths.includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
@@ -492,13 +495,17 @@ describe('storage-v3 B1a proposal', () => {
         }
         if (target && /(?:^|[\\/])v3StoreFiles(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'scripts/storeLifecycle.ts' && sourcePath !== 'server/storage/v3Backup.ts') {
+          if (sourcePath !== 'scripts/storeLifecycle.ts'
+            && sourcePath !== 'server/storage/v3Backup.ts'
+            && sourcePath !== 'server/storage/v3ReaderSelection.ts') {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }
         if (target && /(?:^|[\\/])v3WriterLease(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'scripts/storeLifecycle.ts' && sourcePath !== 'server/storage/v3Backup.ts') {
+          if (sourcePath !== 'scripts/storeLifecycle.ts'
+            && sourcePath !== 'server/storage/v3Backup.ts'
+            && sourcePath !== 'server/storage/v3ReaderSelection.ts') {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }

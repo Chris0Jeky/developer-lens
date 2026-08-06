@@ -339,9 +339,10 @@ export function createStorageV3TargetFactory(
  * plus the CAS consistency it accumulates in service. A store that fails any of
  * them is never handed back to a caller.
  */
-export function openSelectedStorageV3Store(
+function openSelectedStorageV3StoreWithMode(
   directory: string,
-  options: StorageV3StoreOpenOptions = {},
+  options: StorageV3StoreOpenOptions,
+  readonly: boolean,
 ): Database.Database {
   let db: Database.Database | undefined
   try {
@@ -353,7 +354,7 @@ export function openSelectedStorageV3Store(
     const proof = recovery === 'retained'
       ? undefined
       : proveStorageV3ArtifactFile(root, STORAGE_V3_STORE_FILE_NAME, 'selected_store')
-    db = new Database(path, { fileMustExist: true })
+    db = new Database(path, { fileMustExist: true, readonly })
     if (proof !== undefined) assertStorageV3ArtifactFileProof(proof)
     bindStorageV3ArtifactRoot(db, root)
     assertSelectableStorageV3Target(db, { allowContinuityCasState: true })
@@ -365,4 +366,16 @@ export function openSelectedStorageV3Store(
     if (db?.open) db.close()
     return fail()
   }
+}
+
+export function openSelectedStorageV3Store(
+  directory: string,
+  options: StorageV3StoreOpenOptions = {},
+): Database.Database {
+  return openSelectedStorageV3StoreWithMode(directory, options, false)
+}
+
+/** Re-prove and expose the selected store as a true read-only SQLite handle. */
+export function openSelectedStorageV3StoreReadonly(directory: string): Database.Database {
+  return openSelectedStorageV3StoreWithMode(directory, {}, true)
 }
