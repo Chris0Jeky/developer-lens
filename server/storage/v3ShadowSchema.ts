@@ -27,9 +27,9 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.0.0-shadow-b2a-iii' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.1.0-shadow-b3' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 305
+export const STORAGE_V3_SHADOW_USER_VERSION = 306
 
 /**
  * Continuity CAS state lives in the store it guards.  These two tables are
@@ -287,6 +287,26 @@ const key = (column: string, prefix: string): string =>
 const c1 = (column: string): string => key(column, 'scope-')
 const token = (column: string, max = 256): string =>
   `length(${column}) BETWEEN 1 AND ${max} AND ${column} NOT GLOB '*[^A-Za-z0-9:._-]*'`
+/** A REAL ISO week: shape, range, and the leap-week rule (W53 only in long years). */
+const isoWeek = (column: string): string => `
+    length(${column}) = 8
+    AND ${column} GLOB '[0-9][0-9][0-9][0-9]-W[0-5][0-9]'
+    AND substr(${column}, 7, 2) BETWEEN '01' AND '53'
+    AND (
+      substr(${column}, 7, 2) <> '53'
+      OR strftime('%w', substr(${column}, 1, 4) || '-01-01') = '4'
+      OR (
+        strftime('%w', substr(${column}, 1, 4) || '-01-01') = '3'
+        AND (
+          CAST(substr(${column}, 1, 4) AS INTEGER) % 400 = 0
+          OR (
+            CAST(substr(${column}, 1, 4) AS INTEGER) % 4 = 0
+            AND CAST(substr(${column}, 1, 4) AS INTEGER) % 100 <> 0
+          )
+        )
+      )
+    )
+  `
 const canonicalTimestampShape = (column: string): string =>
   `length(${column}) = 24 AND ${column} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'`
 const quoted = (values: readonly string[]): string => values.map((value) => `'${value}'`).join(', ')
@@ -299,9 +319,33 @@ BEGIN
 END;`
 
 /**
+ * The two append-only guards, exported so the B3 scope-deletion saga can drop and
+ * byte-identically recreate them inside its single transaction: scope revocation is
+ * the ONE operation allowed to remove CAS rows, and recreating the identical text
+ * keeps the schema fingerprint unchanged. Every other writer still hits the abort.
+ */
+export const STORAGE_V3_CAS_NO_DELETE_TRIGGERS = Object.freeze([
+  Object.freeze({
+    name: 'continuity_cas_state_no_delete',
+    sql: casAbort('continuity_cas_state_no_delete', 'BEFORE DELETE ON continuity_cas_state'),
+  }),
+  Object.freeze({
+    name: 'continuity_cas_operation_no_delete',
+    sql: casAbort('continuity_cas_operation_no_delete', 'BEFORE DELETE ON continuity_cas_operation'),
+  }),
+])
+
+/**
  * Single-row revision state plus its immutable operation history.  The triggers
  * make monotonic single-step revisions and append-only history table properties
  * rather than writer conventions.
+ *
+ * `applied_week` carries the ISO-week grain floor of the writer's process wall time
+ * (ADR-01 grain rule); the writer computes it from a canonical timestamp, the CHECK
+ * pins only the shape. `payload_sha256` is a LOCAL C2 receipt: the G2 13-month
+ * lifetime binds it, so it is nullable and the sweep clears it in place — the
+ * clear-only trigger below makes NULL the only value an update can ever write,
+ * keeping the history append-only in every other respect (PR #130 late review).
  */
 const continuityCasSqlBlock = `CREATE TABLE IF NOT EXISTS continuity_cas_state (
   scope_id TEXT PRIMARY KEY NOT NULL CHECK (${c1('scope_id')}),
@@ -318,8 +362,9 @@ CREATE TABLE IF NOT EXISTS continuity_cas_operation (
       AND applied_revision <= ${CONTINUITY_CAS_MAX_REVISION}
       AND applied_revision = expected_revision + 1
     ),
-  payload_sha256 TEXT NOT NULL
-    CHECK (length(payload_sha256) = 64 AND payload_sha256 NOT GLOB '*[^0-9a-f]*'),
+  payload_sha256 TEXT
+    CHECK (payload_sha256 IS NULL OR (length(payload_sha256) = 64 AND payload_sha256 NOT GLOB '*[^0-9a-f]*')),
+  applied_week TEXT NOT NULL CHECK (${isoWeek('applied_week')}),
   UNIQUE (scope_id, applied_revision),
   FOREIGN KEY (scope_id) REFERENCES continuity_cas_state(scope_id) ON DELETE RESTRICT
 ) STRICT;
@@ -329,7 +374,7 @@ ${casAbort(
   `BEFORE UPDATE OF revision ON continuity_cas_state
 WHEN NEW.revision != OLD.revision + 1`,
 )}
-${casAbort('continuity_cas_state_no_delete', 'BEFORE DELETE ON continuity_cas_state')}
+${STORAGE_V3_CAS_NO_DELETE_TRIGGERS[0].sql}
 ${casAbort(
   'continuity_cas_operation_matches_state',
   `BEFORE INSERT ON continuity_cas_operation
@@ -339,8 +384,19 @@ WHEN NOT EXISTS (
     AND state.revision = NEW.applied_revision
 )`,
 )}
-${casAbort('continuity_cas_operation_no_update', 'BEFORE UPDATE ON continuity_cas_operation')}
-${casAbort('continuity_cas_operation_no_delete', 'BEFORE DELETE ON continuity_cas_operation')}`
+${casAbort(
+  'continuity_cas_operation_no_update',
+  `BEFORE UPDATE ON continuity_cas_operation
+WHEN NOT (
+  NEW.operation_id = OLD.operation_id
+  AND NEW.scope_id = OLD.scope_id
+  AND NEW.expected_revision = OLD.expected_revision
+  AND NEW.applied_revision = OLD.applied_revision
+  AND NEW.applied_week = OLD.applied_week
+  AND NEW.payload_sha256 IS NULL
+)`,
+)}
+${STORAGE_V3_CAS_NO_DELETE_TRIGGERS[1].sql}`
 
 /** Strict, isolated DDL for every table named by the B1a disposition registry. */
 export const STORAGE_V3_SHADOW_SCHEMA_SQL = `
@@ -604,25 +660,7 @@ CREATE TABLE IF NOT EXISTS lineage_event (
   capability_id TEXT NOT NULL CHECK (capability_id = 'github.core'),
   caused_by TEXT CHECK (caused_by IS NULL OR ${token('caused_by')}),
   event_kind TEXT NOT NULL CHECK (event_kind IN (${quoted(LINEAGE_V3_EVENT_KINDS)})),
-  event_week TEXT NOT NULL CHECK (
-    length(event_week) = 8
-    AND event_week GLOB '[0-9][0-9][0-9][0-9]-W[0-5][0-9]'
-    AND substr(event_week, 7, 2) BETWEEN '01' AND '53'
-    AND (
-      substr(event_week, 7, 2) <> '53'
-      OR strftime('%w', substr(event_week, 1, 4) || '-01-01') = '4'
-      OR (
-        strftime('%w', substr(event_week, 1, 4) || '-01-01') = '3'
-        AND (
-          CAST(substr(event_week, 1, 4) AS INTEGER) % 400 = 0
-          OR (
-            CAST(substr(event_week, 1, 4) AS INTEGER) % 4 = 0
-            AND CAST(substr(event_week, 1, 4) AS INTEGER) % 100 <> 0
-          )
-        )
-      )
-    )
-  ),
+  event_week TEXT NOT NULL CHECK (${isoWeek('event_week')}),
   PRIMARY KEY (subject_kind, subject_id, event_kind, operation_id, event_week),
   CHECK ((event_kind IN (${quoted(LINEAGE_V3_DELETION_EVENT_KINDS)}) AND ${key('operation_id', 'del-')}) OR (event_kind NOT IN (${quoted(LINEAGE_V3_DELETION_EVENT_KINDS)}) AND ${key('operation_id', 'op-')})),
   CHECK ((subject_kind = 'scope' AND ${c1('subject_id')}) OR (subject_kind = 'claim' AND ${key('subject_id', 'cl_')}) OR (subject_kind = 'job' AND ${key('subject_id', 'job-')}) OR (subject_kind = 'snapshot' AND ${key('subject_id', 'snap-')}) OR (subject_kind = 'checkpoint' AND ${key('subject_id', 'ckpt-')}) OR (subject_kind = 'coverage' AND ${key('subject_id', 'cov-')}) OR (subject_kind = 'evidence' AND ${key('subject_id', 'ev-')}) OR (subject_kind = 'artifact' AND ${key('subject_id', 'art-')}) OR (subject_kind = 'deletion' AND ${key('subject_id', 'del-')})),
@@ -631,7 +669,7 @@ CREATE TABLE IF NOT EXISTS lineage_event (
   CHECK ((event_kind = 'c2_retention_expired' AND subject_kind IN ('job', 'snapshot', 'checkpoint', 'coverage')) OR (event_kind <> 'c2_retention_expired')),
   CHECK ((event_kind = 'scope_series_restarted' AND subject_kind = 'scope') OR (event_kind <> 'scope_series_restarted')),
   CHECK ((event_kind = 'legacy_deletion_operation' AND subject_kind = 'deletion' AND operation_id = subject_id) OR (event_kind <> 'legacy_deletion_operation')),
-  CHECK ((event_kind = 'legacy_deletion_operation' AND scope_id IS NULL) OR (event_kind <> 'legacy_deletion_operation' AND scope_id IS NOT NULL AND ${c1('scope_id')})),
+  CHECK ((event_kind = 'legacy_deletion_operation' AND scope_id IS NULL) OR (event_kind IN (${quoted(LINEAGE_V3_DELETION_EVENT_KINDS.filter((kind) => kind !== 'legacy_deletion_operation'))}) AND (scope_id IS NULL OR ${c1('scope_id')})) OR (event_kind NOT IN (${quoted(LINEAGE_V3_DELETION_EVENT_KINDS)}) AND scope_id IS NOT NULL AND ${c1('scope_id')})),
   CHECK (event_kind <> 'scope_series_restarted' OR caused_by IS NULL)
 ) STRICT;
 CREATE UNIQUE INDEX IF NOT EXISTS lineage_retention_event_identity ON lineage_event (

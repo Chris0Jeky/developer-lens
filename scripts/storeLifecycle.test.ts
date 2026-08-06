@@ -47,28 +47,40 @@ describe('store lifecycle command', () => {
     const lines: string[] = []
     const result = runStoreLifecycleDemo({ directory, log: (line) => lines.push(line) })
 
-    expect(result.deletion).toMatchObject({ tables: 10, tombstoneWritten: true })
-    expect(result.deletion.rowsAfter).toBeLessThan(result.deletion.rowsBefore)
     expect(result.migration).toEqual({ status: 'complete', checksumLength: 64 })
     expect(result.cas).toEqual({
-      scope: 'created',
+      scopes: 3,
       firstApply: 'applied',
       replayApply: 'replayed',
-      revisions: [1],
+      revisions: [0, 0, 1],
     })
     expect(result.sweep.status).toBe('complete')
     expect(result.sweep.clearedTotal).toBe(10)
     expect(result.sweep.lineageEvents).toBe(5)
+    expect(result.deletion).toEqual({
+      status: 'deleted',
+      replay: 'replayed',
+      rowsRemoved: 15,
+      // scope + claim + job + snapshot + checkpoint + coverage + evidence
+      tombstonesWritten: 7,
+      remainingScopes: 2,
+      otherScopesIntact: true,
+      casScopesRemaining: 2,
+      deletionRecords: { tombstone_cascade: 7, legacy_deletion_operation: 1 },
+      maintenance: 'complete',
+    })
     expect(result.report.tableCounts).toMatchObject({
       claim_scope: 2,
       repository_identity: 2,
-      continuity_cas_state: 1,
-      continuity_cas_operation: 1,
+      continuity_cas_state: 2,
+      continuity_cas_operation: 0,
       import_run: 0,
       coverage_observation: 0,
-      lineage_event: 6,
+      v2_coverage_record: 0,
+      // 1 migrated legacy record + 5 sweep events + 7 B3 tombstones
+      lineage_event: 13,
     })
-    expect(result.report.casRevisions).toEqual([1])
+    expect(result.report.casRevisions).toEqual([0, 0])
     expect(result.lines).toEqual(lines)
     expect(lines).toHaveLength(7)
 
@@ -159,8 +171,8 @@ describe('store lifecycle command', () => {
     expect(runStoreLifecycleCli(['demo', '--dir', directory], enabled, log)).toBe(0)
     lines.length = 0
     expect(runStoreLifecycleCli(['status', '--dir', directory], enabled, log)).toBe(0)
-    expect(lines.join('\n')).toContain('cas-scopes=1')
-    expect(lines.join('\n')).toContain('cas: revisions=1')
+    expect(lines.join('\n')).toContain('cas-scopes=2')
+    expect(lines.join('\n')).toContain('cas: revisions=0,0')
 
     lines.length = 0
     expect(runStoreLifecycleCli(

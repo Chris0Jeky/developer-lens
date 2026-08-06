@@ -9,20 +9,19 @@ import { SYNTHETIC_STORE_MARKER } from '../server/api/v2/contract.js'
 import { installV2BridgeStore } from '../server/api/v2/store.js'
 import { installClaimGraphStorage } from '../server/storage/claims.js'
 import { openStorageDatabase } from '../server/storage/database.js'
-import {
-  executeRegisteredGithubCoreDeletion,
-  planRegisteredGithubCoreDeletion,
-  REGISTERED_GITHUB_CORE_DELETION_TABLES,
-} from '../server/storage/deletionPlanner.js'
 import { installIncrementalGithubCoreStorage } from '../server/storage/incremental.js'
 import { createInstallationAliases } from '../server/storage/installationAliases.js'
 import {
   applyContinuityCasOperation,
   initializeContinuityCasScope,
   readContinuityCasState,
-  type ContinuityCasScopeStatus,
   type ContinuityCasStatus,
 } from '../server/storage/v3ContinuityCasProposal.js'
+import {
+  completeStorageV3DeletionMaintenance,
+  deleteStorageV3Scope,
+  readStorageV3DeletionLineage,
+} from '../server/storage/v3Deletion.js'
 import {
   orchestrateStorageV3ShadowMigration,
   STORAGE_V3_SHADOW_TABLES,
@@ -70,10 +69,11 @@ export const STORE_LIFECYCLE_TIMELINE = Object.freeze({
   deletedObservedAt: '2026-01-15T00:00:00.000Z',
   migrationAsOf: '2026-02-01T00:00:00.000Z',
   sweepAsOf: '2026-04-01T00:00:00.000Z',
+  deletionAsOf: '2026-04-02T00:00:00.000Z',
 })
 
 export interface InventedCohort {
-  readonly label: 'aged' | 'recent'
+  readonly label: 'aged' | 'recent' | 'deletable'
   readonly rawProviderId: string
   readonly rangeStart: string
   readonly observedAt: string
@@ -94,6 +94,18 @@ export const INVENTED_COHORTS: readonly InventedCohort[] = Object.freeze([
   }),
 ])
 
+/**
+ * The third full cohort exists to be DELETED: it migrates like the others and one
+ * B3 scope deletion removes it from the SELECTED store — the product order, not
+ * the old delete-the-source-first workaround.
+ */
+export const INVENTED_DELETABLE_COHORT: InventedCohort = Object.freeze({
+  label: 'deletable' as const,
+  rawProviderId: 'invented-repository-deletable',
+  rangeStart: STORE_LIFECYCLE_TIMELINE.recentRangeStart,
+  observedAt: STORE_LIFECYCLE_TIMELINE.deletedObservedAt,
+})
+
 /** A fixed invented installation key: this command never reads a real one. */
 export const INVENTED_INSTALLATION_KEY_BYTE = 0x5b
 
@@ -105,7 +117,9 @@ export interface InventedV2Source {
   readonly path: string
   readonly installationKey: Buffer
   readonly identityBindings: readonly { readonly rawProviderId: string }[]
-  readonly deletedScopeAlias: string
+  /** The raw provider whose migrated scope the demo deletes on the SELECTED store. */
+  readonly deletableRawProviderId: string
+  /** A historical slice-A legacy tombstone the migration must carry forward. */
   readonly tombstoneSubjectId: string
   readonly scopes: number
   readonly claims: number
@@ -227,7 +241,11 @@ function insertScopeGraph(
   return scopeId
 }
 
-/** Build a complete invented v2 store: two live cohorts plus one deletable scope. */
+/**
+ * Build a complete invented v2 store: three full cohorts (one destined for B3
+ * deletion), the C0 bridge PRESENT from the start — the order the old slice-A
+ * planner could not survive — and one historical slice-A legacy tombstone.
+ */
 export function createInventedV2Source(directory: string): InventedV2Source {
   mkdirSync(directory, { recursive: true })
   const path = join(directory, INVENTED_SOURCE_FILE_NAME)
@@ -238,9 +256,11 @@ export function createInventedV2Source(directory: string): InventedV2Source {
   try {
     installIncrementalGithubCoreStorage(db)
     installClaimGraphStorage(db)
+    installV2BridgeStore(db)
     const installationKey = Buffer.alloc(32, INVENTED_INSTALLATION_KEY_BYTE)
     const aliases = createInstallationAliases(installationKey)
-    for (const cohort of INVENTED_COHORTS) {
+    const cohorts = [...INVENTED_COHORTS, INVENTED_DELETABLE_COHORT]
+    for (const cohort of cohorts) {
       insertCohort(
         db,
         cohort,
@@ -248,90 +268,37 @@ export function createInventedV2Source(directory: string): InventedV2Source {
         aliases.repositoryAnalyticalKey(cohort.rawProviderId),
       )
     }
-    const deletedScopeAlias = token('deletable-scope')
-    insertScopeGraph(
-      db,
-      'deletable',
-      deletedScopeAlias,
-      STORE_LIFECYCLE_TIMELINE.deletedObservedAt,
-      STORE_LIFECYCLE_TIMELINE.recentRangeStart,
-    )
+    db.prepare(`INSERT INTO v2_store_provenance (
+      singleton, mode, synthetic_marker, importer_version, created_at
+    ) VALUES (1, 'synthetic', ?, '1.0.0', ?)`)
+      .run(SYNTHETIC_STORE_MARKER, STORE_LIFECYCLE_TIMELINE.agedRangeStart)
+    db.prepare(`INSERT INTO v2_coverage_record (
+      coverage_id, capability_id, scope_alias, range_start, range_end, status,
+      expected_units, observed_units, omitted_units, retryable, observed_at, limitation_code
+    ) VALUES (?, 'github.core', ?, ?, ?, 'complete', 3, 3, 0, 0, ?, 'NONE')`)
+      .run(
+        token('c0-coverage'),
+        token('c0-scope'),
+        STORE_LIFECYCLE_TIMELINE.agedRangeStart,
+        STORE_LIFECYCLE_TIMELINE.agedObservedAt,
+        STORE_LIFECYCLE_TIMELINE.agedObservedAt,
+      )
+    const tombstoneSubjectId = `scope_tombstone_${hex('historical-tombstone')}`
+    db.prepare('INSERT INTO lineage_event (subject_id, event_kind, caused_by, occurred_at) VALUES (?, ?, ?, ?)')
+      .run(tombstoneSubjectId, 'tombstone_cascade', 'cap_github_core', STORE_LIFECYCLE_TIMELINE.deletedObservedAt)
     return {
       db,
       path,
       installationKey,
-      identityBindings: INVENTED_COHORTS.map(({ rawProviderId }) => ({ rawProviderId })),
-      deletedScopeAlias,
-      tombstoneSubjectId: `scope_tombstone_${hex('deletable-tombstone')}`,
-      scopes: INVENTED_COHORTS.length + 1,
-      claims: INVENTED_COHORTS.length + 1,
+      identityBindings: cohorts.map(({ rawProviderId }) => ({ rawProviderId })),
+      deletableRawProviderId: INVENTED_DELETABLE_COHORT.rawProviderId,
+      tombstoneSubjectId,
+      scopes: cohorts.length,
+      claims: cohorts.length,
     }
   } catch (error) {
     db.close()
     throw error
-  }
-}
-
-/**
- * Install the C0 bridge the migration requires.
- *
- * It is deliberately installed after the registered deletion has run: the slice-A
- * planner refuses any store carrying an unregistered table with a capability or
- * scope column, and `v2_coverage_record` is exactly that, so the two seams cannot
- * both be exercised on one store in the other order.
- */
-export function installInventedV2Bridge(source: InventedV2Source): void {
-  installV2BridgeStore(source.db)
-  source.db.prepare(`INSERT INTO v2_store_provenance (
-    singleton, mode, synthetic_marker, importer_version, created_at
-  ) VALUES (1, 'synthetic', ?, '1.0.0', ?)`)
-    .run(SYNTHETIC_STORE_MARKER, STORE_LIFECYCLE_TIMELINE.agedRangeStart)
-  source.db.prepare(`INSERT INTO v2_coverage_record (
-    coverage_id, capability_id, scope_alias, range_start, range_end, status,
-    expected_units, observed_units, omitted_units, retryable, observed_at, limitation_code
-  ) VALUES (?, 'github.core', ?, ?, ?, 'complete', 3, 3, 0, 0, ?, 'NONE')`)
-    .run(
-      token('c0-coverage'),
-      token('c0-scope'),
-      STORE_LIFECYCLE_TIMELINE.agedRangeStart,
-      STORE_LIFECYCLE_TIMELINE.agedObservedAt,
-      STORE_LIFECYCLE_TIMELINE.agedObservedAt,
-    )
-}
-
-export interface DeletionProof {
-  readonly tables: number
-  readonly rowsBefore: number
-  readonly rowsAfter: number
-  /** Net across the registered tables: the cascade removes rows and adds one tombstone. */
-  readonly netRowsRemoved: number
-  readonly tombstoneWritten: boolean
-}
-
-const registeredRowCount = (db: Database.Database): number => REGISTERED_GITHUB_CORE_DELETION_TABLES
-  .reduce(
-    (total, { tableName }) =>
-      total + Number(db.prepare(`SELECT COUNT(*) FROM ${tableName}`).pluck().get()),
-    0,
-  )
-
-/** Plan and execute the registered v2-domain deletion for the deletable scope. */
-export function proveRegisteredDeletion(source: InventedV2Source): DeletionProof {
-  const rowsBefore = registeredRowCount(source.db)
-  const plan = planRegisteredGithubCoreDeletion(source.db, {
-    capabilityId: 'github.core',
-    scopeAlias: source.deletedScopeAlias,
-    tombstoneSubjectId: source.tombstoneSubjectId,
-    occurredAt: STORE_LIFECYCLE_TIMELINE.deletedObservedAt,
-  })
-  const result = executeRegisteredGithubCoreDeletion(source.db, plan)
-  const rowsAfter = registeredRowCount(source.db)
-  return {
-    tables: plan.deletionOrder.length,
-    rowsBefore,
-    rowsAfter,
-    netRowsRemoved: rowsBefore - rowsAfter,
-    tombstoneWritten: result.tombstoneWritten,
   }
 }
 
@@ -358,23 +325,28 @@ export function migrateInventedSource(
 }
 
 export interface ContinuityCasProof {
-  readonly scope: ContinuityCasScopeStatus
+  readonly scopes: number
   readonly firstApply: ContinuityCasStatus
   readonly replayApply: ContinuityCasStatus
   readonly revisions: readonly number[]
 }
 
 /**
- * Initialize the CAS scope for one migrated scope and apply the same operation
- * twice: a restart that repeats its last operation must replay, never re-apply.
+ * Initialize CAS state for EVERY migrated scope, then apply the same operation
+ * twice on the named one: a restart that repeats its last operation must replay,
+ * never re-apply. The named scope is the one the demo later deletes, so the B3
+ * cascade is proven against live CAS rows while another scope's survive.
  */
-export function proveContinuityCasRestart(store: Database.Database): ContinuityCasProof {
-  const scopeId = store.prepare('SELECT scope_id FROM claim_scope ORDER BY scope_id LIMIT 1')
-    .pluck().get() as string | undefined
-  if (typeof scopeId !== 'string') throw new Error('STORE_LIFECYCLE_NO_SCOPE')
-  const scope = initializeContinuityCasScope(store, scopeId)
+export function proveContinuityCasRestart(
+  store: Database.Database,
+  operatedScopeId: string,
+): ContinuityCasProof {
+  const scopeIds = store.prepare('SELECT scope_id FROM claim_scope ORDER BY scope_id')
+    .pluck().all() as string[]
+  if (!scopeIds.includes(operatedScopeId)) throw new Error('STORE_LIFECYCLE_NO_SCOPE')
+  for (const scopeId of scopeIds) initializeContinuityCasScope(store, scopeId)
   const request = {
-    scopeId,
+    scopeId: operatedScopeId,
     expectedRevision: 0,
     operationId: `op-${randomBytes(32).toString('hex')}`,
     payloadSha256: hex('cas-receipt'),
@@ -382,16 +354,79 @@ export function proveContinuityCasRestart(store: Database.Database): ContinuityC
   const firstApply = applyContinuityCasOperation(store, request).status
   const replayApply = applyContinuityCasOperation(store, request).status
   return {
-    scope,
+    scopes: scopeIds.length,
     firstApply,
     replayApply,
     revisions: readContinuityCasState(store).revisions,
   }
 }
 
+export interface ScopeDeletionProof {
+  readonly status: 'deleted'
+  readonly replay: 'replayed'
+  readonly rowsRemoved: number
+  readonly tombstonesWritten: number
+  readonly remainingScopes: number
+  readonly otherScopesIntact: boolean
+  readonly casScopesRemaining: number
+  /** Deletion-kind lineage rows the store can explain itself with, by event kind. */
+  readonly deletionRecords: Readonly<Record<string, number>>
+  readonly maintenance: 'complete'
+}
+
+/**
+ * B3 on the SELECTED store: delete one scope transactionally, replay it
+ * idempotently, explain the erasure from the surviving tombstone lineage, and
+ * complete the WAL/rebuild saga — while proving the other scopes' rows and CAS
+ * state survive byte-for-byte.
+ */
+export function proveScopeDeletion(
+  store: Database.Database,
+  scopeId: string,
+): ScopeDeletionProof {
+  const otherScopes = (store.prepare('SELECT scope_id FROM claim_scope WHERE scope_id <> ? ORDER BY scope_id')
+    .pluck().all(scopeId) as string[])
+  const scopeTables = [...STORAGE_V3_SHADOW_TABLES].sort().filter((table) =>
+    (store.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>)
+      .some(({ name }) => name === 'scope_id'))
+  const snapshotOthers = (): string => JSON.stringify(otherScopes.map((other) =>
+    scopeTables.map((table) =>
+      store.prepare(`SELECT * FROM ${table} WHERE scope_id = ? ORDER BY rowid`).all(other))))
+  const othersBefore = snapshotOthers()
+
+  const result = deleteStorageV3Scope({
+    db: store,
+    scopeId,
+    asOf: STORE_LIFECYCLE_TIMELINE.deletionAsOf,
+  })
+  const replay = deleteStorageV3Scope({
+    db: store,
+    scopeId,
+    asOf: STORE_LIFECYCLE_TIMELINE.deletionAsOf,
+    operationId: result.operationId,
+  })
+  const deletionRecords: Record<string, number> = {}
+  for (const entry of readStorageV3DeletionLineage(store)) {
+    deletionRecords[entry.eventKind] = (deletionRecords[entry.eventKind] ?? 0) + 1
+  }
+  const maintenance = completeStorageV3DeletionMaintenance(store)
+  return {
+    status: result.status as 'deleted',
+    replay: replay.status as 'replayed',
+    rowsRemoved: Object.values(result.deletedRows).reduce((total, count) => total + count, 0),
+    tombstonesWritten: result.tombstonesWritten,
+    remainingScopes: Number(store.prepare('SELECT COUNT(*) FROM claim_scope').pluck().get()),
+    otherScopesIntact: snapshotOthers() === othersBefore,
+    casScopesRemaining: readContinuityCasState(store).scopes,
+    deletionRecords,
+    maintenance: maintenance.maintenance,
+  }
+}
+
 export interface SweepProof {
   readonly status: 'complete' | 'noop'
   readonly cleared: Readonly<Record<string, number>>
+  readonly casReceiptsCleared: number
   readonly clearedTotal: number
   readonly lineageEvents: number
 }
@@ -401,7 +436,9 @@ export function sweepSelectedStore(store: Database.Database, asOf: string): Swee
   return {
     status: result.status,
     cleared: result.cleared,
-    clearedTotal: Object.values(result.cleared).reduce((total, count) => total + count, 0),
+    casReceiptsCleared: result.casReceiptsCleared,
+    clearedTotal: Object.values(result.cleared).reduce((total, count) => total + count, 0)
+      + result.casReceiptsCleared,
     lineageEvents: result.lineageEvents,
   }
 }
@@ -441,10 +478,10 @@ export interface StoreLifecycleDemoOptions {
 }
 
 export interface StoreLifecycleDemoResult {
-  readonly deletion: DeletionProof
   readonly migration: MigrationProof
   readonly cas: ContinuityCasProof
   readonly sweep: SweepProof
+  readonly deletion: ScopeDeletionProof
   readonly report: StoreReport
   readonly lines: readonly string[]
 }
@@ -456,8 +493,10 @@ const counts = (values: Readonly<Record<string, number>>): string =>
     .join(' ')
 
 /**
- * The full journey on invented data: build, delete, migrate, select, restart the
- * CAS, sweep, and re-validate.
+ * The full journey on invented data, in the product order B3 makes possible:
+ * build (bridge present) -> migrate -> select -> restart the CAS -> sweep ->
+ * DELETE one scope on the selected store -> explain its tombstones -> reopen and
+ * re-validate with the other scopes intact.
  */
 export function runStoreLifecycleDemo(
   options: StoreLifecycleDemoOptions,
@@ -468,15 +507,14 @@ export function runStoreLifecycleDemo(
     options.log?.(line)
   }
   const source = createInventedV2Source(options.directory)
-  let deletion: DeletionProof
   let migration: MigrationProof
+  let deletableAlias: string
   try {
-    emit(`source: invented scopes=${source.scopes} claims=${source.claims} cohorts=${INVENTED_COHORTS.length}`)
-    deletion = proveRegisteredDeletion(source)
-    emit(`deletion: tables=${deletion.tables} rows-before=${deletion.rowsBefore} rows-after=${deletion.rowsAfter} net-removed=${deletion.netRowsRemoved} tombstone=${deletion.tombstoneWritten ? 'written' : 'absent'}`)
-    installInventedV2Bridge(source)
+    emit(`source: invented scopes=${source.scopes} claims=${source.claims} cohorts=${INVENTED_COHORTS.length + 1} bridge=present`)
     migration = migrateInventedSource(source, options.directory, options.failAfterStage)
     emit(`migration: status=${migration.status} checksum-digits=${migration.checksumLength}`)
+    deletableAlias = createInstallationAliases(source.installationKey)
+      .repositoryProviderId(source.deletableRawProviderId)
   } finally {
     source.db.close()
   }
@@ -484,12 +522,18 @@ export function runStoreLifecycleDemo(
   const store = openSelectedStorageV3Store(options.directory)
   let cas: ContinuityCasProof
   let sweep: SweepProof
+  let deletion: ScopeDeletionProof
   try {
     emit(`selection: proven tables=${STORAGE_V3_SHADOW_TABLES.length}`)
-    cas = proveContinuityCasRestart(store)
-    emit(`cas: scope=${cas.scope} first=${cas.firstApply} restart=${cas.replayApply} revisions=${cas.revisions.join(',')}`)
+    const deletableScopeId = store.prepare('SELECT scope_id FROM claim_scope WHERE scope_alias = ?')
+      .pluck().get(deletableAlias) as string | undefined
+    if (typeof deletableScopeId !== 'string') throw new Error('STORE_LIFECYCLE_NO_SCOPE')
+    cas = proveContinuityCasRestart(store, deletableScopeId)
+    emit(`cas: scopes=${cas.scopes} first=${cas.firstApply} restart=${cas.replayApply} revisions=${cas.revisions.join(',')}`)
     sweep = sweepSelectedStore(store, options.sweepAsOf ?? STORE_LIFECYCLE_TIMELINE.sweepAsOf)
-    emit(`sweep: status=${sweep.status} cleared=${sweep.clearedTotal} lineage=${sweep.lineageEvents} ${counts(sweep.cleared)}`)
+    emit(`sweep: status=${sweep.status} cleared=${sweep.clearedTotal} cas-receipts=${sweep.casReceiptsCleared} lineage=${sweep.lineageEvents} ${counts(sweep.cleared)}`)
+    deletion = proveScopeDeletion(store, deletableScopeId)
+    emit(`deletion: status=${deletion.status} replay=${deletion.replay} rows-removed=${deletion.rowsRemoved} tombstones=${deletion.tombstonesWritten} remaining-scopes=${deletion.remainingScopes} others-intact=${deletion.otherScopesIntact ? 'yes' : 'NO'} cas-remaining=${deletion.casScopesRemaining} maintenance=${deletion.maintenance} ${counts(deletion.deletionRecords)}`)
   } finally {
     store.close()
   }
@@ -498,7 +542,7 @@ export function runStoreLifecycleDemo(
   try {
     const report = reportSelectedStore(revalidated)
     emit(`store: rows=${report.rows} cas-scopes=${report.casScopes} cas-operations=${report.casOperations} ${counts(report.tableCounts)}`)
-    return { deletion, migration, cas, sweep, report, lines }
+    return { migration, cas, sweep, deletion, report, lines }
   } finally {
     revalidated.close()
   }
@@ -562,7 +606,6 @@ function runVerb(
   if (invocation.verb === 'migrate') {
     const source = createInventedV2Source(invocation.directory)
     try {
-      installInventedV2Bridge(source)
       const migration = migrateInventedSource(source, invocation.directory)
       log(`migration: status=${migration.status} checksum-digits=${migration.checksumLength}`)
     } finally {

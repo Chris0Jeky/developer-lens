@@ -4,6 +4,11 @@ import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { describe, expect, it } from 'vitest'
 import { CLAIM_SCHEMA_VERSION } from '../../shared/claims.js'
+import {
+  applyContinuityCasOperation,
+  assertContinuityCasConsistency,
+  initializeContinuityCasScope,
+} from './v3ContinuityCasProposal.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 import {
   isoWeekFromCanonicalTimestamp,
@@ -302,7 +307,7 @@ describe('storage-v3 B2a-iii ongoing C2 sweep', () => {
       expect(swept).toMatchObject({
         completeB2: false,
         status: 'complete',
-        schemaVersion: '3.0.0-shadow-b2a-iii',
+        schemaVersion: '3.1.0-shadow-b3',
         cleared: expectedCleared,
         lineageEvents: 5,
       })
@@ -456,6 +461,84 @@ describe('storage-v3 B2a-iii ongoing C2 sweep', () => {
       held.close()
       contender.close()
       rmSync(directory, { recursive: true, force: true })
+    }
+  })
+
+  it('clears CAS payload receipts at the 13-month boundary and leaves younger ones intact (#128)', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      const scopeId = `scope-${'a'.repeat(64)}`
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeId)
+      initializeContinuityCasScope(db, scopeId)
+      const aged = {
+        scopeId,
+        expectedRevision: 0,
+        operationId: `op-${'a'.repeat(64)}`,
+        payloadSha256: 'b'.repeat(64),
+      }
+      const young = {
+        ...aged,
+        expectedRevision: 1,
+        operationId: `op-${'b'.repeat(64)}`,
+      }
+      expect(applyContinuityCasOperation(db, aged, () => '2025-01-15T00:00:00.000Z').status)
+        .toBe('applied')
+      expect(applyContinuityCasOperation(db, young, () => '2026-03-01T00:00:00.000Z').status)
+        .toBe('applied')
+
+      // Under the boundary: nothing clears.
+      const early = sweepStorageV3C2({
+        targetDb: db,
+        asOf: '2026-02-01T00:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 60),
+      })
+      expect(early.casReceiptsCleared).toBe(0)
+
+      // At the boundary the aged receipt clears; the young one survives; the rows
+      // themselves remain (revision history is C1) and consistency still holds.
+      const swept = sweepStorageV3C2({
+        targetDb: db,
+        asOf: '2026-03-01T00:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 61),
+      })
+      expect(swept.casReceiptsCleared).toBe(1)
+      expect(db.prepare('SELECT payload_sha256 FROM continuity_cas_operation WHERE operation_id = ?')
+        .pluck().get(aged.operationId)).toBeNull()
+      expect(db.prepare('SELECT payload_sha256 FROM continuity_cas_operation WHERE operation_id = ?')
+        .pluck().get(young.operationId)).toBe('b'.repeat(64))
+      expect(db.prepare('SELECT COUNT(*) FROM continuity_cas_operation').pluck().get()).toBe(2)
+      assertContinuityCasConsistency(db)
+
+      // Idempotent: a rerun clears nothing further.
+      expect(sweepStorageV3C2({
+        targetDb: db,
+        asOf: '2026-03-01T00:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 62),
+      }).casReceiptsCleared).toBe(0)
+    } finally {
+      db.close()
+    }
+  })
+
+  it('refuses to sweep around divergent or orphaned CAS history (PR #136 review)', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      const scopeId = `scope-${'a'.repeat(64)}`
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeId)
+      initializeContinuityCasScope(db, scopeId)
+      // A permitted single-step revision bump WITHOUT its operation row leaves the
+      // history divergent; the sweep must refuse rather than mutate around it.
+      db.prepare('UPDATE continuity_cas_state SET revision = revision + 1 WHERE scope_id = ?')
+        .run(scopeId)
+      expect(() => sweepStorageV3C2({
+        targetDb: db,
+        asOf: '2026-03-01T00:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 63),
+      })).toThrow(/SWEEP_STATE_REFUSED/)
+    } finally {
+      db.close()
     }
   })
 })

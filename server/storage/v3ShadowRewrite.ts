@@ -786,30 +786,13 @@ export function rewriteStorageV3Shadow(
         sourceImage.provenance.importerVersion,
         sourceImage.provenance.createdAt,
       )
-      const insertBridgeCoverage = options.targetDb.prepare(
-        `INSERT INTO v2_coverage_record (
-          coverage_id, capability_id, scope_alias, range_start, range_end, status,
-          expected_units, observed_units, omitted_units, saturation_reason, retryable,
-          observed_at, limitation_code
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      )
-      for (const record of sourceImage.bridgeCoverage) {
-        insertBridgeCoverage.run(
-          record.coverageId,
-          record.capabilityId,
-          record.scopeAlias,
-          record.rangeStart,
-          record.rangeEnd,
-          record.status,
-          record.expectedUnits,
-          record.observedUnits,
-          record.omittedUnits,
-          record.saturationReason ?? null,
-          record.retryable ? 1 : 0,
-          record.observedAt,
-          record.limitationCode,
-        )
-      }
+      // v2_coverage_record is delete-disposition since B3: the v2 reader refuses v3
+      // stores by application_id/user_version, so a preserved copy could never be
+      // read, while its verbatim scope_alias would carry C2 into a store whose
+      // coverage truth is coverage_ledger. The SOURCE rows were still read and
+      // contract-validated above (sourceImage.bridgeCoverage) — an unreadable or
+      // provenance-less bridge still refuses migration; its rows are simply not
+      // copied, and acceptance asserts the target table stays empty.
       checkpoint('bridge')
 
       const insertCommit = options.targetDb.prepare(

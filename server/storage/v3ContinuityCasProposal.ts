@@ -1,5 +1,6 @@
 import type Database from 'better-sqlite3'
 import { OperationIdV3Schema, ScopeIdV3Schema } from './v3Proposal.js'
+import { isoWeekFromCanonicalTimestamp } from './v3ShadowRewrite.js'
 import {
   STORAGE_V3_CONTINUITY_CAS_ERROR,
   STORAGE_V3_SHADOW_APPLICATION_ID,
@@ -17,7 +18,13 @@ import {
 const MAX_REVISION = Number.MAX_SAFE_INTEGER
 const ERROR_CODE = STORAGE_V3_CONTINUITY_CAS_ERROR
 
-export type ContinuityCasStatus = 'applied' | 'replayed' | 'stale' | 'conflict'
+/**
+ * `receipt_expired` is the honest answer for a replay whose stored receipt digest was
+ * cleared by the 13-month C2 sweep: with no receipt, replay-vs-conflict cannot be
+ * verified, so the operation is refused rather than falsely reported `replayed` or
+ * `applied`. Detection is never weakened into acceptance (PR #130 late review).
+ */
+export type ContinuityCasStatus = 'applied' | 'replayed' | 'stale' | 'conflict' | 'receipt_expired'
 /** A scope initializer is idempotent: it either mints revision 0 or finds it. */
 export type ContinuityCasScopeStatus = 'created' | 'existing'
 
@@ -31,6 +38,7 @@ const RESULTS = Object.freeze({
   replayed: Object.freeze({ kind: 'v3_continuity_cas', status: 'replayed' }),
   stale: Object.freeze({ kind: 'v3_continuity_cas', status: 'stale' }),
   conflict: Object.freeze({ kind: 'v3_continuity_cas', status: 'conflict' }),
+  receipt_expired: Object.freeze({ kind: 'v3_continuity_cas', status: 'receipt_expired' }),
 } as const satisfies Readonly<Record<ContinuityCasStatus, ContinuityCasResult>>)
 
 export class ContinuityCasError extends Error {
@@ -50,8 +58,25 @@ export interface ContinuityCasInput {
   readonly scopeId: string
   readonly expectedRevision: number
   readonly operationId: string
-  /** Opaque local-C2 receipt digest; the CAS grants it no retention of its own. */
+  /** Opaque local-C2 receipt digest; the 13-month sweep clears it in place. */
   readonly payloadSha256: string
+}
+
+/**
+ * `applied_week` records the WRITER's process wall time, captured inside the CAS
+ * transaction and floored to ISO week (§7.4: never caller-supplied — a caller-chosen
+ * time could stretch the receipt's 13-month lifetime or expire a live one). It is a
+ * retention record, not replay identity: replay is discriminated by the payload
+ * digest, so a crash-restart replay across a week boundary still replays. The seam
+ * exists for deterministic tests only; production callers use the process clock.
+ */
+export type ContinuityCasClockForTest = () => string
+
+function capturedWeek(nowForTest?: ContinuityCasClockForTest): string {
+  const timestamp = nowForTest ? nowForTest() : new Date().toISOString()
+  const time = Date.parse(timestamp)
+  if (!Number.isFinite(time) || new Date(time).toISOString() !== timestamp) fail()
+  return isoWeekFromCanonicalTimestamp(timestamp)
 }
 
 function parseInput(input: unknown): ContinuityCasInput {
@@ -113,7 +138,10 @@ function enableConnectionGuards(db: Database.Database): void {
 
 /**
  * Every scope's revision must equal both its operation count and its highest
- * applied revision. Divergence means the history was edited around the CAS.
+ * applied revision, AND every CAS scope must still be owned by a claim_scope row:
+ * an orphaned state (its scope deleted around the CAS, which the deliberate
+ * absence of an FK permits) must refuse further advancement rather than guard
+ * nothing (PR #136 review). Divergence means the history was edited around the CAS.
  */
 export function assertContinuityCasConsistency(db: Database.Database): void {
   const inconsistent = db.prepare(
@@ -126,6 +154,7 @@ export function assertContinuityCasConsistency(db: Database.Database): void {
      ) AS history ON history.scope_id = state.scope_id
      WHERE state.revision != COALESCE(history.operation_count, 0)
         OR state.revision != COALESCE(history.maximum_revision, 0)
+        OR NOT EXISTS (SELECT 1 FROM claim_scope WHERE claim_scope.scope_id = state.scope_id)
      LIMIT 1`,
   ).get()
   if (inconsistent !== undefined) fail()
@@ -194,6 +223,11 @@ export function initializeContinuityCasScope(
         'SELECT revision FROM continuity_cas_state WHERE scope_id = ?',
       ).get(scope)
       if (existing) return 'existing'
+      // Existence rule, deliberately not an FK: a phantom CAS scope must never guard a
+      // scope the store does not hold (PR #130 late review / #128), while B3 scope
+      // deletion must still be able to remove CAS rows together with their scope —
+      // a RESTRICT edge from state to claim_scope would block that erasure order.
+      if (!db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(scope)) fail()
       const inserted = db.prepare(
         'INSERT INTO continuity_cas_state (scope_id, revision) VALUES (?, 0)',
       ).run(scope)
@@ -212,7 +246,8 @@ interface OperationRow {
   readonly scope_id: string
   readonly expected_revision: number
   readonly applied_revision: number
-  readonly payload_sha256: string
+  readonly payload_sha256: string | null
+  readonly applied_week: string
 }
 
 interface StateRow {
@@ -228,14 +263,16 @@ function executeApply(
   db: Database.Database,
   rawInput: unknown,
   testHooks?: ContinuityCasTestHooks,
+  nowForTest?: ContinuityCasClockForTest,
 ): ContinuityCasResult {
   const input = parseInput(rawInput)
   if (db.inTransaction) fail()
   enableConnectionGuards(db)
+  const appliedWeek = capturedWeek(nowForTest)
   const apply = db.transaction((): ContinuityCasResult => {
     assertShadowStore(db)
     const existingOperation = db.prepare(
-      `SELECT scope_id, expected_revision, applied_revision, payload_sha256
+      `SELECT scope_id, expected_revision, applied_revision, payload_sha256, applied_week
        FROM continuity_cas_operation
        WHERE operation_id = ?`,
     ).get(input.operationId) as OperationRow | undefined
@@ -245,8 +282,11 @@ function executeApply(
         existingOperation.scope_id !== input.scopeId
         || existingOperation.expected_revision !== input.expectedRevision
         || existingOperation.applied_revision !== appliedRevision
-        || existingOperation.payload_sha256 !== input.payloadSha256
       ) return RESULTS.conflict
+      // The sweep cleared this receipt at the 13-month boundary: replay identity can
+      // no longer be verified, so refuse rather than guess in either direction.
+      if (existingOperation.payload_sha256 === null) return RESULTS.receipt_expired
+      if (existingOperation.payload_sha256 !== input.payloadSha256) return RESULTS.conflict
       const state = db.prepare(
         'SELECT revision FROM continuity_cas_state WHERE scope_id = ?',
       ).get(input.scopeId) as StateRow | undefined
@@ -267,14 +307,15 @@ function executeApply(
     testHooks?.afterStateMutation?.()
     db.prepare(
       `INSERT INTO continuity_cas_operation (
-        operation_id, scope_id, expected_revision, applied_revision, payload_sha256
-      ) VALUES (?, ?, ?, ?, ?)`,
+        operation_id, scope_id, expected_revision, applied_revision, payload_sha256, applied_week
+      ) VALUES (?, ?, ?, ?, ?, ?)`,
     ).run(
       input.operationId,
       input.scopeId,
       input.expectedRevision,
       appliedRevision,
       input.payloadSha256,
+      appliedWeek,
     )
     testHooks?.afterOperationInsert?.()
     assertDatabaseConsistency(db)
@@ -287,9 +328,10 @@ function executeApply(
 export function applyContinuityCasOperation(
   db: Database.Database,
   input: ContinuityCasInput,
+  nowForTest?: ContinuityCasClockForTest,
 ): ContinuityCasResult {
   try {
-    return executeApply(db, input)
+    return executeApply(db, input, undefined, nowForTest)
   } catch (error) {
     if (error instanceof ContinuityCasError) throw error
     return fail()
