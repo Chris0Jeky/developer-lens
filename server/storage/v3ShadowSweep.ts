@@ -254,6 +254,24 @@ function planStoredClears(db: Database.Database, asOf: string): PlannedClear[] {
   return planned
 }
 
+function clearRepositoryIdentitiesForExpiredAliases(
+  db: Database.Database,
+  scopeIds: ReadonlySet<string>,
+): number {
+  const clear = db.prepare(
+    `UPDATE repository_identity
+     SET provider_id = NULL, analytical_key = NULL, identity_expires_at = NULL
+     WHERE scope_id = ? AND provider_id IS NOT NULL`,
+  )
+  let cleared = 0
+  for (const scopeId of scopeIds) {
+    const result = clear.run(scopeId)
+    if (result.changes > 1) fail('SWEEP_STATE_REFUSED')
+    cleared += result.changes
+  }
+  return cleared
+}
+
 function planClaimClears(db: Database.Database, asOf: string): PlannedClaimClear[] {
   const rows = db.prepare(
     `SELECT scope_id, claim_id, created_at FROM claim
@@ -445,10 +463,21 @@ export function sweepStorageV3C2(options: StorageV3C2SweepOptions): StorageV3C2S
     const clears = planStoredClears(options.targetDb, asOf)
     const claimClears = planClaimClears(options.targetDb, asOf)
     const events = plannedLineageEvents(clears, retainedIncrementalSubjects(options.targetDb))
+    const expiredAliasScopes = new Set(
+      clears
+        .filter((candidate) => candidate.group.key === 'claimScope')
+        .map((candidate) => candidate.scopeId),
+    )
+    // An alias link and its same-scope repository identity are one C2 identity
+    // boundary. If the link expires first, clear both in this transaction and
+    // avoid replaying the identity candidate through its independent clock.
+    const executableClears = clears.filter(
+      (candidate) => candidate.group.key !== 'repositoryIdentity' || !expiredAliasScopes.has(candidate.scopeId),
+    )
     const counts = emptyCounts()
 
     for (const group of STORED_EXPIRY_GROUPS) {
-      const groupClears = clears.filter((candidate) => candidate.group === group)
+      const groupClears = executableClears.filter((candidate) => candidate.group === group)
       const assignments = group.clearColumns.map((column) => `${column} = NULL`).join(', ')
       const identity = group.idColumns.map((column) => `${column} = ?`).join(' AND ')
       const update = options.targetDb.prepare(
@@ -459,6 +488,12 @@ export function sweepStorageV3C2(options: StorageV3C2SweepOptions): StorageV3C2S
         const result = update.run(...candidate.ids, candidate.expiresAt)
         if (result.changes !== 1) fail('SWEEP_STATE_REFUSED')
         counts[group.key] += 1
+      }
+      if (group.key === 'claimScope') {
+        counts.repositoryIdentity += clearRepositoryIdentitiesForExpiredAliases(
+          options.targetDb,
+          expiredAliasScopes,
+        )
       }
       options.failAfterStage?.(group.key)
     }
