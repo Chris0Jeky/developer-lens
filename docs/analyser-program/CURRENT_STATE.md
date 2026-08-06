@@ -8,25 +8,21 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-06
-current_slice_override: 'LIFE-02 B3 core (10_LIFE_02B_DECISION.md §5 item 4): complete v3-domain
-  scope deletion in server/storage/v3Deletion.ts — one IMMEDIATE transaction over a closed
-  20-table registry, child-first deletes, CAS no-delete triggers dropped and byte-identically
-  recreated in-transaction, scope-unbound per-subject tombstone_cascade lineage under one del-
-  operation, replay idempotence, conflict fail-closed, injected-failure rollback at every stage,
-  and the WAL-checkpoint/VACUUM completion saga. Schema v3.1.0-shadow-b3 (user_version 306):
-  deletion-kind lineage may be scope-unbound; continuity_cas_operation gains applied_week and a
-  nullable clear-only payload receipt. CAS scope init refuses phantom scopes; the sweep clears
-  receipts at the 13-month boundary; replay of a cleared receipt fails closed as
-  receipt_expired. v2_coverage_record flipped to delete disposition (the v2 reader refuses v3
-  stores, so the preserved copy was unreadable dead weight) — the bridge/planner workaround is
-  gone and the CLI journey runs the product order: build (bridge present) -> migrate -> select
-  -> CAS restart -> sweep -> delete one scope -> explain tombstones -> reopen intact.'
-phase: 'R4 active horizon OPEN — B3 scope deletion and the B-2 promotion hardening are MERGED
-  to main (per-slice proofs, heads, and run IDs live in the ledger, not here): mint-order
-  equivalence, the #86 storage half, the #128/#129 dispositions, activation_card provenance
-  support, and the measured scale budget all hold. The ONLY remaining LIFE-02 work is B4
-  app-owned artifacts per 10_LIFE_02B_DECISION.md §5 item 5 (including the durable
-  maintenance-pending marker). LIFE-02/#80 remain incomplete until B4 lands.'
+current_slice_override: 'LIFE-02 B4 (10_LIFE_02B_DECISION.md §4/§5 item 5): schema
+  v3.2.0-shadow-b4 (user_version 307) adds a confined app_artifact/app_artifact_scope catalogue
+  and durable storage_maintenance_state marker. The selected store, fixed migration attempts,
+  timestamped migration-backup domain, and invented fixture stores carry art- identity,
+  controlled kind/state, manifest plus content hash, a confined relative locator, and all scope
+  owners; absolute paths stay in opaque process-only root handles. B3 now schedules every owned
+  artifact and the maintenance marker in its deletion transaction, then restartably removes the
+  exact file/sidecar family, writes scope-unbound index_deleted lineage under the same del-
+  operation, checkpoints/TRUNCATEs WAL, VACUUMs, and marks maintenance complete. The existing
+  caller-directed analysis pack remains immutable and outside recall.'
+phase: 'R4 active horizon OPEN — B4 is implemented at this head and is the current merge gate.
+  LIFE-02 and #80 MUST remain open after B4: the recorded whyResolver coverage/job deletion-
+  lineage joins land with the Phase-E stored-observation bridge, and #80 also tracks the C1-window
+  expiry path for scope-unbound deletion lineage. B4 merge unblocks LIFE-03 backup/grace/restore
+  and activation-enforcement work; it does not authorize a real migration or connector.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -34,17 +30,12 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'DL-LIFE-02 chain PRs #103, #105, #107-#125 (slice A, B1a+repairs, B1b-i..iii, B2a-i..iii,
   B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
   their engineering record stays in the ledger', 'state syncs #126']
-active_slice: 'DL-LIFE-02 B4 — app-owned artifact catalogue and deletion saga per
-  10_LIFE_02B_DECISION.md §4/§5 item 5, including the durable maintenance-pending marker owed
-  from the PR #136 round-three triage. PR B-2 (this branch) completed: #133 mint-order
-  equivalence proof (graph colouring deleted, near-linear sort-bound, measured), #86 storage half (cov- registry
-  CHECK + UNIQUE(coverage_id) + fixture migration), all ten open #128/#129 findings dispositioned
-  with discriminating fixtures (eight real, fixed; two disproved, pinned), v2_store_provenance
-  activation_card SUPPORT for migration (serving gate untouched), and the Phase-1c scale corpus
-  with a measured budget. Resolver deletion-lineage scoping decision (recorded on #80): B3 ships
-  the v3 deletion-lineage reader consumed by the CLI; the whyResolver coverage/job lineage joins
-  land with the Phase-4 stored-observation bridge, because v2 stores carry no per-subject
-  tombstones for such joins to find. Inert-code budget stays zero.'
+active_slice: 'Gate and merge the B4 vertical, then start DL-LIFE-03 as a separate PR: timestamped
+  app-controlled backup, untouched source, atomic selection/fallback, seven-day grace, restart at
+  every stage, restore plus tombstone replay, grace-boundary cleanup, exact WAL/SHM handling, and
+  content-free results. Keep all fixtures invented. In parallel review-wait windows, #128''s CAS
+  clock placement, #137, and #139 are bounded hardening slices; the whyResolver lineage joins stay
+  with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -55,12 +46,11 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'None for B4. A real migration/connector still requires B4 completion, LIFE-03
-  backup/grace/restore/tombstone-replay proof, and the activation-enforcement alignment; the
-  #86 storage half is CLOSED on this branch (both halves of #86 now hold), #128/#129 are fully
-  dispositioned, and the equivalence scale risk is closed by measurement. Deliberate breaking
-  change: a pre-#86 on-disk v2 store fails closed at schema validation — no real store exists
-  and invented stores regenerate.'
+blockers: 'No owner blocker for B4 or invented-fixture LIFE-03 work. A real migration/connector
+  still requires LIFE-03 backup/grace/restore/tombstone-replay proof and the activation-enforcement
+  alignment. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention
+  residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema
+  validation — no real store exists and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -68,11 +58,12 @@ frozen_by_reassessment: horizon:frozen label (WB candidates, vector retrieval, G
   PROV-01 sources, ATLAS-03 parsers, EVQ-09/10, TRACE-03) — 07 §0a
 authority_order: [AGENTS.md, .agent-harness/tier.json, HUMAN_TODO.md, data-charter.md,
   source-capability-matrix.md, DEVELOPER_LENS_V2_ARCHITECTURE.md (incl. Appendix I.1-I.4)]
-last_verified_checks: 'Every merged R1-R4 head above passed the hosted PR gate at its exact head,
-  and every merge passed the exact-merge Pages/privacy run; per-slice run IDs and focused-test
-  counts are recorded per slice in docs/IMPLEMENTATION_LEDGER.md. Before the simplification the
-  full local gate was 77 files / 1,137 tests plus context verification, lint, typecheck, build,
-  and diff checking.'
+last_verified_checks: 'The B4 implementation head passed the full local gate: lint, context
+  verification (27 Markdown / 12 required), 73 test files, 1,191 passed plus 1 opt-in scale test
+  skipped, TypeScript/build, and credential scan over 13 build outputs. Its focused storage and
+  analysis-pack proof passed 8 files / 136 tests plus the same opt-in skip. Every earlier merged
+  R1-R4 head passed its exact-head hosted PR gate and exact-merge Pages/privacy run; the ledger
+  now records the missing #132/#136/#138 exact-merge run IDs.'
 review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently posts review comments
   3-10 minutes AFTER merge. The ledger sentences claiming an "empty late-comment sweep" for PRs
   #104-#125 were measured before the bot posted and are not evidence of clean reviews; 20 late
@@ -112,14 +103,18 @@ residual_risks:
      alias only — the schema is the real gate) and a direct alias-absence test;
      the canonical record is validated on the way in and never served. /api/v2/evidence grain is
      NOT in scope and stays as it was'
-  - '#80 remains open: v1 deletion-seam FK decision, C2 sweeper on the live path, lineage ID class
-     separation, whyResolver lineage joins. The Ed25519 low-order condition is discharged as moot
-     by the §7 deletion and reattaches only if signatures return'
+  - '#80 remains open after B4: the whyResolver coverage/job deletion-lineage joins belong to the
+     Phase-E v3 stored-observation bridge, and scope-unbound deletion lineage still needs the
+     charter''s 36-month C1 expiry path (natural LIFE-03 retention work). B3 already resolved the
+     v1 FK/planner, executable C2 sweep, and lineage-ID-class conditions. The Ed25519 low-order
+     condition is discharged as moot by §7 and reattaches only if signatures return'
   - 'late Codex findings from PRs #105/#109/#110/#112 are batch-triaged into tracking issues
      #128/#129 (2026-08-05); two #109 findings were fixed directly (coverage_ledger empty-code
      CHECKs — the preserved v2_coverage_record bridge table deliberately keeps byte-parity with
-     its v2 source; delete-disposition tables must be empty at acceptance), the rest await
-     verification there. The PR #130 post-merge findings are FIXED by B3: phantom CAS scope
+     its v2 source; delete-disposition tables must be empty at acceptance). PR #138 completed every
+     original #128/#129 verification with discriminating fixtures; #128 remains open only for the
+     separately added CAS clock-read placement, while #137 tracks the adjacent in-service alias-
+     clock hazard. The PR #130 post-merge findings are FIXED by B3: phantom CAS scope
      initialization refuses (claim_scope existence rule inside the init transaction) and CAS
      payload receipts expire at the 13-month boundary via the sweep with fail-closed
      receipt_expired replay. The PR #127/#131 post-merge findings were fixed by PR #132

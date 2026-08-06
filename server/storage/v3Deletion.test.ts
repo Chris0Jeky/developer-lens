@@ -159,6 +159,9 @@ function migratedFixture(options: { casOnBoth?: boolean } = {}): MigratedFixture
 function scopeRowCounts(db: Database.Database, scopeId: string): Record<string, number> {
   const counts: Record<string, number> = {}
   for (const table of STORAGE_V3_SHADOW_TABLES) {
+    // B4's durable saga marker intentionally retains the just-deleted scope until
+    // WAL/VACUUM completion; it is lifecycle state, not a surviving observation.
+    if (table === 'app_artifact_scope' || table === 'storage_maintenance_state') continue
     const hasScope = (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>)
       .some(({ name }) => name === 'scope_id')
     if (!hasScope) continue
@@ -211,6 +214,15 @@ describe('B3 v3 scope deletion', { timeout: 30_000 }, () => {
       // scope + claim + job + snapshot + checkpoint + coverage + evidence
       expect(result.tombstonesWritten).toBe(7)
       expect(result.operationId).toMatch(/^del-[0-9a-f]{64}$/)
+      expect(fixture.target.prepare(
+        `SELECT state, operation_id, scope_id, event_week
+         FROM storage_maintenance_state WHERE singleton = 1`,
+      ).get()).toEqual({
+        state: 'pending',
+        operation_id: result.operationId,
+        scope_id: fixture.scopeA,
+        event_week: '2026-W10',
+      })
 
       const remaining = scopeRowCounts(fixture.target, fixture.scopeA)
       expect(Object.values(remaining).every((count) => count === 0)).toBe(true)

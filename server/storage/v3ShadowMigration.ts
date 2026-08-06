@@ -23,6 +23,11 @@ export interface StorageV3ShadowTargetAttempt {
 
 export interface StorageV3ShadowTargetFactory {
   create(kind: 'primary' | 'replay'): StorageV3ShadowTargetAttempt
+  /** Catalogue both proven temporary files after equivalence, before either is removed. */
+  prepareAcceptance?(
+    primary: StorageV3ShadowTargetAttempt,
+    replay: StorageV3ShadowTargetAttempt,
+  ): void
   /** Accept ownership only after the orchestrator has completed every proof. */
   accept(primary: StorageV3ShadowTargetAttempt): void
 }
@@ -269,6 +274,7 @@ export function orchestrateStorageV3ShadowMigration(
     const checksum = createHash('sha256')
       .update(`${lengthPrefix('storage-v3-result.v1')}${lengthPrefix(digest)}`)
       .digest('hex')
+    options.targetFactory.prepareAcceptance?.(primary, replay)
     replay.close()
     replay.discard()
     replay = undefined

@@ -1,0 +1,385 @@
+import {
+  mkdirSync,
+  existsSync,
+  linkSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import Database from 'better-sqlite3'
+import { describe, expect, it } from 'vitest'
+import {
+  assertPublishedStorageV3ArtifactCatalogue,
+  createStorageV3ArtifactRoot,
+  registerSelectedStorageV3Artifact,
+  registerStorageV3Artifact,
+  STORAGE_V3_ARTIFACT_DELETION_STAGES,
+  STORAGE_V3_ARTIFACT_LOCATORS,
+  STORAGE_V3_USER_DIRECTED_ARTIFACTS,
+  StorageV3ArtifactError,
+  storageV3MaintenanceStatus,
+} from './v3ArtifactCatalogue.js'
+import {
+  completeStorageV3DeletionMaintenance,
+  deleteStorageV3Scope,
+  readStorageV3DeletionLineage,
+  STORAGE_V3_DELETION_MAINTENANCE_STAGES,
+  StorageV3DeletionError,
+} from './v3Deletion.js'
+import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
+import { openSelectedStorageV3Store } from './v3StoreFiles.js'
+
+const SCOPE_A = `scope-${'a'.repeat(64)}`
+const SCOPE_B = `scope-${'b'.repeat(64)}`
+const DELETE_AT = '2026-03-02T00:00:00.000Z'
+
+interface FileFixture {
+  readonly root: string
+  readonly store: Database.Database
+  cleanup(): void
+}
+
+function freshSelectedStore(): FileFixture {
+  const root = mkdtempSync(join(tmpdir(), 'developer-lens-b4-'))
+  const rootHandle = createStorageV3ArtifactRoot(root)
+  const path = join(root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+  const db = new Database(path)
+  installStorageV3ShadowSchema(db)
+  db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(SCOPE_A)
+  db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(SCOPE_B)
+  registerSelectedStorageV3Artifact(db, rootHandle, () => Buffer.alloc(32, 1))
+  db.close()
+  const store = openSelectedStorageV3Store(root)
+  return {
+    root,
+    store,
+    cleanup(): void {
+      if (store.open) store.close()
+      rmSync(root, { recursive: true, force: true })
+    },
+  }
+}
+
+function writeInventedSqlite(path: string): void {
+  const db = new Database(path)
+  db.exec('CREATE TABLE invented_fixture (value INTEGER) STRICT')
+  db.prepare('INSERT INTO invented_fixture (value) VALUES (1)').run()
+  db.close()
+}
+
+function registerFixture(
+  fixture: FileFixture,
+  locator: string,
+  scopeIds: readonly string[],
+  byte: number,
+  kind: 'invented_fixture_store' | 'migration_backup_v1' = 'invented_fixture_store',
+): string {
+  writeInventedSqlite(join(fixture.root, locator))
+  return registerStorageV3Artifact({
+    db: fixture.store,
+    kind,
+    relativeLocator: locator,
+    scopeIds,
+    randomBytes: () => Buffer.alloc(32, byte),
+  }).artifactId
+}
+
+function expectArtifactError(run: () => unknown): void {
+  try {
+    run()
+    throw new Error('expected artifact refusal')
+  } catch (error) {
+    expect(error).toBeInstanceOf(StorageV3ArtifactError)
+    expect(error).toMatchObject({
+      code: 'STORAGE_V3_ARTIFACT_INVALID',
+      message: 'STORAGE_V3_ARTIFACT_INVALID',
+    })
+  }
+}
+
+function expectMaintenanceFailure(run: () => unknown): void {
+  try {
+    run()
+    throw new Error('expected maintenance failure')
+  } catch (error) {
+    expect(error).toBeInstanceOf(StorageV3DeletionError)
+    expect(error).toMatchObject({ code: 'MAINTENANCE_FAILED', message: 'MAINTENANCE_FAILED' })
+  }
+}
+
+describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
+  it('catalogues the selected store without persisting an absolute path', () => {
+    const fixture = freshSelectedStore()
+    try {
+      assertPublishedStorageV3ArtifactCatalogue(fixture.store)
+      const artifact = fixture.store.prepare(
+        `SELECT artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator,
+                deletion_operation_id, deletion_scope_id, deletion_week
+         FROM app_artifact`,
+      ).get() as Record<string, unknown>
+      expect(artifact).toMatchObject({
+        kind: 'selected_store',
+        state: 'active',
+        relative_locator: STORAGE_V3_ARTIFACT_LOCATORS.selectedStore,
+        deletion_operation_id: null,
+        deletion_scope_id: null,
+        deletion_week: null,
+      })
+      expect(artifact.artifact_id).toMatch(/^art-[0-9a-f]{64}$/)
+      expect(artifact.manifest_sha256).toMatch(/^[0-9a-f]{64}$/)
+      expect(artifact.content_sha256).toMatch(/^[0-9a-f]{64}$/)
+      expect(JSON.stringify(artifact)).not.toContain(fixture.root)
+      expect(fixture.store.prepare(
+        'SELECT scope_id FROM app_artifact_scope ORDER BY scope_id',
+      ).pluck().all()).toEqual([SCOPE_A, SCOPE_B])
+    } finally { fixture.cleanup() }
+  })
+
+  it('deletes a shared artifact whole, preserves other scopes artifacts, and compacts the selected store', () => {
+    const fixture = freshSelectedStore()
+    try {
+      const sharedLocator = 'migration-backup-20260302T000000Z.sqlite'
+      const otherLocator = 'invented-b-only.sqlite'
+      const sharedId = registerFixture(
+        fixture,
+        sharedLocator,
+        [SCOPE_A, SCOPE_B],
+        2,
+        'migration_backup_v1',
+      )
+      const otherId = registerFixture(fixture, otherLocator, [SCOPE_B], 3)
+      const sharedFamily = [
+        join(fixture.root, sharedLocator),
+        ...['-wal', '-shm', '-journal'].map((suffix) => join(fixture.root, `${sharedLocator}${suffix}`)),
+      ]
+      for (const sidecar of sharedFamily.slice(1)) writeFileSync(sidecar, 'invented sidecar')
+      const result = deleteStorageV3Scope({
+        db: fixture.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 4),
+      })
+      expect(result.maintenance).toBe('pending')
+      expect(storageV3MaintenanceStatus(fixture.store)).toBe('pending')
+      expect(fixture.store.prepare(
+        'SELECT state FROM app_artifact WHERE artifact_id = ?',
+      ).pluck().get(sharedId)).toBe('pending')
+      expect(fixture.store.prepare(
+        'SELECT state FROM app_artifact WHERE artifact_id = ?',
+      ).pluck().get(otherId)).toBe('active')
+
+      const completed = completeStorageV3DeletionMaintenance(fixture.store)
+      expect(completed).toEqual({ maintenance: 'complete', artifactsDeleted: 1 })
+      expect(sharedFamily.every((path) => !existsSync(path))).toBe(true)
+      expect(existsSync(join(fixture.root, otherLocator))).toBe(true)
+      expect(fixture.store.prepare(
+        'SELECT 1 FROM app_artifact WHERE artifact_id = ?',
+      ).get(sharedId)).toBeUndefined()
+      expect(fixture.store.prepare(
+        'SELECT 1 FROM app_artifact WHERE artifact_id = ?',
+      ).get(otherId)).toBeDefined()
+      expect(fixture.store.prepare(
+        `SELECT scope_id FROM app_artifact_scope
+         WHERE artifact_id IN (SELECT artifact_id FROM app_artifact WHERE kind = 'selected_store')
+         ORDER BY scope_id`,
+      ).pluck().all()).toEqual([SCOPE_B])
+      expect(readStorageV3DeletionLineage(fixture.store)).toContainEqual(expect.objectContaining({
+        subjectKind: 'artifact',
+        subjectId: sharedId,
+        operationId: result.operationId,
+        causedBy: SCOPE_A,
+        eventKind: 'index_deleted',
+        eventWeek: '2026-W10',
+      }))
+      expect(storageV3MaintenanceStatus(fixture.store)).toBe('complete')
+    } finally { fixture.cleanup() }
+  })
+
+  it.each(STORAGE_V3_ARTIFACT_DELETION_STAGES)(
+    'resumes an injected %s interruption without resurrecting the artifact',
+    (stage) => {
+      const fixture = freshSelectedStore()
+      const locator = `invented-${stage}.sqlite`
+      try {
+        const artifactId = registerFixture(fixture, locator, [SCOPE_A, SCOPE_B], 5)
+        deleteStorageV3Scope({
+          db: fixture.store,
+          scopeId: SCOPE_A,
+          asOf: DELETE_AT,
+          randomBytes: () => Buffer.alloc(32, 6),
+        })
+        expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(fixture.store, {
+          failAfterArtifactStage: (actual) => {
+            if (actual === stage) throw new Error('invented crash')
+          },
+        }))
+        expect(storageV3MaintenanceStatus(fixture.store)).toBe('pending')
+        fixture.store.close()
+        const reopened = openSelectedStorageV3Store(fixture.root)
+        try {
+          expect(storageV3MaintenanceStatus(reopened)).toBe('pending')
+          expect(completeStorageV3DeletionMaintenance(reopened).maintenance).toBe('complete')
+          expect(existsSync(join(fixture.root, locator))).toBe(false)
+          expect(reopened.prepare(
+            'SELECT 1 FROM app_artifact WHERE artifact_id = ?',
+          ).get(artifactId)).toBeUndefined()
+          expect(storageV3MaintenanceStatus(reopened)).toBe('complete')
+          expect(reopened.prepare(
+            'SELECT 1 FROM claim_scope WHERE scope_id = ?',
+          ).get(SCOPE_A)).toBeUndefined()
+          expect(reopened.prepare(
+            'SELECT 1 FROM claim_scope WHERE scope_id = ?',
+          ).get(SCOPE_B)).toBeDefined()
+        } finally { reopened.close() }
+      } finally { fixture.cleanup() }
+    },
+  )
+
+  it.each(STORAGE_V3_DELETION_MAINTENANCE_STAGES)(
+    'resumes an injected %s maintenance interruption across a real reopen',
+    (stage) => {
+      const fixture = freshSelectedStore()
+      try {
+        deleteStorageV3Scope({
+          db: fixture.store,
+          scopeId: SCOPE_A,
+          asOf: DELETE_AT,
+          randomBytes: () => Buffer.alloc(32, 7),
+        })
+        expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(fixture.store, {
+          failAfterStage: (actual) => {
+            if (actual === stage) throw new Error('invented crash')
+          },
+        }))
+        const expectedInterruptedState = stage === 'markerCompleted' || stage === 'checkpointed'
+          ? 'complete'
+          : 'pending'
+        expect(storageV3MaintenanceStatus(fixture.store)).toBe(expectedInterruptedState)
+        fixture.store.close()
+
+        const reopened = openSelectedStorageV3Store(fixture.root)
+        try {
+          expect(storageV3MaintenanceStatus(reopened)).toBe(expectedInterruptedState)
+          expect(completeStorageV3DeletionMaintenance(reopened).maintenance).toBe('complete')
+          expect(reopened.prepare(
+            'SELECT 1 FROM claim_scope WHERE scope_id = ?',
+          ).get(SCOPE_A)).toBeUndefined()
+          expect(reopened.prepare(
+            'SELECT 1 FROM claim_scope WHERE scope_id = ?',
+          ).get(SCOPE_B)).toBeDefined()
+          expect(storageV3MaintenanceStatus(reopened)).toBe('complete')
+        } finally { reopened.close() }
+      } finally { fixture.cleanup() }
+    },
+  )
+
+  it('refuses traversal, hard links, unknown kinds, and mutable catalogue identity', () => {
+    const fixture = freshSelectedStore()
+    const outside = join(tmpdir(), `developer-lens-b4-outside-${process.pid}.sqlite`)
+    try {
+      writeInventedSqlite(outside)
+      expectArtifactError(() => registerStorageV3Artifact({
+        db: fixture.store,
+        kind: 'invented_fixture_store',
+        relativeLocator: '../outside.sqlite',
+        scopeIds: [SCOPE_A],
+      }))
+      const linked = join(fixture.root, 'invented-linked.sqlite')
+      linkSync(outside, linked)
+      expectArtifactError(() => registerStorageV3Artifact({
+        db: fixture.store,
+        kind: 'invented_fixture_store',
+        relativeLocator: 'invented-linked.sqlite',
+        scopeIds: [SCOPE_A],
+      }))
+      expect(() => fixture.store.prepare(
+        `INSERT INTO app_artifact (
+          artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator
+        ) VALUES (?, 'future_domain', 'active', ?, ?, 'future.sqlite')`,
+      ).run(`art-${'f'.repeat(64)}`, '0'.repeat(64), '0'.repeat(64))).toThrow()
+
+      const id = registerFixture(fixture, 'invented-immutable.sqlite', [SCOPE_A], 7)
+      expect(() => fixture.store.prepare(
+        'UPDATE app_artifact SET manifest_sha256 = ? WHERE artifact_id = ?',
+      ).run('9'.repeat(64), id)).toThrow(/STORAGE_V3_ARTIFACT_INVALID/)
+      expect(() => fixture.store.prepare(
+        'UPDATE app_artifact SET content_sha256 = ? WHERE artifact_id = ?',
+      ).run('8'.repeat(64), id)).toThrow(/STORAGE_V3_ARTIFACT_INVALID/)
+      expect(existsSync(outside)).toBe(true)
+    } finally {
+      fixture.cleanup()
+      rmSync(outside, { force: true })
+    }
+  })
+
+  it('refuses a junction or directory symlink as the reviewed artifact root', () => {
+    const outside = mkdtempSync(join(tmpdir(), 'developer-lens-b4-root-target-'))
+    const junction = join(tmpdir(), `developer-lens-b4-root-link-${process.pid}`)
+    try {
+      symlinkSync(outside, junction, 'junction')
+      expectArtifactError(() => createStorageV3ArtifactRoot(junction))
+    } finally {
+      rmSync(junction, { force: true })
+      rmSync(outside, { recursive: true, force: true })
+    }
+  })
+
+  it('leaves kind or content-hash mismatches pending and recovers only after exact repair', () => {
+    const fixture = freshSelectedStore()
+    const locator = 'invented-kind-mismatch.sqlite'
+    try {
+      registerFixture(fixture, locator, [SCOPE_A], 8)
+      const path = join(fixture.root, locator)
+      const registeredBytes = readFileSync(path)
+      rmSync(path)
+      writeFileSync(path, 'not a sqlite artifact', 'utf8')
+      deleteStorageV3Scope({
+        db: fixture.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 9),
+      })
+      expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(fixture.store))
+      expect(storageV3MaintenanceStatus(fixture.store)).toBe('pending')
+      expect(existsSync(path)).toBe(true)
+      rmSync(path)
+      writeInventedSqlite(path)
+      const changed = new Database(path)
+      changed.prepare('UPDATE invented_fixture SET value = 2').run()
+      changed.close()
+      expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(fixture.store))
+      expect(existsSync(path)).toBe(true)
+      rmSync(path)
+      writeFileSync(path, registeredBytes)
+      expect(completeStorageV3DeletionMaintenance(fixture.store).maintenance).toBe('complete')
+      expect(existsSync(path)).toBe(false)
+    } finally { fixture.cleanup() }
+  })
+
+  it('does not scan or recall a user-directed analysis-pack COMPLETE artifact', () => {
+    const fixture = freshSelectedStore()
+    try {
+      const pack = join(fixture.root, 'user-directed-pack')
+      mkdirSync(pack)
+      writeFileSync(join(pack, 'COMPLETE'), '', 'utf8')
+      writeFileSync(join(pack, 'manifest.json'), '{"invented":true}', 'utf8')
+      expect(STORAGE_V3_USER_DIRECTED_ARTIFACTS.analysisPack).toEqual({
+        classification: 'user-directed',
+        recalled: false,
+      })
+      deleteStorageV3Scope({
+        db: fixture.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 10),
+      })
+      completeStorageV3DeletionMaintenance(fixture.store)
+      expect(existsSync(join(pack, 'COMPLETE'))).toBe(true)
+      expect(existsSync(join(pack, 'manifest.json'))).toBe(true)
+    } finally { fixture.cleanup() }
+  })
+})

@@ -6,6 +6,8 @@ import { openStorageDatabase } from './database.js'
 import { installIncrementalGithubCoreStorage } from './incremental.js'
 import {
   installStorageV3ShadowSchema,
+  STORAGE_V3_ARTIFACT_TABLES,
+  STORAGE_V3_ARTIFACT_TRIGGER_NAMES,
   STORAGE_V3_SHADOW_APPLICATION_ID,
   STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
   STORAGE_V3_SHADOW_COVERAGE_IDENTITY_TRIGGER_NAMES,
@@ -63,6 +65,7 @@ describe('storage-v3 B2a shadow schema', () => {
           ...STORAGE_V3_SHADOW_OWNER_IDENTITY_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES,
           ...casTriggerNames,
+          ...STORAGE_V3_ARTIFACT_TRIGGER_NAMES,
           STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
           STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME,
         ].sort(),
@@ -264,7 +267,7 @@ describe('storage-v3 B2a shadow schema', () => {
     }
   })
 
-  it('installs the registered 18 tables, the two CAS tables, and all dispositions', () => {
+  it('installs the 18 migrated tables, CAS state, B4 catalogue, and all dispositions', () => {
     const db = new Database(':memory:')
     try {
       expect(installStorageV3ShadowSchema(db)).toEqual(STORAGE_V3_SHADOW_RESULT)
@@ -273,6 +276,7 @@ describe('storage-v3 B2a shadow schema', () => {
         ...STORAGE_V3_TABLES,
         'continuity_cas_operation',
         'continuity_cas_state',
+        ...STORAGE_V3_ARTIFACT_TABLES,
       ])
       expect(new Set(STORAGE_V3_DISPOSITIONS.map(({ tableName }) => tableName)).size).toBe(18)
       expect(STORAGE_V3_DISPOSITIONS.map(({ tableName }) => tableName).sort()).toEqual([...STORAGE_V3_TABLES].sort())
