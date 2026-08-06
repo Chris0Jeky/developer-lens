@@ -113,7 +113,7 @@ function probeSelectionReceipt(root: ReturnType<typeof openStorageV3ArtifactRoot
       || typeof row.grace_deadline_at !== 'string') return 'ambiguous'
     return 'present'
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 'absent'
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 'ambiguous'
     // A present-but-unreadable selected artifact is not evidence of a legacy store.
     return 'ambiguous'
   } finally {
@@ -272,6 +272,7 @@ function selectStorageV3ReaderInternal(
     return selected
   } catch (error) {
     if (openedDb?.open) openedDb.close()
+    if (error instanceof StorageV3WriterLeaseError) return selectedUnavailable()
     if (protectedSelection || (root !== undefined && probeSelectionReceipt(root) !== 'absent')) {
       return selectedUnavailable()
     }
