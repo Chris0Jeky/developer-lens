@@ -50,6 +50,14 @@ JSON plus migration backup for a seven-day grace period after a successful repor
 through application-controlled cleanup after the grace period. On failure, keep the old JSON and
 return readers to it. Pseudonymous identifiers are not anonymous.
 
+The selected-reader receipt is also published as one local C2 rollback marker,
+`migration-selection-v1.json`. It contains only opaque artifact/source IDs, the exact success and
+grace timestamps, task/key fingerprints, and integrity bindings; it contains no names, paths, or
+prose. Publication is reconstructed only from the exact committed selected-store receipt and is
+durably fail-closed. The marker survives seven-day cleanup of the old JSON and migration backup so
+their absence can never re-authorize legacy fallback. It remains local, is never exported, and is
+removed no later than the C2 13-month boundary or deletion of the whole task root.
+
 ## Sink contract
 
 Every sink accepts a purpose-built strict schema. Unknown fields, field classes, capabilities,

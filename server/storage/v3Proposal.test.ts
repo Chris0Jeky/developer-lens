@@ -488,6 +488,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3WriterLease.ts',
             'server/storage/v3Backup.ts',
             'server/storage/v3ReaderSelection.ts',
+            'server/storage/v3SelectionProof.ts',
           ]
           if (!allowedSourcePaths.includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)

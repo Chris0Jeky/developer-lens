@@ -1,6 +1,8 @@
 import Database from 'better-sqlite3'
-import { lstatSync } from 'node:fs'
+import { lstatSync, readdirSync } from 'node:fs'
+import { dirname } from 'node:path'
 import {
+  assertStorageV3ArtifactDirectorySyncSupported,
   assertStorageV3ArtifactRootInstallationKey,
   openStorageV3ArtifactRoot,
   storageV3ArtifactFilePath,
@@ -27,6 +29,13 @@ import {
   StorageV3WriterLeaseError,
   withStorageV3WriterLease,
 } from './v3WriterLease.js'
+import {
+  publishStorageV3MigrationSelectionProof,
+  STORAGE_V3_SELECTION_PROOF_NAMES,
+  v3SelectionProofTestSeams,
+  type StorageV3MigrationSelectionProofPublication,
+  type StorageV3SelectionProofPublicationStage,
+} from './v3SelectionProof.js'
 
 export const STORAGE_V3_READER_SELECTION_CODES = [
   'v3-selection-request-invalid',
@@ -63,7 +72,12 @@ export type StorageV3ReaderSelection =
     }>
 
 type ClosedSelectionInput = StorageV3ReaderSelectionInput
-type SelectionStage = 'request' | 'root' | 'lease' | 'store' | 'backup' | 'receipt'
+type SelectionStage = 'request' | 'root' | 'lease' | 'store' | 'backup' | 'receipt' | 'proof'
+type SelectionProofPublisher = (
+  db: Database.Database,
+  root: ReturnType<typeof openStorageV3ArtifactRoot>,
+  installationKey: TaskInstallationKeyHandle,
+) => StorageV3MigrationSelectionProofPublication
 
 const fallback = (code: StorageV3ReaderSelectionCode): StorageV3ReaderSelection =>
   Object.freeze({ reader: 'legacy-json' as const, code })
@@ -79,6 +93,15 @@ class StorageV3SelectedRefusalError extends Error {
 }
 
 type ReceiptPresence = 'absent' | 'present' | 'ambiguous'
+
+function probeSelectionProofMarker(root: ReturnType<typeof openStorageV3ArtifactRoot>): ReceiptPresence {
+  const finalPath = storageV3ArtifactFilePath(root, STORAGE_V3_SELECTION_PROOF_NAMES.final)
+  let names: string[]
+  try { names = readdirSync(dirname(finalPath)) } catch { return 'ambiguous' }
+  return names.some((name) => name.startsWith(STORAGE_V3_SELECTION_PROOF_NAMES.final))
+    ? 'present'
+    : 'absent'
+}
 
 /**
  * A deliberately small, read-only probe used before any selector fallback. It does
@@ -197,12 +220,15 @@ function codeForFailure(error: unknown, stage: SelectionStage): StorageV3ReaderS
     case 'store': return 'v3-selection-store-refused'
     case 'backup': return 'v3-selection-backup-refused'
     case 'receipt': return 'v3-selection-receipt-refused'
+    case 'proof': return 'v3-selection-receipt-refused'
   }
 }
 
 function selectStorageV3ReaderInternal(
   input: StorageV3ReaderSelectionInput,
   beforeReceiptCommit?: () => void,
+  publishProof: SelectionProofPublisher = publishStorageV3MigrationSelectionProof,
+  preflightProof: () => void = assertStorageV3ArtifactDirectorySyncSupported,
 ): StorageV3ReaderSelection {
   let stage: SelectionStage = 'request'
   let openedDb: Database.Database | undefined
@@ -214,13 +240,19 @@ function selectStorageV3ReaderInternal(
     const artifactRoot = openStorageV3ArtifactRoot(closed.directory)
     root = artifactRoot
     const initialPresence = probeSelectionReceipt(artifactRoot)
-    if (initialPresence === 'ambiguous') return selectedUnavailable()
-    protectedSelection = initialPresence === 'present'
+    const initialProofPresence = probeSelectionProofMarker(artifactRoot)
+    if (initialPresence === 'ambiguous' || initialProofPresence === 'ambiguous') return selectedUnavailable()
+    protectedSelection = initialPresence === 'present' || initialProofPresence === 'present'
+    stage = 'proof'
+    preflightProof()
     stage = 'lease'
     const selected = withStorageV3WriterLease(artifactRoot, () => {
       const leasePresence = probeSelectionReceipt(artifactRoot)
-      if (leasePresence === 'ambiguous') throw new StorageV3SelectedRefusalError()
-      if (leasePresence === 'present') protectedSelection = true
+      const leaseProofPresence = probeSelectionProofMarker(artifactRoot)
+      if (leasePresence === 'ambiguous' || leaseProofPresence === 'ambiguous') {
+        throw new StorageV3SelectedRefusalError()
+      }
+      if (leasePresence === 'present' || leaseProofPresence === 'present') protectedSelection = true
       stage = 'store'
       const db = openSelectedStorageV3Store(closed.directory)
       openedDb = db
@@ -256,6 +288,12 @@ function selectStorageV3ReaderInternal(
         // open/revalidation failure must not hand control back to a legacy reader.
         protectedSelection = true
       }
+      stage = 'proof'
+      const proof = publishProof(db, artifactRoot, closed.installationKey)
+      assertReplayRequest(proof.selection, closed, activeSelectedArtifactId(db))
+      if (proof.selection.graceDeadlineAt !== receipt.graceDeadlineAt) {
+        throw new StorageV3SelectedRefusalError()
+      }
       db.close()
       openedDb = undefined
       stage = 'store'
@@ -273,7 +311,8 @@ function selectStorageV3ReaderInternal(
   } catch (error) {
     if (openedDb?.open) openedDb.close()
     if (error instanceof StorageV3WriterLeaseError) return selectedUnavailable()
-    if (protectedSelection || (root !== undefined && probeSelectionReceipt(root) !== 'absent')) {
+    if (protectedSelection || (root !== undefined
+      && (probeSelectionReceipt(root) !== 'absent' || probeSelectionProofMarker(root) !== 'absent'))) {
       return selectedUnavailable()
     }
     if (error instanceof StorageV3SelectedRefusalError) return selectedUnavailable()
@@ -297,6 +336,44 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
     beforeReceiptCommit: () => void,
   ): StorageV3ReaderSelection {
     if (typeof beforeReceiptCommit !== 'function') return fallback('v3-selection-request-invalid')
-    return selectStorageV3ReaderInternal(input, beforeReceiptCommit)
+    return selectStorageV3ReaderInternal(
+      input,
+      beforeReceiptCommit,
+      (db, root, installationKey) => v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        db, root, installationKey, () => {},
+      ),
+      () => {},
+    )
+  },
+  selectWithProofDirectorySynchronizer(
+    input: StorageV3ReaderSelectionInput,
+    synchronizer: (
+      root: ReturnType<typeof openStorageV3ArtifactRoot>,
+      stage: StorageV3SelectionProofPublicationStage,
+    ) => void,
+  ): StorageV3ReaderSelection {
+    if (typeof synchronizer !== 'function') return fallback('v3-selection-request-invalid')
+    return selectStorageV3ReaderInternal(
+      input,
+      undefined,
+      (db, root, installationKey) => v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        db, root, installationKey, synchronizer,
+      ),
+      () => {},
+    )
+  },
+  selectWithProofPreflight(
+    input: StorageV3ReaderSelectionInput,
+    preflight: () => void,
+  ): StorageV3ReaderSelection {
+    if (typeof preflight !== 'function') return fallback('v3-selection-request-invalid')
+    return selectStorageV3ReaderInternal(
+      input,
+      undefined,
+      (db, root, installationKey) => v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        db, root, installationKey, () => {},
+      ),
+      preflight,
+    )
   },
 })

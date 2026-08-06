@@ -15,7 +15,7 @@ import {
   type StorageV3BackupInput,
 } from './v3Backup.js'
 import {
-  selectStorageV3Reader,
+  selectStorageV3Reader as selectStorageV3ReaderNative,
   v3ReaderSelectionTestSeams,
   type StorageV3ReaderSelectionInput,
 } from './v3ReaderSelection.js'
@@ -31,6 +31,7 @@ import {
   type TaskInstallationKeyHandle,
 } from './taskInstallationKey.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
+import { STORAGE_V3_SELECTION_PROOF_NAMES } from './v3SelectionProof.js'
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -38,6 +39,9 @@ const BACKUP_ARTIFACT_ID = `art-${'1'.repeat(64)}`
 const LEGACY_SOURCE_ID = `legacy-${'2'.repeat(64)}`
 const BACKUP_AT = '2026-08-06T12:34:56Z'
 const SUCCESS_AT = '2026-08-06T12:35:00.000Z'
+
+const selectStorageV3Reader = (input: StorageV3ReaderSelectionInput) =>
+  v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(input, () => {})
 
 type Fixture = Readonly<{
   workspaceRoot: string
@@ -127,6 +131,7 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
         graceDeadlineAt: '2026-08-13T12:35:00.000Z',
       })
       first.db.close()
+      expect(existsSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final))).toBe(true)
 
       const replay = expectSelected(selectStorageV3Reader(fx.input))
       expect(replay.selection).toEqual(first.selection)
@@ -137,6 +142,76 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
         ...fx.input,
         installationKey: Object.freeze({}) as TaskInstallationKeyHandle,
       })).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+    } finally { fx.cleanup() }
+  })
+
+  it('reconstructs a missing proof only from the exact committed receipt', async () => {
+    const fx = await fixture()
+    try {
+      const first = expectSelected(selectStorageV3Reader(fx.input))
+      first.db.close()
+      const proofPath = join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)
+      rmSync(proofPath)
+      expect(existsSync(proofPath)).toBe(false)
+
+      const replay = expectSelected(selectStorageV3Reader(fx.input))
+      replay.db.close()
+      expect(existsSync(proofPath)).toBe(true)
+    } finally { fx.cleanup() }
+  })
+
+  it('protects a committed receipt when proof publication fails and resumes exactly', async () => {
+    const fx = await fixture()
+    try {
+      const refused = v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(
+        fx.input,
+        (_root, stage) => {
+          if (stage === 'tempDurable') throw new Error('invented proof sync failure')
+        },
+      )
+      expect(refused).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      const selected = openSelectedStorageV3Store(fx.root)
+      expect(readStorageV3MigrationSelection(selected)).toMatchObject({ successfulReportAt: SUCCESS_AT })
+      selected.close()
+
+      const resumed = expectSelected(selectStorageV3Reader(fx.input))
+      resumed.db.close()
+    } finally { fx.cleanup() }
+  })
+
+  it('leaves a foreign proof marker untouched and never falls back after receipt commit', async () => {
+    const fx = await fixture()
+    try {
+      const proofPath = join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)
+      const foreign = Buffer.from('invented foreign selection proof\n')
+      writeFileSync(proofPath, foreign, { flag: 'wx', mode: 0o600 })
+      expect(v3ReaderSelectionTestSeams.selectWithProofPreflight(fx.input, () => {
+        throw new Error('invented proof preflight failure')
+      })).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      const beforeReceipt = openSelectedStorageV3Store(fx.root)
+      expect(readStorageV3MigrationSelection(beforeReceipt)).toBeUndefined()
+      beforeReceipt.close()
+      expect(selectStorageV3Reader(fx.input)).toEqual({
+        reader: 'unavailable', code: 'v3-selection-selected-refused',
+      })
+      expect(readFileSync(proofPath)).toEqual(foreign)
+      const selected = openSelectedStorageV3Store(fx.root)
+      expect(readStorageV3MigrationSelection(selected)).toBeUndefined()
+      selected.close()
+      expect(existsSync(storageV3WriterLeasePath(openStorageV3ArtifactRoot(fx.root)))).toBe(false)
+    } finally { fx.cleanup() }
+  })
+
+  it('preflights native durability before committing a receipt when unsupported', async () => {
+    if (process.platform !== 'win32') return
+    const fx = await fixture()
+    try {
+      expect(selectStorageV3ReaderNative(fx.input)).toEqual({
+        reader: 'legacy-json', code: 'v3-selection-receipt-refused',
+      })
+      const selected = openSelectedStorageV3Store(fx.root)
+      expect(readStorageV3MigrationSelection(selected)).toBeUndefined()
+      selected.close()
     } finally { fx.cleanup() }
   })
 

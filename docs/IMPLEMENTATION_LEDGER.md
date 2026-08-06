@@ -2918,3 +2918,35 @@ credential scanning over 13 outputs. Hosted, fresh-review, PR, merge, and delaye
 remain pending. Restore #163 is the recovery path behind this deliberate unavailable state; no real
 source, legacy path, private/generated data, connector, or production caller was inspected or
 activated.
+
+## 2026-08-06 — rollback floor merged; external selection proof candidate
+
+PR #167 final head `18d0c31eabe9fe206b44c9bbdfa788274abc54f8` merged as
+`b1c75c52852af276cd913473d816b7a79123d260` at 2026-08-06T17:09:55Z and closed #166.
+The final local gate passed 79 files / 1,326 tests / 10 declared skips, the focused race/store-loss
+proof passed 7 tests, and a fresh Terra exact-head review found no CRITICAL/HIGH blocker. Hosted run
+`31122116478` and exact-merge showcase run `31122305206` remained queued without repository steps
+during the declared critical GitHub Actions incident. The owner explicitly continued the documented
+pre-release outage exception; those runs are not represented as green hosted proof.
+
+Issue #168 records the prerequisite discovered while implementing restore #163: the deliberately
+pre-selection backup cannot authenticate the later success timestamp or grace deadline. Code head
+`00e6161` therefore adds a canonical installation-key-bound local C2 marker, publishes it only
+from the committed selected-store receipt under the writer lease, and returns unavailable after any
+post-receipt failure. Exact replay reconstructs a missing marker from that immutable row; conflicting
+bytes, wrong roots/keys, links, sidecars, and deadline extension fail closed. The standalone marker
+survives process restart at every publication stage and re-synchronizes final-only recovery before
+claiming replay. Its opaque single-use handle is reserved for restore; plain caller-supplied receipt
+objects do not cross the production restore boundary.
+
+Focused proof/selector/allowlist verification passes 25 tests. `npm run check` passes lint, context
+verification, 80 files / 1,336 tests / 10 declared skips, TypeScript/Vite build, and credential
+scanning over 13 outputs; range whitespace is clean. The first standalone review found and the bounded
+fix round repaired restart-stuck empty provisionals and directory-sync replay laundering; the exact
+standalone head `441f5cb` then received a clean CRITICAL/HIGH review. Fresh integration review found
+and the fix head `00e6161` repaired two preflight/foreign-marker legacy-fallback paths; its final
+17-test review, TypeScript check, and whitespace check found no remaining CRITICAL/HIGH blocker.
+Hosted proof, PR/merge, restore consumption, and post-merge sweep remain pending. #165 still
+separately blocks authority for the initially supplied
+successful-report timestamp. No real source, store, legacy path, private/generated data, connector,
+credential, or production caller was inspected or activated.
