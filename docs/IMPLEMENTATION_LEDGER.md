@@ -2662,3 +2662,31 @@ proof, the connector-or-15-minute window, and merge remain pending. No real stor
 connector, activation caller, external-model request, or private input was inspected or used. The
 next vertical after backup is atomic selection/fallback and the seven-day grace boundary;
 restore/tombstone replay and cleanup remain separate slices.
+
+## 2026-08-06 — LIFE-03 selected-store backup merged; singleton hardening candidate
+
+PR #153 merged final head `982f6fbcb835526d9b0d13cdb9fc0469d84ce337` as
+`d0bac814006bada9669d1e414cf741e883131df3`. Exact-head `Prove the pull request` run
+`31087130112` passed; exact-merge Pages/privacy/deploy run `31088363673` passed. Three fresh Terra
+lenses were clean at the final head after the bounded two fix rounds. The exact-head connector then
+raised five findings. All were independently refute-tested with invented fixtures, replied to, and
+resolved under the binding review ceiling: #154 tracks parent-directory durability ordering; #155
+tracks zero/partial pre-durable SQLite and manifest recovery; #156 tracks uppercase canonical task
+IDs plus continuity-authorized key handles; and #157 tracks the singular migration-backup identity.
+The multiple-backup reproduction confirmed the cardinality defect, while current scope-revocation
+maintenance successfully removed both pairs, so a cleanup wedge was not claimed. A thread-aware
+sweep more than ten minutes after merge found no new or unresolved feedback.
+
+The #157 candidate is code heads `343903a` and `d1e24d5`. Schema
+`3.2.2-shadow-life03-backup-singleton` (`user_version=309`) adds a partial UNIQUE index for
+`migration_backup_v1`, a `BEFORE INSERT` guard that prevents `INSERT OR REPLACE` from deleting the
+existing row, and catalogue cardinality assertion. Public invented-fixture proof covers exact
+same-identity replay, distinct timestamp/identity refusal with no second files, staged/pending/
+deleting refusal, complete application-controlled deletion, and post-cleanup recreation. A direct
+SQL fixture proves REPLACE cannot bypass the singleton or disturb the original row. Focused backup
+proof passes 24 tests. The exact code/state working head passed the full local gate: 76 files / 1,248
+tests / 6 declared skips, lint, context verification (27 Markdown / 12 required), TypeScript/build,
+credential scanning over 13 outputs, and range whitespace checks. Hosted proof and exact-final-head
+review remain pending. No real store, legacy source, connector, activation caller, external-model
+request, or private input was inspected or used. Issues #154-#156 and the full grace/restore path
+remain prerequisites to any real invocation.
