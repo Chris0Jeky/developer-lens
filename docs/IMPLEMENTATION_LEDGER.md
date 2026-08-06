@@ -2369,23 +2369,23 @@ below is history. The live resume point is the rest of the analytics-core kernel
 
 ## 2026-08-06 — late-review truth repair, LIFE-02 B3, and B-2 promotion hardening (PRs #132, #136, #138)
 
-- **PR #132** (merge 6b60dce, heads 19eb4f7/991f952/5d64d30 all hosted-green): shared runtime
+- **PR #132** (merge 6b60dce, heads 19eb4f7 (run 31053538930), 991f952 (run 31054656012), 5d64d30 (run 31055488517) all hosted-green): shared runtime
   evidence contract shared/whyContract.ts (strict schemas, projection-reference coherence,
   pinned versions, capability-registry binding); the four untriaged post-merge findings from
   PRs #127/#131 fixed with discriminating tests (11 of 18 client tests fail against the old
   resolver; the legacy deletion-ID substitution was proven accepted pre-fix and refused
   post-fix). Round-three findings tracked on #135; the adversarially reproduced
   preserved-scope-id digest escape tracked as #133. Post-merge sweep clean.
-- **PR #136** (merge 7633444, heads 80f7432/5f2b071/8e4257e hosted-green): LIFE-02 B3 —
+- **PR #136** (merge 7633444, heads 80f7432 (run 31057203977: type-check FAIL, fixed next head), 5f2b071 (run 31058281133 green), 8e4257e (run 31059434729 green)): LIFE-02 B3 —
   server/storage/v3Deletion.ts complete scope deletion (closed 20-table registry, scope-unbound
   tombstones under one del- operation, replay/conflict fail-closed, per-stage rollback, CAS
   cascade via in-transaction trigger drop/recreate, WAL/VACUUM saga); schema v3.1.0-shadow-b3
   (user_version 306); CAS phantom-scope refusal + 13-month receipt expiry with receipt_expired
   replay; v2_coverage_record flipped to delete disposition, killing the bridge/planner
-  workaround; the CLI journey runs the product order. 16 new deletion tests; 124 across the
+  workaround; the CLI journey runs the product order. 17 new deletion tests (nine plus the eight-stage rollback matrix); 124 across the
   affected suites. Round-three findings tracked on #80 (tombstone C1-window expiry) and #128
   (clock-read placement). Post-merge sweep clean.
-- **PR #138** (merge 4770c57, heads 1ca9824/ce492b4 hosted-green): mint-order equivalence proof
+- **PR #138** (merge 4770c57, heads 1ca9824 (run 31064891154 green), ce492b4 (run 31065982736 green)): mint-order equivalence proof
   replaces graph colouring (net -244 lines; #133 closed; private mintedCollector channel;
   REPLACE-proof owner guards); #86 storage half closed (cov- CHECK + UNIQUE(coverage_id),
   fixtures migrated, pre-#86 stores deliberately fail closed); all ten open #128/#129 findings
