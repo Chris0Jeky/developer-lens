@@ -150,10 +150,22 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
     try {
       installStorageV3ShadowSchema(db)
       const handleA = openStorageV3ArtifactRoot(rootA)
+      const handleA2 = openStorageV3ArtifactRoot(rootA)
       const handleB = openStorageV3ArtifactRoot(rootB)
       bindStorageV3ArtifactRoot(db, handleA)
-      expect(() => bindStorageV3ArtifactRoot(db, handleA)).not.toThrow()
+      expect(() => bindStorageV3ArtifactRoot(db, handleA2)).not.toThrow()
       expectArtifactError(() => bindStorageV3ArtifactRoot(db, handleB))
+      writeInventedSqlite(join(rootB, 'invented-b-only.sqlite'))
+      expect(() => registerStorageV3Artifact({
+        db,
+        kind: 'invented_fixture_store',
+        relativeLocator: 'invented-b-only.sqlite',
+        scopeIds: [SCOPE_A],
+      })).toThrow()
+      expect(existsSync(join(rootB, 'invented-b-only.sqlite'))).toBe(true)
+      expect(db.prepare(
+        'SELECT 1 FROM app_artifact WHERE relative_locator = ?',
+      ).get('invented-b-only.sqlite')).toBeUndefined()
     } finally {
       db.close()
       rmSync(rootA, { recursive: true, force: true })

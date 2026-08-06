@@ -16,10 +16,12 @@ import {
   assertSelectableStorageV3Target,
   StorageV3ShadowMigrationError,
 } from '../server/storage/v3ShadowMigration.js'
+import { completeStorageV3DeletionMaintenance } from '../server/storage/v3Deletion.js'
 import {
   openSelectedStorageV3Store,
   STORAGE_V3_STORE_FILE_NAME,
   STORAGE_V3_TARGET_FILE_NAMES,
+  STORAGE_V3_PUBLICATION_FAILURE_STAGES,
 } from '../server/storage/v3StoreFiles.js'
 import {
   INVENTED_COHORTS,
@@ -184,6 +186,20 @@ describe('store lifecycle command', () => {
     },
   )
 
+  it.skipIf(process.platform === 'win32')(
+    'refuses a dangling selected-store WAL before publication without touching its outside target',
+    () => {
+      const outside = join(tmpdir(), `developer-lens-dangling-selected-wal-${process.pid}.sqlite`)
+      const selectedWal = join(directory, `${STORAGE_V3_STORE_FILE_NAME}-wal`)
+      rmSync(outside, { force: true })
+      symlinkSync(outside, selectedWal, 'file')
+      expect(() => runStoreLifecycleDemo({ directory })).toThrow(StorageV3ShadowMigrationError)
+      expect(existsSync(outside)).toBe(false)
+      expect(existsSync(storePath(directory))).toBe(false)
+      expect(existsSync(selectedWal)).toBe(false)
+    },
+  )
+
   it('refuses to accept a second migration over an existing store', () => {
     runStoreLifecycleDemo({ directory })
     const before = readFileSync(storePath(directory))
@@ -206,6 +222,83 @@ describe('store lifecycle command', () => {
       recovered.close()
     }
   })
+
+  it('proves shared-artifact deletion lineage and explicit survivor catalogue semantics', () => {
+    const result = runStoreLifecycleDemo({ directory, includeSharedArtifactFixture: true })
+    expect(result.deletion.deletionRecords.index_deleted).toBe(1)
+    expect(result.deletion.otherScopesIntact).toBe(true)
+    expect(existsSync(join(directory, 'migration-backup-20260201T000000Z.sqlite'))).toBe(false)
+    expect(existsSync(join(directory, 'invented-survivor-only.sqlite'))).toBe(true)
+    const store = openSelectedStorageV3Store(directory)
+    try {
+      expect(store.prepare(
+        `SELECT COUNT(*) FROM app_artifact_scope
+         WHERE artifact_id IN (
+           SELECT artifact_id FROM app_artifact
+           WHERE relative_locator = 'migration-backup-20260201T000000Z.sqlite'
+         )`,
+      ).pluck().get()).toBe(0)
+      expect(store.prepare(
+        `SELECT kind FROM app_artifact WHERE relative_locator = 'invented-survivor-only.sqlite'`,
+      ).pluck().get()).toBe('invented_fixture_store')
+      expect(store.prepare(
+        `SELECT scope_id, event_kind FROM lineage_event
+         WHERE subject_kind = 'artifact' AND event_kind = 'index_deleted'`,
+      ).all()).toHaveLength(1)
+    } finally { store.close() }
+  })
+
+  it('reopens an interrupted shared-artifact maintenance saga without stranded deletion state', () => {
+    expect(() => runStoreLifecycleDemo({
+      directory,
+      includeSharedArtifactFixture: true,
+      failAfterArtifactStage: (stage) => {
+        if (stage === 'sidecarsDeleted') throw new Error('invented crash')
+      },
+    })).toThrow()
+    const reopened = openSelectedStorageV3Store(directory)
+    try {
+      expect(completeStorageV3DeletionMaintenance(reopened).maintenance).toBe('complete')
+      expect(reopened.prepare(
+        `SELECT 1 FROM app_artifact
+         WHERE relative_locator = 'migration-backup-20260201T000000Z.sqlite'`,
+      ).get()).toBeUndefined()
+      expect(reopened.prepare(
+        `SELECT state FROM app_artifact WHERE state = 'deleting'`,
+      ).get()).toBeUndefined()
+      expect(reopened.prepare(
+        `SELECT scope_id, event_kind FROM lineage_event
+         WHERE subject_kind = 'artifact' AND subject_id = ?`,
+      ).get(`art-${'a'.repeat(64)}`)).toEqual({ scope_id: null, event_kind: 'index_deleted' })
+    } finally { reopened.close() }
+  })
+
+  it.each(STORAGE_V3_PUBLICATION_FAILURE_STAGES)(
+    'leaves one unambiguous publication result after injected %s failure',
+    (stage) => {
+      if (stage === 'rollback-unlink') {
+        const result = runStoreLifecycleDemo({
+          directory,
+          failAtPublicationStage: stage,
+        })
+        expect(result.migration.status).toBe('complete')
+        expect(existsSync(storePath(directory))).toBe(true)
+        expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(false)
+        const reopened = openSelectedStorageV3Store(directory)
+        try {
+          expect(reopened.prepare('SELECT COUNT(*) FROM claim_scope').pluck().get()).toBe(2)
+        } finally { reopened.close() }
+      } else {
+        expect(() => runStoreLifecycleDemo({
+          directory,
+          failAtPublicationStage: stage,
+        })).toThrow(StorageV3ShadowMigrationError)
+        expect(existsSync(storePath(directory))).toBe(false)
+        const reopened = () => openSelectedStorageV3Store(directory)
+        expect(reopened).toThrow()
+      }
+    },
+  )
 
   it('refuses every invocation without the environment flag and an explicit directory', () => {
     const lines: string[] = []

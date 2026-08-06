@@ -156,9 +156,15 @@ export function bindStorageV3ArtifactRoot(
   root: StorageV3ArtifactRoot,
 ): void {
   if (!db?.open) fail()
-  rootIdentity(root)
+  const requested = rootIdentity(root)
   const existing = STORE_ROOTS.get(db)
-  if (existing !== undefined && existing !== root) fail()
+  if (existing !== undefined) {
+    const bound = rootIdentity(existing)
+    if (
+      bound.path !== requested.path
+      || !sameIdentity(bound, requested)
+    ) fail()
+  }
   STORE_ROOTS.set(db, root)
 }
 

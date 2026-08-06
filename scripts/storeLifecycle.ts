@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { mkdirSync, rmSync } from 'node:fs'
+import { existsSync, mkdirSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type Database from 'better-sqlite3'
+import Database from 'better-sqlite3'
 import { CLAIM_SCHEMA_VERSION, computeClaimId } from '../shared/claims.js'
 import { CANONICAL_ENVELOPE_SCHEMA_VERSION } from '../shared/provenance.js'
 import { SYNTHETIC_STORE_MARKER } from '../server/api/v2/contract.js'
@@ -31,6 +31,9 @@ import { sweepStorageV3C2 } from '../server/storage/v3ShadowSweep.js'
 import {
   createStorageV3TargetFactory,
   openSelectedStorageV3Store,
+  registerStorageV3Artifact,
+  type StorageV3ArtifactDeletionStage,
+  type StorageV3PublicationFailureStage,
 } from '../server/storage/v3StoreFiles.js'
 
 /**
@@ -314,13 +317,14 @@ export function migrateInventedSource(
   source: InventedV2Source,
   directory: string,
   failAfterStage?: StorageV3ShadowMigrationOptions['failAfterStage'],
+  failAtPublicationStage?: StorageV3PublicationFailureStage,
 ): MigrationProof {
   const result = orchestrateStorageV3ShadowMigration({
     sourceDb: source.db,
     identityBindings: source.identityBindings,
     installationKey: source.installationKey,
     asOf: STORE_LIFECYCLE_TIMELINE.migrationAsOf,
-    targetFactory: createStorageV3TargetFactory(directory),
+    targetFactory: createStorageV3TargetFactory(directory, { failAtPublicationStage }),
     failAfterStage,
   })
   return { status: result.status, checksumLength: result.checksum.length }
@@ -363,6 +367,57 @@ export function proveContinuityCasRestart(
   }
 }
 
+interface LifecycleArtifactFixture {
+  readonly sharedLocator: string
+  readonly sharedArtifactId: string
+  readonly otherLocator: string
+  readonly otherArtifactId: string
+}
+
+/** Add only invented, app-owned files for the B4 deletion proof. */
+function addLifecycleArtifactFixture(
+  store: Database.Database,
+  directory: string,
+  deletedScopeId: string,
+): LifecycleArtifactFixture {
+  const survivors = store.prepare(
+    'SELECT scope_id FROM claim_scope WHERE scope_id <> ? ORDER BY scope_id',
+  ).pluck().all(deletedScopeId) as string[]
+  const survivor = survivors[0]
+  if (typeof survivor !== 'string') throw new Error('STORE_LIFECYCLE_NO_SURVIVOR')
+  const createArtifact = (locator: string): void => {
+    const artifact = new Database(join(directory, locator))
+    try {
+      artifact.exec('CREATE TABLE invented_fixture (value INTEGER) STRICT')
+      artifact.prepare('INSERT INTO invented_fixture (value) VALUES (1)').run()
+    } finally { artifact.close() }
+  }
+  const sharedLocator = 'migration-backup-20260201T000000Z.sqlite'
+  const otherLocator = 'invented-survivor-only.sqlite'
+  createArtifact(sharedLocator)
+  createArtifact(otherLocator)
+  const shared = registerStorageV3Artifact({
+    db: store,
+    kind: 'migration_backup_v1',
+    relativeLocator: sharedLocator,
+    scopeIds: [deletedScopeId, survivor],
+    artifactId: `art-${'a'.repeat(64)}`,
+  }).artifactId
+  const other = registerStorageV3Artifact({
+    db: store,
+    kind: 'invented_fixture_store',
+    relativeLocator: otherLocator,
+    scopeIds: [survivor],
+    artifactId: `art-${'b'.repeat(64)}`,
+  }).artifactId
+  store.prepare(`INSERT INTO lineage_event (
+    scope_id, subject_kind, subject_id, operation_id, capability_id,
+    caused_by, event_kind, event_week
+  ) VALUES (?, 'artifact', ?, ?, 'github.core', NULL, 'index_built', ?)`)
+    .run(survivor, shared, `op-${'1'.repeat(64)}`, '2026-W05')
+  return { sharedLocator, sharedArtifactId: shared, otherLocator, otherArtifactId: other }
+}
+
 export interface ScopeDeletionProof {
   readonly status: 'deleted'
   readonly replay: 'replayed'
@@ -385,6 +440,12 @@ export interface ScopeDeletionProof {
 export function proveScopeDeletion(
   store: Database.Database,
   scopeId: string,
+  options: Readonly<{
+    failAfterArtifactStage?: (
+      stage: StorageV3ArtifactDeletionStage,
+      completedArtifacts: number,
+    ) => void
+  }> = {},
 ): ScopeDeletionProof {
   const otherScopes = (store.prepare('SELECT scope_id FROM claim_scope WHERE scope_id <> ? ORDER BY scope_id')
     .pluck().all(scopeId) as string[])
@@ -409,7 +470,9 @@ export function proveScopeDeletion(
     asOf: STORE_LIFECYCLE_TIMELINE.deletionAsOf,
     operationId: result.operationId,
   })
-  const maintenance = completeStorageV3DeletionMaintenance(store)
+  const maintenance = completeStorageV3DeletionMaintenance(store, {
+    failAfterArtifactStage: options.failAfterArtifactStage,
+  })
   const deletionRecords: Record<string, number> = {}
   for (const entry of readStorageV3DeletionLineage(store)) {
     deletionRecords[entry.eventKind] = (deletionRecords[entry.eventKind] ?? 0) + 1
@@ -478,6 +541,12 @@ export interface StoreLifecycleDemoOptions {
   readonly directory: string
   readonly log?: (line: string) => void
   readonly failAfterStage?: StorageV3ShadowMigrationOptions['failAfterStage']
+  readonly failAtPublicationStage?: StorageV3PublicationFailureStage
+  readonly includeSharedArtifactFixture?: boolean
+  readonly failAfterArtifactStage?: (
+    stage: StorageV3ArtifactDeletionStage,
+    completedArtifacts: number,
+  ) => void
   readonly sweepAsOf?: string
 }
 
@@ -515,7 +584,12 @@ export function runStoreLifecycleDemo(
   let deletableAlias: string
   try {
     emit(`source: invented scopes=${source.scopes} claims=${source.claims} cohorts=${INVENTED_COHORTS.length + 1} bridge=present`)
-    migration = migrateInventedSource(source, options.directory, options.failAfterStage)
+    migration = migrateInventedSource(
+      source,
+      options.directory,
+      options.failAfterStage,
+      options.failAtPublicationStage,
+    )
     emit(`migration: status=${migration.status} checksum-digits=${migration.checksumLength}`)
     deletableAlias = createInstallationAliases(source.installationKey)
       .repositoryProviderId(source.deletableRawProviderId)
@@ -536,7 +610,17 @@ export function runStoreLifecycleDemo(
     emit(`cas: scopes=${cas.scopes} first=${cas.firstApply} restart=${cas.replayApply} revisions=${cas.revisions.join(',')}`)
     sweep = sweepSelectedStore(store, options.sweepAsOf ?? STORE_LIFECYCLE_TIMELINE.sweepAsOf)
     emit(`sweep: status=${sweep.status} cleared=${sweep.clearedTotal} cas-receipts=${sweep.casReceiptsCleared} lineage=${sweep.lineageEvents} ${counts(sweep.cleared)}`)
-    deletion = proveScopeDeletion(store, deletableScopeId)
+    const artifactFixture = options.includeSharedArtifactFixture
+      ? addLifecycleArtifactFixture(store, options.directory, deletableScopeId)
+      : undefined
+    deletion = proveScopeDeletion(store, deletableScopeId, {
+      failAfterArtifactStage: options.failAfterArtifactStage,
+    })
+    if (artifactFixture !== undefined) {
+      if (existsSync(join(options.directory, artifactFixture.sharedLocator))) {
+        throw new Error('STORE_LIFECYCLE_SHARED_ARTIFACT_REMAINS')
+      }
+    }
     emit(`deletion: status=${deletion.status} replay=${deletion.replay} rows-removed=${deletion.rowsRemoved} tombstones=${deletion.tombstonesWritten} remaining-scopes=${deletion.remainingScopes} others-intact=${deletion.otherScopesIntact ? 'yes' : 'NO'} cas-remaining=${deletion.casScopesRemaining} maintenance=${deletion.maintenance} ${counts(deletion.deletionRecords)}`)
   } finally {
     store.close()
