@@ -16,6 +16,7 @@ import {
 import Database from 'better-sqlite3'
 import {
   assertPublishedStorageV3ArtifactCatalogue,
+  assertStorageV3ArtifactCatalogue,
   bindStorageV3ArtifactRoot,
   beginStorageV3MigrationBackupArtifact,
   promoteStorageV3MigrationBackupArtifact,
@@ -53,7 +54,11 @@ export type StorageV3BackupInput = Readonly<{
   artifactId: string
   ownerScopeIds: readonly string[]
   installationKey: TaskInstallationKeyHandle
+  /** @internal invented-fixture failure injection only. */
+  failAfterStage?: (stage: StorageV3BackupStage) => void
 }>
+export const STORAGE_V3_BACKUP_STAGES = ['intentCommitted', 'sqliteTempDurable', 'manifestTempDurable', 'sqliteFinalLinked', 'manifestFinalLinked', 'cataloguePromoted', 'sqliteTempUnlinked', 'manifestTempUnlinked'] as const
+export type StorageV3BackupStage = typeof STORAGE_V3_BACKUP_STAGES[number]
 
 export type StorageV3BackupResult = Readonly<{
   artifactId: string
@@ -149,8 +154,10 @@ function replayIfExact(input: StorageV3BackupInput, locator: string, manifestLoc
   const finalEntry = stat(finalPath)
   const manifestEntry = stat(manifestPath)
   if (finalEntry === undefined && manifestEntry === undefined) return undefined
-  if (finalEntry === undefined || manifestEntry === undefined) fail()
-  const contentSha256 = physicalHash(finalPath)
+  if (finalEntry === undefined || manifestEntry === undefined) return undefined
+  const staged = input.db.prepare('SELECT 1 FROM app_artifact WHERE artifact_id = ? AND kind = \'migration_backup_v1\' AND relative_locator = ? AND state = \'active\'').get(input.artifactId, `${locator}.tmp`)
+  if (staged) return undefined
+  const contentSha256 = physicalHash(finalPath, finalEntry.nlink)
   const manifestBytes = readFileSync(manifestPath)
   const manifestSha256 = sha256(manifestBytes)
   let parsed: Record<string, unknown>
@@ -186,7 +193,6 @@ function validateBackupDb(path: string): void {
 function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<StorageV3BackupResult> {
   assertInput(input)
   bindStorageV3ArtifactRoot(input.db, input.root)
-  assertPublishedStorageV3ArtifactCatalogue(input.db)
   const source = storageV3ArtifactFilePath(input.root, 'v3-store.sqlite')
   if (typeof input.db.name !== 'string' || input.db.name !== source) fail()
   sidecarsAbsent(source)
@@ -196,18 +202,26 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
   const manifestTemp = `${temp}.manifest.json`
   const replay = replayIfExact(input, locator, manifestLocator)
   if (replay) return replay
-  for (const path of [storageV3ArtifactFilePath(input.root, locator), storageV3ArtifactFilePath(input.root, manifestLocator)]) assertAbsent(path)
   const stagedRow = input.db.prepare("SELECT artifact_id, content_sha256 FROM app_artifact WHERE kind = 'migration_backup_v1' AND relative_locator = ? AND state = 'active'").get(temp) as { artifact_id: string; content_sha256: string } | undefined
+  if (stagedRow) assertStorageV3ArtifactCatalogue(input.db)
+  else assertPublishedStorageV3ArtifactCatalogue(input.db)
   if (stagedRow && stagedRow.artifact_id !== input.artifactId) fail()
+  if (!stagedRow) for (const path of [storageV3ArtifactFilePath(input.root, locator), storageV3ArtifactFilePath(input.root, manifestLocator)]) assertAbsent(path)
   if (!stagedRow) {
     assertAbsent(storageV3ArtifactFilePath(input.root, temp)); assertAbsent(storageV3ArtifactFilePath(input.root, manifestTemp))
     beginStorageV3MigrationBackupArtifact({ db: input.db, artifactId: input.artifactId, finalLocator: locator, scopeIds: input.ownerScopeIds })
+    input.failAfterStage?.('intentCommitted')
   }
   const tempPath = storageV3ArtifactFilePath(input.root, temp)
   const finalPath = storageV3ArtifactFilePath(input.root, locator)
   const manifestPath = storageV3ArtifactFilePath(input.root, manifestLocator)
   const manifestTempPath = storageV3ArtifactFilePath(input.root, manifestTemp)
-  const descriptor = openSync(tempPath, stagedRow ? constants.O_RDWR | NO_FOLLOW : constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | NO_FOLLOW, 0o600)
+  if (stagedRow) {
+    if (stat(finalPath) !== undefined) unlinkSync(finalPath)
+    if (stat(manifestPath) !== undefined) unlinkSync(manifestPath)
+  }
+  const tempExists = stat(tempPath) !== undefined
+  const descriptor = openSync(tempPath, tempExists ? constants.O_RDWR | NO_FOLLOW : constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | NO_FOLLOW, 0o600)
   const initial = fstatSync(descriptor, { bigint: true })
   if (!initial.isFile() || initial.isSymbolicLink() || initial.nlink !== 1n || initial.dev === 0n || initial.ino === 0n) {
     closeSync(descriptor)
@@ -220,19 +234,26 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
       if (!afterBackup.isFile() || afterBackup.isSymbolicLink() || afterBackup.dev !== initial.dev || afterBackup.ino !== initial.ino || afterBackup.nlink < 1n || afterBackup.size === 0n) fail()
       const contentSha256 = physicalHash(tempPath)
       validateBackupDb(tempPath)
+      input.failAfterStage?.('sqliteTempDurable')
       const manifest = makeManifest(input, locator, contentSha256)
       if (stagedRow && stat(manifestTempPath) !== undefined) unlinkSync(manifestTempPath)
       writeFileSync(manifestTempPath, manifest.bytes, { flag: 'wx', mode: 0o600 })
       const manifestSha256 = sha256(readFileSync(manifestTempPath))
+      input.failAfterStage?.('manifestTempDurable')
       if (stat(finalPath) === undefined) linkSync(tempPath, finalPath)
       const tempStat = assertRegular(tempPath, 2n); const finalStat = assertRegular(finalPath, 2n)
       if (tempStat.dev !== finalStat.dev || tempStat.ino !== finalStat.ino || tempStat.nlink !== 2n) fail()
+      input.failAfterStage?.('sqliteFinalLinked')
       if (stat(manifestPath) === undefined) linkSync(manifestTempPath, manifestPath)
       const manifestTempStat = assertRegular(manifestTempPath, 2n); const manifestFinalStat = assertRegular(manifestPath, 2n)
       if (manifestTempStat.dev !== manifestFinalStat.dev || manifestTempStat.ino !== manifestFinalStat.ino || manifestTempStat.nlink !== 2n) fail()
+      input.failAfterStage?.('manifestFinalLinked')
       if (physicalHash(finalPath, 2n) !== contentSha256 || sha256(readFileSync(manifestPath)) !== manifestSha256) fail()
       promoteStorageV3MigrationBackupArtifact({ db: input.db, artifactId: input.artifactId, stagedLocator: temp, finalLocator: locator, contentSha256, manifestSha256 })
+      input.failAfterStage?.('cataloguePromoted')
       unlinkSync(tempPath); unlinkSync(manifestTempPath)
+      input.failAfterStage?.('sqliteTempUnlinked')
+      input.failAfterStage?.('manifestTempUnlinked')
       if (assertRegular(finalPath).nlink !== 1n || assertRegular(manifestPath).nlink !== 1n) fail()
       return Object.freeze({ artifactId: input.artifactId, locator, manifestLocator, contentSha256, manifestSha256 })
     } catch (error) {

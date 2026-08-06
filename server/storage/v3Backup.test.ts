@@ -4,7 +4,7 @@ import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { describe, expect, it } from 'vitest'
 import { createStorageV3ArtifactRoot, STORAGE_V3_ARTIFACT_LOCATORS } from './v3ArtifactCatalogue.js'
-import { createStorageV3MigrationBackup, StorageV3BackupError } from './v3Backup.js'
+import { createStorageV3MigrationBackup, recoverStorageV3MigrationBackup, STORAGE_V3_BACKUP_STAGES, StorageV3BackupError, type StorageV3BackupStage } from './v3Backup.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 import { setupTaskInstallationKey, taskInstallationKeyTestSeams } from './taskInstallationKey.js'
 
@@ -58,6 +58,19 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       await expect(createStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
       await expect(createStorageV3MigrationBackup({ ...input, backupAt: '2026-08-06T12:34:56Z', artifactId: `art-${'3'.repeat(64)}` })).resolves.toBeDefined()
       await expect(createStorageV3MigrationBackup({ ...input, backupAt: '2026-08-06T12:34:56Z', artifactId: `art-${'4'.repeat(64)}` })).rejects.toBeInstanceOf(StorageV3BackupError)
+    } finally { fx.cleanup() }
+  })
+
+  it.each(STORAGE_V3_BACKUP_STAGES)('recovers after durable stage %s', async (stage) => {
+    const fx = await fixture()
+    try {
+      const input = { db: fx.db, root: createStorageV3ArtifactRoot(fx.root), backupAt: '2026-08-06T12:35:56Z', artifactId: `art-${'5'.repeat(64)}`, ownerScopeIds: [SCOPE_A, SCOPE_B], installationKey: fx.key }
+      await expect(createStorageV3MigrationBackup({ ...input, failAfterStage: (seen: StorageV3BackupStage) => { if (seen === stage) throw new Error('injected') } })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const result = await recoverStorageV3MigrationBackup(input)
+      expect(result.locator).toBe('migration-backup-20260806T123556Z.sqlite')
+      expect(existsSync(join(fx.root, `${result.locator}.tmp`))).toBe(false)
+      expect(existsSync(join(fx.root, `${result.locator}.manifest.json.tmp`))).toBe(false)
+      expect(fx.db.prepare('SELECT state, relative_locator FROM app_artifact WHERE artifact_id = ?').get(result.artifactId)).toEqual({ state: 'active', relative_locator: result.locator })
     } finally { fx.cleanup() }
   })
 })
