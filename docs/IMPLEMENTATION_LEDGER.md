@@ -2615,3 +2615,47 @@ with 4 Windows/POSIX skips; the exact rebased full local gate passed 74 files / 
 skips, build, and credential checks. Separate exact-base Terra filesystem and crash reviews were
 clean. Hosted Linux/POSIX proof, connector review, and merge remain pending. Issue #142 stays open
 for hostile same-user ABA/native-VFS criteria 3/4; this candidate claims only one compliant writer.
+
+## 2026-08-06 — LIFE-03 single-writer lease merged; selected-store backup candidate
+
+PR #152 merged final head `5c1e3085867026bfc971a62e5678dcafab3c596f` as
+`ee20d63118072134508393616b896dc7b27dd7e5`. Exact-head `Prove the pull request` run
+`31083302290` passed, and exact-merge Pages/privacy/deploy run `31083561314` passed. The lease owns
+one fixed app-root marker through Promise settlement, prevents a second compliant writer from
+reaching its callback, and leaves crash recovery manual-only after every writer is stopped. Issue
+#142 remains open for hostile same-user ABA/native-VFS criteria 3/4.
+
+The PR did **not** satisfy the binding pre-merge review-timing protocol. It merged at
+08:06:46Z, less than four minutes after the final push/check dispatch, with no exact-head connector
+result and before the required 15-minute fallback window. A later thread-aware sweep remained empty
+and the merge deployment was green, but neither fact retroactively repairs the missed pre-merge
+gate. This is a recorded process defect; it is not evidence that the gate passed.
+
+The selected-store backup candidate is code head `98d3c95`. Schema `3.2.1-shadow-life03-backup`
+(`user_version=308`) records a staged catalogue intent before any backup bytes. Under the merged
+writer lease, the SQLite backup API produces one durable selected-store snapshot while leaving the
+source untouched; a canonical manifest binds its exact content hash, selected artifact identity,
+complete sorted owner set, reviewed task identity, and installation-key HMAC. The temporary and
+final SQLite/manifest paths are an exact no-follow hard-link pair until a single-use private
+publication proof revalidates the physical files, snapshot schema/integrity/foreign keys, owner
+set, key-bound manifest bytes, and catalogue placeholder. A genuine key from another task root and
+a forged publication object both fail before promotion.
+
+Recovery is idempotent across all eight durable stages: intent commit, SQLite temp, manifest temp,
+both final links, catalogue promotion, and the two distinct temp unlinks. It reuses the first
+durable snapshot instead of silently refreshing it, refuses conflicting paths and sidecars, checks
+descriptor/path/link identity plus selected-store lineage, and completes only the exact recorded
+pair. Invented crash/reopen fixtures also prove a live writer marker blocks recovery and that
+post-intent source mutation cannot alter the recovered snapshot.
+
+The first bounded exact-base review round found two HIGH publication blockers: arbitrary hashes
+could be promoted without physical files, and a genuine installation-key handle from another task
+root was accepted. Both are fixed at `98d3c95` with the single-use physical publication proof and
+private task-directory binding. Focused TypeScript plus backup/key/catalogue/proposal proof passes
+4 files / 64 tests / 1 declared skip. The full local gate passes lint, context verification
+(27 Markdown / 12 required), 76 files / 1,248 tests / 6 declared skips, TypeScript/build, and
+credential scanning over 13 outputs. Fresh exact-final-head lifecycle/crash, manifest/recovery, and
+privacy/authority reviews, hosted Linux/POSIX proof, the connector-or-15-minute window, and merge
+remain pending. No real store, legacy source, connector, activation caller, external-model request,
+or private input was inspected or used. The next vertical after backup is atomic selection/fallback
+and the seven-day grace boundary; restore/tombstone replay and cleanup remain separate slices.
