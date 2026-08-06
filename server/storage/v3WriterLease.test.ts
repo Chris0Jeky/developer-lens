@@ -69,6 +69,33 @@ describe('storage v3 writer lease', () => {
     expect(() => withStorageV3WriterLease(root, () => undefined)).not.toThrow()
   })
 
+  it('holds the marker until an asynchronous callback settles', async () => {
+    const { root } = freshRoot()
+    let resolveCallback: (() => void) | undefined
+    const first = withStorageV3WriterLease(root, () => new Promise<void>((resolve) => {
+      resolveCallback = resolve
+    }))
+
+    expect(existsSync(storageV3WriterLeasePath(root))).toBe(true)
+    expect(() => withStorageV3WriterLease(root, () => undefined))
+      .toThrowError(new StorageV3WriterLeaseError(STORAGE_V3_WRITER_LEASE_BUSY))
+    resolveCallback?.()
+    await first
+
+    expect(existsSync(storageV3WriterLeasePath(root))).toBe(false)
+    expect(() => withStorageV3WriterLease(root, () => undefined)).not.toThrow()
+  })
+
+  it('releases an asynchronous callback rejection and permits the next writer', async () => {
+    const { root } = freshRoot()
+    await expect(withStorageV3WriterLease(root, async () => {
+      await Promise.resolve()
+      throw new Error('invented asynchronous callback failure')
+    })).rejects.toThrow('invented asynchronous callback failure')
+    expect(existsSync(storageV3WriterLeasePath(root))).toBe(false)
+    expect(() => withStorageV3WriterLease(root, () => undefined)).not.toThrow()
+  })
+
   it('keeps a crash-held marker busy until manual exact removal', () => {
     const { root } = freshRoot()
     const path = storageV3WriterLeasePath(root)

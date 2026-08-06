@@ -144,15 +144,35 @@ function releaseStorageV3WriterLease(lease: StorageV3WriterLease): void {
   LEASES.delete(lease)
 }
 
-/** Hold the writer descriptor for the complete callback, including failures. */
+function isPromiseLike<T>(value: T | PromiseLike<T>): value is PromiseLike<T> {
+  return value !== null
+    && (typeof value === 'object' || typeof value === 'function')
+    && typeof (value as PromiseLike<T>).then === 'function'
+}
+
+/** Hold the writer descriptor for the complete callback, including asynchronous failures. */
+export function withStorageV3WriterLease<T>(
+  root: StorageV3ArtifactRoot,
+  callback: (lease: StorageV3WriterLease) => PromiseLike<T>,
+): Promise<T>
 export function withStorageV3WriterLease<T>(
   root: StorageV3ArtifactRoot,
   callback: (lease: StorageV3WriterLease) => T,
-): T {
+): T
+export function withStorageV3WriterLease<T>(
+  root: StorageV3ArtifactRoot,
+  callback: (lease: StorageV3WriterLease) => T | PromiseLike<T>,
+): T | Promise<T> {
   const lease = acquireStorageV3WriterLease(root)
   try {
-    return callback(lease)
-  } finally {
+    const result = callback(lease)
+    if (isPromiseLike(result)) {
+      return Promise.resolve(result).finally(() => { releaseStorageV3WriterLease(lease) })
+    }
     releaseStorageV3WriterLease(lease)
+    return result
+  } catch (error) {
+    releaseStorageV3WriterLease(lease)
+    throw error
   }
 }
