@@ -645,6 +645,17 @@ WHEN OLD.artifact_id IS NOT NEW.artifact_id
       AND NEW.deletion_operation_id IS NULL
       AND NEW.deletion_scope_id IS NULL
       AND NEW.deletion_week IS NULL
+      OR (
+      OLD.kind = 'migration_backup_v1'
+      AND OLD.state = 'active'
+      AND OLD.relative_locator GLOB 'migration-backup-????????T??????Z.sqlite.tmp'
+      AND NEW.kind = 'migration_backup_v1'
+      AND NEW.state = 'active'
+      AND NEW.relative_locator = replace(OLD.relative_locator, '.tmp', '')
+      AND NEW.deletion_operation_id IS NULL
+      AND NEW.deletion_scope_id IS NULL
+      AND NEW.deletion_week IS NULL
+      )
     )
   )
 BEGIN

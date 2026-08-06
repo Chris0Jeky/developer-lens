@@ -67,6 +67,7 @@ const SQLITE_HEADER = Buffer.from('SQLite format 3\0', 'binary')
 const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
 const SAFE_LOCATOR = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const MIGRATION_BACKUP_LOCATOR = /^migration-backup-[0-9]{8}T[0-9]{6}Z\.sqlite$/
+const MIGRATION_BACKUP_STAGED_LOCATOR = /^migration-backup-[0-9]{8}T[0-9]{6}Z\.sqlite\.tmp$/
 
 interface RootIdentity {
   readonly path: string
@@ -183,7 +184,7 @@ function validateLocator(kind: StorageV3ArtifactKind, locator: string): void {
   if (kind === 'selected_store' && locator !== STORAGE_V3_ARTIFACT_LOCATORS.selectedStore) fail()
   if (kind === 'migration_primary_temp' && locator !== STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary) fail()
   if (kind === 'migration_replay_temp' && locator !== STORAGE_V3_ARTIFACT_LOCATORS.migrationReplay) fail()
-  if (kind === 'migration_backup_v1' && !MIGRATION_BACKUP_LOCATOR.test(locator)) fail()
+  if (kind === 'migration_backup_v1' && !MIGRATION_BACKUP_LOCATOR.test(locator) && !MIGRATION_BACKUP_STAGED_LOCATOR.test(locator)) fail()
   if (kind === 'invented_fixture_store' && !locator.endsWith('.sqlite')) fail()
 }
 
@@ -374,6 +375,16 @@ function safeRemoveManifestCompanion(root: StorageV3ArtifactRoot, locator: strin
   const entry = lstatEntry(path)
   if (entry === undefined) return
   if (!entry.isFile() || entry.isSymbolicLink() || entry.nlink !== 1n) fail()
+  const stable = captureStableFile(path)
+  assertSameFile(stable)
+  rmSync(path)
+}
+
+function safeRemoveLink(root: StorageV3ArtifactRoot, locator: string): void {
+  const path = artifactPath(root, locator)
+  const entry = lstatEntry(path)
+  if (entry === undefined) return
+  if (!entry.isFile() || entry.isSymbolicLink() || (entry.nlink !== 1n && entry.nlink !== 2n)) fail()
   const stable = captureStableFile(path)
   assertSameFile(stable)
   rmSync(path)
@@ -655,6 +666,39 @@ export function registerStorageV3MigrationBackupArtifact(input: Readonly<{
   return Object.freeze({ artifactId, state: 'active' as const })
 }
 
+export function beginStorageV3MigrationBackupArtifact(input: Readonly<{
+  db: Database.Database
+  artifactId: string
+  finalLocator: string
+  scopeIds: readonly string[]
+}>): Readonly<{ artifactId: string; stagedLocator: string; placeholderSha256: string }> {
+  const stagedLocator = `${input.finalLocator}.tmp`
+  const placeholderSha256 = createHash('sha256').update(`developer-lens.storage-v3-backup-intent.v1\0${input.artifactId}\0${input.finalLocator}`, 'utf8').digest('hex')
+  registerStorageV3MigrationBackupArtifact({
+    db: input.db, artifactId: input.artifactId, relativeLocator: stagedLocator,
+    scopeIds: input.scopeIds, contentSha256: placeholderSha256, manifestSha256: placeholderSha256,
+  })
+  return Object.freeze({ artifactId: input.artifactId, stagedLocator, placeholderSha256 })
+}
+
+export function promoteStorageV3MigrationBackupArtifact(input: Readonly<{
+  db: Database.Database
+  artifactId: string
+  stagedLocator: string
+  finalLocator: string
+  contentSha256: string
+  manifestSha256: string
+}>): void {
+  validateLocator('migration_backup_v1', input.stagedLocator)
+  validateLocator('migration_backup_v1', input.finalLocator)
+  if (!/^[a-f0-9]{64}$/.test(input.contentSha256) || !/^[a-f0-9]{64}$/.test(input.manifestSha256)) fail()
+  if (input.db.prepare(`UPDATE app_artifact SET relative_locator = ?, content_sha256 = ?, manifest_sha256 = ?
+      WHERE artifact_id = ? AND kind = 'migration_backup_v1' AND state = 'active' AND relative_locator = ?`).run(
+    input.finalLocator, input.contentSha256, input.manifestSha256, input.artifactId, input.stagedLocator,
+  ).changes !== 1) fail()
+  assertStorageV3ArtifactCatalogue(input.db)
+}
+
 /** Called inside B3's IMMEDIATE transaction before any owned scope rows disappear. */
 export function scheduleStorageV3ArtifactsForScope(
   db: Database.Database,
@@ -803,7 +847,14 @@ export function completeStorageV3ArtifactDeletions(
     }
     if (kind === 'migration_backup_v1') safeRemoveManifestCompanion(root, row.relative_locator)
     options.failAfterStage?.('sidecarsDeleted', completed)
-    safeRemoveExactFile(root, row.relative_locator)
+    if (kind === 'migration_backup_v1' && row.relative_locator.endsWith('.sqlite.tmp')) {
+      const finalLocator = row.relative_locator.slice(0, -4)
+      safeRemoveLink(root, row.relative_locator)
+      safeRemoveLink(root, finalLocator)
+      safeRemoveManifestCompanion(root, finalLocator)
+    } else {
+      safeRemoveExactFile(root, row.relative_locator)
+    }
     options.failAfterStage?.('fileDeleted', completed)
     if (
       lstatEntry(path) !== undefined

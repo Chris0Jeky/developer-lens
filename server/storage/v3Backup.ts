@@ -17,7 +17,8 @@ import Database from 'better-sqlite3'
 import {
   assertPublishedStorageV3ArtifactCatalogue,
   bindStorageV3ArtifactRoot,
-  registerStorageV3MigrationBackupArtifact,
+  beginStorageV3MigrationBackupArtifact,
+  promoteStorageV3MigrationBackupArtifact,
   storageV3ArtifactFilePath,
   type StorageV3ArtifactRoot,
 } from './v3ArtifactCatalogue.js'
@@ -85,8 +86,8 @@ function assertRegular(path: string, expectedNlink = 1n): BigIntStats {
   } finally { closeSync(fd) }
   return before
 }
-function physicalHash(path: string): string {
-  assertRegular(path)
+function physicalHash(path: string, expectedNlink = 1n): string {
+  assertRegular(path, expectedNlink)
   const fd = openSync(path, constants.O_RDONLY | NO_FOLLOW)
   const hash = createHash('sha256')
   try {
@@ -190,10 +191,11 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
   const locator = `migration-backup-${input.backupAt.replace(/[-:]/g, '').replace('.000Z', 'Z')}.sqlite`
   const manifestLocator = `${locator}.manifest.json`
   const temp = `${locator}.tmp`
-  const manifestTemp = `${manifestLocator}.tmp`
+  const manifestTemp = `${temp}.manifest.json`
   const replay = replayIfExact(input, locator, manifestLocator)
   if (replay) return replay
   for (const path of [storageV3ArtifactFilePath(input.root, locator), storageV3ArtifactFilePath(input.root, manifestLocator), storageV3ArtifactFilePath(input.root, temp), storageV3ArtifactFilePath(input.root, manifestTemp)]) assertAbsent(path)
+  beginStorageV3MigrationBackupArtifact({ db: input.db, artifactId: input.artifactId, finalLocator: locator, scopeIds: input.ownerScopeIds })
   const tempPath = storageV3ArtifactFilePath(input.root, temp)
   const finalPath = storageV3ArtifactFilePath(input.root, locator)
   const manifestPath = storageV3ArtifactFilePath(input.root, manifestLocator)
@@ -220,10 +222,10 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
       linkSync(manifestTempPath, manifestPath)
       const manifestTempStat = assertRegular(manifestTempPath, 2n); const manifestFinalStat = assertRegular(manifestPath, 2n)
       if (manifestTempStat.dev !== manifestFinalStat.dev || manifestTempStat.ino !== manifestFinalStat.ino || manifestTempStat.nlink !== 2n) fail()
+      if (physicalHash(finalPath, 2n) !== contentSha256 || sha256(readFileSync(manifestPath)) !== manifestSha256) fail()
+      promoteStorageV3MigrationBackupArtifact({ db: input.db, artifactId: input.artifactId, stagedLocator: temp, finalLocator: locator, contentSha256, manifestSha256 })
       unlinkSync(tempPath); unlinkSync(manifestTempPath)
       if (assertRegular(finalPath).nlink !== 1n || assertRegular(manifestPath).nlink !== 1n) fail()
-      if (physicalHash(finalPath) !== contentSha256 || sha256(readFileSync(manifestPath)) !== manifestSha256) fail()
-      registerStorageV3MigrationBackupArtifact({ db: input.db, artifactId: input.artifactId, relativeLocator: locator, scopeIds: input.ownerScopeIds, contentSha256, manifestSha256 })
       return Object.freeze({ artifactId: input.artifactId, locator, manifestLocator, contentSha256, manifestSha256 })
     } catch (error) {
       if (error instanceof StorageV3BackupError) throw error
