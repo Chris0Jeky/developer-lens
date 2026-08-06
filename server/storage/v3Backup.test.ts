@@ -59,6 +59,17 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       expect(backup.prepare('SELECT scope_id FROM claim_scope ORDER BY scope_id').pluck().all()).toEqual([SCOPE_A, SCOPE_B])
       backup.close()
       expect(fx.db.prepare('SELECT kind, content_sha256, manifest_sha256 FROM app_artifact WHERE artifact_id = ?').get(result.artifactId)).toMatchObject({ kind: 'migration_backup_v1', content_sha256: result.contentSha256, manifest_sha256: result.manifestSha256 })
+      expect(() => fx.db.prepare(`INSERT OR REPLACE INTO app_artifact (
+          artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator
+        ) VALUES (?, 'migration_backup_v1', 'active', ?, ?, ?)`)
+        .run(
+          `art-${'2'.repeat(64)}`,
+          'e'.repeat(64),
+          'f'.repeat(64),
+          'migration-backup-20260806T123455Z.sqlite',
+        )).toThrow(/STORAGE_V3_ARTIFACT_INVALID/)
+      expect(fx.db.prepare("SELECT artifact_id FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().all())
+        .toEqual([result.artifactId])
     } finally { fx.cleanup() }
   })
 
@@ -67,8 +78,16 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
     try {
       const input = { db: fx.db, root: createStorageV3ArtifactRoot(fx.root), backupAt: '2026-08-06T12:34:56.000Z', artifactId: `art-${'2'.repeat(64)}`, ownerScopeIds: [SCOPE_A, SCOPE_B], installationKey: fx.key }
       await expect(createStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
-      await expect(createStorageV3MigrationBackup({ ...input, backupAt: '2026-08-06T12:34:56Z', artifactId: `art-${'3'.repeat(64)}` })).resolves.toBeDefined()
-      await expect(createStorageV3MigrationBackup({ ...input, backupAt: '2026-08-06T12:34:56Z', artifactId: `art-${'4'.repeat(64)}` })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const first = { ...input, backupAt: '2026-08-06T12:34:56Z', artifactId: `art-${'3'.repeat(64)}` }
+      await expect(createStorageV3MigrationBackup(first)).resolves.toBeDefined()
+      await expect(createStorageV3MigrationBackup(first)).resolves.toBeDefined()
+      await expect(createStorageV3MigrationBackup({ ...first, artifactId: `art-${'4'.repeat(64)}` })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const retry = { ...first, backupAt: '2026-08-06T12:34:57Z', artifactId: `art-${'5'.repeat(64)}` }
+      await expect(createStorageV3MigrationBackup(retry)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(1)
+      for (const suffix of ['', '.tmp', '.manifest.json', '.tmp.manifest.json']) {
+        expect(existsSync(join(fx.root, `migration-backup-20260806T123457Z.sqlite${suffix}`))).toBe(false)
+      }
     } finally { fx.cleanup() }
   })
 
@@ -156,6 +175,14 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       const input = { db: fx.db, root: createStorageV3ArtifactRoot(fx.root), backupAt: '2026-08-06T12:35:56Z', artifactId: `art-${'5'.repeat(64)}`, ownerScopeIds: [SCOPE_A, SCOPE_B], installationKey: fx.key }
       await expect(createStorageV3MigrationBackup({ ...input, failAfterStage: (seen: StorageV3BackupStage) => { if (seen === stage) throw new Error('injected') } })).rejects.toBeInstanceOf(StorageV3BackupError)
       const locator = 'migration-backup-20260806T123556Z.sqlite'
+      if (stage === 'intentCommitted') {
+        const retry = { ...input, backupAt: '2026-08-06T12:35:57Z', artifactId: `art-${'6'.repeat(64)}` }
+        await expect(createStorageV3MigrationBackup(retry)).rejects.toBeInstanceOf(StorageV3BackupError)
+        expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(1)
+        for (const suffix of ['', '.tmp', '.manifest.json', '.tmp.manifest.json']) {
+          expect(existsSync(join(fx.root, `migration-backup-20260806T123557Z.sqlite${suffix}`))).toBe(false)
+        }
+      }
       if (stage === 'sqliteTempUnlinked') {
         expect(existsSync(join(fx.root, `${locator}.tmp`))).toBe(false)
         expect(existsSync(join(fx.root, `${locator}.tmp.manifest.json`))).toBe(true)
@@ -226,12 +253,30 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
         asOf: '2026-08-13T12:37:56.000Z',
         randomBytes: () => Buffer.alloc(32, 9),
       })
+      const retryAfterPending = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:37:57Z',
+        artifactId: `art-${'9'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A],
+        installationKey: fx.key,
+      }
+      await expect(createStorageV3MigrationBackup(retryAfterPending)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(fx.db.prepare('SELECT state FROM app_artifact WHERE artifact_id = ?').pluck().get(input.artifactId)).toBe('pending')
+      expect(() => completeStorageV3DeletionMaintenance(fx.db, {
+        failAfterArtifactStage: (stage) => { if (stage === 'markedDeleting') throw new Error('injected') },
+      })).toThrow()
+      await expect(createStorageV3MigrationBackup(retryAfterPending)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(fx.db.prepare('SELECT state FROM app_artifact WHERE artifact_id = ?').pluck().get(input.artifactId)).toBe('deleting')
       expect(completeStorageV3DeletionMaintenance(fx.db)).toMatchObject({ maintenance: 'complete', artifactsDeleted: 1 })
       const locator = 'migration-backup-20260806T123756Z.sqlite'
       for (const suffix of ['', '.tmp', '.manifest.json', '.tmp.manifest.json']) {
         expect(existsSync(join(fx.root, `${locator}${suffix}`))).toBe(false)
       }
       expect(fx.db.prepare('SELECT 1 FROM app_artifact WHERE artifact_id = ?').get(input.artifactId)).toBeUndefined()
+      const recreated = await createStorageV3MigrationBackup(retryAfterPending)
+      expect(recreated.locator).toBe('migration-backup-20260806T123757Z.sqlite')
+      expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(1)
     } finally { fx.cleanup() }
   })
 })

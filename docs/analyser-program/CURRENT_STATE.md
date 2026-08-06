@@ -8,12 +8,12 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-06
-current_slice_override: 'Activation enforcement and the LIFE-03 single-writer lease merged through
-  PR #152. The active vertical is the timestamped selected-store backup: intent precedes bytes,
-  the SQLite snapshot and exact key-bound manifest publish as one recoverable pair, and every stage
-  runs under the fixed app-root writer lease. Next land this backup, then grace, restore, and
-  tombstone replay.'
-phase: 'R4 active horizon OPEN. B4 storage, PR #149 lifecycle safety, PR #150 tracked-source activation enforcement, and PR #152 single-writer enforcement are the foundation; LIFE-03 is active. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
+current_slice_override: 'Activation enforcement, the single-writer lease, and the LIFE-03
+  selected-store backup merged through PR #153. The active vertical is #157: enforce one migration
+  backup across staged, published, pending, and deleting states before grace can select a unique
+  pair. Then close #156 and crash-durability issues #154/#155 before grace, restore, and tombstone
+  replay.'
+phase: 'R4 active horizon OPEN. B4 storage, PR #149 lifecycle safety, PR #150 tracked-source activation enforcement, PR #152 single-writer enforcement, and PR #153 selected-store backup are the foundation; LIFE-03 hardening is active. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -22,9 +22,10 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
   their engineering record stays in the ledger', 'DL-LIFE-02 B3 #136 and B4 #141',
   'wait-window hardening #144/#145, mint-order hardening #148, post-B4 hardening #146,
-  lifecycle safety #149, tracked-source activation enforcement #150, single-writer lease #152',
+  lifecycle safety #149, tracked-source activation enforcement #150, single-writer lease #152,
+  selected-store backup #153',
   'state syncs #126']
-active_slice: 'DL-LIFE-03 timestamped selected-store backup: record catalogue intent before bytes, use the SQLite backup API under the merged writer lease, publish the exact snapshot plus installation-key-bound manifest as a recoverable pair, and prove all eight crash stages. Then implement untouched legacy source, atomic selection/fallback, seven-day grace, restart, restore/tombstone replay, cleanup, and WAL/SHM handling. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
+active_slice: 'DL-LIFE-03 backup hardening: #157 adds a SQL-level singleton plus REPLACE-resistant insert guard so a different timestamp/identity cannot create a second pair and an exact replay stays idempotent; complete deletion must remove the prior row before recreation. Next #156 binds canonical task IDs and continuity-authorized keys, then #154/#155 close directory-ordering and pre-durable recovery. After those implement untouched legacy source, atomic selection/fallback, seven-day grace, restore/tombstone replay, cleanup, and WAL/SHM handling. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -35,7 +36,7 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No owner blocker for invented-fixture work. A real migration/connector still requires the LIFE-03 backup/grace/restore/tombstone-replay proof to merge, #151, and a separately reviewed production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a pre-LIFE-03 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
+blockers: 'No owner blocker for invented-fixture work. A real migration/connector still requires #154-#157, LIFE-03 grace/restore/tombstone-replay proof, #151, and a separately reviewed production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a pre-LIFE-03 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -148,6 +149,10 @@ residual_risks:
      only about four minutes elapsed after the final push and no exact-head connector result had
      arrived. A later empty thread sweep and green merge deployment do not retroactively satisfy
      that pre-merge gate; this is retained as a process defect, not recast as compliant evidence.'
+  - 'PR #153 merged the selected-store backup after exact-head CI, three Terra lenses, exact-head
+     connector triage, and a clean delayed post-merge sweep. Connector findings are executable
+     follow-ups: #154 parent-directory durability, #155 pre-durable temp recovery, #156 canonical
+     task-ID/key continuity, and #157 singleton backup identity. None authorizes real activation.'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,
      producer-absence limiting codes, canonical coverage-code registration'
   - '#86 RESOLVED at the connector on fable/boundary-and-reachability: coverageId is a required

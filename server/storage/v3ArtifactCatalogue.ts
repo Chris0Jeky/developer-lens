@@ -713,6 +713,7 @@ export function assertStorageV3ArtifactCatalogue(db: Database.Database): void {
   const maintenance = readMaintenance(db)
   const liveScopes = new Set(db.prepare('SELECT scope_id FROM claim_scope').pluck().all() as string[])
   let selectedStores = 0
+  let migrationBackups = 0
   for (const row of artifactRows(db)) {
     const kind = row.kind as StorageV3ArtifactKind
     const state = row.state as StorageV3ArtifactState
@@ -721,6 +722,7 @@ export function assertStorageV3ArtifactCatalogue(db: Database.Database): void {
     if (!(STORAGE_V3_ARTIFACT_STATES as readonly string[]).includes(state)) fail()
     validateLocator(kind, row.relative_locator)
     if (kind === 'migration_backup_v1') {
+      migrationBackups += 1
       if (!/^[0-9a-f]{64}$/.test(row.manifest_sha256)) fail()
       if (row.relative_locator.endsWith('.sqlite.tmp')) {
         const finalLocator = row.relative_locator.slice(0, -4)
@@ -755,6 +757,7 @@ export function assertStorageV3ArtifactCatalogue(db: Database.Database): void {
     }
   }
   if (selectedStores > 1) fail()
+  if (migrationBackups > 1) fail()
   if (maintenance.state === 'complete' && artifactRows(db).some(({ state }) => state !== 'active')) fail()
 }
 

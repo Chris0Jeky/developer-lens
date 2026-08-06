@@ -28,9 +28,9 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.1-shadow-life03-backup' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.2-shadow-life03-backup-singleton' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 308
+export const STORAGE_V3_SHADOW_USER_VERSION = 309
 
 /**
  * B4's closed app-owned artifact domain.  Analysis packs are deliberately absent:
@@ -91,6 +91,7 @@ export const STORAGE_V3_ARTIFACT_TABLES = [
 export type StorageV3ArtifactTable = typeof STORAGE_V3_ARTIFACT_TABLES[number]
 export const STORAGE_V3_ARTIFACT_TRIGGER_NAMES = Object.freeze([
   'storage_v3_artifact_insert_guard',
+  'storage_v3_migration_backup_singleton_guard',
   'storage_v3_artifact_delete_guard',
   'storage_v3_artifact_identity_immutable',
   'storage_v3_artifact_scope_delete_guard',
@@ -623,6 +624,15 @@ WHEN EXISTS (
   WHERE existing.artifact_id = NEW.artifact_id
      OR existing.relative_locator = NEW.relative_locator
 )
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE UNIQUE INDEX IF NOT EXISTS storage_v3_migration_backup_singleton
+ON app_artifact (kind) WHERE kind = 'migration_backup_v1';
+CREATE TRIGGER IF NOT EXISTS storage_v3_migration_backup_singleton_guard
+BEFORE INSERT ON app_artifact
+WHEN NEW.kind = 'migration_backup_v1'
+  AND EXISTS (SELECT 1 FROM app_artifact WHERE kind = 'migration_backup_v1')
 BEGIN
   SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
 END;
