@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
@@ -475,6 +475,7 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
         installationKey: fx.key,
       }, (phase) => {
         phases.push(phase)
+        if (phase === 'sqliteTempClaim' || phase === 'manifestTempClaim') return
         const row = fx.db.prepare(
           'SELECT relative_locator FROM app_artifact WHERE artifact_id = ?',
         ).pluck().get(artifactId)
@@ -495,7 +496,10 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
         }
       })
       expect(result.locator).toBe(locator)
-      expect(phases).toEqual(['finalNames', 'sqliteTempRemoval', 'manifestTempRemoval'])
+      expect(phases).toEqual([
+        'sqliteTempClaim', 'manifestTempClaim',
+        'finalNames', 'sqliteTempRemoval', 'manifestTempRemoval',
+      ])
     } finally { fx.cleanup() }
   })
 
@@ -576,6 +580,90 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       ).pluck().get(input.artifactId)).toBe(locator)
       await expect(recoverStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
       expect(readFileSync(tempPath).equals(replacement)).toBe(true)
+    } finally { fx.cleanup() }
+  })
+
+  it('recovers an owned zero/partial SQLite provisional without replacing its inode', async () => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:35:59Z',
+        artifactId: `art-${'e'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123559Z.sqlite'
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAtPhase: (phase) => {
+          if (phase === 'partialSqliteWrite') {
+            writeFileSync(join(fx.root, `${locator}.tmp`), Buffer.from('SQLite format 3', 'binary'))
+            throw new Error('invented partial write')
+          }
+        },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const inode = statSync(join(fx.root, `${locator}.tmp`)).ino
+      const recovered = await recoverStorageV3MigrationBackup(input)
+      expect(recovered.locator).toBe(locator)
+      expect(statSync(join(fx.root, locator)).ino).toBe(inode)
+      expect(fx.db.prepare('SELECT sqlite_content_sha256 FROM migration_backup_attempt WHERE artifact_id = ?').get(input.artifactId)).toBeUndefined()
+    } finally { fx.cleanup() }
+  })
+
+  it('repairs an owned partial manifest on the same inode and rejects overlong bytes', async () => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:36:00Z',
+        artifactId: `art-${'f'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123600Z.sqlite'
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAtPhase: (phase) => {
+          if (phase === 'partialManifestWrite') {
+            writeFileSync(join(fx.root, `${locator}.tmp.manifest.json`), Buffer.from('{"version":"', 'utf8'))
+            throw new Error('invented partial manifest')
+          }
+        },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const inode = statSync(join(fx.root, `${locator}.tmp.manifest.json`)).ino
+      const recovered = await recoverStorageV3MigrationBackup(input)
+      expect(recovered.manifestLocator).toBe(`${locator}.manifest.json`)
+      expect(statSync(join(fx.root, `${locator}.manifest.json`)).ino).toBe(inode)
+      expect(JSON.parse(readFileSync(join(fx.root, `${locator}.manifest.json`), 'utf8'))).toMatchObject({ version: 'migration_backup_v1' })
+    } finally { fx.cleanup() }
+  })
+
+  it('keeps the coherent snapshot when the crash lands before its hash record', async () => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:36:01Z',
+        artifactId: `art-${'0'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123601Z.sqlite'
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAtPhase: (phase) => {
+          if (phase === 'sqliteSnapshotBeforeHash') throw new Error('invented pre-hash crash')
+        },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const original = readFileSync(join(fx.root, `${locator}.tmp`))
+      fx.db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(SCOPE_C)
+      const recovered = await recoverStorageV3MigrationBackup(input)
+      expect(recovered.locator).toBe(locator)
+      expect(readFileSync(join(fx.root, locator)).equals(original)).toBe(true)
     } finally { fx.cleanup() }
   })
 

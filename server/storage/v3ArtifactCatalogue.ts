@@ -1338,6 +1338,15 @@ function validateMigrationBackupPublication(input: MigrationBackupPublication): 
     || manifestPair.temp === undefined || manifestPair.final === undefined) fail()
   const sqliteFinal = sqlitePair.final ?? fail()
   const manifestFinal = manifestPair.final ?? fail()
+  const attempt = readMigrationBackupAttemptRow(input.db, input.artifactId)
+  if (attempt.sqliteDev === null || attempt.sqliteIno === null
+    || attempt.manifestDev === null || attempt.manifestIno === null
+    || attempt.sqliteContentSha256 === null
+    || attempt.sqliteDev !== sqliteFinal.dev.toString(10)
+    || attempt.sqliteIno !== sqliteFinal.ino.toString(10)
+    || attempt.manifestDev !== manifestFinal.dev.toString(10)
+    || attempt.manifestIno !== manifestFinal.ino.toString(10)
+    || attempt.sqliteContentSha256 !== input.contentSha256) fail()
   for (const locator of [input.stagedLocator, input.finalLocator]) {
     if (['-wal', '-shm', '-journal'].some((suffix) => lstatEntry(artifactPath(root, `${locator}${suffix}`)) !== undefined)) fail()
   }
