@@ -198,16 +198,29 @@ function manifestSha256(kind: StorageV3ArtifactKind, locator: string): string {
   return storageV3ArtifactManifestSha256(kind, locator)
 }
 
+export function storageV3MigrationBackupIntentSha256(
+  artifactId: string,
+  finalLocator: string,
+): string {
+  if (!ArtifactIdV3Schema.safeParse(artifactId).success) fail()
+  validateLocator('migration_backup_v1', finalLocator)
+  if (finalLocator.endsWith('.sqlite.tmp')) fail()
+  return createHash('sha256')
+    .update(`developer-lens.storage-v3-backup-intent.v1\0${artifactId}\0${finalLocator}`, 'utf8')
+    .digest('hex')
+}
+
 interface StableFile {
   readonly path: string
   readonly dev: bigint
   readonly ino: bigint
+  readonly nlink: bigint
   readonly size: bigint
   readonly ctimeNs: bigint
   readonly mtimeNs: bigint
 }
 
-function captureStableFile(path: string): StableFile {
+function captureStableFile(path: string, expectedNlink = 1n): StableFile {
   const before = lstatSync(path, { bigint: true })
   const canonical = realpathSync.native(path)
   const descriptor = openSync(path, constants.O_RDONLY | NO_FOLLOW)
@@ -217,7 +230,7 @@ function captureStableFile(path: string): StableFile {
     if (
       !before.isFile() || !handle.isFile() || !after.isFile()
       || before.isSymbolicLink() || after.isSymbolicLink()
-      || before.nlink !== 1n || handle.nlink !== 1n || after.nlink !== 1n
+      || before.nlink !== expectedNlink || handle.nlink !== expectedNlink || after.nlink !== expectedNlink
       || canonical !== path
       || !sameIdentity(before, handle) || !sameIdentity(handle, after)
       || before.size !== handle.size || handle.size !== after.size
@@ -228,6 +241,7 @@ function captureStableFile(path: string): StableFile {
       path,
       dev: handle.dev,
       ino: handle.ino,
+      nlink: handle.nlink,
       size: handle.size,
       ctimeNs: handle.ctimeNs,
       mtimeNs: handle.mtimeNs,
@@ -238,7 +252,7 @@ function captureStableFile(path: string): StableFile {
 }
 
 function assertSameFile(expected: StableFile): void {
-  const actual = captureStableFile(expected.path)
+  const actual = captureStableFile(expected.path, expected.nlink)
   if (
     !sameIdentity(expected, actual)
     || expected.size !== actual.size
@@ -247,8 +261,8 @@ function assertSameFile(expected: StableFile): void {
   ) fail()
 }
 
-function assertSqliteKind(path: string, kind: StorageV3ArtifactKind): StableFile {
-  const stable = captureStableFile(path)
+function assertSqliteKind(path: string, kind: StorageV3ArtifactKind, expectedNlink = 1n): StableFile {
+  const stable = captureStableFile(path, expectedNlink)
   if (stable.size === 0n) {
     if (kind === 'migration_primary_temp' || kind === 'migration_replay_temp') return stable
     fail()
@@ -285,8 +299,26 @@ export function assertStorageV3ArtifactFileProof(proof: StorageV3ArtifactFilePro
 }
 
 /** Stable physical byte hash for every separately deletable artifact file. */
-function physicalContentSha256(path: string, kind: StorageV3ArtifactKind): string {
-  const stable = assertSqliteKind(path, kind)
+function physicalContentSha256(path: string, kind: StorageV3ArtifactKind, expectedNlink = 1n): string {
+  const stable = assertSqliteKind(path, kind, expectedNlink)
+  const descriptor = openSync(path, constants.O_RDONLY | NO_FOLLOW)
+  const hash = createHash('sha256')
+  try {
+    const buffer = Buffer.alloc(64 * 1024)
+    for (;;) {
+      const read = readSync(descriptor, buffer, 0, buffer.length, null)
+      if (read === 0) break
+      hash.update(buffer.subarray(0, read))
+    }
+  } finally {
+    closeSync(descriptor)
+  }
+  assertSameFile(stable)
+  return hash.digest('hex')
+}
+
+function physicalFileSha256(path: string, expectedNlink: bigint): string {
+  const stable = captureStableFile(path, expectedNlink)
   const descriptor = openSync(path, constants.O_RDONLY | NO_FOLLOW)
   const hash = createHash('sha256')
   try {
@@ -370,24 +402,110 @@ export function storageV3ArtifactFilePath(
   return artifactPath(root, locator)
 }
 
-function safeRemoveManifestCompanion(root: StorageV3ArtifactRoot, locator: string): void {
-  const path = artifactPath(root, `${locator}.manifest.json`)
-  const entry = lstatEntry(path)
-  if (entry === undefined) return
-  if (!entry.isFile() || entry.isSymbolicLink() || entry.nlink !== 1n) fail()
-  const stable = captureStableFile(path)
-  assertSameFile(stable)
-  rmSync(path)
-}
-
 function safeRemoveLink(root: StorageV3ArtifactRoot, locator: string): void {
   const path = artifactPath(root, locator)
   const entry = lstatEntry(path)
   if (entry === undefined) return
   if (!entry.isFile() || entry.isSymbolicLink() || (entry.nlink !== 1n && entry.nlink !== 2n)) fail()
-  const stable = captureStableFile(path)
+  const stable = captureStableFile(path, entry.nlink)
   assertSameFile(stable)
   rmSync(path)
+}
+
+interface MigrationBackupFilePair {
+  readonly temp?: StableFile
+  readonly final?: StableFile
+}
+
+interface MigrationBackupFiles {
+  readonly staged: boolean
+  readonly tempLocator: string
+  readonly finalLocator: string
+  readonly manifestTempLocator: string
+  readonly manifestFinalLocator: string
+  readonly sqlite: MigrationBackupFilePair
+  readonly manifest: MigrationBackupFilePair
+}
+
+function inspectMigrationBackupPair(
+  root: StorageV3ArtifactRoot,
+  tempLocator: string,
+  finalLocator: string,
+  staged: boolean,
+  allowPublishedMissing: boolean,
+): MigrationBackupFilePair {
+  const tempPath = artifactPath(root, tempLocator)
+  const finalPath = artifactPath(root, finalLocator)
+  const tempEntry = lstatEntry(tempPath)
+  const finalEntry = lstatEntry(finalPath)
+  if (staged && tempEntry === undefined && finalEntry !== undefined) fail()
+  if (!staged && finalEntry === undefined) {
+    if (allowPublishedMissing && tempEntry === undefined) return Object.freeze({})
+    fail()
+  }
+  if (tempEntry !== undefined && finalEntry !== undefined) {
+    const temp = captureStableFile(tempPath, 2n)
+    const final = captureStableFile(finalPath, 2n)
+    if (temp.dev !== final.dev || temp.ino !== final.ino || temp.size !== final.size) fail()
+    return Object.freeze({ temp, final })
+  }
+  const temp = tempEntry === undefined ? undefined : captureStableFile(tempPath, 1n)
+  const final = finalEntry === undefined ? undefined : captureStableFile(finalPath, 1n)
+  return Object.freeze({ temp, final })
+}
+
+function inspectMigrationBackupFiles(
+  root: StorageV3ArtifactRoot,
+  row: ArtifactRow,
+  allowPublishedMissing: boolean,
+): MigrationBackupFiles {
+  const staged = row.relative_locator.endsWith('.sqlite.tmp')
+  const finalLocator = staged ? row.relative_locator.slice(0, -4) : row.relative_locator
+  const tempLocator = `${finalLocator}.tmp`
+  const manifestFinalLocator = `${finalLocator}.manifest.json`
+  const manifestTempLocator = `${tempLocator}.manifest.json`
+  const sqlite = inspectMigrationBackupPair(root, tempLocator, finalLocator, staged, allowPublishedMissing)
+  const manifest = inspectMigrationBackupPair(
+    root,
+    manifestTempLocator,
+    manifestFinalLocator,
+    staged,
+    allowPublishedMissing,
+  )
+  if (staged && !allowPublishedMissing) {
+    if ((manifest.temp !== undefined || manifest.final !== undefined) && sqlite.temp === undefined) fail()
+    if (sqlite.final !== undefined && manifest.temp === undefined) fail()
+    if (manifest.final !== undefined && sqlite.final === undefined) fail()
+  }
+  if (!staged) {
+    if (sqlite.final !== undefined
+      && physicalContentSha256(sqlite.final.path, 'migration_backup_v1', sqlite.final.nlink) !== row.content_sha256) fail()
+    if (manifest.final !== undefined
+      && physicalFileSha256(manifest.final.path, manifest.final.nlink) !== row.manifest_sha256) fail()
+  }
+  return Object.freeze({
+    staged,
+    tempLocator,
+    finalLocator,
+    manifestTempLocator,
+    manifestFinalLocator,
+    sqlite,
+    manifest,
+  })
+}
+
+function removeMigrationBackupFiles(root: StorageV3ArtifactRoot, files: MigrationBackupFiles): void {
+  if (files.staged) {
+    safeRemoveLink(root, files.finalLocator)
+    safeRemoveLink(root, files.tempLocator)
+    safeRemoveLink(root, files.manifestFinalLocator)
+    safeRemoveLink(root, files.manifestTempLocator)
+  } else {
+    safeRemoveLink(root, files.tempLocator)
+    safeRemoveLink(root, files.finalLocator)
+    safeRemoveLink(root, files.manifestTempLocator)
+    safeRemoveLink(root, files.manifestFinalLocator)
+  }
 }
 
 /** Return the exact lease path under an already reviewed root. */
@@ -465,6 +583,11 @@ export function assertStorageV3ArtifactCatalogue(db: Database.Database): void {
     validateLocator(kind, row.relative_locator)
     if (kind === 'migration_backup_v1') {
       if (!/^[0-9a-f]{64}$/.test(row.manifest_sha256)) fail()
+      if (row.relative_locator.endsWith('.sqlite.tmp')) {
+        const finalLocator = row.relative_locator.slice(0, -4)
+        const intentSha256 = storageV3MigrationBackupIntentSha256(row.artifact_id, finalLocator)
+        if (row.content_sha256 !== intentSha256 || row.manifest_sha256 !== intentSha256) fail()
+      }
     } else if (row.manifest_sha256 !== manifestSha256(kind, row.relative_locator)) fail()
     if (!/^[0-9a-f]{64}$/.test(row.content_sha256)) fail()
     if (kind === 'selected_store') {
@@ -635,7 +758,7 @@ export function registerStorageV3Artifact(
 }
 
 /** LIFE-03-only catalogue seam. Generic registration intentionally cannot supply a manifest hash. */
-export function registerStorageV3MigrationBackupArtifact(input: Readonly<{
+function registerStorageV3MigrationBackupArtifact(input: Readonly<{
   db: Database.Database
   artifactId: string
   relativeLocator: string
@@ -651,10 +774,18 @@ export function registerStorageV3MigrationBackupArtifact(input: Readonly<{
   if (!ArtifactIdV3Schema.safeParse(artifactId).success) fail()
   validateLocator('migration_backup_v1', relativeLocator)
   boundRoot(db)
-  if (db.prepare('SELECT 1 FROM app_artifact WHERE artifact_id = ? OR relative_locator = ?').get(artifactId, relativeLocator)) fail()
+  if (db.prepare(
+    'SELECT 1 FROM app_artifact WHERE artifact_id = ? OR relative_locator = ? UNION ALL SELECT 1 FROM lineage_event WHERE subject_id = ? LIMIT 1',
+  ).get(artifactId, relativeLocator, artifactId)) fail()
   const scopes = [...scopeIds].sort()
   if (scopes.length === 0 || scopes.some((scope, index) => scope !== scopeIds[index] || !ScopeIdV3Schema.safeParse(scope).success)) fail()
-  for (const scope of scopes) if (!db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(scope)) fail()
+  const liveScopes = db.prepare('SELECT scope_id FROM claim_scope ORDER BY scope_id').pluck().all() as string[]
+  if (scopes.length !== liveScopes.length || scopes.some((scope, index) => scope !== liveScopes[index])) fail()
+  if (relativeLocator.endsWith('.sqlite.tmp')) {
+    const finalLocator = relativeLocator.slice(0, -4)
+    const intentSha256 = storageV3MigrationBackupIntentSha256(artifactId, finalLocator)
+    if (contentSha256 !== intentSha256 || physicalManifestSha256 !== intentSha256) fail()
+  }
   db.transaction(() => {
     db.prepare(`INSERT INTO app_artifact (
       artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator
@@ -674,7 +805,7 @@ export function beginStorageV3MigrationBackupArtifact(input: Readonly<{
   scopeIds: readonly string[]
 }>): Readonly<{ artifactId: string; stagedLocator: string; placeholderSha256: string }> {
   const stagedLocator = `${input.finalLocator}.tmp`
-  const placeholderSha256 = createHash('sha256').update(`developer-lens.storage-v3-backup-intent.v1\0${input.artifactId}\0${input.finalLocator}`, 'utf8').digest('hex')
+  const placeholderSha256 = storageV3MigrationBackupIntentSha256(input.artifactId, input.finalLocator)
   registerStorageV3MigrationBackupArtifact({
     db: input.db, artifactId: input.artifactId, relativeLocator: stagedLocator,
     scopeIds: input.scopeIds, contentSha256: placeholderSha256, manifestSha256: placeholderSha256,
@@ -692,10 +823,14 @@ export function promoteStorageV3MigrationBackupArtifact(input: Readonly<{
 }>): void {
   validateLocator('migration_backup_v1', input.stagedLocator)
   validateLocator('migration_backup_v1', input.finalLocator)
+  if (input.stagedLocator !== `${input.finalLocator}.tmp`) fail()
   if (!/^[a-f0-9]{64}$/.test(input.contentSha256) || !/^[a-f0-9]{64}$/.test(input.manifestSha256)) fail()
+  const intentSha256 = storageV3MigrationBackupIntentSha256(input.artifactId, input.finalLocator)
   if (input.db.prepare(`UPDATE app_artifact SET relative_locator = ?, content_sha256 = ?, manifest_sha256 = ?
-      WHERE artifact_id = ? AND kind = 'migration_backup_v1' AND state = 'active' AND relative_locator = ?`).run(
+      WHERE artifact_id = ? AND kind = 'migration_backup_v1' AND state = 'active' AND relative_locator = ?
+        AND content_sha256 = ? AND manifest_sha256 = ?`).run(
     input.finalLocator, input.contentSha256, input.manifestSha256, input.artifactId, input.stagedLocator,
+    intentSha256, intentSha256,
   ).changes !== 1) fail()
   assertStorageV3ArtifactCatalogue(input.db)
 }
@@ -792,10 +927,15 @@ export function completeStorageV3ArtifactDeletions(
     const kind = row.kind as StorageV3ArtifactKind
     validateLocator(kind, row.relative_locator)
     const path = artifactPath(root, row.relative_locator)
+    const backupFiles = kind === 'migration_backup_v1'
+      ? inspectMigrationBackupFiles(root, row, row.state === 'deleting')
+      : undefined
     if (row.state === 'pending') {
-      const entry = lstatEntry(path)
-      if (entry === undefined || !entry.isFile() || entry.isSymbolicLink() || entry.nlink !== 1n) fail()
-      if (physicalContentSha256(path, kind) !== row.content_sha256) fail()
+      if (backupFiles === undefined) {
+        const entry = lstatEntry(path)
+        if (entry === undefined || !entry.isFile() || entry.isSymbolicLink() || entry.nlink !== 1n) fail()
+        if (physicalContentSha256(path, kind) !== row.content_sha256) fail()
+      }
       db.transaction(() => {
         if (db.prepare(
           `UPDATE app_artifact SET state = 'deleting'
@@ -806,21 +946,6 @@ export function completeStorageV3ArtifactDeletions(
       row = { ...row, state: 'deleting' }
     }
     if (row.state !== 'deleting') fail()
-    if (kind === 'migration_backup_v1'
-      && row.manifest_sha256 !== manifestSha256(kind, row.relative_locator)) {
-      const manifestPath = artifactPath(root, `${row.relative_locator}.manifest.json`)
-      const manifestEntry = lstatEntry(manifestPath)
-      if (manifestEntry === undefined || !manifestEntry.isFile() || manifestEntry.isSymbolicLink() || manifestEntry.nlink !== 1n) fail()
-      const manifestStable = captureStableFile(manifestPath)
-      const manifestDescriptor = openSync(manifestPath, constants.O_RDONLY | NO_FOLLOW)
-      const manifestHash = createHash('sha256')
-      try {
-        const bytes = Buffer.alloc(64 * 1024)
-        for (;;) { const count = readSync(manifestDescriptor, bytes, 0, bytes.length, null); if (count === 0) break; manifestHash.update(bytes.subarray(0, count)) }
-      } finally { closeSync(manifestDescriptor) }
-      assertSameFile(manifestStable)
-      if (manifestHash.digest('hex') !== row.manifest_sha256) fail()
-    }
     // A shared artifact may still have ordinary lineage owned by a surviving
     // scope. Reconcile that history before unlinking bytes so the final
     // scope-null index_deleted record cannot collide across scopes after a
@@ -838,30 +963,37 @@ export function completeStorageV3ArtifactDeletions(
          LIMIT 1`,
       ).get(row.artifact_id, row.artifact_id)) fail()
     }).immediate()
-    const entry = lstatEntry(path)
-    if (entry !== undefined) {
-      if (!entry.isFile() || entry.isSymbolicLink() || entry.nlink !== 1n) fail()
-      if (physicalContentSha256(path, kind) !== row.content_sha256) fail()
+    if (backupFiles === undefined) {
+      const entry = lstatEntry(path)
+      if (entry !== undefined) {
+        if (!entry.isFile() || entry.isSymbolicLink() || entry.nlink !== 1n) fail()
+        if (physicalContentSha256(path, kind) !== row.content_sha256) fail()
+      }
     }
-    for (const suffix of ['-shm', '-wal', '-journal']) {
-      safeRemoveExactFile(root, `${row.relative_locator}${suffix}`)
+    const sidecarLocators = backupFiles === undefined
+      ? [row.relative_locator]
+      : [backupFiles.tempLocator, backupFiles.finalLocator]
+    for (const locator of sidecarLocators) {
+      for (const suffix of ['-shm', '-wal', '-journal']) safeRemoveExactFile(root, `${locator}${suffix}`)
     }
-    if (kind === 'migration_backup_v1') safeRemoveManifestCompanion(root, row.relative_locator)
     options.failAfterStage?.('sidecarsDeleted', completed)
-    if (kind === 'migration_backup_v1' && row.relative_locator.endsWith('.sqlite.tmp')) {
-      const finalLocator = row.relative_locator.slice(0, -4)
-      safeRemoveLink(root, row.relative_locator)
-      safeRemoveLink(root, finalLocator)
-      safeRemoveManifestCompanion(root, finalLocator)
-    } else {
-      safeRemoveExactFile(root, row.relative_locator)
-    }
+    if (backupFiles === undefined) safeRemoveExactFile(root, row.relative_locator)
+    else removeMigrationBackupFiles(root, backupFiles)
     options.failAfterStage?.('fileDeleted', completed)
-    if (
-      lstatEntry(path) !== undefined
-      || ['-shm', '-wal', '-journal'].some((suffix) => lstatEntry(`${path}${suffix}`) !== undefined)
-      || (kind === 'migration_backup_v1' && lstatEntry(`${path}.manifest.json`) !== undefined)
-    ) fail()
+    if (backupFiles === undefined) {
+      if (lstatEntry(path) !== undefined
+        || ['-shm', '-wal', '-journal'].some((suffix) => lstatEntry(`${path}${suffix}`) !== undefined)) fail()
+    } else {
+      for (const locator of [
+        backupFiles.tempLocator,
+        backupFiles.finalLocator,
+        backupFiles.manifestTempLocator,
+        backupFiles.manifestFinalLocator,
+      ]) if (lstatEntry(artifactPath(root, locator)) !== undefined) fail()
+      for (const locator of [backupFiles.tempLocator, backupFiles.finalLocator]) {
+        if (['-shm', '-wal', '-journal'].some((suffix) => lstatEntry(artifactPath(root, `${locator}${suffix}`)) !== undefined)) fail()
+      }
+    }
     db.transaction(() => {
       const current = db.prepare(
         `SELECT state, deletion_operation_id, deletion_scope_id, deletion_week
