@@ -8,6 +8,9 @@ import {
   installStorageV3ShadowSchema,
   STORAGE_V3_SHADOW_APPLICATION_ID,
   STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
+  STORAGE_V3_SHADOW_COVERAGE_IDENTITY_TRIGGER_NAMES,
+  STORAGE_V3_SHADOW_OWNER_IDENTITY_TRIGGER_NAMES,
+  STORAGE_V3_SHADOW_OWNER_IDENTITY_INDEX_NAMES,
   STORAGE_V3_SHADOW_RESULT,
   STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT,
   STORAGE_V3_SHADOW_SCHEMA_SQL,
@@ -56,6 +59,8 @@ describe('storage-v3 B2a shadow schema', () => {
           ...immutableTriggerNames,
           ...STORAGE_V3_SHADOW_IMMUTABLE_INSERT_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_IDENTITY_BINDING_TRIGGER_NAMES,
+          ...STORAGE_V3_SHADOW_COVERAGE_IDENTITY_TRIGGER_NAMES,
+          ...STORAGE_V3_SHADOW_OWNER_IDENTITY_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES,
           ...casTriggerNames,
           STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
@@ -154,7 +159,7 @@ describe('storage-v3 B2a shadow schema', () => {
       db.prepare('INSERT INTO collection_checkpoint (scope_id, checkpoint_id, job_id, snapshot_id, capability_id, query_version, source_api_version, consent_revision, coverage_state, deletion_order, lineage_coverage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)').run(scopeA, checkpointId, jobId, snapshotId, 'github.core', 'query', 'api', 'consent', 'complete', 'complete')
       db.prepare('INSERT INTO coverage_ledger (scope_id, coverage_id, job_id, snapshot_id, capability_id, status, observed_units, retryable, limitation_code) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?)').run(scopeA, coverageId, jobId, snapshotId, 'github.core', 'complete', 'NONE')
       db.prepare('INSERT INTO evidence (scope_id, evidence_id, coverage_id, layer, schema_version) VALUES (?, ?, ?, ?, ?)').run(scopeA, evidenceId, coverageId, 'observed', '2.0.0')
-      db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(scopeA, claimId, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01', '2026-02-01', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
+      db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(scopeA, claimId, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
       db.prepare('INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_evidence_id) VALUES (?, ?, ?, ?)').run(scopeA, claimId, 'supports', evidenceId)
       db.prepare('INSERT INTO limitation_instance (scope_id, claim_id, limitation_code, dimension, copy_key) VALUES (?, ?, ?, ?, ?)').run(scopeA, claimId, 'COVERAGE_RESTRICTED', 'completeness', 'copy')
       db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, event_kind, event_week) VALUES (?, ?, ?, ?, ?, ?, ?)').run(scopeA, 'claim', claimId, id('op-'), 'github.core', 'correction', '2026-W32')
@@ -356,8 +361,8 @@ describe('storage-v3 B2a shadow schema', () => {
       db.prepare('INSERT INTO coverage_ledger (scope_id, coverage_id, job_id, snapshot_id, capability_id, status, observed_units, retryable, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)').run(scopeA, id('cov-'), id('job-'), id('snap-'), 'github.core', 'complete', 2, 0, 'SOURCE_FIXTURE')
       db.prepare('INSERT INTO evidence (scope_id, evidence_id, coverage_id, layer, schema_version) VALUES (?, ?, ?, ?, ?)').run(scopeA, id('ev-'), id('cov-'), 'observed', '2.0.0')
       const insertClaim = db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      insertClaim.run(scopeA, id('cl_'), 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01', '2026-02-01', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
-      insertClaim.run(scopeB, id('cl_', 'b'), 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01', '2026-02-01', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
+      insertClaim.run(scopeA, id('cl_'), 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
+      insertClaim.run(scopeB, id('cl_', 'b'), 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
       expect(() => db.prepare('INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_evidence_id) VALUES (?, ?, ?, ?)').run(scopeB, id('cl_', 'b'), 'supports', id('ev-'))).toThrow()
       db.prepare('INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_coverage_id) VALUES (?, ?, ?, ?)').run(scopeA, id('cl_'), 'coverage_basis', id('cov-'))
       expect(() => db.prepare('INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_coverage_id) VALUES (?, ?, ?, ?)').run(scopeA, id('cl_'), 'supports', id('cov-'))).toThrow()
@@ -366,6 +371,153 @@ describe('storage-v3 B2a shadow schema', () => {
       db.prepare('UPDATE claim_scope SET scope_alias = NULL, linked_at = NULL, alias_expires_at = NULL WHERE scope_id = ?').run(scopeA)
       expect(db.prepare('SELECT scope_id FROM claim_scope WHERE scope_id = ?').pluck().get(scopeA)).toBe(scopeA)
       expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+    } finally {
+      db.close()
+    }
+  })
+
+  it('binds coverage and checkpoint snapshot edges to their own job', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      const insertJob = db.prepare('INSERT INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      insertJob.run(scopeA, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
+      insertJob.run(scopeA, id('job-', 'b'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
+      db.prepare('INSERT INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)').run(scopeA, id('snap-', 'b'), id('job-', 'b'), 'github.core', 'closed')
+      const insertCoverage = db.prepare('INSERT INTO coverage_ledger (scope_id, coverage_id, job_id, snapshot_id, capability_id, status, observed_units, retryable, limitation_code) VALUES (?, ?, ?, ?, ?, ?, 0, 0, ?)')
+      // job-a citing job-b's snapshot: the two single-column edges alone allowed it.
+      expect(() => insertCoverage.run(scopeA, id('cov-'), id('job-'), id('snap-', 'b'), 'github.core', 'complete', 'NONE'))
+        .toThrow(/FOREIGN KEY constraint failed/i)
+      const insertCheckpoint = db.prepare('INSERT INTO collection_checkpoint (scope_id, checkpoint_id, job_id, snapshot_id, capability_id, query_version, source_api_version, consent_revision, coverage_state, deletion_order, lineage_coverage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, ?)')
+      expect(() => insertCheckpoint.run(scopeA, id('ckpt-'), id('job-'), id('snap-', 'b'), 'github.core', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete', 'complete'))
+        .toThrow(/FOREIGN KEY constraint failed/i)
+      // The matching job still binds, and a non-complete coverage row keeps a NULL snapshot.
+      insertCoverage.run(scopeA, id('cov-', 'b'), id('job-', 'b'), id('snap-', 'b'), 'github.core', 'complete', 'NONE')
+      insertCheckpoint.run(scopeA, id('ckpt-', 'b'), id('job-', 'b'), id('snap-', 'b'), 'github.core', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete', 'complete')
+      db.prepare('INSERT INTO coverage_ledger (scope_id, coverage_id, job_id, capability_id, status, observed_units, retryable, limitation_code) VALUES (?, ?, ?, ?, ?, 0, 0, ?)')
+        .run(scopeA, id('cov-', 'c'), id('job-'), 'github.core', 'failed', 'NONE')
+      expect(db.prepare('PRAGMA foreign_key_check').all()).toEqual([])
+    } finally {
+      db.close()
+    }
+  })
+
+  it('keeps exactly one closed snapshot per job', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run(scopeA, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
+      const insert = db.prepare('INSERT INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)')
+      insert.run(scopeA, id('snap-'), id('job-'), 'github.core', 'closed')
+      // UNIQUE (scope_id, snapshot_id, job_id) never enforced this: it contains the PK.
+      expect(() => insert.run(scopeA, id('snap-', 'b'), id('job-'), 'github.core', 'closed'))
+        .toThrow(/UNIQUE constraint failed|STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY/i)
+    } finally {
+      db.close()
+    }
+  })
+
+  it('requires canonical claim window timestamps', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      const insert = db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+      const windows = [
+        ['2026-1-1', '2026-2-1'],
+        ['2026-01-01T00:00:00.000Z ', '2026-02-01T00:00:00.000Z '],
+        ['2026-01-01T00:00:00+02:00', '2026-02-01T00:00:00+02:00'],
+        ['2026-01-01', '2026-02-01'],
+      ] as const
+      for (const [windowStart, windowEnd] of windows) {
+        expect(() => insert.run(scopeA, id('cl_'), 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', windowStart, windowEnd, '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z'))
+          .toThrow(/CHECK constraint failed/i)
+      }
+      insert.run(scopeA, id('cl_'), 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
+    } finally {
+      db.close()
+    }
+  })
+
+  it('rejects a duplicate C1 owner in another scope before any lineage exists', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+      expect(db.prepare(
+        "SELECT COUNT(*) FROM sqlite_schema WHERE type = 'index' AND name IN (" +
+        STORAGE_V3_SHADOW_OWNER_IDENTITY_INDEX_NAMES.map(() => '?').join(', ') + ')',
+      ).pluck().get(...STORAGE_V3_SHADOW_OWNER_IDENTITY_INDEX_NAMES)).toBe(STORAGE_V3_SHADOW_OWNER_IDENTITY_INDEX_NAMES.length)
+      expect(db.prepare('SELECT COUNT(*) FROM lineage_event').pluck().get()).toBe(0)
+      const insertJob = db.prepare('INSERT INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      insertJob.run(scopeA, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
+      insertJob.run(scopeB, id('job-', 'b'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
+      expect(() => insertJob.run(scopeB, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete'))
+        .toThrow(/UNIQUE constraint failed|STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY/i)
+      const insertSnapshot = db.prepare('INSERT INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)')
+      insertSnapshot.run(scopeA, id('snap-'), id('job-'), 'github.core', 'closed')
+      expect(() => insertSnapshot.run(scopeB, id('snap-'), id('job-', 'b'), 'github.core', 'closed'))
+        .toThrow(/UNIQUE constraint failed|STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY/i)
+      const insertCoverage = db.prepare('INSERT INTO coverage_ledger (scope_id, coverage_id, job_id, capability_id, status, observed_units, retryable, limitation_code) VALUES (?, ?, ?, ?, ?, 0, 0, ?)')
+      insertCoverage.run(scopeA, id('cov-'), id('job-'), 'github.core', 'failed', 'NONE')
+      expect(() => insertCoverage.run(scopeB, id('cov-'), id('job-', 'b'), 'github.core', 'failed', 'NONE'))
+        .toThrow(/UNIQUE constraint failed|STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY/i)
+      // coverage_observation shares the cov- id space, so a per-table index cannot see it.
+      const insertObservation = db.prepare('INSERT INTO coverage_observation (scope_id, coverage_id, capability_id, status, limitation_code, observed_units) VALUES (?, ?, ?, ?, ?, 0)')
+      expect(() => insertObservation.run(scopeB, id('cov-'), 'github.core', 'complete', 'NONE'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY')
+      insertObservation.run(scopeA, id('cov-'), 'github.core', 'complete', 'NONE')
+      expect(() => insertCoverage.run(scopeB, id('cov-', 'b'), id('job-', 'b'), 'github.core', 'failed', 'NONE')).not.toThrow()
+      db.prepare('DELETE FROM coverage_ledger WHERE scope_id = ? AND coverage_id = ?').run(scopeB, id('cov-', 'b'))
+      insertObservation.run(scopeB, id('cov-', 'b'), 'github.core', 'complete', 'NONE')
+      expect(() => insertCoverage.run(scopeA, id('cov-', 'b'), id('job-'), 'github.core', 'failed', 'NONE'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY')
+    } finally {
+      db.close()
+    }
+  })
+
+  it('refuses INSERT OR REPLACE from moving a C1 owner across scopes (PR #138 review)', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+      db.prepare('INSERT INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(scopeA, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
+      // OR REPLACE would satisfy the unique index by DELETING scope A's row; the
+      // BEFORE INSERT guard fires before conflict resolution and aborts instead.
+      expect(() => db.prepare('INSERT OR REPLACE INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(scopeB, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY')
+      expect(db.prepare('SELECT scope_id FROM collection_job WHERE job_id = ?').pluck().get(id('job-'))).toBe(scopeA)
+    } finally {
+      db.close()
+    }
+  })
+
+  it('binds ownerless artifact and deletion lineage to a single scope', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+      const insert = db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+      // art- subjects have no owner table, so only the history guard can bind them.
+      insert.run(scopeA, 'artifact', id('art-'), id('op-', '1'), 'github.core', null, 'index_built', '2026-W05')
+      expect(() => insert.run(scopeB, 'artifact', id('art-'), id('op-', '2'), 'github.core', null, 'index_built', '2026-W05'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      insert.run(scopeA, 'job', id('job-'), id('op-', '3'), 'github.core', id('art-', 'b'), 'index_built', '2026-W05')
+      expect(() => insert.run(scopeB, 'job', id('job-', 'b'), id('op-', '4'), 'github.core', id('art-', 'b'), 'index_built', '2026-W05'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      insert.run(scopeA, 'deletion', id('del-', '5'), id('del-', '6'), 'github.core', null, 'tombstone_cascade', '2026-W05')
+      expect(() => insert.run(scopeB, 'deletion', id('del-', '5'), id('del-', '7'), 'github.core', null, 'tombstone_cascade', '2026-W05'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_LINEAGE')
+      // Same scope stays legal for every ownerless kind.
+      insert.run(scopeA, 'artifact', id('art-'), id('op-', '8'), 'github.core', null, 'export_included', '2026-W05')
     } finally {
       db.close()
     }
@@ -435,8 +587,8 @@ describe('storage-v3 B2a shadow schema', () => {
       const claimB = id('cl_', 'b')
       const tombstoneClaim = id('cl_', 'c')
       const insertClaim = db.prepare('INSERT INTO claim (scope_id, claim_id, layer, statement_code, method_id, method_version, window_start, window_end, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-      insertClaim.run(scopeA, claimA, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01', '2026-02-01', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
-      insertClaim.run(scopeB, claimB, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01', '2026-02-01', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
+      insertClaim.run(scopeA, claimA, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
+      insertClaim.run(scopeB, claimB, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')
       const insertLineage = db.prepare('INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
 
       expect(() => insertLineage.run(scopeA, 'claim', claimB, id('op-'), 'github.core', null, 'correction', '2026-W32'))
@@ -469,8 +621,8 @@ describe('storage-v3 B2a shadow schema', () => {
         'DELIVERY_FLOW',
         'method',
         '1.0.0',
-        '2026-01-01',
-        '2026-02-01',
+        '2026-01-01T00:00:00.000Z',
+        '2026-02-01T00:00:00.000Z',
         '1.0.0',
         'claim-id.v3',
         '2026-02-01T00:00:00.000Z',
@@ -540,13 +692,40 @@ describe('storage-v3 B2a shadow schema', () => {
     }
   })
 
-  it('preserves only validated synthetic bridge rows', () => {
+  it('preserves a validated bridge record in either mode and refuses every XOR violation', () => {
     const db = new Database(':memory:')
+    const provenance = (): unknown =>
+      db.prepare('SELECT singleton, mode, synthetic_marker, activation_card_id FROM v2_store_provenance').get()
     try {
       installStorageV3ShadowSchema(db)
-      db.prepare('INSERT INTO v2_store_provenance (singleton, mode, synthetic_marker, importer_version, created_at) VALUES (1, ?, ?, ?, ?)').run('synthetic', 'invented', 'test-v1', '2026-01-01T00:00:00.000Z')
+      const insert = db.prepare('INSERT INTO v2_store_provenance (singleton, mode, synthetic_marker, activation_card_id, importer_version, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      insert.run(1, 'synthetic', 'invented', null, 'test-v1', '2026-01-01T00:00:00.000Z')
       db.prepare('INSERT INTO v2_coverage_record (coverage_id, capability_id, scope_alias, range_start, range_end, status, expected_units, observed_units, omitted_units, saturation_reason, retryable, observed_at, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('c0-coverage', 'github.core', 'c0-scope', '2026-01-01', '2026-02-01', 'complete', 2, 2, 0, null, 0, '2026-02-01T00:00:00.000Z', 'NONE')
-      expect(() => db.prepare('INSERT INTO v2_store_provenance (singleton, mode, synthetic_marker, importer_version, created_at) VALUES (2, ?, ?, ?, ?)').run('activation_card', 'invented', 'test-v1', '2026-01-01T00:00:00.000Z')).toThrow()
+      expect(provenance()).toEqual({ singleton: 1, mode: 'synthetic', synthetic_marker: 'invented', activation_card_id: null })
+      // The singleton stays a singleton, whatever the second row claims.
+      expect(() => insert.run(2, 'activation_card', null, 'invented-activation-card', 'test-v1', '2026-01-01T00:00:00.000Z')).toThrow()
+
+      // The v2 source shape is supported end to end: activation_card provenance is
+      // storable here so a real q-5 store can be migrated and preserved verbatim.
+      db.prepare('DELETE FROM v2_store_provenance').run()
+      insert.run(1, 'activation_card', null, 'invented-activation-card', 'test-v1', '2026-01-01T00:00:00.000Z')
+      expect(provenance()).toEqual({ singleton: 1, mode: 'activation_card', synthetic_marker: null, activation_card_id: 'invented-activation-card' })
+
+      // Each mode must carry exactly its own witness, and only recognized modes exist.
+      db.prepare('DELETE FROM v2_store_provenance').run()
+      for (const [mode, marker, card] of [
+        ['synthetic', null, null],
+        ['synthetic', null, 'invented-activation-card'],
+        ['synthetic', 'invented', 'invented-activation-card'],
+        ['activation_card', null, null],
+        ['activation_card', 'invented', null],
+        ['activation_card', 'invented', 'invented-activation-card'],
+        ['activation_card', null, 'invented card'],
+        ['unreviewed_card', 'invented', null],
+      ] as const) {
+        expect(() => insert.run(1, mode, marker, card, 'test-v1', '2026-01-01T00:00:00.000Z'), `${mode}/${marker}/${card}`).toThrow()
+      }
+      expect(db.prepare('SELECT COUNT(*) FROM v2_store_provenance').pluck().get()).toBe(0)
     } finally {
       db.close()
     }

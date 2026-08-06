@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -43,6 +44,13 @@ interface ScopeSeed {
   readonly provider: string
 }
 
+/**
+ * #86: the ledger key is the content-free registry shape (`cov-` + 64 lowercase hex), one
+ * per tag so the two seeded scopes never collide under `UNIQUE(coverage_id)`.
+ */
+const coverageKey = (tag: string): string =>
+  `cov-${createHash('sha256').update(`v3-deletion-fixture/${tag}`).digest('hex')}`
+
 function seedScopeGraph(db: Database.Database, key: Buffer, raw: string, tag: string): ScopeSeed {
   const aliases = createInstallationAliases(key)
   const provider = aliases.repositoryProviderId(raw)
@@ -63,11 +71,11 @@ function seedScopeGraph(db: Database.Database, key: Buffer, raw: string, tag: st
   db.prepare('INSERT INTO source_snapshot (snapshot_id, job_id, capability_id, scope_alias, snapshot_hash, range_start, range_end, observed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
     .run(`snapshot-${tag}`, `job-${tag}`, 'github.core', provider, 'b'.repeat(64), '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z')
   db.prepare('INSERT INTO coverage_ledger (coverage_id, range_start, job_id, snapshot_id, capability_id, scope_alias, range_end, status, expected_units, observed_units, omitted_units, retryable, observed_at, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
-    .run(`coverage-${tag}`, '2026-01-01T00:00:00.000Z', `job-${tag}`, `snapshot-${tag}`, 'github.core', provider, '2026-02-01T00:00:00.000Z', 'complete', 1, 1, 0, 0, '2026-02-01T00:00:00.000Z', 'NONE')
+    .run(coverageKey(tag), '2026-01-01T00:00:00.000Z', `job-${tag}`, `snapshot-${tag}`, 'github.core', provider, '2026-02-01T00:00:00.000Z', 'complete', 1, 1, 0, 0, '2026-02-01T00:00:00.000Z', 'NONE')
   db.prepare('INSERT INTO collection_checkpoint (capability_id, scope_alias, query_version, source_api_version, high_watermark, cursor_hint, bounded_overlap_start, last_complete_snapshot_hash, consent_revision, committed_job_id, source_snapshot_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
     .run('github.core', provider, 'github.core.v1', '2026-03-10', '2026-02-01T00:00:00.000Z', 'cursor', '2026-01-31T00:00:00.000Z', 'b'.repeat(64), 'consent-v3', `job-${tag}`, `snapshot-${tag}`)
   db.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)')
-    .run(`evidence-${tag}`, 'observed', '2.0.0', `coverage-${tag}`, '2026-01-01T00:00:00.000Z', `job-${tag}`)
+    .run(`evidence-${tag}`, 'observed', '2.0.0', coverageKey(tag), '2026-01-01T00:00:00.000Z', `job-${tag}`)
   const claim = computeClaimId({
     layer: 'modelled',
     statementCode: 'DELIVERY_FLOW',

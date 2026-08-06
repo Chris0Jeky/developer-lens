@@ -117,7 +117,11 @@ const INCREMENTAL_GITHUB_CORE_STORAGE_SQL = [
   '  ) THEN RAISE(ABORT, \'SOURCE_SNAPSHOT_JOB_MISMATCH\') END;',
   'END;',
   'CREATE TABLE IF NOT EXISTS coverage_ledger (',
-  '  coverage_id TEXT NOT NULL CHECK (length(coverage_id) BETWEEN 1 AND 256 AND coverage_id NOT GLOB \'*[^A-Za-z0-9:._-]*\'),',
+  // #86 storage half: only the content-free cov- registry is storable — the historical
+  // broad token shape carried the collection scope_alias verbatim inside C1 claim-graph
+  // identifiers. UNIQUE(coverage_id) pins one logical window per key: a fresh key can
+  // never silently represent two windows, and a replayed job must reuse its exact key.
+  '  coverage_id TEXT NOT NULL UNIQUE CHECK (length(coverage_id) = 68 AND coverage_id GLOB \'cov-*\' AND substr(coverage_id, 5) NOT GLOB \'*[^0-9a-f]*\'),',
   '  range_start TEXT NOT NULL,',
   '  job_id TEXT NOT NULL UNIQUE,',
   '  snapshot_id TEXT,',
@@ -319,7 +323,8 @@ export function assertIncrementalGithubCoreStorageSchema(db: Database.Database):
 }
 
 const OpaqueIdSchema = z.string().regex(/^[A-Za-z0-9:._-]{1,128}$/)
-const CoverageIdSchema = z.string().regex(/^[A-Za-z0-9:._-]{1,256}$/)
+/** #86: the content-free registry only — `cov-` + 64 lowercase hex, never alias-bearing. */
+const CoverageIdSchema = z.string().regex(/^cov-[0-9a-f]{64}$/)
 const LowercaseSha256Schema = z.string().regex(/^[a-f0-9]{64}$/)
 const CanonicalTimestampSchema = z.string().datetime({ offset: true }).refine(
   (value) => new Date(value).toISOString() === value,

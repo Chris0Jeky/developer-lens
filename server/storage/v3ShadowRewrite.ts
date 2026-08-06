@@ -16,7 +16,6 @@ import {
 import { CoverageRecordSchema, type CoverageRecord } from '../../shared/coverage.js'
 import { EvidenceLayerSchema, type EvidenceLayer } from '../../shared/provenance.js'
 import {
-  assertServableProvenance,
   installV2BridgeStore,
   readCoverageRecords,
   readStoreProvenance,
@@ -105,6 +104,17 @@ export interface StorageV3ShadowRewriteOptions {
   readonly randomBytes?: (size: number) => Buffer
   /** Test-only failure injection. The callback receives no source/target values. */
   readonly failAfterStage?: (stage: StorageV3ShadowRewriteStage) => void
+  /**
+   * Receives, in creation order, every identifier this run creates that a second run
+   * over the same source creates DIFFERENTLY: entropy-minted C1 keys plus reminted
+   * claim ids (deterministic functions of minted scope ids). Preserved source
+   * identifiers and derived legacy deletion ids are deliberately never reported —
+   * both targets must agree on those literally. This is a private channel for the
+   * orchestrator's equivalence proof (#133): the values are content-free C1 keys and
+   * they never appear in the rewrite RESULT, so no caller can serialize an ordered
+   * mint list that correlates with source traversal (PR #138 review).
+   */
+  readonly mintedCollector?: (value: string) => void
 }
 
 export interface StorageV3ShadowRewriteResult {
@@ -259,8 +269,14 @@ function readSourceImage(db: Database.Database): SourceImage {
       let provenance: Provenance
       let bridgeCoverage: CoverageRecord[]
       try {
+        // Reading for MIGRATION is not reading for SERVING. `readStoreProvenance`
+        // still proves the structural contract — exactly one row, a recognized
+        // mode, and the marker/card XOR — and a violation refuses the migration.
+        // The serving gate (`assertServableProvenance`, which refuses
+        // activation_card until a card is reviewed) deliberately does NOT run
+        // here: a well-formed activation_card store is migratable material, and
+        // the v3 target is unservable by the v2 reader by construction anyway.
         provenance = readStoreProvenance(db)
-        assertServableProvenance(provenance)
         bridgeCoverage = readCoverageRecords(db)
       } catch {
         return fail('SOURCE_BRIDGE_REFUSED')
@@ -659,6 +675,10 @@ export function rewriteStorageV3Shadow(
     const usedKeys = track(new Set<string>())
     const newClaimOwners = track(new Map<string, string>())
     const sourceJobs = track(new Map<string, Row>())
+    /** Providers whose source scope alias link is not retained at `asOf`. */
+    const expiredAliasLinks = track(new Set<string>())
+    /** Source snapshot id -> the source job that produced it, for job-pinned edges. */
+    const sourceSnapshotJobs = track(new Map<string, string>())
     const sourceSnapshotCountByJob = track(new Map<string, number>())
     const sourceCoverageCountByJob = track(new Map<string, number>())
     const omittedJobs = track(new Map<string, string>())
@@ -688,7 +708,11 @@ export function rewriteStorageV3Shadow(
           fail('REWRITE_FAILED')
         }
       }
-      const mintId = (prefix: string): string => mint(prefix, usedKeys, entropy)
+      const recordMinted = (value: string): string => {
+        options.mintedCollector?.(value)
+        return value
+      }
+      const mintId = (prefix: string): string => recordMinted(mint(prefix, usedKeys, entropy))
       const targetScopeForAlias = (scopeAlias: unknown): string | undefined => {
         const alias = requiredText(scopeAlias)
         const sourceScope = sourceScopeByAlias.get(alias)
@@ -710,7 +734,7 @@ export function rewriteStorageV3Shadow(
       }
       for (const state of identityStates.values()) {
         if (state.existingScopeId !== undefined) state.targetScopeId = state.existingScopeId
-        else if (state.eligible) state.targetScopeId = mint('scope-', usedScopes, entropy)
+        else if (state.eligible) state.targetScopeId = recordMinted(mint('scope-', usedScopes, entropy))
       }
 
       const insertScope = options.targetDb.prepare(
@@ -720,6 +744,11 @@ export function rewriteStorageV3Shadow(
         const state = scope.scopeAlias === null ? undefined : identityStates.get(scope.scopeAlias)
         const aliasExpiresAt = addUtcMonthsClamped(scope.linkedAt)
         const retainAlias = state?.eligible === true && asOf < aliasExpiresAt
+        // The identity row carries the SAME provider alias as this link, so keeping it
+        // after the link expired would reconstitute the very scope-to-provider binding
+        // the link expiry removed (#129 late review). All alias material — the link and
+        // the identity aliases — follows the earlier of the two thirteen-month clocks.
+        if (state !== undefined && !retainAlias) expiredAliasLinks.add(state.providerId)
         insertScope.run(
           scope.scopeId,
           retainAlias ? scope.scopeAlias : null,
@@ -748,8 +777,8 @@ export function rewriteStorageV3Shadow(
         ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
       )
       for (const state of identityStates.values()) {
-        if (!state.eligible) {
-          omittedExpiredIdentities += 1
+        if (!state.eligible || expiredAliasLinks.has(state.providerId)) {
+          if (!state.eligible) omittedExpiredIdentities += 1
           if (state.targetScopeId === undefined) continue
           insertIdentity.run(
             state.targetScopeId,
@@ -775,14 +804,19 @@ export function rewriteStorageV3Shadow(
       }
       checkpoint('identities')
 
-      if (sourceImage.provenance.syntheticMarker === null) fail('SOURCE_BRIDGE_REFUSED')
+      // v2_store_provenance is preserve-disposition: the validated C0 row is copied
+      // verbatim in EITHER mode. The source read above already refused a structurally
+      // invalid record, and the target CHECK re-proves the same XOR, so no adapter
+      // may drop a column here — silently dropping activation_card_id would forge
+      // synthetic provenance for a store that never claimed it.
       options.targetDb.prepare(
         `INSERT INTO v2_store_provenance (
-          singleton, mode, synthetic_marker, importer_version, created_at
-        ) VALUES (1, ?, ?, ?, ?)`,
+          singleton, mode, synthetic_marker, activation_card_id, importer_version, created_at
+        ) VALUES (1, ?, ?, ?, ?, ?)`,
       ).run(
         sourceImage.provenance.mode,
         sourceImage.provenance.syntheticMarker,
+        sourceImage.provenance.activationCardId,
         sourceImage.provenance.importerVersion,
         sourceImage.provenance.createdAt,
       )
@@ -960,6 +994,7 @@ export function rewriteStorageV3Shadow(
         const scopeAlias = requiredText(row.scope_alias)
         const targetScopeId = targetScopeForAlias(scopeAlias)
         const oldJobId = requiredText(row.job_id)
+        sourceSnapshotJobs.set(oldSnapshotId, oldJobId)
         sourceSnapshotCountByJob.set(oldJobId, (sourceSnapshotCountByJob.get(oldJobId) ?? 0) + 1)
         const rangeStart = parseTime(row.range_start)
         const rangeEnd = parseTime(row.range_end)
@@ -1030,6 +1065,11 @@ export function rewriteStorageV3Shadow(
         const snapshot = oldSnapshotId === undefined ? undefined : snapshotMap.get(oldSnapshotId)
         if ((record.status === 'complete') !== (snapshot !== undefined)) fail('GRAPH_REFUSED')
         if (snapshot && snapshot.scopeId !== targetScopeId) fail('GRAPH_REFUSED')
+        // The target binds a coverage row to the snapshot of its OWN job; refuse a
+        // cross-job source edge with a typed code rather than a raw FK abort.
+        if (oldSnapshotId !== undefined && sourceSnapshotJobs.get(oldSnapshotId) !== oldJobId) {
+          fail('GRAPH_REFUSED')
+        }
         const expiresAt = addUtcMonthsClamped(record.observedAt)
         const live = retainAuthenticatedC2(record.scopeAlias, expiresAt)
         const targetId = mintId('cov-')
@@ -1104,6 +1144,7 @@ export function rewriteStorageV3Shadow(
         const job = jobMap.get(oldJobId) ?? fail('GRAPH_REFUSED')
         const snapshot = snapshotMap.get(oldSnapshotId) ?? fail('GRAPH_REFUSED')
         if (job.scopeId !== targetScopeId || snapshot.scopeId !== targetScopeId) fail('GRAPH_REFUSED')
+        if (sourceSnapshotJobs.get(oldSnapshotId) !== oldJobId) fail('GRAPH_REFUSED')
         const expiresAt = addUtcMonthsClamped(completedAt)
         const live = retainAuthenticatedC2(scopeAlias, expiresAt)
         const targetId = mintId('ckpt-')
@@ -1253,6 +1294,9 @@ export function rewriteStorageV3Shadow(
         const previousOwner = newClaimOwners.get(targetId)
         if (previousOwner !== undefined && previousOwner !== oldClaimId) fail('KEY_COLLISION')
         newClaimOwners.set(targetId, oldClaimId)
+        // Reminted claim ids are deterministic functions of MINTED scope ids: per-target
+        // different but order-stable, so they join the minted list for the equivalence proof.
+        recordMinted(targetId)
         const owner = { kind: 'claim', targetId, scopeId } as const
         claimMap.set(oldClaimId, owner)
         addOwnership(ownership, oldClaimId, owner)

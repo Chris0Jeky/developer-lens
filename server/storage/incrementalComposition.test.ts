@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import { completeObservedUnits } from '../../shared/coverage.js'
@@ -37,10 +38,17 @@ function database(): Database.Database {
   return db
 }
 
+/**
+ * #86: caller-owned content-free coverage key; the connector no longer mints one, and
+ * `UNIQUE(coverage_id)` means every job in a fixture needs its own — derived here from the
+ * job id so a replay of the same job still presents the identical key.
+ */
+const coverageKey = (seed: string): string =>
+  `cov-${createHash('sha256').update(`composition-fixture/${seed}`).digest('hex')}`
+
 const context = (jobId: string, checkpoint: Parameters<typeof composeGithubCoreRestComplete>[0]['checkpoint'] = null): GithubCoreRestCompositionContext => ({
   checkpoint,
-  // #86: caller-owned content-free coverage key; the connector no longer mints one.
-  coverageId: `cov-${'a'.repeat(64)}`,
+  coverageId: coverageKey(jobId),
   scopeAlias,
   rangeStart,
   rangeEnd,

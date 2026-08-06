@@ -13,6 +13,7 @@ import {
 import { COVERAGE_STATUSES } from '../../shared/coverage.js'
 import { CANONICAL_ENVELOPE_SCHEMA_VERSION, EVIDENCE_LAYERS } from '../../shared/provenance.js'
 import {
+  C1_KEY_PREFIXES,
   CLAIM_MATERIAL_V3_PROPOSAL_VERSION,
   LINEAGE_V3_DELETION_EVENT_KINDS,
   LINEAGE_V3_EVENT_KINDS,
@@ -199,13 +200,84 @@ END;`
 
 const lineageOwnerTriggerSqlBlock = lineageOwnerRegistry.map(lineageOwnerTriggerSql).join('\n')
 
+/**
+ * A C1 subject id belongs to exactly ONE scope.  The lineage-owner triggers above
+ * derive that from existing lineage rows, so they cannot fire for a duplicate owner
+ * inserted BEFORE any lineage references the id (#128, PR #112 late review).  These
+ * indexes make single-scope ownership hold from the first owner INSERT; the composite
+ * `(scope_id, <id>)` primary keys only make the id unique WITHIN a scope.
+ * `claim_scope` is absent because its id column is already the whole primary key.
+ */
+const ownerIdentityRegistry = lineageOwnerRegistry.filter(({ tableName }) => tableName !== 'claim_scope')
+const ownerIdentityIndexName = (tableName: string): string => `storage_v3_owner_identity_${tableName}`
+export const STORAGE_V3_SHADOW_OWNER_IDENTITY_INDEX_NAMES = Object.freeze(
+  ownerIdentityRegistry.map(({ tableName }) => ownerIdentityIndexName(tableName)),
+)
+const ownerIdentityIndexSqlBlock = ownerIdentityRegistry
+  .map(({ tableName, idColumn }) =>
+    `CREATE UNIQUE INDEX IF NOT EXISTS ${ownerIdentityIndexName(tableName)} ON ${tableName} (${idColumn});`)
+  .join('\n')
+
+/**
+ * The unique index alone is REPLACE-bypassable: INSERT OR REPLACE satisfies it by
+ * DELETING the other scope's row, silently moving a C1 identity across scopes (PR #138
+ * review). A BEFORE INSERT trigger fires before conflict resolution deletes anything,
+ * so the cross-scope insert aborts regardless of the caller's conflict clause.
+ */
+const ownerIdentityTriggerName = (tableName: string): string => `storage_v3_owner_identity_guard_${tableName}`
+export const STORAGE_V3_SHADOW_OWNER_IDENTITY_TRIGGER_NAMES = Object.freeze(
+  ownerIdentityRegistry.map(({ tableName }) => ownerIdentityTriggerName(tableName)),
+)
+const ownerIdentityTriggerSqlBlock = ownerIdentityRegistry
+  .map(({ tableName, idColumn }) =>
+    `CREATE TRIGGER IF NOT EXISTS ${ownerIdentityTriggerName(tableName)}
+BEFORE INSERT ON ${tableName}
+WHEN EXISTS (
+  SELECT 1 FROM ${tableName} AS other
+  WHERE other.${idColumn} = NEW.${idColumn} AND other.scope_id IS NOT NEW.scope_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY');
+END;`)
+  .join('\n')
+
+/**
+ * `coverage_ledger` and `coverage_observation` share the `cov-` id space (both are
+ * registered lineage owners of subject kind `coverage`), so a per-table unique index
+ * cannot see a duplicate that lands in the other table.
+ */
+const coverageIdentityTriggerName = (tableName: string): string => `storage_v3_coverage_identity_${tableName}`
+export const STORAGE_V3_SHADOW_COVERAGE_IDENTITY_TRIGGER_NAMES = Object.freeze([
+  coverageIdentityTriggerName('coverage_ledger'),
+  coverageIdentityTriggerName('coverage_observation'),
+] as const)
+const coverageIdentityTriggerSql = (tableName: string, otherTable: string): string =>
+  `CREATE TRIGGER IF NOT EXISTS ${coverageIdentityTriggerName(tableName)}
+BEFORE INSERT ON ${tableName}
+WHEN EXISTS (
+  SELECT 1 FROM ${otherTable} AS other
+  WHERE other.coverage_id = NEW.coverage_id AND other.scope_id IS NOT NEW.scope_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY');
+END;`
+const coverageIdentityTriggerSqlBlock = [
+  coverageIdentityTriggerSql('coverage_ledger', 'coverage_observation'),
+  coverageIdentityTriggerSql('coverage_observation', 'coverage_ledger'),
+].join('\n')
+
 const lineageSubjectMismatch = lineageOwnerRegistry.map(({ subjectKind, tableName, idColumn }) =>
   `(NEW.subject_kind = '${subjectKind}' AND EXISTS (
     SELECT 1 FROM ${tableName} AS owner
     WHERE owner.${idColumn} = NEW.subject_id AND owner.scope_id IS NOT NEW.scope_id
   ))`).join('\n  OR ')
 
-const lineageSubjectHistoryMismatch = [...new Set(lineageOwnerRegistry.map(({ subjectKind }) => subjectKind))]
+/**
+ * Derived from every subject kind, not from the owner registry: `artifact` and
+ * `deletion` have no owner table, so a registry-derived guard silently skipped them
+ * and two scopes could claim one `art-` history (#128, PR #112 late review).
+ */
+const lineageSubjectHistoryMismatch = LINEAGE_V3_SUBJECT_KINDS
   .map((subjectKind) => `(NEW.subject_kind = '${subjectKind}' AND EXISTS (
     SELECT 1 FROM lineage_event AS owner
     WHERE (
@@ -221,7 +293,13 @@ const lineageCauseMismatch = lineageOwnerRegistry.map(({ prefix, tableName, idCo
     WHERE owner.${idColumn} = NEW.caused_by AND owner.scope_id IS NOT NEW.scope_id
   ))`).join('\n  OR ')
 
-const lineageCauseHistoryMismatch = [...new Set(lineageOwnerRegistry.map(({ prefix }) => prefix))]
+/**
+ * The ownerless `art-` prefix joins the owned prefixes here for the same reason.
+ * `op-`/`del-` causes are covered by the operation-cause guard below.
+ */
+const lineageCauseHistoryMismatch = [
+  ...new Set([...lineageOwnerRegistry.map(({ prefix }) => prefix), C1_KEY_PREFIXES.artifact]),
+]
   .map((prefix) => `(NEW.caused_by GLOB '${prefix}*' AND EXISTS (
     SELECT 1 FROM lineage_event AS owner
     WHERE (owner.subject_id = NEW.caused_by OR owner.caused_by = NEW.caused_by)
@@ -480,11 +558,23 @@ CREATE TABLE IF NOT EXISTS dated_event_observation (
   CHECK ((occurred_at IS NULL) = (c2_expires_at IS NULL))
 ) STRICT;
 CREATE TABLE IF NOT EXISTS v2_store_provenance (
+  -- The C0 bridge row is PRESERVED verbatim, so this DDL mirrors the v2 source
+  -- shape in server/api/v2/store.ts: both recorded modes, a nullable marker, the
+  -- opaque activation_card_id, and the same mode/marker/card XOR. Narrowing it to
+  -- synthetic-only would make a well-formed activation_card store unmigratable
+  -- while the v2 writer can still produce one. Serving is a SEPARATE gate: the v2
+  -- read path still refuses to SERVE activation_card provenance (ADR-04), and this
+  -- store is refused by the v2 reader on application_id/user_version anyway.
   singleton INTEGER PRIMARY KEY NOT NULL CHECK (singleton = 1),
-  mode TEXT NOT NULL CHECK (mode = 'synthetic'),
-  synthetic_marker TEXT NOT NULL,
+  mode TEXT NOT NULL CHECK (mode IN ('synthetic', 'activation_card')),
+  synthetic_marker TEXT,
+  activation_card_id TEXT CHECK (activation_card_id IS NULL OR (${token('activation_card_id')})),
   importer_version TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  CHECK (
+    (mode = 'synthetic' AND synthetic_marker IS NOT NULL AND activation_card_id IS NULL)
+    OR (mode = 'activation_card' AND synthetic_marker IS NULL AND activation_card_id IS NOT NULL)
+  )
 ) STRICT;
 CREATE TABLE IF NOT EXISTS v2_coverage_record (
   coverage_id TEXT PRIMARY KEY NOT NULL CHECK (${token('coverage_id')}),
@@ -546,7 +636,9 @@ CREATE TABLE IF NOT EXISTS collection_checkpoint (
   c2_expires_at TEXT,
   PRIMARY KEY (scope_id, checkpoint_id),
   FOREIGN KEY (scope_id, job_id) REFERENCES collection_job(scope_id, job_id),
-  FOREIGN KEY (scope_id, snapshot_id) REFERENCES source_snapshot(scope_id, snapshot_id),
+  -- The snapshot edge carries job_id so a checkpoint cannot select a snapshot
+  -- produced by a DIFFERENT job in the same scope (#128 late review).
+  FOREIGN KEY (scope_id, snapshot_id, job_id) REFERENCES source_snapshot(scope_id, snapshot_id, job_id),
   UNIQUE (scope_id, checkpoint_id, job_id),
   CHECK ((bounded_overlap_start IS NULL) = (last_complete_snapshot_hash IS NULL)),
   CHECK ((bounded_overlap_start IS NULL) = (c2_expires_at IS NULL)),
@@ -563,6 +655,8 @@ CREATE TABLE IF NOT EXISTS source_snapshot (
   status TEXT NOT NULL CHECK (status = 'closed'),
   PRIMARY KEY (scope_id, snapshot_id),
   FOREIGN KEY (scope_id, job_id) REFERENCES collection_job(scope_id, job_id),
+  -- Parent key for the job-pinned snapshot edges of coverage_ledger and
+  -- collection_checkpoint. On its own it constrains nothing (#128 late review).
   UNIQUE (scope_id, snapshot_id, job_id),
   CHECK ((source_snapshot_id IS NULL) = (snapshot_hash IS NULL)),
   CHECK ((source_snapshot_id IS NULL) = (range_start IS NULL)),
@@ -588,7 +682,10 @@ CREATE TABLE IF NOT EXISTS coverage_ledger (
   range_start TEXT, range_end TEXT, observed_at TEXT, c2_expires_at TEXT,
   PRIMARY KEY (scope_id, coverage_id),
   FOREIGN KEY (scope_id, job_id) REFERENCES collection_job(scope_id, job_id),
-  FOREIGN KEY (scope_id, snapshot_id) REFERENCES source_snapshot(scope_id, snapshot_id),
+  -- Same job pinning as the checkpoint edge: a coverage row may only cite the
+  -- snapshot of its OWN job. A NULL snapshot_id still satisfies the composite
+  -- key (SQLite MATCH SIMPLE), so non-complete rows are unaffected.
+  FOREIGN KEY (scope_id, snapshot_id, job_id) REFERENCES source_snapshot(scope_id, snapshot_id, job_id),
   CHECK ((status = 'complete' AND snapshot_id IS NOT NULL) OR (status <> 'complete' AND snapshot_id IS NULL)),
   CHECK ((source_coverage_id IS NULL) = (range_start IS NULL)),
   CHECK ((source_coverage_id IS NULL) = (range_end IS NULL)),
@@ -613,7 +710,8 @@ CREATE TABLE IF NOT EXISTS claim (
   statement_code TEXT NOT NULL CHECK (statement_code IN (${quoted(CLAIM_STATEMENT_CODES)})),
   method_id TEXT NOT NULL CHECK (${token('method_id', 128)}),
   method_version TEXT NOT NULL CHECK (${token('method_version', 64)}),
-  window_start TEXT NOT NULL, window_end TEXT NOT NULL,
+  window_start TEXT NOT NULL CHECK (${canonicalTimestampShape('window_start')}),
+  window_end TEXT NOT NULL CHECK (${canonicalTimestampShape('window_end')}),
   schema_version TEXT NOT NULL CHECK (schema_version = '${CLAIM_SCHEMA_VERSION}'),
   claim_id_material_version TEXT NOT NULL CHECK (claim_id_material_version = '${CLAIM_MATERIAL_V3_PROPOSAL_VERSION}'),
   created_at TEXT CHECK (created_at IS NULL OR ${canonicalTimestampShape('created_at')}),
@@ -640,6 +738,9 @@ CREATE TABLE IF NOT EXISTS claim_evidence_edge (
   CHECK ((role = 'derives_from' AND target_claim_id IS NOT NULL) OR (role = 'coverage_basis' AND target_coverage_id IS NOT NULL) OR (role IN (${quoted(CLAIM_EVIDENCE_EDGE_ROLES)}) AND target_evidence_id IS NOT NULL)),
   CHECK (target_claim_id IS NULL OR target_claim_id <> claim_id)
 ) STRICT;
+CREATE UNIQUE INDEX IF NOT EXISTS source_snapshot_closed_job_identity ON source_snapshot (
+  scope_id, job_id
+) WHERE status = 'closed';
 CREATE UNIQUE INDEX IF NOT EXISTS claim_evidence_edge_identity ON claim_evidence_edge (
   scope_id, claim_id, role, COALESCE(target_evidence_id, target_claim_id, target_coverage_id)
 );
@@ -675,9 +776,12 @@ CREATE TABLE IF NOT EXISTS lineage_event (
 CREATE UNIQUE INDEX IF NOT EXISTS lineage_retention_event_identity ON lineage_event (
   scope_id, subject_kind, subject_id, event_kind, event_week
 ) WHERE event_kind IN ('scope_alias_expired', 'c2_retention_expired');
+${ownerIdentityIndexSqlBlock}
+${ownerIdentityTriggerSqlBlock}
 ${immutableTriggerSqlBlock}
 ${immutableInsertTriggerSqlBlock}
 ${identityBindingTriggerSqlBlock}
+${coverageIdentityTriggerSqlBlock}
 ${lineageScopeTriggerSql}
 ${c2RetentionOwnerTriggerSql}
 ${lineageOwnerTriggerSqlBlock}

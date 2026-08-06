@@ -32,14 +32,17 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'DL-LIFE-02 chain PRs #103, #105, #107-#125 (slice A, B1a+repairs, B1b-i..iii, B2a-i..iii,
   B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
   their engineering record stays in the ledger', 'state syncs #126']
-active_slice: 'DL-LIFE-02 PR B-2 — #86 storage half (tighten incremental.ts coverage_id CHECK to
-  the cov- registry + migrate alias-bearing fixtures), discriminating verification of every open
-  #128/#129 finding, v2_store_provenance drift resolution, and the generated scale corpus with an
-  equivalence budget (fold in the #133 remint-metadata redesign) — then B4 app-owned artifacts.
-  Resolver deletion-lineage scoping decision (recorded on #80): B3 ships the v3 deletion-lineage
-  reader consumed by the CLI; the whyResolver coverage/job lineage joins land with the Phase-4
-  stored-observation bridge, because v2 stores carry no per-subject tombstones for such joins to
-  find. Inert-code budget stays zero: every new module lands with its consumer in the same PR.'
+active_slice: 'DL-LIFE-02 B4 — app-owned artifact catalogue and deletion saga per
+  10_LIFE_02B_DECISION.md §4/§5 item 5, including the durable maintenance-pending marker owed
+  from the PR #136 round-three triage. PR B-2 (this branch) completed: #133 mint-order
+  equivalence proof (graph colouring deleted, linear, measured), #86 storage half (cov- registry
+  CHECK + UNIQUE(coverage_id) + fixture migration), all ten open #128/#129 findings dispositioned
+  with discriminating fixtures (eight real, fixed; two disproved, pinned), v2_store_provenance
+  activation_card SUPPORT for migration (serving gate untouched), and the Phase-1c scale corpus
+  with a measured budget. Resolver deletion-lineage scoping decision (recorded on #80): B3 ships
+  the v3 deletion-lineage reader consumed by the CLI; the whyResolver coverage/job lineage joins
+  land with the Phase-4 stored-observation bridge, because v2 stores carry no per-subject
+  tombstones for such joins to find. Inert-code budget stays zero.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -50,11 +53,12 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'None for B3. A real migration/connector still requires LIFE-03
-  backup/grace/restore/tombstone-replay proof plus the #86 storage half (tighten the
-  incremental.ts coverage_id CHECK to the cov- registry and migrate alias-bearing fixture
-  stores); the #86 connector mint, #79 PresentationView, and #78 credential/launch surface are
-  resolved on fable/boundary-and-reachability.'
+blockers: 'None for B4. A real migration/connector still requires B4 completion, LIFE-03
+  backup/grace/restore/tombstone-replay proof, and the activation-enforcement alignment; the
+  #86 storage half is CLOSED on this branch (both halves of #86 now hold), #128/#129 are fully
+  dispositioned, and the equivalence scale risk is closed by measurement. Deliberate breaking
+  change: a pre-#86 on-disk v2 store fails closed at schema validation — no real store exists
+  and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -120,9 +124,20 @@ residual_risks:
      (row-kind-aware equivalence classifier + shared runtime evidence contract in
      shared/whyContract.ts with requested-reference binding). Also fixed by B3 from the #128
      list: duplicate deletion identities per subject fail closed (OPERATION_CONFLICT)'
-  - 'v2_store_provenance drift: api/v2/store.ts declares 6 columns including activation_card_id,
-     v3ShadowSchema.ts declares 5 and pins mode=synthetic, yet v3Proposal.ts calls the table
-     preserve — an activation_card-mode v2 store is unmigratable (SOURCE_BRIDGE_REFUSED)'
+  - 'v2_store_provenance drift RESOLVED by SUPPORTING activation_card provenance: the v3 shadow
+     DDL now mirrors the v2 source shape (both modes, nullable marker, opaque activation_card_id,
+     same XOR CHECK), the rewrite copies either mode verbatim, and migration validates provenance
+     STRUCTURE only — the ADR-04 serving refusal (V2_ACTIVATION_CARD_NOT_REVIEWED) stays on the v2
+     read path via assertServableProvenance, which the rewrite no longer calls. The upcoming real
+     q-5 activation_card store is therefore migratable and still unservable'
+  - 'Phase-1c scale corpus landed: server/storage/v3ScalePerformance.test.ts generates a
+     deterministic invented v2 source (3 scopes, ~10k commits, ~10k PR facts, ~2k dated events,
+     150 jobs with per-job snapshot/coverage, 600 evidence, 600 claims, 603 lineage rows incl. 3
+     legacy tombstones, C0 bridge present) and times build -> migration -> sweep -> B3 deletion ->
+     reopen. Budget: 120 s total / 90 s migration; measured on one Windows dev box at 6.2-6.4 s
+     total with 4.1-4.2 s migration, i.e. ~19-21x headroom — the mint-order proof is linear in
+     practice, not only on paper. `npm test` runs only the always-on ~1/20 smoke lane; the full
+     lane is gated on DEVELOPER_LENS_SCALE=1'
   - 'closed by the executable core: the C2 sweep now runs against a real rewrite output in
      server/storage/v3ShadowSweepIntegration.test.ts (migrate through the file factory, sweep the
      accepted store, expired cohort NULLed with its retention events, live cohort byte-identical).
@@ -134,17 +149,18 @@ residual_risks:
      registry closes over all 20 shadow tables, and the CLI exercises bridge-present migration
      followed by selected-store deletion. The slice-A v2 planner remains only as the v2-era seam
      under its own unit tests'
-  - 'graphColours refinement is super-linear in identifier count, and the acceptance-time
-     fullEquivalenceShadowChecksum (PR #127) is now the dominant term because it colours every
-     minted identity column across all tables; fine for fixtures, a practical hang risk at
-     multi-year scale — measure and budget in PR B-2 before any real migration, folding in the
-     #133 preserved-scope-id remint-metadata redesign (confirmed digest escape, reproduced
-     2026-08-05)'
+  - 'RESOLVED by PR B-2: graphColours and both alpha-rename digests are DELETED — the mint-order
+     equivalence proof (rewrite reports created identifiers through a private collector channel;
+     digest index-encodes them, everything else literal) is linear, closes the #133 preserved-id
+     escape, and is measured: 25,469 source rows through the full journey in ~6.3 s on this box,
+     budgets asserted in the opt-in DEVELOPER_LENS_SCALE lane plus an always-on smoke variant'
   - '#135 tracks eight residual semantic-coherence refinements to the evidence resolve contract
      (PR #132 round-three review) — MEDIUM defense-in-depth, natural slice when the contract is
      next touched'
   - 'B4 completion only unblocks LIFE-03; a first real migration/connector also requires LIFE-03
-     backup/grace/restore/tombstone-replay proof and #86 V2 alias-bearing coverage remint'
+     backup/grace/restore/tombstone-replay proof and the activation-enforcement alignment. The
+     #86 storage half is CLOSED by PR B-2 (cov- registry CHECK + UNIQUE(coverage_id) + fixture
+     migration); both halves of #86 now hold'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,
      producer-absence limiting codes, canonical coverage-code registration'
   - '#86 RESOLVED at the connector on fable/boundary-and-reachability: coverageId is a required
@@ -153,9 +169,9 @@ residual_risks:
      The replay-determinism constraint still binds and is now the CALLER''s: a replayed job must
      supply the same (jobId, coverageId, jobStartedAt) it supplied the first time, or the storage
      payload hash changes and persistIncrementalGithubCoreTransition fails closed on
-     COLLECTION_JOB_ID_COLLISION. STILL OPEN: the incremental.ts coverage_id CHECK is deliberately
-     unchanged and existing fixture stores keep alias-bearing ids, so the migration remains owed
-     before the q-5 github.core real-collection runs'
+     COLLECTION_JOB_ID_COLLISION. The storage half is CLOSED by PR B-2: the incremental.ts
+     coverage_id CHECK admits only the cov- registry with UNIQUE(coverage_id), every fixture is
+     migrated, and a pre-#86 on-disk store deliberately fails closed at schema validation'
   - 'LIFE-01 transcript replay proves structural lineage only; external authenticity of opaque
      digests remains a future trusted-adapter boundary, with no runtime caller'
   - 'frozen or tracked-only: #68, #69'

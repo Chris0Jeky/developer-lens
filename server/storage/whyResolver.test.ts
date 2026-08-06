@@ -56,7 +56,8 @@ const GAMMA_ALIAS = 'repo-g2'
  * The OTHER alias namespace: `collection_job.scope_alias` / `coverage_ledger.scope_alias`.
  * Deliberately different values from the two above, because a canary set that only knew
  * the `claim_scope` aliases was blind to the connector baking these into `coverage_id`
- * (issue #86). Both namespaces are pinned.
+ * (issue #86, since closed at both the connector and the ledger CHECK). Both namespaces
+ * stay pinned: the canary defends the boundary, not the key's current shape.
  *
  * These were `scope-a` / `-b` / `-c` until #84 landed. They cannot be, any more: the
  * writer now mints surrogates as `scope-` + 64 hex, so a minted `scope-a1b2…` CONTAINS
@@ -876,9 +877,10 @@ describe('why resolver — the C2 boundary', () => {
     const fixture = whyFixture()
     // BOTH alias namespaces, because they are different values and an earlier version of
     // this test checked only the first: the claim_scope C2 alias, AND the collection-side
-    // scope_alias, which the connector bakes into coverage_id verbatim (issue #86). The
-    // full minted coverage_id is asserted too, so a regression cannot pass by emitting the
-    // identifier while the bare alias happens not to appear.
+    // scope_alias, which the connector once baked into coverage_id verbatim (issue #86,
+    // now closed at both halves). The full stored coverage_id is asserted too, so a
+    // regression cannot pass by emitting the identifier while the bare alias happens not
+    // to appear.
     const forbidden = [
       ALPHA_ALIAS,
       GAMMA_ALIAS,

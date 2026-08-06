@@ -220,9 +220,19 @@ describe('storage-v3 B1a proposal', () => {
   it('keeps C2 observations out of every preserve disposition and aborts unsafe claim graphs', () => {
     const c2Terms = /(?:\bsha\b|pull-request number|provider(?:_id| provenance| identity)|occurred_at|created_at|payload hash|snapshot hash|exact range|\brange\b|caller (?:job|snapshot) ID|provenance)/i
     for (const entry of STORAGE_V3_DISPOSITIONS) {
-      expect(entry.preserve.some((field) => c2Terms.test(field) && !/C0 synthetic-only provenance/i.test(field)), `${entry.tableName} preserve`).toBe(false)
+      // The one carve-out is the C0 bridge record itself: preserve-disposition by
+      // decision, in either recorded mode, and never a repository C2 observation.
+      expect(entry.preserve.some((field) => c2Terms.test(field) && !/validated C0 provenance record/i.test(field)), `${entry.tableName} preserve`).toBe(false)
     }
     const byTable = Object.fromEntries(STORAGE_V3_DISPOSITIONS.map((entry) => [entry.tableName, entry])) as Record<string, StorageV3Disposition>
+    // The v2 source records two modes, so the preserve disposition SUPPORTS both and
+    // refuses only structural invalidity — the ADR-04 serving gate is elsewhere.
+    expect(byTable.v2_store_provenance.preserve).toEqual([
+      expect.stringMatching(/verbatim in either recorded mode: synthetic \(marker, no card\) or activation_card \(opaque card ID, no marker\)/i),
+    ])
+    expect(byTable.v2_store_provenance.refuse).toEqual([
+      expect.stringMatching(/structurally invalid provenance only: no record, more than one record, an unrecognized mode, or a mode\/marker\/card XOR violation/i),
+    ])
     expect(byTable.commit_observation.preserve).toEqual(['aggregate counters', 'feature classification'])
     expect(byTable.pull_request_fact.preserve).toEqual(['lifecycle state', 'aggregate counters'])
     expect(byTable.dated_event_observation.preserve).toEqual(['event_kind'])
@@ -324,7 +334,9 @@ describe('storage-v3 B1a proposal', () => {
     expect(before.incrementalVersion).toBe('2.2.0')
     expect(sha256(before.storageSql)).toBe('0c905b7fa6d46a8c43a1ed50ee9d0d3837ca33d8464fba52671ec70670e7917a')
     expect(sha256(before.claimGraphSql)).toBe('2cc02122e85d84227ff47f01f5fee999c431f1936a73f8850cc66632c8d077b9')
-    expect(before.incrementalSchemaFingerprint).toBe('444bfb0e59ce00933d874b02176dcef448f5e050c81a7c0e5928b0e267055bf1')
+    // Repinned for #86: coverage_ledger.coverage_id gained the content-free `cov-` CHECK and
+    // UNIQUE. The pin exists to catch UNINTENDED incremental DDL drift, not to freeze it.
+    expect(before.incrementalSchemaFingerprint).toBe('16609ab8c14a584065f1fd7d0b0032826985164d1195ed0001f0939eb89a89f7')
     expect(sha256(before.bridgeSql)).toBe('0df6fe9ec33f4f5ffd32a7e0d03ae36a7692e52de4e78f6afeeaf8e377bf1340')
     expect(sha256(JSON.stringify(before.capabilityIds))).toBe('c53eabd0bad1ad693c376883e447d46e0879bfac2597b0cfea67390ceeed559d')
     expect(sha256(JSON.stringify(before.capabilityRegistry))).toBe('1fc440f74d96b613ba2f50f92817df27471d621bef195872db803169efa980bd')

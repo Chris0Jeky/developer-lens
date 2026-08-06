@@ -44,13 +44,13 @@ import {
  *    only. `claim_scope.scope_alias` and `coverage_ledger.scope_alias` /
  *    `collection_job.scope_alias` are never selected — the scope node reports
  *    `hasAlias` computed inside SQLite (`scope_alias IS NOT NULL`), so the alias value
- *    never crosses into JavaScript at all. `coverage_id` is likewise never emitted: the
- *    connector now mints it content-free (`cov-` + 64 hex, issue #86), but stores
- *    migrated from the alias-bearing era may still carry the old
- *    `github.core:${scopeAlias}:${rangeEnd}` shape until the #86 storage half lands. A
+ *    never crosses into JavaScript at all. `coverage_id` is likewise never emitted: it is a
+ *    storage identifier, and issue #86 closed both halves — the connector mints it
+ *    content-free and the ledger's CHECK now admits only `cov-` + 64 lowercase hex, so the
+ *    alias-bearing `github.core:${scopeAlias}:${rangeEnd}` shape is not storable at all. A
  *    coverage row is referenced here by `(rangeStart, jobId)` instead —
  *    `coverage_ledger.job_id` is UNIQUE, so that pair identifies the row exactly and the
- *    property holds regardless of the stored id's vintage.
+ *    property holds without depending on what the key contains.
  *
  * WHAT THIS MODULE DOES NOT BOUND. The depth bound and per-claim de-duplication cap the
  * two transitive walks, not the tree's total size: a claim may carry arbitrarily many
@@ -104,10 +104,9 @@ export const WHY_MAX_DEPTH_BOUND = 512
 
 /**
  * How the tree names a `coverage_ledger` row. Deliberately NOT the row's `coverage_id`:
- * the connector now mints that content-free (#86), but rows written before the re-mint
- * may still carry the alias-bearing shape until the #86 storage half migrates them.
- * `job_id` is UNIQUE in `coverage_ledger`, so `(rangeStart, jobId)` identifies the row
- * exactly while staying content-free for every vintage.
+ * #86 made that content-free at both the connector and the ledger CHECK, but a storage
+ * identifier is still not presentation material. `job_id` is UNIQUE in `coverage_ledger`,
+ * so `(rangeStart, jobId)` identifies the row exactly while staying content-free.
  */
 export interface WhyCoverageKey {
   readonly rangeStart: string

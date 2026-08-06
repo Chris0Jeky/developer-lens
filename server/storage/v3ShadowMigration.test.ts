@@ -10,7 +10,6 @@ import { installIncrementalGithubCoreStorage } from './incremental.js'
 import { createInstallationAliases } from './installationAliases.js'
 import {
   orchestrateStorageV3ShadowMigration,
-  replayNormalizedShadowChecksum,
   StorageV3ShadowMigrationError,
   type StorageV3ShadowTargetAttempt,
 } from './v3ShadowMigration.js'
@@ -19,7 +18,7 @@ import {
   STORAGE_V3_SHADOW_TABLES,
   rewriteStorageV3Shadow,
 } from './v3ShadowRewrite.js'
-import { installStorageV3ShadowSchema, STORAGE_V3_SHADOW_SCHEMA_VERSION } from './v3ShadowSchema.js'
+import { STORAGE_V3_SHADOW_SCHEMA_VERSION } from './v3ShadowSchema.js'
 
 function sourceFixture(): { db: Database.Database; key: Buffer; raw: string } {
   const db = openStorageDatabase(':memory:')
@@ -33,6 +32,10 @@ function sourceFixture(): { db: Database.Database; key: Buffer; raw: string } {
   const aliases = createInstallationAliases(key)
   const provider = aliases.repositoryProviderId(raw)
   const analytical = aliases.repositoryAnalyticalKey(raw)
+  // A PRE-EXISTING scope row: the rewrite PRESERVES this scope id verbatim, so both
+  // targets must agree on it literally — the exact #133 seam.
+  db.prepare('INSERT INTO claim_scope (scope_id, scope_alias, linked_at) VALUES (?, ?, ?)')
+    .run(PRESERVED_SCOPE, provider, '2026-01-01T00:00:00.000Z')
   db.prepare('INSERT INTO repository_identity (provider_id, analytical_key, is_private, is_archived, is_fork) VALUES (?, ?, 0, 0, 0)')
     .run(provider, analytical)
   db.prepare('INSERT INTO commit_observation (repository_provider_id, sha, occurred_at, source, feature_type, is_revert, is_fixup, message_length) VALUES (?, ?, ?, ?, ?, 0, 0, 1)')
@@ -45,6 +48,7 @@ function sourceFixture(): { db: Database.Database; key: Buffer; raw: string } {
 }
 
 const LEGACY_TOMBSTONE_SUFFIX = 'a'.repeat(64)
+const PRESERVED_SCOPE = `scope-${'1'.repeat(64)}`
 
 interface AttemptRecord {
   closeCount: number
@@ -219,7 +223,6 @@ describe('B1b-iii shadow orchestration', () => {
       expect(Object.isFrozen(result)).toBe(true)
       expect(paths.records.get('primary')).toMatchObject({ closeCount: 1, reopenCount: 1, discardCount: 0 })
       expect(paths.records.get('replay')).toMatchObject({ closeCount: 2, reopenCount: 1, discardCount: 1 })
-      expect(replayNormalizedShadowChecksum(accepted.db)).toBe(result.checksum)
       expect(accepted.db.prepare('PRAGMA foreign_keys').pluck().get()).toBe(1)
       expect(() => accepted.db.prepare(
         'INSERT INTO repository_identity (scope_id, is_private, is_archived, is_fork) VALUES (?, 0, 0, 0)',
@@ -233,6 +236,46 @@ describe('B1b-iii shadow orchestration', () => {
         aliases.repositoryAnalyticalKey(raw),
         ...paths.paths.values(),
       ]) expect(publicResult).not.toContain(forbidden)
+    } finally { closeAccepted(paths); source.close(); paths.cleanup() }
+  })
+
+  /**
+   * The upcoming real q-5 store records `activation_card` provenance. Migration
+   * validates provenance STRUCTURE, so such a source must survive the whole
+   * orchestration — both rewrites, the mint-order equivalence proof, and
+   * acceptance — with its C0 row preserved byte-for-byte, card ID included. The
+   * ADR-04 SERVING refusal is a separate gate on the v2 read path.
+   */
+  it('accepts an activation-card source and preserves its provenance verbatim', () => {
+    const { db: source, key, raw } = sourceFixture()
+    source.prepare('UPDATE v2_store_provenance SET mode = ?, synthetic_marker = NULL, activation_card_id = ?')
+      .run('activation_card', 'invented-activation-card')
+    const paths = fileFactory()
+    try {
+      const result = orchestrateStorageV3ShadowMigration({
+        sourceDb: source,
+        identityBindings: [{ rawProviderId: raw }],
+        installationKey: key,
+        asOf: '2026-01-02T00:00:00.000Z',
+        targetFactory: paths.factory,
+        primaryRandomBytes: entropy(23),
+        replayRandomBytes: entropy(24),
+      })
+      expect(result.status).toBe('complete')
+      const accepted = paths.state.accepted!
+      expect(accepted.db.prepare(
+        'SELECT singleton, mode, synthetic_marker, activation_card_id, importer_version, created_at FROM v2_store_provenance',
+      ).get()).toEqual({
+        singleton: 1,
+        mode: 'activation_card',
+        synthetic_marker: null,
+        activation_card_id: 'invented-activation-card',
+        importer_version: '1.0.0',
+        created_at: '2026-01-01T00:00:00.000Z',
+      })
+      // v2_coverage_record stays delete-disposition under either mode.
+      expect(accepted.db.prepare('SELECT COUNT(*) FROM v2_coverage_record').pluck().get()).toBe(0)
+      expect(JSON.stringify(result)).not.toContain('invented-activation-card')
     } finally { closeAccepted(paths); source.close(); paths.cleanup() }
   })
 
@@ -259,6 +302,30 @@ describe('B1b-iii shadow orchestration', () => {
     ['same-shaped key substitution in a literal C2 column', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
       attempt.db.prepare('UPDATE commit_observation SET sha = ?')
         .run(`job-${(kind === 'primary' ? 'a' : 'b').repeat(64)}`)
+    }],
+    // The exact #133 scenario, previously proven to ESCAPE the graph-colouring digest:
+    // a PRESERVED scope id consistently substituted with a same-shaped value in one
+    // target. Under the mint-order proof the substituted value is not in the mint
+    // list, is compared literally, and refuses.
+    ['same-shaped substitution of a PRESERVED scope id (#133)', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
+      if (kind !== 'primary') return
+      const db = attempt.db
+      const substituted = `scope-${'2'.repeat(64)}`
+      const scopeRow = db.prepare('SELECT * FROM claim_scope WHERE scope_id = ?').get(PRESERVED_SCOPE) as Record<string, unknown>
+      const identityRows = db.prepare('SELECT * FROM repository_identity WHERE scope_id = ?').all(PRESERVED_SCOPE) as Array<Record<string, unknown>>
+      const commitRows = db.prepare('SELECT * FROM commit_observation WHERE scope_id = ?').all(PRESERVED_SCOPE) as Array<Record<string, unknown>>
+      db.prepare('DELETE FROM commit_observation WHERE scope_id = ?').run(PRESERVED_SCOPE)
+      db.prepare('DELETE FROM repository_identity WHERE scope_id = ?').run(PRESERVED_SCOPE)
+      db.prepare('DELETE FROM claim_scope WHERE scope_id = ?').run(PRESERVED_SCOPE)
+      const insert = (table: string, row: Record<string, unknown>): void => {
+        const entries = Object.entries({ ...row, scope_id: substituted })
+        db.prepare(
+          `INSERT INTO ${table} (${entries.map(([column]) => column).join(', ')}) VALUES (${entries.map(() => '?').join(', ')})`,
+        ).run(...entries.map(([, value]) => value))
+      }
+      insert('claim_scope', scopeRow)
+      for (const row of identityRows) insert('repository_identity', row)
+      for (const row of commitRows) insert('commit_observation', row)
     }],
     // The exact PR #127 late-review scenario: a source-derived legacy deletion ID is
     // replaced with another same-shaped `del-<64hex>` in ONE target. Alpha-renaming
@@ -378,87 +445,6 @@ describe('B1b-iii shadow orchestration', () => {
       held.close()
       source.close()
       paths.cleanup()
-    }
-  })
-})
-
-function checksumFixture(
-  scope: string,
-  rows: ReadonlyArray<readonly [string, string, number]>,
-): Database.Database {
-  const db = new Database(':memory:')
-  installStorageV3ShadowSchema(db)
-  db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scope)
-  for (const [observationId, featureType, additions] of rows) {
-    db.prepare(`INSERT INTO commit_observation (
-      scope_id, observation_id, additions, feature_type, is_revert, is_fixup, message_length
-    ) VALUES (?, ?, ?, ?, 0, 0, 1)`).run(scope, observationId, additions, featureType)
-  }
-  return db
-}
-
-function insertChecksumClaim(db: Database.Database, scope: string, createdAt: string | null): void {
-  db.prepare(`INSERT INTO claim (
-    scope_id, claim_id, layer, statement_code, method_id, method_version,
-    window_start, window_end, schema_version, claim_id_material_version, created_at
-  ) VALUES (?, ?, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', ?, ?, '1.0.0', 'claim-id.v3', ?)`)
-    .run(
-      scope,
-      `cl_${'7'.repeat(64)}`,
-      '2026-01-01T00:00:00.000Z',
-      '2026-02-01T00:00:00.000Z',
-      createdAt,
-    )
-}
-
-describe('B1b-iii C1 replay checksum', () => {
-  it('is invariant to fresh C2 IDs, C2 values, and row insertion order', () => {
-    const first = checksumFixture(`scope-${'1'.repeat(64)}`, [
-      [`obs-${'2'.repeat(64)}`, 'feat', 1],
-      [`obs-${'3'.repeat(64)}`, 'fix', 2],
-    ])
-    const second = checksumFixture(`scope-${'4'.repeat(64)}`, [
-      [`obs-${'6'.repeat(64)}`, 'fix', 2],
-      [`obs-${'5'.repeat(64)}`, 'feat', 1],
-    ])
-    try {
-      second.prepare(`UPDATE commit_observation SET
-        sha = 'invented-c2-sha', occurred_at = '2026-01-01T00:00:00.000Z',
-        source = 'local-git', c2_expires_at = '2027-02-01T00:00:00.000Z'`).run()
-      expect(replayNormalizedShadowChecksum(second)).toBe(replayNormalizedShadowChecksum(first))
-    } finally { first.close(); second.close() }
-  })
-
-  it('changes for a semantic C1 difference', () => {
-    const first = checksumFixture(`scope-${'1'.repeat(64)}`, [
-      [`obs-${'2'.repeat(64)}`, 'feat', 1],
-    ])
-    const second = checksumFixture(`scope-${'3'.repeat(64)}`, [
-      [`obs-${'4'.repeat(64)}`, 'feat', 2],
-    ])
-    try {
-      expect(replayNormalizedShadowChecksum(second)).not.toBe(replayNormalizedShadowChecksum(first))
-    } finally { first.close(); second.close() }
-  })
-
-  it('keeps claim IDs and C1 checksum stable when only C2 claim provenance changes or expires', () => {
-    const scope = `scope-${'1'.repeat(64)}`
-    const first = checksumFixture(scope, [])
-    const second = checksumFixture(scope, [])
-    const cleared = checksumFixture(scope, [])
-    try {
-      insertChecksumClaim(first, scope, '2025-01-31T12:00:00.000Z')
-      insertChecksumClaim(second, scope, '2025-02-01T12:00:00.000Z')
-      insertChecksumClaim(cleared, scope, null)
-      const checksum = replayNormalizedShadowChecksum(first)
-      expect(replayNormalizedShadowChecksum(second)).toBe(checksum)
-      expect(replayNormalizedShadowChecksum(cleared)).toBe(checksum)
-      second.prepare('UPDATE claim SET layer = ?').run('hypothesis')
-      expect(replayNormalizedShadowChecksum(second)).not.toBe(checksum)
-    } finally {
-      first.close()
-      second.close()
-      cleared.close()
     }
   })
 })
