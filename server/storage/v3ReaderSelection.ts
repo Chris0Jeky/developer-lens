@@ -372,7 +372,7 @@ function selectStorageV3ReaderInternal(
         protectedSelection = true
       }
       stage = 'revocation'
-      const revocations = commitRevocationReplay(artifactRoot, closed.installationKey, receipt, lease)
+      let revocations = commitRevocationReplay(artifactRoot, closed.installationKey, receipt, lease)
       assertStorageV3RevocationReplayApplied(db, revocations)
       stage = 'proof'
       const proof = publishProof(db, artifactRoot, closed.installationKey)
