@@ -44,6 +44,11 @@ import {
 } from './v3SelectionProof.js'
 import { openSelectedStorageV3StoreReadonly } from './v3StoreFiles.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
+import {
+  assertStorageV3RevocationReplayApplied,
+  replayStorageV3Revocations,
+  verifyStorageV3RevocationReplay,
+} from './v3RevocationReplay.js'
 import type { TaskInstallationKeyHandle } from './taskInstallationKey.js'
 import {
   assertSelectableStorageV3Target,
@@ -354,6 +359,7 @@ type RestoreStage =
   | 'claim'
   | 'copy'
   | 'normalize'
+  | 'tombstone-replay'
   | 'receipt'
   | 'link'
   | 'directory-sync'
@@ -583,11 +589,17 @@ function restoreFromVerifiedSelection(
     preflight?.()
     root = openStorageV3ArtifactRoot(closed.directory)
     assertStorageV3ArtifactRootInstallationKey(root, closed.installationKey)
-    return withStorageV3WriterLease(root, () => {
+    return withStorageV3WriterLease(root, (lease) => {
       const selection = consumeStorageV3MigrationSelectionProof(
         closed.selectionProof,
         root!,
         closed.installationKey,
+      )
+      const revocations = verifyStorageV3RevocationReplay(
+        root!,
+        closed.installationKey,
+        selection,
+        lease,
       )
       const selectedPath = storageV3ArtifactFilePath(root!, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
       const tempLocator = STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary
@@ -602,6 +614,7 @@ function restoreFromVerifiedSelection(
           if (receipt === undefined) return restoreUnavailable()
           assertExactRestoreSelection(receipt, selection)
           assertRestoreSelectedArtifact(replay, selection.selectedArtifactId)
+          assertStorageV3RevocationReplayApplied(replay, revocations)
           return Object.freeze({ reader: 'sqlite-v3' as const, db: replay, selection: receipt })
         } catch {
           if (replay.open) replay.close()
@@ -634,6 +647,8 @@ function restoreFromVerifiedSelection(
         ownerScopeIds: verified.ownerScopeIds,
         intentSha256: verified.intentSha256,
       })
+      replayStorageV3Revocations(writable, revocations)
+      failAfterStage?.('tombstone-replay')
       failAfterStage?.('receipt')
       const recorded = recordStorageV3MigrationSelection(writable, {
         legacySourceId: selection.legacySourceId,
@@ -689,6 +704,7 @@ function restoreFromVerifiedSelection(
         if (receipt === undefined) return fail()
         assertExactRestoreSelection(receipt, selection)
         assertRestoreSelectedArtifact(reader, selection.selectedArtifactId)
+        assertStorageV3RevocationReplayApplied(reader, revocations)
         return Object.freeze({ reader: 'sqlite-v3' as const, db: reader, selection: receipt })
       } catch {
         if (reader.open) reader.close()

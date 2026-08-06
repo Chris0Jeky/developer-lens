@@ -34,8 +34,12 @@ import {
   v3SelectionProofTestSeams,
   verifyStorageV3MigrationSelectionProof,
 } from './v3SelectionProof.js'
+import {
+  v3RevocationReplayTestSeams,
+} from './v3RevocationReplay.js'
 import { installStorageV3ShadowSchema, storageV3ArtifactManifestSha256, storageV3SelectedStoreContentSha256 } from './v3ShadowSchema.js'
 import { taskInstallationKeyTestSeams } from './taskInstallationKey.js'
+import { withStorageV3WriterLease } from './v3WriterLease.js'
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -45,7 +49,10 @@ const FINAL_LOCATOR = 'migration-backup-20260806T123456Z.sqlite'
 const STAGED_LOCATOR = `${FINAL_LOCATOR}.tmp`
 const INTENT = 'a'.repeat(64)
 
-async function publicationFixture(interruptSelectionProof = false): Promise<{
+async function publicationFixture(options: Readonly<{
+  interruptSelectionProof?: boolean
+  revokeAfterBackup?: boolean
+}> = {}): Promise<{
   root: string
   input: StorageV3RestoreFromSelectionInput
   selection: StorageV3MigrationSelection
@@ -103,7 +110,7 @@ async function publicationFixture(interruptSelectionProof = false): Promise<{
         rootBinding: storageV3MigrationRootBinding(root),
       }, '2026-08-06T12:40:00.000Z'),
     }).selection
-    if (interruptSelectionProof) {
+    if (options.interruptSelectionProof === true) {
       try {
         v3SelectionProofTestSeams.publishWithDirectorySynchronizer(
           rootHandle, selection, installationKey, () => {}, 'finalLink',
@@ -120,12 +127,34 @@ async function publicationFixture(interruptSelectionProof = false): Promise<{
         () => {},
       )
     }
-    db.close()
+    withStorageV3WriterLease(rootHandle, (lease) => {
+      v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+        rootHandle,
+        installationKey,
+        selection,
+        lease,
+        () => {},
+      )
+    })
     const backupPath = join(root, backup.locator)
     const manifestPath = join(root, backup.manifestLocator)
     const backupBytes = readFileSync(backupPath)
     const manifestBytes = readFileSync(manifestPath)
     const selectionProofBytes = readFileSync(join(root, STORAGE_V3_SELECTION_PROOF_NAMES.final))
+    db.close()
+    if (options.revokeAfterBackup === true) {
+      v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
+        directory: root,
+        installationKey,
+        scopeId: SCOPE_A,
+        asOf: '2026-08-06T13:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 9),
+      }, () => {})
+      // Simulate an old signed backup reappearing from an external filesystem
+      // snapshot after revocation cleanup removed the app-controlled pair.
+      writeFileSync(backupPath, backupBytes, { mode: 0o600 })
+      writeFileSync(manifestPath, manifestBytes, { mode: 0o600 })
+    }
     unlinkSync(join(root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))
     return {
       root,
@@ -135,7 +164,7 @@ async function publicationFixture(interruptSelectionProof = false): Promise<{
         backupAt,
         backupArtifactId: backup.artifactId,
         installationKey,
-        selectionProof: interruptSelectionProof
+        selectionProof: options.interruptSelectionProof === true
           ? v3SelectionProofTestSeams.verifyWithDirectorySynchronizer(rootHandle, installationKey, () => {})
           : verifyStorageV3MigrationSelectionProof(rootHandle, installationKey),
       }),
@@ -307,7 +336,7 @@ describe('LIFE-03 restore snapshot normalization', () => {
       )
       expect(result.reader).toBe('sqlite-v3')
       expect(stages).toEqual([
-        'claim', 'copy', 'normalize', 'receipt', 'link',
+        'claim', 'copy', 'normalize', 'tombstone-replay', 'receipt', 'link',
         'directory-sync', 'temp-unlink', 'readonly-reopen',
       ])
       if (result.reader !== 'sqlite-v3') throw new Error('expected restored reader')
@@ -341,7 +370,7 @@ describe('LIFE-03 restore snapshot normalization', () => {
   })
 
   it('finalizes an authenticated proof pair and restores after the selected store is lost', async () => {
-    const fx = await publicationFixture(true)
+    const fx = await publicationFixture({ interruptSelectionProof: true })
     try {
       expect(existsSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.temp))).toBe(false)
       const restored = v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {})
@@ -349,6 +378,32 @@ describe('LIFE-03 restore snapshot normalization', () => {
       if (restored.reader !== 'sqlite-v3') throw new Error('expected restored reader')
       expect(restored.selection).toEqual(fx.selection)
       restored.db.close()
+      expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
+      expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
+      expect(readFileSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)))
+        .toEqual(fx.selectionProofBytes)
+    } finally { fx.close() }
+  })
+
+  it('replays a later revocation before publishing an old signed backup', async () => {
+    const fx = await publicationFixture({ revokeAfterBackup: true })
+    try {
+      const result = v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {})
+      expect(result.reader).toBe('sqlite-v3')
+      if (result.reader !== 'sqlite-v3') throw new Error('expected restored reader')
+      expect(result.db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(SCOPE_A))
+        .toBeUndefined()
+      expect(result.db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(SCOPE_B))
+        .toBeDefined()
+      expect(result.db.prepare('SELECT 1 FROM commit_observation WHERE scope_id = ?').get(SCOPE_A))
+        .toBeUndefined()
+      expect(result.db.prepare(
+        "SELECT operation_id, event_week FROM lineage_event WHERE subject_kind = 'scope' AND subject_id = ? AND event_kind = 'tombstone_cascade'",
+      ).get(SCOPE_A)).toEqual({
+        operation_id: `del-${'09'.repeat(32)}`,
+        event_week: '2026-W32',
+      })
+      result.db.close()
       expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
       expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
       expect(readFileSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)))
