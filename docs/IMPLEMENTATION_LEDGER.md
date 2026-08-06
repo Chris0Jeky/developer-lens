@@ -2930,8 +2930,8 @@ during the declared critical GitHub Actions incident. The owner explicitly conti
 pre-release outage exception; those runs are not represented as green hosted proof.
 
 Issue #168 records the prerequisite discovered while implementing restore #163: the deliberately
-pre-selection backup cannot authenticate the later success timestamp or grace deadline. Candidate
-head `2c746c3` therefore adds a canonical installation-key-bound local C2 marker, publishes it only
+pre-selection backup cannot authenticate the later success timestamp or grace deadline. Code head
+`00e6161` therefore adds a canonical installation-key-bound local C2 marker, publishes it only
 from the committed selected-store receipt under the writer lease, and returns unavailable after any
 post-receipt failure. Exact replay reconstructs a missing marker from that immutable row; conflicting
 bytes, wrong roots/keys, links, sidecars, and deadline extension fail closed. The standalone marker
@@ -2939,11 +2939,14 @@ survives process restart at every publication stage and re-synchronizes final-on
 claiming replay. Its opaque single-use handle is reserved for restore; plain caller-supplied receipt
 objects do not cross the production restore boundary.
 
-Focused proof/selector/allowlist verification passes 25 tests; focused lint, TypeScript/Vite build,
-credential scanning, and whitespace checks pass. The first standalone review found and the bounded
+Focused proof/selector/allowlist verification passes 25 tests. `npm run check` passes lint, context
+verification, 80 files / 1,336 tests / 10 declared skips, TypeScript/Vite build, and credential
+scanning over 13 outputs; range whitespace is clean. The first standalone review found and the bounded
 fix round repaired restart-stuck empty provisionals and directory-sync replay laundering; the exact
-standalone head `441f5cb` then received a clean CRITICAL/HIGH review. Fresh review of the committed-
-receipt selector integration, full local gate, hosted proof, PR/merge, restore consumption, and
-post-merge sweep remain pending. #165 still separately blocks authority for the initially supplied
+standalone head `441f5cb` then received a clean CRITICAL/HIGH review. Fresh integration review found
+and the fix head `00e6161` repaired two preflight/foreign-marker legacy-fallback paths; its final
+17-test review, TypeScript check, and whitespace check found no remaining CRITICAL/HIGH blocker.
+Hosted proof, PR/merge, restore consumption, and post-merge sweep remain pending. #165 still
+separately blocks authority for the initially supplied
 successful-report timestamp. No real source, store, legacy path, private/generated data, connector,
 credential, or production caller was inspected or activated.
