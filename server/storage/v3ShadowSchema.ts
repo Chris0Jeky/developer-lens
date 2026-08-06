@@ -90,6 +90,7 @@ export const STORAGE_V3_ARTIFACT_TABLES = [
 ] as const
 export type StorageV3ArtifactTable = typeof STORAGE_V3_ARTIFACT_TABLES[number]
 export const STORAGE_V3_ARTIFACT_TRIGGER_NAMES = Object.freeze([
+  'storage_v3_artifact_insert_guard',
   'storage_v3_artifact_delete_guard',
   'storage_v3_artifact_identity_immutable',
   'storage_v3_artifact_scope_delete_guard',
@@ -592,6 +593,16 @@ CREATE TRIGGER IF NOT EXISTS storage_v3_maintenance_insert_guard
 BEFORE INSERT ON storage_maintenance_state
 WHEN EXISTS (
   SELECT 1 FROM storage_maintenance_state WHERE singleton = NEW.singleton
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_artifact_insert_guard
+BEFORE INSERT ON app_artifact
+WHEN EXISTS (
+  SELECT 1 FROM app_artifact AS existing
+  WHERE existing.artifact_id = NEW.artifact_id
+     OR existing.relative_locator = NEW.relative_locator
 )
 BEGIN
   SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');

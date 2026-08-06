@@ -1,12 +1,12 @@
 import {
   closeSync,
   constants,
-  existsSync,
   linkSync,
   lstatSync,
   openSync,
   realpathSync,
   rmSync,
+  type BigIntStats,
 } from 'node:fs'
 import Database from 'better-sqlite3'
 import { assertContinuityCasConsistency } from './v3ContinuityCasProposal.js'
@@ -61,9 +61,26 @@ function fail(): never {
 
 const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
 
+function lstatEntry(path: string): BigIntStats | undefined {
+  try {
+    return lstatSync(path, { bigint: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+    return fail()
+  }
+}
+
 /** Resume the only partial state created by link-then-unlink publication. */
-function recoverPublishedPrimaryLink(attempt: string, store: string): void {
-  if (!existsSync(attempt) || !existsSync(store)) return
+function recoverPublishedPrimaryLink(
+  root: StorageV3ArtifactRoot,
+  attempt: string,
+  store: string,
+): void {
+  const sourceEntry = lstatEntry(attempt)
+  const selectedEntry = lstatEntry(store)
+  if (sourceEntry === undefined && selectedEntry === undefined) return
+  if (sourceEntry?.isSymbolicLink() || selectedEntry?.isSymbolicLink()) fail()
+  if (sourceEntry === undefined || selectedEntry === undefined) return
   try {
     const source = lstatSync(attempt, { bigint: true })
     const selected = lstatSync(store, { bigint: true })
@@ -74,7 +91,13 @@ function recoverPublishedPrimaryLink(attempt: string, store: string): void {
       || source.dev !== selected.dev || source.ino !== selected.ino
       || realpathSync.native(attempt) !== attempt || realpathSync.native(store) !== store
     ) fail()
-    rmSync(attempt)
+    try {
+      rmSync(attempt)
+    } catch {
+      // The selected hard link is already durable; reopen can safely retain
+      // and later retry removal of the exact primary name.
+      proveStorageV3ArtifactFile(root, STORAGE_V3_STORE_FILE_NAME, 'selected_store')
+    }
   } catch (error) {
     if (error instanceof StorageV3StoreFileError) throw error
     return fail()
@@ -145,7 +168,7 @@ function claimStorePath(
   attempt: string,
   store: string,
 ): void {
-  if (['-shm', '-wal', '-journal'].some((suffix) => existsSync(`${store}${suffix}`))) fail()
+  if (['-shm', '-wal', '-journal'].some((suffix) => lstatEntry(`${store}${suffix}`) !== undefined)) fail()
   proveStorageV3ArtifactFile(
     root,
     STORAGE_V3_TARGET_FILE_NAMES.primary,
@@ -160,7 +183,18 @@ function claimStorePath(
     proveStorageV3ArtifactFile(root, STORAGE_V3_STORE_FILE_NAME, 'selected_store')
   } catch {
     if (linked) {
-      try { rmSync(store) } catch { /* exact owned link; fail closed below */ }
+      try {
+        rmSync(store)
+      } catch {
+        // A valid selected hard link is a durable publication even when the
+        // primary cleanup failed. Leave the exact source for reopen recovery.
+        try {
+          proveStorageV3ArtifactFile(root, STORAGE_V3_STORE_FILE_NAME, 'selected_store')
+          return
+        } catch {
+          return fail()
+        }
+      }
     }
     return fail()
   }
@@ -174,13 +208,13 @@ export function createStorageV3TargetFactory(directory: string): StorageV3Shadow
     replay: storageV3ArtifactFilePath(root, STORAGE_V3_TARGET_FILE_NAMES.replay),
   }
   const storePath = storageV3ArtifactFilePath(root, STORAGE_V3_STORE_FILE_NAME)
-  recoverPublishedPrimaryLink(attemptPaths.primary, storePath)
+  recoverPublishedPrimaryLink(root, attemptPaths.primary, storePath)
   return {
     create(kind: 'primary' | 'replay'): StorageV3ShadowTargetAttempt {
       // Refuse inside the orchestrator so callers retain its fail-closed public
       // error contract. Recheck on every attempt in case another owner won the
       // selected name after this factory was created.
-      if (existsSync(storePath)) fail()
+      if (lstatEntry(storePath) !== undefined) fail()
       const locator = kind === 'primary'
         ? STORAGE_V3_TARGET_FILE_NAMES.primary
         : STORAGE_V3_TARGET_FILE_NAMES.replay
@@ -238,7 +272,7 @@ export function openSelectedStorageV3Store(directory: string): Database.Database
     const root = openStorageV3ArtifactRoot(directory)
     const path = storageV3ArtifactFilePath(root, STORAGE_V3_STORE_FILE_NAME)
     const primaryPath = storageV3ArtifactFilePath(root, STORAGE_V3_TARGET_FILE_NAMES.primary)
-    recoverPublishedPrimaryLink(primaryPath, path)
+    recoverPublishedPrimaryLink(root, primaryPath, path)
     const proof = proveStorageV3ArtifactFile(root, STORAGE_V3_STORE_FILE_NAME, 'selected_store')
     db = new Database(path, { fileMustExist: true })
     assertStorageV3ArtifactFileProof(proof)

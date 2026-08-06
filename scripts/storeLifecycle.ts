@@ -388,7 +388,9 @@ export function proveScopeDeletion(
 ): ScopeDeletionProof {
   const otherScopes = (store.prepare('SELECT scope_id FROM claim_scope WHERE scope_id <> ? ORDER BY scope_id')
     .pluck().all(scopeId) as string[])
+  const lifecycleTables = new Set(['app_artifact', 'app_artifact_scope', 'lineage_event', 'storage_maintenance_state'])
   const scopeTables = [...STORAGE_V3_SHADOW_TABLES].sort().filter((table) =>
+    !lifecycleTables.has(table) &&
     (store.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>)
       .some(({ name }) => name === 'scope_id'))
   const snapshotOthers = (): string => JSON.stringify(otherScopes.map((other) =>
@@ -407,11 +409,11 @@ export function proveScopeDeletion(
     asOf: STORE_LIFECYCLE_TIMELINE.deletionAsOf,
     operationId: result.operationId,
   })
+  const maintenance = completeStorageV3DeletionMaintenance(store)
   const deletionRecords: Record<string, number> = {}
   for (const entry of readStorageV3DeletionLineage(store)) {
     deletionRecords[entry.eventKind] = (deletionRecords[entry.eventKind] ?? 0) + 1
   }
-  const maintenance = completeStorageV3DeletionMaintenance(store)
   return {
     status: result.status as 'deleted',
     replay: replay.status as 'replayed',
