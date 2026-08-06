@@ -7,6 +7,10 @@ import {
   type InstallationAliases,
 } from './installationAliases.js'
 import { isCanonicalTaskId } from '../taskId.js'
+import {
+  assertGithubCoreActivationGrant,
+  type GithubCoreActivationGrant,
+} from '../connectors/github/activationGrant.js'
 
 export const TASK_INSTALLATION_KEY_ERROR_CODE = 'INVALID_TASK_INSTALLATION_KEY' as const
 
@@ -20,9 +24,9 @@ const RESTRICTIVE_FILE_MODE = 0o600
 /**
  * Default-off continuity foundation only.
  *
- * No durable report or activation card binds the returned fingerprint yet. A real runtime must
- * be introduced by a separate reviewed seam that supplies `expectedFingerprint`; loading without
- * that binding is suitable only for setup/inspection and is not continuity authorization.
+ * A bare expected fingerprint is only an integrity assertion because callers can copy it from an
+ * inspection handle. Continuity authorization requires fresh setup or a separately issued opaque
+ * source grant; there is still no production grant issuer or backup caller.
  */
 export class TaskInstallationKeyError extends Error {
   readonly code = TASK_INSTALLATION_KEY_ERROR_CODE
@@ -42,6 +46,11 @@ export type TaskInstallationKeyLoadInput = Readonly<{
   workspaceRoot: string
   taskId: string
   expectedFingerprint?: string
+}>
+
+export type GithubCoreTaskInstallationKeyLoadInput = Readonly<{
+  workspaceRoot: string
+  grant: GithubCoreActivationGrant
 }>
 
 export type TaskInstallationKeyHandle = Readonly<{
@@ -125,6 +134,26 @@ function snapshotClosedInput(value: unknown, allowExpectedFingerprint: boolean):
     invalidKey()
   }
   return { workspaceRoot, taskId, expectedFingerprint }
+}
+
+function snapshotGithubCoreGrantInput(value: unknown): Readonly<{
+  workspaceRoot: string
+  grant: GithubCoreActivationGrant
+}> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) invalidKey()
+  const keys = Reflect.ownKeys(value)
+  if (keys.length !== 2 || !keys.includes('workspaceRoot') || !keys.includes('grant')
+    || keys.some((key) => typeof key !== 'string' || !['workspaceRoot', 'grant'].includes(key))) {
+    invalidKey()
+  }
+  const workspaceRoot = ownDataValue(value, 'workspaceRoot')
+  const grantValue = ownDataValue(value, 'grant')
+  if (typeof workspaceRoot !== 'string') invalidKey()
+  try {
+    return Object.freeze({ workspaceRoot, grant: assertGithubCoreActivationGrant(grantValue) })
+  } catch {
+    return invalidKey()
+  }
 }
 
 function portableIdentityMatches(left: PortableIdentity, right: PortableIdentity): boolean {
@@ -407,6 +436,7 @@ async function setupTaskInstallationKeyCore(
 async function loadTaskInstallationKeyCore(
   input: TaskInstallationKeyLoadInput,
   hooks: InternalHooks,
+  continuityAuthorized = false,
 ): Promise<TaskInstallationKeyHandle> {
   let firstRead: Buffer | undefined
   let secondRead: Buffer | undefined
@@ -448,7 +478,7 @@ async function loadTaskInstallationKeyCore(
       path,
       snapshot,
       closedInput.expectedFingerprint,
-      closedInput.expectedFingerprint !== undefined,
+      continuityAuthorized,
     )
   } catch (error) {
     if (error instanceof TaskInstallationKeyError) throw error
@@ -468,13 +498,25 @@ export function setupTaskInstallationKey(
 }
 
 /**
- * Load an existing task-owned key without creating, replacing, or rotating it.
- * Omitting `expectedFingerprint` cannot establish continuity and is not a runtime authorization.
+ * Load an existing task-owned key without creating, replacing, or rotating it. A matching bare
+ * `expectedFingerprint` proves equality only; it never establishes backup continuity authority.
  */
 export function loadTaskInstallationKey(
   input: TaskInstallationKeyLoadInput,
 ): Promise<TaskInstallationKeyHandle> {
   return loadTaskInstallationKeyCore(input, NO_HOOKS)
+}
+
+/** Load an existing key through the process-local github.core grant that reviewed its binding. */
+export async function loadTaskInstallationKeyForGithubCoreGrant(
+  input: GithubCoreTaskInstallationKeyLoadInput,
+): Promise<TaskInstallationKeyHandle> {
+  const closed = snapshotGithubCoreGrantInput(input)
+  return loadTaskInstallationKeyCore({
+    workspaceRoot: closed.workspaceRoot,
+    taskId: closed.grant.taskId,
+    expectedFingerprint: closed.grant.installationKeyFingerprint,
+  }, NO_HOOKS, true)
 }
 
 /** @internal Invented-fixture seams only; production callers must use the closed public functions. */

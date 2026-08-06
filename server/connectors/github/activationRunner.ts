@@ -31,7 +31,7 @@ import {
   readIncrementalGithubCoreCheckpoint,
   type PersistedGithubCoreCheckpointTransition,
 } from '../../storage/incremental.js'
-import { loadTaskInstallationKey } from '../../storage/taskInstallationKey.js'
+import { loadTaskInstallationKeyForGithubCoreGrant } from '../../storage/taskInstallationKey.js'
 
 export const GITHUB_CORE_ACTIVATION_RUNNER_ERROR_CODE =
   'GITHUB_CORE_ACTIVATION_RUNNER_FAILED' as const
@@ -326,10 +326,9 @@ async function run(
   const firstCard = probeCard(card, firstProbeMaximumRequests)
   const secondCard = probeCard(card, secondProbeMaximumRequests)
 
-  const installationKey = await loadTaskInstallationKey({
+  const installationKey = await loadTaskInstallationKeyForGithubCoreGrant({
     workspaceRoot: input.workspaceRoot,
-    taskId: input.taskId,
-    expectedFingerprint: input.grant.installationKeyFingerprint,
+    grant: input.grant,
   })
   const installationAliases = installationKey.aliases
   const scopeAlias = installationAliases.githubCoreAlias(

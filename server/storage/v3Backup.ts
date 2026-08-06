@@ -392,7 +392,11 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
   ).get(tempLocator) as { artifact_id: string; content_sha256: string; manifest_sha256: string } | undefined
   if (stagedRow) {
     assertStorageV3ArtifactCatalogue(input.db)
-    const intentSha256 = storageV3MigrationBackupIntentSha256(input.artifactId, locator)
+    const intentSha256 = storageV3MigrationBackupIntentSha256(
+      input.artifactId,
+      locator,
+      input.installationKey.fingerprint,
+    )
     if (stagedRow.artifact_id !== input.artifactId
       || stagedRow.content_sha256 !== intentSha256
       || stagedRow.manifest_sha256 !== intentSha256) fail()

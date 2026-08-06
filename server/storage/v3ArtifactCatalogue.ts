@@ -231,12 +231,16 @@ function manifestSha256(kind: StorageV3ArtifactKind, locator: string): string {
 export function storageV3MigrationBackupIntentSha256(
   artifactId: string,
   finalLocator: string,
+  installationKeyFingerprint: string,
 ): string {
   if (!ArtifactIdV3Schema.safeParse(artifactId).success) fail()
   validateLocator('migration_backup_v1', finalLocator)
-  if (finalLocator.endsWith('.sqlite.tmp')) fail()
+  if (finalLocator.endsWith('.sqlite.tmp') || !/^[a-f0-9]{64}$/.test(installationKeyFingerprint)) fail()
   return createHash('sha256')
-    .update(`developer-lens.storage-v3-backup-intent.v1\0${artifactId}\0${finalLocator}`, 'utf8')
+    .update(
+      `developer-lens.storage-v3-backup-intent.v2\0${artifactId}\0${finalLocator}\0${installationKeyFingerprint}`,
+      'utf8',
+    )
     .digest('hex')
 }
 
@@ -727,9 +731,7 @@ export function assertStorageV3ArtifactCatalogue(db: Database.Database): void {
       migrationBackups += 1
       if (!/^[0-9a-f]{64}$/.test(row.manifest_sha256)) fail()
       if (row.relative_locator.endsWith('.sqlite.tmp')) {
-        const finalLocator = row.relative_locator.slice(0, -4)
-        const intentSha256 = storageV3MigrationBackupIntentSha256(row.artifact_id, finalLocator)
-        if (row.content_sha256 !== intentSha256 || row.manifest_sha256 !== intentSha256) fail()
+        if (row.content_sha256 !== row.manifest_sha256) fail()
       }
     } else if (row.manifest_sha256 !== manifestSha256(kind, row.relative_locator)) fail()
     if (!/^[0-9a-f]{64}$/.test(row.content_sha256)) fail()
@@ -926,9 +928,7 @@ function registerStorageV3MigrationBackupArtifact(input: Readonly<{
   const liveScopes = db.prepare('SELECT scope_id FROM claim_scope ORDER BY scope_id').pluck().all() as string[]
   if (scopes.length !== liveScopes.length || scopes.some((scope, index) => scope !== liveScopes[index])) fail()
   if (relativeLocator.endsWith('.sqlite.tmp')) {
-    const finalLocator = relativeLocator.slice(0, -4)
-    const intentSha256 = storageV3MigrationBackupIntentSha256(artifactId, finalLocator)
-    if (contentSha256 !== intentSha256 || physicalManifestSha256 !== intentSha256) fail()
+    if (contentSha256 !== physicalManifestSha256) fail()
   }
   db.transaction(() => {
     db.prepare(`INSERT INTO app_artifact (
@@ -949,14 +949,41 @@ export function beginStorageV3MigrationBackupArtifact(input: Readonly<{
   scopeIds: readonly string[]
   installationKey: TaskInstallationKeyHandle
 }>): Readonly<{ artifactId: string; stagedLocator: string; placeholderSha256: string }> {
-  assertStorageV3ArtifactRootInstallationKey(boundRoot(input.db), input.installationKey)
-  const stagedLocator = `${input.finalLocator}.tmp`
-  const placeholderSha256 = storageV3MigrationBackupIntentSha256(input.artifactId, input.finalLocator)
+  if (!input || typeof input !== 'object' || Array.isArray(input)
+    || Object.getPrototypeOf(input) !== Object.prototype) fail()
+  const expectedKeys = ['db', 'artifactId', 'finalLocator', 'scopeIds', 'installationKey'] as const
+  const keys = Reflect.ownKeys(input)
+  if (keys.length !== expectedKeys.length
+    || keys.some((key) => typeof key !== 'string' || !expectedKeys.includes(key as typeof expectedKeys[number]))) fail()
+  const ownValue = (key: typeof expectedKeys[number]): unknown => {
+    const descriptor = Object.getOwnPropertyDescriptor(input, key)
+    if (!descriptor || !Object.hasOwn(descriptor, 'value')) fail()
+    return (descriptor as PropertyDescriptor & { value: unknown }).value
+  }
+  const db = ownValue('db') as Database.Database
+  const artifactId = ownValue('artifactId')
+  const finalLocator = ownValue('finalLocator')
+  const scopeIds = ownValue('scopeIds')
+  const installationKey = ownValue('installationKey') as TaskInstallationKeyHandle
+  if (typeof artifactId !== 'string' || typeof finalLocator !== 'string' || !Array.isArray(scopeIds)
+    || scopeIds.some((scope) => typeof scope !== 'string')) fail()
+  const closedArtifactId = artifactId as string
+  const closedFinalLocator = finalLocator as string
+  const closedScopeIds = Object.freeze([...(scopeIds as string[])])
+  assertStorageV3ArtifactRootInstallationKey(boundRoot(db), installationKey)
+  const stagedLocator = `${closedFinalLocator}.tmp`
+  const placeholderSha256 = storageV3MigrationBackupIntentSha256(
+    closedArtifactId,
+    closedFinalLocator,
+    installationKey.fingerprint,
+  )
   registerStorageV3MigrationBackupArtifact({
-    db: input.db, artifactId: input.artifactId, relativeLocator: stagedLocator,
-    scopeIds: input.scopeIds, contentSha256: placeholderSha256, manifestSha256: placeholderSha256,
+    db, artifactId: closedArtifactId, relativeLocator: stagedLocator,
+    scopeIds: closedScopeIds,
+    contentSha256: placeholderSha256,
+    manifestSha256: placeholderSha256,
   })
-  return Object.freeze({ artifactId: input.artifactId, stagedLocator, placeholderSha256 })
+  return Object.freeze({ artifactId: closedArtifactId, stagedLocator, placeholderSha256 })
 }
 
 interface MigrationBackupPublication {
@@ -984,7 +1011,11 @@ function validateMigrationBackupPublication(input: MigrationBackupPublication): 
   if (readMaintenance(input.db).state !== 'complete') fail()
   const root = boundRoot(input.db)
   assertStorageV3ArtifactRootInstallationKey(root, input.installationKey)
-  const intentSha256 = storageV3MigrationBackupIntentSha256(input.artifactId, input.finalLocator)
+  const intentSha256 = storageV3MigrationBackupIntentSha256(
+    input.artifactId,
+    input.finalLocator,
+    input.installationKey.fingerprint,
+  )
   const staged = input.db.prepare(
     `SELECT content_sha256, manifest_sha256 FROM app_artifact
      WHERE artifact_id = ? AND kind = 'migration_backup_v1' AND state = 'active' AND relative_locator = ?`,
@@ -1041,7 +1072,11 @@ export function promoteStorageV3MigrationBackupArtifact(
   const input = MIGRATION_BACKUP_PUBLICATION_PROOFS.get(proof) ?? fail()
   MIGRATION_BACKUP_PUBLICATION_PROOFS.delete(proof)
   validateMigrationBackupPublication(input)
-  const intentSha256 = storageV3MigrationBackupIntentSha256(input.artifactId, input.finalLocator)
+  const intentSha256 = storageV3MigrationBackupIntentSha256(
+    input.artifactId,
+    input.finalLocator,
+    input.installationKey.fingerprint,
+  )
   if (input.db.prepare(`UPDATE app_artifact SET relative_locator = ?, content_sha256 = ?, manifest_sha256 = ?
       WHERE artifact_id = ? AND kind = 'migration_backup_v1' AND state = 'active' AND relative_locator = ?
         AND content_sha256 = ? AND manifest_sha256 = ?`).run(

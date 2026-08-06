@@ -105,6 +105,7 @@ describe('github.core process-local activation grant', () => {
     const grantImporters: string[] = []
     const runnerImporters: string[] = []
     const testSeamImporters: string[] = []
+    const grantTaskKeyImports: string[] = []
     for (const path of files) {
       const sourcePath = relative(root, path).replaceAll('\\', '/')
       const file = ts.createSourceFile(path, readFileSync(path, 'utf8'), ts.ScriptTarget.Latest, true)
@@ -134,6 +135,10 @@ describe('github.core process-local activation grant', () => {
           if (/(?:^|\/)activationRunner(?:\.[cm]?js|\.ts)?$/.test(target)) {
             runnerImporters.push(sourcePath)
           }
+          if (sourcePath === 'server/connectors/github/activationGrant.ts'
+            && /(?:^|\/)taskInstallationKey(?:\.[cm]?js|\.ts)?$/.test(target)) {
+            grantTaskKeyImports.push(target)
+          }
         }
         ts.forEachChild(node, check)
       }
@@ -143,8 +148,10 @@ describe('github.core process-local activation grant', () => {
     expect([...new Set(grantImporters)].sort()).toEqual([
       'server/connectors/github/activationRunner.ts',
       'server/connectors/github/activationTaskLoader.ts',
+      'server/storage/taskInstallationKey.ts',
     ])
     expect(testSeamImporters).toEqual([])
     expect(runnerImporters).toEqual([])
+    expect(grantTaskKeyImports).toEqual([])
   })
 })
