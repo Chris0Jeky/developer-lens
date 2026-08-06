@@ -2366,3 +2366,33 @@ below is history. The live resume point is the rest of the analytics-core kernel
    bind the confined card loader to one runtime invocation with an explicit user-reviewable preview.
    Make no live request until that runtime task-card authorization and its task-owned continuity/
    report controls pass.
+
+## 2026-08-06 — late-review truth repair, LIFE-02 B3, and B-2 promotion hardening (PRs #132, #136, #138)
+
+- **PR #132** (merge 6b60dce, heads 19eb4f7/991f952/5d64d30 all hosted-green): shared runtime
+  evidence contract shared/whyContract.ts (strict schemas, projection-reference coherence,
+  pinned versions, capability-registry binding); the four untriaged post-merge findings from
+  PRs #127/#131 fixed with discriminating tests (11 of 18 client tests fail against the old
+  resolver; the legacy deletion-ID substitution was proven accepted pre-fix and refused
+  post-fix). Round-three findings tracked on #135; the adversarially reproduced
+  preserved-scope-id digest escape tracked as #133. Post-merge sweep clean.
+- **PR #136** (merge 7633444, heads 80f7432/5f2b071/8e4257e hosted-green): LIFE-02 B3 —
+  server/storage/v3Deletion.ts complete scope deletion (closed 20-table registry, scope-unbound
+  tombstones under one del- operation, replay/conflict fail-closed, per-stage rollback, CAS
+  cascade via in-transaction trigger drop/recreate, WAL/VACUUM saga); schema v3.1.0-shadow-b3
+  (user_version 306); CAS phantom-scope refusal + 13-month receipt expiry with receipt_expired
+  replay; v2_coverage_record flipped to delete disposition, killing the bridge/planner
+  workaround; the CLI journey runs the product order. 16 new deletion tests; 124 across the
+  affected suites. Round-three findings tracked on #80 (tombstone C1-window expiry) and #128
+  (clock-read placement). Post-merge sweep clean.
+- **PR #138** (merge 4770c57, heads 1ca9824/ce492b4 hosted-green): mint-order equivalence proof
+  replaces graph colouring (net -244 lines; #133 closed; private mintedCollector channel;
+  REPLACE-proof owner guards); #86 storage half closed (cov- CHECK + UNIQUE(coverage_id),
+  fixtures migrated, pre-#86 stores deliberately fail closed); all ten open #128/#129 findings
+  dispositioned with discriminating fixtures (eight real, fixed; two disproved, pinned;
+  adjacent hazard tracked as #137); activation_card provenance supported for migration with the
+  serving gate untouched (superseding note in 10_LIFE_02B_DECISION.md section 2); Phase-1c
+  scale corpus measured 25,469 source rows in ~6.3 s end-to-end (migration ~4.2 s) on the
+  Windows dev box, budgets asserted in the opt-in DEVELOPER_LENS_SCALE=1 lane plus an always-on
+  smoke lane. Full local gate at the final head: 72 files / 1174-1175 tests green. Post-merge
+  findings triaged: state/ledger repairs in this follow-up PR, technical items tracked as #139.
