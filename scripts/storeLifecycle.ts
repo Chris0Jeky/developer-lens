@@ -405,13 +405,13 @@ function addLifecycleArtifactFixture(
       artifact.prepare('INSERT INTO invented_fixture (value) VALUES (1)').run()
     } finally { artifact.close() }
   }
-  const sharedLocator = 'migration-backup-20260201T000000Z.sqlite'
+  const sharedLocator = 'invented-backup-20260201T000000Z.sqlite'
   const otherLocator = 'invented-survivor-only.sqlite'
   createArtifact(sharedLocator)
   createArtifact(otherLocator)
   const shared = registerStorageV3Artifact({
     db: store,
-    kind: 'migration_backup_v1',
+    kind: 'invented_fixture_store',
     relativeLocator: sharedLocator,
     scopeIds: [deletedScopeId, survivor],
     artifactId: `art-${'a'.repeat(64)}`,
