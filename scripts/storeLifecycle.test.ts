@@ -20,6 +20,7 @@ import {
 import { completeStorageV3DeletionMaintenance } from '../server/storage/v3Deletion.js'
 import {
   openSelectedStorageV3Store,
+  StorageV3StoreFileError,
   STORAGE_V3_STORE_FILE_NAME,
   STORAGE_V3_TARGET_FILE_NAMES,
   STORAGE_V3_PUBLICATION_FAILURE_STAGES,
@@ -183,7 +184,7 @@ describe('store lifecycle command', () => {
       rmSync(outside, { force: true })
       symlinkSync(outside, primary, 'file')
 
-      expect(() => runStoreLifecycleDemo({ directory })).toThrow(StorageV3ShadowMigrationError)
+      expect(() => runStoreLifecycleDemo({ directory })).toThrow(StorageV3StoreFileError)
       expect(existsSync(outside)).toBe(false)
       expect(existsSync(storePath(directory))).toBe(false)
     },
