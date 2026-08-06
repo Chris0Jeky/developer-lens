@@ -617,6 +617,55 @@ interface MigrationBackupFiles {
   readonly manifest: MigrationBackupFilePair
 }
 
+/**
+ * Staged backups carry a content-free crash record until promotion.  Before
+ * deletion mutates either the catalogue or the filesystem, prove that every
+ * surviving pair member is still the exact recorded object.  A deleting row
+ * may have no pair members only when the prior unlink completed and the
+ * process crashed before catalogue finalization; pending rows never get that
+ * interpretation.
+ */
+function validateMigrationBackupDeletionIdentity(
+  db: Database.Database,
+  root: StorageV3ArtifactRoot,
+  row: ArtifactRow,
+  files: MigrationBackupFiles,
+): void {
+  if (!files.staged) return
+  const attempt = readMigrationBackupAttemptRow(db, row.artifact_id)
+  const checkPair = (
+    pair: MigrationBackupFilePair,
+    recordedDev: string | null,
+    recordedIno: string | null,
+    hash: boolean,
+  ): void => {
+    const present = [pair.temp, pair.final].filter((file): file is StableFile => file !== undefined)
+    if (recordedDev === null || recordedIno === null) {
+      if (present.length !== 0) fail()
+      if (row.state === 'pending') fail()
+      return
+    }
+    for (const file of present) {
+      if (file.dev.toString(10) !== recordedDev || file.ino.toString(10) !== recordedIno) fail()
+      if (hash && attempt.sqliteContentSha256 !== null
+        && physicalContentSha256(file.path, 'migration_backup_v1', file.nlink) !== attempt.sqliteContentSha256) fail()
+    }
+    if (present.length === 0 && row.state === 'pending') fail()
+  }
+  checkPair(files.sqlite, attempt.sqliteDev, attempt.sqliteIno, true)
+  checkPair(files.manifest, attempt.manifestDev, attempt.manifestIno, false)
+  if (row.state === 'deleting'
+    && attempt.sqliteDev === null && attempt.manifestDev === null
+    && files.sqlite.temp === undefined && files.sqlite.final === undefined
+    && files.manifest.temp === undefined && files.manifest.final === undefined) {
+    for (const locator of [files.tempLocator, files.finalLocator]) {
+      for (const suffix of ['-shm', '-wal', '-journal']) {
+        if (lstatEntry(artifactPath(root, `${locator}${suffix}`)) !== undefined) fail()
+      }
+    }
+  }
+}
+
 function inspectMigrationBackupPair(
   root: StorageV3ArtifactRoot,
   tempLocator: string,
@@ -1500,6 +1549,7 @@ export function completeStorageV3ArtifactDeletions(
     const backupFiles = kind === 'migration_backup_v1'
       ? inspectMigrationBackupFiles(root, row, row.state === 'deleting')
       : undefined
+    if (backupFiles !== undefined) validateMigrationBackupDeletionIdentity(db, root, row, backupFiles)
     if (row.state === 'pending') {
       if (backupFiles === undefined) {
         const entry = lstatEntry(path)
