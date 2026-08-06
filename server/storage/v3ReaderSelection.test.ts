@@ -37,6 +37,10 @@ import {
   resumeStorageV3RevocationReplay,
   v3RevocationReplayTestSeams,
 } from './v3RevocationReplay.js'
+import {
+  registerStorageV3MigrationCleanup,
+  STORAGE_V3_LEGACY_SOURCE_LOCATOR,
+} from './v3MigrationCleanup.js'
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -85,6 +89,13 @@ async function fixture(): Promise<Fixture> {
       installationKey: key,
     }
     await v3BackupTestSeams.createWithDirectorySynchronizer(backupInput, () => {})
+    writeFileSync(join(root, STORAGE_V3_LEGACY_SOURCE_LOCATOR), '{"invented":true}\n', { flag: 'wx' })
+    registerStorageV3MigrationCleanup({
+      db,
+      root: rootHandle,
+      legacySourceId: LEGACY_SOURCE_ID,
+      installationKey: key,
+    })
     db.close()
     return Object.freeze({
       workspaceRoot,
@@ -98,7 +109,7 @@ async function fixture(): Promise<Fixture> {
         backupAt: BACKUP_AT,
         installationKey: key,
       }),
-      cleanup: () => rmSync(workspaceRoot, { recursive: true, force: true }),
+      cleanup: () => rmSync(workspaceRoot, { recursive: true, force: true, maxRetries: 3, retryDelay: 50 }),
     })
   } catch (error) {
     if (db.open) db.close()
@@ -484,28 +495,38 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
     } finally { fx.cleanup() }
   })
 
-  it('replays sqlite-v3 after scope revocation removes the finalized backup', async () => {
+  it('replays sqlite-v3 after scope revocation while grace retains the finalized backup', async () => {
     const fx = await fixture()
     try {
+      expect(existsSync(join(fx.root, 'migration-backup-20260806T123456Z.sqlite')), 'before selection').toBe(true)
       const first = expectSelected(selectStorageV3Reader(fx.input))
+      expect(first.db.prepare('SELECT phase FROM migration_cleanup_state').pluck().get()).toBe('ready')
+      expect(existsSync(join(fx.root, 'migration-backup-20260806T123456Z.sqlite')), 'after selection').toBe(true)
       first.db.close()
 
       for (const [scopeId, byte] of [[SCOPE_A, 8], [SCOPE_B, 9]] as const) {
         const db = openSelectedStorageV3Store(fx.root)
-        expect(deleteStorageV3Scope({
-          db,
-          scopeId,
-          asOf: '2026-08-06T12:40:00.000Z',
-          randomBytes: () => Buffer.alloc(32, byte),
-        }).maintenance).toBe('pending')
-        expect(completeStorageV3DeletionMaintenance(db).maintenance).toBe('complete')
-        db.close()
+        try {
+          expect(deleteStorageV3Scope({
+            db,
+            scopeId,
+            asOf: '2026-08-06T12:40:00.000Z',
+            randomBytes: () => Buffer.alloc(32, byte),
+          }).maintenance).toBe('pending')
+          expect(db.prepare("SELECT state FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe('active')
+          expect(existsSync(join(fx.root, 'migration-backup-20260806T123456Z.sqlite')), `before maintenance ${scopeId}`).toBe(true)
+          expect(completeStorageV3DeletionMaintenance(db).maintenance).toBe('complete')
+        } finally { db.close() }
+        expect(existsSync(join(fx.root, 'migration-backup-20260806T123456Z.sqlite')), scopeId).toBe(true)
       }
 
-      expect(existsSync(join(fx.root, 'migration-backup-20260806123456.sqlite'))).toBe(false)
-      const replay = expectSelected(selectStorageV3Reader(fx.input))
-      expect(replay.db.prepare('SELECT scope_id FROM claim_scope').pluck().all()).toEqual([])
-      replay.db.close()
+      expect(existsSync(join(fx.root, 'migration-backup-20260806T123456Z.sqlite'))).toBe(true)
+      const replayResult = selectStorageV3Reader(fx.input)
+      expect(replayResult.reader).toBe('sqlite-v3')
+      const replay = expectSelected(replayResult)
+      try {
+        expect(replay.db.prepare('SELECT scope_id FROM claim_scope').pluck().all()).toEqual([])
+      } finally { replay.db.close() }
     } finally { fx.cleanup() }
   })
 

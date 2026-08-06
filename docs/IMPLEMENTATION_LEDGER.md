@@ -3134,3 +3134,59 @@ Native hostile same-user pathname/ABA and coordinated rollback remain #142. No r
 legacy path, private/generated data, credential, connector, production caller, or external-model
 request was inspected or activated. After #184, the next bounded slice is #173 expiry cleanup,
 already implemented in isolated commit `111881c`; #174/#80 remain the subsequent Phase E bridge.
+
+## 2026-08-06 — durable seven-day migration expiry candidate (#173 / PR #185)
+
+PR #184 merged as `a53b46772ebf257fa495c074e225100ca753a35a` at 2026-08-06T22:40:55Z
+and closed #180. Its original #179 defect thread and its own applied-lineage thread were replied to
+with exact fix/proof evidence and resolved; the immediate post-merge sweep found no later thread.
+Hosted checks remained absent while GitHub Status continued to report an Actions major outage with
+webhook triggers throttled, so the documented owner-directed pre-release exception is explicit and
+is not represented as a green hosted gate. #183 separately retains the 100k SQL-throughput result.
+
+The #173 implementation rebased cleanly onto that merge as code commit
+`f623ba941aeb49c8fc6e1a8529ec1005ead7dfb3`. Schema 3.2.5 adds a monotonic cleanup singleton and an
+immutable fixed file registry. Backup promotion transfers the exact final SQLite/manifest identity
+before discarding its attempt row; pre-selection registration captures the fixed app-owned legacy
+base and optional WAL/SHM/journal identities. Every present file is bound by confined locator,
+content hash, device/inode/link count, selected artifact, task-key fingerprint, and exact root;
+expected-absent sidecars/provisionals are recorded explicitly. Selection refuses until this registry
+is complete, and verified restore reconstructs the same ready registry from the immutable external
+backup proof rather than caller-supplied paths.
+
+The production cleanup input contains only `{ directory, installationKey }`; its clock is owned by
+the runtime. One millisecond before the exact committed grace deadline it is read-only. At or after
+the deadline it re-verifies selected-store/root/key continuity, the immutable selection proof and
+receipt, complete deletion maintenance, the full keyed replay family, and exact application of every
+revocation under the single writer lease. Unsupported exact-root directory sync refuses in preflight
+before the first unlink. The `ready -> legacy_deleting -> legacy_durable -> backup_deleting ->
+complete` state machine records intent, unlinks only registered identities in reviewed sidecar/base
+order, synchronizes the containing directory after each family, then finalizes the backup catalogue.
+Every phase is restartable; absent already-unlinked registered files converge, while a replacement,
+foreign link, unexpected file, wrong binding, incomplete maintenance, or invalid replay refuses.
+
+The selection marker/receipt and complete content-free revocation anchor/events/head remain byte
+exact through cleanup. The stale migration backup remains protected from ordinary scope deletion
+until this grace cleanup owns it. Restore rebuilds the registry and reapplies replay before service.
+Fix commit `6eb93f56462f53970b4dbcb51b98ba5e69fd9a17` adds the integrated chunk discriminator: a two-record
+committed replay family loses record one while its durable head remains, cleanup refuses with phase
+still `ready`, and every legacy/backup file remains present. This complements anchor-only,
+missing-head, malformed-head, replaced-name, link, directory-sync, per-stage crash, repeated-cleanup,
+selection-refusal, restore, and marker-preservation fixtures.
+
+The exact integrated head passes `npm run check`: lint, context verification, 83 test files with
+1,432 tests passed and 10 declared skips, TypeScript/Vite build, and credential scanning over 13
+outputs. The cleanup/replay/read/restore seam passes 100 tests; cleanup alone passes 29; range
+whitespace is clean. A fresh exact-code adversarial review reran six cleanup/selection/restore/replay/
+catalogue/schema files with 167 passed and three declared skips, verified the irreversible ordering
+and fixed-identity boundary, and found no realistic CRITICAL/HIGH defect. Invented temporary fixtures
+only were used. No real source/store, private or generated operational data, credential, connector,
+activation caller, scheduler, or external-model request was inspected or activated.
+
+NOT verified: hosted Linux/POSIX directory-sync proof during the declared Actions incident. Windows
+production intentionally refuses before the first unlink with the current primitive. Hostile
+same-user pathname ABA remains #142. This slice preserves C1/C2 integrity files and does not implement
+their terminal expiry; before future C2 receipt/proof removal, a durable committed-family
+discriminator must refuse rather than recreate anchor-only/truncated C1 replay state. #168 still
+owns pre-activation marker versioning/stranded preflight/hosted proof. After #173 is reviewed and
+merged, the exact next product slice is the Phase E stored-observation bridge #174/#80.

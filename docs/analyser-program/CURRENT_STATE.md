@@ -8,14 +8,13 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-06
-current_slice_override: 'LIFE-03 revocation replay #172 merged through PR #179. Its delayed exact-head
-  review confirmed #180: the single 16 MiB / 100,000-subject record ceiling could make a large
-  selected scope undeletable. PR #184 carries the bounded repair: authenticated physical chunks,
-  one logical intent, exact partial-tail recovery, and reader/restore refusal until the full group
-  is durable. #173 is implemented in isolated commit 111881c and awaits integration after #184.
-  #168 remains open for pre-activation marker versioning, stranded-preflight recovery, and hosted
-  proof. The owner-directed GitHub Actions outage exception is recorded, never called a green
-  hosted gate.'
+current_slice_override: 'LIFE-03 revocation replay #172 and its large-scope repair #180 are merged
+  through PRs #179/#184. The active #173/PR #185 candidate is `6eb93f5`: durable fixed-identity registration,
+  runtime-clock seven-day source/backup cleanup, restart-safe phases, selection/restore integration,
+  and refusal before any unlink when the committed replay family is incomplete. The exact local gate
+  and fresh exact-code review are green. #168 remains open for pre-activation marker versioning,
+  stranded-preflight recovery, and hosted proof. The owner-directed GitHub Actions outage exception
+  is recorded, never called a green hosted gate.'
 phase: 'R4 active horizon OPEN. B4 storage, PR #149 lifecycle safety, PR #150 tracked-source activation enforcement, PR #152 single-writer enforcement, and PR #153 selected-store backup are the foundation; LIFE-03 hardening is active. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
@@ -30,17 +29,18 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   activation default-deny/assert-only PR #160, crash durability #154/#155/PR #161,
   atomic reader selection/grace #162/PR #164, rollback floor #166/PR #167,
   external immutable selection marker PR #169, restore PR #171, success/grace proof PR #175,
-  selection-proof durability PR #176, tombstone replay #172/PR #179',
+  selection-proof durability PR #176, tombstone replay #172/PR #179,
+  large-scope replay repair #180/PR #184',
   'state syncs #126']
-active_slice: 'DL-LIFE-03 large-scope replay repair (#180/PR #184): canonicalize the complete
-  content-free subject set, bind its count and digest into bounded physical records, advance the
-  keyed head after each record, and aggregate only a complete contiguous group into one logical
-  revocation. A head-matched partial group is recovery state, never readable/restoreable state;
-  restart must replan the still-live selected scope under the recorded operation/week and match
-  every published prefix byte before continuing. Selected-store reconciliation is exact, while an
-  older signed backup may contain a different historical subject set and is deleted before missing
-  committed tombstones are inserted. #183 separately tracks the measured very-large SQL deletion
-  throughput limit. Physical seven-day source/backup expiry is next as #173/111881c. Phase E
+active_slice: 'DL-LIFE-03 physical expiry cleanup (#173/PR #185): before selection, bind the exact app-owned
+  legacy source/sidecars and promoted immutable backup/manifest/provisionals into the selected store
+  by fixed locator, presence, hash, device/inode/link identity, task key, and root. At/after the exact
+  committed seven-day deadline, a runtime-owned clock may advance the monotonic cleanup state only
+  after selection/proof, lease, maintenance, and complete applied revocation replay verify. Unlink
+  the registered legacy family, sync its directory, then unlink the registered backup family, sync,
+  and finalize the catalogue. Restart resumes by phase; replaced, foreign, partial, anchor-only, or
+  missing-chunk state refuses before mutation. Preserve the selection marker/receipt through C2 and
+  the content-free replay family through C1. No scheduler or activation caller is added. Phase E
   stored-observation work remains #174/#80.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
@@ -52,12 +52,12 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No owner blocker for invented-fixture work. Revocation replay #172 is merged; its
-  large-scope repair is PR #184. A real migration/connector still requires #184 merged, physical
-  expiry cleanup #173, the remaining pre-activation #168 contract items, and a separately reviewed
-  production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E #174 resolver lineage
-  join and 36-month scope-unbound C1 expiry path. Deliberate breaking change: pre-activation invented
-  marker bytes fail closed and are regenerated; no real store exists.'
+blockers: 'No owner blocker for invented-fixture work. Replay #172 and large-scope repair #180 are
+  merged. A real migration/connector still requires physical expiry cleanup #173 merged, the
+  remaining pre-activation #168 contract items, and a separately reviewed production grant
+  issuer/caller. LIFE-02/#80 remain open through the Phase-E #174 resolver lineage join and 36-month
+  scope-unbound C1 expiry path. Deliberate breaking change: pre-activation invented marker bytes fail
+  closed and are regenerated; no real store exists.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -104,12 +104,11 @@ residual_risks:
      authority. It survives seven-day legacy/backup cleanup to defeat stale-backup resurrection and
      must be removed by the 36-month C1 boundary or whole-task-root deletion; #173 owns physical
      grace cleanup without deleting this family early.'
-  - 'PR #179 merged under the owner-directed pre-release Actions exception. A delayed exact-head
-     connector finding then confirmed the large-scope revocation defect tracked as #180; PR #184
-     fixes the hard publication ceiling. Its delayed connector review found one further direct
-     ambiguity in the applied-lineage query; fix `7533865` reads every deletion row for each replay
-     identity in bounded indexed batches, has the exact local/full gate green, and passed a fresh
-     bounded fix review. Hosted exact-head proof remains NOT verified during the declared Actions
+  - 'PR #179 merged under the owner-directed pre-release Actions exception. Its delayed exact-head
+     connector finding became #180; PR #184 fixed the hard publication ceiling and its own delayed
+     connector ambiguity in the applied-lineage query, then merged as `a53b467`. Both original
+     threads are resolved and the immediate post-merge sweep is clean. Exact local/full and fresh
+     review proof is green; hosted exact-head proof remains NOT verified during the declared Actions
      incident.'
   - '#183 tracks a separate throughput result from #180: a 100,002-subject invented intent publishes
      25 bounded records before SQL in about 19 seconds, but the existing full SQL tombstone deletion
@@ -119,6 +118,14 @@ residual_risks:
      Older invented v1 bytes therefore fail closed. This is accepted only because activation remains
      never_authorized and no real store exists; #168 still owns explicit marker versioning and
      stranded-preflight recovery before activation.'
+  - 'The #173 candidate is default-off and has no scheduler or activation caller. Windows production
+     deliberately refuses before its first unlink because exact containing-directory sync is not
+     available through the current primitive; hosted POSIX durability remains NOT verified during
+     the Actions incident. Hostile same-user pathname ABA remains #142.'
+  - '#173 preserves the immutable C2 receipt/proof and C1 replay family. Before a future C2 expiry
+     removes the receipt/proof, that separate transition must add a durable committed-family
+     discriminator and refuse anchor-only/truncated C1 state; this candidate does not claim C1/C2
+     terminal expiry.'
   - '#78 RESOLVED on fable/boundary-and-reachability: the browser holds no bearer at all (the guard
      accepts a proven same-origin Sec-Fetch triple on an allowlisted Host OR a bearer for
      non-browser callers), the launch token and importer store path are no longer printed,

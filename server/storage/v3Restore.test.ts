@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
@@ -41,6 +41,11 @@ import {
 import { installStorageV3ShadowSchema, storageV3ArtifactManifestSha256, storageV3SelectedStoreContentSha256 } from './v3ShadowSchema.js'
 import { taskInstallationKeyTestSeams } from './taskInstallationKey.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
+import {
+  registerStorageV3MigrationCleanup,
+  STORAGE_V3_LEGACY_SOURCE_LOCATOR,
+  v3MigrationCleanupTestSeams,
+} from './v3MigrationCleanup.js'
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -96,6 +101,13 @@ async function publicationFixture(options: Readonly<{
       ownerScopeIds: [SCOPE_A, SCOPE_B],
       installationKey,
     }, () => {})
+    writeFileSync(join(root, STORAGE_V3_LEGACY_SOURCE_LOCATOR), '{"invented":true}\n', { flag: 'wx' })
+    registerStorageV3MigrationCleanup({
+      db,
+      root: rootHandle,
+      legacySourceId: `legacy-${'5'.repeat(64)}`,
+      installationKey,
+    })
     const selection = withStorageV3WriterLease(rootHandle, (lease) => {
       const recorded = recordStorageV3MigrationSelectionWithInitialization(db, {
         legacySourceId: `legacy-${'5'.repeat(64)}`,
@@ -418,6 +430,30 @@ describe('LIFE-03 restore snapshot normalization', () => {
       expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
       expect(readFileSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)))
         .toEqual(fx.selectionProofBytes)
+    } finally { fx.close() }
+  })
+
+  it('rebuilds cleanup registration from the restore verifier and expires the retained pair', async () => {
+    const fx = await publicationFixture()
+    try {
+      const preserved = new Map(readdirSync(fx.root)
+        .filter((name) => name.startsWith('migration-selection-v1') || name.startsWith('revocation-replay-v1'))
+        .map((name) => [name, readFileSync(join(fx.root, name))]))
+      const restored = v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {})
+      expect(restored.reader).toBe('sqlite-v3')
+      if (restored.reader !== 'sqlite-v3') throw new Error('expected restored reader')
+      expect(restored.db.prepare('SELECT phase FROM migration_cleanup_state').pluck().get()).toBe('ready')
+      restored.db.close()
+
+      expect(v3MigrationCleanupTestSeams.cleanupAtWithDirectorySynchronizer(
+        { directory: fx.root, installationKey: fx.input.installationKey },
+        '2026-08-13T12:40:00.000Z',
+        () => {},
+      )).toEqual({ status: 'complete' })
+      expect(existsSync(fx.backupPath)).toBe(false)
+      expect(existsSync(fx.manifestPath)).toBe(false)
+      expect(existsSync(join(fx.root, STORAGE_V3_LEGACY_SOURCE_LOCATOR))).toBe(false)
+      for (const [name, bytes] of preserved) expect(readFileSync(join(fx.root, name))).toEqual(bytes)
     } finally { fx.close() }
   })
 
