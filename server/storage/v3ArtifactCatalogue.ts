@@ -715,6 +715,15 @@ interface ArtifactRow {
   readonly deletion_week: string | null
 }
 
+export interface StorageV3MigrationBackupAttempt {
+  readonly artifactId: string
+  readonly sqliteDev: string | null
+  readonly sqliteIno: string | null
+  readonly manifestDev: string | null
+  readonly manifestIno: string | null
+  readonly sqliteContentSha256: string | null
+}
+
 interface MaintenanceRow {
   readonly state: 'complete' | 'pending'
   readonly operation_id: string | null
@@ -807,6 +816,25 @@ export function assertStorageV3ArtifactCatalogue(db: Database.Database): void {
   }
   if (selectedStores > 1) fail()
   if (migrationBackups > 1) fail()
+  const attempts = db.prepare(
+    `SELECT attempt.artifact_id AS artifactId,
+            attempt.sqlite_dev AS sqliteDev, attempt.sqlite_ino AS sqliteIno,
+            attempt.manifest_dev AS manifestDev, attempt.manifest_ino AS manifestIno,
+            attempt.sqlite_content_sha256 AS sqliteContentSha256,
+            artifact.relative_locator, artifact.state
+     FROM migration_backup_attempt AS attempt
+     LEFT JOIN app_artifact AS artifact ON artifact.artifact_id = attempt.artifact_id
+     ORDER BY attempt.artifact_id`,
+  ).all() as Array<StorageV3MigrationBackupAttempt & { relative_locator: string | null; state: string | null }>
+  if (attempts.some((attempt) => attempt.relative_locator === null || attempt.state === null
+    || !attempt.relative_locator.endsWith('.sqlite.tmp'))) fail()
+  const stagedBackups = artifactRows(db).filter(({ kind, relative_locator }) =>
+    kind === 'migration_backup_v1' && relative_locator.endsWith('.sqlite.tmp'))
+  const finalBackups = artifactRows(db).filter(({ kind, relative_locator }) =>
+    kind === 'migration_backup_v1' && !relative_locator.endsWith('.sqlite.tmp'))
+  if (attempts.length !== stagedBackups.length || finalBackups.some(({ artifact_id }) =>
+    attempts.some((attempt) => attempt.artifactId === artifact_id))) fail()
+  if (stagedBackups.some(({ artifact_id }) => !attempts.some((attempt) => attempt.artifactId === artifact_id))) fail()
   if (maintenance.state === 'complete' && artifactRows(db).some(({ state }) => state !== 'active')) fail()
 }
 
@@ -982,9 +1010,143 @@ function registerStorageV3MigrationBackupArtifact(input: Readonly<{
       .run(artifactId, physicalManifestSha256, contentSha256, relativeLocator)
     const insert = db.prepare('INSERT INTO app_artifact_scope (artifact_id, scope_id) VALUES (?, ?)')
     for (const scope of scopes) insert.run(artifactId, scope)
+    if (relativeLocator.endsWith('.sqlite.tmp')) {
+      db.prepare('INSERT INTO migration_backup_attempt (artifact_id) VALUES (?)').run(artifactId)
+    }
   }).immediate()
   assertStorageV3ArtifactCatalogue(db)
   return Object.freeze({ artifactId, state: 'active' as const })
+}
+
+type MigrationBackupAttemptContext = Readonly<{
+  db: Database.Database
+  artifactId: string
+  finalLocator: string
+  installationKey: TaskInstallationKeyHandle
+}>
+
+function validateMigrationBackupAttemptContext(input: MigrationBackupAttemptContext): void {
+  if (!input?.db?.open || input.db.inTransaction
+    || typeof input.artifactId !== 'string' || typeof input.finalLocator !== 'string') fail()
+  validateLocator('migration_backup_v1', input.finalLocator)
+  if (input.finalLocator.endsWith('.sqlite.tmp')) fail()
+  assertSelectedStoreIdentity(input.db)
+  assertStorageV3ArtifactCatalogue(input.db)
+  if (readMaintenance(input.db).state !== 'complete') fail()
+  const root = boundRoot(input.db)
+  assertStorageV3ArtifactRootInstallationKey(root, input.installationKey)
+  const intentSha256 = storageV3MigrationBackupIntentSha256(
+    input.artifactId,
+    input.finalLocator,
+    input.installationKey.fingerprint,
+  )
+  const staged = input.db.prepare(
+    `SELECT content_sha256, manifest_sha256 FROM app_artifact
+     WHERE artifact_id = ? AND kind = 'migration_backup_v1' AND state = 'active'
+       AND relative_locator = ?`,
+  ).get(input.artifactId, `${input.finalLocator}.tmp`) as
+    { content_sha256: string; manifest_sha256: string } | undefined
+  if (staged?.content_sha256 !== intentSha256 || staged.manifest_sha256 !== intentSha256) fail()
+  if (input.db.prepare(
+    'SELECT 1 FROM migration_backup_attempt WHERE artifact_id = ?',
+  ).get(input.artifactId) === undefined) fail()
+}
+
+function canonicalIdentity(value: bigint): string {
+  if (typeof value !== 'bigint' || value < 0n) fail()
+  const text = value.toString(10)
+  if (text.length > 20) fail()
+  return text
+}
+
+/** Read the content-free crash-durability attempt state for one staged backup. */
+export function readStorageV3MigrationBackupAttempt(
+  input: MigrationBackupAttemptContext,
+): StorageV3MigrationBackupAttempt {
+  validateMigrationBackupAttemptContext(input)
+  const row = input.db.prepare(
+    `SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino,
+            sqlite_content_sha256
+     FROM migration_backup_attempt WHERE artifact_id = ?`,
+  ).get(input.artifactId) as {
+    artifact_id: string
+    sqlite_dev: string | null
+    sqlite_ino: string | null
+    manifest_dev: string | null
+    manifest_ino: string | null
+    sqlite_content_sha256: string | null
+  } | undefined
+  const existing = row ?? fail()
+  return Object.freeze({
+    artifactId: existing.artifact_id,
+    sqliteDev: existing.sqlite_dev,
+    sqliteIno: existing.sqlite_ino,
+    manifestDev: existing.manifest_dev,
+    manifestIno: existing.manifest_ino,
+    sqliteContentSha256: existing.sqlite_content_sha256,
+  })
+}
+
+export type StorageV3MigrationBackupAttemptIdentityInput = MigrationBackupAttemptContext & Readonly<{
+  file: 'sqlite' | 'manifest'
+  dev: bigint
+  ino: bigint
+}>
+
+/** Bind one stable file identity, allowing only an exact replay after the first bind. */
+export function bindStorageV3MigrationBackupAttemptIdentity(
+  input: StorageV3MigrationBackupAttemptIdentityInput,
+): StorageV3MigrationBackupAttempt {
+  validateMigrationBackupAttemptContext(input)
+  if (input.file !== 'sqlite' && input.file !== 'manifest') fail()
+  const dev = canonicalIdentity(input.dev)
+  const ino = canonicalIdentity(input.ino)
+  const before = readStorageV3MigrationBackupAttempt(input)
+  const currentDev = input.file === 'sqlite' ? before.sqliteDev : before.manifestDev
+  const currentIno = input.file === 'sqlite' ? before.sqliteIno : before.manifestIno
+  if (currentDev !== null || currentIno !== null) {
+    if (currentDev !== dev || currentIno !== ino) fail()
+    return before
+  }
+  const columns = input.file === 'sqlite' ? 'sqlite_dev = ?, sqlite_ino = ?' : 'manifest_dev = ?, manifest_ino = ?'
+  if (input.db.prepare(`UPDATE migration_backup_attempt SET ${columns} WHERE artifact_id = ?`).run(dev, ino, input.artifactId).changes !== 1) fail()
+  return readStorageV3MigrationBackupAttempt(input)
+}
+
+export type StorageV3MigrationBackupAttemptContentInput = MigrationBackupAttemptContext & Readonly<{
+  contentSha256: string
+}>
+
+/** Bind the SQLite content hash only after the SQLite identity has been bound. */
+export function recordStorageV3MigrationBackupAttemptContentSha256(
+  input: StorageV3MigrationBackupAttemptContentInput,
+): StorageV3MigrationBackupAttempt {
+  validateMigrationBackupAttemptContext(input)
+  if (!/^[a-f0-9]{64}$/.test(input.contentSha256)) fail()
+  const before = readStorageV3MigrationBackupAttempt(input)
+  if (before.sqliteDev === null || before.sqliteIno === null) fail()
+  if (before.sqliteContentSha256 !== null) {
+    if (before.sqliteContentSha256 !== input.contentSha256) fail()
+    return before
+  }
+  if (input.db.prepare(
+    'UPDATE migration_backup_attempt SET sqlite_content_sha256 = ? WHERE artifact_id = ?',
+  ).run(input.contentSha256, input.artifactId).changes !== 1) fail()
+  return readStorageV3MigrationBackupAttempt(input)
+}
+
+// Explicit aliases keep the public seam discoverable without exposing paths or raw handles.
+export const bindStorageV3MigrationBackupAttemptFileIdentity = bindStorageV3MigrationBackupAttemptIdentity
+export const recordStorageV3MigrationBackupAttemptContentHash = recordStorageV3MigrationBackupAttemptContentSha256
+export function bindStorageV3MigrationBackupAttemptSqliteIdentity(
+  input: Omit<StorageV3MigrationBackupAttemptIdentityInput, 'file'>,
+): StorageV3MigrationBackupAttempt {
+  return bindStorageV3MigrationBackupAttemptIdentity({ ...input, file: 'sqlite' })
+}
+export function bindStorageV3MigrationBackupAttemptManifestIdentity(
+  input: Omit<StorageV3MigrationBackupAttemptIdentityInput, 'file'>,
+): StorageV3MigrationBackupAttempt {
+  return bindStorageV3MigrationBackupAttemptIdentity({ ...input, file: 'manifest' })
 }
 
 export function beginStorageV3MigrationBackupArtifact(input: Readonly<{
@@ -1122,12 +1284,18 @@ export function promoteStorageV3MigrationBackupArtifact(
     input.finalLocator,
     input.installationKey.fingerprint,
   )
-  if (input.db.prepare(`UPDATE app_artifact SET relative_locator = ?, content_sha256 = ?, manifest_sha256 = ?
-      WHERE artifact_id = ? AND kind = 'migration_backup_v1' AND state = 'active' AND relative_locator = ?
-        AND content_sha256 = ? AND manifest_sha256 = ?`).run(
-    input.finalLocator, input.contentSha256, input.manifestSha256, input.artifactId, input.stagedLocator,
-    intentSha256, intentSha256,
-  ).changes !== 1) fail()
+  input.db.transaction(() => {
+    if (input.db.prepare(
+      'SELECT 1 FROM migration_backup_attempt WHERE artifact_id = ?',
+    ).get(input.artifactId) === undefined) fail()
+    if (input.db.prepare(`UPDATE app_artifact SET relative_locator = ?, content_sha256 = ?, manifest_sha256 = ?
+        WHERE artifact_id = ? AND kind = 'migration_backup_v1' AND state = 'active' AND relative_locator = ?
+          AND content_sha256 = ? AND manifest_sha256 = ?`).run(
+      input.finalLocator, input.contentSha256, input.manifestSha256, input.artifactId, input.stagedLocator,
+      intentSha256, intentSha256,
+    ).changes !== 1) fail()
+    if (input.db.prepare('DELETE FROM migration_backup_attempt WHERE artifact_id = ?').run(input.artifactId).changes !== 1) fail()
+  })()
   assertStorageV3ArtifactCatalogue(input.db)
 }
 
