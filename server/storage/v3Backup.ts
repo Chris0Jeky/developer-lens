@@ -413,6 +413,7 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
       artifactId: input.artifactId,
       finalLocator: locator,
       scopeIds: input.ownerScopeIds,
+      installationKey: input.installationKey,
     })
     input.failAfterStage?.('intentCommitted')
   }

@@ -163,6 +163,34 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
     } finally { fx.cleanup() }
   })
 
+  it('requires continuity authorization before the direct intent seam can catalogue a backup', async () => {
+    const fx = await fixture()
+    try {
+      const ordinary = await loadTaskInstallationKey({ workspaceRoot: fx.workspaceRoot, taskId: fx.taskId })
+      expect(() => beginStorageV3MigrationBackupArtifact({
+        db: fx.db,
+        artifactId: `art-${'6'.repeat(64)}`,
+        finalLocator: 'migration-backup-20260806T123500Z.sqlite',
+        scopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: ordinary,
+      })).toThrow(StorageV3ArtifactError)
+      expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(0)
+
+      const anchored = await loadTaskInstallationKey({
+        workspaceRoot: fx.workspaceRoot,
+        taskId: fx.taskId,
+        expectedFingerprint: fx.key.fingerprint,
+      })
+      expect(beginStorageV3MigrationBackupArtifact({
+        db: fx.db,
+        artifactId: `art-${'6'.repeat(64)}`,
+        finalLocator: 'migration-backup-20260806T123500Z.sqlite',
+        scopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: anchored,
+      })).toMatchObject({ stagedLocator: 'migration-backup-20260806T123500Z.sqlite.tmp' })
+    } finally { fx.cleanup() }
+  })
+
   it('refuses forged and replacement-key handles before recovery can publish a staged intent', async () => {
     const fx = await fixture()
     try {
@@ -224,6 +252,7 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
         artifactId,
         finalLocator,
         scopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
       })
       const selectedArtifactId = fx.db.prepare(
         "SELECT artifact_id FROM app_artifact WHERE kind = 'selected_store'",

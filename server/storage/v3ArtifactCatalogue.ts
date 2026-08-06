@@ -947,7 +947,9 @@ export function beginStorageV3MigrationBackupArtifact(input: Readonly<{
   artifactId: string
   finalLocator: string
   scopeIds: readonly string[]
+  installationKey: TaskInstallationKeyHandle
 }>): Readonly<{ artifactId: string; stagedLocator: string; placeholderSha256: string }> {
+  assertStorageV3ArtifactRootInstallationKey(boundRoot(input.db), input.installationKey)
   const stagedLocator = `${input.finalLocator}.tmp`
   const placeholderSha256 = storageV3MigrationBackupIntentSha256(input.artifactId, input.finalLocator)
   registerStorageV3MigrationBackupArtifact({
