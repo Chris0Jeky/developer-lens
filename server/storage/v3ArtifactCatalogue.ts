@@ -1046,12 +1046,13 @@ type ClosedMigrationBackupAttemptContentInput = ClosedMigrationBackupAttemptCont
 function captureExactObjectValues(value: unknown, expectedKeys: readonly string[]): Map<string, unknown> {
   if (!value || typeof value !== 'object' || Array.isArray(value)
     || Object.getPrototypeOf(value) !== Object.prototype) fail()
-  const keys = Reflect.ownKeys(value)
+  const objectValue = value as object
+  const keys = Reflect.ownKeys(objectValue)
   if (keys.length !== expectedKeys.length
     || keys.some((key) => typeof key !== 'string' || !expectedKeys.includes(key))) fail()
   const values = new Map<string, unknown>()
   for (const key of expectedKeys) {
-    const descriptor = Object.getOwnPropertyDescriptor(value, key)
+    const descriptor = Object.getOwnPropertyDescriptor(objectValue, key)
     if (!descriptor || !Object.hasOwn(descriptor, 'value')) fail()
     values.set(key, (descriptor as PropertyDescriptor & { value: unknown }).value)
   }
@@ -1065,11 +1066,19 @@ function closeMigrationBackupAttemptContext(values: ReadonlyMap<string, unknown>
   const installationKey = values.get('installationKey') as TaskInstallationKeyHandle
   if (typeof artifactId !== 'string' || typeof finalLocator !== 'string'
     || !installationKey || typeof installationKey !== 'object' || Array.isArray(installationKey)) fail()
+  const closedArtifactId = artifactId as string
+  const closedFinalLocator = finalLocator as string
   const fingerprintDescriptor = Object.getOwnPropertyDescriptor(installationKey, 'fingerprint')
   if (!fingerprintDescriptor || !Object.hasOwn(fingerprintDescriptor, 'value')
     || typeof (fingerprintDescriptor as PropertyDescriptor & { value: unknown }).value !== 'string') fail()
   const installationKeyFingerprint = (fingerprintDescriptor as PropertyDescriptor & { value: string }).value
-  return Object.freeze({ db, artifactId, finalLocator, installationKey, installationKeyFingerprint })
+  return Object.freeze({
+    db,
+    artifactId: closedArtifactId,
+    finalLocator: closedFinalLocator,
+    installationKey,
+    installationKeyFingerprint,
+  })
 }
 
 function closeMigrationBackupAttemptReadInput(input: unknown): ClosedMigrationBackupAttemptContext {
