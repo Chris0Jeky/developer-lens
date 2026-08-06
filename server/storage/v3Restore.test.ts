@@ -3,7 +3,9 @@ import { describe, expect, it } from 'vitest'
 import {
   STORAGE_V3_RESTORE_NORMALIZATION_STAGES,
   StorageV3RestoreError,
+  STORAGE_V3_RESTORE_UNAVAILABLE,
   normalizeStorageV3RestoredSnapshot,
+  restoreStorageV3SelectedStoreFromVerifiedSelection,
   v3RestoreTestSeams,
   type StorageV3RestoreSnapshotProof,
 } from './v3Restore.js'
@@ -73,6 +75,11 @@ function expectRefusal(run: () => unknown): void {
 }
 
 describe('LIFE-03 restore snapshot normalization', () => {
+  it('refuses malformed publication requests with one non-legacy unavailable code', () => {
+    const result = restoreStorageV3SelectedStoreFromVerifiedSelection({} as never)
+    expect(result).toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
+  })
+
   it('removes only the copied staged backup and preserves selected/observed/tombstone state', () => {
     const fx = fixture()
     try {
