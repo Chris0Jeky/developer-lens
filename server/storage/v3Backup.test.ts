@@ -20,9 +20,12 @@ vi.mock('../connectors/github/activationGrant.js', async (importOriginal) => {
 })
 import {
   beginStorageV3MigrationBackupArtifact,
+  bindStorageV3MigrationBackupAttemptIdentity,
   createStorageV3ArtifactRoot,
   promoteStorageV3MigrationBackupArtifact,
   proveStorageV3MigrationBackupPublication,
+  readStorageV3MigrationBackupAttempt,
+  recordStorageV3MigrationBackupAttemptContentSha256,
   storageV3MigrationBackupManifest,
   storageV3WriterLeasePath,
   STORAGE_V3_ARTIFACT_LOCATORS,
@@ -152,6 +155,7 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       expect(backup.prepare('SELECT scope_id FROM claim_scope ORDER BY scope_id').pluck().all()).toEqual([SCOPE_A, SCOPE_B])
       backup.close()
       expect(fx.db.prepare('SELECT kind, content_sha256, manifest_sha256 FROM app_artifact WHERE artifact_id = ?').get(result.artifactId)).toMatchObject({ kind: 'migration_backup_v1', content_sha256: result.contentSha256, manifest_sha256: result.manifestSha256 })
+      expect(fx.db.prepare('SELECT 1 FROM migration_backup_attempt WHERE artifact_id = ?').get(result.artifactId)).toBeUndefined()
       expect(() => fx.db.prepare(`INSERT OR REPLACE INTO app_artifact (
           artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator
         ) VALUES (?, 'migration_backup_v1', 'active', ?, ?, ?)`)
@@ -689,6 +693,105 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       const recreated = await createStorageV3MigrationBackup(retryAfterPending)
       expect(recreated.locator).toBe('migration-backup-20260806T123757Z.sqlite')
       expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(1)
+    } finally { fx.cleanup() }
+  })
+
+  it('catalogues a crash attempt with closed, idempotent identity and hash bindings', async () => {
+    const fx = await fixture()
+    try {
+      const artifactId = `art-${'a'.repeat(64)}`
+      const finalLocator = 'migration-backup-20260806T124000Z.sqlite'
+      beginStorageV3MigrationBackupArtifact({
+        db: fx.db, artifactId, finalLocator, scopeIds: [SCOPE_A, SCOPE_B], installationKey: fx.key,
+      })
+      const context = { db: fx.db, artifactId, finalLocator, installationKey: fx.key }
+      expect(readStorageV3MigrationBackupAttempt(context)).toEqual({
+        artifactId, sqliteDev: null, sqliteIno: null, manifestDev: null, manifestIno: null, sqliteContentSha256: null,
+      })
+      expect(() => recordStorageV3MigrationBackupAttemptContentSha256({ ...context, contentSha256: 'b'.repeat(64) }))
+        .toThrow(StorageV3ArtifactError)
+      const bound = bindStorageV3MigrationBackupAttemptIdentity({ ...context, file: 'sqlite', dev: 12n, ino: 34n })
+      expect(bound).toMatchObject({ sqliteDev: '12', sqliteIno: '34' })
+      expect(bindStorageV3MigrationBackupAttemptIdentity({ ...context, file: 'sqlite', dev: 12n, ino: 34n })).toEqual(bound)
+      expect(() => bindStorageV3MigrationBackupAttemptIdentity({ ...context, file: 'sqlite', dev: 12n, ino: 35n }))
+        .toThrow(StorageV3ArtifactError)
+      expect(readStorageV3MigrationBackupAttempt(context)).toEqual(bound)
+
+      const hash = recordStorageV3MigrationBackupAttemptContentSha256({ ...context, contentSha256: 'b'.repeat(64) })
+      expect(hash.sqliteContentSha256).toBe('b'.repeat(64))
+      expect(recordStorageV3MigrationBackupAttemptContentSha256({ ...context, contentSha256: 'b'.repeat(64) })).toEqual(hash)
+      expect(() => recordStorageV3MigrationBackupAttemptContentSha256({ ...context, contentSha256: 'c'.repeat(64) }))
+        .toThrow(StorageV3ArtifactError)
+      expect(fx.db.prepare('SELECT sqlite_dev, sqlite_ino, sqlite_content_sha256 FROM migration_backup_attempt').get())
+        .toEqual({ sqlite_dev: '12', sqlite_ino: '34', sqlite_content_sha256: 'b'.repeat(64) })
+    } finally { fx.cleanup() }
+  })
+
+  it('binds the manifest identity and rejects wrong or forged installation handles before mutation', async () => {
+    const left = await fixture('attempt-left')
+    const right = await fixture('attempt-right')
+    try {
+      const artifactId = `art-${'d'.repeat(64)}`
+      const finalLocator = 'migration-backup-20260806T124001Z.sqlite'
+      beginStorageV3MigrationBackupArtifact({
+        db: left.db, artifactId, finalLocator, scopeIds: [SCOPE_A, SCOPE_B], installationKey: left.key,
+      })
+      const context = { db: left.db, artifactId, finalLocator, installationKey: left.key }
+      expect(bindStorageV3MigrationBackupAttemptIdentity({ ...context, file: 'manifest', dev: 56n, ino: 78n }))
+        .toMatchObject({ manifestDev: '56', manifestIno: '78' })
+      expect(() => bindStorageV3MigrationBackupAttemptIdentity({ ...context, installationKey: right.key, file: 'sqlite', dev: 1n, ino: 2n }))
+        .toThrow(StorageV3ArtifactError)
+      expect(() => bindStorageV3MigrationBackupAttemptIdentity({ ...context, installationKey: Object.freeze({ ...left.key }), file: 'sqlite', dev: 1n, ino: 2n }))
+        .toThrow(StorageV3ArtifactError)
+      writeFileSync(join(left.workspaceRoot, '.developer-lens', 'activation', left.taskId, 'installation-key.bin'), Buffer.alloc(32, 12), { mode: 0o600 })
+      const replaced = await loadTaskInstallationKey({ workspaceRoot: left.workspaceRoot, taskId: left.taskId })
+      expect(() => bindStorageV3MigrationBackupAttemptIdentity({ ...context, installationKey: replaced, file: 'sqlite', dev: 1n, ino: 2n }))
+        .toThrow(StorageV3ArtifactError)
+      expect(left.db.prepare('SELECT sqlite_dev, sqlite_ino, manifest_dev, manifest_ino FROM migration_backup_attempt').get())
+        .toEqual({ sqlite_dev: null, sqlite_ino: null, manifest_dev: '56', manifest_ino: '78' })
+    } finally { left.cleanup(); right.cleanup() }
+  })
+
+  it('rejects accessors, missing keys, and extra keys without invoking getters or changing the row', async () => {
+    const fx = await fixture()
+    try {
+      const artifactId = `art-${'e'.repeat(64)}`
+      const finalLocator = 'migration-backup-20260806T124002Z.sqlite'
+      beginStorageV3MigrationBackupArtifact({
+        db: fx.db, artifactId, finalLocator, scopeIds: [SCOPE_A, SCOPE_B], installationKey: fx.key,
+      })
+      const base = { db: fx.db, artifactId, finalLocator, installationKey: fx.key }
+      let getterCalled = false
+      const accessor = { ...base, file: 'sqlite', dev: 1n, ino: 2n } as Record<string, unknown>
+      Object.defineProperty(accessor, 'db', { enumerable: true, get: () => { getterCalled = true; return fx.db } })
+      expect(() => bindStorageV3MigrationBackupAttemptIdentity(accessor as never)).toThrow(StorageV3ArtifactError)
+      expect(getterCalled).toBe(false)
+      expect(() => bindStorageV3MigrationBackupAttemptIdentity({ ...base, file: 'sqlite', dev: 1n, ino: 2n, extra: true } as never))
+        .toThrow(StorageV3ArtifactError)
+      expect(() => readStorageV3MigrationBackupAttempt({ db: fx.db, artifactId, finalLocator } as never))
+        .toThrow(StorageV3ArtifactError)
+      expect(() => recordStorageV3MigrationBackupAttemptContentSha256({ ...base, contentSha256: 'a'.repeat(64), extra: true } as never))
+        .toThrow(StorageV3ArtifactError)
+      expect(fx.db.prepare('SELECT sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt').get())
+        .toEqual({ sqlite_dev: null, sqlite_ino: null, manifest_dev: null, manifest_ino: null, sqlite_content_sha256: null })
+    } finally { fx.cleanup() }
+  })
+
+  it('refuses a staged row whose placeholder is not the PR159 v2 intent before mutation', async () => {
+    const fx = await fixture()
+    try {
+      const artifactId = `art-${'f'.repeat(64)}`
+      const finalLocator = 'migration-backup-20260806T124003Z.sqlite'
+      beginStorageV3MigrationBackupArtifact({
+        db: fx.db, artifactId, finalLocator, scopeIds: [SCOPE_A, SCOPE_B], installationKey: fx.key,
+      })
+      const context = { db: fx.db, artifactId, finalLocator, installationKey: fx.key }
+      const wrongIntent = { ...context, finalLocator: 'migration-backup-20260806T124004Z.sqlite' }
+      expect(() => readStorageV3MigrationBackupAttempt(wrongIntent)).toThrow(StorageV3ArtifactError)
+      expect(() => bindStorageV3MigrationBackupAttemptIdentity({ ...wrongIntent, file: 'sqlite', dev: 1n, ino: 2n }))
+        .toThrow(StorageV3ArtifactError)
+      expect(fx.db.prepare('SELECT sqlite_dev, sqlite_ino FROM migration_backup_attempt').get())
+        .toEqual({ sqlite_dev: null, sqlite_ino: null })
     } finally { fx.cleanup() }
   })
 })
