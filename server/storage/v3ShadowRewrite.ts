@@ -117,6 +117,16 @@ export interface StorageV3ShadowRewriteResult {
   readonly copiedLineageEvents: number
   readonly omittedExpiredIdentities: number
   readonly omittedUnclassifiedLineageEvents: number
+  /**
+   * Every identifier this run created that a second run over the same source would
+   * create DIFFERENTLY, in creation order: entropy-minted C1 keys plus reminted
+   * claim ids (deterministic functions of minted scope ids). Preserved source
+   * identifiers and derived legacy deletion ids are deliberately absent — both
+   * targets must agree on those literally. Consumed ONLY by the orchestrator's
+   * equivalence proof (#133); the values are content-free C1 keys, never persisted
+   * as a list, and never exposed past the migration boundary.
+   */
+  readonly mintedIdentifiers: readonly string[]
 }
 
 type Row = Record<string, unknown>
@@ -678,6 +688,7 @@ export function rewriteStorageV3Shadow(
     let copiedLineageEvents = 0
     let omittedExpiredIdentities = 0
     let omittedUnclassifiedLineageEvents = 0
+    const mintedInOrder: string[] = []
 
     options.targetDb.transaction(() => {
       const checkpoint = (stage: StorageV3ShadowRewriteStage): void => {
@@ -688,7 +699,11 @@ export function rewriteStorageV3Shadow(
           fail('REWRITE_FAILED')
         }
       }
-      const mintId = (prefix: string): string => mint(prefix, usedKeys, entropy)
+      const recordMinted = (value: string): string => {
+        mintedInOrder.push(value)
+        return value
+      }
+      const mintId = (prefix: string): string => recordMinted(mint(prefix, usedKeys, entropy))
       const targetScopeForAlias = (scopeAlias: unknown): string | undefined => {
         const alias = requiredText(scopeAlias)
         const sourceScope = sourceScopeByAlias.get(alias)
@@ -710,7 +725,7 @@ export function rewriteStorageV3Shadow(
       }
       for (const state of identityStates.values()) {
         if (state.existingScopeId !== undefined) state.targetScopeId = state.existingScopeId
-        else if (state.eligible) state.targetScopeId = mint('scope-', usedScopes, entropy)
+        else if (state.eligible) state.targetScopeId = recordMinted(mint('scope-', usedScopes, entropy))
       }
 
       const insertScope = options.targetDb.prepare(
@@ -1253,6 +1268,9 @@ export function rewriteStorageV3Shadow(
         const previousOwner = newClaimOwners.get(targetId)
         if (previousOwner !== undefined && previousOwner !== oldClaimId) fail('KEY_COLLISION')
         newClaimOwners.set(targetId, oldClaimId)
+        // Reminted claim ids are deterministic functions of MINTED scope ids: per-target
+        // different but order-stable, so they join the minted list for the equivalence proof.
+        recordMinted(targetId)
         const owner = { kind: 'claim', targetId, scopeId } as const
         claimMap.set(oldClaimId, owner)
         addOwnership(ownership, oldClaimId, owner)
@@ -1457,6 +1475,7 @@ export function rewriteStorageV3Shadow(
       copiedLineageEvents,
       omittedExpiredIdentities,
       omittedUnclassifiedLineageEvents,
+      mintedIdentifiers: Object.freeze([...mintedInOrder]),
     })
   } catch (error) {
     if (error instanceof StorageV3ShadowRewriteError) throw error

@@ -54,101 +54,58 @@ export class StorageV3ShadowMigrationError extends Error {
   }
 }
 
-const RANDOM_KEY = /^(?:scope-|cl_|job-|snap-|ckpt-|cov-|ev-|art-|op-|del-|obs-|pr-|event-)[0-9a-f]{64}$/
-const C1_ID_COLUMNS = new Set([
-  'scope_id',
-  'coverage_id',
-  'job_id',
-  'checkpoint_id',
-  'snapshot_id',
-  'evidence_id',
-  'claim_id',
-  'superseded_by',
-  'target_evidence_id',
-  'target_claim_id',
-  'target_coverage_id',
-  'subject_id',
-  'operation_id',
-  'caused_by',
-])
-
-type ShadowTable = typeof STORAGE_V3_SHADOW_TABLES[number]
-
 /**
- * Versioned allowlist for the retained C1 graph. Empty bridge/import entries are
- * deliberate. A newly added shadow table cannot silently enter the checksum.
+ * The mint-order equivalence proof (#133): the rewrite reports every identifier it
+ * created that a second run over the same source creates DIFFERENTLY (entropy-minted
+ * C1 keys plus reminted claim ids), in creation order. Because both targets consume
+ * the same source in the same deterministic order, position i in one run corresponds
+ * to position i in the other — so the digest encodes each minted value as its mint
+ * INDEX and every other cell literally. Two targets digest equally exactly when they
+ * agree literally on all preserved, derived, and retained material and are related by
+ * the order-bijection on minted identifiers.
+ *
+ * This replaces the earlier graph-colouring alpha-rename, which was super-linear in
+ * identifier count and column-classified: a same-shaped substitution of a PRESERVED
+ * scope id (or a consistently substituted minted id) could earn the same colour and
+ * escape both digests. Here a substituted value simply is not in the mint list, is
+ * encoded literally, and refuses acceptance. The digest binds alias-shaped material
+ * and must never enter the public result or any log; the reported result checksum is
+ * a domain-separated re-hash.
  */
-const C1_GRAPH_VERSION = 'storage-v3-c1-graph.v1'
-const C1_GRAPH_COLUMNS = {
-  import_run: [],
-  claim_scope: ['scope_id'],
-  repository_identity: ['scope_id', 'is_private', 'is_archived', 'is_fork'],
-  commit_observation: [
-    'scope_id', 'additions', 'deletions', 'files', 'parent_count', 'feature_type',
-    'is_revert', 'is_fixup', 'message_length',
-  ],
-  pull_request_fact: [
-    'scope_id', 'state', 'is_draft', 'additions', 'deletions', 'changed_files',
-    'comments', 'reviews',
-  ],
-  coverage_observation: [
-    'scope_id', 'coverage_id', 'capability_id', 'status', 'limitation_code', 'observed_units',
-  ],
-  dated_event_observation: ['scope_id', 'event_kind'],
-  v2_store_provenance: [],
-  v2_coverage_record: [],
-  collection_job: [
-    'scope_id', 'job_id', 'capability_id', 'storage_contract_version', 'query_version',
-    'source_api_version', 'consent_revision', 'status',
-  ],
-  collection_checkpoint: [
-    'scope_id', 'checkpoint_id', 'job_id', 'snapshot_id', 'capability_id', 'query_version',
-    'source_api_version', 'consent_revision', 'coverage_state', 'deletion_order',
-    'lineage_coverage',
-  ],
-  source_snapshot: ['scope_id', 'snapshot_id', 'job_id', 'capability_id', 'status'],
-  coverage_ledger: [
-    'scope_id', 'coverage_id', 'job_id', 'snapshot_id', 'capability_id', 'status',
-    'expected_units', 'observed_units', 'omitted_units', 'saturation_reason', 'retryable',
-    'limitation_code',
-  ],
-  evidence: ['scope_id', 'evidence_id', 'coverage_id', 'layer', 'schema_version'],
-  claim: [
-    'scope_id', 'claim_id', 'layer', 'statement_code', 'method_id', 'method_version',
-    'window_start', 'window_end', 'schema_version', 'claim_id_material_version', 'superseded_by',
-  ],
-  claim_evidence_edge: [
-    'scope_id', 'claim_id', 'role', 'target_evidence_id', 'target_claim_id',
-    'target_coverage_id',
-  ],
-  limitation_instance: ['scope_id', 'claim_id', 'limitation_code', 'dimension', 'copy_key'],
-  lineage_event: [
-    'scope_id', 'subject_kind', 'subject_id', 'operation_id', 'capability_id', 'caused_by',
-    'event_kind', 'event_week',
-  ],
-  // New-store state, never migration output: empty at acceptance and outside the
-  // replayed C1 graph, so neither target's CAS rows can enter the checksum.
-  continuity_cas_state: [],
-  continuity_cas_operation: [],
-} as const satisfies Record<ShadowTable, readonly string[]>
-
-/**
- * Rows whose key-shaped identifiers are DERIVED from the source, not minted from caller
- * entropy. The slice-A legacy tombstone is rewritten as `del-${suffix}` with the suffix
- * taken verbatim from the source `scope_tombstone_<64hex>` subject, so the primary and
- * replay targets must agree on those values LITERALLY; alpha-renaming them like minted
- * identities would give a same-shaped substitution in one target the same colour and let
- * it slip through both digests (PR #127 late review). Minted `del-` operation IDs on
- * ordinary deletion-kind lineage rows keep their entropy classification — this predicate
- * is per row kind, not per column.
- */
-const SOURCE_DERIVED_ID_ROWS: Partial<
-  Record<ShadowTable, (row: Record<string, unknown>) => boolean>
-> = {
-  lineage_event: (row) => row.event_kind === 'legacy_deletion_operation',
-}
+const MINT_ORDER_EQUIVALENCE_VERSION = 'storage-v3-mint-order-equivalence.v1'
 
 const lengthPrefix = (value: string): string => `${value.length}:${value}`
+
+function mintOrderShadowDigest(
+  db: Database.Database,
+  mintedInOrder: readonly string[],
+): string {
+  const indexByValue = new Map<string, number>()
+  mintedInOrder.forEach((value, index) => {
+    // A duplicate mint would make the bijection ambiguous; refuse the run outright.
+    if (indexByValue.has(value)) throw new Error()
+    indexByValue.set(value, index)
+  })
+  const pieces: string[] = []
+  for (const table of [...STORAGE_V3_SHADOW_TABLES].sort()) {
+    const columns = (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>)
+      .map(({ name }) => name)
+      .sort()
+    const rows = db.prepare(`SELECT ${columns.join(', ')} FROM ${table}`).all() as Array<Record<string, unknown>>
+    for (const row of rows) {
+      const encoded = columns.map((column) => {
+        const value = row[column]
+        const index = typeof value === 'string' ? indexByValue.get(value) : undefined
+        const cell = index === undefined ? typedValue(value) : `mint${lengthPrefix(String(index))}`
+        return `${lengthPrefix(column)}${lengthPrefix(cell)}`
+      }).join('')
+      pieces.push(`${lengthPrefix(table)}${lengthPrefix(encoded)}`)
+    }
+  }
+  pieces.sort()
+  const payload = `${lengthPrefix(MINT_ORDER_EQUIVALENCE_VERSION)}${pieces.map(lengthPrefix).join('')}`
+  return createHash('sha256').update(payload).digest('hex')
+}
 
 function typedValue(value: unknown): string {
   if (value === null || value === undefined) return 'null'
@@ -157,92 +114,6 @@ function typedValue(value: unknown): string {
   if (typeof value === 'bigint') return `bigint${lengthPrefix(String(value))}`
   if (Buffer.isBuffer(value)) return `bytes${lengthPrefix(value.toString('hex'))}`
   throw new Error()
-}
-
-interface C1Cell {
-  readonly column: string
-  readonly value: unknown
-  readonly id: string | undefined
-}
-
-interface C1Row {
-  readonly table: ShadowTable
-  readonly cells: readonly C1Cell[]
-}
-
-function c1Rows(db: Database.Database): C1Row[] {
-  const projected: C1Row[] = []
-  for (const table of [...STORAGE_V3_SHADOW_TABLES].sort()) {
-    const columns = C1_GRAPH_COLUMNS[table]
-    if (columns.length === 0) continue
-    const installed = new Set(
-      (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>).map(({ name }) => name),
-    )
-    if (columns.some((column) => !installed.has(column))) throw new Error()
-    const rows = db.prepare(`SELECT ${columns.join(', ')} FROM ${table}`).all() as Array<Record<string, unknown>>
-    for (const row of rows) {
-      const sourceDerivedIds = SOURCE_DERIVED_ID_ROWS[table]?.(row) ?? false
-      projected.push({
-        table,
-        cells: columns.map((column) => {
-          const value = row[column]
-          return {
-            column,
-            value,
-            id: !sourceDerivedIds
-              && C1_ID_COLUMNS.has(column) && typeof value === 'string' && RANDOM_KEY.test(value)
-              ? value
-              : undefined,
-          }
-        }),
-      })
-    }
-  }
-  return projected
-}
-
-function randomPrefix(value: string): string {
-  return value.startsWith('cl_') ? 'cl_' : value.slice(0, value.indexOf('-') + 1)
-}
-
-/** Refine identifier colours from their complete typed graph neighbourhoods. */
-function graphColours(rows: readonly C1Row[]): ReadonlyMap<string, string> {
-  const ids = [...new Set(rows.flatMap(({ cells }) => cells.flatMap(({ id }) => id ? [id] : [])))]
-  let colours = new Map(ids.map((id) => [id, randomPrefix(id)]))
-  for (let iteration = 0; iteration <= ids.length; iteration += 1) {
-    const signatures = new Map<string, string>()
-    for (const id of ids) {
-      const occurrences: string[] = []
-      for (const row of rows) {
-        for (const cell of row.cells) {
-          if (cell.id !== id) continue
-          const encodedCells = row.cells.map((candidate) => {
-            const encoded = candidate.id === id
-              ? 'self'
-              : candidate.id
-                ? `colour${lengthPrefix(colours.get(candidate.id) ?? randomPrefix(candidate.id))}`
-                : typedValue(candidate.value)
-            return `${lengthPrefix(candidate.column)}${lengthPrefix(encoded)}`
-          }).join('')
-          occurrences.push(
-            `${lengthPrefix(row.table)}${lengthPrefix(cell.column)}${lengthPrefix(encodedCells)}`,
-          )
-        }
-      }
-      signatures.set(id, `${lengthPrefix(randomPrefix(id))}${occurrences.sort().map(lengthPrefix).join('')}`)
-    }
-    const ranked = new Map<string, string>()
-    for (const prefix of [...new Set(ids.map(randomPrefix))].sort()) {
-      const unique = [...new Set(ids
-        .filter((id) => randomPrefix(id) === prefix)
-        .map((id) => signatures.get(id)!))].sort()
-      unique.forEach((signature, index) => ranked.set(`${prefix}\0${signature}`, `${prefix}#${index + 1}`))
-    }
-    const next = new Map(ids.map((id) => [id, ranked.get(`${randomPrefix(id)}\0${signatures.get(id)!}`)!]))
-    if (ids.every((id) => next.get(id) === colours.get(id))) return next
-    colours = next
-  }
-  return colours
 }
 
 export interface StorageV3SelectableTargetOptions {
@@ -290,100 +161,6 @@ export function assertSelectableStorageV3Target(
   for (const table of empty) {
     if (Number(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get()) !== 0) throw new Error()
   }
-}
-
-/**
- * Produce a deterministic C1-only graph digest. Random C1 identifiers are
- * alpha-renamed from typed graph neighbourhoods; C2 aliases, IDs, hashes and
- * exact operational times never enter the digest.
- */
-export function replayNormalizedShadowChecksum(db: Database.Database): string {
-  const rows = c1Rows(db)
-  const colours = graphColours(rows)
-  const pieces: string[] = []
-  for (const { table, cells } of rows) {
-    const row = cells.map(({ column, value, id }) => {
-      const encoded = id ? `id${lengthPrefix(colours.get(id)!)}` : typedValue(value)
-      return `${lengthPrefix(column)}${lengthPrefix(encoded)}`
-    }).join('')
-    pieces.push(`${lengthPrefix(table)}${lengthPrefix(row)}`)
-  }
-  pieces.sort()
-  const payload = `${lengthPrefix(C1_GRAPH_VERSION)}${pieces.map(lengthPrefix).join('')}`
-  return createHash('sha256').update(payload).digest('hex')
-}
-
-const FULL_EQUIVALENCE_VERSION = 'storage-v3-full-equivalence.v1'
-
-/**
- * Columns whose values the rewrite mints from caller entropy. Only these are
- * alpha-renamed in the equivalence digest; a retained C2 value that merely has a
- * reminted-key shape (source_job_id, source_snapshot_id, source_coverage_id, and
- * any other source-opaque token) is compared literally, so a same-shaped
- * substitution in one target refuses acceptance for those columns. Column
- * membership is necessary but not sufficient: `SOURCE_DERIVED_ID_ROWS` exempts
- * row kinds whose values in these columns are source-derived rather than minted.
- *
- * KNOWN RESIDUAL GAP (tracked): scope ids that the rewrite PRESERVES from an
- * existing claim_scope row (rather than minting) are still alpha-renamed here,
- * so a consistent same-shaped scope-id substitution in one target can escape
- * both digests. Closing it needs per-run remint metadata from the rewrite (the
- * planned equivalence redesign), not another static row predicate — the target
- * rows alone cannot say whether a scope id was preserved or minted.
- */
-const ENTROPY_ID_COLUMNS = new Set([...C1_ID_COLUMNS, 'observation_id', 'fact_id', 'event_id'])
-
-function fullRows(db: Database.Database): C1Row[] {
-  const projected: C1Row[] = []
-  for (const table of [...STORAGE_V3_SHADOW_TABLES].sort()) {
-    const columns = (db.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>)
-      .map(({ name }) => name)
-      .sort()
-    const rows = db.prepare(`SELECT ${columns.join(', ')} FROM ${table}`).all() as Array<Record<string, unknown>>
-    for (const row of rows) {
-      const sourceDerivedIds = SOURCE_DERIVED_ID_ROWS[table]?.(row) ?? false
-      projected.push({
-        table,
-        cells: columns.map((column) => {
-          const value = row[column]
-          return {
-            column,
-            value,
-            id: !sourceDerivedIds
-              && ENTROPY_ID_COLUMNS.has(column) && typeof value === 'string' && RANDOM_KEY.test(value)
-              ? value
-              : undefined,
-          }
-        }),
-      })
-    }
-  }
-  return projected
-}
-
-/**
- * Digest every column of every shadow table, with the minted identity columns
- * alpha-renamed from their graph neighbourhoods and every other column compared
- * literally. Retained C2 and preserved C0 bridge values are deterministic
- * functions of the source rows, asOf and installation key, so the primary and
- * replay targets must agree exactly; a target-side corruption of any alias,
- * source-provenance, hash or exact-time column refuses acceptance. The digest
- * binds alias-shaped material and must never enter the public result or any log.
- */
-function fullEquivalenceShadowChecksum(db: Database.Database): string {
-  const rows = fullRows(db)
-  const colours = graphColours(rows)
-  const pieces: string[] = []
-  for (const { table, cells } of rows) {
-    const row = cells.map(({ column, value, id }) => {
-      const encoded = id ? `id${lengthPrefix(colours.get(id)!)}` : typedValue(value)
-      return `${lengthPrefix(column)}${lengthPrefix(encoded)}`
-    }).join('')
-    pieces.push(`${lengthPrefix(table)}${lengthPrefix(row)}`)
-  }
-  pieces.sort()
-  const payload = `${lengthPrefix(FULL_EQUIVALENCE_VERSION)}${pieces.map(lengthPrefix).join('')}`
-  return createHash('sha256').update(payload).digest('hex')
 }
 
 function sourceFingerprint(db: Database.Database): Buffer {
@@ -434,7 +211,7 @@ export function orchestrateStorageV3ShadowMigration(
       || primary.db === options.sourceDb
       || replay.db === options.sourceDb
     ) throw new Error()
-    rewriteStorageV3Shadow({
+    const primaryRun = rewriteStorageV3Shadow({
       sourceDb: options.sourceDb,
       targetDb: primary.db,
       identityBindings: options.identityBindings,
@@ -443,7 +220,7 @@ export function orchestrateStorageV3ShadowMigration(
       randomBytes: options.primaryRandomBytes ?? cryptoRandomBytes,
       failAfterStage: (stage) => options.failAfterStage?.('primary', stage),
     })
-    rewriteStorageV3Shadow({
+    const replayRun = rewriteStorageV3Shadow({
       sourceDb: options.sourceDb,
       targetDb: replay.db,
       identityBindings: options.identityBindings,
@@ -475,10 +252,17 @@ export function orchestrateStorageV3ShadowMigration(
     assertSelectableStorageV3Target(replay.db)
     assertProcessInputsAbsent(primary.db, options.identityBindings, options.installationKey)
     assertProcessInputsAbsent(replay.db, options.identityBindings, options.installationKey)
-    const checksum = replayNormalizedShadowChecksum(primary.db)
-    if (checksum !== replayNormalizedShadowChecksum(replay.db)) throw new Error()
-    if (fullEquivalenceShadowChecksum(primary.db) !== fullEquivalenceShadowChecksum(replay.db)) throw new Error()
+    // The mint-order equivalence proof: identical mint counts, then per-target
+    // digests over every column of every table with minted values index-encoded.
+    if (primaryRun.mintedIdentifiers.length !== replayRun.mintedIdentifiers.length) throw new Error()
+    const digest = mintOrderShadowDigest(primary.db, primaryRun.mintedIdentifiers)
+    if (digest !== mintOrderShadowDigest(replay.db, replayRun.mintedIdentifiers)) throw new Error()
     if (!sourceFingerprint(options.sourceDb).equals(sourceBefore)) throw new Error()
+    // The digest binds alias-shaped material; the reported checksum is a
+    // domain-separated re-hash that can name the run without exposing it.
+    const checksum = createHash('sha256')
+      .update(`${lengthPrefix('storage-v3-result.v1')}${lengthPrefix(digest)}`)
+      .digest('hex')
     replay.close()
     replay.discard()
     replay = undefined
