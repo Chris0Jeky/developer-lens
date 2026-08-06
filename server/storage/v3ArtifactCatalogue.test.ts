@@ -220,14 +220,13 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
   it('deletes a shared artifact whole, preserves other scopes artifacts, and compacts the selected store', () => {
     const fixture = freshSelectedStore()
     try {
-      const sharedLocator = 'migration-backup-20260302T000000Z.sqlite'
+      const sharedLocator = 'invented-backup-20260302T000000Z.sqlite'
       const otherLocator = 'invented-b-only.sqlite'
       const sharedId = registerFixture(
         fixture,
         sharedLocator,
         [SCOPE_A, SCOPE_B],
         2,
-        'migration_backup_v1',
       )
       const otherId = registerFixture(fixture, otherLocator, [SCOPE_B], 3)
       const sharedFamily = [
@@ -281,7 +280,7 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
     const fixture = freshSelectedStore()
     try {
       const locator = 'migration-backup-20260302T000001Z.sqlite'
-      const artifactId = registerFixture(fixture, locator, [SCOPE_A, SCOPE_B], 13, 'migration_backup_v1')
+      const artifactId = registerFixture(fixture, locator.replace('migration-backup-', 'invented-backup-'), [SCOPE_A, SCOPE_B], 13)
       const survivorId = registerFixture(fixture, 'invented-survivor-cause.sqlite', [SCOPE_B], 15)
       fixture.store.prepare(`INSERT INTO lineage_event (
         scope_id, subject_kind, subject_id, operation_id, capability_id,
