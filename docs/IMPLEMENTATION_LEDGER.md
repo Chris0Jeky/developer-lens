@@ -3086,3 +3086,17 @@ the generated files are the only producer boundary it may copy. Focused contract
 round-trip, strict rejection, feature/person-scoring prohibitions, deterministic bytes, and the
 fixture was validated by the lab's Pydantic consumer. No AnalysisPack or runtime source activation
 was changed.
+
+Late exact-head Codex review of PR #178 exposed five blocking contract defects. Commit
+`9aeb60973d80e9c65d5ebe9b4f352a9663957f4e` closes them: feature identifiers now use the canonical
+person-subject vocabulary and token-aware case folding across dot, underscore, and hyphen
+separators; interpretation codes are a closed vocabulary and require `NOT_PERSON_MEASURE`; C1
+`generated_at` is the UTC Monday ISO-week floor; and `.gitattributes` pins the two generated JSON
+artifacts to LF. The standalone schema carries the closed enum, required-code `contains`, and C1
+midnight conditional while typed consumers enforce the Monday rule. The exact code head passed
+`npm run check`: 83 test files, 1,396 tests passed and 10 declared skips, plus lint, context,
+generator drift, TypeScript/Vite build, credential scanning, and whitespace proof. The generated
+schema SHA-256 is `dbeb7c88434dc0849567d3f756304ee25b9f4f0d4b7f985ca16232675bb788b0`.
+Five non-blocking semantic refinements were consolidated in #182; broader standalone-schema/runtime
+parity remains #181. Hosted proof remains absent during the declared GitHub Actions incident and is
+not represented as green.
