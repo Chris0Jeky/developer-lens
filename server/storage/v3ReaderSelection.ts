@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3'
 import { lstatSync } from 'node:fs'
 import {
+  assertStorageV3ArtifactRootInstallationKey,
   openStorageV3ArtifactRoot,
   storageV3ArtifactFilePath,
   STORAGE_V3_ARTIFACT_LOCATORS,
@@ -226,6 +227,7 @@ function selectStorageV3ReaderInternal(
       const existing = readStorageV3MigrationSelection(db)
       let receipt: StorageV3MigrationSelection
       if (existing !== undefined) {
+        assertStorageV3ArtifactRootInstallationKey(artifactRoot, closed.installationKey)
         const selectedArtifactId = activeSelectedArtifactId(db)
         assertReplayRequest(existing, closed, selectedArtifactId)
         receipt = existing

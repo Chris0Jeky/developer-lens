@@ -132,6 +132,11 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       expect(replay.selection).toEqual(first.selection)
       expect(replay.db.prepare('SELECT COUNT(*) FROM migration_selection_state').pluck().get()).toBe(1)
       replay.db.close()
+
+      expect(selectStorageV3Reader({
+        ...fx.input,
+        installationKey: Object.freeze({}) as TaskInstallationKeyHandle,
+      })).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
     } finally { fx.cleanup() }
   })
 
