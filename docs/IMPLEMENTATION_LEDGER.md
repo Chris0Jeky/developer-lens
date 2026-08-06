@@ -2654,8 +2654,11 @@ root was accepted. Both are fixed at `98d3c95` with the single-use physical publ
 private task-directory binding. Focused TypeScript plus backup/key/catalogue/proposal proof passes
 4 files / 64 tests / 1 declared skip. The full local gate passes lint, context verification
 (27 Markdown / 12 required), 76 files / 1,248 tests / 6 declared skips, TypeScript/build, and
-credential scanning over 13 outputs. Fresh exact-final-head lifecycle/crash, manifest/recovery, and
-privacy/authority reviews, hosted Linux/POSIX proof, the connector-or-15-minute window, and merge
-remain pending. No real store, legacy source, connector, activation caller, external-model request,
-or private input was inspected or used. The next vertical after backup is atomic selection/fallback
-and the seven-day grace boundary; restore/tombstone replay and cleanup remain separate slices.
+credential scanning over 13 outputs. At code/review head `43d4259`, three fresh Terra lenses found
+no CRITICAL/HIGH lifecycle/crash, manifest/recovery, or privacy/authority blocker; each independently
+confirmed the two prior attack paths are closed. The range-level whitespace check is clean, and the
+semantic-equivalent proposal allow-list cleanup passes its 8 focused tests. Hosted Linux/POSIX
+proof, the connector-or-15-minute window, and merge remain pending. No real store, legacy source,
+connector, activation caller, external-model request, or private input was inspected or used. The
+next vertical after backup is atomic selection/fallback and the seven-day grace boundary;
+restore/tombstone replay and cleanup remain separate slices.
