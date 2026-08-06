@@ -1,4 +1,5 @@
 import type Database from 'better-sqlite3'
+import { createHash } from 'node:crypto'
 import {
   STORAGE_V3_SHADOW_APPLICATION_ID,
   STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT,
@@ -10,6 +11,8 @@ const CANONICAL_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 const ARTIFACT_ID = /^art-[0-9a-f]{64}$/
 const LEGACY_SOURCE_ID = /^legacy-[0-9a-f]{64}$/
 const GRACE_MILLISECONDS = 7 * 24 * 60 * 60 * 1000
+const BACKUP_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/
+const OPAQUE_BINDING = /^[a-z0-9][a-z0-9._:-]{0,127}$/
 
 export type StorageV3MigrationSelectionStatus = 'recorded' | 'replayed'
 
@@ -26,8 +29,31 @@ export interface StorageV3MigrationSelectionInput {
   readonly legacySourceId: string
   readonly selectedArtifactId: string
   readonly backupArtifactId: string
-  readonly successfulReportAt: string
+  readonly backupAt: string
+  readonly taskId: string
+  readonly taskFingerprint: string
+  readonly rootBinding: string
+  readonly successReportProof: StorageV3MigrationSuccessReportProof
 }
+
+/** Runtime-opaque proof issued after an invented migration report succeeds. */
+export interface StorageV3MigrationSuccessReportProof {
+  readonly __storageV3MigrationSuccessReportProof: never
+}
+
+interface SuccessReport {
+  readonly legacySourceId: string
+  readonly selectedArtifactId: string
+  readonly backupArtifactId: string
+  readonly backupAt: string
+  readonly taskId: string
+  readonly taskFingerprint: string
+  readonly rootBinding: string
+  readonly successfulReportAt: string
+  readonly graceDeadlineAt: string
+}
+
+const SUCCESS_REPORTS = new WeakMap<StorageV3MigrationSuccessReportProof, SuccessReport>()
 
 export interface StorageV3MigrationSelectionResult {
   readonly kind: 'v3_migration_selection'
@@ -64,12 +90,88 @@ function addGrace(timestamp: string): string {
   return result
 }
 
+function canonicalBackupTimestamp(value: unknown): string {
+  if (typeof value !== 'string' || !BACKUP_TIMESTAMP.test(value)) return fail()
+  const parsed = Date.parse(value)
+  if (!Number.isFinite(parsed) || new Date(parsed).toISOString() !== value.replace('Z', '.000Z')) return fail()
+  return value
+}
+
+function opaque(value: unknown): string {
+  if (typeof value !== 'string' || !OPAQUE_BINDING.test(value)) return fail()
+  return value
+}
+
+type SuccessReportInput = Readonly<{
+  legacySourceId: string
+  selectedArtifactId: string
+  backupArtifactId: string
+  backupAt: string
+  taskId: string
+  taskFingerprint: string
+  rootBinding: string
+}>
+
+export function storageV3MigrationRootBinding(directory: string): string {
+  // The absolute root never enters the receipt; only this process-local digest does.
+  return `root-${createHash('sha256').update(directory, 'utf8').digest('hex')}`
+}
+
+function issueSuccessReport(input: SuccessReportInput, reportAt: string): StorageV3MigrationSuccessReportProof {
+  if (typeof input !== 'object' || input === null || Array.isArray(input)) return fail()
+  if (!LEGACY_SOURCE_ID.test(input.legacySourceId)
+    || !ARTIFACT_ID.test(input.selectedArtifactId)
+    || !ARTIFACT_ID.test(input.backupArtifactId)) return fail()
+  const backupAt = canonicalBackupTimestamp(input.backupAt)
+  const taskId = opaque(input.taskId)
+  const taskFingerprint = opaque(input.taskFingerprint)
+  const rootBinding = opaque(input.rootBinding)
+  const successfulReportAt = canonicalTimestamp(reportAt)
+  if (Date.parse(successfulReportAt) < Date.parse(backupAt)) return fail()
+  const proof = Object.freeze({}) as StorageV3MigrationSuccessReportProof
+  SUCCESS_REPORTS.set(proof, Object.freeze({
+    legacySourceId: input.legacySourceId,
+    selectedArtifactId: input.selectedArtifactId,
+    backupArtifactId: input.backupArtifactId,
+    backupAt,
+    taskId,
+    taskFingerprint,
+    rootBinding,
+    successfulReportAt,
+    graceDeadlineAt: addGrace(successfulReportAt),
+  }))
+  return proof
+}
+
+/** Issue a proof using the current runtime clock; callers cannot choose report time. */
+export function issueStorageV3MigrationSuccessReport(
+  input: SuccessReportInput,
+): StorageV3MigrationSuccessReportProof {
+  return issueSuccessReport(input, new Date().toISOString())
+}
+
+/** Rebind an already committed report while restoring its exact original time. */
+export function replayStorageV3MigrationSuccessReport(
+  input: SuccessReportInput,
+  successfulReportAt: string,
+): StorageV3MigrationSuccessReportProof {
+  return issueSuccessReport(input, successfulReportAt)
+}
+
+function reportFor(proof: unknown): SuccessReport {
+  if (!proof || typeof proof !== 'object' || SUCCESS_REPORTS.get(proof as StorageV3MigrationSuccessReportProof) === undefined) return fail()
+  return SUCCESS_REPORTS.get(proof as StorageV3MigrationSuccessReportProof) as SuccessReport
+}
+
 function parseInput(raw: unknown): StorageV3MigrationSelectionInput {
   if (raw === null || typeof raw !== 'object' || Array.isArray(raw)) return fail()
   const input = raw as object
   const prototype = Object.getPrototypeOf(input)
   if (prototype !== Object.prototype && prototype !== null) return fail()
-  const expected = ['backupArtifactId', 'legacySourceId', 'selectedArtifactId', 'successfulReportAt']
+  const expected = [
+    'backupArtifactId', 'backupAt', 'legacySourceId', 'rootBinding',
+    'selectedArtifactId', 'successReportProof', 'taskFingerprint', 'taskId',
+  ]
   const keys = Reflect.ownKeys(input)
   if (keys.length !== expected.length || keys.some((key) => typeof key !== 'string')) return fail()
   if (keys.map((key) => String(key)).sort().some((key, index) => key !== expected[index])) return fail()
@@ -81,12 +183,28 @@ function parseInput(raw: unknown): StorageV3MigrationSelectionInput {
   const legacySourceId = read('legacySourceId')
   const selectedArtifactId = read('selectedArtifactId')
   const backupArtifactId = read('backupArtifactId')
-  const successfulReportAt = read('successfulReportAt')
+  const backupAt = read('backupAt')
+  const taskId = read('taskId')
+  const taskFingerprint = read('taskFingerprint')
+  const rootBinding = read('rootBinding')
+  const successReportProof = read('successReportProof')
   if (typeof legacySourceId !== 'string' || !LEGACY_SOURCE_ID.test(legacySourceId)) return fail()
   if (typeof selectedArtifactId !== 'string' || !ARTIFACT_ID.test(selectedArtifactId)) return fail()
   if (typeof backupArtifactId !== 'string' || !ARTIFACT_ID.test(backupArtifactId)) return fail()
-  const reportAt = canonicalTimestamp(successfulReportAt)
-  return Object.freeze({ legacySourceId, selectedArtifactId, backupArtifactId, successfulReportAt: reportAt })
+  const canonicalBackupAt = canonicalBackupTimestamp(backupAt)
+  const report = reportFor(successReportProof)
+  if (report.legacySourceId !== legacySourceId
+    || report.selectedArtifactId !== selectedArtifactId
+    || report.backupArtifactId !== backupArtifactId
+    || report.backupAt !== canonicalBackupAt
+    || report.taskId !== opaque(taskId)
+    || report.taskFingerprint !== opaque(taskFingerprint)
+    || report.rootBinding !== opaque(rootBinding)) return fail()
+  return Object.freeze({
+    legacySourceId, selectedArtifactId, backupArtifactId, backupAt: canonicalBackupAt,
+    taskId: report.taskId, taskFingerprint: report.taskFingerprint, rootBinding: report.rootBinding,
+    successReportProof: successReportProof as StorageV3MigrationSuccessReportProof,
+  })
 }
 
 function parseRow(row: Record<string, unknown>): StorageV3MigrationSelection {
@@ -131,17 +249,18 @@ function executeRecord(
   beforeCommit?: () => void,
 ): StorageV3MigrationSelectionResult {
   const input = parseInput(rawInput)
+  const report = reportFor(input.successReportProof)
   if (db.inTransaction) return fail()
   const record = db.transaction((): StorageV3MigrationSelectionResult => {
     assertStore(db)
-    const graceDeadlineAt = addGrace(input.successfulReportAt)
+    const graceDeadlineAt = report.graceDeadlineAt
     const existing = readRow(db)
     const expected = Object.freeze({
       readerState: 'v3_selected' as const,
       legacySourceId: input.legacySourceId,
       selectedArtifactId: input.selectedArtifactId,
       backupArtifactId: input.backupArtifactId,
-      successfulReportAt: input.successfulReportAt,
+      successfulReportAt: report.successfulReportAt,
       graceDeadlineAt,
     })
     if (existing !== undefined) {
@@ -161,7 +280,7 @@ function executeRecord(
       input.legacySourceId,
       input.selectedArtifactId,
       input.backupArtifactId,
-      input.successfulReportAt,
+      report.successfulReportAt,
       graceDeadlineAt,
     )
     if (inserted.changes !== 1) return fail()
@@ -212,4 +331,5 @@ export function evaluateStorageV3MigrationGrace(
 /** Test-only rollback seam. The production recorder has no callback or mutation bypass. */
 export const v3SelectionReceiptTestSeams = Object.freeze({
   recordWithBeforeCommit: executeRecord,
+  issueSuccessReportAt: issueSuccessReport,
 })

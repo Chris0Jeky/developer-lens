@@ -22,7 +22,12 @@ import {
   storageV3MaintenanceStatus,
 } from './v3ArtifactCatalogue.js'
 import { v3BackupTestSeams } from './v3Backup.js'
-import { recordStorageV3MigrationSelection, type StorageV3MigrationSelection } from './v3SelectionReceipt.js'
+import {
+  recordStorageV3MigrationSelection,
+  replayStorageV3MigrationSuccessReport,
+  storageV3MigrationRootBinding,
+  type StorageV3MigrationSelection,
+} from './v3SelectionReceipt.js'
 import {
   STORAGE_V3_SELECTION_PROOF_NAMES,
   v3SelectionProofTestSeams,
@@ -83,7 +88,19 @@ async function publicationFixture(): Promise<{
       legacySourceId: `legacy-${'5'.repeat(64)}`,
       selectedArtifactId,
       backupArtifactId: backup.artifactId,
-      successfulReportAt: '2026-08-06T12:40:00.000Z',
+      backupAt,
+      taskId: installationKey.taskId,
+      taskFingerprint: installationKey.fingerprint,
+      rootBinding: storageV3MigrationRootBinding(root),
+      successReportProof: replayStorageV3MigrationSuccessReport({
+        legacySourceId: `legacy-${'5'.repeat(64)}`,
+        selectedArtifactId,
+        backupArtifactId: backup.artifactId,
+        backupAt,
+        taskId: installationKey.taskId,
+        taskFingerprint: installationKey.fingerprint,
+        rootBinding: storageV3MigrationRootBinding(root),
+      }, '2026-08-06T12:40:00.000Z'),
     }).selection
     v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
       db,

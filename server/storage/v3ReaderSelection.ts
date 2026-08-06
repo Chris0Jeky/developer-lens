@@ -14,10 +14,13 @@ import {
 } from './v3Backup.js'
 import {
   recordStorageV3MigrationSelection,
+  issueStorageV3MigrationSuccessReport,
+  storageV3MigrationRootBinding,
   readStorageV3MigrationSelection,
   StorageV3MigrationSelectionError,
   v3SelectionReceiptTestSeams,
   type StorageV3MigrationSelection,
+  type StorageV3MigrationSuccessReportProof,
 } from './v3SelectionReceipt.js'
 import {
   openSelectedStorageV3Store,
@@ -229,7 +232,17 @@ function selectStorageV3ReaderInternal(
   beforeReceiptCommit?: () => void,
   publishProof: SelectionProofPublisher = publishStorageV3MigrationSelectionProof,
   preflightProof: () => void = assertStorageV3ArtifactDirectorySyncSupported,
+  issueSuccessReport: (input: {
+    legacySourceId: string
+    selectedArtifactId: string
+    backupArtifactId: string
+    backupAt: string
+    taskId: string
+    taskFingerprint: string
+    rootBinding: string
+  }) => StorageV3MigrationSuccessReportProof = issueStorageV3MigrationSuccessReport,
 ): StorageV3ReaderSelection {
+  const rootBindingFor = storageV3MigrationRootBinding
   let stage: SelectionStage = 'request'
   let openedDb: Database.Database | undefined
   let root: ReturnType<typeof openStorageV3ArtifactRoot> | undefined
@@ -278,7 +291,19 @@ function selectStorageV3ReaderInternal(
           legacySourceId: closed.legacySourceId,
           selectedArtifactId: backup.selectedArtifactId,
           backupArtifactId: backup.artifactId,
-          successfulReportAt: closed.successfulReportAt,
+          backupAt: closed.backupAt,
+          taskId: closed.installationKey.taskId,
+          taskFingerprint: closed.installationKey.fingerprint,
+          rootBinding: rootBindingFor(closed.directory),
+          successReportProof: issueSuccessReport({
+            legacySourceId: closed.legacySourceId,
+            selectedArtifactId: backup.selectedArtifactId,
+            backupArtifactId: backup.artifactId,
+            backupAt: closed.backupAt,
+            taskId: closed.installationKey.taskId,
+            taskFingerprint: closed.installationKey.fingerprint,
+            rootBinding: rootBindingFor(closed.directory),
+          }),
         })
         const recorded = beforeReceiptCommit === undefined
           ? recordStorageV3MigrationSelection(db, receiptInput)
@@ -343,6 +368,10 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, () => {},
       ),
       () => {},
+      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        report,
+        input.successfulReportAt,
+      ),
     )
   },
   selectWithProofDirectorySynchronizer(
@@ -360,6 +389,10 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, synchronizer,
       ),
       () => {},
+      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        report,
+        input.successfulReportAt,
+      ),
     )
   },
   selectWithProofPreflight(
@@ -374,6 +407,10 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, () => {},
       ),
       preflight,
+      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        report,
+        input.successfulReportAt,
+      ),
     )
   },
 })
