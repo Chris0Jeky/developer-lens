@@ -450,6 +450,7 @@ describe('storage-v3 B1a proposal', () => {
           if (![
             'server/storage/v3StoreFiles.ts',
             'server/storage/v3Deletion.ts',
+            'server/storage/v3ShadowSweep.ts',
             'scripts/storeLifecycle.ts',
           ].includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
@@ -505,6 +506,7 @@ describe('storage-v3 B1a proposal', () => {
       'better-sqlite3',
       '../../shared/claims.js',
       './v3ShadowSchema.js',
+      './v3ContinuityCasProposal.js',
       './v3ShadowRewrite.js',
     ])
     const continuityCasProposalPath = join(

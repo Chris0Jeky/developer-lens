@@ -292,10 +292,22 @@ export function deleteStorageV3Scope(
       }
       options.failAfterStage?.('conflictCheck')
 
+      // A scoped deletion-kind row for a subject OUTSIDE the enumeration (its data row
+      // already gone, or an artifact-kind record) is the only surviving proof of an
+      // EARLIER erasure — it must outlive this scope as a scope-unbound record, not be
+      // destroyed with the scope's ordinary lineage (PR #136 review). The immutable
+      // trigger forbids updating scope_id, so it is captured here and re-inserted
+      // scope-unbound in the tombstone stage, after the owner rows are gone (the
+      // cross-scope lineage triggers reject NULL-scope rows while owners still live).
+      const preservedTombstones = db.prepare(
+        `SELECT subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week
+         FROM lineage_event
+         WHERE scope_id = ? AND event_kind IN ('tombstone_cascade', 'index_deleted')`,
+      ).all(scopeId) as Array<Record<string, unknown>>
       const deletedRows: Record<string, number> = {}
       deletedRows.lineage_event = db.prepare(
         'DELETE FROM lineage_event WHERE scope_id = ?',
-      ).run(scopeId).changes
+      ).run(scopeId).changes - preservedTombstones.length
       options.failAfterStage?.('lineageDelete')
 
       // The claim self-reference is immediate NO ACTION: clear it first so the
@@ -322,6 +334,23 @@ export function deleteStorageV3Scope(
       }
       options.failAfterStage?.('casDelete')
 
+      const reinsertPreserved = db.prepare(
+        `INSERT INTO lineage_event (
+          scope_id, subject_kind, subject_id, operation_id, capability_id,
+          caused_by, event_kind, event_week
+        ) VALUES (NULL, ?, ?, ?, ?, ?, ?, ?)`,
+      )
+      for (const row of preservedTombstones) {
+        reinsertPreserved.run(
+          row.subject_kind,
+          row.subject_id,
+          row.operation_id,
+          row.capability_id,
+          row.caused_by,
+          row.event_kind,
+          row.event_week,
+        )
+      }
       const insertTombstone = db.prepare(
         `INSERT INTO lineage_event (
           scope_id, subject_kind, subject_id, operation_id, capability_id,

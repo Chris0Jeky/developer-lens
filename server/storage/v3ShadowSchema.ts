@@ -287,6 +287,26 @@ const key = (column: string, prefix: string): string =>
 const c1 = (column: string): string => key(column, 'scope-')
 const token = (column: string, max = 256): string =>
   `length(${column}) BETWEEN 1 AND ${max} AND ${column} NOT GLOB '*[^A-Za-z0-9:._-]*'`
+/** A REAL ISO week: shape, range, and the leap-week rule (W53 only in long years). */
+const isoWeek = (column: string): string => `
+    length(${column}) = 8
+    AND ${column} GLOB '[0-9][0-9][0-9][0-9]-W[0-5][0-9]'
+    AND substr(${column}, 7, 2) BETWEEN '01' AND '53'
+    AND (
+      substr(${column}, 7, 2) <> '53'
+      OR strftime('%w', substr(${column}, 1, 4) || '-01-01') = '4'
+      OR (
+        strftime('%w', substr(${column}, 1, 4) || '-01-01') = '3'
+        AND (
+          CAST(substr(${column}, 1, 4) AS INTEGER) % 400 = 0
+          OR (
+            CAST(substr(${column}, 1, 4) AS INTEGER) % 4 = 0
+            AND CAST(substr(${column}, 1, 4) AS INTEGER) % 100 <> 0
+          )
+        )
+      )
+    )
+  `
 const canonicalTimestampShape = (column: string): string =>
   `length(${column}) = 24 AND ${column} GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]T[0-9][0-9]:[0-9][0-9]:[0-9][0-9].[0-9][0-9][0-9]Z'`
 const quoted = (values: readonly string[]): string => values.map((value) => `'${value}'`).join(', ')
@@ -344,11 +364,7 @@ CREATE TABLE IF NOT EXISTS continuity_cas_operation (
     ),
   payload_sha256 TEXT
     CHECK (payload_sha256 IS NULL OR (length(payload_sha256) = 64 AND payload_sha256 NOT GLOB '*[^0-9a-f]*')),
-  applied_week TEXT NOT NULL CHECK (
-    length(applied_week) = 8
-    AND applied_week GLOB '[0-9][0-9][0-9][0-9]-W[0-5][0-9]'
-    AND substr(applied_week, 7, 2) BETWEEN '01' AND '53'
-  ),
+  applied_week TEXT NOT NULL CHECK (${isoWeek('applied_week')}),
   UNIQUE (scope_id, applied_revision),
   FOREIGN KEY (scope_id) REFERENCES continuity_cas_state(scope_id) ON DELETE RESTRICT
 ) STRICT;
@@ -644,25 +660,7 @@ CREATE TABLE IF NOT EXISTS lineage_event (
   capability_id TEXT NOT NULL CHECK (capability_id = 'github.core'),
   caused_by TEXT CHECK (caused_by IS NULL OR ${token('caused_by')}),
   event_kind TEXT NOT NULL CHECK (event_kind IN (${quoted(LINEAGE_V3_EVENT_KINDS)})),
-  event_week TEXT NOT NULL CHECK (
-    length(event_week) = 8
-    AND event_week GLOB '[0-9][0-9][0-9][0-9]-W[0-5][0-9]'
-    AND substr(event_week, 7, 2) BETWEEN '01' AND '53'
-    AND (
-      substr(event_week, 7, 2) <> '53'
-      OR strftime('%w', substr(event_week, 1, 4) || '-01-01') = '4'
-      OR (
-        strftime('%w', substr(event_week, 1, 4) || '-01-01') = '3'
-        AND (
-          CAST(substr(event_week, 1, 4) AS INTEGER) % 400 = 0
-          OR (
-            CAST(substr(event_week, 1, 4) AS INTEGER) % 4 = 0
-            AND CAST(substr(event_week, 1, 4) AS INTEGER) % 100 <> 0
-          )
-        )
-      )
-    )
-  ),
+  event_week TEXT NOT NULL CHECK (${isoWeek('event_week')}),
   PRIMARY KEY (subject_kind, subject_id, event_kind, operation_id, event_week),
   CHECK ((event_kind IN (${quoted(LINEAGE_V3_DELETION_EVENT_KINDS)}) AND ${key('operation_id', 'del-')}) OR (event_kind NOT IN (${quoted(LINEAGE_V3_DELETION_EVENT_KINDS)}) AND ${key('operation_id', 'op-')})),
   CHECK ((subject_kind = 'scope' AND ${c1('subject_id')}) OR (subject_kind = 'claim' AND ${key('subject_id', 'cl_')}) OR (subject_kind = 'job' AND ${key('subject_id', 'job-')}) OR (subject_kind = 'snapshot' AND ${key('subject_id', 'snap-')}) OR (subject_kind = 'checkpoint' AND ${key('subject_id', 'ckpt-')}) OR (subject_kind = 'coverage' AND ${key('subject_id', 'cov-')}) OR (subject_kind = 'evidence' AND ${key('subject_id', 'ev-')}) OR (subject_kind = 'artifact' AND ${key('subject_id', 'art-')}) OR (subject_kind = 'deletion' AND ${key('subject_id', 'del-')})),

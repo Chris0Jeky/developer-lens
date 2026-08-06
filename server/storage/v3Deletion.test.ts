@@ -340,6 +340,34 @@ describe('B3 v3 scope deletion', { timeout: 30_000 }, () => {
     } finally { fixture.cleanup() }
   })
 
+  it('preserves an earlier deletion record for a non-enumerated subject, scope-unbound (PR #136 review)', () => {
+    const fixture = migratedFixture()
+    try {
+      // An earlier erasure's only surviving proof: a scoped index_deleted record for
+      // an artifact-kind subject with no table row (so it is outside the enumeration
+      // and outside the live-subject conflict check).
+      const artifactId = `art-${'7'.repeat(64)}`
+      const earlierOperation = `del-${'8'.repeat(64)}`
+      fixture.target.prepare(
+        `INSERT INTO lineage_event (scope_id, subject_kind, subject_id, operation_id, capability_id, caused_by, event_kind, event_week)
+         VALUES (?, 'artifact', ?, ?, 'github.core', NULL, 'index_deleted', '2026-W05')`,
+      ).run(fixture.scopeA, artifactId, earlierOperation)
+      deleteStorageV3Scope({
+        db: fixture.target, scopeId: fixture.scopeA, asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 205),
+      })
+      const preserved = fixture.target.prepare(
+        "SELECT scope_id, operation_id, event_week FROM lineage_event WHERE subject_kind = 'artifact' AND subject_id = ?",
+      ).get(artifactId) as { scope_id: unknown; operation_id: string; event_week: string } | undefined
+      expect(preserved).toBeDefined()
+      expect(preserved!.scope_id).toBeNull()
+      expect(preserved!.operation_id).toBe(earlierOperation)
+      expect(preserved!.event_week).toBe('2026-W05')
+      expect(readStorageV3DeletionLineage(fixture.target)
+        .some((entry) => entry.subjectId === artifactId && entry.eventKind === 'index_deleted')).toBe(true)
+    } finally { fixture.cleanup() }
+  })
+
   it('refuses a store carrying an unregistered table', () => {
     const fixture = migratedFixture()
     try {

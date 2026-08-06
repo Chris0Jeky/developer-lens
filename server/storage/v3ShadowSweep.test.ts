@@ -520,4 +520,25 @@ describe('storage-v3 B2a-iii ongoing C2 sweep', () => {
       db.close()
     }
   })
+
+  it('refuses to sweep around divergent or orphaned CAS history (PR #136 review)', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      const scopeId = `scope-${'a'.repeat(64)}`
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeId)
+      initializeContinuityCasScope(db, scopeId)
+      // A permitted single-step revision bump WITHOUT its operation row leaves the
+      // history divergent; the sweep must refuse rather than mutate around it.
+      db.prepare('UPDATE continuity_cas_state SET revision = revision + 1 WHERE scope_id = ?')
+        .run(scopeId)
+      expect(() => sweepStorageV3C2({
+        targetDb: db,
+        asOf: '2026-03-01T00:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 63),
+      })).toThrow(/SWEEP_STATE_REFUSED/)
+    } finally {
+      db.close()
+    }
+  })
 })

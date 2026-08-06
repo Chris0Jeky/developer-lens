@@ -428,6 +428,24 @@ describe('v3 continuity CAS in the shadow store', () => {
     }
   })
 
+  it('rejects a nonexistent ISO week 53 in applied_week (PR #136 review)', () => {
+    const db = openFixture()
+    try {
+      // 2021 has no W53; 2020 does. The CHECK must apply the same leap-week rule as
+      // lineage_event.event_week, or the sweeper would compute expiry from a phantom date.
+      expect(() => db.prepare(
+        `INSERT INTO continuity_cas_operation (operation_id, scope_id, expected_revision, applied_revision, payload_sha256, applied_week)
+         VALUES (?, ?, 0, 1, ?, '2021-W53')`,
+      ).run(operation('d'), scope(), payload())).toThrow(/CHECK|STORAGE_V3_CONTINUITY_CAS_INVALID/)
+      expect(applyContinuityCasOperation(db, request(), () => '2021-01-01T00:00:00.000Z').status)
+        .toBe('applied')
+      expect(db.prepare('SELECT applied_week FROM continuity_cas_operation').pluck().get())
+        .toBe('2020-W53')
+    } finally {
+      db.close()
+    }
+  })
+
   it('permits no receipt update other than clearing it', () => {
     const db = openFixture()
     try {

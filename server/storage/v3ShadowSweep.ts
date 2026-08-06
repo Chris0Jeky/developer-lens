@@ -9,6 +9,7 @@ import {
   STORAGE_V3_SHADOW_USER_VERSION,
   storageV3ShadowSchemaFingerprint,
 } from './v3ShadowSchema.js'
+import { assertContinuityCasConsistency } from './v3ContinuityCasProposal.js'
 import { addUtcMonthsClamped, isoWeekFromCanonicalTimestamp } from './v3ShadowRewrite.js'
 
 export const STORAGE_V3_C2_SWEEP_GROUPS = [
@@ -472,7 +473,19 @@ export function sweepStorageV3C2(options: StorageV3C2SweepOptions): StorageV3C2S
     }
     options.failAfterStage?.('claim')
 
+    // Like every other CAS writer: refuse to mutate around divergent or orphaned CAS
+    // history, and prove the receipt clearing preserved consistency (PR #136 review).
+    try {
+      assertContinuityCasConsistency(options.targetDb)
+    } catch {
+      fail('SWEEP_STATE_REFUSED')
+    }
     const casReceiptsCleared = clearExpiredCasReceipts(options.targetDb, asOf)
+    try {
+      assertContinuityCasConsistency(options.targetDb)
+    } catch {
+      fail('SWEEP_STATE_REFUSED')
+    }
     options.failAfterStage?.('casReceipts')
 
     const usedLineageKeys = new Set<string>()
