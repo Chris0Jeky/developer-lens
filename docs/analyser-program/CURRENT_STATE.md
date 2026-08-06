@@ -60,9 +60,10 @@ frozen_by_reassessment: horizon:frozen label (WB candidates, vector retrieval, G
 authority_order: [AGENTS.md, .agent-harness/tier.json, HUMAN_TODO.md, data-charter.md,
   source-capability-matrix.md, DEVELOPER_LENS_V2_ARCHITECTURE.md (incl. Appendix I.1-I.4)]
 last_verified_checks: 'The B4 implementation head passed the full local gate: lint, context
-  verification (27 Markdown / 12 required), 73 test files, 1,195 passed plus 1 opt-in scale test
-  skipped, TypeScript/build, and credential scan over 13 build outputs. Its focused storage and
-  analysis-pack proof passed 9 files / 163 tests plus the same opt-in skip. Every earlier merged
+  verification (27 Markdown / 12 required), 73 test files, 1,195 passed plus 2 skips (the opt-in
+  scale corpus and POSIX dangling-symlink fixture on Windows), TypeScript/build, and credential
+  scan over 13 build outputs. Its focused storage and analysis-pack proof passed 9 files / 163
+  tests plus the same 2 skips. Every earlier merged
   R1-R4 head passed its exact-head hosted PR gate and exact-merge Pages/privacy run; the ledger
   now records the missing #132/#136/#138 exact-merge run IDs.'
 review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently posts review comments

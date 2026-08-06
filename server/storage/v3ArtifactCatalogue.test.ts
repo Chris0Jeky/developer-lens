@@ -309,6 +309,24 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
         'SELECT 1 FROM app_artifact WHERE relative_locator = ?',
       ).get('invented-ownerless.sqlite')).toBeUndefined()
       expect(() => assertPublishedStorageV3ArtifactCatalogue(fixture.store)).not.toThrow()
+
+      const deletedArtifactId = `art-${'e'.repeat(64)}`
+      fixture.store.prepare(`INSERT INTO lineage_event (
+        scope_id, subject_kind, subject_id, operation_id, capability_id,
+        caused_by, event_kind, event_week
+      ) VALUES (NULL, 'artifact', ?, ?, 'github.core', NULL, 'index_deleted', '2026-W10')`)
+        .run(deletedArtifactId, `del-${'d'.repeat(64)}`)
+      writeInventedSqlite(join(fixture.root, 'invented-reused-id.sqlite'))
+      expectArtifactError(() => registerStorageV3Artifact({
+        db: fixture.store,
+        kind: 'invented_fixture_store',
+        relativeLocator: 'invented-reused-id.sqlite',
+        scopeIds: [SCOPE_A],
+        artifactId: deletedArtifactId,
+      }))
+      expect(fixture.store.prepare(
+        'SELECT 1 FROM app_artifact WHERE artifact_id = ?',
+      ).get(deletedArtifactId)).toBeUndefined()
       expect(() => fixture.store.prepare(
         `INSERT INTO app_artifact (
           artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator

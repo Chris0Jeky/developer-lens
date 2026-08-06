@@ -5,6 +5,7 @@ import {
   readFileSync,
   readdirSync,
   rmSync,
+  symlinkSync,
   writeFileSync,
 } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -168,6 +169,20 @@ describe('store lifecycle command', () => {
     expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.replay))).toBe(false)
     expect(entries(directory).some((name) => name.includes('.tmp.sqlite-'))).toBe(false)
   })
+
+  it.skipIf(process.platform === 'win32')(
+    'refuses a dangling fixed-target symlink without writing outside the reviewed root',
+    () => {
+      const primary = join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary)
+      const outside = join(tmpdir(), `developer-lens-dangling-target-${process.pid}.sqlite`)
+      rmSync(outside, { force: true })
+      symlinkSync(outside, primary, 'file')
+
+      expect(() => runStoreLifecycleDemo({ directory })).toThrow(StorageV3ShadowMigrationError)
+      expect(existsSync(outside)).toBe(false)
+      expect(existsSync(storePath(directory))).toBe(false)
+    },
+  )
 
   it('refuses to accept a second migration over an existing store', () => {
     runStoreLifecycleDemo({ directory })
