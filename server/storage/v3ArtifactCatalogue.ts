@@ -620,10 +620,9 @@ interface MigrationBackupFiles {
 /**
  * Staged backups carry a content-free crash record until promotion.  Before
  * deletion mutates either the catalogue or the filesystem, prove that every
- * surviving pair member is still the exact recorded object.  A deleting row
- * may have no pair members only when the prior unlink completed and the
- * process crashed before catalogue finalization; pending rows never get that
- * interpretation.
+ * surviving pair member is still the exact recorded object.  Null identity is
+ * the revocation path and therefore requires both names absent; an identity
+ * that was recorded before a crash may be absent only while deleting.
  */
 function validateMigrationBackupDeletionIdentity(
   db: Database.Database,
