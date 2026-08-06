@@ -27,7 +27,7 @@ export const RELATION_SCHEMA_IDS: Record<RelationName, string> = {
 const canonicalUtcPattern =
   /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d{1,6}))?Z$/
 
-function canonicalUtcMicros(value: string): number | undefined {
+function canonicalUtcMicros(value: string): bigint | undefined {
   const match = canonicalUtcPattern.exec(value)
   if (!match) return undefined
   const [, yearText, monthText, dayText, hourText, minuteText, secondText, fractionText] = match
@@ -65,7 +65,7 @@ function canonicalUtcMicros(value: string): number | undefined {
   ) {
     return undefined
   }
-  return date.getTime() * 1000 + (fractionMicros % 1000)
+  return BigInt(date.getTime()) * 1000n + BigInt(fractionMicros % 1000)
 }
 
 export const CanonicalUtcSchema = z.string().regex(canonicalUtcPattern).superRefine((value, ctx) => {

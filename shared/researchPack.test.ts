@@ -1,7 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
-import { RELATION_NAMES, ResearchPackSchema } from './researchPack.js'
+import { RELATION_NAMES, ResearchPackSchema, TimeWindowSchema } from './researchPack.js'
 import { renderResearchPackFiles } from '../scripts/generateResearchPack.js'
 
 const fixturePath = resolve('research-contracts', 'research-pack', 'v1', 'invented.fixture.json')
@@ -84,5 +84,20 @@ describe('ResearchPack v1 producer contract', () => {
     expect(rendered.schema).toBe(await readFile(schemaPath, 'utf8'))
     expect(rendered.fixture).toBe(await readFile(fixturePath, 'utf8'))
     expect(renderResearchPackFiles()).toEqual(rendered)
+  })
+
+  it('orders far-future microseconds exactly and rejects invalid calendar dates', () => {
+    expect(() =>
+      TimeWindowSchema.parse({
+        start: '9999-12-31T23:59:59.000000Z',
+        end: '9999-12-31T23:59:59.000001Z',
+      }),
+    ).not.toThrow()
+    expect(() =>
+      TimeWindowSchema.parse({
+        start: '9999-02-29T00:00:00Z',
+        end: '9999-03-01T00:00:00Z',
+      }),
+    ).toThrow()
   })
 })
