@@ -36,6 +36,9 @@ import {
 
 export { STORAGE_V3_ARTIFACT_LOCATORS }
 
+/** One fixed application-owned marker; callers cannot choose a lock locator. */
+export const STORAGE_V3_WRITER_LEASE_LOCATOR = 'v3-writer.lease' as const
+
 /**
  * LIFE-02 B4: the selected v3 store is the durable catalogue.  Absolute paths
  * never cross the SQL boundary; the process instead binds each opened store to
@@ -364,6 +367,11 @@ export function storageV3ArtifactFilePath(
   locator: typeof STORAGE_V3_ARTIFACT_LOCATORS[keyof typeof STORAGE_V3_ARTIFACT_LOCATORS],
 ): string {
   return artifactPath(root, locator)
+}
+
+/** Return the exact lease path under an already reviewed root. */
+export function storageV3WriterLeasePath(root: StorageV3ArtifactRoot): string {
+  return artifactPath(root, STORAGE_V3_WRITER_LEASE_LOCATOR)
 }
 
 interface ArtifactRow {

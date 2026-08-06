@@ -26,7 +26,7 @@ import {
   type StorageV3ArtifactRoot,
 } from './v3ArtifactCatalogue.js'
 
-export { registerStorageV3Artifact }
+export { createStorageV3ArtifactRoot, registerStorageV3Artifact }
 export type { StorageV3ArtifactDeletionStage } from './v3ArtifactCatalogue.js'
 import {
   assertSelectableStorageV3Target,

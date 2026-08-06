@@ -29,6 +29,7 @@ import {
 } from '../server/storage/v3ShadowMigration.js'
 import { sweepStorageV3C2 } from '../server/storage/v3ShadowSweep.js'
 import {
+  createStorageV3ArtifactRoot,
   createStorageV3TargetFactory,
   openSelectedStorageV3Store,
   registerStorageV3Artifact,
@@ -36,6 +37,7 @@ import {
   type StorageV3PublicationFailureStage,
   type StorageV3RecoveryFailureStage,
 } from '../server/storage/v3StoreFiles.js'
+import { withStorageV3WriterLease } from '../server/storage/v3WriterLease.js'
 
 /**
  * Owner-controlled, default-off local entrypoint for the storage-v3 lifecycle.
@@ -613,7 +615,7 @@ const counts = (values: Readonly<Record<string, number>>): string =>
  * DELETE one scope on the selected store -> explain its tombstones -> reopen and
  * re-validate with the other scopes intact.
  */
-export function runStoreLifecycleDemo(
+function runStoreLifecycleDemoInsideLease(
   options: StoreLifecycleDemoOptions,
 ): StoreLifecycleDemoResult {
   const lines: string[] = []
@@ -682,6 +684,14 @@ export function runStoreLifecycleDemo(
   }
 }
 
+/** The owner-only lifecycle entry acquires one lease before any store mutation. */
+export function runStoreLifecycleDemo(
+  options: StoreLifecycleDemoOptions,
+): StoreLifecycleDemoResult {
+  const root = createStorageV3ArtifactRoot(options.directory)
+  return withStorageV3WriterLease(root, () => runStoreLifecycleDemoInsideLease(options))
+}
+
 export interface StoreLifecycleInvocation {
   readonly verb: StoreLifecycleVerb
   readonly directory: string
@@ -738,28 +748,37 @@ function runVerb(
     return
   }
   if (invocation.verb === 'migrate') {
-    const source = createInventedV2Source(invocation.directory)
-    try {
-      const migration = migrateInventedSource(source, invocation.directory)
-      log(`migration: status=${migration.status} checksum-digits=${migration.checksumLength}`)
-    } finally {
-      source.db.close()
-    }
+    withStoreLifecycleLease(invocation.directory, () => {
+      const source = createInventedV2Source(invocation.directory)
+      try {
+        const migration = migrateInventedSource(source, invocation.directory)
+        log(`migration: status=${migration.status} checksum-digits=${migration.checksumLength}`)
+      } finally {
+        source.db.close()
+      }
+    })
     return
   }
-  const store = openSelectedStorageV3Store(invocation.directory)
-  try {
-    if (invocation.verb === 'sweep') {
-      const sweep = sweepSelectedStore(store, invocation.asOf)
-      log(`sweep: status=${sweep.status} cleared=${sweep.clearedTotal} lineage=${sweep.lineageEvents} ${counts(sweep.cleared)}`)
-      return
+  withStoreLifecycleLease(invocation.directory, () => {
+    const store = openSelectedStorageV3Store(invocation.directory)
+    try {
+      if (invocation.verb === 'sweep') {
+        const sweep = sweepSelectedStore(store, invocation.asOf)
+        log(`sweep: status=${sweep.status} cleared=${sweep.clearedTotal} lineage=${sweep.lineageEvents} ${counts(sweep.cleared)}`)
+        return
+      }
+      const report = reportSelectedStore(store)
+      log(`store: rows=${report.rows} cas-scopes=${report.casScopes} cas-operations=${report.casOperations} ${counts(report.tableCounts)}`)
+      log(`cas: revisions=${report.casRevisions.join(',') || 'none'}`)
+    } finally {
+      store.close()
     }
-    const report = reportSelectedStore(store)
-    log(`store: rows=${report.rows} cas-scopes=${report.casScopes} cas-operations=${report.casOperations} ${counts(report.tableCounts)}`)
-    log(`cas: revisions=${report.casRevisions.join(',') || 'none'}`)
-  } finally {
-    store.close()
-  }
+  })
+}
+
+function withStoreLifecycleLease<T>(directory: string, callback: () => T): T {
+  const root = createStorageV3ArtifactRoot(directory)
+  return withStorageV3WriterLease(root, () => callback())
 }
 
 /** Returns the process exit code; never throws for a refused invocation. */

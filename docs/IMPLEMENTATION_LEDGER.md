@@ -2591,3 +2591,27 @@ this candidate does not authorize live collection or any external-model call. Ex
 review identified the exported invented issuer as a P2 local-code footgun: it is lookalike-resistant,
 not inaccessible to arbitrary local modules. Issue #151 owns removing it before any production
 caller; the operational claim here is only tracked-source default-off, never a local-code sandbox.
+
+## 2026-08-06 — LIFE-03 activation enforcement merged; single-writer lease candidate
+
+PR #150 merged final head `c25626022712b61da5afab2a33763153c8b7caa5` as
+`442ec09dd1dc0bdd28e48d8a6e568d0bf2eb2d0b`. Exact-head hosted run `31081764006` passed, and the
+exact-merge Pages/privacy/deploy run `31082780368` passed. The code/state head's full local gate
+passed 74 files / 1,213 tests / 5 skips plus lint, context, type/build, and credential checks; the
+final documentation-only claim correction passed context/diff checks and the hosted full gate.
+Two fresh Terra authority/privacy lenses were clean. The exact-head connector P2 was reproduced,
+classified nonblocking, tracked as #151, replied to, and resolved; the final 15-minute window was
+empty. Registry/API state remains `never_authorized`, there is no tracked production caller, and
+the exported invented issuer is not permission for live collection.
+
+The single-writer candidate is rebased code head `46a2afd40dad6536b3dd0cebe1860007b013e7f8`.
+It creates one fixed reviewed-root `v3-writer.lease` with exclusive no-follow `0600` creation,
+keeps the descriptor and opaque WeakMap lease through synchronous or Promise work, refuses a
+second compliant writer before its callback, and removes only its exact proven marker after normal
+completion or failure. A crash leaves the marker; there is no programmatic breaker, and manual
+removal is permitted only after the owner verifies every Developer Lens writer has stopped. The
+invented lifecycle demo and every CLI verb enter through the lease. Focused proof passed 35 tests
+with 4 Windows/POSIX skips; the exact rebased full local gate passed 74 files / 1,224 tests / 6
+skips, build, and credential checks. Separate exact-base Terra filesystem and crash reviews were
+clean. Hosted Linux/POSIX proof, connector review, and merge remain pending. Issue #142 stays open
+for hostile same-user ABA/native-VFS criteria 3/4; this candidate claims only one compliant writer.

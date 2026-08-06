@@ -21,12 +21,15 @@ import {
 import { completeStorageV3DeletionMaintenance } from '../server/storage/v3Deletion.js'
 import { initializeContinuityCasScope } from '../server/storage/v3ContinuityCasProposal.js'
 import {
+  createStorageV3ArtifactRoot,
   openSelectedStorageV3Store,
   StorageV3StoreFileError,
   STORAGE_V3_STORE_FILE_NAME,
   STORAGE_V3_TARGET_FILE_NAMES,
   STORAGE_V3_PUBLICATION_FAILURE_STAGES,
 } from '../server/storage/v3StoreFiles.js'
+import { storageV3WriterLeasePath } from '../server/storage/v3ArtifactCatalogue.js'
+import { STORAGE_V3_WRITER_LEASE_BUSY, StorageV3WriterLeaseError } from '../server/storage/v3WriterLease.js'
 import {
   INVENTED_COHORTS,
   INVENTED_INSTALLATION_KEY_BYTE,
@@ -117,6 +120,15 @@ describe('store lifecycle command', () => {
         'SELECT COUNT(*) FROM app_artifact_scope',
       ).pluck().get()).toBe(2)
     } finally { catalogued.close() }
+  })
+
+  it('refuses a held writer lease before creating any lifecycle database', () => {
+    const root = createStorageV3ArtifactRoot(directory)
+    writeFileSync(storageV3WriterLeasePath(root), 'invented held marker')
+    expect(() => runStoreLifecycleDemo({ directory }))
+      .toThrowError(new StorageV3WriterLeaseError(STORAGE_V3_WRITER_LEASE_BUSY))
+    expect(existsSync(join(directory, INVENTED_SOURCE_FILE_NAME))).toBe(false)
+    expect(existsSync(storePath(directory))).toBe(false)
   })
 
   it('admits accumulated CAS state on selection while acceptance-mode validation refuses it', () => {
