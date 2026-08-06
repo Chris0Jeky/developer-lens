@@ -4,6 +4,7 @@ import {
   constants,
   existsSync,
   fstatSync,
+  fsyncSync,
   lstatSync,
   mkdirSync,
   openSync,
@@ -71,6 +72,15 @@ export const STORAGE_V3_USER_DIRECTED_ARTIFACTS = Object.freeze({
 
 const SQLITE_HEADER = Buffer.from('SQLite format 3\0', 'binary')
 const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
+const DIRECTORY_ONLY = constants.O_DIRECTORY ?? 0
+const DIRECTORY_SYNC_PLATFORMS = new Set<NodeJS.Platform>([
+  'aix',
+  'darwin',
+  'freebsd',
+  'linux',
+  'openbsd',
+  'sunos',
+])
 const SAFE_LOCATOR = /^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$/
 const MIGRATION_BACKUP_LOCATOR = /^migration-backup-[0-9]{8}T[0-9]{6}Z\.sqlite$/
 const MIGRATION_BACKUP_STAGED_LOCATOR = /^migration-backup-[0-9]{8}T[0-9]{6}Z\.sqlite\.tmp$/
@@ -133,6 +143,41 @@ function rootIdentity(root: StorageV3ArtifactRoot): RootIdentity {
   const actual = captureRoot(expected.path)
   if (!sameIdentity(expected, actual)) fail()
   return expected
+}
+
+/**
+ * Native directory fsync is deliberately unavailable on Windows and unknown
+ * platforms. Callers must fail closed or provide an explicit invented-test
+ * synchronizer; file fsync alone is not publication durability.
+ */
+export function assertStorageV3ArtifactDirectorySyncSupported(): void {
+  if (!DIRECTORY_SYNC_PLATFORMS.has(process.platform)
+    || DIRECTORY_ONLY === 0 || NO_FOLLOW === 0) fail()
+}
+
+/** Durably order artifact-name mutations against the exact reviewed root. */
+export function syncStorageV3ArtifactDirectory(root: StorageV3ArtifactRoot): void {
+  let descriptor: number | undefined
+  try {
+    assertStorageV3ArtifactDirectorySyncSupported()
+    const expected = rootIdentity(root)
+    descriptor = openSync(expected.path, constants.O_RDONLY | DIRECTORY_ONLY | NO_FOLLOW)
+    const opened = fstatSync(descriptor, { bigint: true })
+    const beforeSync = rootIdentity(root)
+    if (!opened.isDirectory() || opened.isSymbolicLink()
+      || !sameIdentity(expected, opened) || !sameIdentity(expected, beforeSync)) fail()
+    fsyncSync(descriptor)
+    const afterSync = fstatSync(descriptor, { bigint: true })
+    const afterPath = rootIdentity(root)
+    if (!afterSync.isDirectory() || afterSync.isSymbolicLink()
+      || !sameIdentity(expected, afterSync) || !sameIdentity(expected, afterPath)) fail()
+  } catch {
+    fail()
+  } finally {
+    if (descriptor !== undefined) {
+      try { closeSync(descriptor) } catch { fail() }
+    }
+  }
 }
 
 /** Bind a task-owned installation key to the exact reviewed artifact/task directory. */

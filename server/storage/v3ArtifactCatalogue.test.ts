@@ -26,6 +26,7 @@ import {
   STORAGE_V3_USER_DIRECTED_ARTIFACTS,
   StorageV3ArtifactError,
   storageV3MaintenanceStatus,
+  syncStorageV3ArtifactDirectory,
 } from './v3ArtifactCatalogue.js'
 import {
   completeStorageV3DeletionMaintenance,
@@ -565,6 +566,30 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
       rmSync(junction, { force: true })
       rmSync(outside, { recursive: true, force: true })
     }
+  })
+
+  it('uses the explicit native directory-sync policy for an invented reviewed root', () => {
+    const root = mkdtempSync(join(tmpdir(), 'developer-lens-b4-directory-sync-'))
+    try {
+      const handle = createStorageV3ArtifactRoot(root)
+      if (process.platform === 'win32') {
+        expectArtifactError(() => syncStorageV3ArtifactDirectory(handle))
+      } else {
+        expect(() => syncStorageV3ArtifactDirectory(handle)).not.toThrow()
+      }
+    } finally { rmSync(root, { recursive: true, force: true }) }
+  })
+
+  it.skipIf(process.platform === 'win32')('refuses directory sync after the reviewed root identity is replaced', () => {
+    const container = mkdtempSync(join(tmpdir(), 'developer-lens-b4-directory-replace-'))
+    const root = join(container, 'root')
+    const moved = join(container, 'moved')
+    try {
+      const handle = createStorageV3ArtifactRoot(root)
+      renameSync(root, moved)
+      mkdirSync(root)
+      expectArtifactError(() => syncStorageV3ArtifactDirectory(handle))
+    } finally { rmSync(container, { recursive: true, force: true }) }
   })
 
   it('leaves kind or content-hash mismatches pending and recovers only after exact repair', () => {
