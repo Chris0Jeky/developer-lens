@@ -32,14 +32,17 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'DL-LIFE-02 chain PRs #103, #105, #107-#125 (slice A, B1a+repairs, B1b-i..iii, B2a-i..iii,
   B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
   their engineering record stays in the ledger', 'state syncs #126']
-active_slice: 'DL-LIFE-02 PR B-2 — #86 storage half (tighten incremental.ts coverage_id CHECK to
-  the cov- registry + migrate alias-bearing fixtures), discriminating verification of every open
-  #128/#129 finding, v2_store_provenance drift resolution, and the generated scale corpus with an
-  equivalence budget (fold in the #133 remint-metadata redesign) — then B4 app-owned artifacts.
-  Resolver deletion-lineage scoping decision (recorded on #80): B3 ships the v3 deletion-lineage
-  reader consumed by the CLI; the whyResolver coverage/job lineage joins land with the Phase-4
-  stored-observation bridge, because v2 stores carry no per-subject tombstones for such joins to
-  find. Inert-code budget stays zero: every new module lands with its consumer in the same PR.'
+active_slice: 'DL-LIFE-02 B4 — app-owned artifact catalogue and deletion saga per
+  10_LIFE_02B_DECISION.md §4/§5 item 5, including the durable maintenance-pending marker owed
+  from the PR #136 round-three triage. PR B-2 (this branch) completed: #133 mint-order
+  equivalence proof (graph colouring deleted, linear, measured), #86 storage half (cov- registry
+  CHECK + UNIQUE(coverage_id) + fixture migration), all ten open #128/#129 findings dispositioned
+  with discriminating fixtures (eight real, fixed; two disproved, pinned), v2_store_provenance
+  activation_card SUPPORT for migration (serving gate untouched), and the Phase-1c scale corpus
+  with a measured budget. Resolver deletion-lineage scoping decision (recorded on #80): B3 ships
+  the v3 deletion-lineage reader consumed by the CLI; the whyResolver coverage/job lineage joins
+  land with the Phase-4 stored-observation bridge, because v2 stores carry no per-subject
+  tombstones for such joins to find. Inert-code budget stays zero.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -50,11 +53,12 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'None for B3. A real migration/connector still requires LIFE-03
-  backup/grace/restore/tombstone-replay proof plus the #86 storage half (tighten the
-  incremental.ts coverage_id CHECK to the cov- registry and migrate alias-bearing fixture
-  stores); the #86 connector mint, #79 PresentationView, and #78 credential/launch surface are
-  resolved on fable/boundary-and-reachability.'
+blockers: 'None for B4. A real migration/connector still requires B4 completion, LIFE-03
+  backup/grace/restore/tombstone-replay proof, and the activation-enforcement alignment; the
+  #86 storage half is CLOSED on this branch (both halves of #86 now hold), #128/#129 are fully
+  dispositioned, and the equivalence scale risk is closed by measurement. Deliberate breaking
+  change: a pre-#86 on-disk v2 store fails closed at schema validation — no real store exists
+  and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
