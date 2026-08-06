@@ -9,7 +9,10 @@ import {
   assertContinuityCasConsistency,
   initializeContinuityCasScope,
 } from './v3ContinuityCasProposal.js'
-import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
+import {
+  installStorageV3ShadowSchema,
+  STORAGE_V3_SHADOW_SCHEMA_VERSION,
+} from './v3ShadowSchema.js'
 import {
   isoWeekFromCanonicalTimestamp,
 } from './v3ShadowRewrite.js'
@@ -334,7 +337,7 @@ describe('storage-v3 B2a-iii ongoing C2 sweep', () => {
       expect(swept).toMatchObject({
         completeB2: false,
         status: 'complete',
-        schemaVersion: '3.2.2-shadow-life03-backup-singleton',
+        schemaVersion: STORAGE_V3_SHADOW_SCHEMA_VERSION,
         cleared: expectedCleared,
         lineageEvents: 5,
       })
