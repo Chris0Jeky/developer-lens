@@ -9,6 +9,8 @@ import {
   resolveIntegrationShapeEvidenceSafe,
 } from '../../analysis/integrationShape.js'
 import { AnalyticReferenceSchema, type AnalyticReference } from '../../../shared/findings.js'
+import type { Finding } from '../../../shared/findings.js'
+import type { IntegrationShapeEvidenceResolution } from '../../../shared/integrationShapeEvidence.js'
 import { V2_API_CONTRACT_VERSION, V2EvidenceResolveResponseSchema } from './contract.js'
 import { V2Error } from './errors.js'
 
@@ -49,21 +51,39 @@ function send(response: express.Response, body: unknown, label: string): void {
   response.json(body)
 }
 
+export interface V2EvidenceSnapshot {
+  readonly finding: Finding
+  readonly references: readonly AnalyticReference[]
+  readonly resolve: (reference: AnalyticReference) => IntegrationShapeEvidenceResolution
+}
+
+export type V2EvidenceSource = () => V2EvidenceSnapshot
+
+const staticIntegrationShapeEvidence: V2EvidenceSource = () => ({
+  finding: INTEGRATION_SHAPE_FINDING,
+  references: INTEGRATION_SHAPE_REFERENCES,
+  resolve: resolveIntegrationShapeEvidenceSafe,
+})
+
 /**
  * Registers the evidence routes onto an already-guarded V2 router:
  *   GET /evidence/finding              — the validated finding plus its rendered references
  *   GET /evidence/resolve?kind&id      — the evidence-walk projection for one reference
  */
-export function registerEvidenceRoutes(router: express.Router): void {
+export function registerEvidenceRoutes(
+  router: express.Router,
+  source: V2EvidenceSource = staticIntegrationShapeEvidence,
+): void {
   router.get('/evidence/finding', (_request, response, next) => {
     try {
+      const snapshot = source()
       send(
         response,
         {
           apiContractVersion: V2_API_CONTRACT_VERSION,
           analysisVersion: INTEGRATION_SHAPE_ANALYSIS_VERSION,
-          finding: INTEGRATION_SHAPE_FINDING,
-          references: INTEGRATION_SHAPE_REFERENCES,
+          finding: snapshot.finding,
+          references: snapshot.references,
         },
         'evidence finding response',
       )
@@ -81,11 +101,12 @@ export function registerEvidenceRoutes(router: express.Router): void {
       // unknown claim: the response contract echoes the reference through the strict
       // shared schema, so only well-formed unknowns reach the honest `unresolvable` path.
       if (!AnalyticReferenceSchema.safeParse(reference).success) throw new V2Error('V2_NOT_FOUND')
+      const snapshot = source()
       const body = {
         apiContractVersion: V2_API_CONTRACT_VERSION,
         analysisVersion: INTEGRATION_SHAPE_ANALYSIS_VERSION,
         reference,
-        projection: resolveIntegrationShapeEvidenceSafe(reference),
+        projection: snapshot.resolve(reference),
       }
       // The browser client parses this exact schema; serving a body it would reject
       // is a contract violation here, never a silent client fallback in production.
