@@ -22,6 +22,7 @@ import {
   STORAGE_V3_SHADOW_IMMUTABLE_TRIGGERS,
   STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES,
   STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME,
+  STORAGE_V3_SHADOW_SOURCE_SNAPSHOT_GUARD_TRIGGER_NAME,
   STORAGE_V3_SHADOW_TABLES,
   STORAGE_V3_SHADOW_USER_VERSION,
   storageV3ShadowSchemaFingerprint,
@@ -68,6 +69,7 @@ describe('storage-v3 B2a shadow schema', () => {
           ...STORAGE_V3_ARTIFACT_TRIGGER_NAMES,
           STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
           STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME,
+          STORAGE_V3_SHADOW_SOURCE_SNAPSHOT_GUARD_TRIGGER_NAME,
         ].sort(),
       )
       expect(triggers
@@ -417,7 +419,44 @@ describe('storage-v3 B2a shadow schema', () => {
       insert.run(scopeA, id('snap-'), id('job-'), 'github.core', 'closed')
       // UNIQUE (scope_id, snapshot_id, job_id) never enforced this: it contains the PK.
       expect(() => insert.run(scopeA, id('snap-', 'b'), id('job-'), 'github.core', 'closed'))
-        .toThrow(/UNIQUE constraint failed|STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY/i)
+        .toThrow(/UNIQUE constraint failed|STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY|STORAGE_V3_SHADOW_CLOSED_SNAPSHOT_REPLACE/i)
+    } finally {
+      db.close()
+    }
+  })
+
+  it('refuses INSERT OR REPLACE of a new closed snapshot id and preserves its children', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      expect(Number(db.prepare('PRAGMA recursive_triggers').pluck().get())).toBe(0)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      const jobId = id('job-')
+      const snapshotId = id('snap-')
+      const replacementId = id('snap-', 'b')
+      const coverageId = id('cov-')
+      const checkpointId = id('ckpt-')
+      db.prepare('INSERT INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(scopeA, jobId, 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
+      db.prepare('INSERT INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)')
+        .run(scopeA, snapshotId, jobId, 'github.core', 'closed')
+      db.prepare('INSERT INTO coverage_ledger (scope_id, coverage_id, job_id, snapshot_id, capability_id, status, observed_units, retryable, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(scopeA, coverageId, jobId, snapshotId, 'github.core', 'complete', 1, 0, 'NONE')
+      db.prepare('INSERT INTO collection_checkpoint (scope_id, checkpoint_id, job_id, snapshot_id, capability_id, query_version, source_api_version, consent_revision, coverage_state, deletion_order, lineage_coverage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(scopeA, checkpointId, jobId, snapshotId, 'github.core', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete', 0, 'complete')
+
+      expect(() => db.prepare('INSERT OR REPLACE INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)')
+        .run(scopeA, replacementId, jobId, 'github.core', 'closed'))
+        .toThrow('STORAGE_V3_SHADOW_CLOSED_SNAPSHOT_REPLACE')
+      expect(db.prepare('SELECT scope_id, snapshot_id, job_id FROM source_snapshot').all()).toEqual([
+        { scope_id: scopeA, snapshot_id: snapshotId, job_id: jobId },
+      ])
+      expect(db.prepare('SELECT scope_id, coverage_id, job_id, snapshot_id FROM coverage_ledger').all()).toEqual([
+        { scope_id: scopeA, coverage_id: coverageId, job_id: jobId, snapshot_id: snapshotId },
+      ])
+      expect(db.prepare('SELECT scope_id, checkpoint_id, job_id, snapshot_id FROM collection_checkpoint').all()).toEqual([
+        { scope_id: scopeA, checkpoint_id: checkpointId, job_id: jobId, snapshot_id: snapshotId },
+      ])
     } finally {
       db.close()
     }
