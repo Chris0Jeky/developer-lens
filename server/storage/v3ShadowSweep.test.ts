@@ -179,6 +179,33 @@ function seedUnreferencedJob(db: Database.Database): string {
   return unreferencedJobId
 }
 
+function seedAliasIdentityClockFixture(db: Database.Database): {
+  readonly aliasFirstScope: string
+  readonly identityFirstScope: string
+  readonly aliasBoundary: string
+  readonly identityBoundary: string
+  readonly aliasLaterBoundary: string
+} {
+  installStorageV3ShadowSchema(db)
+  const aliasFirstScope = id('scope-', '8')
+  const identityFirstScope = id('scope-', '9')
+  const aliasBoundary = '2026-02-28T12:00:00.000Z'
+  const identityBoundary = '2026-03-31T12:00:00.000Z'
+  const aliasLaterBoundary = '2026-06-30T12:00:00.000Z'
+  const insertScope = db.prepare(`INSERT INTO claim_scope (
+    scope_id, scope_alias, linked_at, alias_expires_at
+  ) VALUES (?, ?, ?, ?)`)
+  insertScope.run(aliasFirstScope, 'provider-alias-first', createdAt, aliasBoundary)
+  insertScope.run(identityFirstScope, 'provider-identity-first', createdAt, aliasLaterBoundary)
+  const insertIdentity = db.prepare(`INSERT INTO repository_identity (
+    scope_id, provider_id, analytical_key, identity_expires_at,
+    is_private, is_archived, is_fork
+  ) VALUES (?, ?, ?, ?, 0, 0, 0)`)
+  insertIdentity.run(aliasFirstScope, 'provider-alias-first', 'analytical-alias-first', aliasLaterBoundary)
+  insertIdentity.run(identityFirstScope, 'provider-identity-first', 'analytical-identity-first', identityBoundary)
+  return { aliasFirstScope, identityFirstScope, aliasBoundary, identityBoundary, aliasLaterBoundary }
+}
+
 function sweepError(action: () => unknown, code: StorageV3C2SweepErrorCode): void {
   try {
     action()
@@ -350,6 +377,59 @@ describe('storage-v3 B2a-iii ongoing C2 sweep', () => {
       expect(replay.lineageEvents).toBe(0)
       expect(everyC2Value(db).every((value) => value === null)).toBe(true)
       expect(db.prepare('SELECT COUNT(*) FROM lineage_event').pluck().get()).toBe(5)
+    } finally {
+      db.close()
+    }
+  })
+
+  it('couples an in-service alias expiry to its identity while preserving the identity-only clock', () => {
+    const db = new Database(':memory:')
+    try {
+      const fixture = seedAliasIdentityClockFixture(db)
+      const aliasSweep = sweepStorageV3C2({
+        targetDb: db,
+        asOf: fixture.aliasBoundary,
+        randomBytes: () => Buffer.alloc(32, 70),
+      })
+      expect(aliasSweep).toMatchObject({
+        status: 'complete',
+        cleared: { claimScope: 1, repositoryIdentity: 1 },
+        lineageEvents: 1,
+      })
+      expect(db.prepare(
+        'SELECT scope_alias, linked_at, alias_expires_at FROM claim_scope WHERE scope_id = ?',
+      ).get(fixture.aliasFirstScope)).toEqual({ scope_alias: null, linked_at: null, alias_expires_at: null })
+      expect(db.prepare(
+        'SELECT provider_id, analytical_key, identity_expires_at FROM repository_identity WHERE scope_id = ?',
+      ).get(fixture.aliasFirstScope)).toEqual({ provider_id: null, analytical_key: null, identity_expires_at: null })
+
+      const replay = sweepStorageV3C2({
+        targetDb: db,
+        asOf: fixture.aliasBoundary,
+        randomBytes: () => { throw new Error('a coupled alias replay must be a no-op') },
+      })
+      expect(replay.status).toBe('noop')
+      expect(replay.lineageEvents).toBe(0)
+
+      const identitySweep = sweepStorageV3C2({
+        targetDb: db,
+        asOf: fixture.identityBoundary,
+        randomBytes: () => { throw new Error('identity-only expiry must not mint lineage') },
+      })
+      expect(identitySweep).toMatchObject({
+        status: 'complete',
+        cleared: { claimScope: 0, repositoryIdentity: 1 },
+        lineageEvents: 0,
+      })
+      expect(db.prepare(
+        'SELECT scope_alias, alias_expires_at FROM claim_scope WHERE scope_id = ?',
+      ).get(fixture.identityFirstScope)).toEqual({
+        scope_alias: 'provider-identity-first',
+        alias_expires_at: fixture.aliasLaterBoundary,
+      })
+      expect(db.prepare(
+        'SELECT provider_id, analytical_key, identity_expires_at FROM repository_identity WHERE scope_id = ?',
+      ).get(fixture.identityFirstScope)).toEqual({ provider_id: null, analytical_key: null, identity_expires_at: null })
     } finally {
       db.close()
     }

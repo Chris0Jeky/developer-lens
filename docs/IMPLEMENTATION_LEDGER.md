@@ -2447,7 +2447,8 @@ below is history. The live resume point is the rest of the analytics-core kernel
   merge commit `d77b24759fc9d80207f5da0a5ca2789b670a7e7e`, and passed exact-merge
   Pages/privacy/deploy run `31072706976`. The final local gate was 73 files / 1,195 passed / 2
   skipped; the focused proof was 9 files / 163 passed / the same 2 skips. Linux hosted CI executed
-  the POSIX dangling-file-symlink discriminator skipped on Windows.
+  the POSIX dangling-file-symlink discriminator skipped on Windows. A thread-aware post-merge sweep
+  at 05:09Z, beyond the measured connector delay, found no new review and no unresolved thread.
 - **Bounded review disposition.** Five first-pass connector findings were fixed with discriminating
   tests across the two allowed fix rounds. Three exact-final-head fresh-context lenses were clean
   for crash recovery and lifecycle semantics; the privacy lens found a hostile ABA pathname-
@@ -2458,7 +2459,7 @@ below is history. The live resume point is the rest of the analytics-core kernel
   dangling selected-sidecar case is a future path-escape seam. This disposition does not claim
   hostile-writer safety and does not close LIFE-02 or #80.
 
-## 2026-08-06 — #128 CAS clock capture under the writer lock (candidate)
+## 2026-08-06 — #128 CAS clock capture under the writer lock (merged)
 
 `applyContinuityCasOperation` now invokes its process-trusted clock only after `BEGIN IMMEDIATE`
 owns the writer lock and after the exact-operation replay check. The stored ISO week therefore
@@ -2466,9 +2467,25 @@ describes the operation's commit opportunity rather than the time before a block
 the lock; replay still returns the immutable prior result without consulting the clock. A direct
 fixture observes `db.inTransaction` from the injected clock and asserts the stored week.
 
-The rebased candidate commit is `d82607f57c6d117c023c9e7d94d72ea9f4f5d5cc`. Focused CAS and
-shadow-sweep proof passed 2 files / 40 tests. The full local gate passed lint, context verification
-(27 Markdown / 12 required), 73 files / 1,196 tests with the existing 2 skips, TypeScript/build,
-and credential scanning over 13 build outputs. No schema, retention, alias-clock, capability,
-source, or activation boundary changed. Issue #128 remains open until the candidate merges; #137
-continues to own the distinct in-service alias-clock hazard.
+Commits `d82607f` and `b6d9e03` passed focused CAS/shadow-sweep proof (2 files / 40 tests), the full
+local gate (73 files / 1,196 tests / 2 existing skips), and a clean fresh-context transaction/
+privacy review. PR #144 final head `b6d9e03ba4901a77bab7eee9f221cd3862f66ba3` passed exact-head
+hosted run `31073068026`; after the exact-head connector-or-15-minute window remained empty, it
+merged as `b007f968a736bbba9ce6055cd60b37ad6709f070` and exact-merge Pages/privacy/deploy run
+`31073820158` passed. Issue #128 closed. No schema, retention, alias-clock, capability, source, or
+activation boundary changed; #137 continued to own the distinct in-service alias-clock hazard.
+
+## 2026-08-06 — #137 alias/identity retention coupling (candidate)
+
+When a `claim_scope` alias expires, the same IMMEDIATE sweep transaction now clears that scope's
+`repository_identity` provider/analytical values and expiry clock. An identity whose own clock
+expires first still clears independently without clearing the live alias; an exact replay mints no
+lineage and is a no-op. The discriminator gives alias-first and identity-first invented scopes
+different clocks, so the parent behavior fails its alias-boundary assertion.
+
+Rebased candidate `defd350` passed 20 focused sweep tests, 4 migrated-store integration tests, and
+the full local gate: lint, context verification (27 Markdown / 12 required), 73 files / 1,197 tests
+with 2 existing skips, TypeScript/build, and credential scanning over 13 outputs. A fresh-context
+retention/transaction review found no HIGH/CRITICAL defect. Issue #137 remains open until the
+candidate's exact-head hosted gate and merge complete. No real migration, source, capability, or
+activation path changed.
