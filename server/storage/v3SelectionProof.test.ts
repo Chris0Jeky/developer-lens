@@ -113,10 +113,11 @@ describe('LIFE-03 durable migration selection proof', () => {
       expect(() => v3SelectionProofTestSeams.publishWithDirectorySynchronizer(fx.root, selection, fx.key, sync, 'finalLink')).toThrow(StorageV3SelectionProofError)
       expect(lstatSync(fx.tempPath).nlink).toBe(2)
       expect(lstatSync(fx.finalPath).nlink).toBe(2)
-      expect(() => verifyStorageV3MigrationSelectionProof(fx.root, fx.key)).toThrow(StorageV3SelectionProofError)
-      expect(v3SelectionProofTestSeams.publishWithDirectorySynchronizer(fx.root, selection, fx.key, sync)).toMatchObject({ status: 'replayed' })
+      const handle = v3SelectionProofTestSeams.verifyWithDirectorySynchronizer(fx.root, fx.key, sync)
+      expect(consumeStorageV3MigrationSelectionProof(handle, fx.root, fx.key)).toEqual(selection)
       expect(existsSync(fx.tempPath)).toBe(false)
       expect(stages).toEqual(['tempClaim', 'tempDurable', 'finalLink', 'finalLink', 'tempRemoval'])
+      expect(v3SelectionProofTestSeams.publishWithDirectorySynchronizer(fx.root, selection, fx.key, noop)).toMatchObject({ status: 'replayed' })
     } finally { fx.cleanup() }
   })
 

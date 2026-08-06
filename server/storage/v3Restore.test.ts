@@ -30,6 +30,7 @@ import {
 } from './v3SelectionReceipt.js'
 import {
   STORAGE_V3_SELECTION_PROOF_NAMES,
+  StorageV3SelectionProofError,
   v3SelectionProofTestSeams,
   verifyStorageV3MigrationSelectionProof,
 } from './v3SelectionProof.js'
@@ -44,7 +45,7 @@ const FINAL_LOCATOR = 'migration-backup-20260806T123456Z.sqlite'
 const STAGED_LOCATOR = `${FINAL_LOCATOR}.tmp`
 const INTENT = 'a'.repeat(64)
 
-async function publicationFixture(): Promise<{
+async function publicationFixture(interruptSelectionProof = false): Promise<{
   root: string
   input: StorageV3RestoreFromSelectionInput
   selection: StorageV3MigrationSelection
@@ -102,12 +103,23 @@ async function publicationFixture(): Promise<{
         rootBinding: storageV3MigrationRootBinding(root),
       }, '2026-08-06T12:40:00.000Z'),
     }).selection
-    v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
-      db,
-      rootHandle,
-      installationKey,
-      () => {},
-    )
+    if (interruptSelectionProof) {
+      try {
+        v3SelectionProofTestSeams.publishWithDirectorySynchronizer(
+          rootHandle, selection, installationKey, () => {}, 'finalLink',
+        )
+        throw new Error('expected invented selection-proof interruption')
+      } catch (error) {
+        if (!(error instanceof StorageV3SelectionProofError)) throw error
+      }
+    } else {
+      v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        db,
+        rootHandle,
+        installationKey,
+        () => {},
+      )
+    }
     db.close()
     const backupPath = join(root, backup.locator)
     const manifestPath = join(root, backup.manifestLocator)
@@ -123,7 +135,9 @@ async function publicationFixture(): Promise<{
         backupAt,
         backupArtifactId: backup.artifactId,
         installationKey,
-        selectionProof: verifyStorageV3MigrationSelectionProof(rootHandle, installationKey),
+        selectionProof: interruptSelectionProof
+          ? v3SelectionProofTestSeams.verifyWithDirectorySynchronizer(rootHandle, installationKey, () => {})
+          : verifyStorageV3MigrationSelectionProof(rootHandle, installationKey),
       }),
       backupPath,
       manifestPath,
@@ -323,6 +337,22 @@ describe('LIFE-03 restore snapshot normalization', () => {
       expect(syncs).toEqual(['link', 'temp-unlink', 'replay:temp-unlink'])
       expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
       expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
+    } finally { fx.close() }
+  })
+
+  it('finalizes an authenticated proof pair and restores after the selected store is lost', async () => {
+    const fx = await publicationFixture(true)
+    try {
+      expect(existsSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.temp))).toBe(false)
+      const restored = v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {})
+      expect(restored.reader).toBe('sqlite-v3')
+      if (restored.reader !== 'sqlite-v3') throw new Error('expected restored reader')
+      expect(restored.selection).toEqual(fx.selection)
+      restored.db.close()
+      expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
+      expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
+      expect(readFileSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)))
+        .toEqual(fx.selectionProofBytes)
     } finally { fx.close() }
   })
 

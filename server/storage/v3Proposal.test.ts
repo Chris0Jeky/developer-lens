@@ -512,6 +512,7 @@ describe('storage-v3 B1a proposal', () => {
           if (sourcePath !== 'scripts/storeLifecycle.ts'
             && sourcePath !== 'server/storage/v3Backup.ts'
             && sourcePath !== 'server/storage/v3ReaderSelection.ts'
+            && sourcePath !== 'server/storage/v3SelectionProof.ts'
             && sourcePath !== 'server/storage/v3Restore.ts') {
             offenders.push(`${sourcePath} -> ${target}`)
           }

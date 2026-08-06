@@ -33,6 +33,7 @@ import {
   readStorageV3MigrationSelection,
   type StorageV3MigrationSelection,
 } from './v3SelectionReceipt.js'
+import { withStorageV3WriterLease } from './v3WriterLease.js'
 import { isCanonicalTaskId } from '../taskId.js'
 
 export const STORAGE_V3_SELECTION_PROOF_ERROR = 'STORAGE_V3_SELECTION_PROOF_INVALID' as const
@@ -254,6 +255,30 @@ function readDescriptor(path: string, expected: Buffer, expectedNlink: bigint): 
     }
   }
   if (closeFailed) return fail()
+}
+
+function readProofBytes(path: string, expectedNlink: bigint): Buffer {
+  let descriptor: number | undefined
+  try {
+    descriptor = openSync(path, constants.O_RDONLY | NO_FOLLOW)
+    const opened = fstatSync(descriptor, { bigint: true })
+    assertFileStat(opened, expectedNlink)
+    if (opened.size <= 0n || opened.size > 4096n) return fail()
+    const exact = Buffer.alloc(Number(opened.size))
+    let offset = 0
+    while (offset < exact.length) {
+      const count = readSync(descriptor, exact, offset, exact.length - offset, offset)
+      if (count === 0) return fail()
+      offset += count
+    }
+    const extra = Buffer.alloc(1)
+    if (readSync(descriptor, extra, 0, 1, exact.length) !== 0) return fail()
+    assertDescriptorPath(path, descriptor, expectedNlink, BigInt(exact.length))
+    return exact
+  } catch (error) {
+    if (error instanceof StorageV3SelectionProofError) throw error
+    return fail()
+  } finally { if (descriptor !== undefined) closeSync(descriptor) }
 }
 
 function writeExact(path: string, expected: Buffer, descriptor: number): void {
@@ -531,56 +556,67 @@ function parseMarker(bytes: Buffer, key: TaskInstallationKeyHandle, selection?: 
   return marker
 }
 
-export function verifyStorageV3MigrationSelectionProof(
+function verifyInternal(
   root: StorageV3ArtifactRoot,
   installationKey: TaskInstallationKeyHandle,
+  synchronizer: DirectorySynchronizer,
+  preflightDirectorySync: () => void,
 ): StorageV3MigrationSelectionProofHandle {
   try {
     assertStorageV3ArtifactRootInstallationKey(root, installationKey)
     const finalPath = storageV3ArtifactFilePath(root, FINAL_NAME)
     const tempPath = storageV3ArtifactFilePath(root, TEMP_NAME)
     rejectSidecars(dirname(finalPath))
-    const entry = stat(finalPath)
-    if (entry === undefined) return fail()
-    const tempEntry = stat(tempPath)
-    // A temporary/final pair is still an in-progress publication. Do not mint
-    // a restore handle until the durable final-only state is established.
-    if (tempEntry !== undefined) return fail()
-    assertFileStat(entry, 1n)
-    let descriptor: number | undefined
-    const bytes = Buffer.alloc(4096)
-    try {
-      descriptor = openSync(finalPath, constants.O_RDONLY | NO_FOLLOW)
-      const opened = fstatSync(descriptor, { bigint: true })
-      assertFileStat(opened, 1n)
-      if (opened.size <= 0n || opened.size > BigInt(bytes.length)) return fail()
-      const exact = Buffer.alloc(Number(opened.size))
-      let offset = 0
-      while (offset < exact.length) {
-        const count = readSync(descriptor, exact, offset, exact.length - offset, offset)
-        if (count === 0) return fail()
-        offset += count
-      }
-      if (readSync(descriptor, bytes, 0, 1, exact.length) !== 0) return fail()
-      assertDescriptorPath(finalPath, descriptor, 1n, BigInt(exact.length))
-      parseMarker(exact, installationKey)
-      const parsed = JSON.parse(exact.toString('utf8')) as Record<string, unknown>
-      const selection = selectionValue({
-        readerState: parsed.readerState,
-        legacySourceId: parsed.legacySourceId,
-        selectedArtifactId: parsed.selectedArtifactId,
-        backupArtifactId: parsed.backupArtifactId,
-        successfulReportAt: parsed.successfulReportAt,
-        graceDeadlineAt: parsed.graceDeadlineAt,
+    if (stat(finalPath) === undefined) return fail()
+    if (stat(tempPath) !== undefined) {
+      preflightDirectorySync()
+      withStorageV3WriterLease(root, () => {
+        const tempEntry = stat(tempPath)
+        if (tempEntry === undefined) return
+        const finalEntry = stat(finalPath)
+        if (finalEntry === undefined) return fail()
+        assertFileStat(finalEntry, 2n)
+        assertFileStat(tempEntry, 2n)
+        const pairBytes = readProofBytes(finalPath, 2n)
+        exactPair(tempPath, finalPath, pairBytes)
+        parseMarker(pairBytes, installationKey)
+        syncDirectory(root, synchronizer, 'finalLink')
+        exactPair(tempPath, finalPath, pairBytes)
+        unlinkSync(tempPath)
+        syncDirectory(root, synchronizer, 'tempRemoval')
+        readDescriptor(finalPath, pairBytes, 1n)
       })
-      const handle = Object.freeze({}) as StorageV3MigrationSelectionProofHandle
-      HANDLES.set(handle, Object.freeze({ finalPath, selection, bytes: Buffer.from(exact), installationKeyFingerprint: installationKey.fingerprint }))
-      return handle
-    } finally { if (descriptor !== undefined) closeSync(descriptor) }
+    }
+    const exact = readProofBytes(finalPath, 1n)
+    parseMarker(exact, installationKey)
+    const parsed = JSON.parse(exact.toString('utf8')) as Record<string, unknown>
+    const selection = selectionValue({
+      readerState: parsed.readerState,
+      legacySourceId: parsed.legacySourceId,
+      selectedArtifactId: parsed.selectedArtifactId,
+      backupArtifactId: parsed.backupArtifactId,
+      successfulReportAt: parsed.successfulReportAt,
+      graceDeadlineAt: parsed.graceDeadlineAt,
+    })
+    const handle = Object.freeze({}) as StorageV3MigrationSelectionProofHandle
+    HANDLES.set(handle, Object.freeze({ finalPath, selection, bytes: Buffer.from(exact), installationKeyFingerprint: installationKey.fingerprint }))
+    return handle
   } catch (error) {
     if (error instanceof StorageV3SelectionProofError) throw error
     return fail()
   }
+}
+
+export function verifyStorageV3MigrationSelectionProof(
+  root: StorageV3ArtifactRoot,
+  installationKey: TaskInstallationKeyHandle,
+): StorageV3MigrationSelectionProofHandle {
+  return verifyInternal(
+    root,
+    installationKey,
+    (artifactRoot) => syncStorageV3ArtifactDirectory(artifactRoot),
+    assertStorageV3ArtifactDirectorySyncSupported,
+  )
 }
 
 export function consumeStorageV3MigrationSelectionProof(
@@ -608,8 +644,16 @@ export function consumeStorageV3MigrationSelectionProof(
   }
 }
 
-/** @internal Invented-fixture ordering/failure seam; native publication always uses directory fsync. */
+/** @internal Invented-fixture ordering/failure seams; native proof I/O uses directory fsync. */
 export const v3SelectionProofTestSeams = Object.freeze({
+  verifyWithDirectorySynchronizer(
+    root: StorageV3ArtifactRoot,
+    installationKey: TaskInstallationKeyHandle,
+    synchronizer: DirectorySynchronizer,
+  ): StorageV3MigrationSelectionProofHandle {
+    if (typeof synchronizer !== 'function') return fail()
+    return verifyInternal(root, installationKey, synchronizer, () => {})
+  },
   publishWithDirectorySynchronizer(
     root: StorageV3ArtifactRoot,
     selection: StorageV3MigrationSelection,
