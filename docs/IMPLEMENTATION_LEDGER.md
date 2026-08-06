@@ -2885,3 +2885,36 @@ treated as activation-ready. No real store, legacy source/path, connector, produ
 external-model request, generated output, credential, or private input was inspected or used.
 Success-report/grace hardening (#165), restore/reopen (#163), tombstone replay, and physical
 legacy/backup/WAL/SHM/journal cleanup remain dependent LIFE-03 slices.
+
+## 2026-08-06 — atomic selection merged; late rollback-floor follow-up
+
+PR #164 final head `eca8e86d8d79d7b5ab41a5e32d1209132aa9826b` merged as
+`fee152d5e458b5f9574521471ef0b23183a2ab77` at 2026-08-06T16:58:22Z and closed #162.
+The exact code head passed `npm run check`: lint, context verification, 79 files / 1,324 tests / 10
+declared skips, TypeScript/Vite build, and credential scanning over 13 outputs. Fresh Terra review at
+the final head reran the 5-test selector proof and range whitespace check and found no remaining
+CRITICAL/HIGH blocker. Five connector threads were triaged once: the post-commit and revoked-backup
+P1s were fixed; the volatile-state P1 was fixed; and the two grace-contract P2s are tracked by #165.
+
+Exact-head hosted run `31121328404` remained queued without a repository step while GitHub's official
+status reported a critical Actions incident. The owner explicitly directed the program to document
+the external gate gap and keep moving pre-release, so PR #164 merged under that exception. This is
+not green hosted proof. Exact-merge showcase run `31121665220` also entered the outage queue; its
+eventual result must be refreshed rather than inferred.
+
+Two additional connector P1s posted at 16:57Z and were discovered by the immediate post-merge thread
+sweep. A lease loser could return legacy immediately before the winner committed selection, and a
+missing selected-store file was treated as an absent receipt even though the receipt lived inside the
+missing file. Both are confirmed privacy rollback paths during the seven-day grace and are linked to
+follow-up #166 from their original PR threads.
+
+Follow-up commits `4fb0655` and `122b36a` make every writer-lease contention and every missing/moved
+selected-store probe return only `v3-selection-selected-refused`. The invented race proves the loser
+is unavailable and the winner then commits v3; the store-loss fixture proves a prior durable switch
+cannot fall back after its file disappears. Focused selector proof passes 7 tests, TypeScript/Vite and
+the credential scan pass, and range whitespace is clean. The exact candidate passes `npm run check`:
+lint, context verification, 79 files / 1,326 tests / 10 declared skips, TypeScript/Vite build, and
+credential scanning over 13 outputs. Hosted, fresh-review, PR, merge, and delayed post-merge proof
+remain pending. Restore #163 is the recovery path behind this deliberate unavailable state; no real
+source, legacy path, private/generated data, connector, or production caller was inspected or
+activated.
