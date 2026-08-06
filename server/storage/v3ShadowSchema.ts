@@ -235,6 +235,25 @@ END;`
 
 export const STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME = 'storage_v3_lineage_scope_guard'
 export const STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME = 'storage_v3_c2_retention_owner_guard'
+export const STORAGE_V3_SHADOW_SOURCE_SNAPSHOT_GUARD_TRIGGER_NAME = 'storage_v3_source_snapshot_closed_job_guard'
+
+/**
+ * The partial unique index is REPLACE-bypassable: a new snapshot id for the
+ * same closed (scope, job) can otherwise delete the old parent and cascade its
+ * children. This BEFORE INSERT guard runs before SQLite conflict resolution.
+ */
+const sourceSnapshotGuardSql = `CREATE TRIGGER IF NOT EXISTS ${STORAGE_V3_SHADOW_SOURCE_SNAPSHOT_GUARD_TRIGGER_NAME}
+BEFORE INSERT ON source_snapshot
+WHEN NEW.status = 'closed' AND EXISTS (
+  SELECT 1 FROM source_snapshot AS existing
+  WHERE existing.scope_id = NEW.scope_id
+    AND existing.job_id = NEW.job_id
+    AND existing.status = 'closed'
+    AND existing.snapshot_id IS NOT NEW.snapshot_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_CLOSED_SNAPSHOT_REPLACE');
+END;`
 
 const lineageOwnerRegistry = [
   { subjectKind: 'scope', prefix: 'scope-', tableName: 'claim_scope', idColumn: 'scope_id' },
@@ -1009,6 +1028,7 @@ ${identityBindingTriggerSqlBlock}
 ${coverageIdentityTriggerSqlBlock}
 ${lineageScopeTriggerSql}
 ${c2RetentionOwnerTriggerSql}
+${sourceSnapshotGuardSql}
 ${lineageOwnerTriggerSqlBlock}
 ${continuityCasSqlBlock}
 ${artifactLifecycleSqlBlock}

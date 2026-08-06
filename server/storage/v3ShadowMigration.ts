@@ -79,6 +79,52 @@ export class StorageV3ShadowMigrationError extends Error {
  */
 const MINT_ORDER_EQUIVALENCE_VERSION = 'storage-v3-mint-order-equivalence.v1'
 
+/**
+ * Only these cells may legitimately contain an identifier from the private mint
+ * channel. Every other cell is literal, even when a hostile writer copies a
+ * same-shaped minted value into it (for example commit_observation.sha).
+ */
+const MINTED_IDENTIFIER_CELLS = new Set([
+  'claim_scope.scope_id',
+  'repository_identity.scope_id',
+  'commit_observation.scope_id',
+  'commit_observation.observation_id',
+  'pull_request_fact.scope_id',
+  'pull_request_fact.fact_id',
+  'dated_event_observation.scope_id',
+  'dated_event_observation.event_id',
+  'collection_job.scope_id',
+  'collection_job.job_id',
+  'source_snapshot.scope_id',
+  'source_snapshot.snapshot_id',
+  'source_snapshot.job_id',
+  'coverage_ledger.scope_id',
+  'coverage_ledger.coverage_id',
+  'coverage_ledger.job_id',
+  'coverage_ledger.snapshot_id',
+  'collection_checkpoint.scope_id',
+  'collection_checkpoint.checkpoint_id',
+  'collection_checkpoint.job_id',
+  'collection_checkpoint.snapshot_id',
+  'evidence.scope_id',
+  'evidence.evidence_id',
+  'evidence.coverage_id',
+  'claim.scope_id',
+  'claim.claim_id',
+  'claim.superseded_by',
+  'claim_evidence_edge.scope_id',
+  'claim_evidence_edge.claim_id',
+  'claim_evidence_edge.target_evidence_id',
+  'claim_evidence_edge.target_claim_id',
+  'claim_evidence_edge.target_coverage_id',
+  'limitation_instance.scope_id',
+  'limitation_instance.claim_id',
+  'lineage_event.scope_id',
+  'lineage_event.subject_id',
+  'lineage_event.operation_id',
+  'lineage_event.caused_by',
+])
+
 const lengthPrefix = (value: string): string => `${value.length}:${value}`
 
 function mintOrderShadowDigest(
@@ -100,7 +146,9 @@ function mintOrderShadowDigest(
     for (const row of rows) {
       const encoded = columns.map((column) => {
         const value = row[column]
-        const index = typeof value === 'string' ? indexByValue.get(value) : undefined
+        const index = MINTED_IDENTIFIER_CELLS.has(`${table}.${column}`) && typeof value === 'string'
+          ? indexByValue.get(value)
+          : undefined
         const cell = index === undefined ? typedValue(value) : `mint${lengthPrefix(String(index))}`
         return `${lengthPrefix(column)}${lengthPrefix(cell)}`
       }).join('')

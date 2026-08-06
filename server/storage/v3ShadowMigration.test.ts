@@ -299,9 +299,13 @@ describe('B1b-iii shadow orchestration', () => {
     ['retained C2 divergence invisible to the C1 checksum', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
       if (kind === 'replay') attempt.db.prepare('UPDATE commit_observation SET sha = ?').run('tampered-sha')
     }],
-    ['same-shaped key substitution in a literal C2 column', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
-      attempt.db.prepare('UPDATE commit_observation SET sha = ?')
-        .run(`job-${(kind === 'primary' ? 'a' : 'b').repeat(64)}`)
+    ['minted-id substitution in a literal commit SHA column', (_kind: 'primary' | 'replay', attempt: FileAttempt) => {
+      // Copy the target's OWN minted observation id into the literal SHA field.
+      // A global value-only encoder would normalize both rows to the same mint
+      // index; the closed cell registry must compare this field literally.
+      const mintedObservationId = attempt.db.prepare('SELECT observation_id FROM commit_observation').pluck().get()
+      expect(mintedObservationId).toMatch(/^obs-/)
+      attempt.db.prepare('UPDATE commit_observation SET sha = ?').run(mintedObservationId)
     }],
     // The exact #133 scenario, previously proven to ESCAPE the graph-colouring digest:
     // a PRESERVED scope id consistently substituted with a same-shaped value in one

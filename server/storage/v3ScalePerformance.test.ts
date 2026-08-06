@@ -4,7 +4,7 @@
  * WHY: the acceptance-time equivalence proof used to be super-linear in identifier
  * count (graph-colouring refinement over every minted identity column), which was
  * fine for fixtures and a practical hang risk at multi-year scale. The mint-order
- * proof (#133) replaced it with a linear encode-and-digest pass. This file is the
+ * proof (#133) replaced it with a near-linear (sort-bound O(R log R)) encode-and-digest pass. This file is the
  * measurement that keeps that claim honest: a generated corpus large enough that a
  * super-linear regression cannot hide, run through the whole product journey.
  *
@@ -22,8 +22,8 @@
  * change, not performance targets; CI variance must never turn them red):
  *   full journey        < 120 s   |  migration stage alone < 90 s
  *   smoke journey       <  30 s
- * The equivalence proof is linear now, so missing these by ~10x means something
- * structural regressed, not that the box was busy.
+ * The equivalence proof is near-linear with a sort-bound O(R log R) term, so missing
+ * these by ~10x means something structural regressed, not that the box was busy.
  *
  * MEASURED on ONE Windows dev box (Windows 11, vitest 4.1.10, better-sqlite3
  * 12.11.1, three runs, the spread across them shown). These are one machine's
@@ -188,6 +188,18 @@ const SMOKE_VOLUME: ScaleVolume = Object.freeze({
   claimsPerScope: 10,
   totalBudgetMs: 30_000,
   migrationBudgetMs: 30_000,
+})
+
+/** Fourfold row calibration used only by the opt-in scaling lane. */
+const SCALE_CALIBRATION_SMALL_VOLUME: ScaleVolume = Object.freeze({
+  lane: 'scale' as const,
+  commitsPerScope: 834,
+  pullRequestsPerScope: 834,
+  datedEventsPerScope: 167,
+  jobsPerScope: 12,
+  claimsPerScope: 50,
+  totalBudgetMs: 120_000,
+  migrationBudgetMs: 90_000,
 })
 
 interface ScaleSource {
@@ -679,10 +691,16 @@ describe('storage-v3 generated scale corpus (smoke lane)', () => {
 
 describe.skipIf(!SCALE_LANE_ENABLED)('storage-v3 generated scale corpus (scale lane)', () => {
   it('runs the whole journey on the full corpus inside the documented budget', () => {
+    const calibration = runScaleJourney(SCALE_CALIBRATION_SMALL_VOLUME)
+    expectHealthyJourney(calibration, SCALE_CALIBRATION_SMALL_VOLUME)
     const report = runScaleJourney(SCALE_VOLUME)
     expectHealthyJourney(report, SCALE_VOLUME)
-    // Generous by design: the equivalence proof is linear, so a 10x miss means a
-    // structural regression rather than a busy machine.
+    // Calibrated curve check: the full corpus is ~4x the source rows. A >6x
+    // migration ratio trips a super-linear regression without another absolute
+    // timing gate beyond the generous journey budget below.
+    expect(report.sourceTotalRows).toBeGreaterThan(calibration.sourceTotalRows * 3.5)
+    expect(report.sourceTotalRows).toBeLessThan(calibration.sourceTotalRows * 4.5)
+    expect(report.migrationMs).toBeLessThan(calibration.migrationMs * 6)
     expect(report.migrationMs).toBeLessThan(SCALE_VOLUME.migrationBudgetMs)
     expect(report.totalMs).toBeLessThan(SCALE_VOLUME.totalBudgetMs)
   }, 900_000)
