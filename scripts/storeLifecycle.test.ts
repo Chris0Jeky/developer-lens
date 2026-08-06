@@ -199,7 +199,7 @@ describe('store lifecycle command', () => {
       expect(() => runStoreLifecycleDemo({ directory })).toThrow(StorageV3ShadowMigrationError)
       expect(existsSync(outside)).toBe(false)
       expect(existsSync(storePath(directory))).toBe(false)
-      expect(() => lstatSync(selectedWal)).toThrow()
+      expect(lstatSync(selectedWal).isSymbolicLink()).toBe(true)
     },
   )
 
