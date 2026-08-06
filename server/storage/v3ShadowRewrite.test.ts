@@ -121,6 +121,47 @@ describe('B1b-ii shadow rewrite', () => {
     } finally { source.close(); target.close() }
   })
 
+  it('keeps migrated readiness fields explicitly missing instead of inferring from creation or draft state', () => {
+    const source = sourceDb()
+    const target = new Database(':memory:')
+    const key = Buffer.alloc(32, 21)
+    const raw = 'invented-readiness-provider'
+    const aliases = createInstallationAliases(key)
+    const provider = aliases.repositoryProviderId(raw)
+    const analytical = aliases.repositoryAnalyticalKey(raw)
+    const scope = scopeId('8')
+    source.prepare('INSERT INTO claim_scope (scope_id, scope_alias, linked_at) VALUES (?, ?, ?)')
+      .run(scope, provider, '2026-01-01T00:00:00.000Z')
+    source.prepare('INSERT INTO repository_identity (provider_id, analytical_key, is_private, is_archived, is_fork) VALUES (?, ?, 0, 0, 0)')
+      .run(provider, analytical)
+    source.prepare(`INSERT INTO pull_request_fact (
+      provider_id, repository_provider_id, number, created_at, state, is_draft,
+      additions, deletions, changed_files, comments, reviews
+    ) VALUES (?, ?, 17, ?, 'OPEN', 0, 1, 2, 3, 0, 0)`)
+      .run('invented-pr-provider', provider, '2026-01-02T00:00:00.000Z')
+    try {
+      rewriteStorageV3Shadow({
+        sourceDb: source,
+        targetDb: target,
+        identityBindings: [{ rawProviderId: raw }],
+        installationKey: key,
+        asOf: '2026-01-03T00:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 22),
+      })
+      expect(target.prepare('SELECT number, created_at, is_draft, ready_for_review_at, ready_for_review_basis FROM pull_request_fact').get())
+        .toMatchObject({
+          number: 17,
+          created_at: '2026-01-02T00:00:00.000Z',
+          is_draft: 0,
+          ready_for_review_at: null,
+          ready_for_review_basis: null,
+        })
+    } finally {
+      source.close()
+      target.close()
+    }
+  })
+
   it('fails closed on missing bindings and leaves target without rows', () => {
     const source = sourceDb(), target = new Database(':memory:')
     try {

@@ -134,7 +134,10 @@ const STORED_EXPIRY_GROUPS: readonly StoredExpiryGroup[] = [
     table: 'pull_request_fact',
     idColumns: ['scope_id', 'fact_id'],
     expiryColumn: 'c2_expires_at',
-    clearColumns: ['number', 'created_at', 'merged_at', 'closed_at', 'c2_expires_at'],
+    clearColumns: [
+      'number', 'created_at', 'merged_at', 'closed_at',
+      'ready_for_review_at', 'ready_for_review_basis', 'c2_expires_at',
+    ],
   },
   {
     key: 'datedEventObservation',

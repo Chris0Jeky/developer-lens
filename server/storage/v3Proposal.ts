@@ -9,6 +9,18 @@ export const STORAGE_V3_PROPOSAL_VERSION = 'storage-v3' as const
 export const CLAIM_MATERIAL_V3_PROPOSAL_VERSION = 'claim-id.v3' as const
 export const LINEAGE_V3_PROPOSAL_VERSION = 'lineage.v3' as const
 
+/**
+ * Readiness provenance is explicit: a timeline event is distinct from the
+ * conservative observation that a pull request was created non-draft and no
+ * timeline event was available.  The pair remains nullable until a future
+ * observation bridge can supply either basis; migration never infers it.
+ */
+export const PULL_REQUEST_READY_FOR_REVIEW_BASES = [
+  'timeline_event',
+  'creation_observed_never_draft',
+] as const
+export type PullRequestReadyForReviewBasis = typeof PULL_REQUEST_READY_FOR_REVIEW_BASES[number]
+
 /** Closed retained-C1 key registry. Generation strategy is explicit below. */
 export const C1_KEY_PREFIXES = {
   scope: 'scope-',
@@ -298,7 +310,7 @@ export const STORAGE_V3_DISPOSITIONS = [
   disposition({ tableName: 'import_run', family: 'base', action: 'delete', preserve: [], rewrite: [], delete: ['all legacy rows lacking scope and import-time ownership'] }),
   disposition({ tableName: 'repository_identity', family: 'base', action: 'rewrite', preserve: ['is_private', 'is_archived', 'is_fork'], rewrite: ['provider_id and analytical_key remain only in the expiring C2 identity row', 'ephemeral raw provider ID independently recomputes provider_id (repository-provider domain) and analytical_key (repository-analytical domain); require byte equality for both', 'claim_scope.scope_alias continuity uses an exact match against the recomputed provider_id only, never analytical_key', 'provider identity -> scope- C1 anchor'], delete: ['provider_id and analytical_key at C2 expiry', 'raw provider ID and installation key are never retained in target, proof, error, or log'] }),
   disposition({ tableName: 'commit_observation', family: 'base', action: 'rewrite', preserve: ['aggregate counters', 'feature classification'], rewrite: ['repository_provider_id -> canonical scope_id', 'commit sha as an expiring C2 observation'], delete: ['complete nullable C2 observation field group (commit sha, exact time, source provenance, and expiry marker) at C2 expiry; never the C1 anchor/counters', 'rows whose repository binding is unverifiable'] }),
-  disposition({ tableName: 'pull_request_fact', family: 'base', action: 'rewrite', preserve: ['lifecycle state', 'aggregate counters'], rewrite: ['repository_provider_id -> canonical scope_id', 'pull-request number as an expiring C2 observation'], delete: ['complete nullable C2 observation field group (pull-request number, exact times, and expiry marker) at C2 expiry; never the C1 anchor/state/counters', 'rows whose repository binding is unverifiable'] }),
+  disposition({ tableName: 'pull_request_fact', family: 'base', action: 'rewrite', preserve: ['lifecycle state', 'aggregate counters', 'explicit nullable ready_for_review_at + ready_for_review_basis pair when a future observation bridge supplies it'], rewrite: ['repository_provider_id -> canonical scope_id', 'pull-request number as an expiring C2 observation', 'ready_for_review_at and ready_for_review_basis remain NULL for every existing/migrated row; never infer from created_at or final is_draft'], delete: ['complete nullable C2 observation field group (pull-request number, exact times, readiness pair, and expiry marker) at C2 expiry; never the C1 anchor/state/counters', 'rows whose repository binding is unverifiable'] }),
   disposition({ tableName: 'coverage_observation', family: 'base', action: 'delete', preserve: [], rewrite: [], delete: ['all legacy aggregate rows without complete member-scope ownership'] }),
   disposition({ tableName: 'dated_event_observation', family: 'base', action: 'rewrite', preserve: ['event_kind'], rewrite: ['repository_provider_id -> canonical scope_id', 'occurred_at as an expiring C2 observation'], delete: ['complete nullable C2 observation field group (exact occurred_at and expiry marker) at C2 expiry; never the C1 anchor/event kind', 'rows whose repository binding is unverifiable'] }),
   disposition({ tableName: 'v2_store_provenance', family: 'bridge', action: 'preserve', preserve: ['the validated C0 provenance record verbatim in either recorded mode: synthetic (marker, no card) or activation_card (opaque card ID, no marker)'], rewrite: [], delete: [], refuse: ['structurally invalid provenance only: no record, more than one record, an unrecognized mode, or a mode/marker/card XOR violation — migration validates structure, it does not apply the ADR-04 SERVING gate, which still refuses activation_card on the v2 read path'] }),

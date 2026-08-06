@@ -234,7 +234,11 @@ describe('storage-v3 B1a proposal', () => {
       expect.stringMatching(/structurally invalid provenance only: no record, more than one record, an unrecognized mode, or a mode\/marker\/card XOR violation/i),
     ])
     expect(byTable.commit_observation.preserve).toEqual(['aggregate counters', 'feature classification'])
-    expect(byTable.pull_request_fact.preserve).toEqual(['lifecycle state', 'aggregate counters'])
+    expect(byTable.pull_request_fact.preserve).toEqual([
+      'lifecycle state',
+      'aggregate counters',
+      'explicit nullable ready_for_review_at + ready_for_review_basis pair when a future observation bridge supplies it',
+    ])
     expect(byTable.dated_event_observation.preserve).toEqual(['event_kind'])
     expect(byTable.commit_observation.delete).toEqual(expect.arrayContaining([
       expect.stringMatching(/complete nullable C2 observation field group.*never the C1 anchor\/counters/i),

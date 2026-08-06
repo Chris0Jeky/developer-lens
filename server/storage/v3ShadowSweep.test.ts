@@ -66,10 +66,11 @@ function seedSweepTarget(db: Database.Database): void {
   ) VALUES (?, ?, 'invented-sha', ?, 'github', ?, 3, 1, 1, 1, 'feat', 0, 0, 12)`)
     .run(scopeId, id('obs-', '2'), createdAt, expiresAt)
   db.prepare(`INSERT INTO pull_request_fact (
-    scope_id, fact_id, number, created_at, merged_at, closed_at, c2_expires_at,
+    scope_id, fact_id, number, created_at, merged_at, closed_at,
+    ready_for_review_at, ready_for_review_basis, c2_expires_at,
     state, is_draft, additions, deletions, changed_files, comments, reviews
-  ) VALUES (?, ?, 17, ?, ?, ?, ?, 'MERGED', 0, 3, 1, 1, 2, 1)`)
-    .run(scopeId, id('pr-', '3'), createdAt, createdAt, createdAt, expiresAt)
+  ) VALUES (?, ?, 17, ?, ?, ?, ?, 'timeline_event', ?, 'MERGED', 0, 3, 1, 1, 2, 1)`)
+    .run(scopeId, id('pr-', '3'), createdAt, createdAt, createdAt, createdAt, expiresAt)
   db.prepare(`INSERT INTO dated_event_observation (
     scope_id, event_id, occurred_at, c2_expires_at, event_kind
   ) VALUES (?, ?, ?, ?, 'review')`).run(scopeId, id('event-', '4'), createdAt, expiresAt)
@@ -226,7 +227,7 @@ function everyC2Value(db: Database.Database): unknown[] {
     ['claim_scope', 'scope_alias, linked_at, alias_expires_at'],
     ['repository_identity', 'provider_id, analytical_key, identity_expires_at'],
     ['commit_observation', 'sha, occurred_at, source, c2_expires_at'],
-    ['pull_request_fact', 'number, created_at, merged_at, closed_at, c2_expires_at'],
+    ['pull_request_fact', 'number, created_at, merged_at, closed_at, ready_for_review_at, ready_for_review_basis, c2_expires_at'],
     ['dated_event_observation', 'occurred_at, c2_expires_at'],
     [
       'collection_job',

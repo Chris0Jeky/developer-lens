@@ -30,7 +30,11 @@ import {
   storageV3ShadowSchemaFingerprint,
   storageV3ShadowResult,
 } from './v3ShadowSchema.js'
-import { STORAGE_V3_DISPOSITIONS, STORAGE_V3_TABLES } from './v3Proposal.js'
+import {
+  PULL_REQUEST_READY_FOR_REVIEW_BASES,
+  STORAGE_V3_DISPOSITIONS,
+  STORAGE_V3_TABLES,
+} from './v3Proposal.js'
 
 const hex = (letter: string): string => letter.repeat(64)
 const scopeA = `scope-${hex('a')}`
@@ -42,6 +46,36 @@ const tables = (db: Database.Database): string[] => db.prepare(
 ).pluck().all() as string[]
 
 describe('storage-v3 B2a shadow schema', () => {
+  it('keeps readiness missing by default and enforces its timestamp/basis pair', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      const insert = db.prepare(`INSERT INTO pull_request_fact (
+        scope_id, fact_id, state, is_draft, comments, reviews,
+        ready_for_review_at, ready_for_review_basis
+      ) VALUES (?, ?, 'OPEN', 0, 0, 0, ?, ?)`)
+      const rowId = id('pr-')
+      expect(db.prepare('SELECT ready_for_review_at, ready_for_review_basis FROM pull_request_fact').get()).toBeUndefined()
+      expect(() => insert.run(scopeA, rowId, null, null)).not.toThrow()
+      expect(db.prepare('SELECT ready_for_review_at, ready_for_review_basis FROM pull_request_fact').get()).toEqual({
+        ready_for_review_at: null,
+        ready_for_review_basis: null,
+      })
+      for (const basis of PULL_REQUEST_READY_FOR_REVIEW_BASES) {
+        db.prepare('DELETE FROM pull_request_fact').run()
+        expect(() => insert.run(scopeA, rowId, '2026-01-02T03:04:05.678Z', basis)).not.toThrow()
+      }
+      expect(() => insert.run(scopeA, rowId, '2026-01-02T03:04:05.678Z', null)).toThrow()
+      db.prepare('DELETE FROM pull_request_fact').run()
+      expect(() => insert.run(scopeA, rowId, null, 'timeline_event')).toThrow()
+      db.prepare('DELETE FROM pull_request_fact').run()
+      expect(() => insert.run(scopeA, rowId, 'not-a-timestamp', 'timeline_event')).toThrow()
+    } finally {
+      db.close()
+    }
+  })
+
   it('installs the closed immutable-trigger registry in the schema fingerprint', () => {
     const db = new Database(':memory:')
     try {

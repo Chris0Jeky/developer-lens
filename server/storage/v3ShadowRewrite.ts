@@ -868,9 +868,10 @@ export function rewriteStorageV3Shadow(
 
       const insertPullRequest = options.targetDb.prepare(
         `INSERT INTO pull_request_fact (
-          scope_id, fact_id, number, created_at, merged_at, closed_at, c2_expires_at,
+          scope_id, fact_id, number, created_at, merged_at, closed_at,
+          ready_for_review_at, ready_for_review_basis, c2_expires_at,
           state, is_draft, additions, deletions, changed_files, comments, reviews
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
       )
       for (const row of sourceRows(sourceImage, 'pull_request_fact')) {
         const providerId = requiredText(row.repository_provider_id)
@@ -894,6 +895,8 @@ export function rewriteStorageV3Shadow(
           live ? row.created_at : null,
           live ? row.merged_at : null,
           live ? row.closed_at : null,
+          null,
+          null,
           live ? expiresAt : null,
           row.state,
           row.is_draft,

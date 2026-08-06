@@ -18,6 +18,7 @@ import {
   LINEAGE_V3_DELETION_EVENT_KINDS,
   LINEAGE_V3_EVENT_KINDS,
   LINEAGE_V3_SUBJECT_KINDS,
+  PULL_REQUEST_READY_FOR_REVIEW_BASES,
   STORAGE_V3_DISPOSITIONS,
   STORAGE_V3_TABLES,
   type StorageV3Table,
@@ -28,9 +29,9 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.5-shadow-life03-expiry' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.6-shadow-phasee-readiness' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 312
+export const STORAGE_V3_SHADOW_USER_VERSION = 313
 
 /**
  * B4's closed app-owned artifact domain.  Analysis packs are deliberately absent:
@@ -1136,6 +1137,8 @@ CREATE TABLE IF NOT EXISTS pull_request_fact (
   fact_id TEXT NOT NULL CHECK (${key('fact_id', 'pr-')}),
   number INTEGER CHECK (number IS NULL OR number > 0),
   created_at TEXT, merged_at TEXT, closed_at TEXT,
+  ready_for_review_at TEXT CHECK (ready_for_review_at IS NULL OR ${canonicalTimestampShape('ready_for_review_at')}),
+  ready_for_review_basis TEXT CHECK (ready_for_review_basis IS NULL OR ready_for_review_basis IN (${quoted(PULL_REQUEST_READY_FOR_REVIEW_BASES)})),
   c2_expires_at TEXT,
   state TEXT NOT NULL CHECK (state IN ('OPEN', 'CLOSED', 'MERGED')),
   is_draft INTEGER NOT NULL CHECK (is_draft IN (0, 1)),
@@ -1145,6 +1148,7 @@ CREATE TABLE IF NOT EXISTS pull_request_fact (
   FOREIGN KEY (scope_id) REFERENCES claim_scope(scope_id),
   CHECK ((number IS NULL) = (created_at IS NULL)),
   CHECK ((number IS NULL) = (c2_expires_at IS NULL)),
+  CHECK ((ready_for_review_at IS NULL) = (ready_for_review_basis IS NULL)),
   CHECK (number IS NOT NULL OR (merged_at IS NULL AND closed_at IS NULL))
 ) STRICT;
 CREATE TABLE IF NOT EXISTS coverage_observation (
