@@ -51,6 +51,10 @@ import {
   type StorageV3RevocationReplayPublicationStage,
   type StorageV3RevocationReplayState,
 } from './v3RevocationReplay.js'
+import {
+  assertStorageV3MigrationCleanupSelectionReady,
+  StorageV3MigrationCleanupError,
+} from './v3MigrationCleanup.js'
 
 export const STORAGE_V3_READER_SELECTION_CODES = [
   'v3-selection-request-invalid',
@@ -58,6 +62,7 @@ export const STORAGE_V3_READER_SELECTION_CODES = [
   'v3-selection-lease-refused',
   'v3-selection-store-refused',
   'v3-selection-backup-refused',
+  'v3-selection-cleanup-refused',
   'v3-selection-receipt-refused',
 ] as const
 export type StorageV3ReaderSelectionCode = typeof STORAGE_V3_READER_SELECTION_CODES[number]
@@ -86,7 +91,7 @@ export type StorageV3ReaderSelection =
     }>
 
 type ClosedSelectionInput = StorageV3ReaderSelectionInput
-type SelectionStage = 'request' | 'root' | 'lease' | 'store' | 'backup' | 'receipt' | 'proof' | 'revocation'
+type SelectionStage = 'request' | 'root' | 'lease' | 'store' | 'backup' | 'cleanup' | 'receipt' | 'proof' | 'revocation'
 type SelectionProofPublisher = (
   db: Database.Database,
   root: ReturnType<typeof openStorageV3ArtifactRoot>,
@@ -245,6 +250,7 @@ function codeForFailure(error: unknown, stage: SelectionStage): StorageV3ReaderS
   if (error instanceof StorageV3WriterLeaseError) return 'v3-selection-lease-refused'
   if (error instanceof StorageV3StoreFileError) return 'v3-selection-store-refused'
   if (error instanceof StorageV3BackupError) return 'v3-selection-backup-refused'
+  if (error instanceof StorageV3MigrationCleanupError) return 'v3-selection-cleanup-refused'
   if (error instanceof StorageV3MigrationSelectionError) return 'v3-selection-receipt-refused'
   switch (stage) {
     case 'request': return 'v3-selection-request-invalid'
@@ -252,6 +258,7 @@ function codeForFailure(error: unknown, stage: SelectionStage): StorageV3ReaderS
     case 'lease': return 'v3-selection-lease-refused'
     case 'store': return 'v3-selection-store-refused'
     case 'backup': return 'v3-selection-backup-refused'
+    case 'cleanup': return 'v3-selection-cleanup-refused'
     case 'receipt': return 'v3-selection-receipt-refused'
     case 'proof': return 'v3-selection-receipt-refused'
     case 'revocation': return 'v3-selection-receipt-refused'
@@ -330,6 +337,15 @@ function selectStorageV3ReaderInternal(
           root: artifactRoot,
           backupAt: closed.backupAt,
           artifactId: closed.backupArtifactId,
+          installationKey: closed.installationKey,
+        })
+        stage = 'cleanup'
+        assertStorageV3MigrationCleanupSelectionReady({
+          db,
+          root: artifactRoot,
+          legacySourceId: closed.legacySourceId,
+          selectedArtifactId: backup.selectedArtifactId,
+          backupArtifactId: backup.artifactId,
           installationKey: closed.installationKey,
         })
         stage = 'receipt'

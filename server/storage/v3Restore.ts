@@ -49,6 +49,7 @@ import {
   replayStorageV3Revocations,
   verifyStorageV3RevocationReplay,
 } from './v3RevocationReplay.js'
+import { registerRestoredStorageV3MigrationCleanup } from './v3MigrationCleanup.js'
 import type { TaskInstallationKeyHandle } from './taskInstallationKey.js'
 import {
   assertSelectableStorageV3Target,
@@ -646,6 +647,13 @@ function restoreFromVerifiedSelection(
         selectedArtifactId: verified.selectedArtifactId,
         ownerScopeIds: verified.ownerScopeIds,
         intentSha256: verified.intentSha256,
+      })
+      registerRestoredStorageV3MigrationCleanup({
+        db: writable,
+        root: root!,
+        selection,
+        verification: verified,
+        installationKey: closed.installationKey,
       })
       replayStorageV3Revocations(writable, revocations)
       failAfterStage?.('tombstone-replay')
