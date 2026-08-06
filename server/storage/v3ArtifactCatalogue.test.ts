@@ -674,13 +674,21 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
       const staged = registerStagedBackup(fixture, `art-${'d'.repeat(64)}`)
       const finalPath = join(fixture.root, staged.finalLocator)
       const tempPath = join(fixture.root, staged.tempLocator)
-      rmSync(finalPath)
-      rmSync(tempPath)
-      writeInventedSqlite(finalPath)
-      linkSync(finalPath, tempPath)
+      const replacementPath = join(fixture.root, 'invented-replacement.sqlite')
       const beforeAttempt = fixture.store.prepare(
         'SELECT sqlite_dev, sqlite_ino, manifest_dev, manifest_ino FROM migration_backup_attempt WHERE artifact_id = ?',
-      ).get(staged.artifactId)
+      ).get(staged.artifactId) as { sqlite_dev: string; sqlite_ino: string }
+      // Allocate the replacement while the recorded inode is still live. Removing
+      // both original links first lets Linux immediately reuse that inode, which
+      // turns this hostile fixture into an accidental exact-identity replay.
+      writeInventedSqlite(replacementPath)
+      const replacement = lstatSync(replacementPath, { bigint: true })
+      expect([replacement.dev.toString(10), replacement.ino.toString(10)])
+        .not.toEqual([beforeAttempt.sqlite_dev, beforeAttempt.sqlite_ino])
+      rmSync(finalPath)
+      rmSync(tempPath)
+      renameSync(replacementPath, finalPath)
+      linkSync(finalPath, tempPath)
       deleteStorageV3Scope({
         db: fixture.store,
         scopeId: SCOPE_A,
