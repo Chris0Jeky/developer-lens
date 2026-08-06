@@ -11,14 +11,20 @@ import {
 } from './activationRunner.js'
 import type { GithubCoreActivationGrant } from './activationGrant.js'
 
-// #151: production ships no grant issuer. Success paths inject a test-owned validator that accepts
-// a test-built grant object; the fingerprint/scope/card bindings the runner enforces still hold, so
-// the negative cases below (wrong key, wrong scope) are rejected on their real merits.
-vi.mock('./activationGrant.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('./activationGrant.js')>()),
-  assertGithubCoreActivationGrant: (input: unknown): GithubCoreActivationGrant =>
-    input as GithubCoreActivationGrant,
-}))
+const grantMock = vi.hoisted(() => ({ acceptTestGrant: false }))
+
+// #151: production ships no grant issuer. The mock delegates to the production default-deny
+// validator unless a success path explicitly opts into a test-owned acceptance seam.
+vi.mock('./activationGrant.js', async (importOriginal) => {
+  const original = await importOriginal<typeof import('./activationGrant.js')>()
+  return {
+    ...original,
+    assertGithubCoreActivationGrant: (input: unknown): GithubCoreActivationGrant =>
+      grantMock.acceptTestGrant
+        ? input as GithubCoreActivationGrant
+        : original.assertGithubCoreActivationGrant(input),
+  }
+})
 
 function testGrant(fields: {
   taskId: string
@@ -52,11 +58,21 @@ const roots: string[] = []
 const databases: Database.Database[] = []
 
 afterEach(async () => {
+  grantMock.acceptTestGrant = false
   for (const db of databases.splice(0)) {
     if (db.open) db.close()
   }
   await Promise.all(roots.splice(0).map((root) => rm(root, { force: true, recursive: true })))
 })
+
+async function runWithTestGrant(input: GithubCoreActivationRunnerInput) {
+  grantMock.acceptTestGrant = true
+  try {
+    return await runGithubCoreActivation(input)
+  } finally {
+    grantMock.acceptTestGrant = false
+  }
+}
 
 function database(): Database.Database {
   const db = openStorageDatabase(':memory:')
@@ -311,7 +327,7 @@ function count(db: Database.Database, table: string): number {
 }
 
 describe('default-off github.core activation runner', () => {
-  it('denies a forged or non-github grant before reading inputs or invoking any dependency', async () => {
+  it('uses production default-deny before reading workspace/card/key/store/fetch inputs', async () => {
     for (const grant of [
       {
         capabilityId: 'github.core',
@@ -322,23 +338,22 @@ describe('default-off github.core activation runner', () => {
       },
       { capabilityId: 'cap.external.model' },
     ]) {
-      let workspaceReads = 0
+      const dependencyReads: string[] = []
       let storeOpens = 0
       let fetches = 0
-      const input: Record<string, unknown> = {
-        grant,
-        taskId,
-        expectedTaskCardSha256: 'a'.repeat(64),
-        openStore: () => { storeOpens += 1; throw new Error('store must stay closed') },
-        fetch: async () => { fetches += 1; throw new Error('fetch must not run') },
-        jobId: 'fixture-denied-job',
-        coverageId: firstCoverageId,
-        jobStartedAt: firstJobStart,
+      const input: Record<string, unknown> = { grant }
+      for (const property of [
+        'workspaceRoot', 'taskId', 'expectedTaskCardSha256', 'openStore', 'fetch', 'jobId',
+        'coverageId', 'jobStartedAt',
+      ]) {
+        Object.defineProperty(input, property, {
+          enumerable: true,
+          get: () => {
+            dependencyReads.push(property)
+            throw new Error(`${property} must stay unread`)
+          },
+        })
       }
-      Object.defineProperty(input, 'workspaceRoot', {
-        enumerable: true,
-        get: () => { workspaceReads += 1; throw new Error('path must not be read') },
-      })
 
       let denial: unknown
       try {
@@ -351,8 +366,8 @@ describe('default-off github.core activation runner', () => {
         message: GITHUB_CORE_ACTIVATION_RUNNER_ERROR_CODE,
       })
       expect(JSON.stringify(denial)).not.toMatch(/fixture-denied|PRIVATE|repo-|task-card|sha256/i)
-      expect({ workspaceReads, storeOpens, fetches }).toEqual({
-        workspaceReads: 0,
+      expect({ dependencyReads, storeOpens, fetches }).toEqual({
+        dependencyReads: [],
         storeOpens: 0,
         fetches: 0,
       })
@@ -367,7 +382,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
     ])
 
-    const result = await runGithubCoreActivation(runnerInput(fixture, db, transport.fetch))
+    const result = await runWithTestGrant(runnerInput(fixture, db, transport.fetch))
 
     expect(result).toEqual({
       stability: 'stable',
@@ -412,13 +427,13 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
     ])
-    await runGithubCoreActivation(runnerInput(fixture, db, seedTransport.fetch))
+    await runWithTestGrant(runnerInput(fixture, db, seedTransport.fetch))
     const scopeAlias = fixture.scopeAlias
     const secondTransport = fetchFixture([
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
     ])
-    await runGithubCoreActivation(runnerInput(fixture, db, secondTransport.fetch, {
+    await runWithTestGrant(runnerInput(fixture, db, secondTransport.fetch, {
       jobId: 'fixture-second-window',
       coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
@@ -467,7 +482,7 @@ describe('default-off github.core activation runner', () => {
     const db = database()
     const transport = fetchFixture([response(404, { message: 'POISON_NOT_FOUND' })])
 
-    const result = await runGithubCoreActivation(runnerInput(fixture, db, transport.fetch))
+    const result = await runWithTestGrant(runnerInput(fixture, db, transport.fetch))
 
     expect(result).toMatchObject({
       stability: 'not_observed',
@@ -493,7 +508,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
     ])
-    await runGithubCoreActivation(runnerInput(fixture, db, seedTransport.fetch, {
+    await runWithTestGrant(runnerInput(fixture, db, seedTransport.fetch, {
       jobId: 'fixture-seed-job',
     }))
     const scopeAlias = fixture.scopeAlias
@@ -504,7 +519,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-b'),
     ])
 
-    const result = await runGithubCoreActivation(runnerInput(fixture, db, transport.fetch, {
+    const result = await runWithTestGrant(runnerInput(fixture, db, transport.fetch, {
       jobId: 'fixture-unstable-job',
       coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
@@ -544,7 +559,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
     ])
-    await runGithubCoreActivation(runnerInput(fixture, db, seedTransport.fetch, {
+    await runWithTestGrant(runnerInput(fixture, db, seedTransport.fetch, {
       jobId: 'fixture-seed-job',
     }))
     const scopeAlias = fixture.scopeAlias
@@ -556,7 +571,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
       response(403, { message: 'POISON_PERMISSION' }),
     ])
-    const result = await runGithubCoreActivation(runnerInput(fixture, db, transport.fetch, {
+    const result = await runWithTestGrant(runnerInput(fixture, db, transport.fetch, {
       jobId: 'fixture-followup-job',
       coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
@@ -591,7 +606,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
     ])
-    await runGithubCoreActivation(runnerInput(originalFixture, db, seedTransport.fetch, {
+    await runWithTestGrant(runnerInput(originalFixture, db, seedTransport.fetch, {
       jobId: 'fixture-seed-job',
     }))
     const scopeAlias = originalFixture.scopeAlias

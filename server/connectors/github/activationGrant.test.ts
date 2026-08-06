@@ -30,6 +30,71 @@ function lookalikeGrant(overrides: Record<string, unknown> = {}): Record<string,
   })
 }
 
+type ExportBinding = Readonly<{
+  localName: string
+  form: string
+}>
+
+function nodeText(node: ts.Node | undefined, sourceFile: ts.SourceFile): string {
+  return node ? node.getText(sourceFile) : '<anonymous>'
+}
+
+function collectExportSurface(source: string): Map<string, ExportBinding> {
+  const sourceFile = ts.createSourceFile('synthetic.ts', source, ts.ScriptTarget.Latest, true)
+  const surface = new Map<string, ExportBinding>()
+  const add = (exportedName: string, localName: string, form: string): void => {
+    surface.set(exportedName, { localName, form })
+  }
+
+  for (const statement of sourceFile.statements) {
+    if (ts.isExportDeclaration(statement)) {
+      const moduleName = statement.moduleSpecifier ? nodeText(statement.moduleSpecifier, sourceFile) : '<local>'
+      if (!statement.exportClause) {
+        add('*', `* from ${moduleName}`, 'namespace-reexport')
+      } else if (ts.isNamespaceExport(statement.exportClause)) {
+        add(statement.exportClause.name.text, `* from ${moduleName}`, 'namespace-reexport')
+      } else {
+        for (const specifier of statement.exportClause.elements) {
+          add(
+            specifier.name.text,
+            nodeText(specifier.propertyName ?? specifier.name, sourceFile),
+            statement.moduleSpecifier ? 'reexport' : 'named',
+          )
+        }
+      }
+      continue
+    }
+
+    if (ts.isExportAssignment(statement)) {
+      add(statement.isExportEquals ? 'export=' : 'default', nodeText(statement.expression, sourceFile), 'assignment')
+      continue
+    }
+
+    const modifiers = ts.canHaveModifiers(statement) ? ts.getModifiers(statement) : undefined
+    if (!modifiers?.some((modifier) => modifier.kind === ts.SyntaxKind.ExportKeyword)) continue
+    const isDefault = modifiers.some((modifier) => modifier.kind === ts.SyntaxKind.DefaultKeyword)
+    if (ts.isVariableStatement(statement)) {
+      for (const declaration of statement.declarationList.declarations) {
+        add(isDefault ? 'default' : nodeText(declaration.name, sourceFile), nodeText(declaration.name, sourceFile), 'declaration')
+      }
+      continue
+    }
+
+    if (
+      ts.isFunctionDeclaration(statement) || ts.isClassDeclaration(statement)
+      || ts.isInterfaceDeclaration(statement) || ts.isTypeAliasDeclaration(statement)
+      || ts.isEnumDeclaration(statement) || ts.isModuleDeclaration(statement)
+    ) {
+      add(isDefault ? 'default' : nodeText(statement.name, sourceFile), nodeText(statement.name, sourceFile), 'declaration')
+    }
+  }
+  return surface
+}
+
+function sortedSurface(surface: Map<string, ExportBinding>): readonly [string, ExportBinding][] {
+  return [...surface.entries()].sort(([left], [right]) => left.localeCompare(right))
+}
+
 describe('github.core process-local activation grant', () => {
   it('default-denies every input content-free: no production issuer exists (#151)', () => {
     const canaries = ['PRIVATE_REPOSITORY_CANARY', 'C:\\PRIVATE_PATH_CANARY', 'PRIVATE_KEY_CANARY']
@@ -168,29 +233,26 @@ describe('github.core process-local activation grant', () => {
     expect(source).not.toMatch(/githubCoreActivationGrantTestSeam/)
     expect(source).not.toMatch(/issuedGrants\s*\.\s*add\b/)
 
-    const file = ts.createSourceFile(modulePath, source, ts.ScriptTarget.Latest, true)
-    const exportedNames = new Set<string>()
-    const collect = (node: ts.Node): void => {
-      const modifiers = ts.canHaveModifiers(node) ? ts.getModifiers(node) : undefined
-      const isExported = modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) ?? false
-      if (isExported) {
-        if ((ts.isFunctionDeclaration(node) || ts.isClassDeclaration(node) || ts.isInterfaceDeclaration(node)
-          || ts.isTypeAliasDeclaration(node)) && node.name) exportedNames.add(node.name.text)
-        if (ts.isVariableStatement(node)) {
-          for (const decl of node.declarationList.declarations) {
-            if (ts.isIdentifier(decl.name)) exportedNames.add(decl.name.text)
-          }
-        }
-      }
-      ts.forEachChild(node, collect)
-    }
-    collect(file)
-    // Only the type, error code, error class, and default-deny validator are exported.
-    expect([...exportedNames].sort()).toEqual([
-      'GITHUB_CORE_ACTIVATION_GRANT_ERROR_CODE',
-      'GithubCoreActivationGrant',
-      'GithubCoreActivationGrantError',
-      'assertGithubCoreActivationGrant',
+    // Only the type, error code, error class, and default-deny validator are exported, with
+    // each binding retaining its exact local declaration. Names alone would miss an issuer
+    // exposed through `export { issuedGrants as allowedName }`.
+    const expected = new Map<string, ExportBinding>([
+      ['GITHUB_CORE_ACTIVATION_GRANT_ERROR_CODE', { localName: 'GITHUB_CORE_ACTIVATION_GRANT_ERROR_CODE', form: 'declaration' }],
+      ['GithubCoreActivationGrant', { localName: 'GithubCoreActivationGrant', form: 'declaration' }],
+      ['GithubCoreActivationGrantError', { localName: 'GithubCoreActivationGrantError', form: 'declaration' }],
+      ['assertGithubCoreActivationGrant', { localName: 'assertGithubCoreActivationGrant', form: 'declaration' }],
     ])
+    expect(sortedSurface(collectExportSurface(source))).toEqual(sortedSurface(expected))
+
+    for (const synthetic of [
+      'const issuedGrants = {}; export { issuedGrants }',
+      'const issuedGrants = {}; export { issuedGrants as GITHUB_CORE_ACTIVATION_GRANT_ERROR_CODE }',
+      'const alias = assertGithubCoreActivationGrant; export { alias as assertGithubCoreActivationGrant }',
+      'export * as issuedGrants from \'./other.js\'',
+      'export default function issuer() {}',
+      'const issuedGrants = {}; export = issuedGrants',
+    ]) {
+      expect(sortedSurface(collectExportSurface(synthetic))).not.toEqual(sortedSurface(expected))
+    }
   })
 })
