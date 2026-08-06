@@ -36,8 +36,10 @@ active_slice: 'DL-LIFE-03 revocation replay (#172): before deleting a selected s
   immutable key-bound content-free C1 intent outside the selected database. Selected readers and
   restore verify the mandatory keyed tail head and complete reserved family, then replay every intent
   before serving data, so an older signed backup cannot resurrect a revoked scope. Initialization
-  consumes the exact new-receipt runtime grant before proof publication; an existing receipt can
-  never recreate a missing family. The integrated candidate also resumes the exact pending
+  consumes the exact pending-receipt runtime grant inside that transaction, then advances the empty
+  head from initializing to committed after commit and before proof publication. Only an empty
+  initializing attempt may resume; an existing receipt cannot recreate a missing family, and a
+  committed family cannot mint a new receipt after C2 expiry. The candidate also resumes the pending
   deletion-maintenance saga after a post-commit crash. Missing, truncated, foreign, case-variant,
   non-canonical, or unapplied state is unavailable and never legacy fallback. Physical seven-day
   source/backup expiry is the next separate slice #173. The whyResolver lineage joins and second

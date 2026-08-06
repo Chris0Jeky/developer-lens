@@ -23,8 +23,7 @@ import {
 } from './v3ArtifactCatalogue.js'
 import { v3BackupTestSeams } from './v3Backup.js'
 import {
-  claimStorageV3MigrationSelectionInitialization,
-  recordStorageV3MigrationSelection,
+  recordStorageV3MigrationSelectionWithInitialization,
   replayStorageV3MigrationSuccessReport,
   storageV3MigrationRootBinding,
   type StorageV3MigrationSelection,
@@ -94,15 +93,8 @@ async function publicationFixture(options: Readonly<{
       ownerScopeIds: [SCOPE_A, SCOPE_B],
       installationKey,
     }, () => {})
-    const recorded = recordStorageV3MigrationSelection(db, {
-      legacySourceId: `legacy-${'5'.repeat(64)}`,
-      selectedArtifactId,
-      backupArtifactId: backup.artifactId,
-      backupAt,
-      taskId: installationKey.taskId,
-      taskFingerprint: installationKey.fingerprint,
-      rootBinding: storageV3MigrationRootBinding(root),
-      successReportProof: replayStorageV3MigrationSuccessReport({
+    const selection = withStorageV3WriterLease(rootHandle, (lease) => {
+      const recorded = recordStorageV3MigrationSelectionWithInitialization(db, {
         legacySourceId: `legacy-${'5'.repeat(64)}`,
         selectedArtifactId,
         backupArtifactId: backup.artifactId,
@@ -110,19 +102,33 @@ async function publicationFixture(options: Readonly<{
         taskId: installationKey.taskId,
         taskFingerprint: installationKey.fingerprint,
         rootBinding: storageV3MigrationRootBinding(root),
-      }, '2026-08-06T12:40:00.000Z'),
-    })
-    const selection = recorded.selection
-    const initializationGrant = claimStorageV3MigrationSelectionInitialization(recorded)
-    withStorageV3WriterLease(rootHandle, (lease) => {
-      v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+        successReportProof: replayStorageV3MigrationSuccessReport({
+          legacySourceId: `legacy-${'5'.repeat(64)}`,
+          selectedArtifactId,
+          backupArtifactId: backup.artifactId,
+          backupAt,
+          taskId: installationKey.taskId,
+          taskFingerprint: installationKey.fingerprint,
+          rootBinding: storageV3MigrationRootBinding(root),
+        }, '2026-08-06T12:40:00.000Z'),
+      }, (pendingSelection, initializationGrant) => {
+        v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+          rootHandle,
+          installationKey,
+          pendingSelection,
+          initializationGrant,
+          lease,
+          () => {},
+        )
+      })
+      v3RevocationReplayTestSeams.commitInitializationWithDirectorySynchronizer(
         rootHandle,
         installationKey,
-        selection,
-        initializationGrant,
+        recorded.selection,
         lease,
         () => {},
       )
+      return recorded.selection
     })
     if (options.interruptSelectionProof === true) {
       try {

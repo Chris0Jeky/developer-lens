@@ -64,12 +64,14 @@ the controlled capability code, ISO-week grain, keyed task/selection bindings, a
 They contain no raw task ID, repository/source name or alias, path, prose, exact timestamp, or
 observed value. The head commits the expected final sequence and digest; an entry and its advanced
 head are durable before its deletion transaction. Selected reads and restore verify that exact tail
-and prove every entry applied before serving data. Only the single-use runtime grant attached to the
-newly committed receipt may initialize the family, before selection-proof publication. A missing,
-truncated, foreign, non-canonical, or unapplied family fails closed and never authorizes legacy
-fallback. The family survives seven-day cleanup so an older signed backup cannot resurrect revoked
-data, remains local and unexported, and is removed no later than the C1 36-month boundary or deletion
-of the whole task root.
+and prove every entry applied before serving data. A single-use runtime grant initializes an empty
+`initializing` family inside the pending receipt transaction; after that transaction commits, the
+head is durably advanced to `committed` before selection-proof publication or service. Only an
+empty `initializing` family may resume a rolled-back first attempt. A `committed` family cannot mint
+a new receipt after the shorter C2 receipt lifetime. A missing, truncated, foreign, non-canonical,
+or unapplied family fails closed and never authorizes legacy fallback. The family survives seven-day
+cleanup so an older signed backup cannot resurrect revoked data, remains local and unexported, and
+is removed no later than the C1 36-month boundary or deletion of the whole task root.
 
 ## Sink contract
 

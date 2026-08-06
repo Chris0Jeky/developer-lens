@@ -29,8 +29,8 @@ import {
   verifyStorageV3RevocationReplay,
 } from './v3RevocationReplay.js'
 import {
-  claimStorageV3MigrationSelectionInitialization,
-  recordStorageV3MigrationSelection,
+  readStorageV3MigrationSelection,
+  recordStorageV3MigrationSelectionWithInitialization,
   storageV3MigrationRootBinding,
   v3SelectionReceiptTestSeams,
   type StorageV3MigrationSelection,
@@ -99,24 +99,31 @@ async function fixture(): Promise<Fixture> {
       taskFingerprint: key.fingerprint,
       rootBinding: storageV3MigrationRootBinding(root),
     })
-    const recorded = recordStorageV3MigrationSelection(db, {
-      ...reportInput,
-      successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
-        reportInput,
-        SUCCESS_AT,
-      ),
-    })
-    const selection = recorded.selection
-    const initializationGrant = claimStorageV3MigrationSelectionInitialization(recorded)
-    withStorageV3WriterLease(rootHandle, (lease) => {
-      v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+    const selection = withStorageV3WriterLease(rootHandle, (lease) => {
+      const recorded = recordStorageV3MigrationSelectionWithInitialization(db, {
+        ...reportInput,
+        successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
+          reportInput,
+          SUCCESS_AT,
+        ),
+      }, (pendingSelection, initializationGrant) => {
+        v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+          rootHandle,
+          key,
+          pendingSelection,
+          initializationGrant,
+          lease,
+          () => {},
+        )
+      })
+      v3RevocationReplayTestSeams.commitInitializationWithDirectorySynchronizer(
         rootHandle,
         key,
-        selection,
-        initializationGrant,
+        recorded.selection,
         lease,
         () => {},
       )
+      return recorded.selection
     })
     db.close()
     return Object.freeze({
@@ -216,6 +223,48 @@ describe('LIFE-03 external revocation replay', { timeout: 30_000 }, () => {
         ).get(SCOPE_A)).toBeDefined()
       } finally { after.close() }
     } finally { fx.close() }
+  })
+
+  it('never adopts a previously committed empty family as a new initialization', async () => {
+    const fx = await fixture()
+    const second = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(second)
+      const headPath = join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.head)
+      const headBytes = readFileSync(headPath)
+      const reportInput = Object.freeze({
+        legacySourceId: fx.selection.legacySourceId,
+        selectedArtifactId: fx.selection.selectedArtifactId,
+        backupArtifactId: fx.selection.backupArtifactId,
+        backupAt: BACKUP_AT,
+        taskId: fx.key.taskId,
+        taskFingerprint: fx.key.fingerprint,
+        rootBinding: storageV3MigrationRootBinding(fx.root),
+      })
+      expect(() => withStorageV3WriterLease(openStorageV3ArtifactRoot(fx.root), (lease) => {
+        recordStorageV3MigrationSelectionWithInitialization(second, {
+          ...reportInput,
+          successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
+            reportInput,
+            '2026-08-06T14:00:00.000Z',
+          ),
+        }, (selection, initializationGrant) => {
+          v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+            openStorageV3ArtifactRoot(fx.root),
+            fx.key,
+            selection,
+            initializationGrant,
+            lease,
+            () => {},
+          )
+        })
+      })).toThrowError(new StorageV3RevocationReplayError())
+      expect(readStorageV3MigrationSelection(second)).toBeUndefined()
+      expect(readFileSync(headPath)).toEqual(headBytes)
+    } finally {
+      second.close()
+      fx.close()
+    }
   })
 
   it('completes pending maintenance after interruption following SQL deletion', async () => {

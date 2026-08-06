@@ -2,10 +2,10 @@ import Database from 'better-sqlite3'
 import { describe, expect, it } from 'vitest'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 import {
-  claimStorageV3MigrationSelectionInitialization,
   evaluateStorageV3MigrationGrace,
   readStorageV3MigrationSelection,
   recordStorageV3MigrationSelection,
+  recordStorageV3MigrationSelectionWithInitialization,
   StorageV3MigrationSelectionError,
   v3SelectionReceiptTestSeams,
 } from './v3SelectionReceipt.js'
@@ -68,17 +68,29 @@ describe('LIFE-03 migration selection receipt', () => {
     } finally { db.close() }
   })
 
-  it('issues initialization authority once only for the exact new result', () => {
+  it('runs one initialization inside the new receipt transaction only', () => {
     const db = fixture()
     try {
-      const recorded = recordStorageV3MigrationSelection(db, input)
-      expect(claimStorageV3MigrationSelectionInitialization(recorded)).toBeDefined()
-      expect(() => claimStorageV3MigrationSelectionInitialization(recorded))
-        .toThrow(StorageV3MigrationSelectionError)
-      const replayed = recordStorageV3MigrationSelection(db, input)
+      let initialized = 0
+      const recorded = recordStorageV3MigrationSelectionWithInitialization(
+        db,
+        input,
+        (selection, grant) => {
+          expect(db.inTransaction).toBe(true)
+          expect(selection.successfulReportAt).toBe('2026-08-06T12:34:56.789Z')
+          expect(grant).toBeDefined()
+          initialized += 1
+        },
+      )
+      expect(recorded.status).toBe('recorded')
+      expect(initialized).toBe(1)
+      const replayed = recordStorageV3MigrationSelectionWithInitialization(
+        db,
+        input,
+        () => { initialized += 1 },
+      )
       expect(replayed.status).toBe('replayed')
-      expect(() => claimStorageV3MigrationSelectionInitialization(replayed))
-        .toThrow(StorageV3MigrationSelectionError)
+      expect(initialized).toBe(1)
     } finally { db.close() }
   })
 

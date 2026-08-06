@@ -67,11 +67,15 @@ export interface StorageV3MigrationSelectionInitializationGrant {
   readonly __storageV3MigrationSelectionInitializationGrant: never
 }
 
-const FRESH_SELECTION_RESULTS = new WeakSet<StorageV3MigrationSelectionResult>()
 const INITIALIZATION_GRANTS = new WeakMap<
   StorageV3MigrationSelectionInitializationGrant,
   StorageV3MigrationSelection
 >()
+
+export type StorageV3MigrationSelectionInitializer = (
+  selection: StorageV3MigrationSelection,
+  grant: StorageV3MigrationSelectionInitializationGrant,
+) => void
 
 export type StorageV3MigrationGraceStatus = 'active' | 'expired' | 'absent'
 
@@ -263,7 +267,7 @@ function readRow(db: Database.Database): StorageV3MigrationSelection | undefined
 function executeRecord(
   db: Database.Database,
   rawInput: unknown,
-  beforeCommit?: () => void,
+  beforeCommit?: (selection: StorageV3MigrationSelection) => void,
 ): StorageV3MigrationSelectionResult {
   const input = parseInput(rawInput)
   const report = reportFor(input.successReportProof)
@@ -303,14 +307,12 @@ function executeRecord(
     if (inserted.changes !== 1) return fail()
     const selection = readRow(db)
     if (selection === undefined) return fail()
-    beforeCommit?.()
-    const result = Object.freeze({
+    beforeCommit?.(selection)
+    return Object.freeze({
       kind: 'v3_migration_selection' as const,
       status: 'recorded' as const,
       selection,
     })
-    FRESH_SELECTION_RESULTS.add(result)
-    return result
   })
   return record.immediate()
 }
@@ -327,15 +329,18 @@ export function recordStorageV3MigrationSelection(
   }
 }
 
-/** Claim the one runtime grant attached to an exact newly recorded result. */
-export function claimStorageV3MigrationSelectionInitialization(
-  result: StorageV3MigrationSelectionResult,
-): StorageV3MigrationSelectionInitializationGrant {
-  if (!result || typeof result !== 'object' || result.status !== 'recorded'
-    || !FRESH_SELECTION_RESULTS.delete(result)) return fail()
-  const grant = Object.freeze({}) as StorageV3MigrationSelectionInitializationGrant
-  INITIALIZATION_GRANTS.set(grant, result.selection)
-  return grant
+/** Commit a new receipt only after its exact external initialization completes. */
+export function recordStorageV3MigrationSelectionWithInitialization(
+  db: Database.Database,
+  input: StorageV3MigrationSelectionInput,
+  initialize: StorageV3MigrationSelectionInitializer,
+): StorageV3MigrationSelectionResult {
+  if (typeof initialize !== 'function') return fail()
+  return executeRecord(db, input, (selection) => {
+    const grant = Object.freeze({}) as StorageV3MigrationSelectionInitializationGrant
+    INITIALIZATION_GRANTS.set(grant, selection)
+    try { initialize(selection, grant) } finally { INITIALIZATION_GRANTS.delete(grant) }
+  })
 }
 
 /** Consume the exact grant; copied or replayed receipt values have no authority. */
@@ -375,6 +380,12 @@ export function evaluateStorageV3MigrationGrace(
 
 /** Test-only rollback seam. The production recorder has no callback or mutation bypass. */
 export const v3SelectionReceiptTestSeams = Object.freeze({
-  recordWithBeforeCommit: executeRecord,
+  recordWithBeforeCommit(
+    db: Database.Database,
+    input: StorageV3MigrationSelectionInput,
+    beforeCommit: () => void,
+  ): StorageV3MigrationSelectionResult {
+    return executeRecord(db, input, () => beforeCommit())
+  },
   issueSuccessReportAt: issueSuccessReport,
 })
