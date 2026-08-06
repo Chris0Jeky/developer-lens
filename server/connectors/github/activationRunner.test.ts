@@ -3,13 +3,31 @@ import { createHash } from 'node:crypto'
 import { mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   GITHUB_CORE_ACTIVATION_RUNNER_ERROR_CODE,
   runGithubCoreActivation,
   type GithubCoreActivationRunnerInput,
 } from './activationRunner.js'
-import { githubCoreActivationGrantTestSeam } from './activationGrant.js'
+import type { GithubCoreActivationGrant } from './activationGrant.js'
+
+// #151: production ships no grant issuer. Success paths inject a test-owned validator that accepts
+// a test-built grant object; the fingerprint/scope/card bindings the runner enforces still hold, so
+// the negative cases below (wrong key, wrong scope) are rejected on their real merits.
+vi.mock('./activationGrant.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('./activationGrant.js')>()),
+  assertGithubCoreActivationGrant: (input: unknown): GithubCoreActivationGrant =>
+    input as GithubCoreActivationGrant,
+}))
+
+function testGrant(fields: {
+  taskId: string
+  taskCardSha256: string
+  installationKeyFingerprint: string
+  scopeAlias: string
+}): GithubCoreActivationGrant {
+  return Object.freeze({ capabilityId: 'github.core', ...fields })
+}
 import type {
   GithubCoreRestFetch,
   GithubCoreRestResponse,
@@ -181,7 +199,7 @@ async function cardFixture(value: unknown = card()): Promise<{
   readonly expectedTaskCardSha256: string
   readonly installationKeyFingerprint: string
   readonly scopeAlias: string
-  readonly grant: ReturnType<typeof githubCoreActivationGrantTestSeam.issueInventedGrant>
+  readonly grant: GithubCoreActivationGrant
 }> {
   const root = await mkdtemp(join(tmpdir(), 'developer-lens-runner-'))
   roots.push(root)
@@ -195,9 +213,7 @@ async function cardFixture(value: unknown = card()): Promise<{
   )
   const expectedTaskCardSha256 = createHash('sha256').update(bytes).digest('hex')
   const scopeAlias = key.aliases.githubCoreAlias('repository', '101')
-  const grant = githubCoreActivationGrantTestSeam.issueInventedGrant({
-    fixture: 'invented',
-    capabilityId: 'github.core',
+  const grant = testGrant({
     taskId,
     taskCardSha256: expectedTaskCardSha256,
     installationKeyFingerprint: key.fingerprint,
@@ -613,17 +629,13 @@ describe('default-off github.core activation runner', () => {
     let storeOpens = 0
     const openStore = () => { storeOpens += 1; return db }
     const validInput = runnerInput(validFixture, db, transport.fetch, { openStore })
-    const wrongKeyGrant = githubCoreActivationGrantTestSeam.issueInventedGrant({
-      fixture: 'invented',
-      capabilityId: 'github.core',
+    const wrongKeyGrant = testGrant({
       taskId,
       taskCardSha256: validFixture.expectedTaskCardSha256,
       installationKeyFingerprint: '0'.repeat(64),
       scopeAlias: validFixture.scopeAlias,
     })
-    const wrongScopeGrant = githubCoreActivationGrantTestSeam.issueInventedGrant({
-      fixture: 'invented',
-      capabilityId: 'github.core',
+    const wrongScopeGrant = testGrant({
       taskId,
       taskCardSha256: validFixture.expectedTaskCardSha256,
       installationKeyFingerprint: validFixture.installationKeyFingerprint,

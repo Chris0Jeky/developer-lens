@@ -36,7 +36,7 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No owner blocker for invented-fixture work. A real migration/connector still requires #154-#156, LIFE-03 grace/restore/tombstone-replay proof, #151, and a separately reviewed production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a pre-LIFE-03 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
+blockers: 'No owner blocker for invented-fixture work. #156 (task-key authority) is merged and independently verified sound; #151 (activation default-deny) is CLOSED. A real migration/connector still requires #154/#155 crash-durability, LIFE-03 grace/restore/tombstone-replay proof, and a separately reviewed production grant issuer/caller. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a pre-LIFE-03 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -60,10 +60,11 @@ review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently pos
   sound slice ships; only a NEW CRITICAL introduced by the fixes reopens once. After merge, sweep
   again beyond the measured delay before calling the review clean.'
 capabilities: registry and API definitions remain never_authorized; cap.external.model is uncalled.
-  The github.core runner is grant-gated and validates a private WeakSet-recognized task/card/key/
-  scope binding before protected access. An AST boundary proves the tracked source has no
-  production issuer or runner caller; the exported invented issuer remains accessible to arbitrary
-  local code and must be removed under #151 before any production caller exists.
+  The github.core runner is grant-gated: assertGithubCoreActivationGrant is now assert-only /
+  default-deny (#151 CLOSED). The production grant module exports NO issuer; every grant object is
+  refused until a separately reviewed issuer is added. Test success paths inject a test-owned
+  validator via vitest module mocking. A TypeScript-AST import boundary plus an export regression in
+  activationGrant.test.ts prove the production module ships no issuer or runner caller.
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
   `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
   or 07 §6 index by hand)

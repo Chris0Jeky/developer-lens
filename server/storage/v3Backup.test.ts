@@ -2,8 +2,16 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, unlinkSync, w
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
-import { describe, expect, it } from 'vitest'
-import { githubCoreActivationGrantTestSeam } from '../connectors/github/activationGrant.js'
+import { describe, expect, it, vi } from 'vitest'
+import type { GithubCoreActivationGrant } from '../connectors/github/activationGrant.js'
+
+// #151: production ships no grant issuer. The two anchored-reload success paths inject a test-owned
+// validator; every forged/replacement/cross-root KEY-handle refusal these tests exercise is unaffected.
+vi.mock('../connectors/github/activationGrant.js', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('../connectors/github/activationGrant.js')>()),
+  assertGithubCoreActivationGrant: (input: unknown): GithubCoreActivationGrant =>
+    input as GithubCoreActivationGrant,
+}))
 import {
   beginStorageV3MigrationBackupArtifact,
   createStorageV3ArtifactRoot,
@@ -43,9 +51,8 @@ async function fixture(taskId = 'invented-backup-task'): Promise<{ workspaceRoot
   return { workspaceRoot, taskId, root, db, key, cleanup: () => { if (db.open) db.close(); rmSync(workspaceRoot, { recursive: true, force: true }) } }
 }
 
-function inventedGrant(taskId: string, fingerprint: string) {
-  return githubCoreActivationGrantTestSeam.issueInventedGrant({
-    fixture: 'invented',
+function inventedGrant(taskId: string, fingerprint: string): GithubCoreActivationGrant {
+  return Object.freeze({
     capabilityId: 'github.core',
     taskId,
     taskCardSha256: 'a'.repeat(64),
