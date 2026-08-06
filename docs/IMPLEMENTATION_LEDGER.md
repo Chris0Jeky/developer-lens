@@ -3084,7 +3084,7 @@ and independent reviews are recorded above, but hosted proof was unavailable and
 A delayed exact-head connector review then confirmed that the 100,000-subject total publication
 ceiling conflicted with the 16 MiB per-record ceiling and could make a sufficiently large selected
 scope impossible to revoke. The finding is tracked by #180; the original PR #179 thread remains
-open until this follow-up merges. PR #184 code head
+open until this follow-up merges. PR #184 initial code head
 `7da6804f6f1cc993d7bc8296c3dcaff0a416f647` replaces the total ceiling with deterministic bounded
 chunks of at most 4,096 canonical subjects. Every record binds its chunk index/count, total subject
 count, partition size, and a domain-separated digest of the complete logical subject set. The whole
@@ -3101,11 +3101,23 @@ after the backup. One fresh review found that grouping deletion rows by event ki
 second conflicting deletion event for one subject; the fix requires exactly one deletion lineage
 row across deletion event kinds and adds a discriminating test.
 
-The exact code head passes `npm run check`: lint, context verification, 82 test files with 1,401
+Two fresh exact-diff reviews reran the original 69-test replay/read/restore seam. One found and the
+candidate fixed deletion-event-kind grouping that could otherwise ignore a conflicting row for the
+same subject; neither found another realistic CRITICAL/HIGH blocker at that head. A delayed PR #184
+connector review then found a second direct ambiguity: the set-based applied-lineage query selected
+rows through the revoked scope, so a conflicting scope-unbound row for the same non-scope identity
+could be hidden when its cause named another scope or was null. Fix head
+`7533865d6052c6727a481468c3dd20be2a2e7e4c` now joins bounded 400-identity batches against the indexed
+subject kind/ID prefix and evaluates every deletion row for each replay subject. A discriminating
+fixture inserts the formerly hidden row and proves refusal.
+
+The exact fix content passes `npm run check`: lint, context verification, 82 test files with 1,402
 tests passed and 10 declared skips, TypeScript/Vite build, and credential scanning over 13 outputs.
-Range whitespace is clean. Two fresh exact-diff reviews reran the 69-test replay/read/restore seam;
-after the lineage fix, neither found another realistic CRITICAL/HIGH blocker. Invented-fixture proof
-publishes a 100,002-subject intent as 25 bounded records before SQL in about 19 seconds, and the full
+The focused replay/read/restore seam passes 70 tests and range whitespace is clean. A fresh bounded
+fix review confirmed that 400 identities use 800 bind parameters, every deletion row for those
+identities is accumulated, and duplicate or mismatched operation/week/cause/kind/capability state
+fails closed; it found no realistic CRITICAL/HIGH regression. Invented-fixture proof publishes a
+100,002-subject intent as 25 bounded records before SQL in about 19 seconds, and the full
 delete/replay journey passes across the production 4,096-subject boundary with 4,098 subjects.
 
 Issue #183 separately records that the existing SQL tombstone deletion for the 100,002-subject

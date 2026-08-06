@@ -106,8 +106,11 @@ residual_risks:
      grace cleanup without deleting this family early.'
   - 'PR #179 merged under the owner-directed pre-release Actions exception. A delayed exact-head
      connector finding then confirmed the large-scope revocation defect tracked as #180; PR #184
-     fixes the hard publication ceiling with local/full and two fresh independent reviews green.
-     Hosted exact-head proof remains NOT verified during the declared Actions incident.'
+     fixes the hard publication ceiling. Its delayed connector review found one further direct
+     ambiguity in the applied-lineage query; fix `7533865` reads every deletion row for each replay
+     identity in bounded indexed batches, has the exact local/full gate green, and passed a fresh
+     bounded fix review. Hosted exact-head proof remains NOT verified during the declared Actions
+     incident.'
   - '#183 tracks a separate throughput result from #180: a 100,002-subject invented intent publishes
      25 bounded records before SQL in about 19 seconds, but the existing full SQL tombstone deletion
      remained CPU-active beyond a 10-minute bound. Complete deletion/replay is proven across the
