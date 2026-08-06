@@ -28,9 +28,9 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.3-shadow-life03-backup-attempt' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.4-shadow-life03-selection' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 310
+export const STORAGE_V3_SHADOW_USER_VERSION = 311
 
 /**
  * B4's closed app-owned artifact domain.  Analysis packs are deliberately absent:
@@ -90,6 +90,15 @@ export const STORAGE_V3_ARTIFACT_TABLES = [
   'storage_maintenance_state',
 ] as const
 export type StorageV3ArtifactTable = typeof STORAGE_V3_ARTIFACT_TABLES[number]
+
+/** The immutable, singleton proof that the v3 reader was selected successfully. */
+export const STORAGE_V3_SELECTION_TABLES = ['migration_selection_state'] as const
+export type StorageV3SelectionTable = typeof STORAGE_V3_SELECTION_TABLES[number]
+export const STORAGE_V3_SELECTION_TRIGGER_NAMES = Object.freeze([
+  'storage_v3_selection_insert_guard',
+  'storage_v3_selection_update_guard',
+  'storage_v3_selection_delete_guard',
+] as const)
 export const STORAGE_V3_ARTIFACT_TRIGGER_NAMES = Object.freeze([
   'storage_v3_artifact_insert_guard',
   'storage_v3_migration_backup_singleton_guard',
@@ -816,6 +825,37 @@ BEGIN
   SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
 END;`
 
+const selectionReceiptSqlBlock = `CREATE TABLE IF NOT EXISTS migration_selection_state (
+  singleton INTEGER PRIMARY KEY NOT NULL CHECK (singleton = 1),
+  reader_state TEXT NOT NULL CHECK (reader_state = 'v3_selected'),
+  legacy_source_id TEXT NOT NULL CHECK (
+    length(legacy_source_id) = 71
+    AND legacy_source_id GLOB 'legacy-*'
+    AND substr(legacy_source_id, 8) NOT GLOB '*[^0-9a-f]*'
+  ),
+  selected_artifact_id TEXT NOT NULL CHECK (${key('selected_artifact_id', 'art-')}),
+  backup_artifact_id TEXT NOT NULL CHECK (${key('backup_artifact_id', 'art-')}),
+  successful_report_at TEXT NOT NULL CHECK (${canonicalTimestampShape('successful_report_at')}),
+  grace_deadline_at TEXT NOT NULL CHECK (${canonicalTimestampShape('grace_deadline_at')}),
+  CHECK (strftime('%Y-%m-%dT%H:%M:%fZ', successful_report_at, '+7 days') = grace_deadline_at)
+) STRICT;
+CREATE TRIGGER IF NOT EXISTS storage_v3_selection_insert_guard
+BEFORE INSERT ON migration_selection_state
+WHEN EXISTS (SELECT 1 FROM migration_selection_state)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SELECTION_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_selection_update_guard
+BEFORE UPDATE ON migration_selection_state
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SELECTION_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_selection_delete_guard
+BEFORE DELETE ON migration_selection_state
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SELECTION_INVALID');
+END;`
+
 /** Strict, isolated DDL for every table named by the B1a disposition registry. */
 export const STORAGE_V3_SHADOW_SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
@@ -1127,6 +1167,7 @@ ${c2RetentionOwnerTriggerSql}
 ${sourceSnapshotGuardSql}
 ${lineageOwnerTriggerSqlBlock}
 ${continuityCasSqlBlock}
+${selectionReceiptSqlBlock}
 ${artifactLifecycleSqlBlock}
 `
 
@@ -1355,6 +1396,7 @@ export const STORAGE_V3_SHADOW_TABLES = [
   ...STORAGE_V3_TABLES,
   ...STORAGE_V3_CONTINUITY_CAS_TABLES,
   ...STORAGE_V3_ARTIFACT_TABLES,
+  ...STORAGE_V3_SELECTION_TABLES,
 ] as const
 export type StorageV3ShadowTable = typeof STORAGE_V3_SHADOW_TABLES[number]
 export const STORAGE_V3_SHADOW_DISPOSITIONS = STORAGE_V3_DISPOSITIONS

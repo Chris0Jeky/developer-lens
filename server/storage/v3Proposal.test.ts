@@ -427,6 +427,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3Deletion.ts',
             'server/storage/v3ArtifactCatalogue.ts',
             'server/storage/v3Backup.ts',
+            'server/storage/v3SelectionReceipt.ts',
           ].includes(sourcePath)) {
             offenders.push(edge)
           }
@@ -440,6 +441,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3Deletion.ts',
             'server/storage/v3ArtifactCatalogue.ts',
             'server/storage/v3Backup.ts',
+            'server/storage/v3SelectionReceipt.ts',
           ].includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
           }

@@ -25,6 +25,8 @@ import {
   STORAGE_V3_SHADOW_SOURCE_SNAPSHOT_GUARD_TRIGGER_NAME,
   STORAGE_V3_SHADOW_TABLES,
   STORAGE_V3_SHADOW_USER_VERSION,
+  STORAGE_V3_SELECTION_TABLES,
+  STORAGE_V3_SELECTION_TRIGGER_NAMES,
   storageV3ShadowSchemaFingerprint,
   storageV3ShadowResult,
 } from './v3ShadowSchema.js'
@@ -67,6 +69,7 @@ describe('storage-v3 B2a shadow schema', () => {
           ...STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES,
           ...casTriggerNames,
           ...STORAGE_V3_ARTIFACT_TRIGGER_NAMES,
+          ...STORAGE_V3_SELECTION_TRIGGER_NAMES,
           STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
           STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME,
           STORAGE_V3_SHADOW_SOURCE_SNAPSHOT_GUARD_TRIGGER_NAME,
@@ -269,7 +272,7 @@ describe('storage-v3 B2a shadow schema', () => {
     }
   })
 
-  it('installs the 18 migrated tables, CAS state, B4 catalogue, and all dispositions', () => {
+  it('installs the migrated tables, CAS state, B4 catalogue, selection receipt, and all dispositions', () => {
     const db = new Database(':memory:')
     try {
       expect(installStorageV3ShadowSchema(db)).toEqual(STORAGE_V3_SHADOW_RESULT)
@@ -279,6 +282,7 @@ describe('storage-v3 B2a shadow schema', () => {
         'continuity_cas_operation',
         'continuity_cas_state',
         ...STORAGE_V3_ARTIFACT_TABLES,
+        ...STORAGE_V3_SELECTION_TABLES,
       ])
       expect(new Set(STORAGE_V3_DISPOSITIONS.map(({ tableName }) => tableName)).size).toBe(18)
       expect(STORAGE_V3_DISPOSITIONS.map(({ tableName }) => tableName).sort()).toEqual([...STORAGE_V3_TABLES].sort())
