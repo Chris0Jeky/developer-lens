@@ -3011,30 +3011,64 @@ were absent or unavailable and are **not** represented as green. Review findings
 blocking defects were fixed, non-blocking residuals were tracked, and each pushed final head aged at
 least three minutes before merge.
 
-The #172 integrated candidate is branch `codex/life03-tombstone-replay-integrated`, code/docs head
-`0826518`. It adds `revocation-replay-v1-00000000.json` plus chained immutable entries under the
-selected task root. Every entry is published before SQL deletion with exclusive no-follow creation,
-file fsync, no-clobber hard link, and directory-sync ordering. Its schema is content-free local C1:
-opaque scope/subject/operation IDs, controlled capability and ISO-week values, selection/task/key
-bindings, and integrity hashes only — no raw task ID, names, aliases, paths, prose, exact timestamps,
-or observed values. Missing, truncated, foreign/case-variant, non-canonical, or unapplied state fails
+The #172 integrated candidate is branch `codex/life03-tombstone-replay-integrated`, exact code head
+`47cc12e`. It adds `revocation-replay-v1-00000000.json`, a mandatory keyed
+`revocation-replay-v1-head.json`, and chained immutable entries under the selected task root. Every
+entry is published before SQL deletion with exclusive no-follow creation, file fsync, no-clobber
+hard link, and directory-sync ordering. Its schema is content-free local C1: opaque
+scope/subject/operation IDs, controlled capability and ISO-week values, selection/task/key bindings,
+and integrity hashes only — no raw task ID, names, aliases, paths, prose, exact timestamps, or
+observed values. Missing, truncated, foreign/case-variant, non-canonical, or unapplied state fails
 closed and never enables legacy fallback.
 
-Selected read and restore verify the complete family and replay every intent before serving data.
-The invented stale-backup journey deletes a scope, reintroduces the old signed backup bytes, restores,
-and proves the revoked scope/observation remain absent while the exact content-free tombstone is
-present. Crash fixtures cover interruption after durable intent and after SQL deletion commit. An
-early independent review found that the latter could leave deletion maintenance permanently pending;
-fix `a67d1c9` resumes the exact pending saga before replay and proves catalogue/backup cleanup reaches
-complete. The full candidate gate passed 82 files / 1,373 tests / 10 declared skips plus lint,
-context verification, TypeScript/Vite build, and credential scanning over 13 outputs.
+Selected read and restore verify the complete family and keyed head, then replay every intent before
+serving data. The invented stale-backup journey deletes a scope, reintroduces the old signed backup
+bytes, restores, and proves the revoked scope/observation remain absent while the exact content-free
+tombstone remains present. Crash fixtures cover interruption after durable intent and after SQL
+deletion commit. Early review found that post-commit interruption could leave deletion maintenance
+permanently pending; fix `a67d1c9` resumes the exact pending saga before replay and proves
+catalogue/backup cleanup reaches complete.
+
+Two later fresh reviews found initial-publication gaps. Fix `b333309` makes the keyed head mandatory,
+refuses whole-family loss and tail truncation after a committed receipt, and prevents a committed
+empty family from minting a new receipt. Fix `844e7a6` couples first-family publication to the
+receipt transaction: a single-use opaque grant publishes only an empty `initializing` family inside
+that transaction, the SQLite commit makes the receipt authoritative, and a durable head replacement
+to `committed` must finish before proof publication or service. A crash before the SQLite commit
+rolls the receipt back and may resume only the exact empty initializing family, even when the new
+runtime success time differs; a crash after SQLite commit resumes only final head publication from
+the exact receipt. Foreign head-only state is rejected before anchor mutation. Committed, missing,
+or non-empty families with a surviving receipt/proof cannot enter this initialization path.
+
+The first full gate on `844e7a6` correctly exposed a local binding defect: the reader declared replay
+state `const` and reassigned it during readonly reopen verification, producing 19 fail-closed
+selection refusals. Fix `47cc12e` changes only that binding to `let`. Its reader suite passes 23/23;
+the exact-head `npm run check` passes lint, context verification, all 82 test files with 1,388 tests
+passed and 10 declared skips, TypeScript/Vite build, and credential scanning over 13 outputs.
+A fresh exact-head Terra crash/privacy review reran 65 focused assertions plus TypeScript and
+whitespace proof and found no realistic CRITICAL/HIGH blocker. An independent exact-head Luna
+review reran the 56-test replay/read/restore seam, audited publication/recovery ordering and
+fail-closed boundaries, and likewise found no CRITICAL/HIGH blocker.
 
 The replay family deliberately survives #173's seven-day old-source/backup cleanup so a stale
 filesystem snapshot cannot resurrect revoked data. It remains local/unexported and must be removed
-no later than the C1 36-month boundary or whole-task-root deletion. #172 remains open until this
-candidate is reviewed and merged; #173 owns physical expiry cleanup without early journal removal.
-Phase E stored-observation bridge, resolver lineage, and the change-batch/integration-tail second lens
-remain separate #174/#80 work. Hosted exact-head proof, final Terra crash/privacy review, PR, merge,
-and post-merge late-comment sweep are pending. No real source/store, legacy path, private/generated
-data, connector, credential, production issuer/caller, or external-model request was inspected or
-activated.
+no later than the C1 36-month boundary or whole-task-root deletion. Coordinated rollback of both an
+entry and its keyed head to an older mutually authenticated snapshot remains outside the declared
+single-owner/#142 ABA boundary because no external monotonic witness exists. The raw
+`deleteStorageV3Scope` primitive also remains exported for invented lifecycle composition; production
+integration must use the replay-first wrapper and keep that boundary enforced.
+
+The future C2-expiry transition needs an additional durable discriminator before it may remove the
+receipt/proof. If that future cleanup is combined with a coordinated snapshot/fault that removes a
+formerly committed head and all tail entries but leaves the valid anchor, the remaining bytes are
+indistinguishable from an anchor-only rolled-back first attempt because the retry binding deliberately
+excludes success/grace timestamps. This state is not reachable through today's immutable receipt or
+normal crash ordering; the [#173 cleanup proof note](https://github.com/Chris0Jeky/developer-lens/issues/173#issuecomment-5208995872)
+records the requirement that future cleanup refuse, not recreate, an anchor-only/truncated C1 family.
+
+#172 remains open until this candidate is reviewed and merged; #173 owns physical expiry cleanup
+without early replay-family removal. Phase E stored-observation bridge, resolver lineage, and the
+change-batch/integration-tail second lens remain separate #174/#80 work. Hosted exact-head proof,
+PR, merge, and post-merge late-comment sweep are pending. No real source/store, legacy path,
+private/generated data, connector, credential, production issuer/caller, or external-model request
+was inspected or activated.
