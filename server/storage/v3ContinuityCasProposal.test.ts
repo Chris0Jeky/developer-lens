@@ -410,6 +410,22 @@ describe('v3 continuity CAS in the shadow store', () => {
     }
   })
 
+  it('captures applied_week only after the IMMEDIATE transaction owns the writer lock', () => {
+    const db = openFixture()
+    try {
+      let clockObservedTransaction = false
+      expect(applyContinuityCasOperation(db, request(), () => {
+        clockObservedTransaction = db.inTransaction
+        return '2026-03-01T00:00:00.000Z'
+      }).status).toBe('applied')
+      expect(clockObservedTransaction).toBe(true)
+      expect(db.prepare('SELECT applied_week FROM continuity_cas_operation').pluck().get())
+        .toBe('2026-W09')
+    } finally {
+      db.close()
+    }
+  })
+
   it('refuses to advance an orphaned CAS scope whose claim_scope row is gone (PR #136 review)', () => {
     const db = openFixture()
     try {

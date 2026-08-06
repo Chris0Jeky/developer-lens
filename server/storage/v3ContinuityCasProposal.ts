@@ -268,7 +268,6 @@ function executeApply(
   const input = parseInput(rawInput)
   if (db.inTransaction) fail()
   enableConnectionGuards(db)
-  const appliedWeek = capturedWeek(nowForTest)
   const apply = db.transaction((): ContinuityCasResult => {
     assertShadowStore(db)
     const existingOperation = db.prepare(
@@ -294,6 +293,9 @@ function executeApply(
       return RESULTS.replayed
     }
 
+    // Capture only after BEGIN IMMEDIATE owns the writer lock. A wait spanning an
+    // ISO-week boundary must record the week in which the operation can commit.
+    const appliedWeek = capturedWeek(nowForTest)
     const state = db.prepare(
       'SELECT revision FROM continuity_cas_state WHERE scope_id = ?',
     ).get(input.scopeId) as StateRow | undefined

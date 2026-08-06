@@ -8,34 +8,31 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-06
-current_slice_override: 'LIFE-02 B4 (10_LIFE_02B_DECISION.md §4/§5 item 5): schema
-  v3.2.0-shadow-b4 (user_version 307) adds a confined app_artifact/app_artifact_scope catalogue
-  and durable storage_maintenance_state marker. The selected store, fixed migration attempts,
-  timestamped migration-backup domain, and invented fixture stores carry art- identity,
-  controlled kind/state, manifest plus content hash, a confined relative locator, and all scope
-  owners; absolute paths stay in opaque process-only root handles. B3 now schedules every owned
-  artifact and the maintenance marker in its deletion transaction, then restartably removes the
-  exact file/sidecar family, writes scope-unbound index_deleted lineage under the same del-
-  operation, checkpoints/TRUNCATEs WAL, VACUUMs, and marks maintenance complete. The existing
-  caller-directed analysis pack remains immutable and outside recall.'
-phase: 'R4 active horizon OPEN — B4 is implemented at this head and is the current merge gate.
+current_slice_override: 'Post-B4 storage hardening (#143) is the immediate LIFE-03 prerequisite:
+  immutable app-root binding, REPLACE-resistant artifact identity, no-follow selected-sidecar
+  checks, unambiguous publication recovery, and post-maintenance/shared-artifact lineage proof.
+  Keep fixtures invented and the runtime unactivated. The isolated #128 CAS-clock slice moves the
+  caller clock read under the existing IMMEDIATE writer lock without expanding that boundary.'
+phase: 'R4 active horizon OPEN — PR #141 merged B4 as d77b247 and exact-merge Pages/privacy run
+  31072706976 is green. Issue #143 now hardens the seven exact-head review seams before LIFE-03.
   LIFE-02 and #80 MUST remain open after B4: the recorded whyResolver coverage/job deletion-
   lineage joins land with the Phase-E stored-observation bridge, and #80 also tracks the C1-window
-  expiry path for scope-unbound deletion lineage. B4 merge unblocks LIFE-03 backup/grace/restore
-  and activation-enforcement work; it does not authorize a real migration or connector.'
+  expiry path for scope-unbound deletion lineage. B4 permits the next bounded work; it does not
+  authorize a real migration or connector.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
   DL-COMPARE-01 #89, DL-VALIDATE-01 #92, DL-VALUE-01 #94, DL-LIFE-01 #100, DL-EVQ-03 #99',
   'DL-LIFE-02 chain PRs #103, #105, #107-#125 (slice A, B1a+repairs, B1b-i..iii, B2a-i..iii,
   B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
-  their engineering record stays in the ledger', 'state syncs #126']
-active_slice: 'Gate and merge the B4 vertical, then start DL-LIFE-03 as a separate PR: timestamped
+  their engineering record stays in the ledger', 'DL-LIFE-02 B3 #136 and B4 #141',
+  'state syncs #126']
+active_slice: 'Land #143, then start DL-LIFE-03 as a separate vertical: timestamped
   app-controlled backup, untouched source, atomic selection/fallback, seven-day grace, restart at
   every stage, restore plus tombstone replay, grace-boundary cleanup, exact WAL/SHM handling, and
-  content-free results. Keep all fixtures invented. In parallel review-wait windows, #128''s CAS
-  clock placement, #137, and #139 are bounded hardening slices; the whyResolver lineage joins stay
-  with Phase E, never the v2 resolver.'
+  content-free results plus default-deny activation enforcement. Keep all fixtures invented. The
+  #128 CAS-clock repair is an independent wait-window slice; #137 and #139 remain bounded hardening
+  lanes. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -46,9 +43,10 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No owner blocker for B4 or invented-fixture LIFE-03 work. A real migration/connector
-  still requires LIFE-03 backup/grace/restore/tombstone-replay proof and the activation-enforcement
-  alignment. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention
+blockers: 'No owner blocker for invented-fixture work. #143 is the technical prerequisite for
+  LIFE-03 because its selected-sidecar case is a future path-escape seam. A real migration/connector
+  still requires #143, LIFE-03 backup/grace/restore/tombstone-replay proof, and default-deny
+  activation enforcement. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention
   residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema
   validation, and a 306 B3 invented shadow is rebuilt rather than upgraded in place — no real
   store exists and invented stores regenerate.'
@@ -59,13 +57,14 @@ frozen_by_reassessment: horizon:frozen label (WB candidates, vector retrieval, G
   PROV-01 sources, ATLAS-03 parsers, EVQ-09/10, TRACE-03) — 07 §0a
 authority_order: [AGENTS.md, .agent-harness/tier.json, HUMAN_TODO.md, data-charter.md,
   source-capability-matrix.md, DEVELOPER_LENS_V2_ARCHITECTURE.md (incl. Appendix I.1-I.4)]
-last_verified_checks: 'The B4 implementation head passed the full local gate: lint, context
+last_verified_checks: 'The B4 final head 9a875ae passed the full local gate: lint, context
   verification (27 Markdown / 12 required), 73 test files, 1,195 passed plus 2 skips (the opt-in
   scale corpus and POSIX dangling-symlink fixture on Windows), TypeScript/build, and credential
   scan over 13 build outputs. Its focused storage and analysis-pack proof passed 9 files / 163
-  tests plus the same 2 skips. Every earlier merged
-  R1-R4 head passed its exact-head hosted PR gate and exact-merge Pages/privacy run; the ledger
-  now records the missing #132/#136/#138 exact-merge run IDs.'
+  tests plus the same 2 skips. Exact-head PR run 31071892180 and exact-merge Pages/privacy/deploy
+  run 31072706976 are green at merge d77b247. The isolated CAS-clock repair passes its focused
+  2 files / 40 tests and the full local gate (73 files / 1,196 passed / 2 skipped) after rebasing
+  to that merge.'
 review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently posts review comments
   3-10 minutes AFTER merge. The ledger sentences claiming an "empty late-comment sweep" for PRs
   #104-#125 were measured before the bot posted and are not evidence of clean reviews; 20 late
@@ -76,9 +75,10 @@ review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently pos
   validation, requested-reference binding) — all four fixed by the late-review truth-repair PR.
   Binding protocol: do not merge until the Codex review for the exact final head has arrived and
   every finding is fixed/tracked/rejected, OR 15 minutes have passed since the LAST push with a
-  fresh sweep showing no new review; any fix push restarts that clock, and a later exact-head
-  finding is still a finding — there is no two-rounds-means-ship exception for it. After merge,
-  sweep again beyond the measured delay before calling the review clean.'
+  fresh sweep showing no new review; any fix push restarts that clock. Two fix rounds are the
+  ceiling: later findings are still triaged, but post-ceiling defects are tracked/rejected and the
+  sound slice ships; only a NEW CRITICAL introduced by the fixes reopens once. After merge, sweep
+  again beyond the measured delay before calling the review clean.'
 capabilities: every executable capability remains never_authorized; cap.external.model uncalled.
   Note the enforcement inversion measured 2026-08-05 - the registry literal gates only the /api/v2
   reporting surface; the real collection boundary is the ignored task card + installation key +
@@ -160,6 +160,12 @@ residual_risks:
      backup/grace/restore/tombstone-replay proof and the activation-enforcement alignment. The
      #86 storage half is CLOSED by PR B-2 (cov- registry CHECK + UNIQUE(coverage_id) + fixture
      migration); both halves of #86 now hold'
+  - '#143 is the immediate post-B4 hardening prerequisite: root-binding immutability, artifact
+     REPLACE guards, no-follow selected-sidecar handling, deterministic publication recovery, and
+     shared-artifact lineage/proof semantics. No real store or production caller exists.'
+  - '#142 tracks the hostile ABA pathname-replacement boundary. B4/#143 make no hostile concurrent-
+     writer claim; the architecture still assumes one app writer, and native handle binding needs
+     a separate bounded design before that assumption can be relaxed.'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,
      producer-absence limiting codes, canonical coverage-code registration'
   - '#86 RESOLVED at the connector on fable/boundary-and-reachability: coverageId is a required

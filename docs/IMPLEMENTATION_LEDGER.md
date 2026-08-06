@@ -2442,3 +2442,33 @@ below is history. The live resume point is the rest of the analytics-core kernel
   Pages/privacy runs 31056663209 (#132), 31061095872 (#136), and 31066722824 (#138) are archived,
   and PR #138's exact final-head count is 1,175. PR #140 itself was hosted-green at run 31067873356
   and exact-merge Pages/privacy-green at run 31068019043.
+- **Delivery and exact-merge proof.** PR #141 final head
+  `9a875ae310d88e68644581a0fbcefcc5925cc8f1` passed exact-head hosted run `31071892180`, merged by
+  merge commit `d77b24759fc9d80207f5da0a5ca2789b670a7e7e`, and passed exact-merge
+  Pages/privacy/deploy run `31072706976`. The final local gate was 73 files / 1,195 passed / 2
+  skipped; the focused proof was 9 files / 163 passed / the same 2 skips. Linux hosted CI executed
+  the POSIX dangling-file-symlink discriminator skipped on Windows.
+- **Bounded review disposition.** Five first-pass connector findings were fixed with discriminating
+  tests across the two allowed fix rounds. Three exact-final-head fresh-context lenses were clean
+  for crash recovery and lifecycle semantics; the privacy lens found a hostile ABA pathname-
+  replacement boundary that cannot be portably bound to the better-sqlite3 handle and is tracked
+  as #142. The exact-final-head connector then reported seven further storage invariants after the
+  ceiling; each was reproduced/refute-checked, documented with acceptance criteria in #143, replied
+  to, and resolved on the PR. Issue #143 is the immediate prerequisite for LIFE-03 because its
+  dangling selected-sidecar case is a future path-escape seam. This disposition does not claim
+  hostile-writer safety and does not close LIFE-02 or #80.
+
+## 2026-08-06 — #128 CAS clock capture under the writer lock (candidate)
+
+`applyContinuityCasOperation` now invokes its process-trusted clock only after `BEGIN IMMEDIATE`
+owns the writer lock and after the exact-operation replay check. The stored ISO week therefore
+describes the operation's commit opportunity rather than the time before a blocked writer acquired
+the lock; replay still returns the immutable prior result without consulting the clock. A direct
+fixture observes `db.inTransaction` from the injected clock and asserts the stored week.
+
+The rebased candidate commit is `d82607f57c6d117c023c9e7d94d72ea9f4f5d5cc`. Focused CAS and
+shadow-sweep proof passed 2 files / 40 tests. The full local gate passed lint, context verification
+(27 Markdown / 12 required), 73 files / 1,196 tests with the existing 2 skips, TypeScript/build,
+and credential scanning over 13 build outputs. No schema, retention, alias-clock, capability,
+source, or activation boundary changed. Issue #128 remains open until the candidate merges; #137
+continues to own the distinct in-service alias-clock hazard.
