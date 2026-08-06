@@ -1,4 +1,5 @@
-import { join } from 'node:path'
+import { isAbsolute, join, normalize } from 'node:path'
+import { HalfOpenWindowSchema, type HalfOpenWindow } from '../../../shared/comparison.js'
 import type { V2GuardOptions } from './guard.js'
 
 /**
@@ -25,8 +26,96 @@ export function defaultV2StorePath(env: NodeJS.ProcessEnv = process.env): string
   return env.DEVELOPER_LENS_V2_STORE ?? join(V2_SYNTHETIC_STORE_DIRECTORY, V2_STORE_FILENAME)
 }
 
+export interface PhaseEStoredAnalysisConfig {
+  /** Selected storage-v3 artifact ROOT; never a caller-supplied SQLite filename. */
+  readonly selectedStoreDirectory: string
+  readonly scopeId: string
+  readonly consentRevision: string
+  readonly baselineWindow: HalfOpenWindow
+  readonly currentWindow: HalfOpenWindow
+  readonly asOf: string
+}
+
+const PHASE_E_ENVIRONMENT = [
+  'DEVELOPER_LENS_PHASE_E_STORE_ROOT',
+  'DEVELOPER_LENS_PHASE_E_SCOPE_ID',
+  'DEVELOPER_LENS_PHASE_E_CONSENT_REVISION',
+  'DEVELOPER_LENS_PHASE_E_BASELINE_START',
+  'DEVELOPER_LENS_PHASE_E_BASELINE_END',
+  'DEVELOPER_LENS_PHASE_E_CURRENT_START',
+  'DEVELOPER_LENS_PHASE_E_CURRENT_END',
+  'DEVELOPER_LENS_PHASE_E_AS_OF',
+] as const
+
+export class PhaseEConfigurationError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'PhaseEConfigurationError'
+  }
+}
+
+/**
+ * The selected-store analysis is absent by default. Once any binding is named, every binding is
+ * required and checked together; a partial environment never falls through to an arbitrary path
+ * or a default scope/window.
+ */
+export function resolvePhaseEStoredAnalysisConfig(
+  env: NodeJS.ProcessEnv = process.env,
+): PhaseEStoredAnalysisConfig | undefined {
+  const present = PHASE_E_ENVIRONMENT.filter((name) => env[name] !== undefined)
+  if (present.length === 0) return undefined
+  if (present.length !== PHASE_E_ENVIRONMENT.length) {
+    throw new PhaseEConfigurationError('Phase E selected-store analysis requires every explicit store, scope, consent, window, and clock binding')
+  }
+
+  const selectedStoreDirectory = env.DEVELOPER_LENS_PHASE_E_STORE_ROOT as string
+  if (!isAbsolute(selectedStoreDirectory)) {
+    throw new PhaseEConfigurationError('Phase E selected-store root must be an absolute directory')
+  }
+  const scopeId = env.DEVELOPER_LENS_PHASE_E_SCOPE_ID as string
+  if (!/^scope-[0-9a-f]{64}$/.test(scopeId)) {
+    throw new PhaseEConfigurationError('Phase E scope must be a content-free scope surrogate')
+  }
+  const consentRevision = env.DEVELOPER_LENS_PHASE_E_CONSENT_REVISION as string
+  if (!/^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$/.test(consentRevision)) {
+    throw new PhaseEConfigurationError('Phase E consent revision is malformed')
+  }
+
+  const baselineWindow = HalfOpenWindowSchema.parse({
+    start: env.DEVELOPER_LENS_PHASE_E_BASELINE_START,
+    end: env.DEVELOPER_LENS_PHASE_E_BASELINE_END,
+  })
+  const currentWindow = HalfOpenWindowSchema.parse({
+    start: env.DEVELOPER_LENS_PHASE_E_CURRENT_START,
+    end: env.DEVELOPER_LENS_PHASE_E_CURRENT_END,
+  })
+  if (baselineWindow.end !== currentWindow.start) {
+    throw new PhaseEConfigurationError('Phase E comparison windows must be adjacent')
+  }
+  if (
+    Date.parse(baselineWindow.end) - Date.parse(baselineWindow.start)
+    !== Date.parse(currentWindow.end) - Date.parse(currentWindow.start)
+  ) {
+    throw new PhaseEConfigurationError('Phase E comparison windows must have equal duration')
+  }
+  const asOf = env.DEVELOPER_LENS_PHASE_E_AS_OF as string
+  if (Number.isNaN(Date.parse(asOf)) || Date.parse(asOf) < Date.parse(currentWindow.end)) {
+    throw new PhaseEConfigurationError('Phase E as-of clock must be parseable and at or after the current window end')
+  }
+
+  return Object.freeze({
+    selectedStoreDirectory: normalize(selectedStoreDirectory),
+    scopeId,
+    consentRevision,
+    baselineWindow,
+    currentWindow,
+    asOf,
+  })
+}
+
 export interface V2RuntimeConfig extends V2GuardOptions {
   readonly storePath: string
+  readonly phaseEAnalysis?: PhaseEStoredAnalysisConfig
 }
 
 function apiPort(env: NodeJS.ProcessEnv): number {
@@ -46,5 +135,6 @@ export function resolveV2RuntimeConfig(
     allowedHosts: [`127.0.0.1:${port}`, `127.0.0.1:${V2_DEV_WEB_PORT}`],
     allowedOrigins: [`http://127.0.0.1:${port}`, `http://127.0.0.1:${V2_DEV_WEB_PORT}`],
     storePath: defaultV2StorePath(env),
+    phaseEAnalysis: resolvePhaseEStoredAnalysisConfig(env),
   }
 }
