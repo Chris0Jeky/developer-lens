@@ -9,6 +9,7 @@ import {
   runGithubCoreActivation,
   type GithubCoreActivationRunnerInput,
 } from './activationRunner.js'
+import { githubCoreActivationGrantTestSeam } from './activationGrant.js'
 import type {
   GithubCoreRestFetch,
   GithubCoreRestResponse,
@@ -18,7 +19,7 @@ import {
   installIncrementalGithubCoreStorage,
   readIncrementalGithubCoreCheckpoint,
 } from '../../storage/incremental.js'
-import { createInstallationAliases } from '../../storage/installationAliases.js'
+import { taskInstallationKeyTestSeams } from '../../storage/taskInstallationKey.js'
 
 const taskId = 'activation-runner-fixture'
 const rangeStart = '2026-07-01T00:00:00.000Z'
@@ -178,6 +179,9 @@ function card(maximumRequests = 5): Record<string, unknown> {
 async function cardFixture(value: unknown = card()): Promise<{
   readonly root: string
   readonly expectedTaskCardSha256: string
+  readonly installationKeyFingerprint: string
+  readonly scopeAlias: string
+  readonly grant: ReturnType<typeof githubCoreActivationGrantTestSeam.issueInventedGrant>
 }> {
   const root = await mkdtemp(join(tmpdir(), 'developer-lens-runner-'))
   roots.push(root)
@@ -185,9 +189,26 @@ async function cardFixture(value: unknown = card()): Promise<{
   await mkdir(directory, { recursive: true })
   const bytes = Buffer.from(JSON.stringify(value), 'utf8')
   await writeFile(join(directory, 'task-card.json'), bytes)
+  const key = await taskInstallationKeyTestSeams.setupWithRandomBytes(
+    { workspaceRoot: root, taskId },
+    () => Buffer.from(installationKey),
+  )
+  const expectedTaskCardSha256 = createHash('sha256').update(bytes).digest('hex')
+  const scopeAlias = key.aliases.githubCoreAlias('repository', '101')
+  const grant = githubCoreActivationGrantTestSeam.issueInventedGrant({
+    fixture: 'invented',
+    capabilityId: 'github.core',
+    taskId,
+    taskCardSha256: expectedTaskCardSha256,
+    installationKeyFingerprint: key.fingerprint,
+    scopeAlias,
+  })
   return {
     root,
-    expectedTaskCardSha256: createHash('sha256').update(bytes).digest('hex'),
+    expectedTaskCardSha256,
+    installationKeyFingerprint: key.fingerprint,
+    scopeAlias,
+    grant,
   }
 }
 
@@ -249,11 +270,11 @@ function runnerInput(
   overrides: Partial<GithubCoreActivationRunnerInput> = {},
 ): GithubCoreActivationRunnerInput {
   return {
+    grant: fixture.grant,
     workspaceRoot: fixture.root,
     taskId,
     expectedTaskCardSha256: fixture.expectedTaskCardSha256,
-    db,
-    installationKey,
+    openStore: () => db,
     fetch,
     jobId: 'fixture-job-1',
     coverageId: firstCoverageId,
@@ -274,6 +295,54 @@ function count(db: Database.Database, table: string): number {
 }
 
 describe('default-off github.core activation runner', () => {
+  it('denies a forged or non-github grant before reading inputs or invoking any dependency', async () => {
+    for (const grant of [
+      {
+        capabilityId: 'github.core',
+        taskId,
+        taskCardSha256: 'a'.repeat(64),
+        installationKeyFingerprint: 'b'.repeat(64),
+        scopeAlias: `repo-${'c'.repeat(64)}`,
+      },
+      { capabilityId: 'cap.external.model' },
+    ]) {
+      let workspaceReads = 0
+      let storeOpens = 0
+      let fetches = 0
+      const input: Record<string, unknown> = {
+        grant,
+        taskId,
+        expectedTaskCardSha256: 'a'.repeat(64),
+        openStore: () => { storeOpens += 1; throw new Error('store must stay closed') },
+        fetch: async () => { fetches += 1; throw new Error('fetch must not run') },
+        jobId: 'fixture-denied-job',
+        coverageId: firstCoverageId,
+        jobStartedAt: firstJobStart,
+      }
+      Object.defineProperty(input, 'workspaceRoot', {
+        enumerable: true,
+        get: () => { workspaceReads += 1; throw new Error('path must not be read') },
+      })
+
+      let denial: unknown
+      try {
+        await runGithubCoreActivation(input as never)
+      } catch (error) {
+        denial = error
+      }
+      expect(denial).toMatchObject({
+        code: GITHUB_CORE_ACTIVATION_RUNNER_ERROR_CODE,
+        message: GITHUB_CORE_ACTIVATION_RUNNER_ERROR_CODE,
+      })
+      expect(JSON.stringify(denial)).not.toMatch(/fixture-denied|PRIVATE|repo-|task-card|sha256/i)
+      expect({ workspaceReads, storeOpens, fetches }).toEqual({
+        workspaceReads: 0,
+        storeOpens: 0,
+        fetches: 0,
+      })
+    }
+  })
+
   it('persists one job-bound complete proposal only after two equal complete hashes', async () => {
     const fixture = await cardFixture(card(5))
     const db = database()
@@ -328,7 +397,7 @@ describe('default-off github.core activation runner', () => {
       ...completeProbe('invented-node-a'),
     ])
     await runGithubCoreActivation(runnerInput(fixture, db, seedTransport.fetch))
-    const scopeAlias = createInstallationAliases(installationKey).githubCoreAlias('repository', '101')
+    const scopeAlias = fixture.scopeAlias
     const secondTransport = fetchFixture([
       ...completeProbe('invented-node-a'),
       ...completeProbe('invented-node-a'),
@@ -411,7 +480,7 @@ describe('default-off github.core activation runner', () => {
     await runGithubCoreActivation(runnerInput(fixture, db, seedTransport.fetch, {
       jobId: 'fixture-seed-job',
     }))
-    const scopeAlias = createInstallationAliases(installationKey).githubCoreAlias('repository', '101')
+    const scopeAlias = fixture.scopeAlias
     const priorCheckpoint = readIncrementalGithubCoreCheckpoint(db, scopeAlias)
     expect(priorCheckpoint).not.toBeNull()
     const transport = fetchFixture([
@@ -462,7 +531,7 @@ describe('default-off github.core activation runner', () => {
     await runGithubCoreActivation(runnerInput(fixture, db, seedTransport.fetch, {
       jobId: 'fixture-seed-job',
     }))
-    const scopeAlias = createInstallationAliases(installationKey).githubCoreAlias('repository', '101')
+    const scopeAlias = fixture.scopeAlias
     const priorCheckpoint = readIncrementalGithubCoreCheckpoint(db, scopeAlias)
     expect(priorCheckpoint).not.toBeNull()
     expect(count(db, 'source_snapshot')).toBe(1)
@@ -509,7 +578,7 @@ describe('default-off github.core activation runner', () => {
     await runGithubCoreActivation(runnerInput(originalFixture, db, seedTransport.fetch, {
       jobId: 'fixture-seed-job',
     }))
-    const scopeAlias = createInstallationAliases(installationKey).githubCoreAlias('repository', '101')
+    const scopeAlias = originalFixture.scopeAlias
     const priorCheckpoint = readIncrementalGithubCoreCheckpoint(db, scopeAlias)
     const before = {
       jobs: count(db, 'collection_job'),
@@ -535,20 +604,40 @@ describe('default-off github.core activation runner', () => {
     }).toEqual(before)
   })
 
-  it('rejects alias-key, hash, card, closed-input, and unsplittable-budget failures before fetch', async () => {
+  it('rejects grant/key/scope, hash, card, closed-input, and budget failures before store or fetch', async () => {
     const validFixture = await cardFixture(card(5))
     const invalidCardFixture = await cardFixture({ ...card(5), secretFixture: 'POISON_SECRET' })
     const unsplittableFixture = await cardFixture(card(1))
     const db = database()
     const transport = fetchFixture([])
-    const validInput = runnerInput(validFixture, db, transport.fetch)
+    let storeOpens = 0
+    const openStore = () => { storeOpens += 1; return db }
+    const validInput = runnerInput(validFixture, db, transport.fetch, { openStore })
+    const wrongKeyGrant = githubCoreActivationGrantTestSeam.issueInventedGrant({
+      fixture: 'invented',
+      capabilityId: 'github.core',
+      taskId,
+      taskCardSha256: validFixture.expectedTaskCardSha256,
+      installationKeyFingerprint: '0'.repeat(64),
+      scopeAlias: validFixture.scopeAlias,
+    })
+    const wrongScopeGrant = githubCoreActivationGrantTestSeam.issueInventedGrant({
+      fixture: 'invented',
+      capabilityId: 'github.core',
+      taskId,
+      taskCardSha256: validFixture.expectedTaskCardSha256,
+      installationKeyFingerprint: validFixture.installationKeyFingerprint,
+      scopeAlias: `repo-${'0'.repeat(64)}`,
+    })
 
-    await expectRunnerFailure({ ...validInput, installationKey: Buffer.alloc(31, 0x5a) })
+    await expectRunnerFailure({ ...validInput, grant: wrongKeyGrant })
+    await expectRunnerFailure({ ...validInput, grant: wrongScopeGrant })
     await expectRunnerFailure({ ...validInput, expectedTaskCardSha256: '0'.repeat(64) })
-    await expectRunnerFailure(runnerInput(invalidCardFixture, db, transport.fetch))
+    await expectRunnerFailure(runnerInput(invalidCardFixture, db, transport.fetch, { openStore }))
     await expectRunnerFailure({ ...validInput, card: card(5) })
-    await expectRunnerFailure(runnerInput(unsplittableFixture, db, transport.fetch))
+    await expectRunnerFailure(runnerInput(unsplittableFixture, db, transport.fetch, { openStore }))
 
+    expect(storeOpens).toBe(0)
     expect(transport.calls).toHaveLength(0)
     expect(count(db, 'collection_job')).toBe(0)
     expect(count(db, 'coverage_ledger')).toBe(0)

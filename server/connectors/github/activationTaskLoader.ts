@@ -8,6 +8,10 @@ import {
   parseGithubCoreActivationTaskCard,
   type GithubCoreActivationTaskCard,
 } from './activationTask.js'
+import {
+  assertGithubCoreActivationGrant,
+  type GithubCoreActivationGrant,
+} from './activationGrant.js'
 
 export const GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD_ERROR_CODE =
   'INVALID_GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD' as const
@@ -22,10 +26,49 @@ export class GithubCoreActivationTaskCardLoadError extends Error {
 }
 
 export type GithubCoreActivationTaskCardLoadInput = ActivationTaskCardLoadInput
-export type GithubCoreHashBoundActivationTaskCardLoadInput = HashBoundActivationTaskCardLoadInput
+export type GithubCoreHashBoundActivationTaskCardLoadInput = HashBoundActivationTaskCardLoadInput &
+  Readonly<{ grant: GithubCoreActivationGrant }>
+
+type GrantedHashBoundLoadInput = Readonly<{
+  workspaceRoot: string
+  taskId: string
+  expectedSha256: string
+  grant: GithubCoreActivationGrant
+}>
 
 function invalidLoad(): never {
   throw new GithubCoreActivationTaskCardLoadError()
+}
+
+function snapshotGrantedHashBoundInput(input: unknown): GrantedHashBoundLoadInput {
+  if (!input || typeof input !== 'object' || Array.isArray(input)) invalidLoad()
+  const expectedKeys = ['grant', 'workspaceRoot', 'taskId', 'expectedSha256'] as const
+  const keys = Reflect.ownKeys(input)
+  if (
+    keys.length !== expectedKeys.length ||
+    keys.some((key) => typeof key !== 'string' || !expectedKeys.includes(key as typeof expectedKeys[number]))
+  ) invalidLoad()
+
+  const grantDescriptor = Object.getOwnPropertyDescriptor(input, 'grant')
+  if (!grantDescriptor || !Object.hasOwn(grantDescriptor, 'value')) invalidLoad()
+  const grant = assertGithubCoreActivationGrant(grantDescriptor.value)
+
+  const value = (key: 'workspaceRoot' | 'taskId' | 'expectedSha256'): unknown => {
+    const descriptor = Object.getOwnPropertyDescriptor(input, key)
+    if (!descriptor || !Object.hasOwn(descriptor, 'value')) invalidLoad()
+    return descriptor.value
+  }
+  const workspaceRoot = value('workspaceRoot')
+  const taskId = value('taskId')
+  const expectedSha256 = value('expectedSha256')
+  if (
+    typeof workspaceRoot !== 'string' ||
+    typeof taskId !== 'string' ||
+    typeof expectedSha256 !== 'string' ||
+    taskId !== grant.taskId ||
+    expectedSha256 !== grant.taskCardSha256
+  ) invalidLoad()
+  return Object.freeze({ workspaceRoot, taskId, expectedSha256, grant })
 }
 
 /**
@@ -53,7 +96,12 @@ export async function loadHashBoundGithubCoreActivationTaskCard(
   input: GithubCoreHashBoundActivationTaskCardLoadInput,
 ): Promise<GithubCoreActivationTaskCard> {
   try {
-    const loaded = await loadHashBoundActivationTaskCard(input)
+    const closed = snapshotGrantedHashBoundInput(input)
+    const loaded = await loadHashBoundActivationTaskCard({
+      workspaceRoot: closed.workspaceRoot,
+      taskId: closed.taskId,
+      expectedSha256: closed.expectedSha256,
+    })
     const card = parseGithubCoreActivationTaskCard(loaded.parsed)
     if (card.localBoundary.root !== `.developer-lens/activation/${loaded.taskId}/`) invalidLoad()
     return card

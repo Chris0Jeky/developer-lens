@@ -2565,3 +2565,29 @@ lifecycle Terra then completed a distinct clean privacy/authority follow-up beca
 ceiling refused a third fresh agent. Hosted Linux/POSIX proof, exact-head connector
 review, and merge are not yet verified. #147 remains active until merged. No real store, connector,
 capability activation, or private data was used.
+
+## 2026-08-06 — #147 lifecycle safety vertical (merged) and LIFE-03 activation enforcement (candidate)
+
+PR #149 merged as `5728f2f87b0d2d62c03d58ea4e5a724d170d8264` from final head
+`83e7384987f0ad3ec76a18deb6add1af15b886e0` and closed #147. Exact-head hosted run
+`31078394899` passed; exact-merge Pages/privacy/deploy run `31079336156` passed. The focused
+lifecycle suite passed 36 tests with 4 declared skips, and the exact rebased full local gate passed
+73 files / 1,208 tests / 5 skips plus lint, context, type/build, and credential checks. Fresh
+lifecycle, crash/filesystem, and privacy/authority lenses were clean after two bounded documentation
+accuracy fix rounds. The connector-or-15-minute window remained empty, and the post-merge sweep
+found no late feedback. No real store, connector, activation caller, or private input was used.
+
+The first LIFE-03 activation-enforcement candidate is code head `04c1219`. It replaces the
+github.core runner's registry-literal precondition with a private `WeakSet` grant bound to the exact
+task ID, reviewed card hash, installation-key fingerprint, and derived repository scope. Both the
+runner and hash-bound card loader validate the grant before card/path/key/store/fetch/write access;
+the runner loads only the opaque installation-key handle and opens its caller-owned store lazily.
+Registry/API reporting remains `never_authorized`, planning remains denied, and an AST boundary
+proves that no production module imports the invented issuer or calls the runner. Invented focused
+tests passed 88 assertions; the rebased 46-test activation seam and `git diff --check` passed under
+a fresh Terra review with no HIGH/CRITICAL finding. The exact final local/hosted gates, connector
+window, and merge remain pending. A later production issuer/caller is a separate reviewed slice;
+this candidate does not authorize live collection or any external-model call. Exact-head connector
+review identified the exported invented issuer as a P2 local-code footgun: it is lookalike-resistant,
+not inaccessible to arbitrary local modules. Issue #151 owns removing it before any production
+caller; the operational claim here is only tracked-source default-off, never a local-code sandbox.

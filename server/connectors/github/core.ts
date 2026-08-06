@@ -40,7 +40,7 @@ export interface GithubCoreManifest {
   readonly queryVersion: typeof GITHUB_CORE_QUERY_VERSION
   readonly maxAttempts: typeof GITHUB_CORE_MAX_ATTEMPTS
   readonly overlapMs: typeof GITHUB_CORE_OVERLAP_MS
-  readonly execution: 'inert'
+  readonly execution: 'grant_gated'
 }
 
 export interface GithubCorePlan {
@@ -316,7 +316,7 @@ export function githubCoreManifest(): GithubCoreManifest {
     queryVersion: GITHUB_CORE_QUERY_VERSION,
     maxAttempts: GITHUB_CORE_MAX_ATTEMPTS,
     overlapMs: GITHUB_CORE_OVERLAP_MS,
-    execution: 'inert',
+    execution: 'grant_gated',
   }
 }
 
@@ -338,7 +338,7 @@ export function boundedGithubCoreOverlapStart(
   return new Date(Math.max(floor.valueOf(), overlap.valueOf())).toISOString()
 }
 
-/** Planning is fail-closed until an activation path explicitly changes the capability contract. */
+/** Planning remains fail-closed because this pure protocol surface accepts no execution grant. */
 export function planGithubCoreCollection(
   input: Pick<
     GithubCoreReconciliationInput,

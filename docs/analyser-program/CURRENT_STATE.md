@@ -8,11 +8,11 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-06
-current_slice_override: '#147 is the active post-B4 storage safety vertical: retained-publication
-  CAS recovery, cause-aware artifact lineage cleanup, survivor ownership/lineage snapshots, and
-  exclusive invented fixture claims. Keep fixtures invented and the runtime unactivated. After
-  #147 merges, LIFE-03 owns backup, grace, restore, tombstone replay, and activation enforcement.'
-phase: 'R4 active horizon OPEN. B4 storage catalogue and post-B4 hardening remain the foundation; #147 is active before LIFE-03. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
+current_slice_override: '#147 merged through PR #149. LIFE-03 activation enforcement is the active
+  vertical: github.core execution is bound to a private process-local invented grant before any
+  task card, installation key, store, fetch, or write. There is no production issuer or caller.
+  Next land the single-writer lease, then backup, grace, restore, and tombstone replay.'
+phase: 'R4 active horizon OPEN. B4 storage catalogue and PR #149 lifecycle safety are the foundation; LIFE-03 is active. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -20,9 +20,10 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'DL-LIFE-02 chain PRs #103, #105, #107-#125 (slice A, B1a+repairs, B1b-i..iii, B2a-i..iii,
   B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
   their engineering record stays in the ledger', 'DL-LIFE-02 B3 #136 and B4 #141',
-  'wait-window hardening #144/#145, mint-order hardening #148, post-B4 hardening #146',
+  'wait-window hardening #144/#145, mint-order hardening #148, post-B4 hardening #146,
+  lifecycle safety #149',
   'state syncs #126']
-active_slice: '#147: complete retained-publication CAS, ordinary subject/cause lineage cleanup, survivor ownership/lineage proof, and exclusive invented fixture claim. Then start DL-LIFE-03 with timestamped backup, untouched source, atomic selection/fallback, seven-day grace, restart, restore/tombstone replay, cleanup, WAL/SHM handling, and default-deny activation enforcement. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
+active_slice: 'DL-LIFE-03 activation enforcement: keep registry/API reporting at never_authorized while the otherwise unreachable github.core runner requires one exact task/card/key/scope-bound grant. Then land the single-writer lease and implement timestamped selected-store backup, untouched legacy source, atomic selection/fallback, seven-day grace, restart, restore/tombstone replay, cleanup, and WAL/SHM handling. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -33,7 +34,7 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No owner blocker for invented-fixture work. A real migration/connector still requires #147, LIFE-03 backup/grace/restore/tombstone-replay proof, and default-deny activation enforcement. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a 306 B3 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
+blockers: 'No owner blocker for invented-fixture work. A real migration/connector still requires the LIFE-03 single-writer lease, backup/grace/restore/tombstone-replay proof, and a separately reviewed production grant issuer/caller; this activation slice deliberately supplies neither. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a 306 B3 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -56,11 +57,11 @@ review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently pos
   ceiling: later findings are still triaged, but post-ceiling defects are tracked/rejected and the
   sound slice ships; only a NEW CRITICAL introduced by the fixes reopens once. After merge, sweep
   again beyond the measured delay before calling the review clean.'
-capabilities: every executable capability remains never_authorized; cap.external.model uncalled.
-  Note the enforcement inversion measured 2026-08-05 - the registry literal gates only the /api/v2
-  reporting surface; the real collection boundary is the ignored task card + installation key +
-  the absence of any activationRunner caller (activationRunner.ts asserts the registry still says
-  never_authorized and would otherwise proceed)
+capabilities: registry and API definitions remain never_authorized; cap.external.model is uncalled.
+  The github.core runner is grant-gated and validates a private WeakSet-recognized task/card/key/
+  scope binding before protected access. An AST boundary proves the tracked source has no
+  production issuer or runner caller; the exported invented issuer remains accessible to arbitrary
+  local code and must be removed under #151 before any production caller exists.
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
   `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
   or 07 §6 index by hand)
@@ -138,7 +139,7 @@ residual_risks:
      backup/grace/restore/tombstone-replay proof and the activation-enforcement alignment. The
      #86 storage half is CLOSED by PR B-2 (cov- registry CHECK + UNIQUE(coverage_id) + fixture
      migration); both halves of #86 now hold'
-  - '#147 remains active until merged: retained-publication CAS recovery, cause-aware artifact lineage cleanup, survivor ownership/lineage snapshots, and exclusive invented fixture claims are implemented in the owned worktree. No real store or production caller exists.'
+  - '#147 is CLOSED by PR #149: retained-publication CAS recovery, cause-aware artifact lineage cleanup, survivor ownership/lineage snapshots, and exclusive invented fixture claims merged with exact-head and exact-merge gates. No real store or production caller was added.'
   - '#142 tracks the hostile ABA pathname-replacement boundary. B4/#143 make no hostile concurrent-
      writer claim; the architecture still assumes one app writer, and native handle binding needs
      a separate bounded design before that assumption can be relaxed.'

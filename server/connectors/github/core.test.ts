@@ -138,13 +138,14 @@ describe('github.core content-free coverage identifiers (#86)', () => {
   })
 })
 
-describe('github.core inert protocol foundation', () => {
-  it('pins protocol versions and exposes the still-denied capability manifest and plan coverage', () => {
+describe('github.core grant-gated protocol foundation', () => {
+  it('pins protocol versions while the non-grant planner and reporting metadata stay denied', () => {
     const manifest = githubCoreManifest()
     const plan = planGithubCoreCollection(input())
 
     expect(manifest.restApiVersion).toBe('2026-03-10')
     expect(manifest.queryVersion).toBe('github.core.v1')
+    expect(manifest.execution).toBe('grant_gated')
     expect(manifest.capability.authorization).toBe('never_authorized')
     expect(plan).toMatchObject({
       state: 'denied',
