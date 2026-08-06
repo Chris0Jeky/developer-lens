@@ -223,6 +223,133 @@ function mintDeletionOperationId(
   return fail('DELETION_FAILED')
 }
 
+export interface StorageV3DeletionReplaySubject {
+  readonly subjectKind: string
+  readonly subjectId: string
+  readonly causedBy: string | null
+  readonly eventKind: 'tombstone_cascade' | 'index_deleted'
+}
+
+export interface StorageV3ScopeDeletionPlan {
+  readonly scopeId: string
+  readonly operationId: string
+  readonly eventWeek: string
+  readonly status: 'delete' | 'replay'
+  readonly subjects: readonly StorageV3DeletionReplaySubject[]
+}
+
+/**
+ * Produce the exact content-free lineage that an immediate B3 deletion will retain.
+ * The caller must hold the writer lease across this plan, durable external intent,
+ * and `deleteStorageV3Scope`; the executor repeats every validation transactionally.
+ */
+export function planStorageV3ScopeDeletion(
+  options: Omit<StorageV3ScopeDeletionOptions, 'failAfterStage'>,
+): Readonly<StorageV3ScopeDeletionPlan> {
+  const scope = ScopeIdV3Schema.safeParse(options.scopeId)
+  if (!scope.success) return fail('INVALID_REQUEST')
+  const scopeId = scope.data
+  const eventWeek = isoWeekFromCanonicalTimestamp(parseAsOf(options.asOf))
+  let requestedOperation: string | undefined
+  if (options.operationId !== undefined) {
+    const parsed = DeletionOperationIdV3Schema.safeParse(options.operationId)
+    if (!parsed.success) return fail('INVALID_REQUEST')
+    requestedOperation = parsed.data
+  }
+  const db = options.db
+  if (db.inTransaction) fail('STORE_REFUSED')
+  try {
+    assertSelectedStore(db)
+    if (storageV3MaintenanceStatus(db) !== 'complete') fail('STORE_REFUSED')
+    const scopeExists = db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(scopeId) !== undefined
+    const recorded = db.prepare(
+      `SELECT DISTINCT operation_id, event_week FROM lineage_event
+       WHERE event_kind = 'tombstone_cascade' AND subject_kind = 'scope' AND subject_id = ?`,
+    ).all(scopeId) as Array<{ operation_id: string; event_week: string }>
+    if (!scopeExists) {
+      if (recorded.length !== 1 || recorded[0]?.event_week !== eventWeek
+        || (requestedOperation !== undefined && recorded[0]?.operation_id !== requestedOperation)) {
+        fail(recorded.length === 0 ? 'UNKNOWN_SCOPE' : 'OPERATION_CONFLICT')
+      }
+      const operationId = recorded[0]!.operation_id
+      const rows = db.prepare(
+        `SELECT subject_kind, subject_id, caused_by, event_kind
+         FROM lineage_event
+         WHERE scope_id IS NULL AND operation_id = ?
+           AND event_kind IN ('tombstone_cascade', 'index_deleted')
+           AND (subject_id = ? OR caused_by = ?)
+         ORDER BY event_kind, subject_kind, subject_id`,
+      ).all(operationId, scopeId, scopeId) as Array<{
+        subject_kind: string
+        subject_id: string
+        caused_by: string | null
+        event_kind: 'tombstone_cascade' | 'index_deleted'
+      }>
+      if (!rows.some((row) => row.event_kind === 'tombstone_cascade'
+        && row.subject_kind === 'scope' && row.subject_id === scopeId)) fail('OPERATION_CONFLICT')
+      return Object.freeze({
+        scopeId,
+        operationId,
+        eventWeek,
+        status: 'replay' as const,
+        subjects: Object.freeze(rows.map((row) => Object.freeze({
+          subjectKind: row.subject_kind,
+          subjectId: row.subject_id,
+          causedBy: row.caused_by,
+          eventKind: row.event_kind,
+        }))),
+      })
+    }
+
+    const subjects: StorageV3DeletionReplaySubject[] = [Object.freeze({
+      subjectKind: 'scope', subjectId: scopeId, causedBy: null, eventKind: 'tombstone_cascade' as const,
+    })]
+    for (const { subjectKind, table, idColumn } of SUBJECT_ENUMERATION) {
+      const ids = db.prepare(
+        `SELECT ${idColumn} FROM ${table} WHERE scope_id = ? ORDER BY ${idColumn}`,
+      ).pluck().all(scopeId) as string[]
+      for (const subjectId of ids) subjects.push(Object.freeze({
+        subjectKind, subjectId, causedBy: scopeId, eventKind: 'tombstone_cascade' as const,
+      }))
+    }
+    const artifactIds = db.prepare(
+      `SELECT artifact.artifact_id
+       FROM app_artifact AS artifact
+       JOIN app_artifact_scope AS owner ON owner.artifact_id = artifact.artifact_id
+       WHERE owner.scope_id = ? AND artifact.kind <> 'selected_store' AND artifact.state = 'active'
+       ORDER BY artifact.artifact_id`,
+    ).pluck().all(scopeId) as string[]
+    for (const subjectId of artifactIds) subjects.push(Object.freeze({
+      subjectKind: 'artifact', subjectId, causedBy: scopeId, eventKind: 'index_deleted' as const,
+    }))
+    const prior = db.prepare(
+      `SELECT 1 FROM lineage_event
+       WHERE event_kind IN ('tombstone_cascade', 'index_deleted')
+         AND subject_kind = ? AND subject_id = ? LIMIT 1`,
+    )
+    for (const subject of subjects) {
+      if (prior.get(subject.subjectKind, subject.subjectId)) fail('OPERATION_CONFLICT')
+    }
+    const operationId = requestedOperation ?? mintDeletionOperationId(
+      db,
+      options.randomBytes ?? cryptoRandomBytes,
+    )
+    if (requestedOperation !== undefined && db.prepare(
+      'SELECT 1 FROM lineage_event WHERE subject_id = ? OR operation_id = ? OR caused_by = ? LIMIT 1',
+    ).get(operationId, operationId, operationId)) fail('OPERATION_CONFLICT')
+    return Object.freeze({
+      scopeId,
+      operationId,
+      eventWeek,
+      status: 'delete' as const,
+      subjects: Object.freeze(subjects),
+    })
+  } catch (error) {
+    if (error instanceof StorageV3DeletionError) throw error
+    return fail('DELETION_FAILED')
+  }
+}
+
 /** Delete one scope and every registered SQL descendant; see the module contract. */
 export function deleteStorageV3Scope(
   options: StorageV3ScopeDeletionOptions,

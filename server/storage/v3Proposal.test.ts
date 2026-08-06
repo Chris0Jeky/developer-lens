@@ -429,6 +429,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3Backup.ts',
             'server/storage/v3SelectionReceipt.ts',
             'server/storage/v3Restore.ts',
+            'server/storage/v3RevocationReplay.ts',
           ].includes(sourcePath)) {
             offenders.push(edge)
           }
@@ -456,6 +457,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3ContinuityCasProposal.ts',
             'server/storage/v3Deletion.ts',
             'server/storage/v3Restore.ts',
+            'server/storage/v3RevocationReplay.ts',
           ].includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
           }
@@ -479,7 +481,8 @@ describe('storage-v3 B1a proposal', () => {
         }
         if (target && /(?:^|[\\/])v3Deletion(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (sourcePath !== 'scripts/storeLifecycle.ts') {
+          if (sourcePath !== 'scripts/storeLifecycle.ts'
+            && sourcePath !== 'server/storage/v3RevocationReplay.ts') {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }
@@ -493,6 +496,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3ReaderSelection.ts',
             'server/storage/v3SelectionProof.ts',
             'server/storage/v3Restore.ts',
+            'server/storage/v3RevocationReplay.ts',
           ]
           if (!allowedSourcePaths.includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
@@ -503,7 +507,8 @@ describe('storage-v3 B1a proposal', () => {
           if (sourcePath !== 'scripts/storeLifecycle.ts'
             && sourcePath !== 'server/storage/v3Backup.ts'
             && sourcePath !== 'server/storage/v3ReaderSelection.ts'
-            && sourcePath !== 'server/storage/v3Restore.ts') {
+            && sourcePath !== 'server/storage/v3Restore.ts'
+            && sourcePath !== 'server/storage/v3RevocationReplay.ts') {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }
@@ -513,7 +518,8 @@ describe('storage-v3 B1a proposal', () => {
             && sourcePath !== 'server/storage/v3Backup.ts'
             && sourcePath !== 'server/storage/v3ReaderSelection.ts'
             && sourcePath !== 'server/storage/v3SelectionProof.ts'
-            && sourcePath !== 'server/storage/v3Restore.ts') {
+            && sourcePath !== 'server/storage/v3Restore.ts'
+            && sourcePath !== 'server/storage/v3RevocationReplay.ts') {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }

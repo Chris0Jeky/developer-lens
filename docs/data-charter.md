@@ -58,6 +58,21 @@ durably fail-closed. The marker survives seven-day cleanup of the old JSON and m
 their absence can never re-authorize legacy fallback. It remains local, is never exported, and is
 removed no later than the C2 13-month boundary or deletion of the whole task root.
 
+Each selected task also owns one local content-free C1 revocation replay family. Its anchor,
+mandatory atomic tail head, and immutable entries contain only opaque scope/subject/operation IDs,
+the controlled capability code, ISO-week grain, keyed task/selection bindings, and integrity hashes.
+They contain no raw task ID, repository/source name or alias, path, prose, exact timestamp, or
+observed value. The head commits the expected final sequence and digest; an entry and its advanced
+head are durable before its deletion transaction. Selected reads and restore verify that exact tail
+and prove every entry applied before serving data. A single-use runtime grant initializes an empty
+`initializing` family inside the pending receipt transaction; after that transaction commits, the
+head is durably advanced to `committed` before selection-proof publication or service. Only an
+empty `initializing` family may resume a rolled-back first attempt. A `committed` family cannot mint
+a new receipt after the shorter C2 receipt lifetime. A missing, truncated, foreign, non-canonical,
+or unapplied family fails closed and never authorizes legacy fallback. The family survives seven-day
+cleanup so an older signed backup cannot resurrect revoked data, remains local and unexported, and
+is removed no later than the C1 36-month boundary or deletion of the whole task root.
+
 ## Sink contract
 
 Every sink accepts a purpose-built strict schema. Unknown fields, field classes, capabilities,
@@ -150,6 +165,10 @@ deletes source observations, dependent facts/features, graph projections, caches
 and application-controlled packs/backups, leaving only a content-free tombstone. Developer Lens
 must disclose that it cannot recall user-copied exports, provider-held copies, filesystem snapshots,
 or guarantee physical-media erasure.
+
+For a selected migrated task, the content-free revocation replay family is that durable tombstone
+authority across stale local filesystem snapshots. It carries no source content and is not a reader,
+fallback, or collection authorization. It remains only through the bounded C1 lifetime above.
 
 ## Fixture and verification rule
 

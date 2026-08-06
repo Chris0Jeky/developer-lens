@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
@@ -32,6 +32,11 @@ import {
 } from './taskInstallationKey.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
 import { STORAGE_V3_SELECTION_PROOF_NAMES } from './v3SelectionProof.js'
+import {
+  STORAGE_V3_REVOCATION_REPLAY_NAMES,
+  resumeStorageV3RevocationReplay,
+  v3RevocationReplayTestSeams,
+} from './v3RevocationReplay.js'
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -131,6 +136,7 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       })
       first.db.close()
       expect(existsSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final))).toBe(true)
+      expect(existsSync(join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.anchor))).toBe(true)
 
       const replay = expectSelected(selectStorageV3Reader(fx.input))
       expect(replay.selection).toEqual(first.selection)
@@ -141,6 +147,143 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
         ...fx.input,
         installationKey: Object.freeze({}) as TaskInstallationKeyHandle,
       })).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+    } finally { fx.cleanup() }
+  })
+
+  it('refuses reads with a durable unapplied revocation and resumes before service', async () => {
+    const fx = await fixture()
+    try {
+      const selected = expectSelected(selectStorageV3Reader(fx.input))
+      selected.db.close()
+      expect(() => v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
+        directory: fx.root,
+        installationKey: fx.key,
+        scopeId: SCOPE_A,
+        asOf: '2026-08-06T13:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 9),
+      }, () => {}, (stage) => {
+        if (stage === 'intentDurable') throw new Error('invented process interruption')
+      })).toThrow('invented process interruption')
+
+      expect(selectStorageV3Reader(fx.input))
+        .toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      expect(resumeStorageV3RevocationReplay(fx.root, fx.key)).toBe(1)
+      const replay = expectSelected(selectStorageV3Reader(fx.input))
+      expect(replay.db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(SCOPE_A))
+        .toBeUndefined()
+      replay.db.close()
+    } finally { fx.cleanup() }
+  })
+
+  it.each([
+    'tempDurable',
+    'finalLink',
+    'tempRemoval',
+    'headTempDurable',
+    'headReplace',
+  ] as const)('rolls back the receipt and resumes empty-family initialization after %s', async (stage) => {
+    const fx = await fixture()
+    try {
+      let interrupted = false
+      const first = v3ReaderSelectionTestSeams.selectWithRevocationDirectorySynchronizer(
+        fx.input,
+        (_root, current) => {
+          if (current === stage && !interrupted) {
+            interrupted = true
+            throw new Error(`invented ${stage} initialization crash`)
+          }
+        },
+        SUCCESS_AT,
+      )
+      expect(first).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      const rolledBack = openSelectedStorageV3Store(fx.root)
+      try { expect(readStorageV3MigrationSelection(rolledBack)).toBeUndefined() } finally { rolledBack.close() }
+      expect(readdirSync(fx.root).some((name) => name.startsWith(
+        STORAGE_V3_REVOCATION_REPLAY_NAMES.prefix,
+      ))).toBe(true)
+
+      const retrySuccessAt = '2026-08-06T12:36:00.000Z'
+      const resumed = expectSelected(
+        v3ReaderSelectionTestSeams.selectWithRevocationDirectorySynchronizer(
+          fx.input,
+          () => {},
+          retrySuccessAt,
+        ),
+      )
+      expect(resumed.selection.successfulReportAt).toBe(retrySuccessAt)
+      resumed.db.close()
+      expect(existsSync(join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.anchor))).toBe(true)
+      expect(existsSync(join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.head))).toBe(true)
+      expect(readdirSync(fx.root).some((name) => name.startsWith(
+        STORAGE_V3_REVOCATION_REPLAY_NAMES.prefix,
+      ) && name.endsWith('.tmp'))).toBe(false)
+    } finally { fx.cleanup() }
+  })
+
+  it.each(['headTempDurable', 'headReplace'] as const)(
+    'resumes a committed receipt after initialization finalization fails at %s',
+    async (stage) => {
+      const fx = await fixture()
+      try {
+        let occurrences = 0
+        const first = v3ReaderSelectionTestSeams.selectWithRevocationDirectorySynchronizer(
+          fx.input,
+          (_root, current) => {
+            if (current === stage) {
+              occurrences += 1
+              if (occurrences === 2) throw new Error(`invented committed ${stage} crash`)
+            }
+          },
+          SUCCESS_AT,
+        )
+        expect(first).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+        const committed = openSelectedStorageV3Store(fx.root)
+        try {
+          expect(readStorageV3MigrationSelection(committed)).toMatchObject({
+            successfulReportAt: SUCCESS_AT,
+          })
+        } finally { committed.close() }
+
+        const resumed = expectSelected(selectStorageV3Reader(fx.input))
+        resumed.db.close()
+        expect(readFileSync(join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.head), 'utf8'))
+          .toContain('"phase":"committed"')
+      } finally { fx.cleanup() }
+    },
+  )
+
+  it('never recreates a missing replay family for a committed selection', async () => {
+    const fx = await fixture()
+    try {
+      const selected = expectSelected(selectStorageV3Reader(fx.input))
+      selected.db.close()
+      expect(() => v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
+        directory: fx.root,
+        installationKey: fx.key,
+        scopeId: SCOPE_A,
+        asOf: '2026-08-06T13:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 9),
+      }, () => {}, (stage) => {
+        if (stage === 'intentDurable') throw new Error('invented process interruption')
+      })).toThrow('invented process interruption')
+      for (const name of readdirSync(fx.root)) {
+        if (name.startsWith(STORAGE_V3_REVOCATION_REPLAY_NAMES.prefix)) {
+          rmSync(join(fx.root, name))
+        }
+      }
+      expect(readdirSync(fx.root).some((name) => name.startsWith(
+        STORAGE_V3_REVOCATION_REPLAY_NAMES.prefix,
+      ))).toBe(false)
+
+      expect(selectStorageV3Reader(fx.input))
+        .toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      expect(readdirSync(fx.root).some((name) => name.startsWith(
+        STORAGE_V3_REVOCATION_REPLAY_NAMES.prefix,
+      ))).toBe(false)
+      const store = openSelectedStorageV3Store(fx.root)
+      try {
+        expect(store.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(SCOPE_A)).toBeDefined()
+      } finally { store.close() }
     } finally { fx.cleanup() }
   })
 
@@ -199,6 +342,22 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       expect(readStorageV3MigrationSelection(selected)).toBeUndefined()
       selected.close()
       expect(existsSync(storageV3WriterLeasePath(openStorageV3ArtifactRoot(fx.root)))).toBe(false)
+    } finally { fx.cleanup() }
+  })
+
+  it('leaves a foreign head-only namespace untouched without creating an anchor', async () => {
+    const fx = await fixture()
+    try {
+      const headPath = join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.head)
+      const foreign = Buffer.from('invented foreign revocation head\n')
+      writeFileSync(headPath, foreign, { flag: 'wx', mode: 0o600 })
+
+      expect(selectStorageV3Reader(fx.input))
+        .toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      expect(readFileSync(headPath)).toEqual(foreign)
+      expect(existsSync(join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.anchor))).toBe(false)
+      const store = openSelectedStorageV3Store(fx.root)
+      try { expect(readStorageV3MigrationSelection(store)).toBeUndefined() } finally { store.close() }
     } finally { fx.cleanup() }
   })
 

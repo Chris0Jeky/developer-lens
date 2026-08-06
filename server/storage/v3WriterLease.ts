@@ -94,6 +94,21 @@ function proveLease(record: LeaseRecord): void {
   }
 }
 
+/** Re-prove that an opaque lease belongs to this exact reviewed artifact root. */
+export function assertStorageV3WriterLease(
+  root: StorageV3ArtifactRoot,
+  lease: StorageV3WriterLease,
+): void {
+  const record = LEASES.get(lease)
+  if (record === undefined) return fail(STORAGE_V3_WRITER_LEASE_REFUSED)
+  let expectedPath: string
+  try { expectedPath = storageV3WriterLeasePath(root) } catch {
+    return fail(STORAGE_V3_WRITER_LEASE_REFUSED)
+  }
+  if (record.path !== expectedPath) fail(STORAGE_V3_WRITER_LEASE_REFUSED)
+  proveLease(record)
+}
+
 function acquireStorageV3WriterLease(root: StorageV3ArtifactRoot): StorageV3WriterLease {
   const path = (() => {
     try { return storageV3WriterLeasePath(root) } catch { return fail(STORAGE_V3_WRITER_LEASE_REFUSED) }
