@@ -16,12 +16,18 @@ import {
 } from './v3Restore.js'
 import {
   createStorageV3ArtifactRoot,
+  openStorageV3ArtifactRoot,
   registerSelectedStorageV3Artifact,
   STORAGE_V3_ARTIFACT_LOCATORS,
   storageV3MaintenanceStatus,
 } from './v3ArtifactCatalogue.js'
 import { v3BackupTestSeams } from './v3Backup.js'
-import { recordStorageV3MigrationSelection } from './v3SelectionReceipt.js'
+import { recordStorageV3MigrationSelection, type StorageV3MigrationSelection } from './v3SelectionReceipt.js'
+import {
+  STORAGE_V3_SELECTION_PROOF_NAMES,
+  v3SelectionProofTestSeams,
+  verifyStorageV3MigrationSelectionProof,
+} from './v3SelectionProof.js'
 import { installStorageV3ShadowSchema, storageV3ArtifactManifestSha256, storageV3SelectedStoreContentSha256 } from './v3ShadowSchema.js'
 import { taskInstallationKeyTestSeams } from './taskInstallationKey.js'
 
@@ -36,10 +42,12 @@ const INTENT = 'a'.repeat(64)
 async function publicationFixture(): Promise<{
   root: string
   input: StorageV3RestoreFromSelectionInput
+  selection: StorageV3MigrationSelection
   backupPath: string
   manifestPath: string
   backupBytes: Buffer
   manifestBytes: Buffer
+  selectionProofBytes: Buffer
   close(): void
 }> {
   const workspaceRoot = mkdtempSync(join(tmpdir(), 'developer-lens-life03-restore-'))
@@ -77,25 +85,34 @@ async function publicationFixture(): Promise<{
       backupArtifactId: backup.artifactId,
       successfulReportAt: '2026-08-06T12:40:00.000Z',
     }).selection
+    v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+      db,
+      rootHandle,
+      installationKey,
+      () => {},
+    )
     db.close()
     const backupPath = join(root, backup.locator)
     const manifestPath = join(root, backup.manifestLocator)
     const backupBytes = readFileSync(backupPath)
     const manifestBytes = readFileSync(manifestPath)
+    const selectionProofBytes = readFileSync(join(root, STORAGE_V3_SELECTION_PROOF_NAMES.final))
     unlinkSync(join(root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))
     return {
       root,
+      selection,
       input: Object.freeze({
         directory: root,
         backupAt,
         backupArtifactId: backup.artifactId,
         installationKey,
-        selection,
+        selectionProof: verifyStorageV3MigrationSelectionProof(rootHandle, installationKey),
       }),
       backupPath,
       manifestPath,
       backupBytes,
       manifestBytes,
+      selectionProofBytes,
       close: () => rmSync(workspaceRoot, { recursive: true, force: true }),
     }
   } catch (error) {
@@ -103,6 +120,16 @@ async function publicationFixture(): Promise<{
     rmSync(workspaceRoot, { recursive: true, force: true })
     throw error
   }
+}
+
+function freshRestoreInput(fx: Awaited<ReturnType<typeof publicationFixture>>): StorageV3RestoreFromSelectionInput {
+  return Object.freeze({
+    ...fx.input,
+    selectionProof: verifyStorageV3MigrationSelectionProof(
+      openStorageV3ArtifactRoot(fx.root),
+      fx.input.installationKey,
+    ),
+  })
 }
 
 function fixture(): { db: Database.Database; proof: StorageV3RestoreSnapshotProof; close(): void } {
@@ -160,6 +187,21 @@ describe('LIFE-03 restore snapshot normalization', () => {
   it('refuses malformed publication requests with one non-legacy unavailable code', () => {
     const result = restoreStorageV3SelectedStoreFromVerifiedSelection({} as never)
     expect(result).toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
+  })
+
+  it('refuses a caller-minted receipt in place of an opaque selection-proof handle', async () => {
+    const fx = await publicationFixture()
+    try {
+      const result = v3RestorePublicationTestSeams.restoreWithSynchronizer({
+        ...fx.input,
+        selectionProof: fx.selection as never,
+      }, () => {})
+      expect(result).toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))).toBe(false)
+      expect(readFileSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)))
+        .toEqual(fx.selectionProofBytes)
+      expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
+    } finally { fx.close() }
   })
 
   it('removes only the copied staged backup and preserves selected/observed/tombstone state', () => {
@@ -238,11 +280,11 @@ describe('LIFE-03 restore snapshot normalization', () => {
         'directory-sync', 'temp-unlink', 'readonly-reopen',
       ])
       if (result.reader !== 'sqlite-v3') throw new Error('expected restored reader')
-      expect(result.selection).toEqual(fx.input.selection)
+      expect(result.selection).toEqual(fx.selection)
       expect(result.db.prepare('SELECT additions, deletions, files FROM commit_observation').get())
         .toEqual({ additions: 4, deletions: 2, files: 1 })
       expect(result.db.prepare('SELECT artifact_id, state FROM app_artifact').all())
-        .toEqual([{ artifact_id: fx.input.selection.selectedArtifactId, state: 'active' }])
+        .toEqual([{ artifact_id: fx.selection.selectedArtifactId, state: 'active' }])
       expect(result.db.prepare('SELECT COUNT(*) FROM migration_backup_attempt').pluck().get()).toBe(0)
       result.db.close()
 
@@ -251,10 +293,12 @@ describe('LIFE-03 restore snapshot normalization', () => {
       expect(statSync(selectedPath).ino).not.toBe(statSync(fx.backupPath).ino)
       expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
       expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
+      expect(readFileSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)))
+        .toEqual(fx.selectionProofBytes)
       expect(syncs).toEqual(['link', 'temp-unlink'])
 
       const replay = v3RestorePublicationTestSeams.restoreWithSynchronizer(
-        fx.input,
+        freshRestoreInput(fx),
         (_root, phase) => syncs.push(`replay:${phase}`),
       )
       expect(replay.reader).toBe('sqlite-v3')
@@ -275,10 +319,10 @@ describe('LIFE-03 restore snapshot normalization', () => {
         .toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
       expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))).toBe(true)
       expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary))).toBe(true)
-      expect(v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, rejectLinkSync as never))
+      expect(v3RestorePublicationTestSeams.restoreWithSynchronizer(freshRestoreInput(fx), rejectLinkSync as never))
         .toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
 
-      const recovered = v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {})
+      const recovered = v3RestorePublicationTestSeams.restoreWithSynchronizer(freshRestoreInput(fx), () => {})
       expect(recovered.reader).toBe('sqlite-v3')
       if (recovered.reader === 'sqlite-v3') recovered.db.close()
       expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary))).toBe(false)

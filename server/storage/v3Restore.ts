@@ -36,6 +36,10 @@ import {
   recordStorageV3MigrationSelection,
   type StorageV3MigrationSelection,
 } from './v3SelectionReceipt.js'
+import {
+  consumeStorageV3MigrationSelectionProof,
+  type StorageV3MigrationSelectionProofHandle,
+} from './v3SelectionProof.js'
 import { openSelectedStorageV3StoreReadonly } from './v3StoreFiles.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
 import type { TaskInstallationKeyHandle } from './taskInstallationKey.js'
@@ -336,8 +340,8 @@ export type StorageV3RestoreFromSelectionInput = Readonly<{
   backupAt: string
   backupArtifactId: string
   installationKey: TaskInstallationKeyHandle
-  /** An already verified immutable selection receipt; restore never mints one. */
-  selection: StorageV3MigrationSelection
+  /** Opaque, single-use authority from the exact immutable external marker. */
+  selectionProof: StorageV3MigrationSelectionProofHandle
 }>
 
 export type StorageV3RestoreResult =
@@ -361,8 +365,6 @@ type RestoreFailureInjector = (stage: RestoreStage) => void
 const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
 const SQLITE_HEADER = Buffer.from('SQLite format 3\0', 'binary')
 const ARTIFACT_ID = /^art-[0-9a-f]{64}$/
-const LEGACY_SOURCE_ID = /^legacy-[0-9a-f]{64}$/
-const CANONICAL_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 
 function restoreUnavailable(): StorageV3RestoreResult {
   return Object.freeze({ reader: 'unavailable' as const, code: STORAGE_V3_RESTORE_UNAVAILABLE })
@@ -410,7 +412,7 @@ function assertRestoreSidecarsAbsent(root: StorageV3ArtifactRoot, locator: strin
 
 function closeRestoreInput(raw: unknown): Readonly<StorageV3RestoreFromSelectionInput> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw) || Object.getPrototypeOf(raw) !== Object.prototype) return fail()
-  const expected = ['directory', 'backupAt', 'backupArtifactId', 'installationKey', 'selection'] as const
+  const expected = ['directory', 'backupAt', 'backupArtifactId', 'installationKey', 'selectionProof'] as const
   const keys = Reflect.ownKeys(raw)
   if (keys.length !== expected.length || keys.some((key) => typeof key !== 'string' || !expected.includes(key as typeof expected[number]))) return fail()
   const read = (key: typeof expected[number]): unknown => {
@@ -422,45 +424,17 @@ function closeRestoreInput(raw: unknown): Readonly<StorageV3RestoreFromSelection
   const backupAt = read('backupAt')
   const backupArtifactId = read('backupArtifactId')
   const installationKey = read('installationKey')
-  const value = read('selection')
+  const selectionProof = read('selectionProof')
   if (typeof directory !== 'string' || directory.length === 0
     || typeof backupAt !== 'string' || typeof backupArtifactId !== 'string' || !ARTIFACT_ID.test(backupArtifactId)
     || !installationKey || typeof installationKey !== 'object'
-    || !value || typeof value !== 'object' || Array.isArray(value)) return fail()
-  const selectionKeys = ['readerState', 'legacySourceId', 'selectedArtifactId', 'backupArtifactId', 'successfulReportAt', 'graceDeadlineAt'] as const
-  const ownSelectionKeys = Reflect.ownKeys(value)
-  if (ownSelectionKeys.length !== selectionKeys.length
-    || ownSelectionKeys.some((key) => typeof key !== 'string' || !selectionKeys.includes(key as typeof selectionKeys[number]))) return fail()
-  const selectionValue = (key: typeof selectionKeys[number]): unknown => {
-    const descriptor = Object.getOwnPropertyDescriptor(value, key)
-    if (!descriptor || !Object.hasOwn(descriptor, 'value')) return fail()
-    return (descriptor as PropertyDescriptor & { value: unknown }).value
-  }
-  const readerState = selectionValue('readerState')
-  const legacySourceId = selectionValue('legacySourceId')
-  const selectedArtifactId = selectionValue('selectedArtifactId')
-  const selectedBackupArtifactId = selectionValue('backupArtifactId')
-  const successfulReportAt = selectionValue('successfulReportAt')
-  const graceDeadlineAt = selectionValue('graceDeadlineAt')
-  if (readerState !== 'v3_selected' || typeof legacySourceId !== 'string' || !LEGACY_SOURCE_ID.test(legacySourceId)
-    || typeof selectedArtifactId !== 'string' || !ARTIFACT_ID.test(selectedArtifactId)
-    || typeof selectedBackupArtifactId !== 'string' || !ARTIFACT_ID.test(selectedBackupArtifactId)
-    || typeof successfulReportAt !== 'string' || !CANONICAL_TIMESTAMP.test(successfulReportAt)
-    || typeof graceDeadlineAt !== 'string' || !CANONICAL_TIMESTAMP.test(graceDeadlineAt)
-    || new Date(Date.parse(successfulReportAt) + 7 * 24 * 60 * 60 * 1000).toISOString() !== graceDeadlineAt) return fail()
+    || !selectionProof || typeof selectionProof !== 'object' || Array.isArray(selectionProof)) return fail()
   return Object.freeze({
     directory,
     backupAt,
     backupArtifactId,
     installationKey: installationKey as TaskInstallationKeyHandle,
-    selection: Object.freeze({
-      readerState: 'v3_selected' as const,
-      legacySourceId,
-      selectedArtifactId,
-      backupArtifactId: selectedBackupArtifactId,
-      successfulReportAt,
-      graceDeadlineAt,
-    }),
+    selectionProof: selectionProof as StorageV3MigrationSelectionProofHandle,
   })
 }
 
@@ -608,6 +582,11 @@ function restoreFromVerifiedSelection(
     root = openStorageV3ArtifactRoot(closed.directory)
     assertStorageV3ArtifactRootInstallationKey(root, closed.installationKey)
     return withStorageV3WriterLease(root, () => {
+      const selection = consumeStorageV3MigrationSelectionProof(
+        closed.selectionProof,
+        root!,
+        closed.installationKey,
+      )
       const selectedPath = storageV3ArtifactFilePath(root!, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
       const tempLocator = STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary
       const tempPath = storageV3ArtifactFilePath(root!, tempLocator)
@@ -619,8 +598,8 @@ function restoreFromVerifiedSelection(
         try {
           const receipt = readStorageV3MigrationSelection(replay)
           if (receipt === undefined) return restoreUnavailable()
-          assertExactRestoreSelection(receipt, closed.selection)
-          assertRestoreSelectedArtifact(replay, closed.selection.selectedArtifactId)
+          assertExactRestoreSelection(receipt, selection)
+          assertRestoreSelectedArtifact(replay, selection.selectedArtifactId)
           return Object.freeze({ reader: 'sqlite-v3' as const, db: replay, selection: receipt })
         } catch {
           if (replay.open) replay.close()
@@ -635,8 +614,8 @@ function restoreFromVerifiedSelection(
         artifactId: closed.backupArtifactId,
         installationKey: closed.installationKey,
       })
-      if (verified.selectedArtifactId !== closed.selection.selectedArtifactId
-        || verified.artifactId !== closed.selection.backupArtifactId) return restoreUnavailable()
+      if (verified.selectedArtifactId !== selection.selectedArtifactId
+        || verified.artifactId !== selection.backupArtifactId) return restoreUnavailable()
       claimedTemp = copyRestoreBackup(root!, verified, tempPath, failAfterStage)
       writable = new Database(tempPath, { fileMustExist: true })
       bindStorageV3ArtifactRoot(writable, root!)
@@ -655,12 +634,12 @@ function restoreFromVerifiedSelection(
       })
       failAfterStage?.('receipt')
       const recorded = recordStorageV3MigrationSelection(writable, {
-        legacySourceId: closed.selection.legacySourceId,
-        selectedArtifactId: closed.selection.selectedArtifactId,
-        backupArtifactId: closed.selection.backupArtifactId,
-        successfulReportAt: closed.selection.successfulReportAt,
+        legacySourceId: selection.legacySourceId,
+        selectedArtifactId: selection.selectedArtifactId,
+        backupArtifactId: selection.backupArtifactId,
+        successfulReportAt: selection.successfulReportAt,
       })
-      assertExactRestoreSelection(recorded.selection, closed.selection)
+      assertExactRestoreSelection(recorded.selection, selection)
       writable.close()
       writable = undefined
       failAfterStage?.('link')
@@ -694,8 +673,8 @@ function restoreFromVerifiedSelection(
       try {
         const receipt = readStorageV3MigrationSelection(reader)
         if (receipt === undefined) return fail()
-        assertExactRestoreSelection(receipt, closed.selection)
-        assertRestoreSelectedArtifact(reader, closed.selection.selectedArtifactId)
+        assertExactRestoreSelection(receipt, selection)
+        assertRestoreSelectedArtifact(reader, selection.selectedArtifactId)
         return Object.freeze({ reader: 'sqlite-v3' as const, db: reader, selection: receipt })
       } catch {
         if (reader.open) reader.close()
