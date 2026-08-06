@@ -1,13 +1,16 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { EvidenceDrawer } from './EvidenceDrawer'
 import { useIntegrationShapeEvidenceResolver } from '../lib/evidenceApiResolver'
 import {
-  buildIntegrationShapePresentation,
   secondsToDayLabel,
   type IntegrationShapeOutcomeRow,
   type IntegrationShapePresentation,
 } from '../../shared/integrationShape'
+import {
+  parseIntegrationShapePresentationEnvelope,
+  type IntegrationShapePresentationEnvelope,
+} from '../../shared/integrationShapeStoredPresentation.js'
 import type { AnalyticReference } from '../../shared/findings.js'
 import type { ComparisonResult, ResidualSegment } from '../../shared/comparison.js'
 import type { Finding } from '../../shared/findings.js'
@@ -289,9 +292,15 @@ function OutcomeTable({ outcomes }: { outcomes: readonly IntegrationShapeOutcome
   )
 }
 
-export function IntegrationShapeAtlasPanel({ presentation }: { presentation: IntegrationShapePresentation }) {
+export function IntegrationShapeAtlasPanel({
+  presentation,
+  resolutions,
+}: {
+  presentation: IntegrationShapePresentation
+  resolutions?: IntegrationShapePresentationEnvelope['resolutions']
+}) {
   const [drawerReference, setDrawerReference] = useState<AnalyticReference | null>(null)
-  const resolveEvidence = useIntegrationShapeEvidenceResolver(drawerReference)
+  const resolveEvidence = useIntegrationShapeEvidenceResolver(drawerReference, resolutions)
   const finding = presentation.finding
   const headline = presentation.headline
   const open = drawerReference !== null
@@ -488,9 +497,72 @@ export function IntegrationShapeAtlasPanel({ presentation }: { presentation: Int
   )
 }
 
-/** The route entry: computes the composition once and renders the panel. Never fetches. */
+export function atlasPresentationEndpoint(
+  staticDemo = import.meta.env.VITE_STATIC_DEMO === 'true',
+  baseUrl = import.meta.env.BASE_URL,
+): string {
+  return staticDemo ? `${baseUrl}data/integration-shape.json` : '/api/v2/analysis/integration-shape'
+}
+
+function AtlasUnavailable() {
+  return (
+    <section className="atlas-route__status" data-testid="integration-shape-unavailable" role="status">
+      <span className="atlas-panel__eyebrow">Integration shape Atlas · unavailable</span>
+      <h1>The Atlas presentation is unavailable.</h1>
+      <p>
+        The selected presentation could not be loaded or did not satisfy its contract. This view abstains rather than
+        showing a local synthetic fallback.
+      </p>
+    </section>
+  )
+}
+
+function AtlasLoading() {
+  return (
+    <section className="atlas-route__status" data-testid="integration-shape-loading" role="status" aria-live="polite">
+      <span className="atlas-panel__eyebrow">Integration shape Atlas · loading</span>
+      <h1>Loading the stored Atlas presentation…</h1>
+      <p>Reading the selected local presentation. No conclusion is shown until it is available.</p>
+    </section>
+  )
+}
+
+/** The route entry: fetches an explicit stored presentation and abstains on any failure. */
 export function IntegrationShapeAtlasRoute() {
-  const presentation = useMemo(() => buildIntegrationShapePresentation(), [])
+  const [state, setState] = useState<
+    | { kind: 'loading' }
+    | { kind: 'ready'; envelope: IntegrationShapePresentationEnvelope }
+    | { kind: 'unavailable' }
+  >({ kind: 'loading' })
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const staticDemo = import.meta.env.VITE_STATIC_DEMO === 'true'
+
+    setState({ kind: 'loading' })
+    fetch(atlasPresentationEndpoint(staticDemo), { signal: controller.signal })
+      .then(async (response) => {
+        if (!response.ok) throw new Error(`integration-shape presentation returned ${response.status}`)
+        return parseIntegrationShapePresentationEnvelope(await response.json())
+      })
+      .then((envelope) => setState({ kind: 'ready', envelope }))
+      .catch((error: unknown) => {
+        if (error instanceof Error && error.name === 'AbortError') return
+        setState({ kind: 'unavailable' })
+      })
+
+    return () => controller.abort()
+  }, [])
+
+  const content =
+    state.kind === 'loading' ? (
+      <AtlasLoading />
+    ) : state.kind === 'unavailable' ? (
+      <AtlasUnavailable />
+    ) : (
+      <IntegrationShapeAtlasPanel presentation={state.envelope.presentation} resolutions={state.envelope.resolutions} />
+    )
+
   return (
     <div className="app atlas-route" id="top">
       <div className="ambient ambient--one" aria-hidden="true" />
@@ -499,10 +571,12 @@ export function IntegrationShapeAtlasRoute() {
         <a className="atlas-route__brand" href="?">
           ← Developer Lens · integration shape
         </a>
-        <span className="local-pill local-pill--public">Invented C1 · offline</span>
+        <span className="local-pill local-pill--public">
+          {state.kind === 'ready' && state.envelope.mode === 'selected_store' ? 'Selected store' : 'Stored presentation'}
+        </span>
       </header>
       <main className="atlas-route__main">
-        <IntegrationShapeAtlasPanel presentation={presentation} />
+        {content}
       </main>
     </div>
   )

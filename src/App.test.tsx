@@ -5,12 +5,19 @@ import { analyzeDataset } from '../server/analytics'
 import { createDemoDataset } from '../server/demo'
 import { payloadForSink } from '../shared/privacy'
 import { V2_DEMO_INSIGHTS, V2_DEMO_PAYLOAD, V2_DEMO_REGISTRATION } from '../shared/v2Demo'
+import { buildIntegrationShapePresentation } from '../shared/integrationShape'
 import App from './App'
 
 const demo = analyzeDataset(createDemoDataset('6m'))
 const publicDemo = {
   ...demo,
   meta: { ...demo.meta, privacy: 'public-demo' as const },
+}
+const integrationShapeEnvelope = {
+  presentationContractVersion: '1.0.0' as const,
+  mode: 'synthetic' as const,
+  presentation: buildIntegrationShapePresentation(),
+  resolutions: {},
 }
 
 describe('Developer Lens app', () => {
@@ -145,7 +152,13 @@ describe('Developer Lens app', () => {
   })
 
   it('renders the Atlas route with a way back to the dashboard', async () => {
-    vi.stubGlobal('fetch', vi.fn())
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => integrationShapeEnvelope,
+      }),
+    )
     window.history.replaceState({}, '', '/?view=integration-shape')
 
     render(<App />)

@@ -1,13 +1,18 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import App from '../App'
-import { IntegrationShapeAtlasPanel } from './IntegrationShapeAtlas'
+import { atlasPresentationEndpoint, IntegrationShapeAtlasPanel, IntegrationShapeAtlasRoute } from './IntegrationShapeAtlas'
 import { UNRESOLVABLE_COPY } from './evidenceDrawerCopy'
 import { CLAIM_IDS, buildIntegrationShapePresentation } from '../../shared/integrationShape'
 import { CAUSAL_OR_EVALUATIVE_TERMS } from '../../shared/findings'
 
 const presentation = buildIntegrationShapePresentation()
+const envelope = {
+  presentationContractVersion: '1.0.0' as const,
+  mode: 'synthetic' as const,
+  presentation,
+  resolutions: {},
+}
 
 function renderPanel() {
   return render(<IntegrationShapeAtlasPanel presentation={presentation} />)
@@ -194,15 +199,38 @@ describe('IntegrationShapeAtlas — copy discipline', () => {
   })
 })
 
-describe('IntegrationShapeAtlas — routed in App and never fetches to render', () => {
-  it('renders at ?view=integration-shape without a network call', async () => {
-    const fetchMock = vi.fn()
+describe('IntegrationShapeAtlas — explicit presentation source', () => {
+  it('uses the private analysis endpoint and renders the served presentation', async () => {
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ ...envelope, mode: 'selected_store' }), { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
-    window.history.replaceState({}, '', '/?view=integration-shape')
-    render(<App />)
-    // The route is lazy, so it arrives on the Suspense boundary rather than the first paint.
+    render(<IntegrationShapeAtlasRoute />)
+
     expect(await screen.findByTestId('integration-shape-atlas')).toBeInTheDocument()
-    expect(fetchMock).not.toHaveBeenCalled()
+    expect(fetchMock).toHaveBeenCalledWith('/api/v2/analysis/integration-shape', expect.any(Object))
+    expect(screen.getByText('Selected store')).toBeInTheDocument()
+  })
+
+  it('builds the Pages URL from the Vite base without changing the private endpoint', () => {
+    expect(atlasPresentationEndpoint(true, '/developer-lens/')).toBe('/developer-lens/data/integration-shape.json')
+    expect(atlasPresentationEndpoint(false, '/developer-lens/')).toBe('/api/v2/analysis/integration-shape')
+  })
+
+  it('renders explicit unavailable abstention furniture and never falls back to local composition', async () => {
+    const fetchMock = vi.fn(async () => new Response('{"presentation":null}', { status: 503 }))
+    vi.stubGlobal('fetch', fetchMock)
+    render(<IntegrationShapeAtlasRoute />)
+
+    expect(await screen.findByTestId('integration-shape-unavailable')).toBeInTheDocument()
+    expect(screen.getByText(/abstains rather than showing a local synthetic fallback/i)).toBeInTheDocument()
+    expect(screen.queryByTestId('integration-shape-atlas')).not.toBeInTheDocument()
+  })
+
+  it('abstains when a successful response fails the stored-presentation contract', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response('{}', { status: 200 })))
+    render(<IntegrationShapeAtlasRoute />)
+
+    expect(await screen.findByTestId('integration-shape-unavailable')).toBeInTheDocument()
+    expect(screen.queryByTestId('atlas-observation')).not.toBeInTheDocument()
   })
 })
 

@@ -27,6 +27,18 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+.atlas-route__status {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  padding: 1.5rem;
+  border-radius: 18px;
+  background: rgba(20, 22, 34, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+.atlas-route__status h1 { margin: 0; font-size: 1.5rem; }
+.atlas-route__status p { margin: 0; max-width: 58ch; line-height: 1.55; color: #d5dcf0; }
+
 .atlas-panel__eyebrow {
   font-size: 0.72rem;
   text-transform: uppercase;

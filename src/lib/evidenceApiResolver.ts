@@ -87,6 +87,7 @@ function servedProjection(
  */
 export function useIntegrationShapeEvidenceResolver(
   reference: AnalyticReference | null,
+  bundledResolutions: Readonly<Record<string, IntegrationShapeEvidenceResolution>> | undefined = undefined,
 ): (reference: AnalyticReference) => IntegrationShapeEvidenceResolution {
   const requested = useRef(new Set<string>())
   const unreachable = useRef(false)
@@ -120,9 +121,15 @@ export function useIntegrationShapeEvidenceResolver(
   }, [reference])
 
   return useCallback(
-    (requestedReference: AnalyticReference) =>
-      served.get(evidenceReferenceKey(requestedReference)) ??
-      resolveIntegrationShapeEvidence(requestedReference),
-    [served],
+    (requestedReference: AnalyticReference) => {
+      const key = evidenceReferenceKey(requestedReference)
+      return (
+        served.get(key) ??
+        bundledResolutions?.[key] ??
+        (requestedReference.kind === 'claim' ? bundledResolutions?.[requestedReference.claimId] : undefined) ??
+        resolveIntegrationShapeEvidence(requestedReference)
+      )
+    },
+    [bundledResolutions, served],
   )
 }
