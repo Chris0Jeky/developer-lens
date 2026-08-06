@@ -175,6 +175,10 @@ function replayIfExact(input: StorageV3BackupInput, locator: string, manifestLoc
   const row = input.db.prepare('SELECT kind, state, content_sha256, manifest_sha256 FROM app_artifact WHERE artifact_id = ? AND relative_locator = ?').get(input.artifactId, locator) as Record<string, unknown> | undefined
   if (!row || row.kind !== 'migration_backup_v1' || row.state !== 'active' || row.content_sha256 !== contentSha256 || row.manifest_sha256 !== manifestSha256) fail()
   validateBackupDb(finalPath)
+  const stagedPath = storageV3ArtifactFilePath(input.root, `${locator}.tmp`)
+  const stagedManifestPath = storageV3ArtifactFilePath(input.root, `${locator}.tmp.manifest.json`)
+  if (stat(stagedPath) !== undefined) unlinkSync(stagedPath)
+  if (stat(stagedManifestPath) !== undefined) unlinkSync(stagedManifestPath)
   return Object.freeze({ artifactId: input.artifactId, locator, manifestLocator, contentSha256, manifestSha256 })
 }
 
