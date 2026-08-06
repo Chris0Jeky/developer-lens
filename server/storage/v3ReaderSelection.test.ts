@@ -19,6 +19,10 @@ import {
   v3ReaderSelectionTestSeams,
   type StorageV3ReaderSelectionInput,
 } from './v3ReaderSelection.js'
+import {
+  completeStorageV3DeletionMaintenance,
+  deleteStorageV3Scope,
+} from './v3Deletion.js'
 import { readStorageV3MigrationSelection } from './v3SelectionReceipt.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 import { openSelectedStorageV3Store } from './v3StoreFiles.js'
@@ -158,12 +162,37 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       expect(selectStorageV3Reader({
         ...fx.input,
         successfulReportAt: '2026-08-06T12:35:01.000Z',
-      })).toEqual({ reader: 'legacy-json', code: 'v3-selection-receipt-refused' })
+      })).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
 
       const exact = expectSelected(selectStorageV3Reader(fx.input))
       expect(exact.selection.successfulReportAt).toBe(SUCCESS_AT)
       expect(exact.selection.graceDeadlineAt).toBe('2026-08-13T12:35:00.000Z')
       exact.db.close()
+    } finally { fx.cleanup() }
+  })
+
+  it('replays sqlite-v3 after scope revocation removes the finalized backup', async () => {
+    const fx = await fixture()
+    try {
+      const first = expectSelected(selectStorageV3Reader(fx.input))
+      first.db.close()
+
+      for (const [scopeId, byte] of [[SCOPE_A, 8], [SCOPE_B, 9]] as const) {
+        const db = openSelectedStorageV3Store(fx.root)
+        expect(deleteStorageV3Scope({
+          db,
+          scopeId,
+          asOf: '2026-08-06T12:40:00.000Z',
+          randomBytes: () => Buffer.alloc(32, byte),
+        }).maintenance).toBe('pending')
+        expect(completeStorageV3DeletionMaintenance(db).maintenance).toBe('complete')
+        db.close()
+      }
+
+      expect(existsSync(join(fx.root, 'migration-backup-20260806123456.sqlite'))).toBe(false)
+      const replay = expectSelected(selectStorageV3Reader(fx.input))
+      expect(replay.db.prepare('SELECT scope_id FROM claim_scope').pluck().all()).toEqual([])
+      replay.db.close()
     } finally { fx.cleanup() }
   })
 

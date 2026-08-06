@@ -1,6 +1,9 @@
-import type Database from 'better-sqlite3'
+import Database from 'better-sqlite3'
+import { lstatSync } from 'node:fs'
 import {
   openStorageV3ArtifactRoot,
+  storageV3ArtifactFilePath,
+  STORAGE_V3_ARTIFACT_LOCATORS,
 } from './v3ArtifactCatalogue.js'
 import {
   StorageV3BackupError,
@@ -53,12 +56,90 @@ export type StorageV3ReaderSelection =
       reader: 'legacy-json'
       code: StorageV3ReaderSelectionCode
     }>
+  | Readonly<{
+      reader: 'unavailable'
+      code: 'v3-selection-selected-refused'
+    }>
 
 type ClosedSelectionInput = StorageV3ReaderSelectionInput
 type SelectionStage = 'request' | 'root' | 'lease' | 'store' | 'backup' | 'receipt'
 
 const fallback = (code: StorageV3ReaderSelectionCode): StorageV3ReaderSelection =>
   Object.freeze({ reader: 'legacy-json' as const, code })
+
+const selectedUnavailable = (): StorageV3ReaderSelection =>
+  Object.freeze({ reader: 'unavailable' as const, code: 'v3-selection-selected-refused' as const })
+
+class StorageV3SelectedRefusalError extends Error {
+  constructor() {
+    super('STORAGE_V3_SELECTED_REFUSED')
+    this.name = 'StorageV3SelectedRefusalError'
+  }
+}
+
+type ReceiptPresence = 'absent' | 'present' | 'ambiguous'
+
+/**
+ * A deliberately small, read-only probe used before any selector fallback. It does
+ * not assert the full store contract (the real opener does that); it only answers
+ * whether a durable selection row is plainly absent, plainly present, or ambiguous.
+ * Any malformed state is protected rather than treated as a legacy store.
+ */
+function probeSelectionReceipt(root: ReturnType<typeof openStorageV3ArtifactRoot>): ReceiptPresence {
+  const path = storageV3ArtifactFilePath(root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+  let db: Database.Database | undefined
+  try {
+    const entry = lstatSync(path, { bigint: true })
+    if (!entry.isFile() || entry.isSymbolicLink()) return 'ambiguous'
+    db = new Database(path, { fileMustExist: true, readonly: true })
+    const table = db.prepare(
+      "SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'migration_selection_state'",
+    ).get()
+    if (table === undefined) return 'absent'
+    const rows = db.prepare(
+      `SELECT singleton, reader_state, legacy_source_id, selected_artifact_id,
+              backup_artifact_id, successful_report_at, grace_deadline_at
+       FROM migration_selection_state`,
+    ).all() as Array<Record<string, unknown>>
+    if (rows.length === 0) return 'absent'
+    if (rows.length !== 1) return 'ambiguous'
+    const row = rows[0]
+    if (row === undefined || row.singleton !== 1 || row.reader_state !== 'v3_selected'
+      || typeof row.legacy_source_id !== 'string'
+      || typeof row.selected_artifact_id !== 'string'
+      || typeof row.backup_artifact_id !== 'string'
+      || typeof row.successful_report_at !== 'string'
+      || typeof row.grace_deadline_at !== 'string') return 'ambiguous'
+    return 'present'
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return 'absent'
+    // A present-but-unreadable selected artifact is not evidence of a legacy store.
+    return 'ambiguous'
+  } finally {
+    if (db?.open) db.close()
+  }
+}
+
+function activeSelectedArtifactId(db: Database.Database): string {
+  const rows = db.prepare(
+    "SELECT artifact_id FROM app_artifact WHERE kind = 'selected_store' AND state = 'active'",
+  ).pluck().all() as unknown[]
+  if (rows.length !== 1 || typeof rows[0] !== 'string') throw new StorageV3SelectedRefusalError()
+  return rows[0]
+}
+
+function assertReplayRequest(
+  selection: StorageV3MigrationSelection,
+  input: ClosedSelectionInput,
+  selectedArtifactId: string,
+): void {
+  if (selection.legacySourceId !== input.legacySourceId
+    || selection.selectedArtifactId !== selectedArtifactId
+    || selection.backupArtifactId !== input.backupArtifactId
+    || selection.successfulReportAt !== input.successfulReportAt) {
+    throw new StorageV3SelectedRefusalError()
+  }
+}
 
 function closeInput(input: unknown): ClosedSelectionInput {
   if (!input || typeof input !== 'object' || Array.isArray(input)
@@ -124,33 +205,55 @@ function selectStorageV3ReaderInternal(
 ): StorageV3ReaderSelection {
   let stage: SelectionStage = 'request'
   let openedDb: Database.Database | undefined
+  let root: ReturnType<typeof openStorageV3ArtifactRoot> | undefined
+  let protectedSelection = false
   try {
     const closed = closeInput(input)
     stage = 'root'
-    const root = openStorageV3ArtifactRoot(closed.directory)
+    const artifactRoot = openStorageV3ArtifactRoot(closed.directory)
+    root = artifactRoot
+    const initialPresence = probeSelectionReceipt(artifactRoot)
+    if (initialPresence === 'ambiguous') return selectedUnavailable()
+    protectedSelection = initialPresence === 'present'
     stage = 'lease'
-    const selected = withStorageV3WriterLease(root, () => {
+    const selected = withStorageV3WriterLease(artifactRoot, () => {
+      const leasePresence = probeSelectionReceipt(artifactRoot)
+      if (leasePresence === 'ambiguous') throw new StorageV3SelectedRefusalError()
+      if (leasePresence === 'present') protectedSelection = true
       stage = 'store'
       const db = openSelectedStorageV3Store(closed.directory)
       openedDb = db
-      stage = 'backup'
-      const backup = verifyStorageV3MigrationBackup({
-        db,
-        root,
-        backupAt: closed.backupAt,
-        artifactId: closed.backupArtifactId,
-        installationKey: closed.installationKey,
-      })
-      stage = 'receipt'
-      const receiptInput = Object.freeze({
-        legacySourceId: closed.legacySourceId,
-        selectedArtifactId: backup.selectedArtifactId,
-        backupArtifactId: backup.artifactId,
-        successfulReportAt: closed.successfulReportAt,
-      })
-      const receipt = beforeReceiptCommit === undefined
-        ? recordStorageV3MigrationSelection(db, receiptInput)
-        : v3SelectionReceiptTestSeams.recordWithBeforeCommit(db, receiptInput, beforeReceiptCommit)
+      const existing = readStorageV3MigrationSelection(db)
+      let receipt: StorageV3MigrationSelection
+      if (existing !== undefined) {
+        const selectedArtifactId = activeSelectedArtifactId(db)
+        assertReplayRequest(existing, closed, selectedArtifactId)
+        receipt = existing
+      } else {
+        if (protectedSelection) throw new StorageV3SelectedRefusalError()
+        stage = 'backup'
+        const backup = verifyStorageV3MigrationBackup({
+          db,
+          root: artifactRoot,
+          backupAt: closed.backupAt,
+          artifactId: closed.backupArtifactId,
+          installationKey: closed.installationKey,
+        })
+        stage = 'receipt'
+        const receiptInput = Object.freeze({
+          legacySourceId: closed.legacySourceId,
+          selectedArtifactId: backup.selectedArtifactId,
+          backupArtifactId: backup.artifactId,
+          successfulReportAt: closed.successfulReportAt,
+        })
+        const recorded = beforeReceiptCommit === undefined
+          ? recordStorageV3MigrationSelection(db, receiptInput)
+          : v3SelectionReceiptTestSeams.recordWithBeforeCommit(db, receiptInput, beforeReceiptCommit)
+        receipt = recorded.selection
+        // From this point on the durable receipt is the source of truth. Any later
+        // open/revalidation failure must not hand control back to a legacy reader.
+        protectedSelection = true
+      }
       db.close()
       openedDb = undefined
       stage = 'store'
@@ -158,20 +261,19 @@ function selectStorageV3ReaderInternal(
       openedDb = readerDb
       stage = 'receipt'
       const durableSelection = readStorageV3MigrationSelection(readerDb)
-      if (durableSelection === undefined
-        || durableSelection.legacySourceId !== receipt.selection.legacySourceId
-        || durableSelection.selectedArtifactId !== receipt.selection.selectedArtifactId
-        || durableSelection.backupArtifactId !== receipt.selection.backupArtifactId
-        || durableSelection.successfulReportAt !== receipt.selection.successfulReportAt
-        || durableSelection.graceDeadlineAt !== receipt.selection.graceDeadlineAt) {
-        throw new StorageV3MigrationSelectionError()
-      }
+      if (durableSelection === undefined) throw new StorageV3SelectedRefusalError()
+      assertReplayRequest(durableSelection, closed, activeSelectedArtifactId(readerDb))
+      if (durableSelection.graceDeadlineAt !== receipt.graceDeadlineAt) throw new StorageV3SelectedRefusalError()
       return Object.freeze({ reader: 'sqlite-v3' as const, db: readerDb, selection: durableSelection })
     })
     openedDb = undefined
     return selected
   } catch (error) {
     if (openedDb?.open) openedDb.close()
+    if (protectedSelection || (root !== undefined && probeSelectionReceipt(root) !== 'absent')) {
+      return selectedUnavailable()
+    }
+    if (error instanceof StorageV3SelectedRefusalError) return selectedUnavailable()
     return fallback(codeForFailure(error, stage))
   }
 }
