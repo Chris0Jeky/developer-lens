@@ -8,19 +8,11 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-06
-current_slice_override: 'Post-B4 storage hardening (#143) is the immediate LIFE-03 prerequisite:
-  immutable app-root binding, REPLACE-resistant artifact identity, no-follow selected-sidecar
-  checks, unambiguous publication recovery, and post-maintenance/shared-artifact lineage proof.
-  Keep fixtures invented and the runtime unactivated. The rebased candidate is locally proven and
-  awaits exact-head hosted Linux/POSIX proof plus the connector-or-15-minute gate.'
-phase: 'R4 active horizon OPEN — PR #141 merged B4 as d77b247 and exact-merge Pages/privacy run
-  31072706976 is green. PR #144 merged the #128 CAS-clock repair as b007f96 and exact-merge run
-  31073820158 is green. PR #145 merged the #137 retention repair as f1a5e67 and exact-merge run
-  31074797477 is green. Issue #143 now hardens the seven exact-head review seams before LIFE-03.
-  LIFE-02 and #80 MUST remain open after B4: the recorded whyResolver coverage/job deletion-
-  lineage joins land with the Phase-E stored-observation bridge, and #80 also tracks the C1-window
-  expiry path for scope-unbound deletion lineage. B4 permits the next bounded work; it does not
-  authorize a real migration or connector.'
+current_slice_override: '#147 is the active post-B4 storage safety vertical: retained-publication
+  CAS recovery, cause-aware artifact lineage cleanup, survivor ownership/lineage snapshots, and
+  exclusive invented fixture claims. Keep fixtures invented and the runtime unactivated. After
+  #147 merges, LIFE-03 owns backup, grace, restore, tombstone replay, and activation enforcement.'
+phase: 'R4 active horizon OPEN. B4 storage catalogue and post-B4 hardening remain the foundation; #147 is active before LIFE-03. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -28,14 +20,9 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'DL-LIFE-02 chain PRs #103, #105, #107-#125 (slice A, B1a+repairs, B1b-i..iii, B2a-i..iii,
   B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
   their engineering record stays in the ledger', 'DL-LIFE-02 B3 #136 and B4 #141',
-  'wait-window hardening #144/#145',
+  'wait-window hardening #144/#145, post-B4 hardening #146',
   'state syncs #126']
-active_slice: 'Land #143, then start DL-LIFE-03 as a separate vertical: timestamped
-  app-controlled backup, untouched source, atomic selection/fallback, seven-day grace, restart at
-  every stage, restore plus tombstone replay, grace-boundary cleanup, exact WAL/SHM handling, and
-  content-free results plus default-deny activation enforcement. Keep all fixtures invented. The
-  #139 mint-order/snapshot/scale candidate waits behind #143 because both touch the storage schema.
-  The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
+active_slice: '#147: complete retained-publication CAS, ordinary subject/cause lineage cleanup, survivor ownership/lineage proof, and exclusive invented fixture claim. Then start DL-LIFE-03 with timestamped backup, untouched source, atomic selection/fallback, seven-day grace, restart, restore/tombstone replay, cleanup, WAL/SHM handling, and default-deny activation enforcement. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
@@ -46,13 +33,7 @@ next_value_slice: 'change-batch size vs integration tail is the selected second 
   rather than adding another unreachable route'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No owner blocker for invented-fixture work. #143 is the technical prerequisite for
-  LIFE-03 because its selected-sidecar case is a future path-escape seam. A real migration/connector
-  still requires #143, LIFE-03 backup/grace/restore/tombstone-replay proof, and default-deny
-  activation enforcement. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention
-  residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema
-  validation, and a 306 B3 invented shadow is rebuilt rather than upgraded in place — no real
-  store exists and invented stores regenerate.'
+blockers: 'No owner blocker for invented-fixture work. A real migration/connector still requires #147, LIFE-03 backup/grace/restore/tombstone-replay proof, and default-deny activation enforcement. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema validation, and a 306 B3 invented shadow is rebuilt rather than upgraded in place; no real store exists and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -60,16 +41,7 @@ frozen_by_reassessment: horizon:frozen label (WB candidates, vector retrieval, G
   PROV-01 sources, ATLAS-03 parsers, EVQ-09/10, TRACE-03) — 07 §0a
 authority_order: [AGENTS.md, .agent-harness/tier.json, HUMAN_TODO.md, data-charter.md,
   source-capability-matrix.md, DEVELOPER_LENS_V2_ARCHITECTURE.md (incl. Appendix I.1-I.4)]
-last_verified_checks: 'The B4 final head 9a875ae passed the full local gate: lint, context
-  verification (27 Markdown / 12 required), 73 test files, 1,195 passed plus 2 skips (the opt-in
-  scale corpus and POSIX dangling-symlink fixture on Windows), TypeScript/build, and credential
-  scan over 13 build outputs. Its focused storage and analysis-pack proof passed 9 files / 163
-  tests plus the same 2 skips. Exact-head PR run 31071892180 and exact-merge Pages/privacy/deploy
-  run 31072706976 are green at merge d77b247. PR #144 exact-head run 31073068026 and exact-merge
-  run 31073820158 are green at b007f96. PR #145 exact-head run 31074008009 and exact-merge run
-  31074797477 are green at f1a5e67. The rebased #143 candidate passes 92 focused tests / 3 skips
-  and the full local gate (73 files / 1,206 passed / 4 Windows-platform skips); crash, lifecycle,
-  and privacy review are clean after the bounded repeated-unlink repair.'
+last_verified_checks: '#147 focused lifecycle and artifact-catalogue tests are green in the owned worktree. Full local gate, hosted Linux/POSIX proof, and review remain pending for this active branch.'
 review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently posts review comments
   3-10 minutes AFTER merge. The ledger sentences claiming an "empty late-comment sweep" for PRs
   #104-#125 were measured before the bot posted and are not evidence of clean reviews; 20 late
@@ -166,10 +138,7 @@ residual_risks:
      backup/grace/restore/tombstone-replay proof and the activation-enforcement alignment. The
      #86 storage half is CLOSED by PR B-2 (cov- registry CHECK + UNIQUE(coverage_id) + fixture
      migration); both halves of #86 now hold'
-  - '#143 is the immediate post-B4 hardening prerequisite. Its reviewed candidate now implements
-     root-binding immutability, artifact REPLACE guards, no-follow selected-sidecar handling,
-     deterministic publication recovery, and shared-artifact lineage/proof semantics; hosted
-     exact-head Linux/POSIX proof and merge remain. No real store or production caller exists.'
+  - '#147 remains active until merged: retained-publication CAS recovery, cause-aware artifact lineage cleanup, survivor ownership/lineage snapshots, and exclusive invented fixture claims are implemented in the owned worktree. No real store or production caller exists.'
   - '#142 tracks the hostile ABA pathname-replacement boundary. B4/#143 make no hostile concurrent-
      writer claim; the architecture still assumes one app writer, and native handle binding needs
      a separate bounded design before that assumption can be relaxed.'

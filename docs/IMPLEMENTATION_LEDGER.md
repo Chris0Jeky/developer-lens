@@ -2521,3 +2521,27 @@ thread, and issue #137 closed. No real migration, source, capability, or activat
 Issue #143 remains the immediate LIFE-03 prerequisite and stays open until merge. Issue #142 still
 owns hostile concurrent ABA/native-handle containment; this slice makes no hostile-writer claim and
 adds no real migration, protected-data read, capability activation, or production caller.
+
+## 2026-08-06 â€” #146 post-B4 storage hardening (merged)
+
+PR #146 merged as `eb67cb0c9b30a544b56844809db6cfe338641762`. It hardened the B4 storage seams with
+immutable app-root binding, REPLACE-resistant artifact identity, no-follow selected-sidecar checks,
+deterministic publication recovery, and shared-artifact lineage/lifecycle proof. The synthetic-only
+runtime remains unactivated; LIFE-02 and #80 remain open.
+
+## 2026-08-06 â€” #147 lifecycle safety vertical (active)
+
+Commits `a6b4df3ef6e8e77c838d3976cfea5d54f3fe4a40` and
+`08f6490fe98ed81b6e3d942b93892985df1ffc5e` implement the bounded #147 slice. Retained publication
+recovery now accepts valid accumulated CAS state while the virgin target acceptance proof stays
+strict. Synthetic lifecycle fixtures initialize CAS, force repeated primary-unlink recovery, refuse
+malformed CAS, snapshot survivor artifact ownership and lineage, and claim fixed fixture locators
+with exclusive no-follow creation. Artifact deletion removes ordinary lineage when the deleting
+artifact is either its subject or cause, preserves only tombstone/index_deleted/legacy deletion
+kinds, and the crash-reopen proof asserts no dangling causes or stranded `deleting` rows.
+
+Focused proof: `npm test -- scripts/storeLifecycle.test.ts server/storage/v3ArtifactCatalogue.test.ts`
+passed 36 tests with 4 platform/scale skips on this Windows host. POSIX symlink refusal remains
+hosted-only; full local gate, hosted Linux/POSIX proof, review, and merge are not yet verified.
+#147 remains active until merged. No real store, connector, capability activation, or private data
+was used.
