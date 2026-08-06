@@ -2686,7 +2686,12 @@ deleting refusal, complete application-controlled deletion, and post-cleanup rec
 SQL fixture proves REPLACE cannot bypass the singleton or disturb the original row. Focused backup
 proof passes 24 tests. The exact code/state working head passed the full local gate: 76 files / 1,248
 tests / 6 declared skips, lint, context verification (27 Markdown / 12 required), TypeScript/build,
-credential scanning over 13 outputs, and range whitespace checks. Hosted proof and exact-final-head
-review remain pending. No real store, legacy source, connector, activation caller, external-model
+credential scanning over 13 outputs, and range whitespace checks. Three fresh Terra lenses at exact
+candidate head
+`2574c28062b984dd36fcfe4bceb0a23c6fa68cd9` found no CRITICAL/HIGH schema/fingerprint,
+lifecycle/crash-recovery, or privacy/authority defect. Their focused invented-fixture proofs covered
+84 tests / 1 declared skip, 82 tests, and 24 tests respectively; all confirmed that #154-#156 stay
+accurately tracked rather than being overclaimed by this singleton slice. Hosted proof remains
+pending. No real store, legacy source, connector, activation caller, external-model
 request, or private input was inspected or used. Issues #154-#156 and the full grace/restore path
 remain prerequisites to any real invocation.
