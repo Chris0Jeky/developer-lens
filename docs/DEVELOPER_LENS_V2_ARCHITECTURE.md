@@ -599,8 +599,16 @@ Payload families are separate types such as `RepositoryObservedV1`, `PullRequest
 6. Recompute deterministic features from imported facts; do not import current DNA/archetype/personality output as canonical features.
 7. Compare v1/v2 safe aggregate parity on invented fixtures and, later, owner-authorized private data.
 8. Create a consistent pre-migration backup, import into a new SQLite file and leave old JSON untouched.
-9. Switch readers only after integrity, FK, deterministic replay and rollback checks.
-10. Delete old files only after G2’s grace period and explicit verified migration report.
+9. Switch readers only after integrity, FK, deterministic replay and rollback checks. Commit the
+   immutable selected-store receipt, then publish its installation-key-bound local C2 marker from
+   that exact row before returning the selected reader. A missing marker may be reconstructed only
+   from that committed receipt; conflicting bytes fail closed.
+10. Restore consumes an opaque, freshly verified marker handle, copies the immutable backup, removes
+    only provisional backup metadata from the copy, records the exact original receipt, and publishes
+    the selected name durably. It never accepts a caller-minted success timestamp.
+11. Delete old files only after G2’s grace period and explicit verified migration report. Keep the
+    C2 selection marker after that cleanup until its 13-month expiry or whole-task deletion so a
+    missing receipt-bearing store cannot silently re-authorize legacy fallback.
 
 ---
 
