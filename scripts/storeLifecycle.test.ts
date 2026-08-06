@@ -11,6 +11,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import Database from 'better-sqlite3'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { createInstallationAliases } from '../server/storage/installationAliases.js'
 import {
@@ -18,6 +19,7 @@ import {
   StorageV3ShadowMigrationError,
 } from '../server/storage/v3ShadowMigration.js'
 import { completeStorageV3DeletionMaintenance } from '../server/storage/v3Deletion.js'
+import { initializeContinuityCasScope } from '../server/storage/v3ContinuityCasProposal.js'
 import {
   openSelectedStorageV3Store,
   StorageV3StoreFileError,
@@ -128,6 +130,35 @@ describe('store lifecycle command', () => {
     }
   })
 
+  it('allows valid CAS only on retained publication recovery and refuses malformed state', () => {
+    const source = createInventedV2Source(directory)
+    try {
+      expect(migrateInventedSource(source, directory, undefined, 'rollback-unlink').status)
+        .toBe('complete')
+    } finally { source.db.close() }
+
+    const firstRetained = openSelectedStorageV3Store(directory, {
+      failAtRecoveryStage: 'primary-unlink',
+    })
+    try {
+      const scopes = firstRetained.prepare('SELECT scope_id FROM claim_scope').pluck().all() as string[]
+      for (const scopeId of scopes) initializeContinuityCasScope(firstRetained, scopeId)
+    } finally { firstRetained.close() }
+
+    const repeatedRetained = openSelectedStorageV3Store(directory, {
+      failAtRecoveryStage: 'primary-unlink',
+    })
+    repeatedRetained.close()
+
+    const malformed = new Database(storePath(directory))
+    try {
+      malformed.prepare('UPDATE continuity_cas_state SET revision = 1 WHERE revision = 0').run()
+    } finally { malformed.close() }
+    expect(() => openSelectedStorageV3Store(directory, {
+      failAtRecoveryStage: 'primary-unlink',
+    })).toThrow(StorageV3StoreFileError)
+  })
+
   it('prints counts and statuses without any invented identifier or key material', () => {
     const lines: string[] = []
     runStoreLifecycleDemo({ directory, log: (line) => lines.push(line) })
@@ -204,6 +235,22 @@ describe('store lifecycle command', () => {
     },
   )
 
+  it.skipIf(process.platform === 'win32')(
+    'claims invented fixture locators exclusively without following a pre-existing symlink',
+    () => {
+      const outside = join(tmpdir(), `developer-lens-dangling-fixture-${process.pid}.sqlite`)
+      const fixture = join(directory, 'invented-survivor-only.sqlite')
+      rmSync(outside, { force: true })
+      symlinkSync(outside, fixture, 'file')
+      expect(() => runStoreLifecycleDemo({
+        directory,
+        includeSharedArtifactFixture: true,
+      })).toThrow()
+      expect(existsSync(outside)).toBe(false)
+      expect(lstatSync(fixture).isSymbolicLink()).toBe(true)
+    },
+  )
+
   it('refuses to accept a second migration over an existing store', () => {
     runStoreLifecycleDemo({ directory })
     const before = readFileSync(storePath(directory))
@@ -249,6 +296,13 @@ describe('store lifecycle command', () => {
         `SELECT scope_id, event_kind FROM lineage_event
          WHERE subject_kind = 'artifact' AND event_kind = 'index_deleted'`,
       ).all()).toHaveLength(1)
+      expect(store.prepare(
+        `SELECT COUNT(*) FROM lineage_event
+         WHERE subject_kind = 'artifact' AND subject_id = (
+           SELECT artifact_id FROM app_artifact
+           WHERE relative_locator = 'invented-survivor-only.sqlite'
+         ) AND event_kind = 'index_built'`,
+      ).pluck().get()).toBe(1)
     } finally { store.close() }
   })
 
