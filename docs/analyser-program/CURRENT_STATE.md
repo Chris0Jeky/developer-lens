@@ -120,9 +120,20 @@ residual_risks:
      (row-kind-aware equivalence classifier + shared runtime evidence contract in
      shared/whyContract.ts with requested-reference binding). Also fixed by B3 from the #128
      list: duplicate deletion identities per subject fail closed (OPERATION_CONFLICT)'
-  - 'v2_store_provenance drift: api/v2/store.ts declares 6 columns including activation_card_id,
-     v3ShadowSchema.ts declares 5 and pins mode=synthetic, yet v3Proposal.ts calls the table
-     preserve — an activation_card-mode v2 store is unmigratable (SOURCE_BRIDGE_REFUSED)'
+  - 'v2_store_provenance drift RESOLVED by SUPPORTING activation_card provenance: the v3 shadow
+     DDL now mirrors the v2 source shape (both modes, nullable marker, opaque activation_card_id,
+     same XOR CHECK), the rewrite copies either mode verbatim, and migration validates provenance
+     STRUCTURE only — the ADR-04 serving refusal (V2_ACTIVATION_CARD_NOT_REVIEWED) stays on the v2
+     read path via assertServableProvenance, which the rewrite no longer calls. The upcoming real
+     q-5 activation_card store is therefore migratable and still unservable'
+  - 'Phase-1c scale corpus landed: server/storage/v3ScalePerformance.test.ts generates a
+     deterministic invented v2 source (3 scopes, ~10k commits, ~10k PR facts, ~2k dated events,
+     150 jobs with per-job snapshot/coverage, 600 evidence, 600 claims, 603 lineage rows incl. 3
+     legacy tombstones, C0 bridge present) and times build -> migration -> sweep -> B3 deletion ->
+     reopen. Budget: 120 s total / 90 s migration; measured on one Windows dev box at 6.2-6.4 s
+     total with 4.1-4.2 s migration, i.e. ~19-21x headroom — the mint-order proof is linear in
+     practice, not only on paper. `npm test` runs only the always-on ~1/20 smoke lane; the full
+     lane is gated on DEVELOPER_LENS_SCALE=1'
   - 'closed by the executable core: the C2 sweep now runs against a real rewrite output in
      server/storage/v3ShadowSweepIntegration.test.ts (migrate through the file factory, sweep the
      accepted store, expired cohort NULLed with its retention events, live cohort byte-identical).
