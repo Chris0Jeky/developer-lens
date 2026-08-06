@@ -9,6 +9,10 @@ import {
   loadGithubCoreActivationTaskCard,
   portableFileIdentityMatches,
 } from './activationTaskLoader.js'
+import {
+  assertGithubCoreActivationGrant,
+  githubCoreActivationGrantTestSeam,
+} from './activationGrant.js'
 
 const taskId = 'fixture-loader-01'
 
@@ -124,6 +128,17 @@ async function expectInvalidHashBound(input: unknown): Promise<void> {
   })
 }
 
+function inventedGrant(expectedSha256: string) {
+  return githubCoreActivationGrantTestSeam.issueInventedGrant({
+    fixture: 'invented',
+    capabilityId: 'github.core',
+    taskId,
+    taskCardSha256: expectedSha256,
+    installationKeyFingerprint: 'b'.repeat(64),
+    scopeAlias: `repo-${'c'.repeat(64)}`,
+  })
+}
+
 describe('github.core activation task card loader', () => {
   it('fails closed when portable opened-file identity is absent or mismatched', () => {
     expect(portableFileIdentityMatches({ dev: 0, ino: 0 }, { dev: 0, ino: 0 })).toBe(false)
@@ -138,6 +153,7 @@ describe('github.core activation task card loader', () => {
     expect(card.localBoundary.root).toBe(`.developer-lens/activation/${taskId}/`)
     expect(Object.isFrozen(card)).toBe(true)
     expect(Object.isFrozen(card.localBoundary)).toBe(true)
+    expect(() => assertGithubCoreActivationGrant(card)).toThrow('GITHUB_CORE_ACTIVATION_GRANT_DENIED')
   })
 
   it('binds exact opened-handle bytes to a lowercase SHA-256', async () => {
@@ -146,13 +162,35 @@ describe('github.core activation task card loader', () => {
     const originalBytes = await readFile(cardPath)
     const expectedSha256 = createHash('sha256').update(originalBytes).digest('hex')
 
-    await expect(loadHashBoundGithubCoreActivationTaskCard({ workspaceRoot: root, taskId, expectedSha256 }))
+    const grant = inventedGrant(expectedSha256)
+    await expect(loadHashBoundGithubCoreActivationTaskCard({ grant, workspaceRoot: root, taskId, expectedSha256 }))
       .resolves.toMatchObject({ taskId })
-    await expectInvalidHashBound({ workspaceRoot: root, taskId, expectedSha256: expectedSha256.toUpperCase() })
-    await expectInvalidHashBound({ workspaceRoot: root, taskId, expectedSha256: '0'.repeat(64) })
+    await expectInvalidHashBound({ grant, workspaceRoot: root, taskId, expectedSha256: expectedSha256.toUpperCase() })
+    await expectInvalidHashBound({ grant, workspaceRoot: root, taskId, expectedSha256: '0'.repeat(64) })
 
     await writeFile(cardPath, Buffer.concat([originalBytes, Buffer.from('\n')]))
-    await expectInvalidHashBound({ workspaceRoot: root, taskId, expectedSha256 })
+    await expectInvalidHashBound({ grant, workspaceRoot: root, taskId, expectedSha256 })
+  })
+
+  it('validates the unforgeable grant before reading any execution-loader property', async () => {
+    let workspaceRootRead = false
+    const input: Record<string, unknown> = {
+      grant: {
+        capabilityId: 'github.core',
+        taskId,
+        taskCardSha256: 'a'.repeat(64),
+        installationKeyFingerprint: 'b'.repeat(64),
+        scopeAlias: `repo-${'c'.repeat(64)}`,
+      },
+      taskId,
+      expectedSha256: 'a'.repeat(64),
+    }
+    Object.defineProperty(input, 'workspaceRoot', {
+      enumerable: true,
+      get: () => { workspaceRootRead = true; throw new Error('must not read before grant') },
+    })
+    await expectInvalidHashBound(input)
+    expect(workspaceRootRead).toBe(false)
   })
 
   it('rejects malformed JSON, schema errors, and a wrong filename without leaking values', async () => {

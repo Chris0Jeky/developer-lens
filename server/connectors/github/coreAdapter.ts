@@ -176,7 +176,7 @@ function validateInput(input: GithubCoreSyntheticCollectionInput): void {
     throw new Error('snapshotHash must be a canonical lowercase SHA-256')
   }
   const manifest = githubCoreManifest()
-  if (manifest.execution !== 'inert' || manifest.capability.authorization !== 'never_authorized') throw new Error('github.core authorization boundary changed')
+  if (manifest.execution !== 'grant_gated') throw new Error('github.core activation boundary changed')
 }
 
 function validateRequest(value: unknown, expected: GithubCoreSyntheticPageRequest): void {

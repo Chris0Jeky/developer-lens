@@ -13,6 +13,10 @@ import {
 } from './activationTask.js'
 import { loadHashBoundGithubCoreActivationTaskCard } from './activationTaskLoader.js'
 import {
+  assertGithubCoreActivationGrant,
+  type GithubCoreActivationGrant,
+} from './activationGrant.js'
+import {
   composeGithubCoreRestComplete,
   composeGithubCoreRestNoncomplete,
   type GithubCoreRestCompositionContext,
@@ -27,7 +31,7 @@ import {
   readIncrementalGithubCoreCheckpoint,
   type PersistedGithubCoreCheckpointTransition,
 } from '../../storage/incremental.js'
-import { createInstallationAliases } from '../../storage/installationAliases.js'
+import { loadTaskInstallationKey } from '../../storage/taskInstallationKey.js'
 
 export const GITHUB_CORE_ACTIVATION_RUNNER_ERROR_CODE =
   'GITHUB_CORE_ACTIVATION_RUNNER_FAILED' as const
@@ -47,11 +51,12 @@ export class GithubCoreActivationRunnerError extends Error {
 }
 
 export interface GithubCoreActivationRunnerInput {
+  readonly grant: GithubCoreActivationGrant
   readonly workspaceRoot: string
   readonly taskId: string
   readonly expectedTaskCardSha256: string
-  readonly db: Database.Database
-  readonly installationKey: Buffer
+  /** Lazy, caller-owned handle factory; the runner invokes it only after exact grant/card/key binding. */
+  readonly openStore: () => Database.Database
   readonly fetch: GithubCoreRestFetch
   readonly jobId: string
   /**
@@ -94,9 +99,7 @@ export interface GithubCoreActivationRunnerResult {
   readonly requests: GithubCoreActivationRunnerRequestFacts
 }
 
-interface SnapshottedRunnerInput extends GithubCoreActivationRunnerInput {
-  readonly installationKey: Buffer
-}
+type SnapshottedRunnerInput = GithubCoreActivationRunnerInput
 
 interface RequestCounter {
   total: number
@@ -131,11 +134,11 @@ function isCanonicalTimestamp(value: string): boolean {
 function snapshotRunnerInput(value: unknown): SnapshottedRunnerInput {
   if (!value || typeof value !== 'object' || Array.isArray(value)) fail()
   const expectedKeys: readonly (keyof GithubCoreActivationRunnerInput)[] = [
+    'grant',
     'workspaceRoot',
     'taskId',
     'expectedTaskCardSha256',
-    'db',
-    'installationKey',
+    'openStore',
     'fetch',
     'jobId',
     'coverageId',
@@ -144,11 +147,11 @@ function snapshotRunnerInput(value: unknown): SnapshottedRunnerInput {
   const keys = Reflect.ownKeys(value)
   if (keys.length !== expectedKeys.length || expectedKeys.some((key) => !keys.includes(key))) fail()
 
+  const grant = assertGithubCoreActivationGrant(dataProperty(value, 'grant'))
   const workspaceRoot = dataProperty(value, 'workspaceRoot')
   const taskId = dataProperty(value, 'taskId')
   const expectedTaskCardSha256 = dataProperty(value, 'expectedTaskCardSha256')
-  const db = dataProperty(value, 'db')
-  const installationKey = dataProperty(value, 'installationKey')
+  const openStore = dataProperty(value, 'openStore')
   const fetch = dataProperty(value, 'fetch')
   const jobId = dataProperty(value, 'jobId')
   const coverageId = dataProperty(value, 'coverageId')
@@ -158,8 +161,9 @@ function snapshotRunnerInput(value: unknown): SnapshottedRunnerInput {
     typeof taskId !== 'string' ||
     typeof expectedTaskCardSha256 !== 'string' ||
     !LOWERCASE_SHA_256.test(expectedTaskCardSha256) ||
-    !db || typeof db !== 'object' ||
-    !Buffer.isBuffer(installationKey) ||
+    taskId !== grant.taskId ||
+    expectedTaskCardSha256 !== grant.taskCardSha256 ||
+    typeof openStore !== 'function' ||
     typeof fetch !== 'function' ||
     typeof jobId !== 'string' || !OPAQUE_ID.test(jobId) ||
     typeof coverageId !== 'string' || !CONTENT_FREE_COVERAGE_ID.test(coverageId) ||
@@ -167,11 +171,11 @@ function snapshotRunnerInput(value: unknown): SnapshottedRunnerInput {
   ) fail()
 
   return {
+    grant,
     workspaceRoot,
     taskId,
     expectedTaskCardSha256,
-    db: db as Database.Database,
-    installationKey: Buffer.from(installationKey),
+    openStore: openStore as () => Database.Database,
     fetch: fetch as GithubCoreRestFetch,
     jobId,
     coverageId,
@@ -247,12 +251,13 @@ function unstableTransition(
 }
 
 function persistTransition(
+  db: Database.Database,
   input: SnapshottedRunnerInput,
   scopeAlias: string,
   transition: PersistedGithubCoreCheckpointTransition,
   sourceSnapshotId?: string,
 ): void {
-  persistIncrementalGithubCoreTransition(input.db, {
+  persistIncrementalGithubCoreTransition(db, {
     jobId: input.jobId,
     scopeAlias,
     consentRevision: input.expectedTaskCardSha256,
@@ -301,8 +306,9 @@ async function run(
   input: SnapshottedRunnerInput,
 ): Promise<GithubCoreActivationRunnerResult> {
   const manifest = githubCoreManifest()
-  if (manifest.execution !== 'inert' || manifest.capability.authorization !== 'never_authorized') fail()
+  if (manifest.execution !== 'grant_gated') fail()
   const card = await loadHashBoundGithubCoreActivationTaskCard({
+    grant: input.grant,
     workspaceRoot: input.workspaceRoot,
     taskId: input.taskId,
     expectedSha256: input.expectedTaskCardSha256,
@@ -320,13 +326,20 @@ async function run(
   const firstCard = probeCard(card, firstProbeMaximumRequests)
   const secondCard = probeCard(card, secondProbeMaximumRequests)
 
-  const installationAliases = createInstallationAliases(input.installationKey)
+  const installationKey = await loadTaskInstallationKey({
+    workspaceRoot: input.workspaceRoot,
+    taskId: input.taskId,
+    expectedFingerprint: input.grant.installationKeyFingerprint,
+  })
+  const installationAliases = installationKey.aliases
   const scopeAlias = installationAliases.githubCoreAlias(
     'repository',
     card.selectedRepository.providerRepositoryId,
   )
-  if (!OPAQUE_ID.test(scopeAlias)) fail()
-  const priorCheckpoint = freezeDeep(readIncrementalGithubCoreCheckpoint(input.db, scopeAlias))
+  if (!OPAQUE_ID.test(scopeAlias) || scopeAlias !== input.grant.scopeAlias) fail()
+  const db = input.openStore()
+  if (!db || typeof db !== 'object') fail()
+  const priorCheckpoint = freezeDeep(readIncrementalGithubCoreCheckpoint(db, scopeAlias))
   if (
     priorCheckpoint !== null &&
     priorCheckpoint.consentRevision !== input.expectedTaskCardSha256
@@ -359,7 +372,7 @@ async function run(
       result: firstResult as GithubCoreRestNonCompleteResult,
       attempt: 1,
     })
-    persistTransition(input, scopeAlias, composed.transition)
+    persistTransition(db, input, scopeAlias, composed.transition)
     return resultFacts(
       composed.transition,
       'not_observed',
@@ -396,7 +409,7 @@ async function run(
       result: secondResult as GithubCoreRestNonCompleteResult,
       attempt: 2,
     })
-    persistTransition(input, scopeAlias, composed.transition)
+    persistTransition(db, input, scopeAlias, composed.transition)
     return resultFacts(
       composed.transition,
       'not_observed',
@@ -409,7 +422,7 @@ async function run(
 
   const secondComplete = composeGithubCoreRestComplete({ ...secondContext, result: secondResult })
   if (firstComplete.snapshotHash === secondComplete.snapshotHash) {
-    persistTransition(input, scopeAlias, firstComplete.transition, firstComplete.sourceSnapshotId)
+    persistTransition(db, input, scopeAlias, firstComplete.transition, firstComplete.sourceSnapshotId)
     return resultFacts(
       firstComplete.transition,
       'stable',
@@ -421,7 +434,7 @@ async function run(
   }
 
   const transition = unstableTransition(firstContext)
-  persistTransition(input, scopeAlias, transition)
+  persistTransition(db, input, scopeAlias, transition)
   return resultFacts(
     transition,
     'unstable',
@@ -434,7 +447,7 @@ async function run(
 
 /**
  * Default-off github.core runner. No production module imports this entry point; callers must
- * inject the already-open opt-in store, installation key, exact card hash, time, job ID, and fetch.
+ * inject an unforgeable grant plus lazy store access, exact card hash, time, job ID, and fetch.
  */
 export async function runGithubCoreActivation(
   input: GithubCoreActivationRunnerInput,
