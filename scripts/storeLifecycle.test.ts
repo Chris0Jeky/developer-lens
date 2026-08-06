@@ -1,4 +1,12 @@
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  linkSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -167,6 +175,21 @@ describe('store lifecycle command', () => {
     expect(() => runStoreLifecycleDemo({ directory })).toThrow(StorageV3ShadowMigrationError)
     expect(readFileSync(storePath(directory)).equals(before)).toBe(true)
     expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(false)
+  })
+
+  it('recovers publication interrupted between linking the store and unlinking the primary', () => {
+    runStoreLifecycleDemo({ directory })
+    const primary = join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary)
+    linkSync(storePath(directory), primary)
+
+    const recovered = openSelectedStorageV3Store(directory)
+    try {
+      expect(recovered.prepare('SELECT COUNT(*) FROM claim_scope').pluck().get()).toBe(2)
+      expect(existsSync(storePath(directory))).toBe(true)
+      expect(existsSync(primary)).toBe(false)
+    } finally {
+      recovered.close()
+    }
   })
 
   it('refuses every invocation without the environment flag and an explicit directory', () => {

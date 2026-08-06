@@ -1,9 +1,11 @@
 import {
   mkdirSync,
+  copyFileSync,
   existsSync,
   linkSync,
   mkdtempSync,
   readFileSync,
+  renameSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -31,7 +33,7 @@ import {
   StorageV3DeletionError,
 } from './v3Deletion.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
-import { openSelectedStorageV3Store } from './v3StoreFiles.js'
+import { openSelectedStorageV3Store, StorageV3StoreFileError } from './v3StoreFiles.js'
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -303,6 +305,12 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
       ).run(`art-${'f'.repeat(64)}`, '0'.repeat(64), '0'.repeat(64))).toThrow()
 
       const id = registerFixture(fixture, 'invented-immutable.sqlite', [SCOPE_A], 7)
+      expectArtifactError(() => registerStorageV3Artifact({
+        db: fixture.store,
+        kind: 'invented_fixture_store',
+        relativeLocator: 'invented-immutable.sqlite',
+        scopeIds: [SCOPE_B],
+      }))
       expect(() => fixture.store.prepare(
         'UPDATE app_artifact SET manifest_sha256 = ? WHERE artifact_id = ?',
       ).run('9'.repeat(64), id)).toThrow(/STORAGE_V3_ARTIFACT_INVALID/)
@@ -313,6 +321,64 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
     } finally {
       fixture.cleanup()
       rmSync(outside, { force: true })
+    }
+  })
+
+  it('refuses a hard-linked selected-store child even when its schema is valid', () => {
+    const fixture = freshSelectedStore()
+    const outside = join(tmpdir(), `developer-lens-b4-selected-outside-${process.pid}.sqlite`)
+    try {
+      fixture.store.close()
+      const selected = join(fixture.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+      renameSync(selected, outside)
+      linkSync(outside, selected)
+      expect(() => openSelectedStorageV3Store(fixture.root)).toThrow(StorageV3StoreFileError)
+      expect(existsSync(outside)).toBe(true)
+    } finally {
+      fixture.cleanup()
+      rmSync(outside, { force: true })
+    }
+  })
+
+  it('quiesces a valid WAL family before hashing so a later checkpoint cannot strand it', () => {
+    const fixture = freshSelectedStore()
+    const source = join(fixture.root, 'invented-wal-source.sqlite')
+    const locator = 'invented-wal-copy.sqlite'
+    const target = join(fixture.root, locator)
+    const writer = new Database(source)
+    try {
+      writer.pragma('journal_mode = WAL')
+      writer.pragma('wal_autocheckpoint = 0')
+      writer.exec('CREATE TABLE invented_wal (value INTEGER) STRICT')
+      writer.prepare('INSERT INTO invented_wal (value) VALUES (1)').run()
+      copyFileSync(source, target)
+      copyFileSync(`${source}-wal`, `${target}-wal`)
+      writer.close()
+
+      registerStorageV3Artifact({
+        db: fixture.store,
+        kind: 'invented_fixture_store',
+        relativeLocator: locator,
+        scopeIds: [SCOPE_A],
+        randomBytes: () => Buffer.alloc(32, 11),
+      })
+      const checkpoint = new Database(target)
+      expect(checkpoint.prepare('SELECT value FROM invented_wal').pluck().get()).toBe(1)
+      checkpoint.pragma('wal_checkpoint(TRUNCATE)')
+      checkpoint.close()
+
+      deleteStorageV3Scope({
+        db: fixture.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 12),
+      })
+      expect(completeStorageV3DeletionMaintenance(fixture.store).maintenance).toBe('complete')
+      expect(existsSync(target)).toBe(false)
+      expect(existsSync(source)).toBe(true)
+    } finally {
+      if (writer.open) writer.close()
+      fixture.cleanup()
     }
   })
 

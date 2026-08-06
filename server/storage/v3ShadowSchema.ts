@@ -551,7 +551,7 @@ const artifactLifecycleSqlBlock = `CREATE TABLE IF NOT EXISTS app_artifact (
     CHECK (length(manifest_sha256) = 64 AND manifest_sha256 NOT GLOB '*[^0-9a-f]*'),
   content_sha256 TEXT NOT NULL
     CHECK (length(content_sha256) = 64 AND content_sha256 NOT GLOB '*[^0-9a-f]*'),
-  relative_locator TEXT NOT NULL CHECK (
+  relative_locator TEXT NOT NULL UNIQUE CHECK (
     length(relative_locator) BETWEEN 1 AND 128
     AND relative_locator GLOB '[A-Za-z0-9]*'
     AND relative_locator NOT GLOB '*[^A-Za-z0-9._-]*'

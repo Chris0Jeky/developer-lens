@@ -1,11 +1,22 @@
-import { existsSync, renameSync } from 'node:fs'
+import {
+  closeSync,
+  constants,
+  existsSync,
+  linkSync,
+  lstatSync,
+  openSync,
+  realpathSync,
+  rmSync,
+} from 'node:fs'
 import Database from 'better-sqlite3'
 import { assertContinuityCasConsistency } from './v3ContinuityCasProposal.js'
 import {
   assertPublishedStorageV3ArtifactCatalogue,
+  assertStorageV3ArtifactFileProof,
   bindStorageV3ArtifactRoot,
   createStorageV3ArtifactRoot,
   openStorageV3ArtifactRoot,
+  proveStorageV3ArtifactFile,
   registerSelectedStorageV3Artifact,
   registerStorageV3Artifact,
   removeStorageV3DatabaseFamily,
@@ -48,17 +59,64 @@ function fail(): never {
   throw new StorageV3StoreFileError()
 }
 
+const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
+
+/** Resume the only partial state created by link-then-unlink publication. */
+function recoverPublishedPrimaryLink(attempt: string, store: string): void {
+  if (!existsSync(attempt) || !existsSync(store)) return
+  try {
+    const source = lstatSync(attempt, { bigint: true })
+    const selected = lstatSync(store, { bigint: true })
+    if (
+      !source.isFile() || !selected.isFile()
+      || source.isSymbolicLink() || selected.isSymbolicLink()
+      || source.nlink !== 2n || selected.nlink !== 2n
+      || source.dev !== selected.dev || source.ino !== selected.ino
+      || realpathSync.native(attempt) !== attempt || realpathSync.native(store) !== store
+    ) fail()
+    rmSync(attempt)
+  } catch (error) {
+    if (error instanceof StorageV3StoreFileError) throw error
+    return fail()
+  }
+}
+
 class FileTargetAttempt implements StorageV3ShadowTargetAttempt {
-  public readonly db: Database.Database
+  public readonly db!: Database.Database
   public readonly path: string
   private readonly root: StorageV3ArtifactRoot
   private readonly locator: string
 
-  constructor(root: StorageV3ArtifactRoot, locator: string) {
+  constructor(root: StorageV3ArtifactRoot, locator: string, claim = false) {
     this.root = root
     this.locator = locator
     this.path = storageV3ArtifactFilePath(root, locator as typeof STORAGE_V3_TARGET_FILE_NAMES[keyof typeof STORAGE_V3_TARGET_FILE_NAMES])
-    this.db = new Database(this.path)
+    const kind = locator === STORAGE_V3_TARGET_FILE_NAMES.primary
+      ? 'migration_primary_temp'
+      : 'migration_replay_temp'
+    let claimed = false
+    let opened: Database.Database | undefined
+    try {
+      if (claim) {
+        const descriptor = openSync(
+          this.path,
+          constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | NO_FOLLOW,
+          0o600,
+        )
+        closeSync(descriptor)
+        claimed = true
+      }
+      const proof = proveStorageV3ArtifactFile(root, locator, kind)
+      opened = new Database(this.path, { fileMustExist: true })
+      assertStorageV3ArtifactFileProof(proof)
+      this.db = opened
+    } catch {
+      if (opened?.open) opened.close()
+      if (claimed) {
+        try { removeStorageV3DatabaseFamily(root, locator) } catch { /* fail closed below */ }
+      }
+      return fail()
+    }
   }
 
   // Windows refuses to unlink or rename a file an open handle still holds, so
@@ -79,20 +137,33 @@ class FileTargetAttempt implements StorageV3ShadowTargetAttempt {
 }
 
 /**
- * Publish the proven primary under the store name. Both names are fixed children
- * of the same canonical, single-owner root, so a closed-handle rename is atomic.
+ * Publish without replacement. A same-directory hard link is the portable
+ * no-clobber primitive: it fails atomically if another process selected a store.
  */
 function claimStorePath(
   root: StorageV3ArtifactRoot,
   attempt: string,
   store: string,
 ): void {
-  if (existsSync(store)) fail()
+  if (['-shm', '-wal', '-journal'].some((suffix) => existsSync(`${store}${suffix}`))) fail()
+  proveStorageV3ArtifactFile(
+    root,
+    STORAGE_V3_TARGET_FILE_NAMES.primary,
+    'migration_primary_temp',
+  )
+  let linked = false
   try {
     removeStorageV3DatabaseSidecars(root, STORAGE_V3_TARGET_FILE_NAMES.primary)
-    removeStorageV3DatabaseSidecars(root, STORAGE_V3_STORE_FILE_NAME)
-    renameSync(attempt, store)
-  } catch { fail() }
+    linkSync(attempt, store)
+    linked = true
+    rmSync(attempt)
+    proveStorageV3ArtifactFile(root, STORAGE_V3_STORE_FILE_NAME, 'selected_store')
+  } catch {
+    if (linked) {
+      try { rmSync(store) } catch { /* exact owned link; fail closed below */ }
+    }
+    return fail()
+  }
 }
 
 /** Real files for the two shadow attempts, plus acceptance of the proven one. */
@@ -103,15 +174,20 @@ export function createStorageV3TargetFactory(directory: string): StorageV3Shadow
     replay: storageV3ArtifactFilePath(root, STORAGE_V3_TARGET_FILE_NAMES.replay),
   }
   const storePath = storageV3ArtifactFilePath(root, STORAGE_V3_STORE_FILE_NAME)
+  recoverPublishedPrimaryLink(attemptPaths.primary, storePath)
   return {
     create(kind: 'primary' | 'replay'): StorageV3ShadowTargetAttempt {
+      // Refuse inside the orchestrator so callers retain its fail-closed public
+      // error contract. Recheck on every attempt in case another owner won the
+      // selected name after this factory was created.
+      if (existsSync(storePath)) fail()
       const locator = kind === 'primary'
         ? STORAGE_V3_TARGET_FILE_NAMES.primary
         : STORAGE_V3_TARGET_FILE_NAMES.replay
       // Interruption recovery: whatever a crashed run left here is not a target.
       removeStorageV3DatabaseFamily(root, locator)
       try {
-        return new FileTargetAttempt(root, locator)
+        return new FileTargetAttempt(root, locator, true)
       } catch {
         return fail()
       }
@@ -157,12 +233,15 @@ export function createStorageV3TargetFactory(directory: string): StorageV3Shadow
  * them is never handed back to a caller.
  */
 export function openSelectedStorageV3Store(directory: string): Database.Database {
-  const root = openStorageV3ArtifactRoot(directory)
-  const path = storageV3ArtifactFilePath(root, STORAGE_V3_STORE_FILE_NAME)
-  if (!existsSync(path)) fail()
   let db: Database.Database | undefined
   try {
+    const root = openStorageV3ArtifactRoot(directory)
+    const path = storageV3ArtifactFilePath(root, STORAGE_V3_STORE_FILE_NAME)
+    const primaryPath = storageV3ArtifactFilePath(root, STORAGE_V3_TARGET_FILE_NAMES.primary)
+    recoverPublishedPrimaryLink(primaryPath, path)
+    const proof = proveStorageV3ArtifactFile(root, STORAGE_V3_STORE_FILE_NAME, 'selected_store')
     db = new Database(path, { fileMustExist: true })
+    assertStorageV3ArtifactFileProof(proof)
     bindStorageV3ArtifactRoot(db, root)
     assertSelectableStorageV3Target(db, { allowContinuityCasState: true })
     assertContinuityCasConsistency(db)

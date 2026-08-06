@@ -2402,11 +2402,21 @@ below is history. The live resume point is the rest of the analytics-core kernel
 - **Schema and confinement.** Schema `3.2.0-shadow-b4` (`user_version=307`) adds the closed
   `app_artifact`, `app_artifact_scope`, and `storage_maintenance_state` domain. Catalogue rows use
   random `art-` identities, controlled kind/state, manifest and content hashes, one confined
-  relative locator, and every owning `scope-`; absolute roots exist only in opaque process-bound
+  UNIQUE relative locator, and every owning `scope-`; absolute roots exist only in opaque process-bound
   handles. Root and file identity are revalidated with `lstat`/`realpath`/descriptor identity,
   symlink/junction and hard-link inputs refuse, and errors/results remain content-free.
+  Version 307 is deliberately a new copy target: a 306 B3 shadow refuses rather than upgrading
+  in place and is rebuilt from the untouched v2 source. No real or production-selected B3 store
+  exists; LIFE-03 owns the first-real-migration wrapper.
 - **Artifact classification.** The selected store is a mutable app-owned artifact with a controlled
   logical schema-identity hash; separately deletable SQLite artifacts use stable physical SHA-256.
+  Registration first checkpoints/TRUNCATEs WAL, requires rollback-journal mode, closes the file,
+  and removes only exact inert sidecars; a later representation-only checkpoint cannot stale the
+  hash. Temporary files are exclusively claimed, selected-store opens prove the child before and
+  after SQLite opens it, and publication uses an atomic no-replace hard link rather than clobbering
+  rename semantics. A restart recognizes only the exact two-link, same-inode primary/store state
+  left between publication's link and unlink steps, removes the temporary name, and re-proves the
+  selected store; every other multi-link state refuses.
   Primary/replay attempts use fixed locators, the registration-only `migration_backup_v1` domain
   admits timestamped backup locators for LIFE-03, and `invented_fixture_store` exists only for
   invented proving data. Exact `-wal`/`-shm`/`-journal` siblings are one registered SQLite family,
@@ -2419,9 +2429,9 @@ below is history. The live resume point is the rest of the analytics-core kernel
   ownership, checkpoints/TRUNCATEs WAL, VACUUMs, checkpoints again, and only then marks maintenance
   complete. Every artifact phase and all five maintenance phases have close/reopen crash fixtures;
   a shared multi-scope backup is deleted whole while another scope's artifact remains.
-- **Proof.** Focused storage/analysis-pack proof: 8 files, 136 passed and 1 opt-in scale test skipped.
+- **Proof.** Focused storage/analysis-pack proof: 9 files, 162 passed and 1 opt-in scale test skipped.
   The full local gate passed: lint, context verification (27 Markdown / 12 required), 73 test files,
-  1,191 passed and 1 opt-in scale test skipped, TypeScript/build, and credential scan over 13 build
+  1,194 passed and 1 opt-in scale test skipped, TypeScript/build, and credential scan over 13 build
   outputs. The first full-gate attempt correctly failed the storage-v3 AST boundary on the new
   catalogue; the final head narrows that gate to the catalogue's two runtime consumers and exact
   schema/proposal dependencies, and the rerun is green.

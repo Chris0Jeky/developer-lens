@@ -50,7 +50,8 @@ blockers: 'No owner blocker for B4 or invented-fixture LIFE-03 work. A real migr
   still requires LIFE-03 backup/grace/restore/tombstone-replay proof and the activation-enforcement
   alignment. LIFE-02/#80 remain open through the Phase-E resolver lineage join and #80 retention
   residual. Deliberate breaking change: a pre-#86 on-disk v2 store fails closed at schema
-  validation — no real store exists and invented stores regenerate.'
+  validation, and a 306 B3 invented shadow is rebuilt rather than upgraded in place — no real
+  store exists and invented stores regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -59,9 +60,9 @@ frozen_by_reassessment: horizon:frozen label (WB candidates, vector retrieval, G
 authority_order: [AGENTS.md, .agent-harness/tier.json, HUMAN_TODO.md, data-charter.md,
   source-capability-matrix.md, DEVELOPER_LENS_V2_ARCHITECTURE.md (incl. Appendix I.1-I.4)]
 last_verified_checks: 'The B4 implementation head passed the full local gate: lint, context
-  verification (27 Markdown / 12 required), 73 test files, 1,191 passed plus 1 opt-in scale test
+  verification (27 Markdown / 12 required), 73 test files, 1,194 passed plus 1 opt-in scale test
   skipped, TypeScript/build, and credential scan over 13 build outputs. Its focused storage and
-  analysis-pack proof passed 8 files / 136 tests plus the same opt-in skip. Every earlier merged
+  analysis-pack proof passed 9 files / 162 tests plus the same opt-in skip. Every earlier merged
   R1-R4 head passed its exact-head hosted PR gate and exact-merge Pages/privacy run; the ledger
   now records the missing #132/#136/#138 exact-merge run IDs.'
 review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently posts review comments

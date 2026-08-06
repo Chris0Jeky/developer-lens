@@ -12,7 +12,7 @@ import {
   rmSync,
 } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
-import type Database from 'better-sqlite3'
+import Database from 'better-sqlite3'
 import {
   ArtifactIdV3Schema,
   DeletionOperationIdV3Schema,
@@ -75,8 +75,14 @@ export interface StorageV3ArtifactRoot {
   readonly __storageV3ArtifactRoot: never
 }
 
+/** Opaque proof that one exact child was a stable, confined SQLite file. */
+export interface StorageV3ArtifactFileProof {
+  readonly __storageV3ArtifactFileProof: never
+}
+
 const ROOT_IDENTITIES = new WeakMap<StorageV3ArtifactRoot, RootIdentity>()
 const STORE_ROOTS = new WeakMap<Database.Database, StorageV3ArtifactRoot>()
+const FILE_PROOFS = new WeakMap<StorageV3ArtifactFileProof, StableFile>()
 
 const identityAvailable = (value: Readonly<{ dev: bigint; ino: bigint }>): boolean =>
   value.dev !== 0n || value.ino !== 0n
@@ -238,6 +244,24 @@ function assertSqliteKind(path: string, kind: StorageV3ArtifactKind): StableFile
   return stable
 }
 
+export function proveStorageV3ArtifactFile(
+  root: StorageV3ArtifactRoot,
+  locator: string,
+  kind: StorageV3ArtifactKind,
+): StorageV3ArtifactFileProof {
+  validateLocator(kind, locator)
+  const stable = assertSqliteKind(artifactPath(root, locator), kind)
+  const proof = Object.freeze({}) as StorageV3ArtifactFileProof
+  FILE_PROOFS.set(proof, stable)
+  return proof
+}
+
+export function assertStorageV3ArtifactFileProof(proof: StorageV3ArtifactFileProof): void {
+  const stable = FILE_PROOFS.get(proof)
+  if (stable === undefined) return fail()
+  assertSameFile(stable)
+}
+
 /** Stable physical byte hash for every separately deletable artifact file. */
 function physicalContentSha256(path: string, kind: StorageV3ArtifactKind): string {
   const stable = assertSqliteKind(path, kind)
@@ -255,6 +279,36 @@ function physicalContentSha256(path: string, kind: StorageV3ArtifactKind): strin
   }
   assertSameFile(stable)
   return hash.digest('hex')
+}
+
+/**
+ * Registration accepts only a standalone SQLite image. Fold any valid WAL into
+ * the main file, switch the artifact to rollback-journal mode, close it, and
+ * remove the now-inert exact sidecars before taking the durable byte hash.
+ */
+function quiesceStorageV3DatabaseFamily(
+  root: StorageV3ArtifactRoot,
+  locator: string,
+  kind: StorageV3ArtifactKind,
+): string {
+  const path = artifactPath(root, locator)
+  const proof = proveStorageV3ArtifactFile(root, locator, kind)
+  let artifactDb: Database.Database | undefined
+  try {
+    artifactDb = new Database(path, { fileMustExist: true })
+    assertStorageV3ArtifactFileProof(proof)
+    const checkpoint = artifactDb.pragma('wal_checkpoint(TRUNCATE)') as Array<{ busy: number }>
+    if (checkpoint.some((row) => Number(row.busy) !== 0)) fail()
+    const mode = String(artifactDb.pragma('journal_mode = DELETE', { simple: true })).toLowerCase()
+    if (mode !== 'delete') fail()
+  } catch (error) {
+    if (error instanceof StorageV3ArtifactError) throw error
+    return fail()
+  } finally {
+    if (artifactDb?.open) artifactDb.close()
+  }
+  removeStorageV3DatabaseSidecars(root, locator)
+  return physicalContentSha256(path, kind)
 }
 
 function safeRemoveExactFile(root: StorageV3ArtifactRoot, locator: string): void {
@@ -507,9 +561,13 @@ export function registerStorageV3Artifact(
   if (readMaintenance(db).state !== 'complete') fail()
   const root = boundRoot(db)
   validateLocator(kind, relativeLocator)
-  const contentSha256 = physicalContentSha256(artifactPath(root, relativeLocator), kind)
+  if (db.prepare('SELECT 1 FROM app_artifact WHERE relative_locator = ?').get(relativeLocator)) fail()
+  const contentSha256 = quiesceStorageV3DatabaseFamily(root, relativeLocator, kind)
   const artifactId = options.artifactId ?? mintArtifactId(db, options.randomBytes ?? cryptoRandomBytes)
   if (!ArtifactIdV3Schema.safeParse(artifactId).success) fail()
+  if (db.prepare(
+    'SELECT 1 FROM app_artifact WHERE artifact_id = ? UNION ALL SELECT 1 FROM lineage_event WHERE subject_id = ? LIMIT 1',
+  ).get(artifactId, artifactId)) fail()
   db.transaction(() => insertArtifact(db, {
     artifactId,
     kind,
