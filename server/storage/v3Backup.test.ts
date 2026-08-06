@@ -8,6 +8,7 @@ import {
   createStorageV3ArtifactRoot,
   promoteStorageV3MigrationBackupArtifact,
   proveStorageV3MigrationBackupPublication,
+  storageV3MigrationBackupManifest,
   storageV3WriterLeasePath,
   STORAGE_V3_ARTIFACT_LOCATORS,
   StorageV3ArtifactError,
@@ -15,15 +16,18 @@ import {
 import { createStorageV3MigrationBackup, recoverStorageV3MigrationBackup, STORAGE_V3_BACKUP_STAGES, StorageV3BackupError, type StorageV3BackupStage } from './v3Backup.js'
 import { completeStorageV3DeletionMaintenance, deleteStorageV3Scope } from './v3Deletion.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
-import { setupTaskInstallationKey, taskInstallationKeyTestSeams } from './taskInstallationKey.js'
+import {
+  loadTaskInstallationKey,
+  setupTaskInstallationKey,
+  taskInstallationKeyTestSeams,
+} from './taskInstallationKey.js'
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
 const SCOPE_C = `scope-${'c'.repeat(64)}`
 
-async function fixture(): Promise<{ workspaceRoot: string; root: string; db: Database.Database; key: Awaited<ReturnType<typeof setupTaskInstallationKey>>; cleanup(): void }> {
+async function fixture(taskId = 'invented-backup-task'): Promise<{ workspaceRoot: string; taskId: string; root: string; db: Database.Database; key: Awaited<ReturnType<typeof setupTaskInstallationKey>>; cleanup(): void }> {
   const workspaceRoot = mkdtempSync(join(tmpdir(), 'developer-lens-life03-backup-'))
-  const taskId = 'invented-backup-task'
   const root = join(workspaceRoot, '.developer-lens', 'activation', taskId)
   mkdirSync(root, { recursive: true })
   const rootHandle = createStorageV3ArtifactRoot(root)
@@ -34,7 +38,7 @@ async function fixture(): Promise<{ workspaceRoot: string; root: string; db: Dat
   const { registerSelectedStorageV3Artifact } = await import('./v3ArtifactCatalogue.js')
   registerSelectedStorageV3Artifact(db, rootHandle, () => Buffer.alloc(32, 3))
   const key = await taskInstallationKeyTestSeams.setupWithRandomBytes({ workspaceRoot, taskId }, () => Buffer.alloc(32, 7))
-  return { workspaceRoot, root, db, key, cleanup: () => { if (db.open) db.close(); rmSync(workspaceRoot, { recursive: true, force: true }) } }
+  return { workspaceRoot, taskId, root, db, key, cleanup: () => { if (db.open) db.close(); rmSync(workspaceRoot, { recursive: true, force: true }) } }
 }
 
 describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () => {
@@ -107,6 +111,86 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       for (const suffix of ['', '.tmp', '.manifest.json', '.tmp.manifest.json']) {
         expect(existsSync(join(fx.root, `${locator}${suffix}`))).toBe(false)
       }
+    } finally { fx.cleanup() }
+  })
+
+  it('requires an opaque continuity-authorized key before staging and accepts an anchored reload', async () => {
+    const fx = await fixture('Upper_Backup_Task')
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:35:00Z',
+        artifactId: `art-${'6'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+      }
+      const ordinary = await loadTaskInstallationKey({ workspaceRoot: fx.workspaceRoot, taskId: fx.taskId })
+      await expect(createStorageV3MigrationBackup({ ...input, installationKey: ordinary })).rejects
+        .toBeInstanceOf(StorageV3BackupError)
+      expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(0)
+      for (const suffix of ['', '.tmp', '.manifest.json', '.tmp.manifest.json']) {
+        expect(existsSync(join(fx.root, `migration-backup-20260806T123500Z.sqlite${suffix}`))).toBe(false)
+      }
+
+      const anchored = await loadTaskInstallationKey({
+        workspaceRoot: fx.workspaceRoot,
+        taskId: fx.taskId,
+        expectedFingerprint: fx.key.fingerprint,
+      })
+      await expect(createStorageV3MigrationBackup({ ...input, installationKey: anchored })).resolves.toMatchObject({
+        locator: 'migration-backup-20260806T123500Z.sqlite',
+      })
+    } finally { fx.cleanup() }
+  })
+
+  it('refuses an unanchored handle at the direct manifest seam', async () => {
+    const fx = await fixture()
+    try {
+      const ordinary = await loadTaskInstallationKey({ workspaceRoot: fx.workspaceRoot, taskId: fx.taskId })
+      const selectedArtifactId = fx.db.prepare(
+        "SELECT artifact_id FROM app_artifact WHERE kind = 'selected_store'",
+      ).pluck().get() as string
+      expect(() => storageV3MigrationBackupManifest({
+        locator: 'migration-backup-20260806T123500Z.sqlite',
+        backupAt: '2026-08-06T12:35:00Z',
+        artifactId: `art-${'6'.repeat(64)}`,
+        selectedArtifactId,
+        contentSha256: 'a'.repeat(64),
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: ordinary,
+      })).toThrow('INVALID_TASK_INSTALLATION_KEY')
+      expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(0)
+    } finally { fx.cleanup() }
+  })
+
+  it('refuses forged and replacement-key handles before recovery can publish a staged intent', async () => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:35:01Z',
+        artifactId: `art-${'7'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAfterStage: (stage) => { if (stage === 'intentCommitted') throw new Error('invented') },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const forged = Object.freeze({ ...fx.key })
+      await expect(recoverStorageV3MigrationBackup({ ...input, installationKey: forged })).rejects
+        .toBeInstanceOf(StorageV3BackupError)
+      expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(1)
+
+      writeFileSync(join(fx.root, 'installation-key.bin'), Buffer.alloc(32, 12), { mode: 0o600 })
+      const replacement = await loadTaskInstallationKey({ workspaceRoot: fx.workspaceRoot, taskId: fx.taskId })
+      await expect(recoverStorageV3MigrationBackup({ ...input, installationKey: replacement })).rejects
+        .toBeInstanceOf(StorageV3BackupError)
+      expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(1)
+      await expect(recoverStorageV3MigrationBackup(input)).resolves.toMatchObject({
+        locator: 'migration-backup-20260806T123501Z.sqlite',
+      })
     } finally { fx.cleanup() }
   })
 

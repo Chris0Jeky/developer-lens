@@ -15,6 +15,7 @@ import { tmpdir } from 'node:os'
 import { join, sep } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import {
+  bindTaskInstallationKeyBody,
   loadTaskInstallationKey,
   setupTaskInstallationKey,
   TASK_INSTALLATION_KEY_ERROR_CODE,
@@ -191,6 +192,34 @@ describe('task-owned installation-key continuity', () => {
     expect(reopened.aliases.githubCoreAlias('page', 'invented-page-1')).toBe(
       created.aliases.githubCoreAlias('page', 'invented-page-1'),
     )
+  })
+
+  it('authorizes backup signing only for setup or fingerprint-anchored continuity handles', async () => {
+    const root = await fixtureRoot()
+    const created = await setupWithKey(root)
+    const body = 'a'.repeat(64)
+    const setupBinding = bindTaskInstallationKeyBody(created, body)
+
+    const ordinary = await loadTaskInstallationKey({ workspaceRoot: root, taskId: TASK_ID })
+    expect(() => bindTaskInstallationKeyBody(ordinary, body)).toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
+    const anchored = await loadTaskInstallationKey({
+      workspaceRoot: root,
+      taskId: TASK_ID,
+      expectedFingerprint: created.fingerprint,
+    })
+    expect(bindTaskInstallationKeyBody(anchored, body)).toBe(setupBinding)
+
+    const forged = Object.freeze({ ...anchored })
+    expect(() => bindTaskInstallationKeyBody(forged, body)).toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
+
+    await writeFile(keyPath(root), OTHER_KEY, { mode: 0o600 })
+    const replacement = await loadTaskInstallationKey({ workspaceRoot: root, taskId: TASK_ID })
+    expect(() => bindTaskInstallationKeyBody(replacement, body)).toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
+    await expectInvalid(loadTaskInstallationKey({
+      workspaceRoot: root,
+      taskId: TASK_ID,
+      expectedFingerprint: created.fingerprint,
+    }), [root, OTHER_KEY.toString('hex')])
   })
 
   it('snapshots closed data properties before awaiting and rejects accessors or mutations', async () => {

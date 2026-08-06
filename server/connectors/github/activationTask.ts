@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isCanonicalTaskId } from '../../taskId.js'
 
 export const GITHUB_CORE_ACTIVATION_TASK_CARD_SCHEMA_VERSION =
   'github-core-activation-task-card.v1' as const
@@ -76,6 +77,7 @@ const canonicalTimestamp = z.string().regex(CANONICAL_UTC_TIMESTAMP).superRefine
 })
 
 const opaqueId = z.string().regex(OPAQUE_ID).refine((value) => value !== '.' && value !== '..')
+const taskId = z.string().refine(isCanonicalTaskId)
 const declaration = z.string().regex(SAFE_DECLARATION)
 
 function strictObject<T extends z.ZodRawShape>(shape: T): z.ZodObject<T> {
@@ -165,7 +167,7 @@ const deletionSchema = strictObject({
 
 const taskCardSchema = strictObject({
   schemaVersion: z.literal(GITHUB_CORE_ACTIVATION_TASK_CARD_SCHEMA_VERSION),
-  taskId: opaqueId,
+  taskId,
   authorizedAt: canonicalTimestamp,
   authorizationBasis: declaration,
   selectedRepository: selectedRepositorySchema,

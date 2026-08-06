@@ -3,8 +3,8 @@ import { lstat, open, realpath, type FileHandle } from 'node:fs/promises'
 import { createHash, timingSafeEqual } from 'node:crypto'
 import { isAbsolute, join, relative, resolve, sep } from 'node:path'
 import { TextDecoder } from 'node:util'
+import { isCanonicalTaskId } from './taskId.js'
 
-const TASK_ID = /^[A-Za-z0-9_-]{1,128}$/
 const LOWERCASE_SHA_256 = /^[0-9a-f]{64}$/
 const MAX_ACTIVATION_ARTIFACT_BYTES = 64 * 1024
 const NON_BLOCKING_READ_FLAG = constants.O_NONBLOCK ?? 0
@@ -333,7 +333,7 @@ async function readStableArtifact(
 }
 
 function assertSafeTaskId(taskId: string, invalid: InvalidLoad): void {
-  if (!TASK_ID.test(taskId) || taskId === '.' || taskId === '..') invalid()
+  if (!isCanonicalTaskId(taskId)) invalid()
 }
 
 async function loadFixedArtifactSnapshot(

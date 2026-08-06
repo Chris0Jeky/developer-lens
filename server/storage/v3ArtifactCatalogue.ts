@@ -34,6 +34,7 @@ import {
   type StorageV3ArtifactState,
 } from './v3ShadowSchema.js'
 import {
+  assertTaskInstallationKeyContinuity,
   assertTaskInstallationKeyTaskDirectory,
   bindTaskInstallationKeyBody,
   type TaskInstallationKeyHandle,
@@ -140,6 +141,7 @@ export function assertStorageV3ArtifactRootInstallationKey(
   installationKey: TaskInstallationKeyHandle,
 ): void {
   try {
+    assertTaskInstallationKeyContinuity(installationKey)
     assertTaskInstallationKeyTaskDirectory(installationKey, rootIdentity(root))
   } catch {
     fail()

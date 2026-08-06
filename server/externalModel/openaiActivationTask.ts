@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { isCanonicalTaskId } from '../taskId.js'
 import {
   OPENAI_LUNA_ENDPOINT,
   OPENAI_LUNA_MAX_ESTIMATED_USD,
@@ -57,7 +58,7 @@ const CanonicalTimestampSchema = z.string()
       context.addIssue({ code: 'custom', message: 'timestamp is not canonical' })
     }
   })
-const OpaqueTaskIdSchema = z.string().regex(/^[A-Za-z0-9_-]{1,128}$/)
+const OpaqueTaskIdSchema = z.string().refine(isCanonicalTaskId)
 const BundleIdSchema = z.string().regex(/^req_[a-f0-9]{32}$/)
 const Sha256Schema = z.string().regex(/^[a-f0-9]{64}$/)
 

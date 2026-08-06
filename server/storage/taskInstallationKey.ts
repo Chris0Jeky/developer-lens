@@ -6,10 +6,10 @@ import {
   createInstallationAliases,
   type InstallationAliases,
 } from './installationAliases.js'
+import { isCanonicalTaskId } from '../taskId.js'
 
 export const TASK_INSTALLATION_KEY_ERROR_CODE = 'INVALID_TASK_INSTALLATION_KEY' as const
 
-const TASK_ID = /^[A-Za-z0-9_-]{1,128}$/
 const INSTALLATION_KEY_BYTES = 32
 const INSTALLATION_KEY_SIZE = 32n
 const INSTALLATION_KEY_FILE = 'installation-key.bin'
@@ -56,6 +56,8 @@ type HandleRecord = Readonly<{
 }>
 
 const HANDLE_KEYS = new WeakMap<object, HandleRecord>()
+/** Private capability: only a fresh setup or anchored reload may sign durable backup material. */
+const CONTINUITY_AUTHORIZED_HANDLES = new WeakSet<object>()
 const TASK_INSTALLATION_BINDING_DOMAIN = 'developer-lens.storage-v3-backup-key-binding.v1' as const
 
 type ClosedInput = Readonly<{
@@ -167,7 +169,7 @@ async function resolveCanonicalKeyPath(input: ClosedInput): Promise<CanonicalKey
     input.workspaceRoot.length === 0 ||
     !isAbsolute(input.workspaceRoot) ||
     resolve(input.workspaceRoot) !== input.workspaceRoot ||
-    !TASK_ID.test(input.taskId)
+    !isCanonicalTaskId(input.taskId)
   ) {
     invalidKey()
   }
@@ -269,6 +271,7 @@ function createOpaqueHandle(
   path: CanonicalKeyPath,
   key: Buffer,
   expectedFingerprint?: string,
+  continuityAuthorized = false,
 ): TaskInstallationKeyHandle {
   const fingerprint = createHash('sha256').update(key).digest('hex')
   if (expectedFingerprint !== undefined) {
@@ -287,6 +290,7 @@ function createOpaqueHandle(
   const taskDirectory = path.directories.at(-1)
   if (taskDirectory === undefined) invalidKey()
   HANDLE_KEYS.set(handle, Object.freeze({ key: Buffer.from(key), taskDirectory }))
+  if (continuityAuthorized) CONTINUITY_AUTHORIZED_HANDLES.add(handle)
   return handle
 }
 
@@ -296,6 +300,12 @@ export type TaskInstallationKeyDirectoryIdentity = Readonly<{
   ino: bigint
 }>
 
+/** Prove that this opaque handle was freshly created or loaded against its reviewed fingerprint. */
+export function assertTaskInstallationKeyContinuity(handle: TaskInstallationKeyHandle): void {
+  if (!handle || typeof handle !== 'object'
+    || !HANDLE_KEYS.has(handle) || !CONTINUITY_AUTHORIZED_HANDLES.has(handle)) invalidKey()
+}
+
 /** Prove that an opaque handle was loaded from this exact canonical task directory. */
 export function assertTaskInstallationKeyTaskDirectory(
   handle: TaskInstallationKeyHandle,
@@ -304,7 +314,7 @@ export function assertTaskInstallationKeyTaskDirectory(
   if (!handle || typeof handle !== 'object' || !directory || typeof directory !== 'object') invalidKey()
   const record = HANDLE_KEYS.get(handle)
   if (record === undefined
-    || !TASK_ID.test(handle.taskId)
+    || !isCanonicalTaskId(handle.taskId)
     || directory.path !== record.taskDirectory.path
     || !portableIdentityMatches(directory, record.taskDirectory)) invalidKey()
 }
@@ -315,6 +325,7 @@ export function bindTaskInstallationKeyBody(
   bodySha256: string,
 ): string {
   if (!handle || typeof handle !== 'object' || !/^[a-f0-9]{64}$/.test(bodySha256)) invalidKey()
+  assertTaskInstallationKeyContinuity(handle)
   const record = HANDLE_KEYS.get(handle)
   if (!record || handle.fingerprint !== createHash('sha256').update(record.key).digest('hex')) invalidKey()
   try {
@@ -381,7 +392,7 @@ async function setupTaskInstallationKeyCore(
       await handle.close()
     }
     if (snapshot === undefined) invalidKey()
-    return createOpaqueHandle(path, snapshot)
+    return createOpaqueHandle(path, snapshot, undefined, true)
   } catch (error) {
     if (error instanceof TaskInstallationKeyError) throw error
     return invalidKey()
@@ -433,7 +444,12 @@ async function loadTaskInstallationKeyCore(
       await handle.close()
     }
     if (snapshot === undefined) invalidKey()
-    return createOpaqueHandle(path, snapshot, closedInput.expectedFingerprint)
+    return createOpaqueHandle(
+      path,
+      snapshot,
+      closedInput.expectedFingerprint,
+      closedInput.expectedFingerprint !== undefined,
+    )
   } catch (error) {
     if (error instanceof TaskInstallationKeyError) throw error
     return invalidKey()
