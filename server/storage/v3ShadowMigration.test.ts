@@ -239,6 +239,46 @@ describe('B1b-iii shadow orchestration', () => {
     } finally { closeAccepted(paths); source.close(); paths.cleanup() }
   })
 
+  /**
+   * The upcoming real q-5 store records `activation_card` provenance. Migration
+   * validates provenance STRUCTURE, so such a source must survive the whole
+   * orchestration — both rewrites, the mint-order equivalence proof, and
+   * acceptance — with its C0 row preserved byte-for-byte, card ID included. The
+   * ADR-04 SERVING refusal is a separate gate on the v2 read path.
+   */
+  it('accepts an activation-card source and preserves its provenance verbatim', () => {
+    const { db: source, key, raw } = sourceFixture()
+    source.prepare('UPDATE v2_store_provenance SET mode = ?, synthetic_marker = NULL, activation_card_id = ?')
+      .run('activation_card', 'invented-activation-card')
+    const paths = fileFactory()
+    try {
+      const result = orchestrateStorageV3ShadowMigration({
+        sourceDb: source,
+        identityBindings: [{ rawProviderId: raw }],
+        installationKey: key,
+        asOf: '2026-01-02T00:00:00.000Z',
+        targetFactory: paths.factory,
+        primaryRandomBytes: entropy(23),
+        replayRandomBytes: entropy(24),
+      })
+      expect(result.status).toBe('complete')
+      const accepted = paths.state.accepted!
+      expect(accepted.db.prepare(
+        'SELECT singleton, mode, synthetic_marker, activation_card_id, importer_version, created_at FROM v2_store_provenance',
+      ).get()).toEqual({
+        singleton: 1,
+        mode: 'activation_card',
+        synthetic_marker: null,
+        activation_card_id: 'invented-activation-card',
+        importer_version: '1.0.0',
+        created_at: '2026-01-01T00:00:00.000Z',
+      })
+      // v2_coverage_record stays delete-disposition under either mode.
+      expect(accepted.db.prepare('SELECT COUNT(*) FROM v2_coverage_record').pluck().get()).toBe(0)
+      expect(JSON.stringify(result)).not.toContain('invented-activation-card')
+    } finally { closeAccepted(paths); source.close(); paths.cleanup() }
+  })
+
   it.each([
     ['schema drift', (kind: 'primary' | 'replay', attempt: FileAttempt) => {
       if (kind === 'primary') attempt.db.exec('CREATE TABLE unexpected(value TEXT) STRICT')

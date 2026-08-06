@@ -236,7 +236,7 @@ function retainedSnapshot(db: Database.Database): Record<string, unknown[]> {
       'scope_id, coverage_id',
     ],
     ['dated_event_observation', 'scope_id, event_id, event_kind', 'scope_id, event_id'],
-    ['v2_store_provenance', 'singleton, mode, synthetic_marker, importer_version, created_at', 'singleton'],
+    ['v2_store_provenance', 'singleton, mode, synthetic_marker, activation_card_id, importer_version, created_at', 'singleton'],
     [
       'v2_coverage_record',
       'coverage_id, capability_id, scope_alias, range_start, range_end, status, expected_units, observed_units, omitted_units, saturation_reason, retryable, observed_at, limitation_code',

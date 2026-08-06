@@ -16,7 +16,6 @@ import {
 import { CoverageRecordSchema, type CoverageRecord } from '../../shared/coverage.js'
 import { EvidenceLayerSchema, type EvidenceLayer } from '../../shared/provenance.js'
 import {
-  assertServableProvenance,
   installV2BridgeStore,
   readCoverageRecords,
   readStoreProvenance,
@@ -269,8 +268,14 @@ function readSourceImage(db: Database.Database): SourceImage {
       let provenance: Provenance
       let bridgeCoverage: CoverageRecord[]
       try {
+        // Reading for MIGRATION is not reading for SERVING. `readStoreProvenance`
+        // still proves the structural contract — exactly one row, a recognized
+        // mode, and the marker/card XOR — and a violation refuses the migration.
+        // The serving gate (`assertServableProvenance`, which refuses
+        // activation_card until a card is reviewed) deliberately does NOT run
+        // here: a well-formed activation_card store is migratable material, and
+        // the v3 target is unservable by the v2 reader by construction anyway.
         provenance = readStoreProvenance(db)
-        assertServableProvenance(provenance)
         bridgeCoverage = readCoverageRecords(db)
       } catch {
         return fail('SOURCE_BRIDGE_REFUSED')
@@ -799,14 +804,19 @@ export function rewriteStorageV3Shadow(
       }
       checkpoint('identities')
 
-      if (sourceImage.provenance.syntheticMarker === null) fail('SOURCE_BRIDGE_REFUSED')
+      // v2_store_provenance is preserve-disposition: the validated C0 row is copied
+      // verbatim in EITHER mode. The source read above already refused a structurally
+      // invalid record, and the target CHECK re-proves the same XOR, so no adapter
+      // may drop a column here — silently dropping activation_card_id would forge
+      // synthetic provenance for a store that never claimed it.
       options.targetDb.prepare(
         `INSERT INTO v2_store_provenance (
-          singleton, mode, synthetic_marker, importer_version, created_at
-        ) VALUES (1, ?, ?, ?, ?)`,
+          singleton, mode, synthetic_marker, activation_card_id, importer_version, created_at
+        ) VALUES (1, ?, ?, ?, ?, ?)`,
       ).run(
         sourceImage.provenance.mode,
         sourceImage.provenance.syntheticMarker,
+        sourceImage.provenance.activationCardId,
         sourceImage.provenance.importerVersion,
         sourceImage.provenance.createdAt,
       )

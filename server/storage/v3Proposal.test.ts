@@ -220,9 +220,19 @@ describe('storage-v3 B1a proposal', () => {
   it('keeps C2 observations out of every preserve disposition and aborts unsafe claim graphs', () => {
     const c2Terms = /(?:\bsha\b|pull-request number|provider(?:_id| provenance| identity)|occurred_at|created_at|payload hash|snapshot hash|exact range|\brange\b|caller (?:job|snapshot) ID|provenance)/i
     for (const entry of STORAGE_V3_DISPOSITIONS) {
-      expect(entry.preserve.some((field) => c2Terms.test(field) && !/C0 synthetic-only provenance/i.test(field)), `${entry.tableName} preserve`).toBe(false)
+      // The one carve-out is the C0 bridge record itself: preserve-disposition by
+      // decision, in either recorded mode, and never a repository C2 observation.
+      expect(entry.preserve.some((field) => c2Terms.test(field) && !/validated C0 provenance record/i.test(field)), `${entry.tableName} preserve`).toBe(false)
     }
     const byTable = Object.fromEntries(STORAGE_V3_DISPOSITIONS.map((entry) => [entry.tableName, entry])) as Record<string, StorageV3Disposition>
+    // The v2 source records two modes, so the preserve disposition SUPPORTS both and
+    // refuses only structural invalidity — the ADR-04 serving gate is elsewhere.
+    expect(byTable.v2_store_provenance.preserve).toEqual([
+      expect.stringMatching(/verbatim in either recorded mode: synthetic \(marker, no card\) or activation_card \(opaque card ID, no marker\)/i),
+    ])
+    expect(byTable.v2_store_provenance.refuse).toEqual([
+      expect.stringMatching(/structurally invalid provenance only: no record, more than one record, an unrecognized mode, or a mode\/marker\/card XOR violation/i),
+    ])
     expect(byTable.commit_observation.preserve).toEqual(['aggregate counters', 'feature classification'])
     expect(byTable.pull_request_fact.preserve).toEqual(['lifecycle state', 'aggregate counters'])
     expect(byTable.dated_event_observation.preserve).toEqual(['event_kind'])

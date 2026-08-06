@@ -129,9 +129,32 @@ describe('B1b-ii shadow rewrite', () => {
     } finally { source.close(); target.close() }
   })
 
-  it('rejects activation-card provenance without exposing values', () => {
+  it('preserves activation-card provenance verbatim, card ID included', () => {
     const source = sourceDb(), target = new Database(':memory:')
-    source.prepare('UPDATE v2_store_provenance SET mode = ?, synthetic_marker = NULL, activation_card_id = ?').run('activation_card', 'card-test')
+    source.prepare('UPDATE v2_store_provenance SET mode = ?, synthetic_marker = NULL, activation_card_id = ?').run('activation_card', 'invented-activation-card')
+    try {
+      expect(() => rewriteStorageV3Shadow({ sourceDb: source, targetDb: target, identityBindings: [], installationKey: Buffer.alloc(32), asOf: '2026-01-01T00:00:00.000Z' })).not.toThrow()
+      expect(target.prepare('SELECT singleton, mode, synthetic_marker, activation_card_id, importer_version, created_at FROM v2_store_provenance').get())
+        .toEqual({ singleton: 1, mode: 'activation_card', synthetic_marker: null, activation_card_id: 'invented-activation-card', importer_version: '1.0.0', created_at: '2026-01-01T00:00:00.000Z' })
+    } finally { source.close(); target.close() }
+  })
+
+  /**
+   * The migration validates provenance STRUCTURE, not servability: a missing or
+   * contract-violating record still refuses, while the ADR-04 serving gate that
+   * refuses activation_card stays on the v2 read path.
+   */
+  it.each([
+    ['no provenance record', (db: Database.Database) => { db.prepare('DELETE FROM v2_store_provenance').run() }],
+    ['a card ID outside the shared opaque contract', (db: Database.Database) => {
+      db.prepare('UPDATE v2_store_provenance SET mode = ?, synthetic_marker = NULL, activation_card_id = ?').run('activation_card', '-leading-dash')
+    }],
+    ['an importer version outside the shared contract', (db: Database.Database) => {
+      db.prepare('UPDATE v2_store_provenance SET importer_version = ?').run('not-a-version')
+    }],
+  ])('refuses structurally invalid bridge provenance: %s', (_label, corrupt) => {
+    const source = sourceDb(), target = new Database(':memory:')
+    corrupt(source)
     try { expect(() => rewriteStorageV3Shadow({ sourceDb: source, targetDb: target, identityBindings: [], installationKey: Buffer.alloc(32), asOf: '2026-01-01T00:00:00.000Z' })).toThrowError('SOURCE_BRIDGE_REFUSED')
     } finally { source.close(); target.close() }
   })

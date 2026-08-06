@@ -535,11 +535,23 @@ CREATE TABLE IF NOT EXISTS dated_event_observation (
   CHECK ((occurred_at IS NULL) = (c2_expires_at IS NULL))
 ) STRICT;
 CREATE TABLE IF NOT EXISTS v2_store_provenance (
+  -- The C0 bridge row is PRESERVED verbatim, so this DDL mirrors the v2 source
+  -- shape in server/api/v2/store.ts: both recorded modes, a nullable marker, the
+  -- opaque activation_card_id, and the same mode/marker/card XOR. Narrowing it to
+  -- synthetic-only would make a well-formed activation_card store unmigratable
+  -- while the v2 writer can still produce one. Serving is a SEPARATE gate: the v2
+  -- read path still refuses to SERVE activation_card provenance (ADR-04), and this
+  -- store is refused by the v2 reader on application_id/user_version anyway.
   singleton INTEGER PRIMARY KEY NOT NULL CHECK (singleton = 1),
-  mode TEXT NOT NULL CHECK (mode = 'synthetic'),
-  synthetic_marker TEXT NOT NULL,
+  mode TEXT NOT NULL CHECK (mode IN ('synthetic', 'activation_card')),
+  synthetic_marker TEXT,
+  activation_card_id TEXT CHECK (activation_card_id IS NULL OR (${token('activation_card_id')})),
   importer_version TEXT NOT NULL,
-  created_at TEXT NOT NULL
+  created_at TEXT NOT NULL,
+  CHECK (
+    (mode = 'synthetic' AND synthetic_marker IS NOT NULL AND activation_card_id IS NULL)
+    OR (mode = 'activation_card' AND synthetic_marker IS NULL AND activation_card_id IS NOT NULL)
+  )
 ) STRICT;
 CREATE TABLE IF NOT EXISTS v2_coverage_record (
   coverage_id TEXT PRIMARY KEY NOT NULL CHECK (${token('coverage_id')}),

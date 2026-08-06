@@ -671,13 +671,40 @@ describe('storage-v3 B2a shadow schema', () => {
     }
   })
 
-  it('preserves only validated synthetic bridge rows', () => {
+  it('preserves a validated bridge record in either mode and refuses every XOR violation', () => {
     const db = new Database(':memory:')
+    const provenance = (): unknown =>
+      db.prepare('SELECT singleton, mode, synthetic_marker, activation_card_id FROM v2_store_provenance').get()
     try {
       installStorageV3ShadowSchema(db)
-      db.prepare('INSERT INTO v2_store_provenance (singleton, mode, synthetic_marker, importer_version, created_at) VALUES (1, ?, ?, ?, ?)').run('synthetic', 'invented', 'test-v1', '2026-01-01T00:00:00.000Z')
+      const insert = db.prepare('INSERT INTO v2_store_provenance (singleton, mode, synthetic_marker, activation_card_id, importer_version, created_at) VALUES (?, ?, ?, ?, ?, ?)')
+      insert.run(1, 'synthetic', 'invented', null, 'test-v1', '2026-01-01T00:00:00.000Z')
       db.prepare('INSERT INTO v2_coverage_record (coverage_id, capability_id, scope_alias, range_start, range_end, status, expected_units, observed_units, omitted_units, saturation_reason, retryable, observed_at, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('c0-coverage', 'github.core', 'c0-scope', '2026-01-01', '2026-02-01', 'complete', 2, 2, 0, null, 0, '2026-02-01T00:00:00.000Z', 'NONE')
-      expect(() => db.prepare('INSERT INTO v2_store_provenance (singleton, mode, synthetic_marker, importer_version, created_at) VALUES (2, ?, ?, ?, ?)').run('activation_card', 'invented', 'test-v1', '2026-01-01T00:00:00.000Z')).toThrow()
+      expect(provenance()).toEqual({ singleton: 1, mode: 'synthetic', synthetic_marker: 'invented', activation_card_id: null })
+      // The singleton stays a singleton, whatever the second row claims.
+      expect(() => insert.run(2, 'activation_card', null, 'invented-activation-card', 'test-v1', '2026-01-01T00:00:00.000Z')).toThrow()
+
+      // The v2 source shape is supported end to end: activation_card provenance is
+      // storable here so a real q-5 store can be migrated and preserved verbatim.
+      db.prepare('DELETE FROM v2_store_provenance').run()
+      insert.run(1, 'activation_card', null, 'invented-activation-card', 'test-v1', '2026-01-01T00:00:00.000Z')
+      expect(provenance()).toEqual({ singleton: 1, mode: 'activation_card', synthetic_marker: null, activation_card_id: 'invented-activation-card' })
+
+      // Each mode must carry exactly its own witness, and only recognized modes exist.
+      db.prepare('DELETE FROM v2_store_provenance').run()
+      for (const [mode, marker, card] of [
+        ['synthetic', null, null],
+        ['synthetic', null, 'invented-activation-card'],
+        ['synthetic', 'invented', 'invented-activation-card'],
+        ['activation_card', null, null],
+        ['activation_card', 'invented', null],
+        ['activation_card', 'invented', 'invented-activation-card'],
+        ['activation_card', null, 'invented card'],
+        ['unreviewed_card', 'invented', null],
+      ] as const) {
+        expect(() => insert.run(1, mode, marker, card, 'test-v1', '2026-01-01T00:00:00.000Z'), `${mode}/${marker}/${card}`).toThrow()
+      }
+      expect(db.prepare('SELECT COUNT(*) FROM v2_store_provenance').pluck().get()).toBe(0)
     } finally {
       db.close()
     }
