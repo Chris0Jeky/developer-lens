@@ -292,6 +292,43 @@ describe('storage-v3 B2a shadow schema', () => {
     }
   })
 
+  it('creates a strict staged-backup attempt with one-way canonical identity CAS', () => {
+    const db = new Database(':memory:')
+    const artifactId = id('art-')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare(`INSERT INTO app_artifact (
+        artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator
+      ) VALUES (?, 'migration_backup_v1', 'active', ?, ?, 'migration-backup-20260806T123455Z.sqlite.tmp')`)
+        .run(artifactId, hex('a'), hex('a'))
+      db.prepare('INSERT INTO migration_backup_attempt (artifact_id) VALUES (?)').run(artifactId)
+      expect(db.prepare('SELECT * FROM migration_backup_attempt').get()).toMatchObject({ artifact_id: artifactId })
+      expect(() => db.prepare(
+        'UPDATE migration_backup_attempt SET sqlite_dev = ?, sqlite_ino = ? WHERE artifact_id = ?',
+      ).run('01', '2', artifactId)).toThrow()
+      db.prepare(
+        'UPDATE migration_backup_attempt SET sqlite_dev = ?, sqlite_ino = ? WHERE artifact_id = ?',
+      ).run('1', '2', artifactId)
+      expect(() => db.prepare(
+        'UPDATE migration_backup_attempt SET sqlite_dev = ? WHERE artifact_id = ?',
+      ).run('3', artifactId)).toThrow()
+      expect(() => db.prepare(
+        'UPDATE migration_backup_attempt SET sqlite_content_sha256 = ? WHERE artifact_id = ?',
+      ).run('not-a-hash', artifactId)).toThrow()
+      db.prepare('UPDATE migration_backup_attempt SET sqlite_content_sha256 = ? WHERE artifact_id = ?')
+        .run(hex('b'), artifactId)
+      expect(() => db.prepare(
+        'UPDATE migration_backup_attempt SET sqlite_content_sha256 = ? WHERE artifact_id = ?',
+      ).run(hex('c'), artifactId)).toThrow()
+      expect(() => db.prepare('DELETE FROM migration_backup_attempt WHERE artifact_id = ?').run(artifactId)).toThrow()
+      db.prepare("UPDATE app_artifact SET relative_locator = 'migration-backup-20260806T123455Z.sqlite' WHERE artifact_id = ?")
+        .run(artifactId)
+      expect(db.prepare('DELETE FROM migration_backup_attempt WHERE artifact_id = ?').run(artifactId).changes).toBe(1)
+    } finally {
+      db.close()
+    }
+  })
+
   it('admits only canonically shaped or cleared claim operational provenance', () => {
     const db = new Database(':memory:')
     try {

@@ -1,4 +1,5 @@
 import {
+  lstatSync,
   mkdirSync,
   copyFileSync,
   existsSync,
@@ -26,6 +27,7 @@ import {
   STORAGE_V3_USER_DIRECTED_ARTIFACTS,
   StorageV3ArtifactError,
   storageV3MaintenanceStatus,
+  syncStorageV3ArtifactDirectory,
 } from './v3ArtifactCatalogue.js'
 import {
   completeStorageV3DeletionMaintenance,
@@ -45,6 +47,49 @@ interface FileFixture {
   readonly root: string
   readonly store: Database.Database
   cleanup(): void
+}
+
+interface StagedBackupFixture {
+  readonly artifactId: string
+  readonly finalLocator: string
+  readonly tempLocator: string
+  readonly manifestFinalLocator: string
+  readonly manifestTempLocator: string
+}
+
+function registerStagedBackup(
+  fixture: FileFixture,
+  artifactId = `art-${'c'.repeat(64)}`,
+  finalLocator = 'migration-backup-20260302T000010Z.sqlite',
+  bindIdentity = true,
+): StagedBackupFixture {
+  const tempLocator = `${finalLocator}.tmp`
+  const manifestFinalLocator = `${finalLocator}.manifest.json`
+  const manifestTempLocator = `${tempLocator}.manifest.json`
+  writeInventedSqlite(join(fixture.root, finalLocator))
+  linkSync(join(fixture.root, finalLocator), join(fixture.root, tempLocator))
+  writeFileSync(join(fixture.root, manifestFinalLocator), 'invented manifest', 'utf8')
+  linkSync(join(fixture.root, manifestFinalLocator), join(fixture.root, manifestTempLocator))
+  const placeholder = 'a'.repeat(64)
+  fixture.store.prepare(`INSERT INTO app_artifact (
+    artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator
+  ) VALUES (?, 'migration_backup_v1', 'active', ?, ?, ?)`)
+    .run(artifactId, placeholder, placeholder, tempLocator)
+  for (const scopeId of [SCOPE_A, SCOPE_B]) {
+    fixture.store.prepare(
+      'INSERT INTO app_artifact_scope (artifact_id, scope_id) VALUES (?, ?)',
+    ).run(artifactId, scopeId)
+  }
+  fixture.store.prepare('INSERT INTO migration_backup_attempt (artifact_id) VALUES (?)').run(artifactId)
+  if (bindIdentity) {
+    const sqlite = lstatSync(join(fixture.root, finalLocator), { bigint: true })
+    const manifest = lstatSync(join(fixture.root, manifestFinalLocator), { bigint: true })
+    fixture.store.prepare(`UPDATE migration_backup_attempt
+      SET sqlite_dev = ?, sqlite_ino = ?, manifest_dev = ?, manifest_ino = ?
+      WHERE artifact_id = ?`)
+      .run(sqlite.dev.toString(10), sqlite.ino.toString(10), manifest.dev.toString(10), manifest.ino.toString(10), artifactId)
+  }
+  return { artifactId, finalLocator, tempLocator, manifestFinalLocator, manifestTempLocator }
 }
 
 function freshSelectedStore(): FileFixture {
@@ -567,6 +612,30 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
     }
   })
 
+  it('uses the explicit native directory-sync policy for an invented reviewed root', () => {
+    const root = mkdtempSync(join(tmpdir(), 'developer-lens-b4-directory-sync-'))
+    try {
+      const handle = createStorageV3ArtifactRoot(root)
+      if (process.platform === 'win32') {
+        expectArtifactError(() => syncStorageV3ArtifactDirectory(handle))
+      } else {
+        expect(() => syncStorageV3ArtifactDirectory(handle)).not.toThrow()
+      }
+    } finally { rmSync(root, { recursive: true, force: true }) }
+  })
+
+  it.skipIf(process.platform === 'win32')('refuses directory sync after the reviewed root identity is replaced', () => {
+    const container = mkdtempSync(join(tmpdir(), 'developer-lens-b4-directory-replace-'))
+    const root = join(container, 'root')
+    const moved = join(container, 'moved')
+    try {
+      const handle = createStorageV3ArtifactRoot(root)
+      renameSync(root, moved)
+      mkdirSync(root)
+      expectArtifactError(() => syncStorageV3ArtifactDirectory(handle))
+    } finally { rmSync(container, { recursive: true, force: true }) }
+  })
+
   it('leaves kind or content-hash mismatches pending and recovers only after exact repair', () => {
     const fixture = freshSelectedStore()
     const locator = 'invented-kind-mismatch.sqlite'
@@ -596,6 +665,175 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
       writeFileSync(path, registeredBytes)
       expect(completeStorageV3DeletionMaintenance(fixture.store).maintenance).toBe('complete')
       expect(existsSync(path)).toBe(false)
+    } finally { fixture.cleanup() }
+  })
+
+  it('refuses staged backup identity collisions before changing bytes or catalogue state', () => {
+    const fixture = freshSelectedStore()
+    try {
+      const staged = registerStagedBackup(fixture, `art-${'d'.repeat(64)}`)
+      const finalPath = join(fixture.root, staged.finalLocator)
+      const tempPath = join(fixture.root, staged.tempLocator)
+      const replacementPath = join(fixture.root, 'invented-replacement.sqlite')
+      const beforeAttempt = fixture.store.prepare(
+        'SELECT sqlite_dev, sqlite_ino, manifest_dev, manifest_ino FROM migration_backup_attempt WHERE artifact_id = ?',
+      ).get(staged.artifactId) as { sqlite_dev: string; sqlite_ino: string }
+      // Allocate the replacement while the recorded inode is still live. Removing
+      // both original links first lets Linux immediately reuse that inode, which
+      // turns this hostile fixture into an accidental exact-identity replay.
+      writeInventedSqlite(replacementPath)
+      const replacement = lstatSync(replacementPath, { bigint: true })
+      expect([replacement.dev.toString(10), replacement.ino.toString(10)])
+        .not.toEqual([beforeAttempt.sqlite_dev, beforeAttempt.sqlite_ino])
+      rmSync(finalPath)
+      rmSync(tempPath)
+      renameSync(replacementPath, finalPath)
+      linkSync(finalPath, tempPath)
+      deleteStorageV3Scope({
+        db: fixture.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 17),
+      })
+      expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(fixture.store))
+      expect(existsSync(finalPath)).toBe(true)
+      expect(existsSync(tempPath)).toBe(true)
+      expect(fixture.store.prepare('SELECT state FROM app_artifact WHERE artifact_id = ?').pluck().get(staged.artifactId))
+        .toBe('pending')
+      expect(fixture.store.prepare(
+        'SELECT sqlite_dev, sqlite_ino, manifest_dev, manifest_ino FROM migration_backup_attempt WHERE artifact_id = ?',
+      ).get(staged.artifactId)).toEqual(beforeAttempt)
+    } finally { fixture.cleanup() }
+  })
+
+  it('refuses a staged backup hash mismatch and a null-identity intent with present files', () => {
+    const mismatch = freshSelectedStore()
+    try {
+      const staged = registerStagedBackup(mismatch, `art-${'e'.repeat(64)}`)
+      mismatch.store.prepare(
+        'UPDATE migration_backup_attempt SET sqlite_content_sha256 = ? WHERE artifact_id = ?',
+      ).run('f'.repeat(64), staged.artifactId)
+      deleteStorageV3Scope({
+        db: mismatch.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 18),
+      })
+      expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(mismatch.store))
+      expect(mismatch.store.prepare('SELECT state FROM app_artifact WHERE artifact_id = ?').pluck().get(staged.artifactId))
+        .toBe('pending')
+      expect(existsSync(join(mismatch.root, staged.finalLocator))).toBe(true)
+    } finally { mismatch.cleanup() }
+
+    const nullIdentity = freshSelectedStore()
+    try {
+      const staged = registerStagedBackup(nullIdentity, `art-${'f'.repeat(64)}`, 'migration-backup-20260302T000011Z.sqlite', false)
+      deleteStorageV3Scope({
+        db: nullIdentity.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 19),
+      })
+      expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(nullIdentity.store))
+      expect(nullIdentity.store.prepare('SELECT state FROM app_artifact WHERE artifact_id = ?').pluck().get(staged.artifactId))
+        .toBe('pending')
+      expect(existsSync(join(nullIdentity.root, staged.finalLocator))).toBe(true)
+    } finally { nullIdentity.cleanup() }
+  })
+
+  it('finalizes a pending null-identity intent when all primary names are already absent', () => {
+    const fixture = freshSelectedStore()
+    try {
+      const staged = registerStagedBackup(
+        fixture,
+        `art-${'0'.repeat(64)}`,
+        'migration-backup-20260302T000015Z.sqlite',
+        false,
+      )
+      for (const locator of [staged.finalLocator, staged.tempLocator, staged.manifestFinalLocator, staged.manifestTempLocator]) {
+        rmSync(join(fixture.root, locator))
+      }
+      deleteStorageV3Scope({
+        db: fixture.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 23),
+      })
+      expect(completeStorageV3DeletionMaintenance(fixture.store)).toMatchObject({
+        maintenance: 'complete', artifactsDeleted: 1,
+      })
+      expect(fixture.store.prepare('SELECT 1 FROM app_artifact WHERE artifact_id = ?').get(staged.artifactId)).toBeUndefined()
+      expect(fixture.store.prepare('SELECT 1 FROM migration_backup_attempt WHERE artifact_id = ?').get(staged.artifactId)).toBeUndefined()
+    } finally { fixture.cleanup() }
+  })
+
+  it('refuses a staged backup with a disallowed link count before unlink', () => {
+    const fixture = freshSelectedStore()
+    const foreign = join(tmpdir(), `developer-lens-staged-foreign-${process.pid}.sqlite`)
+    try {
+      const staged = registerStagedBackup(fixture, `art-${'2'.repeat(64)}`, 'migration-backup-20260302T000013Z.sqlite')
+      linkSync(join(fixture.root, staged.finalLocator), foreign)
+      deleteStorageV3Scope({
+        db: fixture.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 21),
+      })
+      expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(fixture.store))
+      expect(existsSync(join(fixture.root, staged.finalLocator))).toBe(true)
+      expect(existsSync(foreign)).toBe(true)
+      expect(fixture.store.prepare('SELECT state FROM app_artifact WHERE artifact_id = ?').pluck().get(staged.artifactId))
+        .toBe('pending')
+    } finally {
+      fixture.cleanup()
+      rmSync(foreign, { force: true })
+    }
+  })
+
+  it.skipIf(process.platform === 'win32')('refuses a staged backup symlink before unlink', () => {
+    const fixture = freshSelectedStore()
+    try {
+      const staged = registerStagedBackup(fixture, `art-${'3'.repeat(64)}`, 'migration-backup-20260302T000014Z.sqlite')
+      const tempPath = join(fixture.root, staged.tempLocator)
+      rmSync(tempPath)
+      symlinkSync(staged.finalLocator, tempPath, 'file')
+      deleteStorageV3Scope({
+        db: fixture.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 22),
+      })
+      expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(fixture.store))
+      expect(existsSync(join(fixture.root, staged.finalLocator))).toBe(true)
+      expect(existsSync(tempPath)).toBe(true)
+      expect(fixture.store.prepare('SELECT state FROM app_artifact WHERE artifact_id = ?').pluck().get(staged.artifactId))
+        .toBe('pending')
+    } finally { fixture.cleanup() }
+  })
+
+  it('finalizes a deleting staged backup after an exact crash-time file removal', () => {
+    const fixture = freshSelectedStore()
+    try {
+      const staged = registerStagedBackup(fixture, `art-${'1'.repeat(64)}`, 'migration-backup-20260302T000012Z.sqlite')
+      deleteStorageV3Scope({
+        db: fixture.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 20),
+      })
+      expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(fixture.store, {
+        failAfterArtifactStage: (stage) => {
+          if (stage === 'markedDeleting') throw new Error('invented crash')
+        },
+      }))
+      for (const locator of [staged.finalLocator, staged.tempLocator, staged.manifestFinalLocator, staged.manifestTempLocator]) {
+        rmSync(join(fixture.root, locator))
+      }
+      expect(completeStorageV3DeletionMaintenance(fixture.store)).toMatchObject({
+        maintenance: 'complete', artifactsDeleted: 1,
+      })
+      expect(fixture.store.prepare('SELECT 1 FROM app_artifact WHERE artifact_id = ?').get(staged.artifactId)).toBeUndefined()
+      expect(fixture.store.prepare('SELECT 1 FROM migration_backup_attempt WHERE artifact_id = ?').get(staged.artifactId)).toBeUndefined()
     } finally { fixture.cleanup() }
   })
 

@@ -28,9 +28,9 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.2-shadow-life03-backup-singleton' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.3-shadow-life03-backup-attempt' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 309
+export const STORAGE_V3_SHADOW_USER_VERSION = 310
 
 /**
  * B4's closed app-owned artifact domain.  Analysis packs are deliberately absent:
@@ -86,12 +86,16 @@ export type StorageV3ArtifactState = typeof STORAGE_V3_ARTIFACT_STATES[number]
 export const STORAGE_V3_ARTIFACT_TABLES = [
   'app_artifact',
   'app_artifact_scope',
+  'migration_backup_attempt',
   'storage_maintenance_state',
 ] as const
 export type StorageV3ArtifactTable = typeof STORAGE_V3_ARTIFACT_TABLES[number]
 export const STORAGE_V3_ARTIFACT_TRIGGER_NAMES = Object.freeze([
   'storage_v3_artifact_insert_guard',
   'storage_v3_migration_backup_singleton_guard',
+  'storage_v3_migration_backup_attempt_insert_guard',
+  'storage_v3_migration_backup_attempt_update_guard',
+  'storage_v3_migration_backup_attempt_delete_guard',
   'storage_v3_artifact_delete_guard',
   'storage_v3_artifact_identity_immutable',
   'storage_v3_artifact_scope_delete_guard',
@@ -597,6 +601,76 @@ CREATE TABLE IF NOT EXISTS app_artifact_scope (
   FOREIGN KEY (artifact_id) REFERENCES app_artifact(artifact_id) ON DELETE CASCADE,
   FOREIGN KEY (scope_id) REFERENCES claim_scope(scope_id) ON DELETE RESTRICT
 ) STRICT;
+CREATE TABLE IF NOT EXISTS migration_backup_attempt (
+  artifact_id TEXT PRIMARY KEY NOT NULL CHECK (${key('artifact_id', 'art-')}),
+  sqlite_dev TEXT,
+  sqlite_ino TEXT,
+  manifest_dev TEXT,
+  manifest_ino TEXT,
+  sqlite_content_sha256 TEXT,
+  FOREIGN KEY (artifact_id) REFERENCES app_artifact(artifact_id) ON DELETE CASCADE,
+  CHECK ((sqlite_dev IS NULL) = (sqlite_ino IS NULL)),
+  CHECK ((manifest_dev IS NULL) = (manifest_ino IS NULL)),
+  CHECK (sqlite_dev IS NULL OR (
+    length(sqlite_dev) BETWEEN 1 AND 20
+    AND sqlite_dev NOT GLOB '*[^0-9]*'
+    AND (sqlite_dev = '0' OR substr(sqlite_dev, 1, 1) <> '0')
+  )),
+  CHECK (sqlite_ino IS NULL OR (
+    length(sqlite_ino) BETWEEN 1 AND 20
+    AND sqlite_ino NOT GLOB '*[^0-9]*'
+    AND (sqlite_ino = '0' OR substr(sqlite_ino, 1, 1) <> '0')
+  )),
+  CHECK (manifest_dev IS NULL OR (
+    length(manifest_dev) BETWEEN 1 AND 20
+    AND manifest_dev NOT GLOB '*[^0-9]*'
+    AND (manifest_dev = '0' OR substr(manifest_dev, 1, 1) <> '0')
+  )),
+  CHECK (manifest_ino IS NULL OR (
+    length(manifest_ino) BETWEEN 1 AND 20
+    AND manifest_ino NOT GLOB '*[^0-9]*'
+    AND (manifest_ino = '0' OR substr(manifest_ino, 1, 1) <> '0')
+  )),
+  CHECK (sqlite_content_sha256 IS NULL OR (
+    length(sqlite_content_sha256) = 64 AND sqlite_content_sha256 NOT GLOB '*[^0-9a-f]*'
+    AND sqlite_dev IS NOT NULL AND sqlite_ino IS NOT NULL
+  ))
+) STRICT;
+CREATE TRIGGER IF NOT EXISTS storage_v3_migration_backup_attempt_insert_guard
+BEFORE INSERT ON migration_backup_attempt
+WHEN NOT EXISTS (
+  SELECT 1 FROM app_artifact AS artifact
+  WHERE artifact.artifact_id = NEW.artifact_id
+    AND artifact.kind = 'migration_backup_v1'
+    AND artifact.state = 'active'
+    AND artifact.relative_locator GLOB 'migration-backup-????????T??????Z.sqlite.tmp'
+    AND artifact.content_sha256 = artifact.manifest_sha256
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_migration_backup_attempt_update_guard
+BEFORE UPDATE ON migration_backup_attempt
+WHEN NEW.artifact_id IS NOT OLD.artifact_id
+  OR (OLD.sqlite_dev IS NOT NEW.sqlite_dev AND OLD.sqlite_dev IS NOT NULL)
+  OR (OLD.sqlite_ino IS NOT NEW.sqlite_ino AND OLD.sqlite_ino IS NOT NULL)
+  OR (OLD.manifest_dev IS NOT NEW.manifest_dev AND OLD.manifest_dev IS NOT NULL)
+  OR (OLD.manifest_ino IS NOT NEW.manifest_ino AND OLD.manifest_ino IS NOT NULL)
+  OR (OLD.sqlite_content_sha256 IS NOT NEW.sqlite_content_sha256 AND OLD.sqlite_content_sha256 IS NOT NULL)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_migration_backup_attempt_delete_guard
+BEFORE DELETE ON migration_backup_attempt
+WHEN EXISTS (
+  SELECT 1 FROM app_artifact
+  WHERE artifact_id = OLD.artifact_id
+    AND state = 'active'
+    AND relative_locator GLOB 'migration-backup-????????T??????Z.sqlite.tmp'
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
 CREATE TABLE IF NOT EXISTS storage_maintenance_state (
   singleton INTEGER PRIMARY KEY NOT NULL CHECK (singleton = 1),
   state TEXT NOT NULL CHECK (state IN ('complete', 'pending')),

@@ -2736,3 +2736,81 @@ and merge remain pending.
 No real store, legacy source, connector, activation caller, external-model request, generated
 output, or private input was inspected or used. Issues #154-#156 and the full grace/restore path
 remain prerequisites to any real invocation.
+
+## 2026-08-06 — activation default-deny merged; LIFE-03 crash durability candidate
+
+PR #160 merged final head `e86c794` as merge commit
+`b27a712303db1340106aee86475503087747f19b` at 2026-08-06T13:10:24Z and closed #151. Its exact
+local gate passed 77 files / 1,269 tests / 6 declared skips plus lint, context, TypeScript/build,
+credential scanning, and range whitespace checks. Exact-head hosted run `31103488291` passed. Five
+connector threads were reproduced or scoped, fixed, replied to, and resolved within the bounded
+review pipeline; two fresh Terra passes found no remaining CRITICAL/HIGH defect. The test-only final
+head completed the binding 15-minute fallback window with a fresh thread sweep, and the delayed
+post-merge sweep found no late connector feedback. Production exports no grant issuer and contains
+no runner caller; registry/API capability state remains `never_authorized`.
+
+The exact-merge Pages run `31104689598` passed build, full-gate, privacy, and artifact checks. Its
+deployment job accepted the verified artifact but remained `deployment_queued` for the action's
+600-second timeout. One bounded failed-job retry accepted the same artifact and repeated the same
+queue timeout. Deployment IDs `5780048568` and `5780538785` are the support evidence. The Pages
+environment had no wait timer/reviewer and the merge changed no workflow configuration; the queue
+stall is parked as an external publication-service failure, not recast as a green deploy or a code
+regression. No third blind retry is authorized without a distinct new condition.
+
+The cohesive #154/#155 candidate is PR #161, with product code head
+`4abe91d737dd2d7d25d81aba9a1d91f42c2e9544`. Schema
+`3.2.3-shadow-life03-backup-attempt` (`user_version=310`) persists one strict provisional-attempt
+row per staged backup. The row binds stable device/inode identities for SQLite and manifest plus the
+first durable SQLite content hash; fields are one-way immutable and promotion consumes the row in
+the same transaction that publishes the final catalogue locator.
+
+Publication now makes both final hard-link names durable with an artifact-parent directory sync
+before catalogue promotion, and makes each temporary unlink durable before reporting its cleanup
+stage. Native directory sync fails closed on unsupported platforms. Invented ordering seams cover
+every sync boundary; the Windows host exercises the injected ordering contract while hosted
+Linux/POSIX proof remains required for the native primitive.
+
+Recovery claims each provisional with exclusive no-follow creation, durably records the name, binds
+its descriptor identity, and then operates on that same object. A proven owned zero, strict prefix,
+or structurally incoherent pre-durable SQLite attempt is truncated and retried on the original
+inode; a coherent snapshot is never silently refreshed. Manifest recovery accepts only exact bytes
+or a strict expected prefix, rewrites on the original inode, and re-fsyncs/re-proves even an exact
+reopened manifest before any final link. Wrong-inode, symlink, disallowed-link-count, foreign-byte,
+unbound-name, and recorded-hash collisions remain untouched and fail closed. The production native
+entry strips every fault hook before execution.
+
+Partial SQLite recovery now recomputes and checks the complete live owner set immediately before
+truncation and again after the last injected pre-backup boundary. Owner drift therefore fails before
+the provisional inode, bytes, attempt row, or catalogue state changes. The invented regression adds
+an owner after the crash and proves all of those surfaces remain unchanged.
+
+Staged revocation now preflights every surviving SQLite/manifest pair member against the persisted
+attempt identity and optional SQLite hash before artifact state, lineage, sidecars, or primary files
+are mutated. A null-identity intent is removable only when both names are absent; a recorded identity
+may be wholly absent only in `deleting`, the exact crash-after-unlink recovery state. Final catalogue
+deletion cascades the attempt row. Published post-promotion backup cleanup keeps its existing hash
+and manifest proof.
+
+The exact product-code head passes the full local gate: lint, context verification (27 Markdown / 12
+required), 77 files / 1,306 tests / 10 declared skips, TypeScript/build, credential scanning over 13
+outputs, and range whitespace checks. Focused backup proof passed 81 tests / 4 skips; catalogue
+proof passed 26 / 3 and deletion proof 18. A fresh Terra review found and caused the exact-manifest
+re-fsync repair at `e790ded`; a fresh narrow review then found no CRITICAL/HIGH regression and
+independently reran the full gate at 1,300 tests / 9 skips. A final exact-range Terra review
+exercised 147 focused assertions / 5 platform skips at `e7727f8` and found no CRITICAL/HIGH
+blocker. The first hosted PR run `31112768523` exposed a Linux-only nondeterministic fixture caused
+by immediate inode reuse; test-only head `1053cf8` keeps the original inode live while allocating the
+replacement and exact-head run `31113152030` passed 77 files / 1,313 tests / 2 skips plus build and
+synthetic-showcase privacy proof. The connector then raised three findings: provisional metadata in
+the backup snapshot is a restore-boundary requirement tracked by #163; the confirmed owner-drift
+P1 is fixed at `4abe91d`; and conditional all-zero native identity availability is tracked by #142
+as a P2. Hosted Linux/POSIX CI for the final pushed head, final review reconciliation, and merge are
+pending.
+
+The deliberately fail-closed interval after a durable exclusive temp-name claim but before durable
+attempt-identity binding can require trusted manual reconciliation; blindly unlinking or adopting
+that name would violate #155. Actual host-power-loss behavior is represented by ordering/failure
+seams, not physically induced on this machine. Same-user ABA/native-VFS strength remains #142, and
+sidecar/WAL identity, seven-day expiry cleanup, restore/reopen, and tombstone replay remain dependent
+LIFE-03 slices. No real store, legacy source, connector, production issuer/caller, external-model
+request, generated output, or private input was inspected or used.
