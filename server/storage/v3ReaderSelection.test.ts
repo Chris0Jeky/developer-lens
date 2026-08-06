@@ -201,7 +201,21 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
     } finally { fx.cleanup() }
   })
 
-  it('returns content-free fallback codes for request, root, lease, store, and backup refusal', async () => {
+  it('returns unavailable when lease contention races receipt visibility', async () => {
+    const fx = await fixture()
+    try {
+      withStorageV3WriterLease(openStorageV3ArtifactRoot(fx.root), () => {
+        expect(selectStorageV3Reader(fx.input)).toEqual({
+          reader: 'unavailable',
+          code: 'v3-selection-selected-refused',
+        })
+      })
+      const winner = expectSelected(selectStorageV3Reader(fx.input))
+      winner.db.close()
+    } finally { fx.cleanup() }
+  })
+
+  it('returns content-free fallback codes for request, root, store, and backup refusal', async () => {
     const fx = await fixture()
     try {
       const syntheticLegacy = join(fx.workspaceRoot, 'invented-legacy.json')
@@ -218,14 +232,6 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       expect(selectStorageV3Reader({ ...fx.input, directory: join(fx.root, 'absent') })).toEqual({
         reader: 'legacy-json',
         code: 'v3-selection-root-refused',
-      })
-
-      const rootHandle = openStorageV3ArtifactRoot(fx.root)
-      withStorageV3WriterLease(rootHandle, () => {
-        expect(selectStorageV3Reader(fx.input)).toEqual({
-          reader: 'legacy-json',
-          code: 'v3-selection-lease-refused',
-        })
       })
 
       expect(selectStorageV3Reader({
@@ -247,5 +253,20 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
         code: 'v3-selection-store-refused',
       })
     } finally { storeFx.cleanup() }
+  })
+
+  it('refuses legacy fallback when the selected store disappears after durable selection', async () => {
+    const fx = await fixture()
+    try {
+      const selected = expectSelected(selectStorageV3Reader(fx.input))
+      selected.db.close()
+
+      rmSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))
+
+      expect(selectStorageV3Reader(fx.input)).toEqual({
+        reader: 'unavailable',
+        code: 'v3-selection-selected-refused',
+      })
+    } finally { fx.cleanup() }
   })
 })
