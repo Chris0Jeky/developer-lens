@@ -11,7 +11,7 @@ updated: 2026-08-06
 current_slice_override: 'Activation enforcement, the single-writer lease, the LIFE-03 selected-store
   backup, singleton identity enforcement, task-key continuity (#156/PR #159), and assert-only
   activation default-deny (PR #160) are in merged history. The cohesive #154/#155 crash-durability
-  candidate is locally complete and in its publication gate. Atomic selection/fallback plus the
+  PR #161 candidate is locally complete and in its final publication gate. Atomic selection/fallback plus the
   owner-approved seven-day grace contract is next only after that candidate merges.'
 phase: 'R4 active horizon OPEN. B4 storage, PR #149 lifecycle safety, PR #150 tracked-source activation enforcement, PR #152 single-writer enforcement, and PR #153 selected-store backup are the foundation; LIFE-03 hardening is active. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
@@ -26,7 +26,7 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   selected-store backup #153, migration-backup singleton #158, task-key continuity #156/PR #159,
   activation default-deny/assert-only PR #160',
   'state syncs #126']
-active_slice: 'DL-LIFE-03 backup hardening: the #154/#155 candidate now proves parent-directory publication/cleanup ordering, persisted provisional identity and SQLite hash state, deterministic recovery of owned zero/partial SQLite and manifest attempts, and identity-safe staged revocation. The exact local full gate is green; hosted Linux/POSIX proof, exact-head review reconciliation, and merge remain pending. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
+active_slice: 'DL-LIFE-03 backup hardening: PR #161 for #154/#155 now proves parent-directory publication/cleanup ordering, persisted provisional identity and SQLite hash state, deterministic recovery of owned zero/partial SQLite and manifest attempts, owner-continuity revalidation before destructive partial recovery, and identity-safe staged revocation. The exact local full gate is green; hosted Linux/POSIX proof for the final pushed head, exact-head review reconciliation, and merge remain pending. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
   honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
   stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation

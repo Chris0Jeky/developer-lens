@@ -2757,8 +2757,8 @@ environment had no wait timer/reviewer and the merge changed no workflow configu
 stall is parked as an external publication-service failure, not recast as a green deploy or a code
 regression. No third blind retry is authorized without a distinct new condition.
 
-The cohesive #154/#155 candidate is code head
-`e7727f86d0f616ab0bb534c9f7b235541a78e4ee`. Schema
+The cohesive #154/#155 candidate is PR #161, with product code head
+`4abe91d737dd2d7d25d81aba9a1d91f42c2e9544`. Schema
 `3.2.3-shadow-life03-backup-attempt` (`user_version=310`) persists one strict provisional-attempt
 row per staged backup. The row binds stable device/inode identities for SQLite and manifest plus the
 first durable SQLite content hash; fields are one-way immutable and promotion consumes the row in
@@ -2779,6 +2779,11 @@ reopened manifest before any final link. Wrong-inode, symlink, disallowed-link-c
 unbound-name, and recorded-hash collisions remain untouched and fail closed. The production native
 entry strips every fault hook before execution.
 
+Partial SQLite recovery now recomputes and checks the complete live owner set immediately before
+truncation and again after the last injected pre-backup boundary. Owner drift therefore fails before
+the provisional inode, bytes, attempt row, or catalogue state changes. The invented regression adds
+an owner after the crash and proves all of those surfaces remain unchanged.
+
 Staged revocation now preflights every surviving SQLite/manifest pair member against the persisted
 attempt identity and optional SQLite hash before artifact state, lineage, sidecars, or primary files
 are mutated. A null-identity intent is removable only when both names are absent; a recorded identity
@@ -2786,14 +2791,21 @@ may be wholly absent only in `deleting`, the exact crash-after-unlink recovery s
 deletion cascades the attempt row. Published post-promotion backup cleanup keeps its existing hash
 and manifest proof.
 
-The exact code head passes the full local gate: lint, context verification (27 Markdown / 12
-required), 77 files / 1,305 tests / 10 declared skips, TypeScript/build, credential scanning over 13
+The exact product-code head passes the full local gate: lint, context verification (27 Markdown / 12
+required), 77 files / 1,306 tests / 10 declared skips, TypeScript/build, credential scanning over 13
 outputs, and range whitespace checks. Focused backup proof passed 81 tests / 4 skips; catalogue
 proof passed 26 / 3 and deletion proof 18. A fresh Terra review found and caused the exact-manifest
 re-fsync repair at `e790ded`; a fresh narrow review then found no CRITICAL/HIGH regression and
 independently reran the full gate at 1,300 tests / 9 skips. A final exact-range Terra review
 exercised 147 focused assertions / 5 platform skips at `e7727f8` and found no CRITICAL/HIGH
-blocker. Hosted Linux/POSIX CI, connector reconciliation, PR publication, and merge are pending.
+blocker. The first hosted PR run `31112768523` exposed a Linux-only nondeterministic fixture caused
+by immediate inode reuse; test-only head `1053cf8` keeps the original inode live while allocating the
+replacement and exact-head run `31113152030` passed 77 files / 1,313 tests / 2 skips plus build and
+synthetic-showcase privacy proof. The connector then raised three findings: provisional metadata in
+the backup snapshot is a restore-boundary requirement tracked by #163; the confirmed owner-drift
+P1 is fixed at `4abe91d`; and conditional all-zero native identity availability is tracked by #142
+as a P2. Hosted Linux/POSIX CI for the final pushed head, final review reconciliation, and merge are
+pending.
 
 The deliberately fail-closed interval after a durable exclusive temp-name claim but before durable
 attempt-identity binding can require trusted manual reconciliation; blindly unlinking or adopting
