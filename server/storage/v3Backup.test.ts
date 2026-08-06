@@ -612,6 +612,36 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
     } finally { fx.cleanup() }
   })
 
+  it.each([
+    ['exact SQLite header', Buffer.from('SQLite format 3\0', 'binary')],
+    ['header-valid larger partial', Buffer.concat([Buffer.from('SQLite format 3\0', 'binary'), Buffer.from('partial')])],
+  ])('converges a %s SQLite provisional on the original inode', async (_label, partial) => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:36:02Z',
+        artifactId: `art-${partial.length.toString(16).padStart(2, '0')}${'1'.repeat(62)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123602Z.sqlite'
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAtPhase: (phase) => {
+          if (phase === 'partialSqliteWrite') {
+            writeFileSync(join(fx.root, `${locator}.tmp`), partial)
+            throw new Error('invented partial write')
+          }
+        },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+      const inode = statSync(join(fx.root, `${locator}.tmp`)).ino
+      await expect(recoverStorageV3MigrationBackup(input)).resolves.toMatchObject({ locator })
+      expect(statSync(join(fx.root, locator)).ino).toBe(inode)
+    } finally { fx.cleanup() }
+  })
+
   it('repairs an owned partial manifest on the same inode and rejects overlong bytes', async () => {
     const fx = await fixture()
     try {

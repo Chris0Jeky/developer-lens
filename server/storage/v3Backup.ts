@@ -281,10 +281,33 @@ function isStrictSqlitePrefix(descriptor: number): boolean {
 function isIncoherentSqlitePartial(path: string, descriptor: number, expectedNlink: bigint): boolean {
   const size = fstatSync(descriptor, { bigint: true }).size
   if (size === 0n || isStrictSqlitePrefix(descriptor)) return true
-  if (size !== BigInt(SQLITE_HEADER.length)) return false
+  if (size < BigInt(SQLITE_HEADER.length)) return false
   const header = Buffer.alloc(SQLITE_HEADER.length)
   if (readSync(descriptor, header, 0, header.length, 0) !== header.length || !header.equals(SQLITE_HEADER)) return false
-  try { inspectBackupDb(path, descriptor, expectedNlink); return false } catch { return true }
+  // SQLite's 100-byte database header is mandatory even for an otherwise
+  // empty database. A file that stops inside it is a header-valid partial.
+  if (size < 100n) return true
+  // A valid SQLite image with any schema is coherent and must not be
+  // refreshed merely because it is the wrong application schema. Conversely,
+  // a header-valid image that fails SQLite's own readonly integrity check is a
+  // recoverable pre-durable partial. Reprove the bound descriptor/path around
+  // the check so a concurrent replacement cannot turn this into an unlink or
+  // truncate of foreign bytes.
+  assertDescriptorPath(path, descriptor, expectedNlink, true)
+  let candidate: Database.Database | undefined
+  try {
+    candidate = new Database(path, { fileMustExist: true, readonly: true })
+    const coherent = String(candidate.pragma('integrity_check', { simple: true })) === 'ok'
+    if (candidate.open) candidate.close()
+    candidate = undefined
+    assertDescriptorPath(path, descriptor, expectedNlink, true)
+    return !coherent
+  } catch (error) {
+    if (candidate?.open) candidate.close()
+    assertDescriptorPath(path, descriptor, expectedNlink, true)
+    if (error instanceof StorageV3BackupError) throw error
+    return true
+  }
 }
 
 function truncateForRetry(path: string, descriptor: number, expectedNlink: bigint): void {
