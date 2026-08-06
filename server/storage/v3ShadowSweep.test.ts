@@ -307,7 +307,7 @@ describe('storage-v3 B2a-iii ongoing C2 sweep', () => {
       expect(swept).toMatchObject({
         completeB2: false,
         status: 'complete',
-        schemaVersion: '3.1.0-shadow-b3',
+        schemaVersion: '3.2.0-shadow-b4',
         cleared: expectedCleared,
         lineageEvents: 5,
       })

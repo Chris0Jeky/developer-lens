@@ -28,9 +28,77 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.1.0-shadow-b3' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.0-shadow-b4' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 306
+export const STORAGE_V3_SHADOW_USER_VERSION = 307
+
+/**
+ * B4's closed app-owned artifact domain.  Analysis packs are deliberately absent:
+ * their caller-selected output directory makes them user-directed exports, not
+ * application-controlled recall targets.
+ */
+export const STORAGE_V3_ARTIFACT_KINDS = [
+  'selected_store',
+  'migration_primary_temp',
+  'migration_replay_temp',
+  'migration_backup_v1',
+  'invented_fixture_store',
+] as const
+export type StorageV3ArtifactKind = typeof STORAGE_V3_ARTIFACT_KINDS[number]
+export const STORAGE_V3_ARTIFACT_LOCATORS = Object.freeze({
+  selectedStore: 'v3-store.sqlite',
+  migrationPrimary: 'v3-target-primary.tmp.sqlite',
+  migrationReplay: 'v3-target-replay.tmp.sqlite',
+})
+export const STORAGE_V3_ARTIFACT_MANIFEST_DOMAIN =
+  'developer-lens.storage-v3-artifact-manifest.v1' as const
+export const STORAGE_V3_SELECTED_STORE_CONTENT_DOMAIN =
+  'developer-lens.storage-v3-selected-store-logical-content.v1' as const
+
+export function storageV3ArtifactManifestSha256(
+  kind: StorageV3ArtifactKind,
+  locator: string,
+): string {
+  return createHash('sha256')
+    .update(`${STORAGE_V3_ARTIFACT_MANIFEST_DOMAIN}\0${kind}\0${locator}`, 'utf8')
+    .digest('hex')
+}
+
+/**
+ * The selected database is mutable and contains its own catalogue, so a physical
+ * self-hash cannot be stable. This controlled logical-content hash binds the
+ * SQLite application/schema identity; every separate deletable file uses its
+ * physical byte hash instead.
+ */
+export function storageV3SelectedStoreContentSha256(): string {
+  return createHash('sha256')
+    .update(
+      `${STORAGE_V3_SELECTED_STORE_CONTENT_DOMAIN}\0${STORAGE_V3_SHADOW_SCHEMA_VERSION}`
+      + `\0${STORAGE_V3_SHADOW_APPLICATION_ID}\0${STORAGE_V3_SHADOW_USER_VERSION}`,
+      'utf8',
+    )
+    .digest('hex')
+}
+
+export const STORAGE_V3_ARTIFACT_STATES = ['active', 'pending', 'deleting'] as const
+export type StorageV3ArtifactState = typeof STORAGE_V3_ARTIFACT_STATES[number]
+
+export const STORAGE_V3_ARTIFACT_TABLES = [
+  'app_artifact',
+  'app_artifact_scope',
+  'storage_maintenance_state',
+] as const
+export type StorageV3ArtifactTable = typeof STORAGE_V3_ARTIFACT_TABLES[number]
+export const STORAGE_V3_ARTIFACT_TRIGGER_NAMES = Object.freeze([
+  'storage_v3_artifact_delete_guard',
+  'storage_v3_artifact_identity_immutable',
+  'storage_v3_artifact_scope_delete_guard',
+  'storage_v3_artifact_scope_no_update',
+  'storage_v3_artifact_state_transition',
+  'storage_v3_maintenance_insert_guard',
+  'storage_v3_maintenance_no_delete',
+  'storage_v3_maintenance_transition',
+] as const)
 
 /**
  * Continuity CAS state lives in the store it guards.  These two tables are
@@ -476,6 +544,152 @@ WHEN NOT (
 )}
 ${STORAGE_V3_CAS_NO_DELETE_TRIGGERS[1].sql}`
 
+const artifactLifecycleSqlBlock = `CREATE TABLE IF NOT EXISTS app_artifact (
+  artifact_id TEXT PRIMARY KEY NOT NULL CHECK (${key('artifact_id', 'art-')}),
+  kind TEXT NOT NULL CHECK (kind IN (${quoted(STORAGE_V3_ARTIFACT_KINDS)})),
+  state TEXT NOT NULL CHECK (state IN (${quoted(STORAGE_V3_ARTIFACT_STATES)})),
+  manifest_sha256 TEXT NOT NULL
+    CHECK (length(manifest_sha256) = 64 AND manifest_sha256 NOT GLOB '*[^0-9a-f]*'),
+  content_sha256 TEXT NOT NULL
+    CHECK (length(content_sha256) = 64 AND content_sha256 NOT GLOB '*[^0-9a-f]*'),
+  relative_locator TEXT NOT NULL UNIQUE CHECK (
+    length(relative_locator) BETWEEN 1 AND 128
+    AND relative_locator GLOB '[A-Za-z0-9]*'
+    AND relative_locator NOT GLOB '*[^A-Za-z0-9._-]*'
+    AND relative_locator NOT IN ('.', '..')
+  ),
+  deletion_operation_id TEXT CHECK (
+    deletion_operation_id IS NULL OR ${key('deletion_operation_id', 'del-')}
+  ),
+  deletion_scope_id TEXT CHECK (deletion_scope_id IS NULL OR ${c1('deletion_scope_id')}),
+  deletion_week TEXT CHECK (deletion_week IS NULL OR ${isoWeek('deletion_week')}),
+  CHECK (
+    (state = 'active' AND deletion_operation_id IS NULL AND deletion_scope_id IS NULL AND deletion_week IS NULL)
+    OR
+    (state IN ('pending', 'deleting') AND deletion_operation_id IS NOT NULL AND deletion_scope_id IS NOT NULL AND deletion_week IS NOT NULL)
+  )
+) STRICT;
+CREATE TABLE IF NOT EXISTS app_artifact_scope (
+  artifact_id TEXT NOT NULL CHECK (${key('artifact_id', 'art-')}),
+  scope_id TEXT NOT NULL CHECK (${c1('scope_id')}),
+  PRIMARY KEY (artifact_id, scope_id),
+  FOREIGN KEY (artifact_id) REFERENCES app_artifact(artifact_id) ON DELETE CASCADE,
+  FOREIGN KEY (scope_id) REFERENCES claim_scope(scope_id) ON DELETE RESTRICT
+) STRICT;
+CREATE TABLE IF NOT EXISTS storage_maintenance_state (
+  singleton INTEGER PRIMARY KEY NOT NULL CHECK (singleton = 1),
+  state TEXT NOT NULL CHECK (state IN ('complete', 'pending')),
+  operation_id TEXT CHECK (operation_id IS NULL OR ${key('operation_id', 'del-')}),
+  scope_id TEXT CHECK (scope_id IS NULL OR ${c1('scope_id')}),
+  event_week TEXT CHECK (event_week IS NULL OR ${isoWeek('event_week')}),
+  CHECK (
+    (state = 'complete' AND operation_id IS NULL AND scope_id IS NULL AND event_week IS NULL)
+    OR
+    (state = 'pending' AND operation_id IS NOT NULL AND scope_id IS NOT NULL AND event_week IS NOT NULL)
+  )
+) STRICT;
+CREATE TRIGGER IF NOT EXISTS storage_v3_maintenance_insert_guard
+BEFORE INSERT ON storage_maintenance_state
+WHEN EXISTS (
+  SELECT 1 FROM storage_maintenance_state WHERE singleton = NEW.singleton
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_artifact_identity_immutable
+BEFORE UPDATE OF artifact_id, kind, manifest_sha256, content_sha256, relative_locator ON app_artifact
+WHEN OLD.artifact_id IS NOT NEW.artifact_id
+  OR (
+    (OLD.kind IS NOT NEW.kind OR OLD.manifest_sha256 IS NOT NEW.manifest_sha256
+      OR OLD.content_sha256 IS NOT NEW.content_sha256 OR OLD.relative_locator IS NOT NEW.relative_locator)
+    AND NOT (
+      OLD.kind = 'migration_primary_temp'
+      AND OLD.state = 'active'
+      AND OLD.relative_locator = '${STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary}'
+      AND OLD.manifest_sha256 = '${storageV3ArtifactManifestSha256('migration_primary_temp', STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary)}'
+      AND NEW.kind = 'selected_store'
+      AND NEW.state = 'active'
+      AND NEW.relative_locator = '${STORAGE_V3_ARTIFACT_LOCATORS.selectedStore}'
+      AND NEW.manifest_sha256 = '${storageV3ArtifactManifestSha256('selected_store', STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)}'
+      AND NEW.content_sha256 = '${storageV3SelectedStoreContentSha256()}'
+      AND NEW.deletion_operation_id IS NULL
+      AND NEW.deletion_scope_id IS NULL
+      AND NEW.deletion_week IS NULL
+    )
+  )
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_artifact_state_transition
+BEFORE UPDATE OF state, deletion_operation_id, deletion_scope_id, deletion_week ON app_artifact
+WHEN NOT (
+  (OLD.state = 'active' AND NEW.state = 'pending'
+    AND OLD.deletion_operation_id IS NULL AND OLD.deletion_scope_id IS NULL AND OLD.deletion_week IS NULL
+    AND NEW.deletion_operation_id IS NOT NULL AND NEW.deletion_scope_id IS NOT NULL AND NEW.deletion_week IS NOT NULL)
+  OR
+  (OLD.state = 'pending' AND NEW.state = 'deleting'
+    AND OLD.deletion_operation_id IS NEW.deletion_operation_id
+    AND OLD.deletion_scope_id IS NEW.deletion_scope_id
+    AND OLD.deletion_week IS NEW.deletion_week)
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_artifact_delete_guard
+BEFORE DELETE ON app_artifact
+WHEN OLD.state <> 'deleting'
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_artifact_scope_no_update
+BEFORE UPDATE ON app_artifact_scope
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_artifact_scope_delete_guard
+BEFORE DELETE ON app_artifact_scope
+WHEN NOT EXISTS (
+  SELECT 1 FROM app_artifact AS artifact
+  WHERE artifact.artifact_id = OLD.artifact_id AND artifact.state = 'deleting'
+)
+AND NOT EXISTS (
+  SELECT 1
+  FROM app_artifact AS artifact
+  JOIN storage_maintenance_state AS maintenance ON maintenance.singleton = 1
+  WHERE artifact.artifact_id = OLD.artifact_id
+    AND maintenance.state = 'pending'
+    AND maintenance.scope_id = OLD.scope_id
+    AND (
+      artifact.kind = 'selected_store'
+      OR (
+        artifact.state IN ('pending', 'deleting')
+        AND artifact.deletion_scope_id = OLD.scope_id
+      )
+    )
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_maintenance_no_delete
+BEFORE DELETE ON storage_maintenance_state
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_maintenance_transition
+BEFORE UPDATE ON storage_maintenance_state
+WHEN NOT (
+  (OLD.state = 'complete' AND NEW.state = 'pending'
+    AND OLD.operation_id IS NULL AND OLD.scope_id IS NULL AND OLD.event_week IS NULL
+    AND NEW.operation_id IS NOT NULL AND NEW.scope_id IS NOT NULL AND NEW.event_week IS NOT NULL)
+  OR
+  (OLD.state = 'pending' AND NEW.state = 'complete'
+    AND OLD.operation_id IS NOT NULL AND OLD.scope_id IS NOT NULL AND OLD.event_week IS NOT NULL
+    AND NEW.operation_id IS NULL AND NEW.scope_id IS NULL AND NEW.event_week IS NULL)
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;`
+
 /** Strict, isolated DDL for every table named by the B1a disposition registry. */
 export const STORAGE_V3_SHADOW_SCHEMA_SQL = `
 PRAGMA foreign_keys = ON;
@@ -786,6 +1000,7 @@ ${lineageScopeTriggerSql}
 ${c2RetentionOwnerTriggerSql}
 ${lineageOwnerTriggerSqlBlock}
 ${continuityCasSqlBlock}
+${artifactLifecycleSqlBlock}
 `
 
 export interface StorageV3ShadowResult {
@@ -1012,6 +1227,7 @@ export const STORAGE_V3_SHADOW_MIGRATED_TABLES: readonly StorageV3Table[] = STOR
 export const STORAGE_V3_SHADOW_TABLES = [
   ...STORAGE_V3_TABLES,
   ...STORAGE_V3_CONTINUITY_CAS_TABLES,
+  ...STORAGE_V3_ARTIFACT_TABLES,
 ] as const
 export type StorageV3ShadowTable = typeof STORAGE_V3_SHADOW_TABLES[number]
 export const STORAGE_V3_SHADOW_DISPOSITIONS = STORAGE_V3_DISPOSITIONS

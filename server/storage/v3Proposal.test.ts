@@ -392,7 +392,7 @@ describe('storage-v3 B1a proposal', () => {
     expect(liveClaims.LineageEventKindSchema.safeParse('legacy_deletion_operation').success).toBe(false)
   })
 
-  it('allows only the inert migration/rewrite/sweep/schema/proposal chain and no production caller', () => {
+  it('allows only the bounded executable storage-v3 chain and its default-off CLI caller', () => {
     const root = resolve(__dirname, '../..')
     const roots = ['server', 'shared', 'src', 'scripts'].map((name) => join(root, name))
     const files: string[] = []
@@ -425,6 +425,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3ShadowSchema.ts',
             'server/storage/v3ContinuityCasProposal.ts',
             'server/storage/v3Deletion.ts',
+            'server/storage/v3ArtifactCatalogue.ts',
           ].includes(sourcePath)) {
             offenders.push(edge)
           }
@@ -436,6 +437,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3ShadowSweep.ts',
             'server/storage/v3ContinuityCasProposal.ts',
             'server/storage/v3Deletion.ts',
+            'server/storage/v3ArtifactCatalogue.ts',
           ].includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
           }
@@ -471,6 +473,15 @@ describe('storage-v3 B1a proposal', () => {
         if (target && /(?:^|[\\/])v3Deletion(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           if (sourcePath !== 'scripts/storeLifecycle.ts') {
+            offenders.push(`${sourcePath} -> ${target}`)
+          }
+        }
+        if (target && /(?:^|[\\/])v3ArtifactCatalogue(?:\.[cm]?js|\.ts)?$/.test(target)) {
+          const sourcePath = relative(root, path).replaceAll('\\', '/')
+          if (![
+            'server/storage/v3Deletion.ts',
+            'server/storage/v3StoreFiles.ts',
+          ].includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }

@@ -2369,14 +2369,14 @@ below is history. The live resume point is the rest of the analytics-core kernel
 
 ## 2026-08-06 — late-review truth repair, LIFE-02 B3, and B-2 promotion hardening (PRs #132, #136, #138)
 
-- **PR #132** (merge 6b60dce, heads 19eb4f7 (run 31053538930), 991f952 (run 31054656012), 5d64d30 (run 31055488517) all hosted-green): shared runtime
+- **PR #132** (merge 6b60dce, heads 19eb4f7 (run 31053538930), 991f952 (run 31054656012), 5d64d30 (run 31055488517) all hosted-green; exact-merge Pages/privacy run 31056663209 green): shared runtime
   evidence contract shared/whyContract.ts (strict schemas, projection-reference coherence,
   pinned versions, capability-registry binding); the four untriaged post-merge findings from
   PRs #127/#131 fixed with discriminating tests (11 of 18 client tests fail against the old
   resolver; the legacy deletion-ID substitution was proven accepted pre-fix and refused
   post-fix). Round-three findings tracked on #135; the adversarially reproduced
   preserved-scope-id digest escape tracked as #133. Post-merge sweep clean.
-- **PR #136** (merge 7633444, heads 80f7432 (run 31057203977: type-check FAIL, fixed next head), 5f2b071 (run 31058281133 green), 8e4257e (run 31059434729 green)): LIFE-02 B3 —
+- **PR #136** (merge 7633444, heads 80f7432 (run 31057203977: type-check FAIL, fixed next head), 5f2b071 (run 31058281133 green), 8e4257e (run 31059434729 green); exact-merge Pages/privacy run 31061095872 green): LIFE-02 B3 —
   server/storage/v3Deletion.ts complete scope deletion (closed 20-table registry, scope-unbound
   tombstones under one del- operation, replay/conflict fail-closed, per-stage rollback, CAS
   cascade via in-transaction trigger drop/recreate, WAL/VACUUM saga); schema v3.1.0-shadow-b3
@@ -2385,7 +2385,7 @@ below is history. The live resume point is the rest of the analytics-core kernel
   workaround; the CLI journey runs the product order. 17 new deletion tests (nine plus the eight-stage rollback matrix); 124 across the
   affected suites. Round-three findings tracked on #80 (tombstone C1-window expiry) and #128
   (clock-read placement). Post-merge sweep clean.
-- **PR #138** (merge 4770c57, heads 1ca9824 (run 31064891154 green), ce492b4 (run 31065982736 green)): mint-order equivalence proof
+- **PR #138** (merge 4770c57, heads 1ca9824 (run 31064891154 green), ce492b4 (run 31065982736 green); exact-merge Pages/privacy run 31066722824 green): mint-order equivalence proof
   replaces graph colouring (net -244 lines; #133 closed; private mintedCollector channel;
   REPLACE-proof owner guards); #86 storage half closed (cov- CHECK + UNIQUE(coverage_id),
   fixtures migrated, pre-#86 stores deliberately fail closed); all ten open #128/#129 findings
@@ -2394,5 +2394,51 @@ below is history. The live resume point is the rest of the analytics-core kernel
   serving gate untouched (superseding note in 10_LIFE_02B_DECISION.md section 2); Phase-1c
   scale corpus measured 25,469 source rows in ~6.3 s end-to-end (migration ~4.2 s) on the
   Windows dev box, budgets asserted in the opt-in DEVELOPER_LENS_SCALE=1 lane plus an always-on
-  smoke lane. Full local gate at the final head: 72 files / 1174-1175 tests green. Post-merge
+  smoke lane. Full local gate at the final head: 72 files / 1,175 tests green. Post-merge
   findings triaged: state/ledger repairs in this follow-up PR, technical items tracked as #139.
+
+## 2026-08-06 — LIFE-02 B4 app-owned artifact catalogue and deletion saga
+
+- **Schema and confinement.** Schema `3.2.0-shadow-b4` (`user_version=307`) adds the closed
+  `app_artifact`, `app_artifact_scope`, and `storage_maintenance_state` domain. Catalogue rows use
+  random `art-` identities, controlled kind/state, manifest and content hashes, one confined
+  UNIQUE relative locator, and every owning `scope-`; absolute roots exist only in opaque process-bound
+  handles. Root and file identity are revalidated with `lstat`/`realpath`/descriptor identity,
+  symlink/junction and hard-link inputs refuse, and errors/results remain content-free.
+  Version 307 is deliberately a new copy target: a 306 B3 shadow refuses rather than upgrading
+  in place and is rebuilt from the untouched v2 source. No real or production-selected B3 store
+  exists; LIFE-03 owns the first-real-migration wrapper.
+- **Artifact classification.** The selected store is a mutable app-owned artifact with a controlled
+  logical schema-identity hash; separately deletable SQLite artifacts use stable physical SHA-256.
+  Registration first checkpoints/TRUNCATEs WAL, requires rollback-journal mode, closes the file,
+  and removes only exact inert sidecars; a later representation-only checkpoint cannot stale the
+  hash. Temporary files are exclusively claimed, selected-store opens prove the child before and
+  after SQLite opens it, and publication uses an atomic no-replace hard link rather than clobbering
+  rename semantics. A restart recognizes only the exact two-link, same-inode primary/store state
+  left between publication's link and unlink steps, removes the temporary name, and re-proves the
+  selected store; every other multi-link state refuses.
+  Primary/replay attempts use fixed locators, the registration-only `migration_backup_v1` domain
+  admits timestamped backup locators for LIFE-03, and `invented_fixture_store` exists only for
+  invented proving data. Exact `-wal`/`-shm`/`-journal` siblings are one registered SQLite family,
+  never discovered by scan. The existing caller-directory analysis pack remains a user-directed,
+  immutable `COMPLETE` export outside recall; the charter now says so explicitly.
+- **Deletion saga.** B3 schedules all scope-owned artifacts and a durable maintenance-pending marker
+  in the same IMMEDIATE deletion transaction. Completion validates kind/content, transitions each
+  artifact through persisted pending/deleting state, removes only its exact family, records a
+  scope-unbound `index_deleted` row under the same `del-` operation, finalizes selected-store
+  ownership, checkpoints/TRUNCATEs WAL, VACUUMs, checkpoints again, and only then marks maintenance
+  complete. Every artifact phase and all five maintenance phases have close/reopen crash fixtures;
+  a shared multi-scope backup is deleted whole while another scope's artifact remains.
+- **Proof.** Focused storage/analysis-pack proof: 9 files, 163 passed and 2 tests skipped
+  (the opt-in scale corpus and the POSIX dangling-symlink regression on this Windows host).
+  The full local gate passed: lint, context verification (27 Markdown / 12 required), 73 test files,
+  1,195 passed with the same 2 skips, TypeScript/build, and credential scan over 13 build
+  outputs. The first full-gate attempt correctly failed the storage-v3 AST boundary on the new
+  catalogue; the final head narrows that gate to the catalogue's two runtime consumers and exact
+  schema/proposal dependencies, and the rerun is green.
+- **State truth and late-review repair.** B4 does not close LIFE-02 or #80: resolver deletion-lineage
+  joins remain scoped to the Phase-E v3 bridge, and #80 still owns 36-month expiry of scope-unbound
+  deletion lineage. PR #140's three late precision findings are repaired here: exact-merge
+  Pages/privacy runs 31056663209 (#132), 31061095872 (#136), and 31066722824 (#138) are archived,
+  and PR #138's exact final-head count is 1,175. PR #140 itself was hosted-green at run 31067873356
+  and exact-merge Pages/privacy-green at run 31068019043.

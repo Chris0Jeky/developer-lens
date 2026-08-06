@@ -73,6 +73,9 @@ Query Lab reads a user-selected pack, the frontend row above still binds — bro
 only generated, registry-allowlisted `PresentationView` relations projected at pack build
 (`PackPresentationView`), never arbitrary pack fact/feature tables. Raw pack SQL remains an
 external expert workflow over the user's own exported artifact, outside the application's sinks.
+The current builder writes only to a caller-selected directory, so its immutable `COMPLETE` output
+is a user-directed export that Developer Lens cannot recall. A future app-owned pack must first use
+the confined artifact catalogue and bind every owning scope before it may become `COMPLETE`.
 
 ### G4 OpenAI/Luna provider boundary
 

@@ -1,4 +1,13 @@
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  existsSync,
+  linkSync,
+  mkdtempSync,
+  readFileSync,
+  readdirSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
@@ -87,6 +96,19 @@ describe('store lifecycle command', () => {
     expect(existsSync(storePath(directory))).toBe(true)
     expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(false)
     expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.replay))).toBe(false)
+    const catalogued = openSelectedStorageV3Store(directory)
+    try {
+      expect(catalogued.prepare(
+        'SELECT kind, state, relative_locator FROM app_artifact ORDER BY kind',
+      ).all()).toEqual([{
+        kind: 'selected_store',
+        state: 'active',
+        relative_locator: STORAGE_V3_STORE_FILE_NAME,
+      }])
+      expect(catalogued.prepare(
+        'SELECT COUNT(*) FROM app_artifact_scope',
+      ).pluck().get()).toBe(2)
+    } finally { catalogued.close() }
   })
 
   it('admits accumulated CAS state on selection while acceptance-mode validation refuses it', () => {
@@ -135,6 +157,9 @@ describe('store lifecycle command', () => {
     // run must remove them rather than open whatever they contain.
     for (const name of Object.values(STORAGE_V3_TARGET_FILE_NAMES)) {
       writeFileSync(join(directory, name), 'invented stale bytes, not a database')
+      for (const suffix of ['-wal', '-shm', '-journal']) {
+        writeFileSync(join(directory, `${name}${suffix}`), 'invented stale sidecar')
+      }
     }
     const recovered = runStoreLifecycleDemo({ directory })
     expect(recovered.migration.status).toBe('complete')
@@ -142,7 +167,22 @@ describe('store lifecycle command', () => {
     expect(existsSync(storePath(directory))).toBe(true)
     expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(false)
     expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.replay))).toBe(false)
+    expect(entries(directory).some((name) => name.includes('.tmp.sqlite-'))).toBe(false)
   })
+
+  it.skipIf(process.platform === 'win32')(
+    'refuses a dangling fixed-target symlink without writing outside the reviewed root',
+    () => {
+      const primary = join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary)
+      const outside = join(tmpdir(), `developer-lens-dangling-target-${process.pid}.sqlite`)
+      rmSync(outside, { force: true })
+      symlinkSync(outside, primary, 'file')
+
+      expect(() => runStoreLifecycleDemo({ directory })).toThrow(StorageV3ShadowMigrationError)
+      expect(existsSync(outside)).toBe(false)
+      expect(existsSync(storePath(directory))).toBe(false)
+    },
+  )
 
   it('refuses to accept a second migration over an existing store', () => {
     runStoreLifecycleDemo({ directory })
@@ -150,6 +190,21 @@ describe('store lifecycle command', () => {
     expect(() => runStoreLifecycleDemo({ directory })).toThrow(StorageV3ShadowMigrationError)
     expect(readFileSync(storePath(directory)).equals(before)).toBe(true)
     expect(existsSync(join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary))).toBe(false)
+  })
+
+  it('recovers publication interrupted between linking the store and unlinking the primary', () => {
+    runStoreLifecycleDemo({ directory })
+    const primary = join(directory, STORAGE_V3_TARGET_FILE_NAMES.primary)
+    linkSync(storePath(directory), primary)
+
+    const recovered = openSelectedStorageV3Store(directory)
+    try {
+      expect(recovered.prepare('SELECT COUNT(*) FROM claim_scope').pluck().get()).toBe(2)
+      expect(existsSync(storePath(directory))).toBe(true)
+      expect(existsSync(primary)).toBe(false)
+    } finally {
+      recovered.close()
+    }
   })
 
   it('refuses every invocation without the environment flag and an explicit directory', () => {

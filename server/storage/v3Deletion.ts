@@ -2,6 +2,15 @@ import { randomBytes as cryptoRandomBytes } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { DeletionOperationIdV3Schema, ScopeIdV3Schema } from './v3Proposal.js'
 import { assertContinuityCasConsistency } from './v3ContinuityCasProposal.js'
+import {
+  assertStorageV3ArtifactCatalogue,
+  completeStorageV3ArtifactDeletions,
+  finalizeSelectedStorageV3ScopeOwnership,
+  markStorageV3MaintenanceComplete,
+  scheduleStorageV3ArtifactsForScope,
+  storageV3MaintenanceStatus,
+  type StorageV3ArtifactDeletionStage,
+} from './v3ArtifactCatalogue.js'
 import { isoWeekFromCanonicalTimestamp } from './v3ShadowRewrite.js'
 import {
   STORAGE_V3_CAS_NO_DELETE_TRIGGERS,
@@ -17,7 +26,7 @@ import {
  * v3 store (10_LIFE_02B_DECISION.md §4/§5 item 4).
  *
  * One `BEGIN IMMEDIATE` transaction: enumerate every registered SQL subject of the
- * scope, delete dependents before parents across all twenty shadow tables (the CAS
+ * scope, delete dependents before parents across every registered shadow table (the CAS
  * guards are dropped and byte-identically recreated inside the same transaction —
  * scope revocation is the one operation allowed to remove CAS rows), then write the
  * surviving record: one `tombstone_cascade` lineage row per subject under a single
@@ -91,6 +100,9 @@ const V3_DELETION_REGISTRY = {
   lineage_event: 'scopeLineage',
   continuity_cas_state: 'cas',
   continuity_cas_operation: 'cas',
+  app_artifact: 'global',
+  app_artifact_scope: 'global',
+  storage_maintenance_state: 'global',
 } as const satisfies Record<(typeof STORAGE_V3_SHADOW_TABLES)[number], V3DeletionHandling>
 
 /** Children strictly before parents; claim_scope last among scope-bound rows. */
@@ -125,6 +137,7 @@ export const STORAGE_V3_DELETION_STAGES = [
   'storeAssertions',
   'enumeration',
   'conflictCheck',
+  'artifactSchedule',
   'lineageDelete',
   'scopeRowDelete',
   'casDelete',
@@ -153,8 +166,8 @@ export interface StorageV3ScopeDeletionResult {
   readonly tombstonesWritten: number
   /** The content-free `del-` operation binding this deletion; replay must reuse it. */
   readonly operationId: string
-  /** WAL checkpoint/rebuild owed until `completeStorageV3DeletionMaintenance` runs. */
-  readonly maintenance: 'pending'
+  /** Durable catalogue/WAL maintenance state, never a return-only promise. */
+  readonly maintenance: 'pending' | 'complete'
 }
 
 const CANONICAL_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
@@ -189,6 +202,7 @@ function assertSelectedStore(db: Database.Database): void {
     if (Number(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get()) !== 0) fail('STORE_REFUSED')
   }
   assertContinuityCasConsistency(db)
+  assertStorageV3ArtifactCatalogue(db)
 }
 
 function mintDeletionOperationId(
@@ -256,7 +270,7 @@ export function deleteStorageV3Scope(
           deletedRows: Object.freeze({}),
           tombstonesWritten: 0,
           operationId: recorded.operation_id,
-          maintenance: 'pending' as const,
+          maintenance: storageV3MaintenanceStatus(db),
         })
       }
 
@@ -291,6 +305,13 @@ export function deleteStorageV3Scope(
         if (seen) fail('OPERATION_CONFLICT')
       }
       options.failAfterStage?.('conflictCheck')
+
+      scheduleStorageV3ArtifactsForScope(db, {
+        scopeId,
+        operationId,
+        eventWeek,
+      })
+      options.failAfterStage?.('artifactSchedule')
 
       // A scoped deletion-kind row for a subject OUTSIDE the enumeration (its data row
       // already gone, or an artifact-kind record) is the only surviving proof of an
@@ -377,6 +398,7 @@ export function deleteStorageV3Scope(
         fail('DELETION_FAILED')
       }
       assertContinuityCasConsistency(db)
+      assertStorageV3ArtifactCatalogue(db)
       options.failAfterStage?.('finalValidation')
 
       return Object.freeze({
@@ -432,6 +454,26 @@ export function readStorageV3DeletionLineage(
 
 export interface StorageV3DeletionMaintenanceResult {
   readonly maintenance: 'complete'
+  readonly artifactsDeleted: number
+}
+
+export const STORAGE_V3_DELETION_MAINTENANCE_STAGES = [
+  'artifactsDeleted',
+  'selectedOwnershipFinalized',
+  'vacuumed',
+  'markerCompleted',
+  'checkpointed',
+] as const
+export type StorageV3DeletionMaintenanceStage =
+  typeof STORAGE_V3_DELETION_MAINTENANCE_STAGES[number]
+
+export interface StorageV3DeletionMaintenanceOptions {
+  /** Content-free hooks used only by invented crash/restart fixtures. */
+  readonly failAfterStage?: (stage: StorageV3DeletionMaintenanceStage) => void
+  readonly failAfterArtifactStage?: (
+    stage: StorageV3ArtifactDeletionStage,
+    completedArtifacts: number,
+  ) => void
 }
 
 /**
@@ -443,6 +485,7 @@ export interface StorageV3DeletionMaintenanceResult {
  */
 export function completeStorageV3DeletionMaintenance(
   db: Database.Database,
+  options: StorageV3DeletionMaintenanceOptions = {},
 ): Readonly<StorageV3DeletionMaintenanceResult> {
   try {
     if (db.inTransaction) fail('MAINTENANCE_FAILED')
@@ -450,11 +493,32 @@ export function completeStorageV3DeletionMaintenance(
       const rows = db.pragma('wal_checkpoint(TRUNCATE)') as Array<{ busy: number }>
       if (rows.some((row) => Number(row.busy) !== 0)) fail('MAINTENANCE_FAILED')
     }
-    checkpoint()
-    db.exec('VACUUM')
-    checkpoint()
+    let artifactsDeleted = 0
+    const state = storageV3MaintenanceStatus(db)
+    if (state === 'pending') {
+      artifactsDeleted = completeStorageV3ArtifactDeletions(db, {
+        failAfterStage: options.failAfterArtifactStage,
+      })
+      options.failAfterStage?.('artifactsDeleted')
+      db.transaction(() => finalizeSelectedStorageV3ScopeOwnership(db)).immediate()
+      options.failAfterStage?.('selectedOwnershipFinalized')
+      checkpoint()
+      db.exec('VACUUM')
+      options.failAfterStage?.('vacuumed')
+      db.transaction(() => markStorageV3MaintenanceComplete(db)).immediate()
+      options.failAfterStage?.('markerCompleted')
+      checkpoint()
+      options.failAfterStage?.('checkpointed')
+    } else {
+      // Idempotent replay of an already completed saga still proves the exact WAL
+      // family is quiescent, without rewriting a content-free store needlessly.
+      checkpoint()
+    }
     if (String(db.prepare('PRAGMA integrity_check').pluck().get()) !== 'ok') fail('MAINTENANCE_FAILED')
-    return Object.freeze({ maintenance: 'complete' as const })
+    if (db.prepare('PRAGMA foreign_key_check').get() !== undefined) fail('MAINTENANCE_FAILED')
+    assertStorageV3ArtifactCatalogue(db)
+    if (storageV3MaintenanceStatus(db) !== 'complete') fail('MAINTENANCE_FAILED')
+    return Object.freeze({ maintenance: 'complete' as const, artifactsDeleted })
   } catch (error) {
     if (error instanceof StorageV3DeletionError) throw error
     return fail('MAINTENANCE_FAILED')

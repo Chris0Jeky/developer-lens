@@ -6,6 +6,8 @@ import { openStorageDatabase } from './database.js'
 import { installIncrementalGithubCoreStorage } from './incremental.js'
 import {
   installStorageV3ShadowSchema,
+  STORAGE_V3_ARTIFACT_TABLES,
+  STORAGE_V3_ARTIFACT_TRIGGER_NAMES,
   STORAGE_V3_SHADOW_APPLICATION_ID,
   STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
   STORAGE_V3_SHADOW_COVERAGE_IDENTITY_TRIGGER_NAMES,
@@ -63,6 +65,7 @@ describe('storage-v3 B2a shadow schema', () => {
           ...STORAGE_V3_SHADOW_OWNER_IDENTITY_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES,
           ...casTriggerNames,
+          ...STORAGE_V3_ARTIFACT_TRIGGER_NAMES,
           STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
           STORAGE_V3_SHADOW_LINEAGE_SCOPE_TRIGGER_NAME,
         ].sort(),
@@ -264,7 +267,7 @@ describe('storage-v3 B2a shadow schema', () => {
     }
   })
 
-  it('installs the registered 18 tables, the two CAS tables, and all dispositions', () => {
+  it('installs the 18 migrated tables, CAS state, B4 catalogue, and all dispositions', () => {
     const db = new Database(':memory:')
     try {
       expect(installStorageV3ShadowSchema(db)).toEqual(STORAGE_V3_SHADOW_RESULT)
@@ -273,6 +276,7 @@ describe('storage-v3 B2a shadow schema', () => {
         ...STORAGE_V3_TABLES,
         'continuity_cas_operation',
         'continuity_cas_state',
+        ...STORAGE_V3_ARTIFACT_TABLES,
       ])
       expect(new Set(STORAGE_V3_DISPOSITIONS.map(({ tableName }) => tableName)).size).toBe(18)
       expect(STORAGE_V3_DISPOSITIONS.map(({ tableName }) => tableName).sort()).toEqual([...STORAGE_V3_TABLES].sort())
@@ -494,6 +498,31 @@ describe('storage-v3 B2a shadow schema', () => {
         .run(scopeB, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete'))
         .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY')
       expect(db.prepare('SELECT scope_id FROM collection_job WHERE job_id = ?').pluck().get(id('job-'))).toBe(scopeA)
+    } finally {
+      db.close()
+    }
+  })
+
+  it('refuses INSERT OR REPLACE from discarding pending maintenance identity', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare(`INSERT INTO storage_maintenance_state (
+        singleton, state, operation_id, scope_id, event_week
+      ) VALUES (1, 'pending', ?, ?, '2026-W05')`).run(id('del-'), scopeA)
+
+      expect(() => db.prepare(`INSERT OR REPLACE INTO storage_maintenance_state (
+        singleton, state, operation_id, scope_id, event_week
+      ) VALUES (1, 'complete', NULL, NULL, NULL)`).run())
+        .toThrow('STORAGE_V3_ARTIFACT_INVALID')
+      expect(db.prepare(`SELECT state, operation_id, scope_id, event_week
+        FROM storage_maintenance_state WHERE singleton = 1`).get()).toEqual({
+        state: 'pending',
+        operation_id: id('del-'),
+        scope_id: scopeA,
+        event_week: '2026-W05',
+      })
     } finally {
       db.close()
     }
