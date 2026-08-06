@@ -1,5 +1,13 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
-import { constants, type BigIntStats } from 'node:fs'
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  lstatSync,
+  openSync,
+  readSync,
+  type BigIntStats,
+} from 'node:fs'
 import { lstat, open, realpath, type FileHandle } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import {
@@ -61,6 +69,7 @@ export type TaskInstallationKeyHandle = Readonly<{
 
 type HandleRecord = Readonly<{
   key: Buffer
+  keyPath: string
   taskDirectory: DirectoryIdentity
 }>
 
@@ -176,6 +185,51 @@ function stableFileStateMatches(left: BigIntStats, right: BigIntStats): boolean 
     left.mode === right.mode &&
     left.mtimeNs === right.mtimeNs &&
     left.ctimeNs === right.ctimeNs
+}
+
+function assertCurrentKeyFileMatches(record: HandleRecord): void {
+  let descriptor: number | undefined
+  const firstRead = Buffer.alloc(INSTALLATION_KEY_BYTES)
+  const secondRead = Buffer.alloc(INSTALLATION_KEY_BYTES)
+  const overflow = Buffer.alloc(1)
+  try {
+    const before = lstatSync(record.keyPath, { bigint: true })
+    assertRegularKeyFile(before, INSTALLATION_KEY_SIZE)
+    descriptor = openSync(
+      record.keyPath,
+      constants.O_RDONLY | NON_BLOCKING_FLAG | NO_FOLLOW_FLAG,
+    )
+    const opened = fstatSync(descriptor, { bigint: true })
+    assertRegularKeyFile(opened, INSTALLATION_KEY_SIZE)
+    if (!stableFileStateMatches(before, opened)) invalidKey()
+    for (const bytes of [firstRead, secondRead]) {
+      let offset = 0
+      while (offset < bytes.length) {
+        const count = readSync(descriptor, bytes, offset, bytes.length - offset, offset)
+        if (count === 0) invalidKey()
+        offset += count
+      }
+      if (readSync(descriptor, overflow, 0, overflow.length, INSTALLATION_KEY_BYTES) !== 0) invalidKey()
+      const observed = fstatSync(descriptor, { bigint: true })
+      if (!stableFileStateMatches(opened, observed)) invalidKey()
+    }
+    const after = lstatSync(record.keyPath, { bigint: true })
+    if (!stableFileStateMatches(opened, after)
+      || !timingSafeEqual(firstRead, secondRead)
+      || !timingSafeEqual(firstRead, record.key)) invalidKey()
+  } catch (error) {
+    if (error instanceof TaskInstallationKeyError) throw error
+    return invalidKey()
+  } finally {
+    let closeFailed = false
+    if (descriptor !== undefined) {
+      try { closeSync(descriptor) } catch { closeFailed = true }
+    }
+    firstRead.fill(0)
+    secondRead.fill(0)
+    overflow.fill(0)
+    if (closeFailed) invalidKey()
+  }
 }
 
 async function captureCanonicalDirectory(path: string): Promise<DirectoryIdentity> {
@@ -318,7 +372,7 @@ function createOpaqueHandle(
   const handle = Object.freeze({ taskId: path.taskId, fingerprint, aliases: Object.freeze(aliases) })
   const taskDirectory = path.directories.at(-1)
   if (taskDirectory === undefined) invalidKey()
-  HANDLE_KEYS.set(handle, Object.freeze({ key: Buffer.from(key), taskDirectory }))
+  HANDLE_KEYS.set(handle, Object.freeze({ key: Buffer.from(key), keyPath: path.keyPath, taskDirectory }))
   if (continuityAuthorized) CONTINUITY_AUTHORIZED_HANDLES.add(handle)
   return handle
 }
@@ -333,6 +387,7 @@ export type TaskInstallationKeyDirectoryIdentity = Readonly<{
 export function assertTaskInstallationKeyContinuity(handle: TaskInstallationKeyHandle): void {
   if (!handle || typeof handle !== 'object'
     || !HANDLE_KEYS.has(handle) || !CONTINUITY_AUTHORIZED_HANDLES.has(handle)) invalidKey()
+  assertCurrentKeyFileMatches(HANDLE_KEYS.get(handle) ?? invalidKey())
 }
 
 /** Prove that an opaque handle was loaded from this exact canonical task directory. */

@@ -283,6 +283,7 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       expect(replacement.fingerprint).not.toBe(fx.key.fingerprint)
       await expect(recoverStorageV3MigrationBackup({ ...input, installationKey: replacement })).rejects
         .toBeInstanceOf(StorageV3BackupError)
+      await expect(recoverStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
       const staged = fx.db.prepare(
         "SELECT content_sha256, manifest_sha256 FROM app_artifact WHERE kind = 'migration_backup_v1'",
       ).get() as { content_sha256: string; manifest_sha256: string }
@@ -316,9 +317,7 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       await expect(recoverStorageV3MigrationBackup({ ...input, installationKey: replacement })).rejects
         .toBeInstanceOf(StorageV3BackupError)
       expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(1)
-      await expect(recoverStorageV3MigrationBackup(input)).resolves.toMatchObject({
-        locator: 'migration-backup-20260806T123501Z.sqlite',
-      })
+      await expect(recoverStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
     } finally { fx.cleanup() }
   })
 

@@ -234,6 +234,7 @@ describe('task-owned installation-key continuity', () => {
     expect(() => bindTaskInstallationKeyBody(forged, body)).toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
 
     await writeFile(keyPath(root), OTHER_KEY, { mode: 0o600 })
+    expect(() => bindTaskInstallationKeyBody(created, body)).toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
     const replacement = await loadTaskInstallationKey({ workspaceRoot: root, taskId: TASK_ID })
     expect(() => bindTaskInstallationKeyBody(replacement, body)).toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
     const copiedFingerprint = await loadTaskInstallationKey({
