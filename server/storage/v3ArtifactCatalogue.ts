@@ -715,12 +715,12 @@ export function completeStorageV3ArtifactDeletions(
     db.transaction(() => {
       db.prepare(
         `DELETE FROM lineage_event
-         WHERE (subject_id = ? OR caused_by = ?)
+         WHERE ((subject_kind = 'artifact' AND subject_id = ?) OR caused_by = ?)
            AND event_kind NOT IN ('tombstone_cascade', 'index_deleted', 'legacy_deletion_operation')`,
       ).run(row.artifact_id, row.artifact_id)
       if (db.prepare(
         `SELECT 1 FROM lineage_event
-         WHERE (subject_id = ? OR caused_by = ?)
+         WHERE ((subject_kind = 'artifact' AND subject_id = ?) OR caused_by = ?)
            AND event_kind NOT IN ('tombstone_cascade', 'index_deleted', 'legacy_deletion_operation')
          LIMIT 1`,
       ).get(row.artifact_id, row.artifact_id)) fail()
