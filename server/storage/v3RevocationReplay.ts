@@ -10,6 +10,7 @@ import {
   readSync,
   readdirSync,
   realpathSync,
+  renameSync,
   unlinkSync,
   writeSync,
   type BigIntStats,
@@ -34,8 +35,10 @@ import {
   type StorageV3ScopeDeletionResult,
 } from './v3Deletion.js'
 import {
+  consumeStorageV3MigrationSelectionInitialization,
   readStorageV3MigrationSelection,
   type StorageV3MigrationSelection,
+  type StorageV3MigrationSelectionInitializationGrant,
 } from './v3SelectionReceipt.js'
 import { isoWeekFromCanonicalTimestamp } from './v3ShadowRewrite.js'
 import { openSelectedStorageV3Store } from './v3StoreFiles.js'
@@ -48,6 +51,7 @@ import {
   withStorageV3WriterLease,
   type StorageV3WriterLease,
 } from './v3WriterLease.js'
+import { STORAGE_V3_SELECTION_PROOF_NAMES } from './v3SelectionProof.js'
 import {
   C1_KEY_PREFIXES,
   DeletionOperationIdV3Schema,
@@ -80,6 +84,8 @@ const VERSION = 'revocation_replay_v1' as const
 const FAMILY = 'revocation-replay-v1-' as const
 const ANCHOR_SEQUENCE = 0
 const ANCHOR_NAME = `${FAMILY}00000000.json` as const
+const HEAD_NAME = `${FAMILY}head.json` as const
+const HEAD_TEMP_NAME = `${HEAD_NAME}.tmp` as const
 const BODY_DOMAIN = 'developer-lens.storage-v3-revocation-replay.v1' as const
 const SELECTION_DOMAIN = 'developer-lens.storage-v3-revocation-selection.v1' as const
 const ZERO_HASH = '0'.repeat(64)
@@ -96,6 +102,7 @@ const GRACE_MS = 7 * 24 * 60 * 60 * 1000
 
 export const STORAGE_V3_REVOCATION_REPLAY_NAMES = Object.freeze({
   anchor: ANCHOR_NAME,
+  head: HEAD_NAME,
   prefix: FAMILY,
 })
 
@@ -104,6 +111,8 @@ export type StorageV3RevocationReplayPublicationStage =
   | 'tempDurable'
   | 'finalLink'
   | 'tempRemoval'
+  | 'headTempDurable'
+  | 'headReplace'
 
 type DirectorySynchronizer = (
   root: StorageV3ArtifactRoot,
@@ -139,7 +148,18 @@ type EventBody = Readonly<{
   subjects: readonly EventSubject[]
 }>
 
-type Marker<T extends AnchorBody | EventBody = AnchorBody | EventBody> = T & Readonly<{
+type HeadBody = Readonly<{
+  version: typeof VERSION
+  kind: 'head'
+  sequence: number
+  selectionSha256: string
+  taskFingerprint: string
+  lastBodySha256: string
+}>
+
+type ReplayBody = AnchorBody | EventBody | HeadBody
+
+type Marker<T extends ReplayBody = ReplayBody> = T & Readonly<{
   bodySha256: string
   installationKeyBinding: string
 }>
@@ -298,7 +318,25 @@ function eventBody(
   })
 }
 
-function markerFor<T extends AnchorBody | EventBody>(body: T, key: TaskInstallationKeyHandle): Marker<T> {
+function headBody(
+  sequence: number,
+  lastBodySha256: string,
+  selection: StorageV3MigrationSelection,
+  key: TaskInstallationKeyHandle,
+): HeadBody {
+  if (!Number.isSafeInteger(sequence) || sequence < 0 || sequence > 99_999_999
+    || !HEX.test(lastBodySha256) || !HEX.test(key.fingerprint)) return fail()
+  return Object.freeze({
+    version: VERSION,
+    kind: 'head' as const,
+    sequence,
+    selectionSha256: selectionSha256(selection),
+    taskFingerprint: key.fingerprint,
+    lastBodySha256,
+  })
+}
+
+function markerFor<T extends ReplayBody>(body: T, key: TaskInstallationKeyHandle): Marker<T> {
   const bodySha256 = createHash('sha256')
     .update(`${BODY_DOMAIN}\0${JSON.stringify(body)}`, 'utf8')
     .digest('hex')
@@ -390,32 +428,49 @@ function sequenceName(sequence: number): string {
 function familyNames(root: StorageV3ArtifactRoot): Readonly<{
   finals: readonly string[]
   temps: readonly string[]
+  head: boolean
+  headTemp: boolean
 }> {
   const anchorPath = storageV3ArtifactFilePath(root, ANCHOR_NAME)
   let names: string[]
   try { names = readdirSync(dirname(anchorPath)) } catch { return fail() }
   const finals: string[] = []
   const temps: string[] = []
+  let head = false
+  let headTemp = false
   for (const name of names) {
     if (!name.toLowerCase().startsWith(FAMILY)) continue
     const finalMatch = FINAL.exec(name)
     const tempMatch = TEMP.exec(name)
     if (finalMatch) finals.push(name)
     else if (tempMatch) temps.push(name)
+    else if (name === HEAD_NAME) head = true
+    else if (name === HEAD_TEMP_NAME) headTemp = true
     else return fail()
   }
   return Object.freeze({
     finals: Object.freeze(finals.sort()),
     temps: Object.freeze(temps.sort()),
+    head,
+    headTemp,
   })
 }
 
 function inventory(root: StorageV3ArtifactRoot, allowedTemp?: string): readonly string[] {
   const names = familyNames(root)
-  if ((allowedTemp === undefined && names.temps.length !== 0)
-    || (allowedTemp !== undefined && (names.temps.length > 1
-      || (names.temps.length === 1 && names.temps[0] !== allowedTemp)))) return fail()
+  const temps = [...names.temps, ...(names.headTemp ? [HEAD_TEMP_NAME] : [])]
+  if ((allowedTemp === undefined && temps.length !== 0)
+    || (allowedTemp !== undefined && (temps.length > 1
+      || (temps.length === 1 && temps[0] !== allowedTemp)))) return fail()
   return names.finals
+}
+
+function assertSelectionProofNamespaceAbsent(root: StorageV3ArtifactRoot): void {
+  const finalPath = storageV3ArtifactFilePath(root, STORAGE_V3_SELECTION_PROOF_NAMES.final)
+  let names: string[]
+  try { names = readdirSync(dirname(finalPath)) } catch { return fail() }
+  const reserved = STORAGE_V3_SELECTION_PROOF_NAMES.final.toLowerCase()
+  if (names.some((name) => name.toLowerCase().startsWith(reserved))) return fail()
 }
 
 function exactPair(tempPath: string, finalPath: string, bytes: Buffer): void {
@@ -495,6 +550,75 @@ function publishRecord(
   return 'published'
 }
 
+function publishHead(
+  root: StorageV3ArtifactRoot,
+  previousBytes: Buffer | undefined,
+  bytes: Buffer,
+  synchronize: DirectorySynchronizer,
+  failAtStage?: StorageV3RevocationReplayPublicationStage,
+): 'published' | 'replayed' {
+  const finalPath = storageV3ArtifactFilePath(root, HEAD_NAME)
+  const tempPath = storageV3ArtifactFilePath(root, HEAD_TEMP_NAME)
+  const names = familyNames(root)
+  if (names.temps.length !== 0) return fail()
+  let existingFinal = stat(finalPath)
+  let existingTemp = stat(tempPath)
+  if (existingTemp !== undefined && existingTemp.size === 0n) {
+    assertFile(existingTemp, 1n)
+    const reproved = stat(tempPath)
+    if (reproved === undefined || reproved.dev !== existingTemp.dev || reproved.ino !== existingTemp.ino) return fail()
+    unlinkSync(tempPath)
+    synchronize(root, 'tempRemoval')
+    existingTemp = undefined
+  }
+  if (existingFinal !== undefined) {
+    assertFile(existingFinal, 1n)
+    const current = readExact(finalPath)
+    if (previousBytes === undefined) {
+      compareBytes(current, bytes)
+      if (existingTemp !== undefined) return fail()
+      return 'replayed'
+    }
+    if (current.length === bytes.length && timingSafeEqual(current, bytes)) {
+      if (existingTemp !== undefined) return fail()
+      return 'replayed'
+    }
+    compareBytes(current, previousBytes)
+  } else if (previousBytes !== undefined) return fail()
+  if (existingTemp !== undefined) {
+    assertFile(existingTemp, 1n)
+    compareBytes(readExact(tempPath), bytes)
+  } else {
+    let descriptor: number | undefined
+    try {
+      descriptor = openSync(tempPath, constants.O_WRONLY | constants.O_CREAT | constants.O_EXCL | NO_FOLLOW, 0o600)
+      if (failAtStage === 'tempClaim') throw new Error('invented revocation interruption')
+      writeExact(tempPath, descriptor, bytes)
+    } catch (error) {
+      if (error instanceof StorageV3RevocationReplayError || (error as Error).message === 'invented revocation interruption') {
+        throw error
+      }
+      return fail()
+    } finally { if (descriptor !== undefined) closeSync(descriptor) }
+    synchronize(root, 'headTempDurable')
+    if (failAtStage === 'headTempDurable') throw new Error('invented revocation interruption')
+  }
+  compareBytes(readExact(tempPath), bytes)
+  existingFinal = stat(finalPath)
+  if (previousBytes === undefined) {
+    if (existingFinal !== undefined) return fail()
+  } else {
+    if (existingFinal === undefined) return fail()
+    compareBytes(readExact(finalPath), previousBytes)
+  }
+  renameSync(tempPath, finalPath)
+  synchronize(root, 'headReplace')
+  if (failAtStage === 'headReplace') throw new Error('invented revocation interruption')
+  compareBytes(readExact(finalPath), bytes)
+  inventory(root)
+  return 'published'
+}
+
 function parseMarker(
   bytes: Buffer,
   key: TaskInstallationKeyHandle,
@@ -506,30 +630,39 @@ function parseMarker(
   const rawKind = own(raw as object, 'kind')
   const expectedKeys = rawKind === 'anchor'
     ? ['version', 'kind', 'sequence', 'selectionSha256', 'taskFingerprint', 'previousBodySha256', 'bodySha256', 'installationKeyBinding']
-    : ['version', 'kind', 'sequence', 'selectionSha256', 'taskFingerprint', 'previousBodySha256', 'scopeId', 'operationId', 'eventWeek', 'subjects', 'bodySha256', 'installationKeyBinding']
+    : rawKind === 'head'
+      ? ['version', 'kind', 'sequence', 'selectionSha256', 'taskFingerprint', 'lastBodySha256', 'bodySha256', 'installationKeyBinding']
+      : ['version', 'kind', 'sequence', 'selectionSha256', 'taskFingerprint', 'previousBodySha256', 'scopeId', 'operationId', 'eventWeek', 'subjects', 'bodySha256', 'installationKeyBinding']
   const object = assertPlain(raw, expectedKeys)
   const selectionHash = own(object, 'selectionSha256')
   const taskFingerprint = own(object, 'taskFingerprint')
-  const previousBodySha256 = own(object, 'previousBodySha256')
   const bodySha256 = own(object, 'bodySha256')
   const binding = own(object, 'installationKeyBinding')
   if (own(object, 'version') !== VERSION
     || selectionHash !== selectionSha256(selection)
     || taskFingerprint !== key.fingerprint
-    || typeof previousBodySha256 !== 'string' || !HEX.test(previousBodySha256)
     || typeof bodySha256 !== 'string' || !HEX.test(bodySha256)
     || typeof binding !== 'string' || !HEX.test(binding)) return fail()
-  let body: AnchorBody | EventBody
+  let body: ReplayBody
   if (rawKind === 'anchor') {
+    const previousBodySha256 = own(object, 'previousBodySha256')
+    if (typeof previousBodySha256 !== 'string' || !HEX.test(previousBodySha256)) return fail()
     if (own(object, 'sequence') !== 0 || previousBodySha256 !== ZERO_HASH) return fail()
     body = anchorBody(selection, key)
+  } else if (rawKind === 'head') {
+    const sequence = own(object, 'sequence')
+    const lastBodySha256 = own(object, 'lastBodySha256')
+    if (typeof sequence !== 'number' || typeof lastBodySha256 !== 'string' || !HEX.test(lastBodySha256)) return fail()
+    body = headBody(sequence, lastBodySha256, selection, key)
   } else if (rawKind === 'revocation') {
     const sequence = own(object, 'sequence')
+    const previousBodySha256 = own(object, 'previousBodySha256')
     const scopeId = own(object, 'scopeId')
     const operationId = own(object, 'operationId')
     const eventWeek = own(object, 'eventWeek')
     const subjects = own(object, 'subjects')
-    if (typeof sequence !== 'number' || typeof scopeId !== 'string'
+    if (typeof sequence !== 'number' || typeof previousBodySha256 !== 'string' || !HEX.test(previousBodySha256)
+      || typeof scopeId !== 'string'
       || typeof operationId !== 'string' || typeof eventWeek !== 'string'
       || !Array.isArray(subjects)) return fail()
     body = eventBody(sequence, previousBodySha256, selection, key, {
@@ -545,15 +678,17 @@ function parseMarker(
   return expected
 }
 
-function verifyInternal(
+type ReplayChain = Readonly<{
+  state: StorageV3RevocationReplayState
+  bodyHashes: readonly string[]
+}>
+
+function readChain(
   root: StorageV3ArtifactRoot,
   key: TaskInstallationKeyHandle,
   selection: StorageV3MigrationSelection,
-  lease: StorageV3WriterLease,
   allowedTemp?: string,
-): StorageV3RevocationReplayState {
-  assertStorageV3WriterLease(root, lease)
-  assertStorageV3ArtifactRootInstallationKey(root, key)
+): ReplayChain {
   const names = inventory(root, allowedTemp)
   if (names.length === 0 || names[0] !== ANCHOR_NAME) return fail()
   const anchorNlink = allowedTemp === `${ANCHOR_NAME}.tmp` ? 2n : 1n
@@ -566,6 +701,7 @@ function verifyInternal(
   const anchor = parseMarker(anchorBytes, key, selection)
   if (anchor.kind !== 'anchor') return fail()
   let previous = anchor.bodySha256
+  const bodyHashes = [anchor.bodySha256]
   const entries: StorageV3RevocationReplayEntry[] = []
   for (let index = 1; index < names.length; index += 1) {
     const name = names[index]
@@ -589,13 +725,51 @@ function verifyInternal(
       bodySha256: marker.bodySha256,
     }))
     previous = marker.bodySha256
+    bodyHashes.push(marker.bodySha256)
   }
   const scopes = entries.map((entry) => entry.scopeId)
   if (new Set(scopes).size !== scopes.length) return fail()
   return Object.freeze({
-    selectionSha256: selectionSha256(selection),
-    entries: Object.freeze(entries),
+    state: Object.freeze({
+      selectionSha256: selectionSha256(selection),
+      entries: Object.freeze(entries),
+    }),
+    bodyHashes: Object.freeze(bodyHashes),
   })
+}
+
+function readHead(
+  root: StorageV3ArtifactRoot,
+  key: TaskInstallationKeyHandle,
+  selection: StorageV3MigrationSelection,
+): Readonly<{ marker: Marker<HeadBody>; bytes: Buffer }> {
+  if (!familyNames(root).head) return fail()
+  const bytes = readExact(storageV3ArtifactFilePath(root, HEAD_NAME))
+  const marker = parseMarker(bytes, key, selection)
+  if (marker.kind !== 'head') return fail()
+  return Object.freeze({ marker, bytes })
+}
+
+function headMatchesChain(head: Marker<HeadBody>, chain: ReplayChain): boolean {
+  return head.sequence === chain.state.entries.length
+    && head.lastBodySha256 === chain.bodyHashes.at(-1)
+}
+
+function assertHeadMatchesChain(head: Marker<HeadBody>, chain: ReplayChain): void {
+  if (!headMatchesChain(head, chain)) return fail()
+}
+
+function verifyInternal(
+  root: StorageV3ArtifactRoot,
+  key: TaskInstallationKeyHandle,
+  selection: StorageV3MigrationSelection,
+  lease: StorageV3WriterLease,
+): StorageV3RevocationReplayState {
+  assertStorageV3WriterLease(root, lease)
+  assertStorageV3ArtifactRootInstallationKey(root, key)
+  const chain = readChain(root, key, selection)
+  assertHeadMatchesChain(readHead(root, key, selection).marker, chain)
+  return chain.state
 }
 
 function recoverPendingRecord(
@@ -605,73 +779,127 @@ function recoverPendingRecord(
   lease: StorageV3WriterLease,
   synchronize: DirectorySynchronizer,
 ): void {
-  const names = familyNames(root)
-  if (names.temps.length === 0) return
-  if (names.temps.length !== 1) return fail()
-  const tempName = names.temps[0]!
-  const match = TEMP.exec(tempName)
-  if (!match) return fail()
-  const sequence = Number(match[1])
-  const finalName = sequenceName(sequence)
-  const finalPath = storageV3ArtifactFilePath(root, finalName)
-  const tempPath = storageV3ArtifactFilePath(root, tempName)
-  const temp = stat(tempPath)
-  if (temp === undefined) return fail()
-  if (temp.size === 0n) {
-    assertFile(temp, 1n)
-    if (stat(finalPath) !== undefined) return fail()
-    unlinkSync(tempPath)
-    synchronize(root, 'tempRemoval')
+  assertStorageV3WriterLease(root, lease)
+  assertStorageV3ArtifactRootInstallationKey(root, key)
+  let names = familyNames(root)
+  if (names.temps.length > 1 || (names.temps.length !== 0 && names.headTemp)) return fail()
+  if (!names.head && names.headTemp && names.temps.length === 0) {
+    const chain = readChain(root, key, selection, HEAD_TEMP_NAME)
+    if (chain.state.entries.length !== 0) return fail()
+    const initialBytes = markerBytes(markerFor(
+      headBody(0, chain.bodyHashes[0]!, selection, key),
+      key,
+    ))
+    publishHead(root, undefined, initialBytes, synchronize)
+    names = familyNames(root)
+  }
+  if (names.temps.length === 1) {
+    const tempName = names.temps[0]!
+    const match = TEMP.exec(tempName)
+    if (!match) return fail()
+    const sequence = Number(match[1])
+    const finalName = sequenceName(sequence)
+    const finalPath = storageV3ArtifactFilePath(root, finalName)
+    const tempPath = storageV3ArtifactFilePath(root, tempName)
+    const temp = stat(tempPath)
+    if (temp === undefined) return fail()
+    if (temp.size === 0n) {
+      assertFile(temp, 1n)
+      if (stat(finalPath) !== undefined) return fail()
+      const reproved = stat(tempPath)
+      if (reproved === undefined || reproved.dev !== temp.dev || reproved.ino !== temp.ino) return fail()
+      unlinkSync(tempPath)
+      synchronize(root, 'tempRemoval')
+    } else {
+      const head = readHead(root, key, selection).marker
+      const final = stat(finalPath)
+      if (final !== undefined) {
+        const chain = readChain(root, key, selection, tempName)
+        const priorHash = chain.bodyHashes[head.sequence]
+        if (!headMatchesChain(head, chain)
+          && (chain.state.entries.length !== head.sequence + 1
+            || head.lastBodySha256 !== priorHash)) return fail()
+        const bytes = readExact(finalPath, 2n)
+        publishRecord(root, sequence, bytes, synchronize)
+      } else {
+        const chain = readChain(root, key, selection, tempName)
+        assertHeadMatchesChain(head, chain)
+        const bytes = readExact(tempPath)
+        const marker = parseMarker(bytes, key, selection)
+        if (marker.kind !== 'revocation' || marker.sequence !== chain.state.entries.length + 1
+          || marker.previousBodySha256 !== chain.bodyHashes.at(-1)) return fail()
+        publishRecord(root, sequence, bytes, synchronize)
+      }
+    }
+  }
+  names = familyNames(root)
+  if (names.temps.length !== 0 || !names.head) return fail()
+  const allowedHeadTemp = names.headTemp ? HEAD_TEMP_NAME : undefined
+  const chain = readChain(root, key, selection, allowedHeadTemp)
+  const head = readHead(root, key, selection)
+  if (headMatchesChain(head.marker, chain)) {
+    if (names.headTemp) return fail()
     return
   }
-  const final = stat(finalPath)
-  if (final !== undefined) {
-    const state = verifyInternal(root, key, selection, lease, tempName)
-    if (sequence > 0 && state.entries.at(-1)?.sequence !== sequence) return fail()
-    const bytes = readExact(finalPath, 2n)
-    publishRecord(root, sequence, bytes, synchronize)
-    return
-  }
-  const state = verifyInternal(root, key, selection, lease, tempName)
-  if (sequence !== state.entries.length + 1 || sequence === 0) return fail()
-  const bytes = readExact(tempPath)
-  const marker = parseMarker(bytes, key, selection)
-  const previous = state.entries.at(-1)?.bodySha256
-    ?? parseMarker(readExact(storageV3ArtifactFilePath(root, ANCHOR_NAME)), key, selection).bodySha256
-  if (marker.kind !== 'revocation' || marker.sequence !== sequence
-    || marker.previousBodySha256 !== previous) return fail()
-  publishRecord(root, sequence, bytes, synchronize)
+  if (chain.state.entries.length !== head.marker.sequence + 1
+    || head.marker.lastBodySha256 !== chain.bodyHashes[head.marker.sequence]) return fail()
+  const nextBytes = markerBytes(markerFor(
+    headBody(chain.state.entries.length, chain.bodyHashes.at(-1)!, selection, key),
+    key,
+  ))
+  publishHead(root, head.bytes, nextBytes, synchronize)
 }
 
-function ensureInternal(
+function initializeInternal(
   root: StorageV3ArtifactRoot,
   key: TaskInstallationKeyHandle,
   selection: StorageV3MigrationSelection,
+  initializationGrant: StorageV3MigrationSelectionInitializationGrant,
   lease: StorageV3WriterLease,
   synchronize: DirectorySynchronizer,
   failAtStage?: StorageV3RevocationReplayPublicationStage,
 ): StorageV3RevocationReplayState {
   assertStorageV3WriterLease(root, lease)
   assertStorageV3ArtifactRootInstallationKey(root, key)
-  const anchorPath = storageV3ArtifactFilePath(root, ANCHOR_NAME)
-  if (stat(anchorPath) === undefined) {
-    const body = anchorBody(selection, key)
-    publishRecord(root, 0, markerBytes(markerFor(body, key)), synchronize, failAtStage)
-  } else {
-    recoverPendingRecord(root, key, selection, lease, synchronize)
-  }
+  consumeStorageV3MigrationSelectionInitialization(initializationGrant, selection)
+  assertSelectionProofNamespaceAbsent(root)
+  const names = familyNames(root)
+  if (names.finals.length !== 0 || names.temps.length !== 0 || names.head || names.headTemp) return fail()
+  const anchor = markerFor(anchorBody(selection, key), key)
+  publishRecord(root, 0, markerBytes(anchor), synchronize, failAtStage)
+  const initialHead = markerFor(headBody(0, anchor.bodySha256, selection, key), key)
+  publishHead(root, undefined, markerBytes(initialHead), synchronize, failAtStage)
   return verifyInternal(root, key, selection, lease)
 }
 
-/** Ensure the empty replay anchor is durable while the caller holds the writer lease. */
-export function ensureStorageV3RevocationReplayAnchor(
+function recoverInternal(
+  root: StorageV3ArtifactRoot,
+  key: TaskInstallationKeyHandle,
+  selection: StorageV3MigrationSelection,
+  lease: StorageV3WriterLease,
+  synchronize: DirectorySynchronizer,
+): StorageV3RevocationReplayState {
+  recoverPendingRecord(root, key, selection, lease, synchronize)
+  return verifyInternal(root, key, selection, lease)
+}
+
+/** Initialize the empty replay family only for a receipt recorded in this call. */
+export function initializeStorageV3RevocationReplay(
   root: StorageV3ArtifactRoot,
   installationKey: TaskInstallationKeyHandle,
   selection: StorageV3MigrationSelection,
+  initializationGrant: StorageV3MigrationSelectionInitializationGrant,
   lease: StorageV3WriterLease,
 ): StorageV3RevocationReplayState {
   assertStorageV3ArtifactDirectorySyncSupported()
-  return ensureInternal(root, installationKey, selection, lease, (value) => syncStorageV3ArtifactDirectory(value))
+  return initializeInternal(
+    root,
+    installationKey,
+    selection,
+    initializationGrant,
+    lease,
+    (value) => syncStorageV3ArtifactDirectory(value),
+  )
 }
 
 /** Verify the complete external replay chain under the same lifecycle writer lease. */
@@ -698,7 +926,7 @@ function appendInternal(
   synchronize: DirectorySynchronizer,
   failAtStage?: StorageV3RevocationReplayPublicationStage,
 ): StorageV3RevocationReplayState {
-  let state = ensureInternal(root, key, selection, lease, synchronize)
+  let state = recoverInternal(root, key, selection, lease, synchronize)
   const existing = state.entries.find((entry) => entry.scopeId === input.scopeId)
   const canonical = canonicalSubjects(input.subjects, input.scopeId)
   if (existing !== undefined) {
@@ -712,7 +940,13 @@ function appendInternal(
     ...input,
     subjects: canonical,
   })
+  const head = readHead(root, key, selection)
   publishRecord(root, body.sequence, markerBytes(markerFor(body, key)), synchronize, failAtStage)
+  const chain = readChain(root, key, selection)
+  publishHead(root, head.bytes, markerBytes(markerFor(
+    headBody(chain.state.entries.length, chain.bodyHashes.at(-1)!, selection, key),
+    key,
+  )), synchronize, failAtStage)
   state = verifyInternal(root, key, selection, lease)
   return state
 }
@@ -863,7 +1097,7 @@ function runDeletion(
     try {
       const selection = readStorageV3MigrationSelection(db)
       if (selection === undefined) return fail()
-      let state = ensureInternal(root, input.installationKey, selection, lease, synchronize)
+      let state = recoverInternal(root, input.installationKey, selection, lease, synchronize)
       const eventWeek = isoWeekFromCanonicalTimestamp(input.asOf)
       const pending = state.entries.find((entry) => entry.scopeId === input.scopeId)
       let operationId: string
@@ -914,10 +1148,10 @@ export function deleteStorageV3ScopeWithRevocationReplay(
   return runDeletion(input, (root) => syncStorageV3ArtifactDirectory(root))
 }
 
-/** Resume durable intents after a crash before/during selected-store deletion. */
-export function resumeStorageV3RevocationReplay(
+function resumeInternal(
   directory: string,
   installationKey: TaskInstallationKeyHandle,
+  synchronize: DirectorySynchronizer,
 ): number {
   const root = openStorageV3ArtifactRoot(directory)
   assertStorageV3ArtifactRootInstallationKey(root, installationKey)
@@ -926,10 +1160,28 @@ export function resumeStorageV3RevocationReplay(
     try {
       const selection = readStorageV3MigrationSelection(db)
       if (selection === undefined) return fail()
-      const state = verifyInternal(root, installationKey, selection, lease)
+      const state = recoverInternal(
+        root,
+        installationKey,
+        selection,
+        lease,
+        synchronize,
+      )
       return replayStorageV3Revocations(db, state)
     } finally { if (db.open) db.close() }
   })
+}
+
+/** Resume durable intents after a crash before/during selected-store deletion. */
+export function resumeStorageV3RevocationReplay(
+  directory: string,
+  installationKey: TaskInstallationKeyHandle,
+): number {
+  return resumeInternal(
+    directory,
+    installationKey,
+    (value) => syncStorageV3ArtifactDirectory(value),
+  )
 }
 
 /** @internal Invented-fixture durability/failure seams. */
@@ -938,12 +1190,21 @@ export const v3RevocationReplayTestSeams = Object.freeze({
     root: StorageV3ArtifactRoot,
     installationKey: TaskInstallationKeyHandle,
     selection: StorageV3MigrationSelection,
+    initializationGrant: StorageV3MigrationSelectionInitializationGrant,
     lease: StorageV3WriterLease,
     synchronize: DirectorySynchronizer,
     failAtStage?: StorageV3RevocationReplayPublicationStage,
   ): StorageV3RevocationReplayState {
     if (typeof synchronize !== 'function') return fail()
-    return ensureInternal(root, installationKey, selection, lease, synchronize, failAtStage)
+    return initializeInternal(
+      root,
+      installationKey,
+      selection,
+      initializationGrant,
+      lease,
+      synchronize,
+      failAtStage,
+    )
   },
   deleteWithDirectorySynchronizer(
     input: StorageV3RevocationDeletionInput,
@@ -953,5 +1214,13 @@ export const v3RevocationReplayTestSeams = Object.freeze({
     if (typeof synchronize !== 'function'
       || (failAfterStage !== undefined && typeof failAfterStage !== 'function')) return fail()
     return runDeletion(input, synchronize, failAfterStage)
+  },
+  resumeWithDirectorySynchronizer(
+    directory: string,
+    installationKey: TaskInstallationKeyHandle,
+    synchronize: DirectorySynchronizer,
+  ): number {
+    if (typeof synchronize !== 'function') return fail()
+    return resumeInternal(directory, installationKey, synchronize)
   },
 })

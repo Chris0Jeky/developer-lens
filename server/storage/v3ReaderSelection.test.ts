@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
@@ -172,6 +172,41 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       expect(replay.db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(SCOPE_A))
         .toBeUndefined()
       replay.db.close()
+    } finally { fx.cleanup() }
+  })
+
+  it('never recreates a missing replay family for a committed selection', async () => {
+    const fx = await fixture()
+    try {
+      const selected = expectSelected(selectStorageV3Reader(fx.input))
+      selected.db.close()
+      expect(() => v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
+        directory: fx.root,
+        installationKey: fx.key,
+        scopeId: SCOPE_A,
+        asOf: '2026-08-06T13:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 9),
+      }, () => {}, (stage) => {
+        if (stage === 'intentDurable') throw new Error('invented process interruption')
+      })).toThrow('invented process interruption')
+      for (const name of readdirSync(fx.root)) {
+        if (name.startsWith(STORAGE_V3_REVOCATION_REPLAY_NAMES.prefix)) {
+          rmSync(join(fx.root, name))
+        }
+      }
+      expect(readdirSync(fx.root).some((name) => name.startsWith(
+        STORAGE_V3_REVOCATION_REPLAY_NAMES.prefix,
+      ))).toBe(false)
+
+      expect(selectStorageV3Reader(fx.input))
+        .toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      expect(readdirSync(fx.root).some((name) => name.startsWith(
+        STORAGE_V3_REVOCATION_REPLAY_NAMES.prefix,
+      ))).toBe(false)
+      const store = openSelectedStorageV3Store(fx.root)
+      try {
+        expect(store.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(SCOPE_A)).toBeDefined()
+      } finally { store.close() }
     } finally { fx.cleanup() }
   })
 

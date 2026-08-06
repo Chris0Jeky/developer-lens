@@ -12,6 +12,7 @@ import {
   verifyStorageV3MigrationBackup,
 } from './v3Backup.js'
 import {
+  claimStorageV3MigrationSelectionInitialization,
   recordStorageV3MigrationSelection,
   issueStorageV3MigrationSuccessReport,
   storageV3MigrationRootBinding,
@@ -19,6 +20,7 @@ import {
   StorageV3MigrationSelectionError,
   v3SelectionReceiptTestSeams,
   type StorageV3MigrationSelection,
+  type StorageV3MigrationSelectionInitializationGrant,
   type StorageV3MigrationSuccessReportProof,
 } from './v3SelectionReceipt.js'
 import {
@@ -43,7 +45,7 @@ import {
 import {
   STORAGE_V3_REVOCATION_REPLAY_NAMES,
   assertStorageV3RevocationReplayApplied,
-  ensureStorageV3RevocationReplayAnchor,
+  initializeStorageV3RevocationReplay,
   v3RevocationReplayTestSeams,
   verifyStorageV3RevocationReplay,
   type StorageV3RevocationReplayState,
@@ -90,10 +92,11 @@ type SelectionProofPublisher = (
   installationKey: TaskInstallationKeyHandle,
 ) => StorageV3MigrationSelectionProofPublication
 type SelectionProofPreflight = (root: ReturnType<typeof openStorageV3ArtifactRoot>) => void
-type RevocationReplayEnsurer = (
+type RevocationReplayInitializer = (
   root: ReturnType<typeof openStorageV3ArtifactRoot>,
   installationKey: TaskInstallationKeyHandle,
   selection: StorageV3MigrationSelection,
+  initializationGrant: StorageV3MigrationSelectionInitializationGrant,
   lease: StorageV3WriterLease,
 ) => StorageV3RevocationReplayState
 
@@ -262,7 +265,7 @@ function selectStorageV3ReaderInternal(
     taskFingerprint: string
     rootBinding: string
   }) => StorageV3MigrationSuccessReportProof = issueStorageV3MigrationSuccessReport,
-  ensureRevocationReplay: RevocationReplayEnsurer = ensureStorageV3RevocationReplayAnchor,
+  initializeRevocationReplay: RevocationReplayInitializer = initializeStorageV3RevocationReplay,
 ): StorageV3ReaderSelection {
   const rootBindingFor = storageV3MigrationRootBinding
   let stage: SelectionStage = 'request'
@@ -302,6 +305,7 @@ function selectStorageV3ReaderInternal(
       openedDb = db
       const existing = readStorageV3MigrationSelection(db)
       let receipt: StorageV3MigrationSelection
+      let initializationGrant: StorageV3MigrationSelectionInitializationGrant | undefined
       if (existing !== undefined) {
         assertStorageV3ArtifactRootInstallationKey(artifactRoot, closed.installationKey)
         const selectedArtifactId = activeSelectedArtifactId(db)
@@ -339,25 +343,24 @@ function selectStorageV3ReaderInternal(
         const recorded = beforeReceiptCommit === undefined
           ? recordStorageV3MigrationSelection(db, receiptInput)
           : v3SelectionReceiptTestSeams.recordWithBeforeCommit(db, receiptInput, beforeReceiptCommit)
+        if (recorded.status !== 'recorded') throw new StorageV3SelectedRefusalError()
         receipt = recorded.selection
+        initializationGrant = claimStorageV3MigrationSelectionInitialization(recorded)
         // From this point on the durable receipt is the source of truth. Any later
         // open/revalidation failure must not hand control back to a legacy reader.
         protectedSelection = true
       }
+      stage = 'revocation'
+      let revocations = initializationGrant !== undefined
+        ? initializeRevocationReplay(artifactRoot, closed.installationKey, receipt, initializationGrant, lease)
+        : verifyStorageV3RevocationReplay(artifactRoot, closed.installationKey, receipt, lease)
+      assertStorageV3RevocationReplayApplied(db, revocations)
       stage = 'proof'
       const proof = publishProof(db, artifactRoot, closed.installationKey)
       assertReplayRequest(proof.selection, closed, activeSelectedArtifactId(db))
       if (proof.selection.graceDeadlineAt !== receipt.graceDeadlineAt) {
         throw new StorageV3SelectedRefusalError()
       }
-      stage = 'revocation'
-      let revocations = ensureRevocationReplay(
-        artifactRoot,
-        closed.installationKey,
-        receipt,
-        lease,
-      )
-      assertStorageV3RevocationReplayApplied(db, revocations)
       db.close()
       openedDb = undefined
       stage = 'store'
@@ -421,9 +424,9 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         report,
         successfulReportAt,
       ),
-      (root, installationKey, selection, lease) =>
+      (root, installationKey, selection, initializationGrant, lease) =>
         v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
-          root, installationKey, selection, lease, () => {},
+          root, installationKey, selection, initializationGrant, lease, () => {},
         ),
     )
   },
@@ -447,9 +450,9 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         report,
         successfulReportAt,
       ),
-      (root, installationKey, selection, lease) =>
+      (root, installationKey, selection, initializationGrant, lease) =>
         v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
-          root, installationKey, selection, lease, () => {},
+          root, installationKey, selection, initializationGrant, lease, () => {},
         ),
     )
   },
@@ -470,9 +473,9 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         report,
         successfulReportAt,
       ),
-      (root, installationKey, selection, lease) =>
+      (root, installationKey, selection, initializationGrant, lease) =>
         v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
-          root, installationKey, selection, lease, () => {},
+          root, installationKey, selection, initializationGrant, lease, () => {},
         ),
     )
   },
@@ -485,9 +488,9 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
       ),
       () => {},
       issueStorageV3MigrationSuccessReport,
-      (root, installationKey, selection, lease) =>
+      (root, installationKey, selection, initializationGrant, lease) =>
         v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
-          root, installationKey, selection, lease, () => {},
+          root, installationKey, selection, initializationGrant, lease, () => {},
         ),
     )
   },

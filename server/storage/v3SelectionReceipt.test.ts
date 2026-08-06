@@ -2,6 +2,7 @@ import Database from 'better-sqlite3'
 import { describe, expect, it } from 'vitest'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 import {
+  claimStorageV3MigrationSelectionInitialization,
   evaluateStorageV3MigrationGrace,
   readStorageV3MigrationSelection,
   recordStorageV3MigrationSelection,
@@ -64,6 +65,20 @@ describe('LIFE-03 migration selection receipt', () => {
     const db = fixture()
     try {
       expect(db.prepare('PRAGMA foreign_key_list(migration_selection_state)').all()).toEqual([])
+    } finally { db.close() }
+  })
+
+  it('issues initialization authority once only for the exact new result', () => {
+    const db = fixture()
+    try {
+      const recorded = recordStorageV3MigrationSelection(db, input)
+      expect(claimStorageV3MigrationSelectionInitialization(recorded)).toBeDefined()
+      expect(() => claimStorageV3MigrationSelectionInitialization(recorded))
+        .toThrow(StorageV3MigrationSelectionError)
+      const replayed = recordStorageV3MigrationSelection(db, input)
+      expect(replayed.status).toBe('replayed')
+      expect(() => claimStorageV3MigrationSelectionInitialization(replayed))
+        .toThrow(StorageV3MigrationSelectionError)
     } finally { db.close() }
   })
 

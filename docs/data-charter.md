@@ -58,15 +58,18 @@ durably fail-closed. The marker survives seven-day cleanup of the old JSON and m
 their absence can never re-authorize legacy fallback. It remains local, is never exported, and is
 removed no later than the C2 13-month boundary or deletion of the whole task root.
 
-Each selected task also owns one local content-free C1 revocation replay family. Its anchor and
-immutable entries contain only opaque scope/subject/operation IDs, the controlled capability code,
-ISO-week grain, keyed task/selection bindings, and integrity hashes. They contain no raw task ID,
-repository/source name or alias, path, prose, exact timestamp, or observed value. An entry is made
-durable before its deletion transaction; selected reads and restore verify the complete reserved
-family and prove every entry applied before serving data. A missing, foreign, non-canonical, or
-unapplied family fails closed and never authorizes legacy fallback. The family survives seven-day
-cleanup so an older signed backup cannot resurrect revoked data, remains local and unexported, and
-is removed no later than the C1 36-month boundary or deletion of the whole task root.
+Each selected task also owns one local content-free C1 revocation replay family. Its anchor,
+mandatory atomic tail head, and immutable entries contain only opaque scope/subject/operation IDs,
+the controlled capability code, ISO-week grain, keyed task/selection bindings, and integrity hashes.
+They contain no raw task ID, repository/source name or alias, path, prose, exact timestamp, or
+observed value. The head commits the expected final sequence and digest; an entry and its advanced
+head are durable before its deletion transaction. Selected reads and restore verify that exact tail
+and prove every entry applied before serving data. Only the single-use runtime grant attached to the
+newly committed receipt may initialize the family, before selection-proof publication. A missing,
+truncated, foreign, non-canonical, or unapplied family fails closed and never authorizes legacy
+fallback. The family survives seven-day cleanup so an older signed backup cannot resurrect revoked
+data, remains local and unexported, and is removed no later than the C1 36-month boundary or deletion
+of the whole task root.
 
 ## Sink contract
 

@@ -23,6 +23,7 @@ import {
 } from './v3ArtifactCatalogue.js'
 import { v3BackupTestSeams } from './v3Backup.js'
 import {
+  claimStorageV3MigrationSelectionInitialization,
   recordStorageV3MigrationSelection,
   replayStorageV3MigrationSuccessReport,
   storageV3MigrationRootBinding,
@@ -35,6 +36,7 @@ import {
   verifyStorageV3MigrationSelectionProof,
 } from './v3SelectionProof.js'
 import {
+  STORAGE_V3_REVOCATION_REPLAY_NAMES,
   v3RevocationReplayTestSeams,
 } from './v3RevocationReplay.js'
 import { installStorageV3ShadowSchema, storageV3ArtifactManifestSha256, storageV3SelectedStoreContentSha256 } from './v3ShadowSchema.js'
@@ -92,7 +94,7 @@ async function publicationFixture(options: Readonly<{
       ownerScopeIds: [SCOPE_A, SCOPE_B],
       installationKey,
     }, () => {})
-    const selection = recordStorageV3MigrationSelection(db, {
+    const recorded = recordStorageV3MigrationSelection(db, {
       legacySourceId: `legacy-${'5'.repeat(64)}`,
       selectedArtifactId,
       backupArtifactId: backup.artifactId,
@@ -109,7 +111,19 @@ async function publicationFixture(options: Readonly<{
         taskFingerprint: installationKey.fingerprint,
         rootBinding: storageV3MigrationRootBinding(root),
       }, '2026-08-06T12:40:00.000Z'),
-    }).selection
+    })
+    const selection = recorded.selection
+    const initializationGrant = claimStorageV3MigrationSelectionInitialization(recorded)
+    withStorageV3WriterLease(rootHandle, (lease) => {
+      v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+        rootHandle,
+        installationKey,
+        selection,
+        initializationGrant,
+        lease,
+        () => {},
+      )
+    })
     if (options.interruptSelectionProof === true) {
       try {
         v3SelectionProofTestSeams.publishWithDirectorySynchronizer(
@@ -127,15 +141,6 @@ async function publicationFixture(options: Readonly<{
         () => {},
       )
     }
-    withStorageV3WriterLease(rootHandle, (lease) => {
-      v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
-        rootHandle,
-        installationKey,
-        selection,
-        lease,
-        () => {},
-      )
-    })
     const backupPath = join(root, backup.locator)
     const manifestPath = join(root, backup.manifestLocator)
     const backupBytes = readFileSync(backupPath)
@@ -408,6 +413,20 @@ describe('LIFE-03 restore snapshot normalization', () => {
       expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
       expect(readFileSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)))
         .toEqual(fx.selectionProofBytes)
+    } finally { fx.close() }
+  })
+
+  it('refuses an old signed backup when the durable replay tail is missing', async () => {
+    const fx = await publicationFixture({ revokeAfterBackup: true })
+    try {
+      const headPath = join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.head)
+      const headBytes = readFileSync(headPath)
+      unlinkSync(join(fx.root, 'revocation-replay-v1-00000001.json'))
+
+      expect(v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {}))
+        .toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
+      expect(readFileSync(headPath)).toEqual(headBytes)
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))).toBe(false)
     } finally { fx.close() }
   })
 

@@ -34,9 +34,11 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'state syncs #126']
 active_slice: 'DL-LIFE-03 revocation replay (#172): before deleting a selected scope, publish one
   immutable key-bound content-free C1 intent outside the selected database. Selected readers and
-  restore verify the complete reserved family and replay every intent before serving data, so an
-  older signed backup cannot resurrect a revoked scope. The integrated candidate also resumes the
-  exact pending deletion-maintenance saga after a post-commit crash. Missing, foreign, case-variant,
+  restore verify the mandatory keyed tail head and complete reserved family, then replay every intent
+  before serving data, so an older signed backup cannot resurrect a revoked scope. Initialization
+  consumes the exact new-receipt runtime grant before proof publication; an existing receipt can
+  never recreate a missing family. The integrated candidate also resumes the exact pending
+  deletion-maintenance saga after a post-commit crash. Missing, truncated, foreign, case-variant,
   non-canonical, or unapplied state is unavailable and never legacy fallback. Physical seven-day
   source/backup expiry is the next separate slice #173. The whyResolver lineage joins and second
   analytical lens stay with Phase E #174/#80, never the v2 resolver.'

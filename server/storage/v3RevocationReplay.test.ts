@@ -29,6 +29,7 @@ import {
   verifyStorageV3RevocationReplay,
 } from './v3RevocationReplay.js'
 import {
+  claimStorageV3MigrationSelectionInitialization,
   recordStorageV3MigrationSelection,
   storageV3MigrationRootBinding,
   v3SelectionReceiptTestSeams,
@@ -98,13 +99,25 @@ async function fixture(): Promise<Fixture> {
       taskFingerprint: key.fingerprint,
       rootBinding: storageV3MigrationRootBinding(root),
     })
-    const selection = recordStorageV3MigrationSelection(db, {
+    const recorded = recordStorageV3MigrationSelection(db, {
       ...reportInput,
       successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
         reportInput,
         SUCCESS_AT,
       ),
-    }).selection
+    })
+    const selection = recorded.selection
+    const initializationGrant = claimStorageV3MigrationSelectionInitialization(recorded)
+    withStorageV3WriterLease(rootHandle, (lease) => {
+      v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
+        rootHandle,
+        key,
+        selection,
+        initializationGrant,
+        lease,
+        () => {},
+      )
+    })
     db.close()
     return Object.freeze({
       workspaceRoot,
@@ -146,6 +159,7 @@ describe('LIFE-03 external revocation replay', { timeout: 30_000 }, () => {
       expect(files).toEqual([
         STORAGE_V3_REVOCATION_REPLAY_NAMES.anchor,
         'revocation-replay-v1-00000001.json',
+        STORAGE_V3_REVOCATION_REPLAY_NAMES.head,
       ])
       const serialized = files.map((name) => readFileSync(join(fx.root, name), 'utf8')).join('\n')
       expect(serialized).not.toContain(fx.taskId)
@@ -179,7 +193,7 @@ describe('LIFE-03 external revocation replay', { timeout: 30_000 }, () => {
       expect(replay.deletion.status).toBe('replayed')
       expect(readdirSync(fx.root).filter((name) => name.startsWith(
         STORAGE_V3_REVOCATION_REPLAY_NAMES.prefix,
-      ))).toHaveLength(2)
+      ))).toHaveLength(3)
     } finally { fx.close() }
   })
 
@@ -233,14 +247,65 @@ describe('LIFE-03 external revocation replay', { timeout: 30_000 }, () => {
     } finally { fx.close() }
   })
 
+  it('refuses a truncated tail against the mandatory durable head', async () => {
+    const fx = await fixture()
+    try {
+      expect(deleteScope(fx).maintenance).toBe('complete')
+      const headPath = join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.head)
+      const headBytes = readFileSync(headPath)
+      rmSync(join(fx.root, 'revocation-replay-v1-00000001.json'))
+
+      expect(() => withStorageV3WriterLease(openStorageV3ArtifactRoot(fx.root), (lease) => {
+        verifyStorageV3RevocationReplay(
+          openStorageV3ArtifactRoot(fx.root),
+          fx.key,
+          fx.selection,
+          lease,
+        )
+      })).toThrowError(new StorageV3RevocationReplayError())
+      expect(() => resumeStorageV3RevocationReplay(fx.root, fx.key))
+        .toThrowError(new StorageV3RevocationReplayError())
+      expect(readFileSync(headPath)).toEqual(headBytes)
+    } finally { fx.close() }
+  })
+
+  it.each(['headTempDurable', 'headReplace'] as const)(
+    'recovers an exact event and head after interruption at %s',
+    async (interruptedStage) => {
+      const fx = await fixture()
+      try {
+        let interrupted = false
+        expect(() => v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
+          directory: fx.root,
+          installationKey: fx.key,
+          scopeId: SCOPE_A,
+          asOf: DELETE_AT,
+          randomBytes: () => Buffer.alloc(32, 9),
+        }, (_root, stage) => {
+          if (stage === interruptedStage && !interrupted) {
+            interrupted = true
+            throw new Error(`invented ${interruptedStage} interruption`)
+          }
+        })).toThrow(`invented ${interruptedStage} interruption`)
+
+        expect(v3RevocationReplayTestSeams.resumeWithDirectorySynchronizer(
+          fx.root,
+          fx.key,
+          () => {},
+        )).toBe(1)
+        const recovered = openSelectedStorageV3Store(fx.root)
+        try {
+          expect(recovered.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(SCOPE_A))
+            .toBeUndefined()
+        } finally { recovered.close() }
+        expect(existsSync(join(fx.root, `${STORAGE_V3_REVOCATION_REPLAY_NAMES.head}.tmp`))).toBe(false)
+      } finally { fx.close() }
+    },
+  )
+
   it('recovers the exact hard-link pair and refuses foreign reserved names', async () => {
     const fx = await fixture()
     try {
-      withStorageV3WriterLease(openStorageV3ArtifactRoot(fx.root), (lease) => {
-        v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
-          openStorageV3ArtifactRoot(fx.root), fx.key, fx.selection, lease, () => {},
-        )
-      })
       let interrupted = false
       expect(() => v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
         directory: fx.root,

@@ -62,6 +62,17 @@ export interface StorageV3MigrationSelectionResult {
   readonly selection: StorageV3MigrationSelection
 }
 
+/** Runtime-only, single-use authority to initialize replay state for a newly committed receipt. */
+export interface StorageV3MigrationSelectionInitializationGrant {
+  readonly __storageV3MigrationSelectionInitializationGrant: never
+}
+
+const FRESH_SELECTION_RESULTS = new WeakSet<StorageV3MigrationSelectionResult>()
+const INITIALIZATION_GRANTS = new WeakMap<
+  StorageV3MigrationSelectionInitializationGrant,
+  StorageV3MigrationSelection
+>()
+
 export type StorageV3MigrationGraceStatus = 'active' | 'expired' | 'absent'
 
 export class StorageV3MigrationSelectionError extends Error {
@@ -293,7 +304,13 @@ function executeRecord(
     const selection = readRow(db)
     if (selection === undefined) return fail()
     beforeCommit?.()
-    return Object.freeze({ kind: 'v3_migration_selection' as const, status: 'recorded' as const, selection })
+    const result = Object.freeze({
+      kind: 'v3_migration_selection' as const,
+      status: 'recorded' as const,
+      selection,
+    })
+    FRESH_SELECTION_RESULTS.add(result)
+    return result
   })
   return record.immediate()
 }
@@ -308,6 +325,28 @@ export function recordStorageV3MigrationSelection(
     if (error instanceof StorageV3MigrationSelectionError) throw error
     return fail()
   }
+}
+
+/** Claim the one runtime grant attached to an exact newly recorded result. */
+export function claimStorageV3MigrationSelectionInitialization(
+  result: StorageV3MigrationSelectionResult,
+): StorageV3MigrationSelectionInitializationGrant {
+  if (!result || typeof result !== 'object' || result.status !== 'recorded'
+    || !FRESH_SELECTION_RESULTS.delete(result)) return fail()
+  const grant = Object.freeze({}) as StorageV3MigrationSelectionInitializationGrant
+  INITIALIZATION_GRANTS.set(grant, result.selection)
+  return grant
+}
+
+/** Consume the exact grant; copied or replayed receipt values have no authority. */
+export function consumeStorageV3MigrationSelectionInitialization(
+  grant: StorageV3MigrationSelectionInitializationGrant,
+  selection: StorageV3MigrationSelection,
+): void {
+  if (!grant || typeof grant !== 'object') return fail()
+  const expected = INITIALIZATION_GRANTS.get(grant)
+  INITIALIZATION_GRANTS.delete(grant)
+  if (expected === undefined || expected !== selection) return fail()
 }
 
 export function readStorageV3MigrationSelection(

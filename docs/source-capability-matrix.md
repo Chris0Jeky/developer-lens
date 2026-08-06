@@ -35,9 +35,10 @@ implementation creates retained C2/C3 descendants (dependency aliases, graphs, s
 retrieval indexes) is schedulable only after the registry-derived deletion planner exists
 (programme card DL-LIFE-02); rollback prose never substitutes for an implemented cascade.
 
-The revocation replay family is local-only integrity state: it reaches no API, export, public asset,
-or model payload. Seven-day legacy/backup cleanup must preserve it; C1 expiry or whole-task-root
-deletion removes it. Its presence never activates collection or authorizes a fallback reader.
+The revocation replay family, including its mandatory tail head, is local-only integrity state: it
+reaches no API, export, public asset, or model payload. Seven-day legacy/backup cleanup must preserve
+it; C1 expiry or whole-task-root deletion removes it. Its presence never activates collection or
+authorizes a fallback reader.
 
 ## Rejected capabilities
 
