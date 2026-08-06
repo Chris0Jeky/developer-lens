@@ -2696,25 +2696,42 @@ conclusion to the docs-only final head. PR #158 final head
 `31089644527`. No connector review arrived, so the immutable head remained open from its 09:34:00Z
 ready creation through the 09:49:29Z final thread-aware sweep before merge. It merged as
 `cafd699360f13902f04092b98603c0f7cb81a0a0`; exact-merge Pages/privacy/deploy run `31090730918`
-passed.
+passed. A 10:03:46Z thread-aware post-merge sweep found no late review or unresolved thread.
 
-The #156 candidate is code heads `103a2c8` and `708ba71`. A dependency-free shared validator now
+The #156 candidate began at code heads `103a2c8` and `708ba71`. A dependency-free shared validator
 defines the exact case-preserving `[A-Za-z0-9_-]{1,128}` task-ID grammar for activation artifacts,
 GitHub and OpenAI task cards, grants, task-owned installation keys, and backup input without Unicode
-or case normalization. A private `WeakSet` capability authorizes only current-session setup handles
-and reloads that match an exact expected fingerprint. Backup entry and direct-intent paths reject
-ordinary, replacement, copied, forged, or cross-root handles before a catalogue or file side effect;
-the direct manifest and publication seams independently reject the same handles. Invented-fixture
-proof covers uppercase success, malformed grammar, anchored reload and recovery, direct manifest/
-intent refusal, key replacement, and shared activation-card compatibility. Focused review suites
-passed 63, 67, and 90
-tests across the three lenses; the full gate passed 77 files / 1,262 tests / 6 declared skips plus
-lint, context, TypeScript/build, credential scanning, and range whitespace checks. Three fresh Terra
-lenses at exact rebased head `708ba719e2126684e470c5b4f1524753eabbcff9` found no CRITICAL/HIGH
-schema/compatibility, lifecycle/direct-seam, or privacy/authority defect. The privacy lens retained
-one non-blocking hostile-writer residual: an already-authorized in-process key handle is not
-revalidated after an on-disk key replacement; it is tracked on #142 and does not authorize a forged
-handle or production caller. Hosted proof, connector-or-15-minute timing, and merge remain pending.
+or case normalization. A private `WeakSet` capability authorizes current-session setup handles; an
+existing key can join only through a process-local, privately issued github.core grant that binds
+its exact task ID and fingerprint. Bare expected fingerprints remain integrity checks only. Backup
+entry and direct-intent paths reject ordinary, replacement, copied, forged, cross-root, or stale
+handles before a catalogue or file side effect; direct manifest and publication seams independently
+reject the same handles.
+
+PR #159 old head `6ff38d45d4506baf922eb84f89b8c81473e2493d` passed exact-head hosted run
+`31091461170`. Its exact-head connector review then raised three P1 findings, all reproduced with
+invented fixtures: a caller could copy an inspection fingerprint and self-authorize a second load;
+deleting the key after staged intent allowed a new setup handle to publish that old intent; and an
+accessor-swapped `db` could validate root A but register the intent in B. First fix head `6a672ac`
+makes bare fingerprints non-authorizing, adds the opaque grant-backed loader used by the existing
+runner without adding a production grant issuer or backup caller, binds the staged-intent digest to
+the original key fingerprint, and snapshots the direct-intent input's own data properties once.
+Fresh lifecycle review then reproduced one final HIGH: the retained original in-process handle could
+survive deletion/recreation and recover the intent. Second and final fix head `337e964` reopens the
+live confined key no-follow, proves stable descriptor/path state, reads it twice, and requires exact
+key-byte continuity before every protected bind. The stale-original-handle recovery fixture now
+fails before effects.
+
+Final focused proof passes 88 tests / 1 declared skip; the full gate passes 77 files / 1,266 tests /
+6 declared skips plus lint, context, TypeScript/build, credential scanning, and range whitespace
+checks. Three fresh Terra lenses at exact code head
+`337e964f5c6ffca9f8c8b1d87623896d09715574` found no CRITICAL/HIGH key-file, lifecycle, or
+privacy/authority defect and no new CRITICAL introduced by the final fix. The same-user ABA/native
+file-identity boundary remains tracked on #142, the test-only grant issuer remains tracked on #151,
+and generic staged-row validation deliberately cannot recompute the fingerprint-bound intent without
+the live handle; every operational recovery/publication path does recompute it before promotion.
+Hosted proof for the final head, thread reconciliation, the connector-or-15-minute timing window,
+and merge remain pending.
 
 No real store, legacy source, connector, activation caller, external-model request, generated
 output, or private input was inspected or used. Issues #154-#156 and the full grace/restore path
