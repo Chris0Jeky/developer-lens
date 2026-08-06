@@ -324,7 +324,9 @@ describe('storage-v3 B1a proposal', () => {
     expect(before.incrementalVersion).toBe('2.2.0')
     expect(sha256(before.storageSql)).toBe('0c905b7fa6d46a8c43a1ed50ee9d0d3837ca33d8464fba52671ec70670e7917a')
     expect(sha256(before.claimGraphSql)).toBe('2cc02122e85d84227ff47f01f5fee999c431f1936a73f8850cc66632c8d077b9')
-    expect(before.incrementalSchemaFingerprint).toBe('444bfb0e59ce00933d874b02176dcef448f5e050c81a7c0e5928b0e267055bf1')
+    // Repinned for #86: coverage_ledger.coverage_id gained the content-free `cov-` CHECK and
+    // UNIQUE. The pin exists to catch UNINTENDED incremental DDL drift, not to freeze it.
+    expect(before.incrementalSchemaFingerprint).toBe('16609ab8c14a584065f1fd7d0b0032826985164d1195ed0001f0939eb89a89f7')
     expect(sha256(before.bridgeSql)).toBe('0df6fe9ec33f4f5ffd32a7e0d03ae36a7692e52de4e78f6afeeaf8e377bf1340')
     expect(sha256(JSON.stringify(before.capabilityIds))).toBe('c53eabd0bad1ad693c376883e447d46e0879bfac2597b0cfea67390ceeed559d')
     expect(sha256(JSON.stringify(before.capabilityRegistry))).toBe('1fc440f74d96b613ba2f50f92817df27471d621bef195872db803169efa980bd')

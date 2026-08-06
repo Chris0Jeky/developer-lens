@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import { completeObservedUnits } from '../../shared/coverage.js'
@@ -27,11 +28,15 @@ const observedAt = '2026-01-05T00:00:00.000Z'
 const startedAt = '2026-01-05T00:00:01.000Z'
 const completedAt = '2026-01-05T00:00:02.000Z'
 /**
- * Invented content-free coverage key (#86). The connector now requires this shape; the storage
- * CHECK constraint is deliberately unchanged and still admits the legacy alias-bearing form a
- * hand-seeded fixture below uses, because migrating existing stores is a separate card.
+ * Invented content-free coverage keys (#86). The connector and the storage CHECK now agree on
+ * one shape — `cov-` plus 64 lowercase hex — and `UNIQUE(coverage_id)` pins one logical window
+ * per key, so every fixture job below derives its own key from its job id: a replay of the same
+ * job reuses its exact key, and a different job over any window gets a different one.
  */
-const contentFreeCoverageId = `cov-${'7c8d9e0f'.repeat(8)}`
+const coverageKey = (seed: string): string =>
+  `cov-${createHash('sha256').update(`incremental-fixture/${seed}`).digest('hex')}`
+/** The legacy alias-bearing form the ledger must now refuse outright. */
+const aliasBearingCoverageId = 'github.core:scope-a:2026-01-02T00:00:00.000Z'
 
 afterEach(() => {
   for (const db of databases.splice(0)) {
@@ -49,6 +54,7 @@ interface CompleteOptions {
   scopeAlias?: string
   consentRevision?: string
   jobId?: string
+  coverageId?: string
   snapshotId?: string
   snapshotHash?: string
   rangeStart?: string
@@ -79,7 +85,7 @@ function completeInput(options: CompleteOptions = {}): PersistGithubCoreTransiti
     completedAt,
     transition: reconcileGithubCoreReceipts({
       checkpoint: options.previous ?? null,
-      coverageId: contentFreeCoverageId,
+      coverageId: options.coverageId ?? coverageKey(jobId),
       scopeAlias,
       rangeStart,
       rangeEnd,
@@ -105,7 +111,7 @@ function failedInput(
     completedAt,
     transition: reconcileGithubCoreReceipts({
       checkpoint: previous,
-      coverageId: contentFreeCoverageId,
+      coverageId: coverageKey(jobId),
       scopeAlias: 'scope-a',
       rangeStart: '2026-01-02T00:00:00.000Z',
       rangeEnd: '2026-01-03T00:00:00.000Z',
@@ -131,7 +137,7 @@ function truncatedInput(
     completedAt,
     transition: reconcileGithubCoreReceipts({
       checkpoint: previous,
-      coverageId: contentFreeCoverageId,
+      coverageId: coverageKey(jobId),
       scopeAlias: 'scope-a',
       rangeStart: '2026-01-03T00:00:00.000Z',
       rangeEnd: '2026-01-04T00:00:00.000Z',
@@ -152,11 +158,12 @@ function truncatedInput(
 function restrictedInput(
   previous: GithubCoreCheckpoint | null,
   jobId = 'job-restricted',
+  coverageId = coverageKey(jobId),
 ): PersistGithubCoreTransitionInput {
   const transition: RestrictedGithubCoreCheckpointTransition = {
     status: 'restricted',
     coverage: {
-      coverageId: 'github.core:scope-a:2026-01-02T00:00:00.000Z',
+      coverageId,
       capabilityId: 'github.core',
       scopeAlias: 'scope-a',
       rangeStart: '2026-01-02T00:00:00.000Z',
@@ -432,7 +439,7 @@ describe('P4 opt-in incremental github.core storage', () => {
     expect(ownedValues(db)).not.toContain('private-canary')
   })
 
-  it('replays identical jobs without writes and keeps rangeStart in coverage identity', () => {
+  it('replays identical jobs without writes and keeps a distinct key per stored window', () => {
     const db = database()
     installIncrementalGithubCoreStorage(db)
     const first = completeInput()
@@ -453,17 +460,46 @@ describe('P4 opt-in incremental github.core storage', () => {
       rangeStart: '2026-01-01T06:00:00.000Z',
       rangeEnd: firstRangeEnd,
     })
-    expect(second.transition.coverage.coverageId).toBe(first.transition.coverage.coverageId)
+    // #86: the key is caller-owned and UNIQUE, so a second job over a second window
+    // must arrive with its own key — the store cannot hold two windows under one.
+    expect(second.transition.coverage.coverageId).not.toBe(first.transition.coverage.coverageId)
     persistIncrementalGithubCoreTransition(db, second)
 
     expect(db.prepare(
-      'SELECT range_start FROM coverage_ledger ORDER BY range_start',
-    ).pluck().all()).toEqual([
-      firstRangeStart,
-      '2026-01-01T06:00:00.000Z',
+      'SELECT range_start, coverage_id FROM coverage_ledger ORDER BY range_start',
+    ).all()).toEqual([
+      { range_start: firstRangeStart, coverage_id: first.transition.coverage.coverageId },
+      { range_start: '2026-01-01T06:00:00.000Z', coverage_id: second.transition.coverage.coverageId },
     ])
     expect(count(db, 'collection_job')).toBe(2)
     expect(count(db, 'coverage_ledger')).toBe(2)
+  })
+
+  it('refuses an alias-bearing key and a key already spent on another window (#86)', () => {
+    const db = database()
+    installIncrementalGithubCoreStorage(db)
+    const first = completeInput()
+    persistIncrementalGithubCoreTransition(db, first)
+
+    // The legacy alias-bearing shape carried the scope alias verbatim; it is no longer storable.
+    expect(() => persistIncrementalGithubCoreTransition(
+      db,
+      restrictedInput(readIncrementalGithubCoreCheckpoint(db, 'scope-a'), 'job-alias', aliasBearingCoverageId),
+    )).toThrow()
+    // Nor may a fresh window silently reuse a key another window already holds.
+    expect(() => persistIncrementalGithubCoreTransition(db, completeInput({
+      jobId: 'job-a2',
+      coverageId: first.transition.coverage.coverageId,
+      snapshotId: 'snapshot-job-a2',
+      snapshotHash: 'b'.repeat(64),
+      rangeStart: '2026-01-02T00:00:00.000Z',
+      rangeEnd: '2026-01-03T00:00:00.000Z',
+      previous: readIncrementalGithubCoreCheckpoint(db, 'scope-a'),
+    }))).toThrow()
+
+    expect(count(db, 'coverage_ledger')).toBe(1)
+    expect(count(db, 'collection_job')).toBe(1)
+    expect(runStorageChecks(db)).toEqual({ integrity: 'ok', quick: 'ok', foreignKeys: [] })
   })
 
   it('records failed and truncated coverage without advancing the durable checkpoint', () => {
@@ -573,7 +609,9 @@ describe('P4 opt-in incremental github.core storage', () => {
       rangeEnd: failed.transition.coverage.rangeEnd,
     })
 
-    expect(recovered.transition.coverage.coverageId).toBe(
+    // #86: recovery is a NEW job, so it carries its own key even over the same range —
+    // only a replay of the identical job reuses one.
+    expect(recovered.transition.coverage.coverageId).not.toBe(
       failed.transition.coverage.coverageId,
     )
     persistIncrementalGithubCoreTransition(db, recovered)

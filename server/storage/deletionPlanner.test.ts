@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import type Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import { reconcileGithubCoreReceipts } from '../connectors/github/core.js'
@@ -49,6 +50,9 @@ function count(db: Database.Database, tableName: string, where = '', ...args: st
   return Number(db.prepare(`SELECT COUNT(*) FROM "${tableName}"${where}`).pluck().get(...args))
 }
 
+const coverageKey = (seed: string): string =>
+  `cov-${createHash('sha256').update(`deletion-planner-fixture/${seed}`).digest('hex')}`
+
 function persistComplete(db: Database.Database, scopeAlias: string, jobId: string, hash: string): void {
   persistIncrementalGithubCoreTransition(db, {
     jobId,
@@ -59,8 +63,9 @@ function persistComplete(db: Database.Database, scopeAlias: string, jobId: strin
     completedAt: '2026-04-06T00:00:02.000Z',
     transition: reconcileGithubCoreReceipts({
       checkpoint: null,
-      // #86: caller-owned content-free coverage key; the connector no longer mints one.
-      coverageId: `cov-${'a'.repeat(64)}`,
+      // #86: caller-owned content-free coverage key; the connector no longer mints one, and
+      // `UNIQUE(coverage_id)` means each job's window needs its own key.
+      coverageId: coverageKey(jobId),
       scopeAlias,
       rangeStart: '2026-01-05T00:00:00.000Z',
       rangeEnd: '2026-01-06T00:00:00.000Z',

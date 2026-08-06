@@ -18,6 +18,19 @@ function sourceDb(): Database.Database {
 
 const scopeId = (letter: string): string => `scope-${letter.repeat(64)}`
 
+/**
+ * #86: v2 ledger keys are the content-free registry shape (`cov-` + 64 lowercase hex) and
+ * `UNIQUE(coverage_id)` binds, so every seeded window owns its own key. (The v3 target's
+ * `source_coverage_id` keeps the retained broad C2 token shape and is not minted here.)
+ */
+const coverageKey = (seed: string): string =>
+  `cov-${createHash('sha256').update(`shadow-rewrite-fixture/${seed}`).digest('hex')}`
+const SEEDED_COVERAGE = coverageKey('seeded')
+const SOURCE_COVERAGE = coverageKey('source')
+const SECOND_COVERAGE = coverageKey('second')
+/** Conforming in shape, absent from the ledger — the danglingness is the point. */
+const MISSING_COVERAGE = coverageKey('missing')
+
 function seedIdentity(
   db: Database.Database,
   raw: string,
@@ -61,7 +74,7 @@ function seedIncremental(db: Database.Database, scopeAlias: string, dates = {
 }): void {
   db.prepare('INSERT INTO collection_job (job_id, storage_contract_version, payload_hash, capability_id, scope_alias, query_version, source_api_version, consent_revision, range_start, range_end, observed_at, started_at, completed_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('job-seeded', '2.2.0', 'a'.repeat(64), 'github.core', scopeAlias, 'github.core.v1', '2026-03-10', 'consent-v3', dates.rangeStart, dates.rangeEnd, dates.observedAt, dates.observedAt, dates.completedAt, 'complete')
   db.prepare('INSERT INTO source_snapshot (snapshot_id, job_id, capability_id, scope_alias, snapshot_hash, range_start, range_end, observed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run('snapshot-seeded', 'job-seeded', 'github.core', scopeAlias, 'b'.repeat(64), dates.rangeStart, dates.rangeEnd, dates.observedAt)
-  db.prepare('INSERT INTO coverage_ledger (coverage_id, range_start, job_id, snapshot_id, capability_id, scope_alias, range_end, status, expected_units, observed_units, omitted_units, retryable, observed_at, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('coverage-seeded', dates.rangeStart, 'job-seeded', 'snapshot-seeded', 'github.core', scopeAlias, dates.rangeEnd, 'complete', 1, 1, 0, 0, dates.observedAt, 'NONE')
+  db.prepare('INSERT INTO coverage_ledger (coverage_id, range_start, job_id, snapshot_id, capability_id, scope_alias, range_end, status, expected_units, observed_units, omitted_units, retryable, observed_at, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(SEEDED_COVERAGE, dates.rangeStart, 'job-seeded', 'snapshot-seeded', 'github.core', scopeAlias, dates.rangeEnd, 'complete', 1, 1, 0, 0, dates.observedAt, 'NONE')
   db.prepare('INSERT INTO collection_checkpoint (capability_id, scope_alias, query_version, source_api_version, high_watermark, cursor_hint, bounded_overlap_start, last_complete_snapshot_hash, consent_revision, committed_job_id, source_snapshot_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('github.core', scopeAlias, 'github.core.v1', '2026-03-10', dates.rangeEnd, 'cursor', dates.rangeStart, 'b'.repeat(64), 'consent-v3', 'job-seeded', 'snapshot-seeded')
 }
 
@@ -74,7 +87,7 @@ function seedClaimGraph(
   const seeded = seedIdentity(db, raw, key, undefined, undefined, 'e')
   seedIncremental(db, seeded.provider)
   db.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)')
-    .run('evidence-seeded', 'observed', '2.0.0', 'coverage-seeded', '2026-01-01T00:00:00.000Z', 'job-seeded')
+    .run('evidence-seeded', 'observed', '2.0.0', SEEDED_COVERAGE, '2026-01-01T00:00:00.000Z', 'job-seeded')
   const sourceClaimId = computeClaimId({
     layer: 'modelled',
     statementCode: 'DELIVERY_FLOW',
@@ -170,9 +183,9 @@ describe('B1b-ii shadow rewrite', () => {
     source.prepare('INSERT INTO commit_observation (repository_provider_id, sha, occurred_at, source, feature_type, is_revert, is_fixup, message_length) VALUES (?, ?, ?, ?, ?, 0, 0, 1)').run(provider, 'sha-graph', '2026-01-01T00:00:00.000Z', 'github', 'feat')
     source.prepare('INSERT INTO collection_job (job_id, storage_contract_version, payload_hash, capability_id, scope_alias, query_version, source_api_version, consent_revision, range_start, range_end, observed_at, started_at, completed_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('job-source', '2.2.0', 'a'.repeat(64), 'github.core', provider, 'github.core.v1', '2026-03-10', 'consent-v3', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', 'complete')
     source.prepare('INSERT INTO source_snapshot (snapshot_id, job_id, capability_id, scope_alias, snapshot_hash, range_start, range_end, observed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run('snapshot-source', 'job-source', 'github.core', provider, 'b'.repeat(64), '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z')
-    source.prepare('INSERT INTO coverage_ledger (coverage_id, range_start, job_id, snapshot_id, capability_id, scope_alias, range_end, status, expected_units, observed_units, omitted_units, retryable, observed_at, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('coverage-source', '2026-01-01T00:00:00.000Z', 'job-source', 'snapshot-source', 'github.core', provider, '2026-02-01T00:00:00.000Z', 'complete', 1, 1, 0, 0, '2026-02-01T00:00:00.000Z', 'NONE')
+    source.prepare('INSERT INTO coverage_ledger (coverage_id, range_start, job_id, snapshot_id, capability_id, scope_alias, range_end, status, expected_units, observed_units, omitted_units, retryable, observed_at, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(SOURCE_COVERAGE, '2026-01-01T00:00:00.000Z', 'job-source', 'snapshot-source', 'github.core', provider, '2026-02-01T00:00:00.000Z', 'complete', 1, 1, 0, 0, '2026-02-01T00:00:00.000Z', 'NONE')
     source.prepare('INSERT INTO collection_checkpoint (capability_id, scope_alias, query_version, source_api_version, high_watermark, cursor_hint, bounded_overlap_start, last_complete_snapshot_hash, consent_revision, committed_job_id, source_snapshot_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('github.core', provider, 'github.core.v1', '2026-03-10', '2026-02-01T00:00:00.000Z', 'cursor', '2026-01-31T00:00:00.000Z', 'b'.repeat(64), 'consent-v3', 'job-source', 'snapshot-source')
-    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run('evidence-source', 'observed', '2.0.0', 'coverage-source', '2026-01-01T00:00:00.000Z', 'job-source')
+    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run('evidence-source', 'observed', '2.0.0', SOURCE_COVERAGE, '2026-01-01T00:00:00.000Z', 'job-source')
     const claim = computeClaimId({
       layer: 'modelled',
       statementCode: 'DELIVERY_FLOW',
@@ -370,7 +383,7 @@ describe('B1b-ii shadow rewrite', () => {
     const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, 19)
     const seeded = seedIdentity(source, 'claim-golden', key, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'b')
     seedIncremental(source, seeded.provider)
-    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run('evidence-golden', 'observed', '2.0.0', 'coverage-seeded', '2026-01-01T00:00:00.000Z', 'job-seeded')
+    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run('evidence-golden', 'observed', '2.0.0', SEEDED_COVERAGE, '2026-01-01T00:00:00.000Z', 'job-seeded')
     const claim = computeClaimId({ layer: 'modelled', statementCode: 'DELIVERY_FLOW', methodId: 'method', methodVersion: '1.0.0', basis: [{ role: 'supports', targetEvidenceId: 'evidence-golden' }], windowStart: '2026-01-01T00:00:00.000Z', windowEnd: '2026-02-01T00:00:00.000Z', scopeId: seeded.scope, schemaVersion: CLAIM_SCHEMA_VERSION })
     source.prepare('INSERT INTO claim (claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(claim, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', seeded.scope, CLAIM_SCHEMA_VERSION, 'claim-id.v2', '2026-02-01T00:00:00.000Z')
     source.prepare('INSERT INTO claim_evidence_edge (claim_id, role, target_evidence_id) VALUES (?, ?, ?)').run(claim, 'supports', 'evidence-golden')
@@ -383,18 +396,26 @@ describe('B1b-ii shadow rewrite', () => {
     } finally { source.close(); target.close() }
   })
 
-  it('keeps duplicate coverage IDs distinct by the exact evidence composite', () => {
+  it('refuses a reused coverage key and keeps distinct windows distinct by the exact composite', () => {
     const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, 191)
     const seeded = seedIdentity(source, 'coverage-composite', key, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'c')
     seedIncremental(source, seeded.provider)
     source.prepare('INSERT INTO collection_job (job_id, storage_contract_version, payload_hash, capability_id, scope_alias, query_version, source_api_version, consent_revision, range_start, range_end, observed_at, started_at, completed_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('job-second', '2.2.0', 'c'.repeat(64), 'github.core', seeded.provider, 'github.core.v1', '2026-03-10', 'consent-v3', '2026-02-01T00:00:00.000Z', '2026-03-01T00:00:00.000Z', '2026-03-01T00:00:00.000Z', '2026-03-01T00:00:00.000Z', '2026-03-01T00:00:00.000Z', 'complete')
     source.prepare('INSERT INTO source_snapshot (snapshot_id, job_id, capability_id, scope_alias, snapshot_hash, range_start, range_end, observed_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?)').run('snapshot-second', 'job-second', 'github.core', seeded.provider, 'd'.repeat(64), '2026-02-01T00:00:00.000Z', '2026-03-01T00:00:00.000Z', '2026-03-01T00:00:00.000Z')
-    source.prepare('INSERT INTO coverage_ledger (coverage_id, range_start, job_id, snapshot_id, capability_id, scope_alias, range_end, status, expected_units, observed_units, omitted_units, retryable, observed_at, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run('coverage-seeded', '2026-02-01T00:00:00.000Z', 'job-second', 'snapshot-second', 'github.core', seeded.provider, '2026-03-01T00:00:00.000Z', 'complete', 1, 1, 0, 0, '2026-03-01T00:00:00.000Z', 'NONE')
+    source.prepare('INSERT INTO coverage_ledger (coverage_id, range_start, job_id, snapshot_id, capability_id, scope_alias, range_end, status, expected_units, observed_units, omitted_units, retryable, observed_at, limitation_code) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(SECOND_COVERAGE, '2026-02-01T00:00:00.000Z', 'job-second', 'snapshot-second', 'github.core', seeded.provider, '2026-03-01T00:00:00.000Z', 'complete', 1, 1, 0, 0, '2026-03-01T00:00:00.000Z', 'NONE')
     try {
+      // #86: the second window could not have reused the first window's key — the v2 ledger
+      // now refuses it outright, which is what makes one key mean exactly one window.
+      expect(() => source.prepare('UPDATE coverage_ledger SET coverage_id = ? WHERE job_id = ?')
+        .run(SEEDED_COVERAGE, 'job-second')).toThrow(/UNIQUE/)
       let entropy = 192
       rewriteStorageV3Shadow({ sourceDb: source, targetDb: target, identityBindings: [{ rawProviderId: 'coverage-composite' }], installationKey: key, asOf: '2026-04-01T00:00:00.000Z', randomBytes: () => Buffer.alloc(32, entropy++) })
       expect(target.prepare('SELECT COUNT(*) FROM coverage_ledger').pluck().get()).toBe(2)
-      expect(target.prepare('SELECT COUNT(DISTINCT source_coverage_id) FROM coverage_ledger').pluck().get()).toBe(1)
+      // Each source window keeps its own retained C2 token, and the target mints its own key.
+      expect(target.prepare('SELECT COUNT(DISTINCT source_coverage_id) FROM coverage_ledger').pluck().get()).toBe(2)
+      expect(target.prepare('SELECT COUNT(DISTINCT coverage_id) FROM coverage_ledger').pluck().get()).toBe(2)
+      expect(target.prepare('SELECT source_coverage_id FROM coverage_ledger ORDER BY source_coverage_id').pluck().all())
+        .toEqual([SECOND_COVERAGE, SEEDED_COVERAGE].sort())
     } finally { source.close(); target.close() }
   })
 
@@ -406,7 +427,7 @@ describe('B1b-ii shadow rewrite', () => {
       db.pragma('foreign_keys = OFF')
       const claim = `cl_${'2'.repeat(64)}`
       db.prepare('INSERT INTO claim (claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(claim, 'modelled', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', seeded.scope, CLAIM_SCHEMA_VERSION, 'claim-id.v2', '2026-02-01T00:00:00.000Z')
-      db.prepare('INSERT INTO claim_evidence_edge (claim_id, role, target_coverage_id, target_coverage_range_start, target_coverage_job_id) VALUES (?, ?, ?, ?, ?)').run(claim, 'coverage_basis', 'missing-coverage', '2026-01-01T00:00:00.000Z', 'missing-job')
+      db.prepare('INSERT INTO claim_evidence_edge (claim_id, role, target_coverage_id, target_coverage_range_start, target_coverage_job_id) VALUES (?, ?, ?, ?, ?)').run(claim, 'coverage_basis', MISSING_COVERAGE, '2026-01-01T00:00:00.000Z', 'missing-job')
       db.pragma('foreign_keys = ON')
     }],
   ] as const)('refuses %s', (_name, addRows) => {
@@ -425,7 +446,7 @@ describe('B1b-ii shadow rewrite', () => {
     const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, 21)
     const first = seedIdentity(source, 'scope-one', key, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'e')
     seedIncremental(source, first.provider)
-    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run('evidence-strong', 'hypothesis', '2.0.0', 'coverage-seeded', '2026-01-01T00:00:00.000Z', 'job-seeded')
+    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run('evidence-strong', 'hypothesis', '2.0.0', SEEDED_COVERAGE, '2026-01-01T00:00:00.000Z', 'job-seeded')
     const claim = `cl_${'3'.repeat(64)}`
     source.prepare('INSERT INTO claim (claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, claim_id_material_version, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(claim, 'deterministic', 'DELIVERY_FLOW', 'method', '1.0.0', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', first.scope, CLAIM_SCHEMA_VERSION, 'claim-id.v2', '2026-02-01T00:00:00.000Z')
     source.prepare('INSERT INTO claim_evidence_edge (claim_id, role, target_evidence_id) VALUES (?, ?, ?)').run(claim, 'supports', 'evidence-strong')
@@ -439,7 +460,7 @@ describe('B1b-ii shadow rewrite', () => {
     const first = seedIdentity(source, 'claim-scope', key, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'e')
     const second = seedIdentity(source, 'evidence-scope', key, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'f')
     seedIncremental(source, second.provider)
-    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run('evidence-cross-scope', 'observed', '2.0.0', 'coverage-seeded', '2026-01-01T00:00:00.000Z', 'job-seeded')
+    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run('evidence-cross-scope', 'observed', '2.0.0', SEEDED_COVERAGE, '2026-01-01T00:00:00.000Z', 'job-seeded')
     const claim = computeClaimId({
       layer: 'deterministic',
       statementCode: 'DELIVERY_FLOW',
@@ -462,7 +483,7 @@ describe('B1b-ii shadow rewrite', () => {
     const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, 213)
     const seeded = seedIdentity(source, 'erased-scope-link', key, '2025-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', 'd')
     seedIncremental(source, seeded.provider)
-    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run('evidence-erased-link', 'observed', '2.0.0', 'coverage-seeded', '2026-01-01T00:00:00.000Z', 'job-seeded')
+    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run('evidence-erased-link', 'observed', '2.0.0', SEEDED_COVERAGE, '2026-01-01T00:00:00.000Z', 'job-seeded')
     const claim = computeClaimId({
       layer: 'deterministic',
       statementCode: 'DELIVERY_FLOW',
@@ -486,8 +507,8 @@ describe('B1b-ii shadow rewrite', () => {
     const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, kind === 'series mismatch' ? 22 : 23)
     const seeded = seedIdentity(source, `supersession-${kind}`, key, '2026-01-01T00:00:00.000Z', '2026-01-01T00:00:00.000Z', kind === 'series mismatch' ? 'a' : 'b')
     seedIncremental(source, seeded.provider)
-    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run(`evidence-${kind.replace(' ', '_')}`, 'observed', '2.0.0', 'coverage-seeded', '2026-01-01T00:00:00.000Z', 'job-seeded')
-    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run(`evidence2-${kind.replace(' ', '_')}`, 'observed', '2.0.0', 'coverage-seeded', '2026-01-01T00:00:00.000Z', 'job-seeded')
+    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run(`evidence-${kind.replace(' ', '_')}`, 'observed', '2.0.0', SEEDED_COVERAGE, '2026-01-01T00:00:00.000Z', 'job-seeded')
+    source.prepare('INSERT INTO evidence (evidence_id, layer, schema_version, coverage_id, coverage_range_start, coverage_job_id) VALUES (?, ?, ?, ?, ?, ?)').run(`evidence2-${kind.replace(' ', '_')}`, 'observed', '2.0.0', SEEDED_COVERAGE, '2026-01-01T00:00:00.000Z', 'job-seeded')
     const base = { statementCode: 'DELIVERY_FLOW' as const, methodId: 'method', methodVersion: '1.0.0', windowStart: '2026-01-01T00:00:00.000Z', windowEnd: '2026-02-01T00:00:00.000Z', scopeId: seeded.scope, schemaVersion: CLAIM_SCHEMA_VERSION }
     const evidenceId = `evidence-${kind.replace(' ', '_')}`
     const first = computeClaimId({ ...base, layer: 'deterministic', basis: [{ role: 'supports', targetEvidenceId: evidenceId }] })

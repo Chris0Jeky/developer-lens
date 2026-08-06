@@ -74,11 +74,11 @@ const LEAKED_KEYS = ['coverageId', 'coverage_id'] as const
 /**
  * Throws if a value about to be served carries the installation alias VALUE, or transports a
  * `coverage_id` field at all. The field stays banned from this boundary after #86 made the
- * connector's coverage key content-free (`cov-` plus 64 lowercase hex): a storage identifier is
- * not presentation material even once it stops embedding the alias, and older stores can still
- * hold the alias-bearing `github.core:${scopeAlias}:${rangeEnd}` form this canary was written
- * for. The projection names coverage rows by `(rangeStart, jobId)` instead, so a clean projection
- * has neither.
+ * coverage key content-free (`cov-` plus 64 lowercase hex) at the connector AND at the ledger
+ * CHECK: a storage identifier is not presentation material even once the alias-bearing
+ * `github.core:${scopeAlias}:${rangeEnd}` form this canary was written for stopped being
+ * storable. The projection names coverage rows by `(rangeStart, jobId)` instead, so a clean
+ * projection has neither.
  */
 export function assertPresentationSafe(value: unknown, label: string): void {
   const serialized = JSON.stringify(value)

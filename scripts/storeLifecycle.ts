@@ -166,7 +166,9 @@ function insertScopeGraph(
   const scopeId = `scope-${hex(`${label}-scope`)}`
   const jobId = token(`${label}-job`)
   const snapshotId = token(`${label}-snapshot`)
-  const coverageId = token(`${label}-coverage`)
+  // #86: the ledger key is the content-free registry shape (`cov-` + 64 lowercase
+  // hex), derived per label so each cohort owns a distinct key under UNIQUE.
+  const coverageId = `cov-${hex(`${label}-coverage`)}`
   const evidenceId = token(`${label}-evidence`)
   db.prepare('INSERT INTO claim_scope (scope_id, scope_alias, linked_at) VALUES (?, ?, ?)')
     .run(scopeId, scopeAlias, observedAt)
