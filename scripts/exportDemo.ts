@@ -3,6 +3,16 @@ import { resolve } from 'node:path'
 import type { DashboardData, RangeKey } from '../shared/types.js'
 import { analyzeDataset } from '../server/analytics.js'
 import { createDemoDataset } from '../server/demo.js'
+import { analyticReferenceId } from '../shared/findings.js'
+import { buildIntegrationShapePresentation } from '../shared/integrationShape.js'
+import {
+  INTEGRATION_SHAPE_REFERENCES,
+  resolveIntegrationShapeEvidence,
+} from '../shared/integrationShapeEvidence.js'
+import {
+  INTEGRATION_SHAPE_PRESENTATION_CONTRACT_VERSION,
+  parseIntegrationShapePresentationEnvelope,
+} from '../shared/integrationShapeStoredPresentation.js'
 
 const outputDirectory = resolve('public', 'data')
 
@@ -41,3 +51,18 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
   await writeFile(path, `${JSON.stringify(publicDashboard(range), null, 2)}\n`, 'utf8')
   console.log(`Generated synthetic public dashboard: ${path}`)
 }
+
+const integrationShapePath = resolve(outputDirectory, 'integration-shape.json')
+const integrationShape = parseIntegrationShapePresentationEnvelope({
+  presentationContractVersion: INTEGRATION_SHAPE_PRESENTATION_CONTRACT_VERSION,
+  mode: 'synthetic',
+  presentation: buildIntegrationShapePresentation(),
+  resolutions: Object.fromEntries(
+    INTEGRATION_SHAPE_REFERENCES.map((reference) => [
+      analyticReferenceId(reference),
+      resolveIntegrationShapeEvidence(reference),
+    ]),
+  ),
+})
+await writeFile(integrationShapePath, `${JSON.stringify(integrationShape, null, 2)}\n`, 'utf8')
+console.log(`Generated synthetic Integration Shape presentation: ${integrationShapePath}`)

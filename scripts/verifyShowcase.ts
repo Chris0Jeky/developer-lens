@@ -1,6 +1,10 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { extname, join, resolve } from 'node:path'
 import type { DashboardData, RangeKey } from '../shared/types.js'
+import { analyticReferenceId } from '../shared/findings.js'
+import {
+  parseIntegrationShapePresentationEnvelope,
+} from '../shared/integrationShapeStoredPresentation.js'
 import { buildShareCardSvg } from '../src/lib/shareCardMarkup.js'
 import { createPortableExportPayload } from '../src/lib/portableExportPayload.js'
 import { buildPortableExperienceReport } from '../src/lib/portableExportReport.js'
@@ -164,6 +168,34 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
       )
     }
   }
+}
+
+const integrationShape = parseIntegrationShapePresentationEnvelope(
+  JSON.parse(await readFile(join(publicData, 'integration-shape.json'), 'utf8')) as unknown,
+)
+assert(integrationShape.mode === 'synthetic', 'Integration Shape public bundle is not explicitly synthetic')
+const renderedReferences = [
+  ...integrationShape.presentation.finding.marks.map((mark) => mark.reference),
+  ...integrationShape.presentation.finding.evidence,
+  ...integrationShape.presentation.finding.counterEvidence,
+]
+for (const reference of renderedReferences) {
+  assert(
+    integrationShape.resolutions[analyticReferenceId(reference)] !== undefined,
+    `Integration Shape reference ${analyticReferenceId(reference)} has no exported resolution`,
+  )
+}
+const integrationShapeText = JSON.stringify(integrationShape)
+for (const forbidden of [
+  'scope_alias',
+  'scopeAlias',
+  'coverage_id',
+  'coverageId',
+  'storePath',
+  'selectedArtifactId',
+  'snapshotId',
+]) {
+  assert(!integrationShapeText.includes(`"${forbidden}"`), `Integration Shape exports forbidden field ${forbidden}`)
 }
 
 const socialCard = await readFile(join(dist, 'social-card.png'))
