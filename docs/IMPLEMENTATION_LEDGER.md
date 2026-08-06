@@ -3135,7 +3135,7 @@ legacy path, private/generated data, credential, connector, production caller, o
 request was inspected or activated. After #184, the next bounded slice is #173 expiry cleanup,
 already implemented in isolated commit `111881c`; #174/#80 remain the subsequent Phase E bridge.
 
-## 2026-08-06 — durable seven-day migration expiry candidate (#173)
+## 2026-08-06 — durable seven-day migration expiry candidate (#173 / PR #185)
 
 PR #184 merged as `a53b46772ebf257fa495c074e225100ca753a35a` at 2026-08-06T22:40:55Z
 and closed #180. Its original #179 defect thread and its own applied-lineage thread were replied to

@@ -9,7 +9,7 @@ file can resume deleted work (PR #127 late review).
 ```yaml
 updated: 2026-08-06
 current_slice_override: 'LIFE-03 revocation replay #172 and its large-scope repair #180 are merged
-  through PRs #179/#184. The active #173 candidate is `6eb93f5`: durable fixed-identity registration,
+  through PRs #179/#184. The active #173/PR #185 candidate is `6eb93f5`: durable fixed-identity registration,
   runtime-clock seven-day source/backup cleanup, restart-safe phases, selection/restore integration,
   and refusal before any unlink when the committed replay family is incomplete. The exact local gate
   and fresh exact-code review are green. #168 remains open for pre-activation marker versioning,
@@ -32,7 +32,7 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   selection-proof durability PR #176, tombstone replay #172/PR #179,
   large-scope replay repair #180/PR #184',
   'state syncs #126']
-active_slice: 'DL-LIFE-03 physical expiry cleanup (#173): before selection, bind the exact app-owned
+active_slice: 'DL-LIFE-03 physical expiry cleanup (#173/PR #185): before selection, bind the exact app-owned
   legacy source/sidecars and promoted immutable backup/manifest/provisionals into the selected store
   by fixed locator, presence, hash, device/inode/link identity, task key, and root. At/after the exact
   committed seven-day deadline, a runtime-owned clock may advance the monotonic cleanup state only
