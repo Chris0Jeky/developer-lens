@@ -5,13 +5,19 @@ import Database from 'better-sqlite3'
 import { describe, expect, it, vi } from 'vitest'
 import type { GithubCoreActivationGrant } from '../connectors/github/activationGrant.js'
 
-// #151: production ships no grant issuer. The two anchored-reload success paths inject a test-owned
-// validator; every forged/replacement/cross-root KEY-handle refusal these tests exercise is unaffected.
-vi.mock('../connectors/github/activationGrant.js', async (importOriginal) => ({
-  ...(await importOriginal<typeof import('../connectors/github/activationGrant.js')>()),
-  assertGithubCoreActivationGrant: (input: unknown): GithubCoreActivationGrant =>
-    input as GithubCoreActivationGrant,
-}))
+// #151: production ships no grant issuer. The two anchored-reload success paths explicitly opt into
+// a test-owned validator; all other calls delegate to the real default-deny validator.
+const grantValidation = vi.hoisted(() => ({ acceptTestGrants: false }))
+vi.mock('../connectors/github/activationGrant.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('../connectors/github/activationGrant.js')>()
+  return {
+    ...actual,
+    assertGithubCoreActivationGrant: (input: unknown): GithubCoreActivationGrant =>
+      grantValidation.acceptTestGrants
+        ? input as GithubCoreActivationGrant
+        : actual.assertGithubCoreActivationGrant(input),
+  }
+})
 import {
   beginStorageV3MigrationBackupArtifact,
   createStorageV3ArtifactRoot,
@@ -59,6 +65,15 @@ function inventedGrant(taskId: string, fingerprint: string): GithubCoreActivatio
     installationKeyFingerprint: fingerprint,
     scopeAlias: `repo-${'c'.repeat(64)}`,
   })
+}
+
+async function withTestGrant<T>(operation: () => Promise<T>): Promise<T> {
+  grantValidation.acceptTestGrants = true
+  try {
+    return await operation()
+  } finally {
+    grantValidation.acceptTestGrants = false
+  }
 }
 
 describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () => {
@@ -152,10 +167,10 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
         expect(existsSync(join(fx.root, `migration-backup-20260806T123500Z.sqlite${suffix}`))).toBe(false)
       }
 
-      const anchored = await loadTaskInstallationKeyForGithubCoreGrant({
+      const anchored = await withTestGrant(() => loadTaskInstallationKeyForGithubCoreGrant({
         workspaceRoot: fx.workspaceRoot,
         grant: inventedGrant(fx.taskId, fx.key.fingerprint),
-      })
+      }))
       await expect(createStorageV3MigrationBackup({ ...input, installationKey: anchored })).resolves.toMatchObject({
         locator: 'migration-backup-20260806T123500Z.sqlite',
       })
@@ -221,10 +236,10 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
       })).toThrow(StorageV3ArtifactError)
       expect(fx.db.prepare("SELECT COUNT(*) FROM app_artifact WHERE kind = 'migration_backup_v1'").pluck().get()).toBe(0)
 
-      const anchored = await loadTaskInstallationKeyForGithubCoreGrant({
+      const anchored = await withTestGrant(() => loadTaskInstallationKeyForGithubCoreGrant({
         workspaceRoot: fx.workspaceRoot,
         grant: inventedGrant(fx.taskId, fx.key.fingerprint),
-      })
+      }))
       expect(beginStorageV3MigrationBackupArtifact({
         db: fx.db,
         artifactId: `art-${'6'.repeat(64)}`,
