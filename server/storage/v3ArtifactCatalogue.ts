@@ -10,6 +10,7 @@ import {
   readSync,
   realpathSync,
   rmSync,
+  type BigIntStats,
 } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import Database from 'better-sqlite3'
@@ -113,6 +114,15 @@ function rootIdentity(root: StorageV3ArtifactRoot): RootIdentity {
   return expected
 }
 
+function lstatEntry(path: string): BigIntStats | undefined {
+  try {
+    return lstatSync(path, { bigint: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+    return fail()
+  }
+}
+
 /** Create only the explicit app-controlled root and return no path value. */
 export function createStorageV3ArtifactRoot(directory: string): StorageV3ArtifactRoot {
   if (typeof directory !== 'string' || directory.length === 0) fail()
@@ -146,7 +156,15 @@ export function bindStorageV3ArtifactRoot(
   root: StorageV3ArtifactRoot,
 ): void {
   if (!db?.open) fail()
-  rootIdentity(root)
+  const requested = rootIdentity(root)
+  const existing = STORE_ROOTS.get(db)
+  if (existing !== undefined) {
+    const bound = rootIdentity(existing)
+    if (
+      bound.path !== requested.path
+      || !sameIdentity(bound, requested)
+    ) fail()
+  }
   STORE_ROOTS.set(db, root)
 }
 
@@ -313,7 +331,9 @@ function quiesceStorageV3DatabaseFamily(
 
 function safeRemoveExactFile(root: StorageV3ArtifactRoot, locator: string): void {
   const path = artifactPath(root, locator)
-  if (!existsSync(path)) return
+  const entry = lstatEntry(path)
+  if (entry === undefined) return
+  if (!entry.isFile() || entry.isSymbolicLink() || entry.nlink !== 1n) fail()
   const stable = captureStableFile(path)
   assertSameFile(stable)
   rmSync(path)
@@ -675,7 +695,8 @@ export function completeStorageV3ArtifactDeletions(
     validateLocator(kind, row.relative_locator)
     const path = artifactPath(root, row.relative_locator)
     if (row.state === 'pending') {
-      if (!existsSync(path)) fail()
+      const entry = lstatEntry(path)
+      if (entry === undefined || !entry.isFile() || entry.isSymbolicLink() || entry.nlink !== 1n) fail()
       if (physicalContentSha256(path, kind) !== row.content_sha256) fail()
       db.transaction(() => {
         if (db.prepare(
@@ -687,7 +708,28 @@ export function completeStorageV3ArtifactDeletions(
       row = { ...row, state: 'deleting' }
     }
     if (row.state !== 'deleting') fail()
-    if (existsSync(path) && physicalContentSha256(path, kind) !== row.content_sha256) fail()
+    // A shared artifact may still have ordinary lineage owned by a surviving
+    // scope. Reconcile that history before unlinking bytes so the final
+    // scope-null index_deleted record cannot collide across scopes after a
+    // crash or reopen.
+    db.transaction(() => {
+      db.prepare(
+        `DELETE FROM lineage_event
+         WHERE subject_kind = 'artifact' AND subject_id = ?
+           AND event_kind NOT IN ('tombstone_cascade', 'index_deleted', 'legacy_deletion_operation')`,
+      ).run(row.artifact_id)
+      if (db.prepare(
+        `SELECT 1 FROM lineage_event
+         WHERE subject_kind = 'artifact' AND subject_id = ?
+           AND event_kind NOT IN ('tombstone_cascade', 'index_deleted', 'legacy_deletion_operation')
+         LIMIT 1`,
+      ).get(row.artifact_id)) fail()
+    }).immediate()
+    const entry = lstatEntry(path)
+    if (entry !== undefined) {
+      if (!entry.isFile() || entry.isSymbolicLink() || entry.nlink !== 1n) fail()
+      if (physicalContentSha256(path, kind) !== row.content_sha256) fail()
+    }
     for (const suffix of ['-shm', '-wal', '-journal']) {
       safeRemoveExactFile(root, `${row.relative_locator}${suffix}`)
     }
@@ -695,8 +737,8 @@ export function completeStorageV3ArtifactDeletions(
     safeRemoveExactFile(root, row.relative_locator)
     options.failAfterStage?.('fileDeleted', completed)
     if (
-      existsSync(path)
-      || ['-shm', '-wal', '-journal'].some((suffix) => existsSync(`${path}${suffix}`))
+      lstatEntry(path) !== undefined
+      || ['-shm', '-wal', '-journal'].some((suffix) => lstatEntry(`${path}${suffix}`) !== undefined)
     ) fail()
     db.transaction(() => {
       const current = db.prepare(
@@ -709,12 +751,22 @@ export function completeStorageV3ArtifactDeletions(
         || current.deletion_scope_id !== maintenance.scope_id
         || current.deletion_week !== maintenance.event_week
       ) fail()
-      db.prepare(
-        `INSERT INTO lineage_event (
-          scope_id, subject_kind, subject_id, operation_id, capability_id,
-          caused_by, event_kind, event_week
-        ) VALUES (NULL, 'artifact', ?, ?, 'github.core', ?, 'index_deleted', ?)`,
-      ).run(row.artifact_id, maintenance.operation_id, maintenance.scope_id, maintenance.event_week)
+      const existingDeletion = db.prepare(
+        `SELECT operation_id, event_week FROM lineage_event
+         WHERE scope_id IS NULL AND subject_kind = 'artifact' AND subject_id = ?
+           AND event_kind = 'index_deleted'`,
+      ).get(row.artifact_id) as { operation_id: string; event_week: string } | undefined
+      if (existingDeletion === undefined) {
+        db.prepare(
+          `INSERT INTO lineage_event (
+            scope_id, subject_kind, subject_id, operation_id, capability_id,
+            caused_by, event_kind, event_week
+          ) VALUES (NULL, 'artifact', ?, ?, 'github.core', ?, 'index_deleted', ?)`,
+        ).run(row.artifact_id, maintenance.operation_id, maintenance.scope_id, maintenance.event_week)
+      } else if (
+        existingDeletion.operation_id !== maintenance.operation_id
+        || existingDeletion.event_week !== maintenance.event_week
+      ) fail()
       db.prepare('DELETE FROM app_artifact_scope WHERE artifact_id = ?').run(row.artifact_id)
       if (db.prepare(
         "DELETE FROM app_artifact WHERE artifact_id = ? AND state = 'deleting'",

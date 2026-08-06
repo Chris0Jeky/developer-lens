@@ -2475,7 +2475,7 @@ merged as `b007f968a736bbba9ce6055cd60b37ad6709f070` and exact-merge Pages/priva
 `31073820158` passed. Issue #128 closed. No schema, retention, alias-clock, capability, source, or
 activation boundary changed; #137 continued to own the distinct in-service alias-clock hazard.
 
-## 2026-08-06 — #137 alias/identity retention coupling (candidate)
+## 2026-08-06 — #137 alias/identity retention coupling (merged)
 
 When a `claim_scope` alias expires, the same IMMEDIATE sweep transaction now clears that scope's
 `repository_identity` provider/analytical values and expiry clock. An identity whose own clock
@@ -2483,9 +2483,41 @@ expires first still clears independently without clearing the live alias; an exa
 lineage and is a no-op. The discriminator gives alias-first and identity-first invented scopes
 different clocks, so the parent behavior fails its alias-boundary assertion.
 
-Rebased candidate `defd350` passed 20 focused sweep tests, 4 migrated-store integration tests, and
-the full local gate: lint, context verification (27 Markdown / 12 required), 73 files / 1,197 tests
-with 2 existing skips, TypeScript/build, and credential scanning over 13 outputs. A fresh-context
-retention/transaction review found no HIGH/CRITICAL defect. Issue #137 remains open until the
-candidate's exact-head hosted gate and merge complete. No real migration, source, capability, or
-activation path changed.
+Commits `defd350` and `ac416d5` passed 20 focused sweep tests, 4 migrated-store integration tests,
+the full local gate (73 files / 1,197 tests / 2 existing skips), and a clean fresh-context retention/
+transaction review. PR #145 final head `ac416d5271511c3b0ee9d1c9b0f14b954ddb6ab4` passed exact-head
+hosted run `31074008009`; after its connector-or-15-minute window remained empty, it merged as
+`f1a5e67db437ea2474a3928d97211a7951252d07` and exact-merge Pages/privacy/deploy run
+`31074797477` passed. A 05:50Z thread-aware post-merge sweep found no late review or unresolved
+thread, and issue #137 closed. No real migration, source, capability, or activation path changed.
+
+## 2026-08-06 — #143 post-B4 storage invariants (candidate)
+
+- **Identity and replacement.** A database's first app-artifact root binding is immutable by the
+  reviewed root's path/device/inode identity; a separately opened handle to the same root is
+  idempotent, while a distinct root refuses and cannot redirect later registration. A `BEFORE
+  INSERT` guard stops `INSERT OR REPLACE` from replacing either an artifact identity or unique
+  locator before SQLite can cascade ownership or cancel pending maintenance.
+- **No-follow publication.** Every exact selected sidecar is tested with `lstat`, so a dangling
+  `v3-store.sqlite-{wal,shm,journal}` entry refuses without following its outside target. A closed
+  failure seam covers link, primary unlink, selected proof, and rollback unlink. Failure returns
+  only after selected absence is proven; the sole success exception is the exact app-owned
+  primary/selected two-link pair. That pair is revalidated by path/device/inode and selectable DB
+  before and after every reopen, remains usable through repeated cleanup failure, and collapses to
+  one selected link when cleanup later succeeds. Arbitrary hard links still refuse.
+- **Lifecycle proof.** Artifact maintenance now completes before the CLI counts deletion lineage;
+  ordinary survivor snapshots exclude only the explicitly catalogued lifecycle tables. A shared
+  artifact's ordinary lineage transitions transactionally before unlink, both ownership rows and
+  the file disappear, its scope-null `index_deleted` proof remains, another scope's ordinary graph
+  and B-only artifact remain intact, and injected close/reopen maintenance cannot strand `deleting`.
+- **Proof and review.** Rebased code heads `ffd3c08`, `bab29b9`, `0e4b41f`, and test-only precision
+  head `9c0f7dc` pass 92 focused tests / 3 Windows skips. The full local gate passes lint, context
+  verification (27 Markdown / 12 required), 73 files / 1,206 tests / 4 Windows-platform skips,
+  TypeScript/build, and credential scanning over 13 outputs. Fresh lifecycle and privacy lenses
+  were clean. The first crash lens found a repeat-unlink reopen defect; the final bounded fix makes
+  the exact pair reopenable, and a fresh final crash verification is clean. Hosted Linux/POSIX
+  execution, exact-head CI, and connector review remain before merge.
+
+Issue #143 remains the immediate LIFE-03 prerequisite and stays open until merge. Issue #142 still
+owns hostile concurrent ABA/native-handle containment; this slice makes no hostile-writer claim and
+adds no real migration, protected-data read, capability activation, or production caller.

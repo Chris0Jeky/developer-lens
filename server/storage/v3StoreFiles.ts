@@ -1,12 +1,12 @@
 import {
   closeSync,
   constants,
-  existsSync,
   linkSync,
   lstatSync,
   openSync,
   realpathSync,
   rmSync,
+  type BigIntStats,
 } from 'node:fs'
 import Database from 'better-sqlite3'
 import { assertContinuityCasConsistency } from './v3ContinuityCasProposal.js'
@@ -25,6 +25,9 @@ import {
   storageV3ArtifactFilePath,
   type StorageV3ArtifactRoot,
 } from './v3ArtifactCatalogue.js'
+
+export { registerStorageV3Artifact }
+export type { StorageV3ArtifactDeletionStage } from './v3ArtifactCatalogue.js'
 import {
   assertSelectableStorageV3Target,
   type StorageV3ShadowTargetAttempt,
@@ -61,20 +64,97 @@ function fail(): never {
 
 const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
 
-/** Resume the only partial state created by link-then-unlink publication. */
-function recoverPublishedPrimaryLink(attempt: string, store: string): void {
-  if (!existsSync(attempt) || !existsSync(store)) return
+export const STORAGE_V3_PUBLICATION_FAILURE_STAGES = [
+  'link',
+  'primary-unlink',
+  'selected-proof',
+  'rollback-unlink',
+] as const
+export type StorageV3PublicationFailureStage = typeof STORAGE_V3_PUBLICATION_FAILURE_STAGES[number]
+export type StorageV3RecoveryFailureStage = 'primary-unlink'
+
+export interface StorageV3TargetFactoryOptions {
+  /** Synthetic crash seam; never configured by production callers. */
+  readonly failAtPublicationStage?: StorageV3PublicationFailureStage
+}
+
+export interface StorageV3StoreOpenOptions {
+  /** Synthetic repeated-reopen crash seam; never configured by production callers. */
+  readonly failAtRecoveryStage?: StorageV3RecoveryFailureStage
+}
+
+function injectPublicationFailure(
+  configured: StorageV3PublicationFailureStage | undefined,
+  stage: StorageV3PublicationFailureStage,
+): void {
+  if (configured === stage) throw new Error('invented publication interruption')
+}
+
+function lstatEntry(path: string): BigIntStats | undefined {
   try {
-    const source = lstatSync(attempt, { bigint: true })
-    const selected = lstatSync(store, { bigint: true })
-    if (
-      !source.isFile() || !selected.isFile()
-      || source.isSymbolicLink() || selected.isSymbolicLink()
-      || source.nlink !== 2n || selected.nlink !== 2n
-      || source.dev !== selected.dev || source.ino !== selected.ino
-      || realpathSync.native(attempt) !== attempt || realpathSync.native(store) !== store
-    ) fail()
-    rmSync(attempt)
+    return lstatSync(path, { bigint: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return undefined
+    return fail()
+  }
+}
+
+function assertExactPublishedPair(attempt: string, store: string): void {
+  const source = lstatEntry(attempt)
+  const selected = lstatEntry(store)
+  if (
+    source === undefined
+    || selected === undefined
+    || !selected.isFile()
+    || selected.isSymbolicLink()
+    || realpathSync.native(store) !== store
+    || !source.isFile()
+    || source.isSymbolicLink()
+    || source.nlink !== 2n
+    || selected.nlink !== 2n
+    || source.dev !== selected.dev
+    || source.ino !== selected.ino
+    || realpathSync.native(attempt) !== attempt
+  ) fail()
+}
+
+function assertDurableSelectedPublication(attempt: string, store: string): void {
+  assertExactPublishedPair(attempt, store)
+  const selected = lstatEntry(store)
+  if (selected === undefined) {
+    fail()
+  }
+  const db = new Database(store, { fileMustExist: true })
+  try {
+    assertSelectableStorageV3Target(db)
+  } finally { db.close() }
+}
+
+/** Resume the only partial state created by link-then-unlink publication. */
+type PublishedRecoveryState = 'none' | 'cleaned' | 'retained'
+
+function recoverPublishedPrimaryLink(
+  attempt: string,
+  store: string,
+  failAtRecoveryStage?: StorageV3RecoveryFailureStage,
+): PublishedRecoveryState {
+  const sourceEntry = lstatEntry(attempt)
+  const selectedEntry = lstatEntry(store)
+  if (sourceEntry === undefined && selectedEntry === undefined) return 'none'
+  if (sourceEntry?.isSymbolicLink() || selectedEntry?.isSymbolicLink()) fail()
+  if (sourceEntry === undefined || selectedEntry === undefined) return 'none'
+  try {
+    assertExactPublishedPair(attempt, store)
+    try {
+      if (failAtRecoveryStage === 'primary-unlink') throw new Error('invented recovery interruption')
+      rmSync(attempt)
+      return 'cleaned'
+    } catch {
+      // The selected hard link is already durable; reopen can safely retain
+      // and later retry removal of the exact primary name.
+      assertDurableSelectedPublication(attempt, store)
+      return 'retained'
+    }
   } catch (error) {
     if (error instanceof StorageV3StoreFileError) throw error
     return fail()
@@ -144,8 +224,9 @@ function claimStorePath(
   root: StorageV3ArtifactRoot,
   attempt: string,
   store: string,
+  failAtPublicationStage?: StorageV3PublicationFailureStage,
 ): void {
-  if (['-shm', '-wal', '-journal'].some((suffix) => existsSync(`${store}${suffix}`))) fail()
+  if (['-shm', '-wal', '-journal'].some((suffix) => lstatEntry(`${store}${suffix}`) !== undefined)) fail()
   proveStorageV3ArtifactFile(
     root,
     STORAGE_V3_TARGET_FILE_NAMES.primary,
@@ -154,20 +235,39 @@ function claimStorePath(
   let linked = false
   try {
     removeStorageV3DatabaseSidecars(root, STORAGE_V3_TARGET_FILE_NAMES.primary)
+    injectPublicationFailure(failAtPublicationStage, 'link')
     linkSync(attempt, store)
     linked = true
+    injectPublicationFailure(failAtPublicationStage, 'primary-unlink')
+    injectPublicationFailure(failAtPublicationStage, 'rollback-unlink')
     rmSync(attempt)
+    injectPublicationFailure(failAtPublicationStage, 'selected-proof')
     proveStorageV3ArtifactFile(root, STORAGE_V3_STORE_FILE_NAME, 'selected_store')
   } catch {
     if (linked) {
-      try { rmSync(store) } catch { /* exact owned link; fail closed below */ }
+      try {
+        injectPublicationFailure(failAtPublicationStage, 'rollback-unlink')
+        rmSync(store)
+      } catch {
+        // A valid selected hard link is a durable publication even when the
+        // primary cleanup failed. Leave the exact source for reopen recovery.
+        try {
+          assertDurableSelectedPublication(attempt, store)
+          return
+        } catch {
+          return fail()
+        }
+      }
     }
     return fail()
   }
 }
 
 /** Real files for the two shadow attempts, plus acceptance of the proven one. */
-export function createStorageV3TargetFactory(directory: string): StorageV3ShadowTargetFactory {
+export function createStorageV3TargetFactory(
+  directory: string,
+  options: StorageV3TargetFactoryOptions = {},
+): StorageV3ShadowTargetFactory {
   const root = createStorageV3ArtifactRoot(directory)
   const attemptPaths = {
     primary: storageV3ArtifactFilePath(root, STORAGE_V3_TARGET_FILE_NAMES.primary),
@@ -180,7 +280,7 @@ export function createStorageV3TargetFactory(directory: string): StorageV3Shadow
       // Refuse inside the orchestrator so callers retain its fail-closed public
       // error contract. Recheck on every attempt in case another owner won the
       // selected name after this factory was created.
-      if (existsSync(storePath)) fail()
+      if (lstatEntry(storePath) !== undefined) fail()
       const locator = kind === 'primary'
         ? STORAGE_V3_TARGET_FILE_NAMES.primary
         : STORAGE_V3_TARGET_FILE_NAMES.replay
@@ -222,7 +322,7 @@ export function createStorageV3TargetFactory(directory: string): StorageV3Shadow
       if (!(primary instanceof FileTargetAttempt) || primary.path !== attemptPaths.primary) fail()
       registerSelectedStorageV3Artifact(primary.db, root)
       primary.close()
-      claimStorePath(root, attemptPaths.primary, storePath)
+      claimStorePath(root, attemptPaths.primary, storePath, options.failAtPublicationStage)
     },
   }
 }
@@ -232,18 +332,25 @@ export function createStorageV3TargetFactory(directory: string): StorageV3Shadow
  * plus the CAS consistency it accumulates in service. A store that fails any of
  * them is never handed back to a caller.
  */
-export function openSelectedStorageV3Store(directory: string): Database.Database {
+export function openSelectedStorageV3Store(
+  directory: string,
+  options: StorageV3StoreOpenOptions = {},
+): Database.Database {
   let db: Database.Database | undefined
   try {
     const root = openStorageV3ArtifactRoot(directory)
     const path = storageV3ArtifactFilePath(root, STORAGE_V3_STORE_FILE_NAME)
     const primaryPath = storageV3ArtifactFilePath(root, STORAGE_V3_TARGET_FILE_NAMES.primary)
-    recoverPublishedPrimaryLink(primaryPath, path)
-    const proof = proveStorageV3ArtifactFile(root, STORAGE_V3_STORE_FILE_NAME, 'selected_store')
+    const recovery = recoverPublishedPrimaryLink(primaryPath, path, options.failAtRecoveryStage)
+    if (recovery === 'retained') assertExactPublishedPair(primaryPath, path)
+    const proof = recovery === 'retained'
+      ? undefined
+      : proveStorageV3ArtifactFile(root, STORAGE_V3_STORE_FILE_NAME, 'selected_store')
     db = new Database(path, { fileMustExist: true })
-    assertStorageV3ArtifactFileProof(proof)
+    if (proof !== undefined) assertStorageV3ArtifactFileProof(proof)
     bindStorageV3ArtifactRoot(db, root)
     assertSelectableStorageV3Target(db, { allowContinuityCasState: true })
+    if (recovery === 'retained') assertExactPublishedPair(primaryPath, path)
     assertContinuityCasConsistency(db)
     assertPublishedStorageV3ArtifactCatalogue(db)
     return db
