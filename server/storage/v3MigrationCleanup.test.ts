@@ -35,7 +35,10 @@ import {
   v3ReaderSelectionTestSeams,
   type StorageV3ReaderSelectionInput,
 } from './v3ReaderSelection.js'
-import { STORAGE_V3_REVOCATION_REPLAY_NAMES } from './v3RevocationReplay.js'
+import {
+  STORAGE_V3_REVOCATION_REPLAY_NAMES,
+  v3RevocationReplayTestSeams,
+} from './v3RevocationReplay.js'
 import { STORAGE_V3_SELECTION_PROOF_NAMES } from './v3SelectionProof.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 import { taskInstallationKeyTestSeams, type TaskInstallationKeyHandle } from './taskInstallationKey.js'
@@ -69,6 +72,7 @@ async function fixture(options: Readonly<{
   legacySidecars?: boolean
   backupAt?: string
   successAt?: string
+  claimCount?: number
 }> = {}): Promise<Fixture> {
   const workspaceRoot = mkdtempSync(join(tmpdir(), 'developer-lens-life03-expiry-'))
   const taskId = 'DL-LIFE-03'
@@ -80,6 +84,17 @@ async function fixture(options: Readonly<{
     installStorageV3ShadowSchema(db)
     db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(SCOPE_A)
     db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(SCOPE_B)
+    const claimCount = options.claimCount ?? 0
+    if (!Number.isSafeInteger(claimCount) || claimCount < 0) throw new Error('invalid invented claim count')
+    if (claimCount > 0) db.prepare(`WITH RECURSIVE invented_claim(value) AS (
+      VALUES(0) UNION ALL SELECT value + 1 FROM invented_claim WHERE value + 1 < ?
+    ) INSERT INTO claim (
+      scope_id, claim_id, layer, statement_code, method_id, method_version,
+      window_start, window_end, schema_version, claim_id_material_version, created_at
+    ) SELECT ?, 'cl_' || printf('%064x', value), 'modelled', 'DELIVERY_FLOW',
+      'invented-method', '1.0.0', '2026-01-01T00:00:00.000Z',
+      '2026-02-01T00:00:00.000Z', '1.0.0', 'claim-id.v3',
+      '2026-02-01T00:00:00.000Z' FROM invented_claim`).run(claimCount, SCOPE_A)
     registerSelectedStorageV3Artifact(db, rootHandle, () => Buffer.alloc(32, 3))
     const selectedArtifactId = db.prepare(
       "SELECT artifact_id FROM app_artifact WHERE kind = 'selected_store'",
@@ -390,6 +405,33 @@ describe('LIFE-03 seven-day migration cleanup', { timeout: 30_000 }, () => {
       } finally { fx.cleanup() }
     },
   )
+
+  it('refuses a missing committed multi-chunk record before any cleanup unlink', async () => {
+    const fx = await fixture({ claimCount: 1 })
+    try {
+      expect(v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
+        directory: fx.root,
+        installationKey: fx.key,
+        scopeId: SCOPE_A,
+        asOf: '2026-08-06T13:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 9),
+      }, () => {}, undefined, 1)).toMatchObject({ replayEntries: 1, maintenance: 'complete' })
+      const protectedFiles = [
+        STORAGE_V3_LEGACY_SOURCE_LOCATOR,
+        `${STORAGE_V3_LEGACY_SOURCE_LOCATOR}-wal`,
+        `${STORAGE_V3_LEGACY_SOURCE_LOCATOR}-shm`,
+        `${STORAGE_V3_LEGACY_SOURCE_LOCATOR}-journal`,
+        BACKUP_LOCATOR,
+        BACKUP_MANIFEST,
+      ]
+      for (const name of protectedFiles) expect(existsSync(join(fx.root, name))).toBe(true)
+      unlinkSync(join(fx.root, 'revocation-replay-v1-00000001.json'))
+
+      expect(() => cleanupAt(fx)).toThrow()
+      expect(readCleanupState(fx).phase).toBe('ready')
+      for (const name of protectedFiles) expect(existsSync(join(fx.root, name))).toBe(true)
+    } finally { fx.cleanup() }
+  })
 
   it('selection refuses until the fixed cleanup registry is ready', async () => {
     const fx = await fixture({ register: false, select: false })
