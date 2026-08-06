@@ -118,7 +118,11 @@ function assertExactPublishedPair(attempt: string, store: string): void {
   ) fail()
 }
 
-function assertDurableSelectedPublication(attempt: string, store: string): void {
+function assertDurableSelectedPublication(
+  attempt: string,
+  store: string,
+  options: Readonly<{ allowContinuityCasState: boolean }>,
+): void {
   assertExactPublishedPair(attempt, store)
   const selected = lstatEntry(store)
   if (selected === undefined) {
@@ -126,7 +130,7 @@ function assertDurableSelectedPublication(attempt: string, store: string): void 
   }
   const db = new Database(store, { fileMustExist: true })
   try {
-    assertSelectableStorageV3Target(db)
+    assertSelectableStorageV3Target(db, options)
   } finally { db.close() }
 }
 
@@ -152,7 +156,10 @@ function recoverPublishedPrimaryLink(
     } catch {
       // The selected hard link is already durable; reopen can safely retain
       // and later retry removal of the exact primary name.
-      assertDurableSelectedPublication(attempt, store)
+      // The selected link is already the durable publication during retained
+      // recovery, so valid service CAS state is expected. The virgin rollback
+      // validation call in claimStorePath keeps the strict default.
+      assertDurableSelectedPublication(attempt, store, { allowContinuityCasState: true })
       return 'retained'
     }
   } catch (error) {
@@ -252,7 +259,7 @@ function claimStorePath(
         // A valid selected hard link is a durable publication even when the
         // primary cleanup failed. Leave the exact source for reopen recovery.
         try {
-          assertDurableSelectedPublication(attempt, store)
+          assertDurableSelectedPublication(attempt, store, { allowContinuityCasState: false })
           return
         } catch {
           return fail()

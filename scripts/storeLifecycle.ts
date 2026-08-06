@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { existsSync, mkdirSync, rmSync } from 'node:fs'
+import { closeSync, constants, existsSync, mkdirSync, openSync, rmSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import Database from 'better-sqlite3'
@@ -387,7 +387,17 @@ function addLifecycleArtifactFixture(
   const survivor = survivors[0]
   if (typeof survivor !== 'string') throw new Error('STORE_LIFECYCLE_NO_SURVIVOR')
   const createArtifact = (locator: string): void => {
-    const artifact = new Database(join(directory, locator))
+    const path = join(directory, locator)
+    // These fixed locators are invented fixtures, not recovery targets. Claim
+    // each one without following or replacing a pre-existing entry before
+    // SQLite ever opens it.
+    const descriptor = openSync(
+      path,
+      constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | (constants.O_NOFOLLOW ?? 0),
+      0o600,
+    )
+    closeSync(descriptor)
+    const artifact = new Database(path, { fileMustExist: true })
     try {
       artifact.exec('CREATE TABLE invented_fixture (value INTEGER) STRICT')
       artifact.prepare('INSERT INTO invented_fixture (value) VALUES (1)').run()
@@ -416,6 +426,11 @@ function addLifecycleArtifactFixture(
     caused_by, event_kind, event_week
   ) VALUES (?, 'artifact', ?, ?, 'github.core', NULL, 'index_built', ?)`)
     .run(survivor, shared, `op-${'1'.repeat(64)}`, '2026-W05')
+  store.prepare(`INSERT INTO lineage_event (
+    scope_id, subject_kind, subject_id, operation_id, capability_id,
+    caused_by, event_kind, event_week
+  ) VALUES (?, 'artifact', ?, ?, 'github.core', NULL, 'index_built', ?)`)
+    .run(survivor, other, `op-${'2'.repeat(64)}`, '2026-W05')
   return { sharedLocator, sharedArtifactId: shared, otherLocator, otherArtifactId: other }
 }
 
@@ -450,14 +465,39 @@ export function proveScopeDeletion(
 ): ScopeDeletionProof {
   const otherScopes = (store.prepare('SELECT scope_id FROM claim_scope WHERE scope_id <> ? ORDER BY scope_id')
     .pluck().all(scopeId) as string[])
+  const deletingArtifactIds = new Set(
+    store.prepare(
+      `SELECT owner.artifact_id
+       FROM app_artifact_scope AS owner
+       JOIN app_artifact AS artifact ON artifact.artifact_id = owner.artifact_id
+       WHERE owner.scope_id = ? AND artifact.kind <> 'selected_store'
+       ORDER BY owner.artifact_id`,
+    ).pluck().all(scopeId) as string[],
+  )
   const lifecycleTables = new Set(['app_artifact', 'app_artifact_scope', 'lineage_event', 'storage_maintenance_state'])
   const scopeTables = [...STORAGE_V3_SHADOW_TABLES].sort().filter((table) =>
     !lifecycleTables.has(table) &&
     (store.prepare(`PRAGMA table_info(${table})`).all() as Array<{ name: string }>)
       .some(({ name }) => name === 'scope_id'))
-  const snapshotOthers = (): string => JSON.stringify(otherScopes.map((other) =>
-    scopeTables.map((table) =>
-      store.prepare(`SELECT * FROM ${table} WHERE scope_id = ? ORDER BY rowid`).all(other))))
+  const snapshotOthers = (): string => JSON.stringify({
+    scopeRows: otherScopes.map((other) =>
+      scopeTables.map((table) =>
+        store.prepare(`SELECT * FROM ${table} WHERE scope_id = ? ORDER BY rowid`).all(other))),
+    artifactOwnership: store.prepare(
+      'SELECT artifact_id, scope_id FROM app_artifact_scope ORDER BY artifact_id, scope_id',
+    ).all().filter((row) => otherScopes.includes(String((row as { scope_id: string }).scope_id))
+      && !deletingArtifactIds.has(String((row as { artifact_id: string }).artifact_id))),
+    lineage: store.prepare(
+      `SELECT scope_id, subject_kind, subject_id, operation_id, capability_id,
+              caused_by, event_kind, event_week
+       FROM lineage_event WHERE scope_id IS NOT NULL ORDER BY rowid`,
+    ).all().filter((row) => {
+      const typed = row as { scope_id: string; subject_id: string; caused_by: string | null }
+      return otherScopes.includes(typed.scope_id)
+        && !deletingArtifactIds.has(typed.subject_id)
+        && !deletingArtifactIds.has(typed.caused_by ?? '')
+    }),
+  })
   const othersBefore = snapshotOthers()
 
   const result = deleteStorageV3Scope({

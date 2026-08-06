@@ -277,31 +277,52 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
     } finally { fixture.cleanup() }
   })
 
-  it('reconciles surviving shared-artifact lineage before unlinking its bytes', () => {
+  it('reconciles shared-artifact subjects and causes across a crash-reopen', () => {
     const fixture = freshSelectedStore()
     try {
       const locator = 'migration-backup-20260302T000001Z.sqlite'
       const artifactId = registerFixture(fixture, locator, [SCOPE_A, SCOPE_B], 13, 'migration_backup_v1')
+      const survivorId = registerFixture(fixture, 'invented-survivor-cause.sqlite', [SCOPE_B], 15)
       fixture.store.prepare(`INSERT INTO lineage_event (
         scope_id, subject_kind, subject_id, operation_id, capability_id,
         caused_by, event_kind, event_week
       ) VALUES (?, 'artifact', ?, ?, 'github.core', NULL, 'index_built', '2026-W09')`)
-        .run(SCOPE_B, artifactId, `op-${'1'.repeat(64)}`)
+        .run(SCOPE_B, survivorId, `op-${'1'.repeat(64)}`)
+      fixture.store.prepare(`INSERT INTO lineage_event (
+        scope_id, subject_kind, subject_id, operation_id, capability_id,
+        caused_by, event_kind, event_week
+      ) VALUES (?, 'artifact', ?, ?, 'github.core', ?, 'index_built', '2026-W09')`)
+        .run(SCOPE_B, survivorId, `op-${'2'.repeat(64)}`, artifactId)
       deleteStorageV3Scope({
         db: fixture.store,
         scopeId: SCOPE_A,
         asOf: DELETE_AT,
         randomBytes: () => Buffer.alloc(32, 14),
       })
-      expect(completeStorageV3DeletionMaintenance(fixture.store).maintenance).toBe('complete')
-      expect(fixture.store.prepare(
-        `SELECT 1 FROM lineage_event
-         WHERE scope_id = ? AND subject_kind = 'artifact' AND subject_id = ? AND event_kind = 'index_built'`,
-      ).get(SCOPE_B, artifactId)).toBeUndefined()
-      expect(fixture.store.prepare(
-        `SELECT scope_id, event_kind FROM lineage_event
-         WHERE subject_kind = 'artifact' AND subject_id = ?`,
-      ).get(artifactId)).toEqual({ scope_id: null, event_kind: 'index_deleted' })
+      expectMaintenanceFailure(() => completeStorageV3DeletionMaintenance(fixture.store, {
+        failAfterArtifactStage: (stage) => {
+          if (stage === 'sidecarsDeleted') throw new Error('invented crash')
+        },
+      }))
+      fixture.store.close()
+      const reopened = openSelectedStorageV3Store(fixture.root)
+      try {
+        expect(completeStorageV3DeletionMaintenance(reopened).maintenance).toBe('complete')
+        expect(reopened.prepare(
+          'SELECT 1 FROM lineage_event WHERE caused_by = ?',
+        ).get(artifactId)).toBeUndefined()
+        expect(reopened.prepare(
+          `SELECT 1 FROM lineage_event
+           WHERE subject_kind = 'artifact' AND subject_id = ? AND event_kind = 'index_built'`,
+        ).get(survivorId)).toBeDefined()
+        expect(reopened.prepare(
+          "SELECT 1 FROM app_artifact WHERE state = 'deleting'",
+        ).get()).toBeUndefined()
+        expect(reopened.prepare(
+          `SELECT scope_id, event_kind FROM lineage_event
+           WHERE subject_kind = 'artifact' AND subject_id = ?`,
+        ).get(artifactId)).toEqual({ scope_id: null, event_kind: 'index_deleted' })
+      } finally { reopened.close() }
     } finally { fixture.cleanup() }
   })
 
