@@ -63,7 +63,8 @@ import {
  * Durable, content-free revocation intent outside the selected database.
  *
  * The immutable migration backup predates later deletions. Each deletion therefore
- * publishes one key-bound intent file before its SQL transaction commits. Restore
+ * publishes one or more bounded, key-bound intent files before its SQL transaction
+ * commits. Restore
  * verifies the complete reserved family and replays it into the copied backup before
  * the selected name is published. Files contain only C1 identifiers and ISO week
  * grain; repository labels, paths, source bytes, and exact timestamps never enter it.
@@ -97,8 +98,10 @@ const FINAL = /^revocation-replay-v1-(\d{8})\.json$/
 const TEMP = /^revocation-replay-v1-(\d{8})\.json\.tmp$/
 const NO_FOLLOW = constants.O_NOFOLLOW ?? 0
 const MAX_RECORD_BYTES = 16 * 1024 * 1024
-const MAX_SUBJECTS = 100_000
+const MAX_SUBJECTS_PER_RECORD = 4_096
+const APPLIED_SUBJECT_QUERY_BATCH = 400
 const GRACE_MS = 7 * 24 * 60 * 60 * 1000
+const SUBJECTS_DOMAIN = 'developer-lens.storage-v3-revocation-subjects.v1' as const
 
 export const STORAGE_V3_REVOCATION_REPLAY_NAMES = Object.freeze({
   anchor: ANCHOR_NAME,
@@ -145,6 +148,11 @@ type EventBody = Readonly<{
   scopeId: string
   operationId: string
   eventWeek: string
+  chunkIndex: number
+  chunkCount: number
+  subjectsPerChunk: number
+  subjectCount: number
+  subjectsSha256: string
   subjects: readonly EventSubject[]
 }>
 
@@ -263,9 +271,12 @@ function subjectPrefix(kind: string): string | undefined {
   return C1_KEY_PREFIXES[kind as keyof typeof C1_KEY_PREFIXES]
 }
 
-function canonicalSubjects(raw: readonly StorageV3DeletionReplaySubject[], scopeId: string): readonly EventSubject[] {
-  if (!Array.isArray(raw) || raw.length === 0 || raw.length > MAX_SUBJECTS) return fail()
-  const subjects = raw.map((value): EventSubject => {
+function canonicalSubjectValues(
+  raw: readonly StorageV3DeletionReplaySubject[],
+  scopeId: string,
+): readonly EventSubject[] {
+  if (!Array.isArray(raw) || raw.length === 0) return fail()
+  const subjects = raw.map((value): Readonly<{ subject: EventSubject; sortKey: string }> => {
     const object = assertPlain(value, ['subjectKind', 'subjectId', 'causedBy', 'eventKind'])
     const subjectKind = own(object, 'subjectKind')
     const subjectId = own(object, 'subjectId')
@@ -273,16 +284,60 @@ function canonicalSubjects(raw: readonly StorageV3DeletionReplaySubject[], scope
     const eventKind = own(object, 'eventKind')
     const prefix = typeof subjectKind === 'string' ? subjectPrefix(subjectKind) : undefined
     if (prefix === undefined || typeof subjectId !== 'string'
-      || !new RegExp(`^${prefix}[0-9a-f]{64}$`).test(subjectId)
+      || !subjectId.startsWith(prefix) || !HEX.test(subjectId.slice(prefix.length))
       || (causedBy !== null && causedBy !== scopeId)
       || (subjectKind === 'scope' ? causedBy !== null || subjectId !== scopeId : causedBy !== scopeId)
       || (subjectKind === 'artifact' ? eventKind !== 'index_deleted' : eventKind !== 'tombstone_cascade')) return fail()
-    return Object.freeze({ subjectKind, subjectId, causedBy, eventKind }) as EventSubject
-  }).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)))
-  if (subjects.filter((subject) => subject.subjectKind === 'scope' && subject.subjectId === scopeId).length !== 1) return fail()
+    const subject = Object.freeze({ subjectKind, subjectId, causedBy, eventKind }) as EventSubject
+    return Object.freeze({ subject, sortKey: JSON.stringify(subject) })
+  }).sort((left, right) => left.sortKey.localeCompare(right.sortKey))
+    .map(({ subject }) => subject)
   const identities = subjects.map((subject) => `${subject.eventKind}\0${subject.subjectKind}\0${subject.subjectId}`)
   if (new Set(identities).size !== identities.length) return fail()
   return Object.freeze(subjects)
+}
+
+function canonicalSubjects(
+  raw: readonly StorageV3DeletionReplaySubject[],
+  scopeId: string,
+): readonly EventSubject[] {
+  const subjects = canonicalSubjectValues(raw, scopeId)
+  if (subjects.filter((subject) => subject.subjectKind === 'scope' && subject.subjectId === scopeId).length !== 1) return fail()
+  return subjects
+}
+
+function digestSubjects(subjects: readonly EventSubject[]): string {
+  return createHash('sha256')
+    .update(`${SUBJECTS_DOMAIN}\0${JSON.stringify(subjects)}`, 'utf8')
+    .digest('hex')
+}
+
+type SubjectChunkPlan = Readonly<{
+  subjects: readonly EventSubject[]
+  subjectsSha256: string
+  subjectsPerChunk: number
+  chunks: readonly (readonly EventSubject[])[]
+}>
+
+function planSubjectChunks(
+  raw: readonly StorageV3DeletionReplaySubject[],
+  scopeId: string,
+  subjectsPerChunk = MAX_SUBJECTS_PER_RECORD,
+): SubjectChunkPlan {
+  if (!Number.isSafeInteger(subjectsPerChunk)
+    || subjectsPerChunk <= 0 || subjectsPerChunk > MAX_SUBJECTS_PER_RECORD) return fail()
+  const subjects = canonicalSubjects(raw, scopeId)
+  const chunks: Array<readonly EventSubject[]> = []
+  for (let offset = 0; offset < subjects.length; offset += subjectsPerChunk) {
+    chunks.push(Object.freeze(subjects.slice(offset, offset + subjectsPerChunk)))
+  }
+  if (chunks.length <= 0 || chunks.length > 99_999_999) return fail()
+  return Object.freeze({
+    subjects,
+    subjectsSha256: digestSubjects(subjects),
+    subjectsPerChunk,
+    chunks: Object.freeze(chunks),
+  })
 }
 
 function anchorBody(selection: StorageV3MigrationSelection, key: TaskInstallationKeyHandle): AnchorBody {
@@ -306,6 +361,11 @@ function eventBody(
     scopeId: string
     operationId: string
     eventWeek: string
+    chunkIndex: number
+    chunkCount: number
+    subjectsPerChunk: number
+    subjectCount: number
+    subjectsSha256: string
     subjects: readonly StorageV3DeletionReplaySubject[]
   }>,
 ): EventBody {
@@ -313,7 +373,21 @@ function eventBody(
     || !HEX.test(previousBodySha256) || !HEX.test(key.fingerprint)
     || !ScopeIdV3Schema.safeParse(input.scopeId).success
     || !DeletionOperationIdV3Schema.safeParse(input.operationId).success
-    || !IsoWeekV3Schema.safeParse(input.eventWeek).success) return fail()
+    || !IsoWeekV3Schema.safeParse(input.eventWeek).success
+    || !Number.isSafeInteger(input.chunkIndex) || input.chunkIndex < 0
+    || !Number.isSafeInteger(input.chunkCount) || input.chunkCount <= 0
+    || !Number.isSafeInteger(input.subjectsPerChunk) || input.subjectsPerChunk <= 0
+    || input.subjectsPerChunk > MAX_SUBJECTS_PER_RECORD
+    || !Number.isSafeInteger(input.subjectCount) || input.subjectCount <= 0
+    || input.chunkCount !== Math.ceil(input.subjectCount / input.subjectsPerChunk)
+    || input.chunkIndex >= input.chunkCount
+    || !HEX.test(input.subjectsSha256)) return fail()
+  const subjects = canonicalSubjectValues(input.subjects, input.scopeId)
+  const expectedChunkLength = Math.min(
+    input.subjectsPerChunk,
+    input.subjectCount - (input.chunkIndex * input.subjectsPerChunk),
+  )
+  if (expectedChunkLength <= 0 || subjects.length !== expectedChunkLength) return fail()
   return Object.freeze({
     version: VERSION,
     kind: 'revocation' as const,
@@ -324,8 +398,56 @@ function eventBody(
     scopeId: input.scopeId,
     operationId: input.operationId,
     eventWeek: input.eventWeek,
-    subjects: canonicalSubjects(input.subjects, input.scopeId),
+    chunkIndex: input.chunkIndex,
+    chunkCount: input.chunkCount,
+    subjectsPerChunk: input.subjectsPerChunk,
+    subjectCount: input.subjectCount,
+    subjectsSha256: input.subjectsSha256,
+    subjects,
   })
+}
+
+type PlannedEventRecord = Readonly<{
+  body: EventBody
+  marker: Marker<EventBody>
+  bytes: Buffer
+}>
+
+function planEventRecords(
+  startSequence: number,
+  previousBodySha256: string,
+  selection: StorageV3MigrationSelection,
+  key: TaskInstallationKeyHandle,
+  input: Readonly<{
+    scopeId: string
+    operationId: string
+    eventWeek: string
+    plan: SubjectChunkPlan
+  }>,
+): readonly PlannedEventRecord[] {
+  if (!Number.isSafeInteger(startSequence) || startSequence <= 0
+    || startSequence + input.plan.chunks.length - 1 > 99_999_999
+    || !HEX.test(previousBodySha256)) return fail()
+  const records: PlannedEventRecord[] = []
+  let previous = previousBodySha256
+  for (let chunkIndex = 0; chunkIndex < input.plan.chunks.length; chunkIndex += 1) {
+    const body = eventBody(startSequence + chunkIndex, previous, selection, key, {
+      scopeId: input.scopeId,
+      operationId: input.operationId,
+      eventWeek: input.eventWeek,
+      chunkIndex,
+      chunkCount: input.plan.chunks.length,
+      subjectsPerChunk: input.plan.subjectsPerChunk,
+      subjectCount: input.plan.subjects.length,
+      subjectsSha256: input.plan.subjectsSha256,
+      subjects: input.plan.chunks[chunkIndex]!,
+    })
+    const marker = markerFor(body, key)
+    const bytes = markerBytes(marker)
+    records.push(Object.freeze({ body, marker, bytes }))
+    previous = marker.bodySha256
+  }
+  return Object.freeze(records)
 }
 
 function headBody(
@@ -645,7 +767,12 @@ function parseMarker(
     ? ['version', 'kind', 'sequence', 'selectionSha256', 'taskFingerprint', 'previousBodySha256', 'bodySha256', 'installationKeyBinding']
     : rawKind === 'head'
       ? ['version', 'kind', 'phase', 'sequence', 'selectionSha256', 'taskFingerprint', 'lastBodySha256', 'bodySha256', 'installationKeyBinding']
-      : ['version', 'kind', 'sequence', 'selectionSha256', 'taskFingerprint', 'previousBodySha256', 'scopeId', 'operationId', 'eventWeek', 'subjects', 'bodySha256', 'installationKeyBinding']
+      : [
+          'version', 'kind', 'sequence', 'selectionSha256', 'taskFingerprint',
+          'previousBodySha256', 'scopeId', 'operationId', 'eventWeek',
+          'chunkIndex', 'chunkCount', 'subjectsPerChunk', 'subjectCount',
+          'subjectsSha256', 'subjects', 'bodySha256', 'installationKeyBinding',
+        ]
   const object = assertPlain(raw, expectedKeys)
   const selectionHash = own(object, 'selectionSha256')
   const taskFingerprint = own(object, 'taskFingerprint')
@@ -676,15 +803,28 @@ function parseMarker(
     const scopeId = own(object, 'scopeId')
     const operationId = own(object, 'operationId')
     const eventWeek = own(object, 'eventWeek')
+    const chunkIndex = own(object, 'chunkIndex')
+    const chunkCount = own(object, 'chunkCount')
+    const subjectsPerChunk = own(object, 'subjectsPerChunk')
+    const subjectCount = own(object, 'subjectCount')
+    const subjectsSha256 = own(object, 'subjectsSha256')
     const subjects = own(object, 'subjects')
     if (typeof sequence !== 'number' || typeof previousBodySha256 !== 'string' || !HEX.test(previousBodySha256)
       || typeof scopeId !== 'string'
       || typeof operationId !== 'string' || typeof eventWeek !== 'string'
+      || typeof chunkIndex !== 'number' || typeof chunkCount !== 'number'
+      || typeof subjectsPerChunk !== 'number' || typeof subjectCount !== 'number'
+      || typeof subjectsSha256 !== 'string'
       || !Array.isArray(subjects)) return fail()
     body = eventBody(sequence, previousBodySha256, selection, key, {
       scopeId,
       operationId,
       eventWeek,
+      chunkIndex,
+      chunkCount,
+      subjectsPerChunk,
+      subjectCount,
+      subjectsSha256,
       subjects: subjects as readonly StorageV3DeletionReplaySubject[],
     })
   } else return fail()
@@ -697,7 +837,62 @@ function parseMarker(
 type ReplayChain = Readonly<{
   state: StorageV3RevocationReplayState
   bodyHashes: readonly string[]
+  pending?: Readonly<{
+    sequence: number
+    scopeId: string
+    operationId: string
+    eventWeek: string
+    chunkCount: number
+    subjectsPerChunk: number
+    subjectCount: number
+    subjectsSha256: string
+    nextChunkIndex: number
+    subjects: readonly EventSubject[]
+    bodySha256: string
+  }>
 }>
+
+function sameChunkGroup(
+  left: Pick<EventBody, 'scopeId' | 'operationId' | 'eventWeek' | 'chunkCount' | 'subjectsPerChunk' | 'subjectCount' | 'subjectsSha256'>,
+  right: Pick<EventBody, 'scopeId' | 'operationId' | 'eventWeek' | 'chunkCount' | 'subjectsPerChunk' | 'subjectCount' | 'subjectsSha256'>,
+): boolean {
+  return left.scopeId === right.scopeId
+    && left.operationId === right.operationId
+    && left.eventWeek === right.eventWeek
+    && left.chunkCount === right.chunkCount
+    && left.subjectsPerChunk === right.subjectsPerChunk
+    && left.subjectCount === right.subjectCount
+    && left.subjectsSha256 === right.subjectsSha256
+}
+
+function assertChunkBoundary(
+  existing: readonly EventSubject[],
+  next: readonly EventSubject[],
+): void {
+  const last = existing.at(-1)
+  const first = next[0]
+  if (last !== undefined && first !== undefined
+    && JSON.stringify(last).localeCompare(JSON.stringify(first)) >= 0) return fail()
+}
+
+function assertMarkerContinuesChain(chain: ReplayChain, marker: Marker<EventBody>): void {
+  let subjects: readonly EventSubject[]
+  if (chain.pending === undefined) {
+    if (marker.chunkIndex !== 0
+      || chain.state.entries.some((entry) => entry.scopeId === marker.scopeId)) return fail()
+    subjects = marker.subjects
+  } else {
+    if (!sameChunkGroup(chain.pending, marker)
+      || marker.chunkIndex !== chain.pending.nextChunkIndex) return fail()
+    assertChunkBoundary(chain.pending.subjects, marker.subjects)
+    subjects = [...chain.pending.subjects, ...marker.subjects]
+  }
+  if (marker.chunkIndex === marker.chunkCount - 1
+    && (subjects.length !== marker.subjectCount
+      || digestSubjects(subjects) !== marker.subjectsSha256
+      || subjects.filter((subject) => subject.subjectKind === 'scope'
+        && subject.subjectId === marker.scopeId).length !== 1)) return fail()
+}
 
 function readChain(
   root: StorageV3ArtifactRoot,
@@ -719,6 +914,19 @@ function readChain(
   let previous = anchor.bodySha256
   const bodyHashes = [anchor.bodySha256]
   const entries: StorageV3RevocationReplayEntry[] = []
+  let pending: {
+    sequence: number
+    scopeId: string
+    operationId: string
+    eventWeek: string
+    chunkCount: number
+    subjectsPerChunk: number
+    subjectCount: number
+    subjectsSha256: string
+    nextChunkIndex: number
+    subjects: EventSubject[]
+    bodySha256: string
+  } | undefined
   for (let index = 1; index < names.length; index += 1) {
     const name = names[index]
     if (name !== sequenceName(index)) return fail()
@@ -732,14 +940,47 @@ function readChain(
     const marker = parseMarker(bytes, key, selection)
     if (marker.kind !== 'revocation' || marker.sequence !== index
       || marker.previousBodySha256 !== previous) return fail()
-    entries.push(Object.freeze({
-      sequence: marker.sequence,
-      scopeId: marker.scopeId,
-      operationId: marker.operationId,
-      eventWeek: marker.eventWeek,
-      subjects: marker.subjects,
-      bodySha256: marker.bodySha256,
-    }))
+    if (pending === undefined) {
+      if (marker.chunkIndex !== 0 || entries.some((entry) => entry.scopeId === marker.scopeId)) return fail()
+      pending = {
+        sequence: marker.sequence,
+        scopeId: marker.scopeId,
+        operationId: marker.operationId,
+        eventWeek: marker.eventWeek,
+        chunkCount: marker.chunkCount,
+        subjectsPerChunk: marker.subjectsPerChunk,
+        subjectCount: marker.subjectCount,
+        subjectsSha256: marker.subjectsSha256,
+        nextChunkIndex: 1,
+        subjects: [...marker.subjects],
+        bodySha256: marker.bodySha256,
+      }
+    } else {
+      if (!sameChunkGroup(pending, marker) || marker.chunkIndex !== pending.nextChunkIndex) return fail()
+      assertChunkBoundary(pending.subjects, marker.subjects)
+      pending.sequence = marker.sequence
+      pending.nextChunkIndex += 1
+      pending.subjects.push(...marker.subjects)
+      pending.bodySha256 = marker.bodySha256
+    }
+    const current = pending
+    if (current === undefined) return fail()
+    if (current.nextChunkIndex === current.chunkCount) {
+      if (current.subjects.length !== current.subjectCount
+        || digestSubjects(current.subjects) !== current.subjectsSha256
+        || current.subjects.filter((subject) => subject.subjectKind === 'scope'
+          && subject.subjectId === current.scopeId).length !== 1) return fail()
+      const subjects = Object.freeze([...current.subjects])
+      entries.push(Object.freeze({
+        sequence: current.sequence,
+        scopeId: current.scopeId,
+        operationId: current.operationId,
+        eventWeek: current.eventWeek,
+        subjects,
+        bodySha256: current.bodySha256,
+      }))
+      pending = undefined
+    }
     previous = marker.bodySha256
     bodyHashes.push(marker.bodySha256)
   }
@@ -751,6 +992,9 @@ function readChain(
       entries: Object.freeze(entries),
     }),
     bodyHashes: Object.freeze(bodyHashes),
+    ...(pending === undefined ? {} : {
+      pending: Object.freeze({ ...pending, subjects: Object.freeze([...pending.subjects]) }),
+    }),
   })
 }
 
@@ -767,7 +1011,7 @@ function readHead(
 }
 
 function headMatchesChain(head: Marker<HeadBody>, chain: ReplayChain): boolean {
-  return head.sequence === chain.state.entries.length
+  return head.sequence === chain.bodyHashes.length - 1
     && head.lastBodySha256 === chain.bodyHashes.at(-1)
 }
 
@@ -786,7 +1030,7 @@ function verifyInternal(
   assertStorageV3ArtifactRootInstallationKey(root, key)
   const chain = readChain(root, key, selection)
   const head = readHead(root, key, selection).marker
-  if (head.phase !== expectedPhase) return fail()
+  if (head.phase !== expectedPhase || chain.pending !== undefined) return fail()
   assertHeadMatchesChain(head, chain)
   return chain.state
 }
@@ -804,7 +1048,7 @@ function recoverPendingRecord(
   if (names.temps.length > 1 || (names.temps.length !== 0 && names.headTemp)) return fail()
   if (!names.head && names.headTemp && names.temps.length === 0) {
     const chain = readChain(root, key, selection, HEAD_TEMP_NAME)
-    if (chain.state.entries.length !== 0) return fail()
+    if (chain.bodyHashes.length !== 1 || chain.pending !== undefined) return fail()
     const initialBytes = markerBytes(markerFor(
       headBody('initializing', 0, chain.bodyHashes[0]!, selection, key),
       key,
@@ -836,7 +1080,7 @@ function recoverPendingRecord(
         const chain = readChain(root, key, selection, tempName)
         const priorHash = chain.bodyHashes[head.sequence]
         if (!headMatchesChain(head, chain)
-          && (chain.state.entries.length !== head.sequence + 1
+          && (chain.bodyHashes.length - 1 !== head.sequence + 1
             || head.lastBodySha256 !== priorHash)) return fail()
         const bytes = readExact(finalPath, 2n)
         publishRecord(root, sequence, bytes, synchronize)
@@ -845,9 +1089,10 @@ function recoverPendingRecord(
         assertHeadMatchesChain(head, chain)
         const bytes = readExact(tempPath)
         const marker = parseMarker(bytes, key, selection)
-        if (sequence !== chain.state.entries.length + 1
+        if (sequence !== chain.bodyHashes.length
           || marker.kind !== 'revocation' || marker.sequence !== sequence
           || marker.previousBodySha256 !== chain.bodyHashes.at(-1)) return fail()
+        assertMarkerContinuesChain(chain, marker)
         publishRecord(root, sequence, bytes, synchronize)
       }
     }
@@ -861,10 +1106,10 @@ function recoverPendingRecord(
     if (names.headTemp) return fail()
     return
   }
-  if (chain.state.entries.length !== head.marker.sequence + 1
+  if (chain.bodyHashes.length - 1 !== head.marker.sequence + 1
     || head.marker.lastBodySha256 !== chain.bodyHashes[head.marker.sequence]) return fail()
   const nextBytes = markerBytes(markerFor(
-    headBody('committed', chain.state.entries.length, chain.bodyHashes.at(-1)!, selection, key),
+    headBody('committed', chain.bodyHashes.length - 1, chain.bodyHashes.at(-1)!, selection, key),
     key,
   ))
   publishHead(root, head.bytes, nextBytes, synchronize)
@@ -903,15 +1148,21 @@ function initializeInternal(
   return verifyInternal(root, key, selection, lease, 'initializing')
 }
 
-function recoverInternal(
+function recoverChainInternal(
   root: StorageV3ArtifactRoot,
   key: TaskInstallationKeyHandle,
   selection: StorageV3MigrationSelection,
   lease: StorageV3WriterLease,
   synchronize: DirectorySynchronizer,
-): StorageV3RevocationReplayState {
+): ReplayChain {
   recoverPendingRecord(root, key, selection, lease, synchronize)
-  return verifyInternal(root, key, selection, lease)
+  assertStorageV3WriterLease(root, lease)
+  assertStorageV3ArtifactRootInstallationKey(root, key)
+  const chain = readChain(root, key, selection)
+  const head = readHead(root, key, selection).marker
+  if (head.phase !== 'committed') return fail()
+  assertHeadMatchesChain(head, chain)
+  return chain
 }
 
 function commitInitializationInternal(
@@ -929,10 +1180,11 @@ function commitInitializationInternal(
   const head = readHead(root, key, selection)
   assertHeadMatchesChain(head.marker, chain)
   if (head.marker.phase === 'committed') {
-    if (names.headTemp) return fail()
+    if (names.headTemp || chain.pending !== undefined) return fail()
     return chain.state
   }
-  if (head.marker.phase !== 'initializing' || chain.state.entries.length !== 0) return fail()
+  if (head.marker.phase !== 'initializing' || chain.bodyHashes.length !== 1
+    || chain.pending !== undefined) return fail()
   const committed = markerBytes(markerFor(
     headBody('committed', 0, chain.bodyHashes[0]!, selection, key),
     key,
@@ -980,33 +1232,74 @@ function appendInternal(
     operationId: string
     eventWeek: string
     subjects: readonly StorageV3DeletionReplaySubject[]
+    subjectsPerChunk?: number
   }>,
   synchronize: DirectorySynchronizer,
   failAtStage?: StorageV3RevocationReplayPublicationStage,
 ): StorageV3RevocationReplayState {
-  let state = recoverInternal(root, key, selection, lease, synchronize)
-  const existing = state.entries.find((entry) => entry.scopeId === input.scopeId)
+  const chain = recoverChainInternal(root, key, selection, lease, synchronize)
+  const existing = chain.state.entries.find((entry) => entry.scopeId === input.scopeId)
   const canonical = canonicalSubjects(input.subjects, input.scopeId)
   if (existing !== undefined) {
     if (existing.operationId !== input.operationId || existing.eventWeek !== input.eventWeek
-      || JSON.stringify(existing.subjects) !== JSON.stringify(canonical)) return fail()
-    return state
+      || JSON.stringify(existing.subjects) !== JSON.stringify(canonical)
+      || chain.pending !== undefined) return fail()
+    return chain.state
   }
-  const previous = state.entries.at(-1)?.bodySha256
-    ?? parseMarker(readExact(storageV3ArtifactFilePath(root, ANCHOR_NAME)), key, selection).bodySha256
-  const body = eventBody(state.entries.length + 1, previous, selection, key, {
-    ...input,
-    subjects: canonical,
+  const subjectsPerChunk = input.subjectsPerChunk
+    ?? chain.pending?.subjectsPerChunk
+    ?? MAX_SUBJECTS_PER_RECORD
+  const plan = planSubjectChunks(canonical, input.scopeId, subjectsPerChunk)
+  let firstChunk = 0
+  let startSequence = chain.bodyHashes.length
+  if (chain.pending !== undefined) {
+    const pending = chain.pending
+    if (pending.scopeId !== input.scopeId || pending.operationId !== input.operationId
+      || pending.eventWeek !== input.eventWeek || pending.chunkCount !== plan.chunks.length
+      || pending.subjectsPerChunk !== plan.subjectsPerChunk
+      || pending.subjectCount !== plan.subjects.length
+      || pending.subjectsSha256 !== plan.subjectsSha256
+      || JSON.stringify(pending.subjects) !== JSON.stringify(
+        plan.subjects.slice(0, pending.subjects.length),
+      )) return fail()
+    firstChunk = pending.nextChunkIndex
+    startSequence -= firstChunk
+  }
+  const previousBodySha256 = chain.bodyHashes[startSequence - 1]
+  if (previousBodySha256 === undefined) return fail()
+  const records = planEventRecords(startSequence, previousBodySha256, selection, key, {
+    scopeId: input.scopeId,
+    operationId: input.operationId,
+    eventWeek: input.eventWeek,
+    plan,
   })
-  const head = readHead(root, key, selection)
-  publishRecord(root, body.sequence, markerBytes(markerFor(body, key)), synchronize, failAtStage)
-  const chain = readChain(root, key, selection)
-  publishHead(root, head.bytes, markerBytes(markerFor(
-    headBody('committed', chain.state.entries.length, chain.bodyHashes.at(-1)!, selection, key),
-    key,
-  )), synchronize, failAtStage)
-  state = verifyInternal(root, key, selection, lease)
-  return state
+  for (let chunkIndex = 0; chunkIndex < firstChunk; chunkIndex += 1) {
+    const record = records[chunkIndex]!
+    if (chain.bodyHashes[record.body.sequence] !== record.marker.bodySha256) return fail()
+    compareBytes(
+      readExact(storageV3ArtifactFilePath(root, sequenceName(record.body.sequence))),
+      record.bytes,
+    )
+  }
+  let expectedSequence = chain.bodyHashes.length
+  let expectedPrevious = chain.bodyHashes.at(-1)!
+  for (let chunkIndex = firstChunk; chunkIndex < records.length; chunkIndex += 1) {
+    const record = records[chunkIndex]!
+    if (record.body.sequence !== expectedSequence
+      || record.body.previousBodySha256 !== expectedPrevious) return fail()
+    const head = readHead(root, key, selection)
+    if (head.marker.phase !== 'committed'
+      || head.marker.sequence !== expectedSequence - 1
+      || head.marker.lastBodySha256 !== expectedPrevious) return fail()
+    publishRecord(root, record.body.sequence, record.bytes, synchronize, failAtStage)
+    publishHead(root, head.bytes, markerBytes(markerFor(
+      headBody('committed', record.body.sequence, record.marker.bodySha256, selection, key),
+      key,
+    )), synchronize, failAtStage)
+    expectedSequence += 1
+    expectedPrevious = record.marker.bodySha256
+  }
+  return verifyInternal(root, key, selection, lease)
 }
 
 function canonicalTimestampForIsoWeek(eventWeek: string): string {
@@ -1024,16 +1317,43 @@ function canonicalTimestampForIsoWeek(eventWeek: string): string {
 
 function assertEntryApplied(db: Database.Database, entry: StorageV3RevocationReplayEntry): void {
   if (db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(entry.scopeId)) return fail()
+  const byIdentity = new Map<string, Array<Record<string, unknown>>>()
+  const statements = new Map<number, Database.Statement>()
+  for (let offset = 0; offset < entry.subjects.length; offset += APPLIED_SUBJECT_QUERY_BATCH) {
+    const batch = entry.subjects.slice(offset, offset + APPLIED_SUBJECT_QUERY_BATCH)
+    let statement = statements.get(batch.length)
+    if (statement === undefined) {
+      statement = db.prepare(
+        `WITH expected(subject_kind, subject_id) AS (
+           VALUES ${batch.map(() => '(?, ?)').join(', ')}
+         )
+         SELECT actual.subject_kind, actual.subject_id, actual.operation_id, actual.caused_by,
+                actual.event_kind, actual.event_week, actual.capability_id
+         FROM lineage_event AS actual
+         INNER JOIN expected
+           ON expected.subject_kind = actual.subject_kind AND expected.subject_id = actual.subject_id
+         WHERE actual.scope_id IS NULL
+           AND actual.event_kind IN ('tombstone_cascade', 'index_deleted')`,
+      )
+      statements.set(batch.length, statement)
+    }
+    const rows = statement.all(
+      ...batch.flatMap((subject) => [subject.subjectKind, subject.subjectId]),
+    ) as Array<Record<string, unknown>>
+    for (const row of rows) {
+      const identity = `${String(row.subject_kind)}\0${String(row.subject_id)}`
+      const matching = byIdentity.get(identity) ?? []
+      matching.push(row)
+      byIdentity.set(identity, matching)
+    }
+  }
   for (const subject of entry.subjects) {
-    const rows = db.prepare(
-      `SELECT operation_id, caused_by, event_kind, event_week, capability_id
-       FROM lineage_event
-       WHERE scope_id IS NULL AND subject_kind = ? AND subject_id = ?
-         AND event_kind IN ('tombstone_cascade', 'index_deleted')`,
-    ).all(subject.subjectKind, subject.subjectId) as Array<Record<string, unknown>>
-    if (rows.length !== 1 || rows[0]?.operation_id !== entry.operationId
-      || rows[0]?.caused_by !== subject.causedBy || rows[0]?.event_kind !== subject.eventKind
-      || rows[0]?.event_week !== entry.eventWeek || rows[0]?.capability_id !== 'github.core') return fail()
+    const matching = byIdentity.get(
+      `${subject.subjectKind}\0${subject.subjectId}`,
+    ) ?? []
+    if (matching.length !== 1 || matching[0]?.operation_id !== entry.operationId
+      || matching[0]?.caused_by !== subject.causedBy || matching[0]?.event_kind !== subject.eventKind
+      || matching[0]?.event_week !== entry.eventWeek || matching[0]?.capability_id !== 'github.core') return fail()
   }
 }
 
@@ -1117,6 +1437,27 @@ export function replayStorageV3Revocations(
   return applied
 }
 
+function replaySelectedStoreRevocationsExactly(
+  db: Database.Database,
+  state: StorageV3RevocationReplayState,
+): number {
+  if (storageV3MaintenanceStatus(db) === 'pending') completeStorageV3DeletionMaintenance(db)
+  for (const entry of state.entries) {
+    const scopeExists = db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(entry.scopeId) !== undefined
+    if (!scopeExists) continue
+    const plan = planStorageV3ScopeDeletion({
+      db,
+      scopeId: entry.scopeId,
+      asOf: canonicalTimestampForIsoWeek(entry.eventWeek),
+      operationId: entry.operationId,
+    })
+    if (plan.status !== 'delete'
+      || JSON.stringify(canonicalSubjects(plan.subjects, entry.scopeId))
+        !== JSON.stringify(entry.subjects)) return fail()
+  }
+  return replayStorageV3Revocations(db, state)
+}
+
 function closeDeletionInput(raw: StorageV3RevocationDeletionInput): StorageV3RevocationDeletionInput {
   const object = assertPlain(raw, raw.randomBytes === undefined
     ? ['directory', 'installationKey', 'scopeId', 'asOf']
@@ -1146,6 +1487,7 @@ function runDeletion(
   rawInput: StorageV3RevocationDeletionInput,
   synchronize: DirectorySynchronizer,
   failAfterStage?: (stage: StorageV3RevocationDeletionStage) => void,
+  subjectsPerChunk?: number,
 ): StorageV3RevocationDeletionResult {
   const input = closeDeletionInput(rawInput)
   const root = openStorageV3ArtifactRoot(input.directory)
@@ -1155,29 +1497,35 @@ function runDeletion(
     try {
       const selection = readStorageV3MigrationSelection(db)
       if (selection === undefined) return fail()
-      let state = recoverInternal(root, input.installationKey, selection, lease, synchronize)
+      const chain = recoverChainInternal(root, input.installationKey, selection, lease, synchronize)
+      replaySelectedStoreRevocationsExactly(db, chain.state)
       const eventWeek = isoWeekFromCanonicalTimestamp(input.asOf)
-      const pending = state.entries.find((entry) => entry.scopeId === input.scopeId)
+      if (chain.pending !== undefined && chain.pending.scopeId !== input.scopeId) return fail()
+      const recorded = chain.state.entries.find((entry) => entry.scopeId === input.scopeId)
       let operationId: string
-      let subjects: readonly StorageV3DeletionReplaySubject[]
-      if (pending !== undefined) {
-        if (pending.eventWeek !== eventWeek) return fail()
-        operationId = pending.operationId
-        subjects = pending.subjects
+      let state: StorageV3RevocationReplayState
+      if (recorded !== undefined) {
+        if (recorded.eventWeek !== eventWeek || chain.pending !== undefined) return fail()
+        operationId = recorded.operationId
+        state = chain.state
       } else {
         const plan = planStorageV3ScopeDeletion({
           db,
           scopeId: input.scopeId,
           asOf: input.asOf,
+          ...(chain.pending === undefined ? {} : { operationId: chain.pending.operationId }),
           randomBytes: input.randomBytes ?? cryptoRandomBytes,
         })
+        if (plan.eventWeek !== eventWeek || plan.status !== 'delete') return fail()
         operationId = plan.operationId
-        subjects = plan.subjects
         state = appendInternal(root, input.installationKey, selection, lease, {
           scopeId: input.scopeId,
           operationId,
           eventWeek,
-          subjects,
+          subjects: plan.subjects,
+          ...(chain.pending === undefined && subjectsPerChunk !== undefined
+            ? { subjectsPerChunk }
+            : {}),
         }, synchronize)
       }
       failAfterStage?.('intentDurable')
@@ -1218,14 +1566,34 @@ function resumeInternal(
     try {
       const selection = readStorageV3MigrationSelection(db)
       if (selection === undefined) return fail()
-      const state = recoverInternal(
+      const chain = recoverChainInternal(
         root,
         installationKey,
         selection,
         lease,
         synchronize,
       )
-      return replayStorageV3Revocations(db, state)
+      let applied = replaySelectedStoreRevocationsExactly(db, chain.state)
+      let state = chain.state
+      if (chain.pending !== undefined) {
+        const pending = chain.pending
+        const asOf = canonicalTimestampForIsoWeek(pending.eventWeek)
+        const plan = planStorageV3ScopeDeletion({
+          db,
+          scopeId: pending.scopeId,
+          asOf,
+          operationId: pending.operationId,
+        })
+        if (plan.status !== 'delete' || plan.eventWeek !== pending.eventWeek) return fail()
+        state = appendInternal(root, installationKey, selection, lease, {
+          scopeId: pending.scopeId,
+          operationId: pending.operationId,
+          eventWeek: pending.eventWeek,
+          subjects: plan.subjects,
+        }, synchronize)
+        applied += replaySelectedStoreRevocationsExactly(db, state)
+      }
+      return applied
     } finally { if (db.open) db.close() }
   })
 }
@@ -1301,10 +1669,13 @@ export const v3RevocationReplayTestSeams = Object.freeze({
     input: StorageV3RevocationDeletionInput,
     synchronize: DirectorySynchronizer,
     failAfterStage?: (stage: StorageV3RevocationDeletionStage) => void,
+    subjectsPerChunk?: number,
   ): StorageV3RevocationDeletionResult {
     if (typeof synchronize !== 'function'
-      || (failAfterStage !== undefined && typeof failAfterStage !== 'function')) return fail()
-    return runDeletion(input, synchronize, failAfterStage)
+      || (failAfterStage !== undefined && typeof failAfterStage !== 'function')
+      || (subjectsPerChunk !== undefined && (!Number.isSafeInteger(subjectsPerChunk)
+        || subjectsPerChunk <= 0 || subjectsPerChunk > MAX_SUBJECTS_PER_RECORD))) return fail()
+    return runDeletion(input, synchronize, failAfterStage, subjectsPerChunk)
   },
   resumeWithDirectorySynchronizer(
     directory: string,
@@ -1313,5 +1684,23 @@ export const v3RevocationReplayTestSeams = Object.freeze({
   ): number {
     if (typeof synchronize !== 'function') return fail()
     return resumeInternal(directory, installationKey, synchronize)
+  },
+  describeSubjectChunks(
+    subjects: readonly StorageV3DeletionReplaySubject[],
+    scopeId: string,
+    subjectsPerChunk = MAX_SUBJECTS_PER_RECORD,
+  ): Readonly<{
+    subjectCount: number
+    chunkCount: number
+    subjectsPerChunk: number
+    subjectsSha256: string
+  }> {
+    const plan = planSubjectChunks(subjects, scopeId, subjectsPerChunk)
+    return Object.freeze({
+      subjectCount: plan.subjects.length,
+      chunkCount: plan.chunks.length,
+      subjectsPerChunk: plan.subjectsPerChunk,
+      subjectsSha256: plan.subjectsSha256,
+    })
   },
 })

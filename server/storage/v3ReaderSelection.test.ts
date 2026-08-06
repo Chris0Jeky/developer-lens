@@ -175,6 +175,39 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
     } finally { fx.cleanup() }
   })
 
+  it('refuses reads while a physically head-matched chunk group is incomplete', async () => {
+    const fx = await fixture()
+    try {
+      const selected = expectSelected(selectStorageV3Reader(fx.input))
+      selected.db.close()
+      let interrupted = false
+      expect(() => v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
+        directory: fx.root,
+        installationKey: fx.key,
+        scopeId: SCOPE_A,
+        asOf: '2026-08-06T13:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 9),
+      }, (_root, stage) => {
+        if (stage === 'headReplace' && !interrupted) {
+          interrupted = true
+          throw new Error('invented partial chunk interruption')
+        }
+      }, undefined, 1)).toThrow('invented partial chunk interruption')
+
+      expect(selectStorageV3Reader(fx.input))
+        .toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      expect(v3RevocationReplayTestSeams.resumeWithDirectorySynchronizer(
+        fx.root,
+        fx.key,
+        () => {},
+      )).toBe(1)
+      const replay = expectSelected(selectStorageV3Reader(fx.input))
+      expect(replay.db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(SCOPE_A))
+        .toBeUndefined()
+      replay.db.close()
+    } finally { fx.cleanup() }
+  })
+
   it.each([
     'tempDurable',
     'finalLink',
