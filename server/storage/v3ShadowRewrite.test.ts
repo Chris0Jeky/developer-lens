@@ -744,15 +744,8 @@ describe('B1b-ii shadow rewrite', () => {
     const source = sourceDb(), target = new Database(':memory:'), key = Buffer.alloc(32, 31)
     try {
       const result = rewriteStorageV3Shadow({ sourceDb: source, targetDb: target, identityBindings: [], installationKey: key, asOf: '2026-01-01T00:00:00.000Z' })
-      expect(Object.keys(result).sort()).toEqual(['completeB1b', 'copiedClaims', 'copiedLineageEvents', 'copiedScopes', 'mintedIdentifiers', 'omittedExpiredIdentities', 'omittedUnclassifiedLineageEvents', 'schemaVersion', 'selectable', 'status'].sort())
-      // mintedIdentifiers is the equivalence-proof seam: content-free C1 random keys
-      // only, frozen, and the REST of the result still carries no identifier material.
-      expect(Object.isFrozen(result.mintedIdentifiers)).toBe(true)
-      for (const minted of result.mintedIdentifiers) {
-        expect(minted).toMatch(/^(?:scope-|cl_|job-|snap-|ckpt-|cov-|ev-|art-|op-|del-|obs-|pr-|event-)[0-9a-f]{64}$/)
-      }
-      const { mintedIdentifiers: _minted, ...counts } = result
-      expect(JSON.stringify(counts)).not.toMatch(/provider|scope-[0-9a-f]{64}/)
+      expect(Object.keys(result).sort()).toEqual(['completeB1b', 'copiedClaims', 'copiedLineageEvents', 'copiedScopes', 'omittedExpiredIdentities', 'omittedUnclassifiedLineageEvents', 'schemaVersion', 'selectable', 'status'].sort())
+      expect(JSON.stringify(result)).not.toMatch(/provider|scope-[0-9a-f]{64}/)
     } finally { source.close(); target.close() }
   })
 })

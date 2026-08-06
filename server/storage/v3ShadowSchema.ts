@@ -219,6 +219,29 @@ const ownerIdentityIndexSqlBlock = ownerIdentityRegistry
   .join('\n')
 
 /**
+ * The unique index alone is REPLACE-bypassable: INSERT OR REPLACE satisfies it by
+ * DELETING the other scope's row, silently moving a C1 identity across scopes (PR #138
+ * review). A BEFORE INSERT trigger fires before conflict resolution deletes anything,
+ * so the cross-scope insert aborts regardless of the caller's conflict clause.
+ */
+const ownerIdentityTriggerName = (tableName: string): string => `storage_v3_owner_identity_guard_${tableName}`
+export const STORAGE_V3_SHADOW_OWNER_IDENTITY_TRIGGER_NAMES = Object.freeze(
+  ownerIdentityRegistry.map(({ tableName }) => ownerIdentityTriggerName(tableName)),
+)
+const ownerIdentityTriggerSqlBlock = ownerIdentityRegistry
+  .map(({ tableName, idColumn }) =>
+    `CREATE TRIGGER IF NOT EXISTS ${ownerIdentityTriggerName(tableName)}
+BEFORE INSERT ON ${tableName}
+WHEN EXISTS (
+  SELECT 1 FROM ${tableName} AS other
+  WHERE other.${idColumn} = NEW.${idColumn} AND other.scope_id IS NOT NEW.scope_id
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY');
+END;`)
+  .join('\n')
+
+/**
  * `coverage_ledger` and `coverage_observation` share the `cov-` id space (both are
  * registered lineage owners of subject kind `coverage`), so a per-table unique index
  * cannot see a duplicate that lands in the other table.
@@ -754,6 +777,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS lineage_retention_event_identity ON lineage_ev
   scope_id, subject_kind, subject_id, event_kind, event_week
 ) WHERE event_kind IN ('scope_alias_expired', 'c2_retention_expired');
 ${ownerIdentityIndexSqlBlock}
+${ownerIdentityTriggerSqlBlock}
 ${immutableTriggerSqlBlock}
 ${immutableInsertTriggerSqlBlock}
 ${identityBindingTriggerSqlBlock}

@@ -149,17 +149,18 @@ residual_risks:
      registry closes over all 20 shadow tables, and the CLI exercises bridge-present migration
      followed by selected-store deletion. The slice-A v2 planner remains only as the v2-era seam
      under its own unit tests'
-  - 'graphColours refinement is super-linear in identifier count, and the acceptance-time
-     fullEquivalenceShadowChecksum (PR #127) is now the dominant term because it colours every
-     minted identity column across all tables; fine for fixtures, a practical hang risk at
-     multi-year scale — measure and budget in PR B-2 before any real migration, folding in the
-     #133 preserved-scope-id remint-metadata redesign (confirmed digest escape, reproduced
-     2026-08-05)'
+  - 'RESOLVED by PR B-2: graphColours and both alpha-rename digests are DELETED — the mint-order
+     equivalence proof (rewrite reports created identifiers through a private collector channel;
+     digest index-encodes them, everything else literal) is linear, closes the #133 preserved-id
+     escape, and is measured: 25,469 source rows through the full journey in ~6.3 s on this box,
+     budgets asserted in the opt-in DEVELOPER_LENS_SCALE lane plus an always-on smoke variant'
   - '#135 tracks eight residual semantic-coherence refinements to the evidence resolve contract
      (PR #132 round-three review) — MEDIUM defense-in-depth, natural slice when the contract is
      next touched'
   - 'B4 completion only unblocks LIFE-03; a first real migration/connector also requires LIFE-03
-     backup/grace/restore/tombstone-replay proof and #86 V2 alias-bearing coverage remint'
+     backup/grace/restore/tombstone-replay proof and the activation-enforcement alignment. The
+     #86 storage half is CLOSED by PR B-2 (cov- registry CHECK + UNIQUE(coverage_id) + fixture
+     migration); both halves of #86 now hold'
   - '#76 carries binding constraints on DL-SPINE-05: the source_diversity clamp decision,
      producer-absence limiting codes, canonical coverage-code registration'
   - '#86 RESOLVED at the connector on fable/boundary-and-reachability: coverageId is a required
@@ -168,9 +169,9 @@ residual_risks:
      The replay-determinism constraint still binds and is now the CALLER''s: a replayed job must
      supply the same (jobId, coverageId, jobStartedAt) it supplied the first time, or the storage
      payload hash changes and persistIncrementalGithubCoreTransition fails closed on
-     COLLECTION_JOB_ID_COLLISION. STILL OPEN: the incremental.ts coverage_id CHECK is deliberately
-     unchanged and existing fixture stores keep alias-bearing ids, so the migration remains owed
-     before the q-5 github.core real-collection runs'
+     COLLECTION_JOB_ID_COLLISION. The storage half is CLOSED by PR B-2: the incremental.ts
+     coverage_id CHECK admits only the cov- registry with UNIQUE(coverage_id), every fixture is
+     migrated, and a pre-#86 on-disk store deliberately fails closed at schema validation'
   - 'LIFE-01 transcript replay proves structural lineage only; external authenticity of opaque
      digests remains a future trusted-adapter boundary, with no runtime caller'
   - 'frozen or tracked-only: #68, #69'

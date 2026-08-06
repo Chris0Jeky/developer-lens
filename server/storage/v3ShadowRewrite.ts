@@ -104,6 +104,17 @@ export interface StorageV3ShadowRewriteOptions {
   readonly randomBytes?: (size: number) => Buffer
   /** Test-only failure injection. The callback receives no source/target values. */
   readonly failAfterStage?: (stage: StorageV3ShadowRewriteStage) => void
+  /**
+   * Receives, in creation order, every identifier this run creates that a second run
+   * over the same source creates DIFFERENTLY: entropy-minted C1 keys plus reminted
+   * claim ids (deterministic functions of minted scope ids). Preserved source
+   * identifiers and derived legacy deletion ids are deliberately never reported —
+   * both targets must agree on those literally. This is a private channel for the
+   * orchestrator's equivalence proof (#133): the values are content-free C1 keys and
+   * they never appear in the rewrite RESULT, so no caller can serialize an ordered
+   * mint list that correlates with source traversal (PR #138 review).
+   */
+  readonly mintedCollector?: (value: string) => void
 }
 
 export interface StorageV3ShadowRewriteResult {
@@ -116,16 +127,6 @@ export interface StorageV3ShadowRewriteResult {
   readonly copiedLineageEvents: number
   readonly omittedExpiredIdentities: number
   readonly omittedUnclassifiedLineageEvents: number
-  /**
-   * Every identifier this run created that a second run over the same source would
-   * create DIFFERENTLY, in creation order: entropy-minted C1 keys plus reminted
-   * claim ids (deterministic functions of minted scope ids). Preserved source
-   * identifiers and derived legacy deletion ids are deliberately absent — both
-   * targets must agree on those literally. Consumed ONLY by the orchestrator's
-   * equivalence proof (#133); the values are content-free C1 keys, never persisted
-   * as a list, and never exposed past the migration boundary.
-   */
-  readonly mintedIdentifiers: readonly string[]
 }
 
 type Row = Record<string, unknown>
@@ -697,7 +698,6 @@ export function rewriteStorageV3Shadow(
     let copiedLineageEvents = 0
     let omittedExpiredIdentities = 0
     let omittedUnclassifiedLineageEvents = 0
-    const mintedInOrder: string[] = []
 
     options.targetDb.transaction(() => {
       const checkpoint = (stage: StorageV3ShadowRewriteStage): void => {
@@ -709,7 +709,7 @@ export function rewriteStorageV3Shadow(
         }
       }
       const recordMinted = (value: string): string => {
-        mintedInOrder.push(value)
+        options.mintedCollector?.(value)
         return value
       }
       const mintId = (prefix: string): string => recordMinted(mint(prefix, usedKeys, entropy))
@@ -1501,7 +1501,6 @@ export function rewriteStorageV3Shadow(
       copiedLineageEvents,
       omittedExpiredIdentities,
       omittedUnclassifiedLineageEvents,
-      mintedIdentifiers: Object.freeze([...mintedInOrder]),
     })
   } catch (error) {
     if (error instanceof StorageV3ShadowRewriteError) throw error

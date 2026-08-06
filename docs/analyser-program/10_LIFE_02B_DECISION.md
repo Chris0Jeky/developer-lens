@@ -92,7 +92,7 @@ C1 anchor.
 | `commit_observation`, `pull_request_fact`, `dated_event_observation` | Inherit the exact repository scope; register as descendants with class-appropriate retention anchors. |
 | `import_run` | Existing rows lack safe time/scope ownership: delete them during migration. Future rows bind participating scopes and an import time. |
 | `coverage_observation` | Existing aggregates lack safe scope membership/time: delete them during migration and report absence honestly. Future aggregates bind every member scope; revoking one deletes the whole aggregate. |
-| V2 bridge tables | Keep the present C0 synthetic-only domain explicit. `activation_card` provenance remains refused. Any future real writer must add scope/deletion metadata first. |
+| V2 bridge tables | Keep the present C0 synthetic-only domain explicit. *(Superseded 2026-08-06, PR #138:)* migration now SUPPORTS structurally valid `activation_card` provenance — the q-5 real store is born with it — while SERVING remains synthetic-only (`V2_ACTIVATION_CARD_NOT_REVIEWED` unchanged). The deletion metadata question is answered by classification, not new columns: `v2_store_provenance` is STORE-GLOBAL (it describes the whole store's origin, not any scope), so it survives scope deletion by design and falls with the store under LIFE-03 whole-store deletion; `activation_card_id` is a content-free opaque local card identifier. `v2_coverage_record` is delete-disposition in the v3 target (B3). |
 
 Legacy repository binding is never inferred from similarity. The stored `provider_id` and
 `analytical_key` are independent domain-separated HMACs over a raw provider ID; one alias cannot be

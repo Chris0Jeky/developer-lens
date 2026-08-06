@@ -211,7 +211,11 @@ export function orchestrateStorageV3ShadowMigration(
       || primary.db === options.sourceDb
       || replay.db === options.sourceDb
     ) throw new Error()
-    const primaryRun = rewriteStorageV3Shadow({
+    // The mint lists are proof material scoped to this call: collected through the
+    // private channel, consumed by the digests below, never part of any result.
+    const primaryMinted: string[] = []
+    const replayMinted: string[] = []
+    rewriteStorageV3Shadow({
       sourceDb: options.sourceDb,
       targetDb: primary.db,
       identityBindings: options.identityBindings,
@@ -219,8 +223,9 @@ export function orchestrateStorageV3ShadowMigration(
       asOf: options.asOf,
       randomBytes: options.primaryRandomBytes ?? cryptoRandomBytes,
       failAfterStage: (stage) => options.failAfterStage?.('primary', stage),
+      mintedCollector: (value) => { primaryMinted.push(value) },
     })
-    const replayRun = rewriteStorageV3Shadow({
+    rewriteStorageV3Shadow({
       sourceDb: options.sourceDb,
       targetDb: replay.db,
       identityBindings: options.identityBindings,
@@ -228,6 +233,7 @@ export function orchestrateStorageV3ShadowMigration(
       asOf: options.asOf,
       randomBytes: options.replayRandomBytes ?? cryptoRandomBytes,
       failAfterStage: (stage) => options.failAfterStage?.('replay', stage),
+      mintedCollector: (value) => { replayMinted.push(value) },
     })
     const closedPrimary = primary
     const closedReplay = replay
@@ -254,9 +260,9 @@ export function orchestrateStorageV3ShadowMigration(
     assertProcessInputsAbsent(replay.db, options.identityBindings, options.installationKey)
     // The mint-order equivalence proof: identical mint counts, then per-target
     // digests over every column of every table with minted values index-encoded.
-    if (primaryRun.mintedIdentifiers.length !== replayRun.mintedIdentifiers.length) throw new Error()
-    const digest = mintOrderShadowDigest(primary.db, primaryRun.mintedIdentifiers)
-    if (digest !== mintOrderShadowDigest(replay.db, replayRun.mintedIdentifiers)) throw new Error()
+    if (primaryMinted.length !== replayMinted.length) throw new Error()
+    const digest = mintOrderShadowDigest(primary.db, primaryMinted)
+    if (digest !== mintOrderShadowDigest(replay.db, replayMinted)) throw new Error()
     if (!sourceFingerprint(options.sourceDb).equals(sourceBefore)) throw new Error()
     // The digest binds alias-shaped material; the reported checksum is a
     // domain-separated re-hash that can name the run without exposing it.

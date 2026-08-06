@@ -9,6 +9,7 @@ import {
   STORAGE_V3_SHADOW_APPLICATION_ID,
   STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
   STORAGE_V3_SHADOW_COVERAGE_IDENTITY_TRIGGER_NAMES,
+  STORAGE_V3_SHADOW_OWNER_IDENTITY_TRIGGER_NAMES,
   STORAGE_V3_SHADOW_OWNER_IDENTITY_INDEX_NAMES,
   STORAGE_V3_SHADOW_RESULT,
   STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT,
@@ -59,6 +60,7 @@ describe('storage-v3 B2a shadow schema', () => {
           ...STORAGE_V3_SHADOW_IMMUTABLE_INSERT_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_IDENTITY_BINDING_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_COVERAGE_IDENTITY_TRIGGER_NAMES,
+          ...STORAGE_V3_SHADOW_OWNER_IDENTITY_TRIGGER_NAMES,
           ...STORAGE_V3_SHADOW_LINEAGE_OWNER_TRIGGER_NAMES,
           ...casTriggerNames,
           STORAGE_V3_SHADOW_C2_RETENTION_OWNER_TRIGGER_NAME,
@@ -411,7 +413,7 @@ describe('storage-v3 B2a shadow schema', () => {
       insert.run(scopeA, id('snap-'), id('job-'), 'github.core', 'closed')
       // UNIQUE (scope_id, snapshot_id, job_id) never enforced this: it contains the PK.
       expect(() => insert.run(scopeA, id('snap-', 'b'), id('job-'), 'github.core', 'closed'))
-        .toThrow(/UNIQUE constraint failed/i)
+        .toThrow(/UNIQUE constraint failed|STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY/i)
     } finally {
       db.close()
     }
@@ -454,15 +456,15 @@ describe('storage-v3 B2a shadow schema', () => {
       insertJob.run(scopeA, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
       insertJob.run(scopeB, id('job-', 'b'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
       expect(() => insertJob.run(scopeB, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete'))
-        .toThrow(/UNIQUE constraint failed/i)
+        .toThrow(/UNIQUE constraint failed|STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY/i)
       const insertSnapshot = db.prepare('INSERT INTO source_snapshot (scope_id, snapshot_id, job_id, capability_id, status) VALUES (?, ?, ?, ?, ?)')
       insertSnapshot.run(scopeA, id('snap-'), id('job-'), 'github.core', 'closed')
       expect(() => insertSnapshot.run(scopeB, id('snap-'), id('job-', 'b'), 'github.core', 'closed'))
-        .toThrow(/UNIQUE constraint failed/i)
+        .toThrow(/UNIQUE constraint failed|STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY/i)
       const insertCoverage = db.prepare('INSERT INTO coverage_ledger (scope_id, coverage_id, job_id, capability_id, status, observed_units, retryable, limitation_code) VALUES (?, ?, ?, ?, ?, 0, 0, ?)')
       insertCoverage.run(scopeA, id('cov-'), id('job-'), 'github.core', 'failed', 'NONE')
       expect(() => insertCoverage.run(scopeB, id('cov-'), id('job-', 'b'), 'github.core', 'failed', 'NONE'))
-        .toThrow(/UNIQUE constraint failed/i)
+        .toThrow(/UNIQUE constraint failed|STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY/i)
       // coverage_observation shares the cov- id space, so a per-table index cannot see it.
       const insertObservation = db.prepare('INSERT INTO coverage_observation (scope_id, coverage_id, capability_id, status, limitation_code, observed_units) VALUES (?, ?, ?, ?, ?, 0)')
       expect(() => insertObservation.run(scopeB, id('cov-'), 'github.core', 'complete', 'NONE'))
@@ -473,6 +475,25 @@ describe('storage-v3 B2a shadow schema', () => {
       insertObservation.run(scopeB, id('cov-', 'b'), 'github.core', 'complete', 'NONE')
       expect(() => insertCoverage.run(scopeA, id('cov-', 'b'), id('job-'), 'github.core', 'failed', 'NONE'))
         .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY')
+    } finally {
+      db.close()
+    }
+  })
+
+  it('refuses INSERT OR REPLACE from moving a C1 owner across scopes (PR #138 review)', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeB)
+      db.prepare('INSERT INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(scopeA, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete')
+      // OR REPLACE would satisfy the unique index by DELETING scope A's row; the
+      // BEFORE INSERT guard fires before conflict resolution and aborts instead.
+      expect(() => db.prepare('INSERT OR REPLACE INTO collection_job (scope_id, job_id, capability_id, storage_contract_version, query_version, source_api_version, consent_revision, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?)')
+        .run(scopeB, id('job-'), 'github.core', '2.2.0', 'github.core.v1', '2026-03-10', 'consent-v3', 'complete'))
+        .toThrow('STORAGE_V3_SHADOW_CROSS_SCOPE_IDENTITY')
+      expect(db.prepare('SELECT scope_id FROM collection_job WHERE job_id = ?').pluck().get(id('job-'))).toBe(scopeA)
     } finally {
       db.close()
     }
