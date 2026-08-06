@@ -322,6 +322,15 @@ async function expectRunnerFailure(input: unknown): Promise<void> {
   })
 }
 
+async function expectRunnerFailureWithTestGrant(input: unknown): Promise<void> {
+  grantMock.acceptTestGrant = true
+  try {
+    await expectRunnerFailure(input)
+  } finally {
+    grantMock.acceptTestGrant = false
+  }
+}
+
 function count(db: Database.Database, table: string): number {
   return Number(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get())
 }
@@ -462,14 +471,14 @@ describe('default-off github.core activation runner', () => {
     const transport = fetchFixture([])
     const { coverageId: _omitted, ...withoutCoverageId } = runnerInput(fixture, db, transport.fetch)
 
-    await expectRunnerFailure(withoutCoverageId)
+    await expectRunnerFailureWithTestGrant(withoutCoverageId)
     for (const coverageId of [
       `github.core:repo-alias:${firstJobStart}`,
       'cov-not-hex',
       `cov-${'a'.repeat(63)}`,
       `cov-${'A'.repeat(64)}`,
     ]) {
-      await expectRunnerFailure(runnerInput(fixture, db, transport.fetch, { coverageId }))
+      await expectRunnerFailureWithTestGrant(runnerInput(fixture, db, transport.fetch, { coverageId }))
     }
 
     expect(transport.calls).toHaveLength(0)
@@ -619,7 +628,7 @@ describe('default-off github.core activation runner', () => {
     }
     const transport = fetchFixture([])
 
-    await expectRunnerFailure(runnerInput(changedFixture, db, transport.fetch, {
+    await expectRunnerFailureWithTestGrant(runnerInput(changedFixture, db, transport.fetch, {
       jobId: 'fixture-reconsent-required',
       coverageId: secondCoverageId,
       jobStartedAt: secondJobStart,
@@ -657,12 +666,12 @@ describe('default-off github.core activation runner', () => {
       scopeAlias: `repo-${'0'.repeat(64)}`,
     })
 
-    await expectRunnerFailure({ ...validInput, grant: wrongKeyGrant })
-    await expectRunnerFailure({ ...validInput, grant: wrongScopeGrant })
-    await expectRunnerFailure({ ...validInput, expectedTaskCardSha256: '0'.repeat(64) })
-    await expectRunnerFailure(runnerInput(invalidCardFixture, db, transport.fetch, { openStore }))
-    await expectRunnerFailure({ ...validInput, card: card(5) })
-    await expectRunnerFailure(runnerInput(unsplittableFixture, db, transport.fetch, { openStore }))
+    await expectRunnerFailureWithTestGrant({ ...validInput, grant: wrongKeyGrant })
+    await expectRunnerFailureWithTestGrant({ ...validInput, grant: wrongScopeGrant })
+    await expectRunnerFailureWithTestGrant({ ...validInput, expectedTaskCardSha256: '0'.repeat(64) })
+    await expectRunnerFailureWithTestGrant(runnerInput(invalidCardFixture, db, transport.fetch, { openStore }))
+    await expectRunnerFailureWithTestGrant({ ...validInput, card: card(5) })
+    await expectRunnerFailureWithTestGrant(runnerInput(unsplittableFixture, db, transport.fetch, { openStore }))
 
     expect(storeOpens).toBe(0)
     expect(transport.calls).toHaveLength(0)
