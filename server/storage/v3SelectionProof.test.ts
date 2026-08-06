@@ -85,6 +85,11 @@ describe('LIFE-03 durable migration selection proof', () => {
     try {
       expect(v3SelectionProofTestSeams.publishWithDirectorySynchronizer(fx.root, selection, fx.key, noop)).toMatchObject({ status: 'published', selection })
       expect(readFileSync(fx.finalPath).toString('utf8').endsWith('\n')).toBe(true)
+      const marker = JSON.parse(readFileSync(fx.finalPath, 'utf8')) as Record<string, unknown>
+      expect(marker).not.toHaveProperty('taskId')
+      expect(readFileSync(fx.finalPath, 'utf8')).not.toContain('invented-selection-proof-task')
+      expect(typeof marker.taskFingerprint).toBe('string')
+      expect(marker.taskFingerprint).not.toBe(fx.key.fingerprint)
       const handle = verifyStorageV3MigrationSelectionProof(fx.root, fx.key)
       expect(Object.keys(handle)).toEqual([])
       expect(consumeStorageV3MigrationSelectionProof(handle, fx.root, fx.key)).toEqual(selection)
@@ -108,10 +113,11 @@ describe('LIFE-03 durable migration selection proof', () => {
       expect(() => v3SelectionProofTestSeams.publishWithDirectorySynchronizer(fx.root, selection, fx.key, sync, 'finalLink')).toThrow(StorageV3SelectionProofError)
       expect(lstatSync(fx.tempPath).nlink).toBe(2)
       expect(lstatSync(fx.finalPath).nlink).toBe(2)
-      expect(verifyStorageV3MigrationSelectionProof(fx.root, fx.key)).toBeDefined()
-      expect(v3SelectionProofTestSeams.publishWithDirectorySynchronizer(fx.root, selection, fx.key, sync)).toMatchObject({ status: 'replayed' })
+      const handle = v3SelectionProofTestSeams.verifyWithDirectorySynchronizer(fx.root, fx.key, sync)
+      expect(consumeStorageV3MigrationSelectionProof(handle, fx.root, fx.key)).toEqual(selection)
       expect(existsSync(fx.tempPath)).toBe(false)
-      expect(stages).toEqual(['tempClaim', 'tempDurable', 'finalLink', 'tempRemoval'])
+      expect(stages).toEqual(['tempClaim', 'tempDurable', 'finalLink', 'finalLink', 'tempRemoval'])
+      expect(v3SelectionProofTestSeams.publishWithDirectorySynchronizer(fx.root, selection, fx.key, noop)).toMatchObject({ status: 'replayed' })
     } finally { fx.cleanup() }
   })
 
@@ -200,6 +206,11 @@ describe('LIFE-03 durable migration selection proof', () => {
       rmSync(fx.finalPath)
       writeFileSync(join(fx.rootPath, `${STORAGE_V3_SELECTION_PROOF_NAMES.final}.sidecar`), Buffer.from('x'))
       expect(() => v3SelectionProofTestSeams.publishWithDirectorySynchronizer(fx.root, selection, fx.key, noop)).toThrow(StorageV3SelectionProofError)
+      rmSync(join(fx.rootPath, `${STORAGE_V3_SELECTION_PROOF_NAMES.final}.sidecar`))
+      const caseVariant = join(fx.rootPath, 'Migration-Selection-V1.JSON')
+      writeFileSync(caseVariant, Buffer.from('invented foreign case variant\n'))
+      expect(() => v3SelectionProofTestSeams.publishWithDirectorySynchronizer(fx.root, selection, fx.key, noop)).toThrow(StorageV3SelectionProofError)
+      expect(readFileSync(caseVariant, 'utf8')).toBe('invented foreign case variant\n')
     } finally { fx.cleanup(); other.cleanup() }
   })
 

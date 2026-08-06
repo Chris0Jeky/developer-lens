@@ -215,6 +215,40 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
     } finally { fx.cleanup() }
   })
 
+  it('refuses case-variant reserved marker names before receipt commit', async () => {
+    const fx = await fixture()
+    try {
+      const caseVariant = join(fx.root, 'Migration-Selection-V1.JSON')
+      const foreign = Buffer.from('invented case-variant marker\n')
+      writeFileSync(caseVariant, foreign, { flag: 'wx', mode: 0o600 })
+      expect(selectStorageV3Reader(fx.input)).toEqual({
+        reader: 'unavailable', code: 'v3-selection-selected-refused',
+      })
+      expect(readFileSync(caseVariant)).toEqual(foreign)
+      const selected = openSelectedStorageV3Store(fx.root)
+      expect(readStorageV3MigrationSelection(selected)).toBeUndefined()
+      selected.close()
+    } finally { fx.cleanup() }
+  })
+
+  it('runs the exact-root durability preflight under the writer lease before receipt commit', async () => {
+    const fx = await fixture()
+    try {
+      let calls = 0
+      let leaseVisible = false
+      const selected = expectSelected(v3ReaderSelectionTestSeams.selectWithProofPreflight(fx.input, (root) => {
+        calls += 1
+        leaseVisible = existsSync(storageV3WriterLeasePath(root))
+      }, SUCCESS_AT))
+      expect(calls).toBe(1)
+      expect(leaseVisible).toBe(true)
+      expect(readStorageV3MigrationSelection(selected.db)).toMatchObject({
+        successfulReportAt: SUCCESS_AT,
+      })
+      selected.db.close()
+    } finally { fx.cleanup() }
+  })
+
   it('rolls back an interrupted receipt commit, closes the provisional handle, and resumes', async () => {
     const fx = await fixture()
     try {

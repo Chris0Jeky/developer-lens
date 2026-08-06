@@ -2,7 +2,6 @@ import Database from 'better-sqlite3'
 import { lstatSync, readdirSync } from 'node:fs'
 import { dirname } from 'node:path'
 import {
-  assertStorageV3ArtifactDirectorySyncSupported,
   assertStorageV3ArtifactRootInstallationKey,
   openStorageV3ArtifactRoot,
   storageV3ArtifactFilePath,
@@ -34,6 +33,7 @@ import {
 } from './v3WriterLease.js'
 import {
   publishStorageV3MigrationSelectionProof,
+  assertStorageV3SelectionProofDurability,
   STORAGE_V3_SELECTION_PROOF_NAMES,
   v3SelectionProofTestSeams,
   type StorageV3MigrationSelectionProofPublication,
@@ -80,6 +80,7 @@ type SelectionProofPublisher = (
   root: ReturnType<typeof openStorageV3ArtifactRoot>,
   installationKey: TaskInstallationKeyHandle,
 ) => StorageV3MigrationSelectionProofPublication
+type SelectionProofPreflight = (root: ReturnType<typeof openStorageV3ArtifactRoot>) => void
 
 const fallback = (code: StorageV3ReaderSelectionCode): StorageV3ReaderSelection =>
   Object.freeze({ reader: 'legacy-json' as const, code })
@@ -100,7 +101,8 @@ function probeSelectionProofMarker(root: ReturnType<typeof openStorageV3Artifact
   const finalPath = storageV3ArtifactFilePath(root, STORAGE_V3_SELECTION_PROOF_NAMES.final)
   let names: string[]
   try { names = readdirSync(dirname(finalPath)) } catch { return 'ambiguous' }
-  return names.some((name) => name.startsWith(STORAGE_V3_SELECTION_PROOF_NAMES.final))
+  const reservedPrefix = STORAGE_V3_SELECTION_PROOF_NAMES.final.toLowerCase()
+  return names.some((name) => name.toLowerCase().startsWith(reservedPrefix))
     ? 'present'
     : 'absent'
 }
@@ -225,7 +227,7 @@ function selectStorageV3ReaderInternal(
   input: StorageV3ReaderSelectionInput,
   beforeReceiptCommit?: () => void,
   publishProof: SelectionProofPublisher = publishStorageV3MigrationSelectionProof,
-  preflightProof: () => void = assertStorageV3ArtifactDirectorySyncSupported,
+  preflightProof: SelectionProofPreflight = assertStorageV3SelectionProofDurability,
   issueSuccessReport: (input: {
     legacySourceId: string
     selectedArtifactId: string
@@ -250,8 +252,6 @@ function selectStorageV3ReaderInternal(
     const initialProofPresence = probeSelectionProofMarker(artifactRoot)
     if (initialPresence === 'ambiguous' || initialProofPresence === 'ambiguous') return selectedUnavailable()
     protectedSelection = initialPresence === 'present' || initialProofPresence === 'present'
-    stage = 'proof'
-    preflightProof()
     stage = 'lease'
     const selected = withStorageV3WriterLease(artifactRoot, () => {
       const leasePresence = probeSelectionReceipt(artifactRoot)
@@ -260,6 +260,10 @@ function selectStorageV3ReaderInternal(
         throw new StorageV3SelectedRefusalError()
       }
       if (leasePresence === 'present' || leaseProofPresence === 'present') protectedSelection = true
+      if (leasePresence === 'absent' && leaseProofPresence === 'absent') {
+        stage = 'proof'
+        preflightProof(artifactRoot)
+      }
       stage = 'store'
       const db = openSelectedStorageV3Store(closed.directory)
       openedDb = db
@@ -393,7 +397,7 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
   },
   selectWithProofPreflight(
     input: StorageV3ReaderSelectionInput,
-    preflight: () => void,
+    preflight: SelectionProofPreflight,
     successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof preflight !== 'function') return fallback('v3-selection-request-invalid')
