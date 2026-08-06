@@ -724,6 +724,56 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
     } finally { fx.cleanup() }
   })
 
+  it('re-fsyncs an exact reopened manifest before linking final names or promoting the catalogue', async () => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:36:09Z',
+        artifactId: `art-${'7'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123609Z.sqlite'
+      const manifestTempPath = join(fx.root, `${locator}.tmp.manifest.json`)
+      const crashInput = {
+        ...input,
+        failAtPhase: (phase: Parameters<NonNullable<StorageV3BackupInput['failAtPhase']>>[0]) => {
+          if (phase === 'manifestBeforeFsync') throw new Error('invented manifest fsync crash')
+        },
+      }
+      await expect(createStorageV3MigrationBackup(crashInput)).rejects.toBeInstanceOf(StorageV3BackupError)
+      const exactBytes = readFileSync(manifestTempPath)
+      const inode = statSync(manifestTempPath).ino
+      expect(exactBytes.at(-1)).toBe(0x0a)
+      const attemptBefore = fx.db.prepare(
+        'SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt',
+      ).get()
+      const catalogueBefore = fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)
+
+      await expect(recoverStorageV3MigrationBackup(crashInput)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(readFileSync(manifestTempPath).equals(exactBytes)).toBe(true)
+      expect(statSync(manifestTempPath).ino).toBe(inode)
+      expect(existsSync(join(fx.root, locator))).toBe(false)
+      expect(existsSync(join(fx.root, `${locator}.manifest.json`))).toBe(false)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt',
+      ).get()).toEqual(attemptBefore)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)).toEqual(catalogueBefore)
+
+      const recovered = await recoverStorageV3MigrationBackup(input)
+      expect(recovered.locator).toBe(locator)
+      expect(existsSync(join(fx.root, locator))).toBe(true)
+      expect(existsSync(join(fx.root, `${locator}.manifest.json`))).toBe(true)
+      expect(existsSync(manifestTempPath)).toBe(false)
+    } finally { fx.cleanup() }
+  })
+
   it('rejects an unbound staged provisional without changing its bytes, inode, or catalogue', async () => {
     const fx = await fixture()
     try {

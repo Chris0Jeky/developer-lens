@@ -75,6 +75,7 @@ export type StorageV3BackupPhase =
   | 'partialSqliteWrite'
   | 'sqliteSnapshotBeforeHash'
   | 'partialManifestWrite'
+  | 'manifestBeforeFsync'
 
 export const STORAGE_V3_BACKUP_STAGES = [
   'intentCommitted',
@@ -326,9 +327,16 @@ function manifestIsExactOrPrefix(descriptor: number, expected: Buffer): 'exact' 
   return size === BigInt(expected.length) ? 'exact' : 'prefix'
 }
 
-function writeManifestAtZero(path: string, descriptor: number, expectedNlink: bigint, bytes: Buffer): void {
+function writeManifestAtZero(
+  path: string,
+  descriptor: number,
+  expectedNlink: bigint,
+  bytes: Buffer,
+  beforeFsync?: () => void,
+): void {
   ftruncateSync(descriptor, 0)
   if (writeSync(descriptor, bytes, 0, bytes.length, 0) !== bytes.length) fail()
+  beforeFsync?.()
   fsyncSync(descriptor)
   assertDescriptorPath(path, descriptor, expectedNlink)
   if (!readDescriptorExactly(descriptor, bytes.length).equals(bytes)) fail()
@@ -674,7 +682,13 @@ function attempt(
         })
         assertRecordedIdentity(manifestTempPath, manifestDescriptor, 1n, attemptState.manifestDev, attemptState.manifestIno)
         input.failAtPhase?.('partialManifestWrite')
-        writeManifestAtZero(manifestTempPath, manifestDescriptor, 1n, expectedManifest.bytes)
+        writeManifestAtZero(
+          manifestTempPath,
+          manifestDescriptor,
+          1n,
+          expectedManifest.bytes,
+          () => input.failAtPhase?.('manifestBeforeFsync'),
+        )
       } else {
         manifestDescriptor = openBoundDescriptor(
           manifestTempPath,
@@ -686,12 +700,24 @@ function attempt(
         assertRecordedIdentity(manifestTempPath, manifestDescriptor, existingManifestFinal === undefined ? 1n : 2n, attemptState.manifestDev, attemptState.manifestIno)
         const manifestState = manifestIsExactOrPrefix(manifestDescriptor, expectedManifest.bytes)
         if (manifestState === 'invalid') fail()
-        if (manifestState === 'prefix') writeManifestAtZero(
-          manifestTempPath,
-          manifestDescriptor,
-          existingManifestFinal === undefined ? 1n : 2n,
-          expectedManifest.bytes,
-        )
+        if (manifestState === 'prefix') {
+          writeManifestAtZero(
+            manifestTempPath,
+            manifestDescriptor,
+            existingManifestFinal === undefined ? 1n : 2n,
+            expectedManifest.bytes,
+            () => input.failAtPhase?.('manifestBeforeFsync'),
+          )
+        } else {
+          input.failAtPhase?.('manifestBeforeFsync')
+          fsyncSync(manifestDescriptor)
+          assertDescriptorPath(
+            manifestTempPath,
+            manifestDescriptor,
+            existingManifestFinal === undefined ? 1n : 2n,
+          )
+          if (!readDescriptorExactly(manifestDescriptor, expectedManifest.bytes.length).equals(expectedManifest.bytes)) fail()
+        }
         if (existingManifestFinal !== undefined) assertHardLinkToDescriptor(manifestPath, manifestDescriptor)
       }
       const manifestSha256 = sha256(expectedManifest.bytes)
