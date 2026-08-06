@@ -480,12 +480,13 @@ describe('storage-v3 B1a proposal', () => {
         }
         if (target && /(?:^|[\\/])v3ArtifactCatalogue(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
-          if (![ 
+          const allowedSourcePaths = [
             'server/storage/v3Deletion.ts',
             'server/storage/v3StoreFiles.ts',
             'server/storage/v3WriterLease.ts',
             'server/storage/v3Backup.ts',
-          ].includes(sourcePath)) {
+          ]
+          if (!allowedSourcePaths.includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }
