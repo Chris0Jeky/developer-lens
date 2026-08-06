@@ -1,4 +1,4 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto'
+import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
 import { constants, type BigIntStats } from 'node:fs'
 import { lstat, open, realpath, type FileHandle } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
@@ -49,6 +49,9 @@ export type TaskInstallationKeyHandle = Readonly<{
   fingerprint: string
   aliases: InstallationAliases
 }>
+
+const HANDLE_KEYS = new WeakMap<object, Buffer>()
+const TASK_INSTALLATION_BINDING_DOMAIN = 'developer-lens.storage-v3-backup-key-binding.v1' as const
 
 type ClosedInput = Readonly<{
   workspaceRoot: string
@@ -275,8 +278,29 @@ function createOpaqueHandle(
   }
   const aliases = createInstallationAliases(key)
   for (const aliasFunction of Object.values(aliases)) Object.freeze(aliasFunction)
-  return Object.freeze({ taskId, fingerprint, aliases: Object.freeze(aliases) })
+  const handle = Object.freeze({ taskId, fingerprint, aliases: Object.freeze(aliases) })
+  HANDLE_KEYS.set(handle, Buffer.from(key))
+  return handle
 }
+
+/** Bind one canonical body digest to the opaque task key; no raw-key or general HMAC oracle. */
+export function bindTaskInstallationKeyBody(
+  handle: TaskInstallationKeyHandle,
+  bodySha256: string,
+): string {
+  if (!handle || typeof handle !== 'object' || !/^[a-f0-9]{64}$/.test(bodySha256)) invalidKey()
+  const key = HANDLE_KEYS.get(handle)
+  if (!key || handle.fingerprint !== createHash('sha256').update(key).digest('hex')) invalidKey()
+  try {
+    return createHmac('sha256', key)
+      .update(`${TASK_INSTALLATION_BINDING_DOMAIN}\0${bodySha256}`, 'utf8')
+      .digest('hex')
+  } finally {
+    // Keep the opaque handle useful for its lifetime, but never expose the key bytes.
+  }
+}
+
+export const bindTaskInstallationKeyHandle = bindTaskInstallationKeyBody
 
 async function setupTaskInstallationKeyCore(
   input: TaskInstallationKeySetupInput,

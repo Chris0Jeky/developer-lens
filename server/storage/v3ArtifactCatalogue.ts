@@ -364,9 +364,19 @@ export function removeStorageV3DatabaseSidecars(
 
 export function storageV3ArtifactFilePath(
   root: StorageV3ArtifactRoot,
-  locator: typeof STORAGE_V3_ARTIFACT_LOCATORS[keyof typeof STORAGE_V3_ARTIFACT_LOCATORS],
+  locator: string,
 ): string {
   return artifactPath(root, locator)
+}
+
+function safeRemoveManifestCompanion(root: StorageV3ArtifactRoot, locator: string): void {
+  const path = artifactPath(root, `${locator}.manifest.json`)
+  const entry = lstatEntry(path)
+  if (entry === undefined) return
+  if (!entry.isFile() || entry.isSymbolicLink() || entry.nlink !== 1n) fail()
+  const stable = captureStableFile(path)
+  assertSameFile(stable)
+  rmSync(path)
 }
 
 /** Return the exact lease path under an already reviewed root. */
@@ -442,7 +452,9 @@ export function assertStorageV3ArtifactCatalogue(db: Database.Database): void {
     if (!(STORAGE_V3_ARTIFACT_KINDS as readonly string[]).includes(kind)) fail()
     if (!(STORAGE_V3_ARTIFACT_STATES as readonly string[]).includes(state)) fail()
     validateLocator(kind, row.relative_locator)
-    if (row.manifest_sha256 !== manifestSha256(kind, row.relative_locator)) fail()
+    if (kind === 'migration_backup_v1') {
+      if (!/^[0-9a-f]{64}$/.test(row.manifest_sha256)) fail()
+    } else if (row.manifest_sha256 !== manifestSha256(kind, row.relative_locator)) fail()
     if (!/^[0-9a-f]{64}$/.test(row.content_sha256)) fail()
     if (kind === 'selected_store') {
       selectedStores += 1
@@ -610,6 +622,39 @@ export function registerStorageV3Artifact(
   return Object.freeze({ artifactId, state: 'active' as const })
 }
 
+/** LIFE-03-only catalogue seam. Generic registration intentionally cannot supply a manifest hash. */
+export function registerStorageV3MigrationBackupArtifact(input: Readonly<{
+  db: Database.Database
+  artifactId: string
+  relativeLocator: string
+  scopeIds: readonly string[]
+  contentSha256: string
+  manifestSha256: string
+}>): Readonly<{ artifactId: string; state: 'active' }> {
+  const { db, artifactId, relativeLocator, scopeIds, contentSha256, manifestSha256: physicalManifestSha256 } = input
+  assertSelectedStoreIdentity(db)
+  assertStorageV3ArtifactCatalogue(db)
+  if (readMaintenance(db).state !== 'complete') fail()
+  if (!/^[a-f0-9]{64}$/.test(physicalManifestSha256) || !/^[a-f0-9]{64}$/.test(contentSha256)) fail()
+  if (!ArtifactIdV3Schema.safeParse(artifactId).success) fail()
+  validateLocator('migration_backup_v1', relativeLocator)
+  boundRoot(db)
+  if (db.prepare('SELECT 1 FROM app_artifact WHERE artifact_id = ? OR relative_locator = ?').get(artifactId, relativeLocator)) fail()
+  const scopes = [...scopeIds].sort()
+  if (scopes.length === 0 || scopes.some((scope, index) => scope !== scopeIds[index] || !ScopeIdV3Schema.safeParse(scope).success)) fail()
+  for (const scope of scopes) if (!db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(scope)) fail()
+  db.transaction(() => {
+    db.prepare(`INSERT INTO app_artifact (
+      artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator
+    ) VALUES (?, 'migration_backup_v1', 'active', ?, ?, ?)`)
+      .run(artifactId, physicalManifestSha256, contentSha256, relativeLocator)
+    const insert = db.prepare('INSERT INTO app_artifact_scope (artifact_id, scope_id) VALUES (?, ?)')
+    for (const scope of scopes) insert.run(artifactId, scope)
+  }).immediate()
+  assertStorageV3ArtifactCatalogue(db)
+  return Object.freeze({ artifactId, state: 'active' as const })
+}
+
 /** Called inside B3's IMMEDIATE transaction before any owned scope rows disappear. */
 export function scheduleStorageV3ArtifactsForScope(
   db: Database.Database,
@@ -716,6 +761,21 @@ export function completeStorageV3ArtifactDeletions(
       row = { ...row, state: 'deleting' }
     }
     if (row.state !== 'deleting') fail()
+    if (kind === 'migration_backup_v1'
+      && row.manifest_sha256 !== manifestSha256(kind, row.relative_locator)) {
+      const manifestPath = artifactPath(root, `${row.relative_locator}.manifest.json`)
+      const manifestEntry = lstatEntry(manifestPath)
+      if (manifestEntry === undefined || !manifestEntry.isFile() || manifestEntry.isSymbolicLink() || manifestEntry.nlink !== 1n) fail()
+      const manifestStable = captureStableFile(manifestPath)
+      const manifestDescriptor = openSync(manifestPath, constants.O_RDONLY | NO_FOLLOW)
+      const manifestHash = createHash('sha256')
+      try {
+        const bytes = Buffer.alloc(64 * 1024)
+        for (;;) { const count = readSync(manifestDescriptor, bytes, 0, bytes.length, null); if (count === 0) break; manifestHash.update(bytes.subarray(0, count)) }
+      } finally { closeSync(manifestDescriptor) }
+      assertSameFile(manifestStable)
+      if (manifestHash.digest('hex') !== row.manifest_sha256) fail()
+    }
     // A shared artifact may still have ordinary lineage owned by a surviving
     // scope. Reconcile that history before unlinking bytes so the final
     // scope-null index_deleted record cannot collide across scopes after a
@@ -741,12 +801,14 @@ export function completeStorageV3ArtifactDeletions(
     for (const suffix of ['-shm', '-wal', '-journal']) {
       safeRemoveExactFile(root, `${row.relative_locator}${suffix}`)
     }
+    if (kind === 'migration_backup_v1') safeRemoveManifestCompanion(root, row.relative_locator)
     options.failAfterStage?.('sidecarsDeleted', completed)
     safeRemoveExactFile(root, row.relative_locator)
     options.failAfterStage?.('fileDeleted', completed)
     if (
       lstatEntry(path) !== undefined
       || ['-shm', '-wal', '-journal'].some((suffix) => lstatEntry(`${path}${suffix}`) !== undefined)
+      || (kind === 'migration_backup_v1' && lstatEntry(`${path}.manifest.json`) !== undefined)
     ) fail()
     db.transaction(() => {
       const current = db.prepare(
