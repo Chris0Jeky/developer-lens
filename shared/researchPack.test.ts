@@ -86,6 +86,15 @@ describe('ResearchPack v1 producer contract', () => {
     expect(renderResearchPackFiles()).toEqual(rendered)
   })
 
+  it('keeps person-scoring prohibition case-insensitive in the standalone JSON Schema', async () => {
+    const schema = JSON.parse(await readFile(schemaPath, 'utf8')) as Record<string, any>
+    const pattern = schema.properties.feature_registry.items.properties.feature_id.pattern as string
+    const featureId = new RegExp(pattern)
+
+    expect(featureId.test('DL.PERSON.PRODUCTIVITY.v1')).toBe(false)
+    expect(featureId.test('DL.WEEK.CHANGE_COUNT.v1')).toBe(true)
+  })
+
   it('orders far-future microseconds exactly and rejects invalid calendar dates', () => {
     expect(() =>
       TimeWindowSchema.parse({

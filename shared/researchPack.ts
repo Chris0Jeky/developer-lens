@@ -153,11 +153,35 @@ export const ResearchRelationsSchema = z.strictObject({
   system_event: RelationDescriptorSchema,
 })
 
+function caseFoldPattern(value: string): string {
+  return [...value].map((character) => `[${character.toLowerCase()}${character.toUpperCase()}]`).join('')
+}
+
+const forbiddenFeatureTokenPattern = [
+  caseFoldPattern('person'),
+  caseFoldPattern('productiv'),
+  caseFoldPattern('performance'),
+  caseFoldPattern('effort'),
+  caseFoldPattern('attendance'),
+  `${caseFoldPattern('hours')}[_-]?${caseFoldPattern('worked')}`,
+  caseFoldPattern('availability'),
+  caseFoldPattern('diligence'),
+  caseFoldPattern('quality'),
+  caseFoldPattern('worth'),
+  caseFoldPattern('personality'),
+  caseFoldPattern('sentiment'),
+  caseFoldPattern('burnout'),
+  caseFoldPattern('surveillance'),
+  `${caseFoldPattern('bus')}[_-]?${caseFoldPattern('factor')}`,
+  `${caseFoldPattern('individual')}[_-]?${caseFoldPattern('output')}`,
+].join('|')
+const featureIdPattern = new RegExp(
+  `^(?!.*(?:${forbiddenFeatureTokenPattern}))[A-Za-z][A-Za-z0-9_.-]{0,95}$`,
+)
+
 export const FeatureDefinitionSchema = z
   .strictObject({
-    feature_id: z.string().regex(
-      /^(?!.*(?:person|productiv|performance|effort|attendance|hours[_-]?worked|availability|diligence|quality|worth|personality|sentiment|burnout|surveillance|bus[_-]?factor|individual[_-]?output))[A-Za-z][A-Za-z0-9_.-]{0,95}$/i,
-    ),
+    feature_id: z.string().regex(featureIdPattern),
     relation: z.enum(RELATION_NAMES),
     value_kind: z.enum(['count', 'duration_hours', 'ratio', 'category', 'boolean']),
     unit_code: CodeSchema,
