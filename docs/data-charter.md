@@ -58,6 +58,16 @@ durably fail-closed. The marker survives seven-day cleanup of the old JSON and m
 their absence can never re-authorize legacy fallback. It remains local, is never exported, and is
 removed no later than the C2 13-month boundary or deletion of the whole task root.
 
+Each selected task also owns one local content-free C1 revocation replay family. Its anchor and
+immutable entries contain only opaque scope/subject/operation IDs, the controlled capability code,
+ISO-week grain, keyed task/selection bindings, and integrity hashes. They contain no raw task ID,
+repository/source name or alias, path, prose, exact timestamp, or observed value. An entry is made
+durable before its deletion transaction; selected reads and restore verify the complete reserved
+family and prove every entry applied before serving data. A missing, foreign, non-canonical, or
+unapplied family fails closed and never authorizes legacy fallback. The family survives seven-day
+cleanup so an older signed backup cannot resurrect revoked data, remains local and unexported, and
+is removed no later than the C1 36-month boundary or deletion of the whole task root.
+
 ## Sink contract
 
 Every sink accepts a purpose-built strict schema. Unknown fields, field classes, capabilities,
@@ -150,6 +160,10 @@ deletes source observations, dependent facts/features, graph projections, caches
 and application-controlled packs/backups, leaving only a content-free tombstone. Developer Lens
 must disclose that it cannot recall user-copied exports, provider-held copies, filesystem snapshots,
 or guarantee physical-media erasure.
+
+For a selected migrated task, the content-free revocation replay family is that durable tombstone
+authority across stale local filesystem snapshots. It carries no source content and is not a reader,
+fallback, or collection authorization. It remains only through the bounded C1 lifetime above.
 
 ## Fixture and verification rule
 
