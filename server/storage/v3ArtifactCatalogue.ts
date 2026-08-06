@@ -627,7 +627,6 @@ interface MigrationBackupFiles {
  */
 function validateMigrationBackupDeletionIdentity(
   db: Database.Database,
-  root: StorageV3ArtifactRoot,
   row: ArtifactRow,
   files: MigrationBackupFiles,
 ): void {
@@ -642,7 +641,6 @@ function validateMigrationBackupDeletionIdentity(
     const present = [pair.temp, pair.final].filter((file): file is StableFile => file !== undefined)
     if (recordedDev === null || recordedIno === null) {
       if (present.length !== 0) fail()
-      if (row.state === 'pending') fail()
       return
     }
     for (const file of present) {
@@ -654,16 +652,6 @@ function validateMigrationBackupDeletionIdentity(
   }
   checkPair(files.sqlite, attempt.sqliteDev, attempt.sqliteIno, true)
   checkPair(files.manifest, attempt.manifestDev, attempt.manifestIno, false)
-  if (row.state === 'deleting'
-    && attempt.sqliteDev === null && attempt.manifestDev === null
-    && files.sqlite.temp === undefined && files.sqlite.final === undefined
-    && files.manifest.temp === undefined && files.manifest.final === undefined) {
-    for (const locator of [files.tempLocator, files.finalLocator]) {
-      for (const suffix of ['-shm', '-wal', '-journal']) {
-        if (lstatEntry(artifactPath(root, `${locator}${suffix}`)) !== undefined) fail()
-      }
-    }
-  }
 }
 
 function inspectMigrationBackupPair(
@@ -1549,7 +1537,7 @@ export function completeStorageV3ArtifactDeletions(
     const backupFiles = kind === 'migration_backup_v1'
       ? inspectMigrationBackupFiles(root, row, row.state === 'deleting')
       : undefined
-    if (backupFiles !== undefined) validateMigrationBackupDeletionIdentity(db, root, row, backupFiles)
+    if (backupFiles !== undefined) validateMigrationBackupDeletionIdentity(db, row, backupFiles)
     if (row.state === 'pending') {
       if (backupFiles === undefined) {
         const entry = lstatEntry(path)

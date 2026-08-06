@@ -733,6 +733,32 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
     } finally { nullIdentity.cleanup() }
   })
 
+  it('finalizes a pending null-identity intent when all primary names are already absent', () => {
+    const fixture = freshSelectedStore()
+    try {
+      const staged = registerStagedBackup(
+        fixture,
+        `art-${'0'.repeat(64)}`,
+        'migration-backup-20260302T000015Z.sqlite',
+        false,
+      )
+      for (const locator of [staged.finalLocator, staged.tempLocator, staged.manifestFinalLocator, staged.manifestTempLocator]) {
+        rmSync(join(fixture.root, locator))
+      }
+      deleteStorageV3Scope({
+        db: fixture.store,
+        scopeId: SCOPE_A,
+        asOf: DELETE_AT,
+        randomBytes: () => Buffer.alloc(32, 23),
+      })
+      expect(completeStorageV3DeletionMaintenance(fixture.store)).toMatchObject({
+        maintenance: 'complete', artifactsDeleted: 1,
+      })
+      expect(fixture.store.prepare('SELECT 1 FROM app_artifact WHERE artifact_id = ?').get(staged.artifactId)).toBeUndefined()
+      expect(fixture.store.prepare('SELECT 1 FROM migration_backup_attempt WHERE artifact_id = ?').get(staged.artifactId)).toBeUndefined()
+    } finally { fixture.cleanup() }
+  })
+
   it('refuses a staged backup with a disallowed link count before unlink', () => {
     const fixture = freshSelectedStore()
     const foreign = join(tmpdir(), `developer-lens-staged-foreign-${process.pid}.sqlite`)
