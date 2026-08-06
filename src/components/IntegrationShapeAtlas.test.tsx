@@ -232,6 +232,22 @@ describe('IntegrationShapeAtlas — explicit presentation source', () => {
     expect(await screen.findByTestId('integration-shape-unavailable')).toBeInTheDocument()
     expect(screen.queryByTestId('atlas-observation')).not.toBeInTheDocument()
   })
+
+  it('never substitutes the bundled local composition for missing selected-store evidence', async () => {
+    const user = userEvent.setup()
+    render(
+      <IntegrationShapeAtlasPanel
+        presentation={presentation}
+        resolutions={{}}
+        sourceMode="selected_store"
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /p50 \(median\) difference: -2\.0 d/i }))
+    expect(
+      within(screen.getByRole('dialog')).getByText(UNRESOLVABLE_COPY.STORAGE_UNAVAILABLE),
+    ).toBeInTheDocument()
+  })
 })
 
 describe('IntegrationShapeAtlas — the evidence API is the drawer resolver, local composition is the fallback', () => {

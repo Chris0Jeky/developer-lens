@@ -295,12 +295,14 @@ function OutcomeTable({ outcomes }: { outcomes: readonly IntegrationShapeOutcome
 export function IntegrationShapeAtlasPanel({
   presentation,
   resolutions,
+  sourceMode,
 }: {
   presentation: IntegrationShapePresentation
   resolutions?: IntegrationShapePresentationEnvelope['resolutions']
+  sourceMode?: IntegrationShapePresentationEnvelope['mode']
 }) {
   const [drawerReference, setDrawerReference] = useState<AnalyticReference | null>(null)
-  const resolveEvidence = useIntegrationShapeEvidenceResolver(drawerReference, resolutions)
+  const resolveEvidence = useIntegrationShapeEvidenceResolver(drawerReference, resolutions, sourceMode)
   const finding = presentation.finding
   const headline = presentation.headline
   const open = drawerReference !== null
@@ -560,7 +562,11 @@ export function IntegrationShapeAtlasRoute() {
     ) : state.kind === 'unavailable' ? (
       <AtlasUnavailable />
     ) : (
-      <IntegrationShapeAtlasPanel presentation={state.envelope.presentation} resolutions={state.envelope.resolutions} />
+      <IntegrationShapeAtlasPanel
+        presentation={state.envelope.presentation}
+        resolutions={state.envelope.resolutions}
+        sourceMode={state.envelope.mode}
+      />
     )
 
   return (

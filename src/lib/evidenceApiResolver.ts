@@ -88,6 +88,7 @@ function servedProjection(
 export function useIntegrationShapeEvidenceResolver(
   reference: AnalyticReference | null,
   bundledResolutions: Readonly<Record<string, IntegrationShapeEvidenceResolution>> | undefined = undefined,
+  sourceMode: 'selected_store' | 'synthetic' | undefined = undefined,
 ): (reference: AnalyticReference) => IntegrationShapeEvidenceResolution {
   const requested = useRef(new Set<string>())
   const unreachable = useRef(false)
@@ -96,7 +97,9 @@ export function useIntegrationShapeEvidenceResolver(
   )
 
   useEffect(() => {
-    if (reference === null || unreachable.current) return
+    // The public artifact carries its own validated evidence bundle and has no API. Only the
+    // unlabelled in-process fixture panel retains the historical local composition fallback.
+    if (reference === null || sourceMode === 'synthetic' || unreachable.current) return
     const key = evidenceReferenceKey(reference)
     if (requested.current.has(key)) return
     requested.current.add(key)
@@ -118,18 +121,34 @@ export function useIntegrationShapeEvidenceResolver(
       .finally(() => {
         clearTimeout(timeout)
       })
-  }, [reference])
+  }, [reference, sourceMode])
 
   return useCallback(
     (requestedReference: AnalyticReference) => {
       const key = evidenceReferenceKey(requestedReference)
-      return (
-        served.get(key) ??
-        bundledResolutions?.[key] ??
-        (requestedReference.kind === 'claim' ? bundledResolutions?.[requestedReference.claimId] : undefined) ??
-        resolveIntegrationShapeEvidence(requestedReference)
-      )
+      const bundled = bundledResolutions?.[key] ?? bundledResolutions?.[
+        requestedReference.kind === 'claim' ? requestedReference.claimId : requestedReference.evidenceId
+      ]
+      if (served.has(key)) return served.get(key) as IntegrationShapeEvidenceResolution
+      if (bundled !== undefined) return bundled
+      if (sourceMode === undefined) return resolveIntegrationShapeEvidence(requestedReference)
+      return requestedReference.kind === 'claim'
+        ? {
+            kind: 'unresolvable',
+            resolverVersion: '1.0.0',
+            reason: 'STORAGE_UNAVAILABLE',
+            claimId: requestedReference.claimId,
+            lineage: [],
+          }
+        : {
+            kind: 'missing_link',
+            reason: 'MISSING_EVIDENCE',
+            targetKind: 'evidence',
+            targetId: requestedReference.evidenceId,
+            coverageKey: null,
+            lineage: [],
+          }
     },
-    [bundledResolutions, served],
+    [bundledResolutions, served, sourceMode],
   )
 }
