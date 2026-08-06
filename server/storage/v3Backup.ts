@@ -74,7 +74,9 @@ function stat(path: string): BigIntStats | undefined {
 function assertAbsent(path: string): void { if (stat(path) !== undefined) fail() }
 function assertRegular(path: string, expectedNlink = 1n): BigIntStats {
   const before = stat(path)
-  if (!before || !before.isFile() || before.isSymbolicLink() || before.nlink !== expectedNlink || before.size === 0n) {
+  if (before === undefined) throw new StorageV3BackupError()
+  const stableBefore = before
+  if (!stableBefore.isFile() || stableBefore.isSymbolicLink() || stableBefore.nlink !== expectedNlink || stableBefore.size === 0n) {
     fail()
   }
   try { if (realpathSync.native(path) !== path) fail() } catch { return fail() }
@@ -82,9 +84,9 @@ function assertRegular(path: string, expectedNlink = 1n): BigIntStats {
   try {
     const handle = fstatSync(fd, { bigint: true })
     if (!handle.isFile() || handle.isSymbolicLink() || handle.nlink !== expectedNlink
-      || handle.dev !== before.dev || handle.ino !== before.ino || handle.size !== before.size) fail()
+      || handle.dev !== stableBefore.dev || handle.ino !== stableBefore.ino || handle.size !== stableBefore.size) fail()
   } finally { closeSync(fd) }
-  return before
+  return stableBefore
 }
 function physicalHash(path: string, expectedNlink = 1n): string {
   assertRegular(path, expectedNlink)
@@ -120,7 +122,7 @@ function makeManifest(input: StorageV3BackupInput, locator: string, contentSha25
   const ownerScopeIds = [...input.ownerScopeIds]
   const ownerScopeHash = sha256(`${OWNER_DOMAIN}\0${ownerScopeIds.join('\0')}`)
   const selected = input.db.prepare("SELECT artifact_id FROM app_artifact WHERE kind = 'selected_store' AND state = 'active'").get() as { artifact_id: string } | undefined
-  if (!selected) fail()
+  if (selected === undefined) return fail()
   const body = {
     version: 'migration_backup_v1',
     locator,
@@ -154,7 +156,7 @@ function replayIfExact(input: StorageV3BackupInput, locator: string, manifestLoc
   let parsed: Record<string, unknown>
   try { parsed = JSON.parse(manifestBytes.toString('utf8')) as Record<string, unknown> } catch { return fail() }
   const selected = input.db.prepare("SELECT artifact_id FROM app_artifact WHERE kind = 'selected_store' AND state = 'active'").get() as { artifact_id: string } | undefined
-  if (!selected) fail()
+  if (selected === undefined) return fail()
   if (parsed.artifactId !== input.artifactId || parsed.selectedArtifactId !== selected.artifact_id
     || parsed.locator !== locator || parsed.backupAt !== input.backupAt || parsed.contentSha256 !== contentSha256
     || parsed.taskId !== input.installationKey.taskId || parsed.taskFingerprint !== input.installationKey.fingerprint
@@ -177,7 +179,7 @@ function validateBackupDb(path: string): void {
       || Number(backup.pragma('user_version', { simple: true })) !== STORAGE_V3_SHADOW_USER_VERSION
       || storageV3ShadowSchemaFingerprint(backup) !== STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT
       || String(backup.pragma('integrity_check', { simple: true })) !== 'ok'
-      || backup.pragma('foreign_key_check').length !== 0) fail()
+      || (backup.pragma('foreign_key_check') as unknown[]).length !== 0) fail()
   } finally { backup.close() }
 }
 
