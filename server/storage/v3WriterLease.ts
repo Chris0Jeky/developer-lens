@@ -75,7 +75,7 @@ function lockEntry(path: string): BigIntStats {
     return entry
   } catch (error) {
     if (error instanceof StorageV3WriterLeaseError) throw error
-    fail(STORAGE_V3_WRITER_LEASE_REFUSED)
+    return fail(STORAGE_V3_WRITER_LEASE_REFUSED)
   }
 }
 
@@ -95,23 +95,21 @@ function proveLease(record: LeaseRecord): void {
 }
 
 function acquireStorageV3WriterLease(root: StorageV3ArtifactRoot): StorageV3WriterLease {
-  let path: string
-  try {
-    path = storageV3WriterLeasePath(root)
-  } catch {
-    fail(STORAGE_V3_WRITER_LEASE_REFUSED)
-  }
-  let descriptor: number
-  try {
-    descriptor = openSync(
-      path,
-      constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | NO_FOLLOW,
-      0o600,
-    )
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'EEXIST') fail(STORAGE_V3_WRITER_LEASE_BUSY)
-    fail(STORAGE_V3_WRITER_LEASE_REFUSED)
-  }
+  const path = (() => {
+    try { return storageV3WriterLeasePath(root) } catch { return fail(STORAGE_V3_WRITER_LEASE_REFUSED) }
+  })()
+  const descriptor = (() => {
+    try {
+      return openSync(
+        path,
+        constants.O_CREAT | constants.O_EXCL | constants.O_RDWR | NO_FOLLOW,
+        0o600,
+      )
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'EEXIST') return fail(STORAGE_V3_WRITER_LEASE_BUSY)
+      return fail(STORAGE_V3_WRITER_LEASE_REFUSED)
+    }
+  })()
   try {
     const identity = lockEntry(path)
     const record: LeaseRecord = Object.freeze({
@@ -133,7 +131,7 @@ function acquireStorageV3WriterLease(root: StorageV3ArtifactRoot): StorageV3Writ
 
 function releaseStorageV3WriterLease(lease: StorageV3WriterLease): void {
   const record = LEASES.get(lease)
-  if (record === undefined) fail(STORAGE_V3_WRITER_LEASE_REFUSED)
+  if (record === undefined) return fail(STORAGE_V3_WRITER_LEASE_REFUSED)
   proveLease(record)
   closeSync(record.descriptor)
   try {
