@@ -632,9 +632,14 @@ function attempt(
         if (attemptState.sqliteContentSha256 === null) {
           const expectedNlink = existingFinal === undefined ? 1n : 2n
           if (isIncoherentSqlitePartial(tempPath, sqliteDescriptor, expectedNlink)) {
+            // The provisional is identity-bound, but its owner set may have
+            // changed while the process was down. Revalidate the live store
+            // before truncating or asking SQLite to overwrite its bytes.
+            assertOwners(liveOwners(input.db), input.ownerScopeIds)
             truncateForRetry(tempPath, sqliteDescriptor, expectedNlink)
             input.failAtPhase?.('beforeSqliteBackup')
             sidecarsAbsent(source)
+            assertOwners(liveOwners(input.db), input.ownerScopeIds)
             input.failAtPhase?.('partialSqliteWrite')
             await input.db.backup(tempPath)
             fsyncSync(sqliteDescriptor)

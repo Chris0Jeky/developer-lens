@@ -612,6 +612,55 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
     } finally { fx.cleanup() }
   })
 
+  it('rejects an identity-bound partial after live owners drift without changing recovery state', async () => {
+    const fx = await fixture()
+    try {
+      const input = {
+        db: fx.db,
+        root: createStorageV3ArtifactRoot(fx.root),
+        backupAt: '2026-08-06T12:35:59Z',
+        artifactId: `art-${'c'.repeat(64)}`,
+        ownerScopeIds: [SCOPE_A, SCOPE_B],
+        installationKey: fx.key,
+      }
+      const locator = 'migration-backup-20260806T123559Z.sqlite'
+      const tempPath = join(fx.root, `${locator}.tmp`)
+      await expect(createStorageV3MigrationBackup({
+        ...input,
+        failAtPhase: (phase) => {
+          if (phase === 'partialSqliteWrite') {
+            writeFileSync(tempPath, Buffer.from('SQLite format 3', 'binary'))
+            throw new Error('invented partial write')
+          }
+        },
+      })).rejects.toBeInstanceOf(StorageV3BackupError)
+
+      const bytes = readFileSync(tempPath)
+      const inode = statSync(tempPath).ino
+      const attemptBefore = fx.db.prepare(
+        'SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt',
+      ).get()
+      const catalogueBefore = fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)
+
+      // Invented owner drift between the crashed process and recovery.
+      fx.db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(SCOPE_C)
+
+      await expect(recoverStorageV3MigrationBackup(input)).rejects.toBeInstanceOf(StorageV3BackupError)
+      expect(readFileSync(tempPath).equals(bytes)).toBe(true)
+      expect(statSync(tempPath).ino).toBe(inode)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino, sqlite_content_sha256 FROM migration_backup_attempt',
+      ).get()).toEqual(attemptBefore)
+      expect(fx.db.prepare(
+        'SELECT artifact_id, kind, state, content_sha256, manifest_sha256, relative_locator FROM app_artifact WHERE artifact_id = ?',
+      ).get(input.artifactId)).toEqual(catalogueBefore)
+      expect(existsSync(join(fx.root, locator))).toBe(false)
+      expect(existsSync(join(fx.root, `${locator}.manifest.json`))).toBe(false)
+    } finally { fx.cleanup() }
+  })
+
   it.each([
     ['zero bytes', Buffer.alloc(0)],
     ['exact SQLite header', Buffer.from('SQLite format 3\0', 'binary')],
