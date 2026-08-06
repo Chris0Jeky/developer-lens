@@ -58,9 +58,10 @@ review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently pos
   sound slice ships; only a NEW CRITICAL introduced by the fixes reopens once. After merge, sweep
   again beyond the measured delay before calling the review clean.'
 capabilities: registry and API definitions remain never_authorized; cap.external.model is uncalled.
-  The github.core runner is grant-gated and validates an unforgeable process-local task/card/key/
-  scope binding before protected access, but only the invented test seam can issue a grant and an
-  AST boundary proves there is no production issuer or runner caller.
+  The github.core runner is grant-gated and validates a private WeakSet-recognized task/card/key/
+  scope binding before protected access. An AST boundary proves the tracked source has no
+  production issuer or runner caller; the exported invented issuer remains accessible to arbitrary
+  local code and must be removed under #151 before any production caller exists.
 card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools/generate.mjs;
   `node generate.mjs --check` is the non-mutating drift gate; never edit the manifest
   or 07 §6 index by hand)

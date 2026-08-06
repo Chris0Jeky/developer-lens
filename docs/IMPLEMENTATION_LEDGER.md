@@ -2587,4 +2587,7 @@ proves that no production module imports the invented issuer or calls the runner
 tests passed 88 assertions; the rebased 46-test activation seam and `git diff --check` passed under
 a fresh Terra review with no HIGH/CRITICAL finding. The exact final local/hosted gates, connector
 window, and merge remain pending. A later production issuer/caller is a separate reviewed slice;
-this candidate does not authorize live collection or any external-model call.
+this candidate does not authorize live collection or any external-model call. Exact-head connector
+review identified the exported invented issuer as a P2 local-code footgun: it is lookalike-resistant,
+not inaccessible to arbitrary local modules. Issue #151 owns removing it before any production
+caller; the operational claim here is only tracked-source default-off, never a local-code sandbox.
