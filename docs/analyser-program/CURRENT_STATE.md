@@ -20,7 +20,7 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'DL-LIFE-02 chain PRs #103, #105, #107-#125 (slice A, B1a+repairs, B1b-i..iii, B2a-i..iii,
   B2b-i, B2b-ii-a..j) — B2b-i..ii-j artifacts were deleted by the §7 simplification;
   their engineering record stays in the ledger', 'DL-LIFE-02 B3 #136 and B4 #141',
-  'wait-window hardening #144/#145, post-B4 hardening #146',
+  'wait-window hardening #144/#145, mint-order hardening #148, post-B4 hardening #146',
   'state syncs #126']
 active_slice: '#147: complete retained-publication CAS, ordinary subject/cause lineage cleanup, survivor ownership/lineage proof, and exclusive invented fixture claim. Then start DL-LIFE-03 with timestamped backup, untouched source, atomic selection/fallback, seven-day grace, restart, restore/tombstone replay, cleanup, WAL/SHM handling, and default-deny activation enforcement. The whyResolver lineage joins stay with Phase E, never the v2 resolver.'
 next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
@@ -41,7 +41,7 @@ frozen_by_reassessment: horizon:frozen label (WB candidates, vector retrieval, G
   PROV-01 sources, ATLAS-03 parsers, EVQ-09/10, TRACE-03) — 07 §0a
 authority_order: [AGENTS.md, .agent-harness/tier.json, HUMAN_TODO.md, data-charter.md,
   source-capability-matrix.md, DEVELOPER_LENS_V2_ARCHITECTURE.md (incl. Appendix I.1-I.4)]
-last_verified_checks: '#147 focused lifecycle and artifact-catalogue tests are green in the owned worktree. Full local gate, hosted Linux/POSIX proof, and review remain pending for this active branch.'
+last_verified_checks: 'Exact heads, run IDs, test counts, and review outcomes live in docs/IMPLEMENTATION_LEDGER.md. Refresh live Git and CI, then rerun the relevant gate before relying on prior proof.'
 review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently posts review comments
   3-10 minutes AFTER merge. The ledger sentences claiming an "empty late-comment sweep" for PRs
   #104-#125 were measured before the bot posted and are not evidence of clean reviews; 20 late

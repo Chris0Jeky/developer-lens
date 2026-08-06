@@ -2527,21 +2527,41 @@ adds no real migration, protected-data read, capability activation, or productio
 PR #146 merged as `eb67cb0c9b30a544b56844809db6cfe338641762`. It hardened the B4 storage seams with
 immutable app-root binding, REPLACE-resistant artifact identity, no-follow selected-sidecar checks,
 deterministic publication recovery, and shared-artifact lineage/lifecycle proof. The synthetic-only
-runtime remains unactivated; LIFE-02 and #80 remain open.
+runtime remains unactivated; LIFE-02 and #80 remain open. Exact-head PR run `31075653101` passed at
+`150ba45076e7a1860b0eec8e2226e3dff0f0936c`; exact-merge Pages/privacy/deploy run `31076521103`
+passed at the merge. Five late connector findings were triaged after the bounded review ceiling,
+resolved as tracked in #147, and a post-merge sweep found no additional feedback.
+
+## 2026-08-06 â€” #139 mint-order hardening (merged)
+
+PR #148 merged as `a3fc0fbb98b3b0cc75eb0092b35a0523a84e4ec5` and closed #139. Head
+`dfad9e4983cf99528d6fa0b12bcc193504e6a179` bound every closed minted identifier cell to its
+semantic digest class, stopped `INSERT OR REPLACE` from bypassing source-snapshot identity guards,
+and asserted the generated scale corpus against the documented row/runtime growth envelope. The
+focused migration/schema suite passed 87 tests, the opt-in scale lane passed 2 tests, the full local
+gate passed 73 files / 1,207 tests / 4 skips, exact-head run `31076874752` passed, the fresh Terra
+review was clean, and exact-merge Pages/privacy/deploy run `31077746569` passed.
 
 ## 2026-08-06 â€” #147 lifecycle safety vertical (active)
 
-Commits `a6b4df3ef6e8e77c838d3976cfea5d54f3fe4a40` and
-`08f6490fe98ed81b6e3d942b93892985df1ffc5e` implement the bounded #147 slice. Retained publication
-recovery now accepts valid accumulated CAS state while the virgin target acceptance proof stays
-strict. Synthetic lifecycle fixtures initialize CAS, force repeated primary-unlink recovery, refuse
-malformed CAS, snapshot survivor artifact ownership and lineage, and claim fixed fixture locators
-with exclusive no-follow creation. Artifact deletion removes ordinary lineage when the deleting
-artifact is either its subject or cause, preserves only tombstone/index_deleted/legacy deletion
-kinds, and the crash-reopen proof asserts no dangling causes or stranded `deleting` rows.
+Rebased commits `f0290543cb0962c4e92b205a8a6bf955728b02bd`,
+`5d87bf139ec04fb2e629cccf398ac27dd21d157a`,
+`ec2f3fb37dfcd10c09d543a4b09726b92e5266ba`, and
+`13d45a3cbea185be9919e839169cb440a8ffed59` implement the bounded #147 slice over the #148 merge.
+Retained publication recovery now accepts valid accumulated CAS state while the virgin target
+acceptance proof stays strict. Synthetic lifecycle fixtures initialize CAS, force repeated
+primary-unlink recovery, refuse malformed CAS, snapshot survivor artifact ownership and lineage,
+and claim fixed fixture locators with exclusive no-follow creation. Artifact deletion removes
+ordinary lineage when the deleting artifact is either its subject or cause, preserves only
+tombstone/index_deleted/legacy deletion kinds, and the crash-reopen proof asserts no dangling
+causes or stranded `deleting` rows.
 
 Focused proof: `npm test -- scripts/storeLifecycle.test.ts server/storage/v3ArtifactCatalogue.test.ts`
-passed 36 tests with 4 platform/scale skips on this Windows host. POSIX symlink refusal remains
-hosted-only; full local gate, hosted Linux/POSIX proof, review, and merge are not yet verified.
-#147 remains active until merged. No real store, connector, capability activation, or private data
-was used.
+passed 36 tests with 4 platform/scale skips on this Windows host. The exact rebased code/proof head
+passed the full local gate: lint, context verification (27 Markdown / 12 required), 73 files / 1,208
+tests / 5 skips, TypeScript/build, and credential scanning over 13 outputs. Separate Terra lifecycle
+and crash/filesystem reviewers found no findings and refreshed against the rebased head/base. The
+lifecycle Terra then completed a distinct clean privacy/authority follow-up because the live thread
+ceiling refused a third fresh agent. Hosted Linux/POSIX proof, exact-head connector
+review, and merge are not yet verified. #147 remains active until merged. No real store, connector,
+capability activation, or private data was used.
