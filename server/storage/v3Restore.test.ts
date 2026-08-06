@@ -1,3 +1,6 @@
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { describe, expect, it } from 'vitest'
 import {
@@ -6,14 +9,21 @@ import {
   STORAGE_V3_RESTORE_UNAVAILABLE,
   normalizeStorageV3RestoredSnapshot,
   restoreStorageV3SelectedStoreFromVerifiedSelection,
+  v3RestorePublicationTestSeams,
   v3RestoreTestSeams,
+  type StorageV3RestoreFromSelectionInput,
   type StorageV3RestoreSnapshotProof,
 } from './v3Restore.js'
 import {
+  createStorageV3ArtifactRoot,
+  registerSelectedStorageV3Artifact,
   STORAGE_V3_ARTIFACT_LOCATORS,
   storageV3MaintenanceStatus,
 } from './v3ArtifactCatalogue.js'
+import { v3BackupTestSeams } from './v3Backup.js'
+import { recordStorageV3MigrationSelection } from './v3SelectionReceipt.js'
 import { installStorageV3ShadowSchema, storageV3ArtifactManifestSha256, storageV3SelectedStoreContentSha256 } from './v3ShadowSchema.js'
+import { taskInstallationKeyTestSeams } from './taskInstallationKey.js'
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -22,6 +32,78 @@ const BACKUP = `art-${'2'.repeat(64)}`
 const FINAL_LOCATOR = 'migration-backup-20260806T123456Z.sqlite'
 const STAGED_LOCATOR = `${FINAL_LOCATOR}.tmp`
 const INTENT = 'a'.repeat(64)
+
+async function publicationFixture(): Promise<{
+  root: string
+  input: StorageV3RestoreFromSelectionInput
+  backupPath: string
+  manifestPath: string
+  backupBytes: Buffer
+  manifestBytes: Buffer
+  close(): void
+}> {
+  const workspaceRoot = mkdtempSync(join(tmpdir(), 'developer-lens-life03-restore-'))
+  const taskId = 'invented-restore-task'
+  const root = join(workspaceRoot, '.developer-lens', 'activation', taskId)
+  mkdirSync(root, { recursive: true })
+  const rootHandle = createStorageV3ArtifactRoot(root)
+  const db = new Database(join(root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))
+  try {
+    installStorageV3ShadowSchema(db)
+    db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(SCOPE_A)
+    db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(SCOPE_B)
+    const selectedArtifactId = registerSelectedStorageV3Artifact(db, rootHandle, () => Buffer.alloc(32, 3))
+    db.prepare(`INSERT INTO commit_observation (
+      scope_id, observation_id, sha, occurred_at, source, c2_expires_at,
+      additions, deletions, files, parent_count, feature_type, is_revert, is_fixup, message_length
+    ) VALUES (?, ?, NULL, NULL, NULL, NULL, 4, 2, 1, 1, 'docs', 0, 0, 18)`)
+      .run(SCOPE_A, `obs-${'4'.repeat(64)}`)
+    const installationKey = await taskInstallationKeyTestSeams.setupWithRandomBytes(
+      { workspaceRoot, taskId },
+      () => Buffer.alloc(32, 7),
+    )
+    const backupAt = '2026-08-06T12:35:05Z'
+    const backup = await v3BackupTestSeams.createWithDirectorySynchronizer({
+      db,
+      root: rootHandle,
+      backupAt,
+      artifactId: `art-${'4'.repeat(64)}`,
+      ownerScopeIds: [SCOPE_A, SCOPE_B],
+      installationKey,
+    }, () => {})
+    const selection = recordStorageV3MigrationSelection(db, {
+      legacySourceId: `legacy-${'5'.repeat(64)}`,
+      selectedArtifactId,
+      backupArtifactId: backup.artifactId,
+      successfulReportAt: '2026-08-06T12:40:00.000Z',
+    }).selection
+    db.close()
+    const backupPath = join(root, backup.locator)
+    const manifestPath = join(root, backup.manifestLocator)
+    const backupBytes = readFileSync(backupPath)
+    const manifestBytes = readFileSync(manifestPath)
+    unlinkSync(join(root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))
+    return {
+      root,
+      input: Object.freeze({
+        directory: root,
+        backupAt,
+        backupArtifactId: backup.artifactId,
+        installationKey,
+        selection,
+      }),
+      backupPath,
+      manifestPath,
+      backupBytes,
+      manifestBytes,
+      close: () => rmSync(workspaceRoot, { recursive: true, force: true }),
+    }
+  } catch (error) {
+    if (db.open) db.close()
+    rmSync(workspaceRoot, { recursive: true, force: true })
+    throw error
+  }
+}
 
 function fixture(): { db: Database.Database; proof: StorageV3RestoreSnapshotProof; close(): void } {
   const db = new Database(':memory:')
@@ -137,6 +219,111 @@ describe('LIFE-03 restore snapshot normalization', () => {
       const normalized = fx.db.serialize()
       expectRefusal(() => normalizeStorageV3RestoredSnapshot(fx.proof))
       expect(fx.db.serialize()).toEqual(normalized)
+    } finally { fx.close() }
+  })
+
+  it('copies, normalizes, selects, publishes, and reopens without mutating the backup pair', async () => {
+    const fx = await publicationFixture()
+    try {
+      const syncs: string[] = []
+      const stages: string[] = []
+      const result = v3RestorePublicationTestSeams.restoreWithSynchronizer(
+        fx.input,
+        (_root, phase) => syncs.push(phase),
+        (stage) => stages.push(stage),
+      )
+      expect(result.reader).toBe('sqlite-v3')
+      expect(stages).toEqual([
+        'claim', 'copy', 'normalize', 'receipt', 'link',
+        'directory-sync', 'temp-unlink', 'readonly-reopen',
+      ])
+      if (result.reader !== 'sqlite-v3') throw new Error('expected restored reader')
+      expect(result.selection).toEqual(fx.input.selection)
+      expect(result.db.prepare('SELECT additions, deletions, files FROM commit_observation').get())
+        .toEqual({ additions: 4, deletions: 2, files: 1 })
+      expect(result.db.prepare('SELECT artifact_id, state FROM app_artifact').all())
+        .toEqual([{ artifact_id: fx.input.selection.selectedArtifactId, state: 'active' }])
+      expect(result.db.prepare('SELECT COUNT(*) FROM migration_backup_attempt').pluck().get()).toBe(0)
+      result.db.close()
+
+      const selectedPath = join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary))).toBe(false)
+      expect(statSync(selectedPath).ino).not.toBe(statSync(fx.backupPath).ino)
+      expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
+      expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
+      expect(syncs).toEqual(['link', 'temp-unlink'])
+
+      const replay = v3RestorePublicationTestSeams.restoreWithSynchronizer(
+        fx.input,
+        (_root, phase) => syncs.push(`replay:${phase}`),
+      )
+      expect(replay.reader).toBe('sqlite-v3')
+      if (replay.reader === 'sqlite-v3') replay.db.close()
+      expect(syncs).toEqual(['link', 'temp-unlink', 'replay:temp-unlink'])
+      expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
+      expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
+    } finally { fx.close() }
+  })
+
+  it('does not accept an unsynchronized published pair on replay', async () => {
+    const fx = await publicationFixture()
+    try {
+      const rejectLinkSync = (_root: unknown, phase: string): void => {
+        if (phase === 'link') throw new Error('invented directory sync failure')
+      }
+      expect(v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, rejectLinkSync as never))
+        .toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))).toBe(true)
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary))).toBe(true)
+      expect(v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, rejectLinkSync as never))
+        .toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
+
+      const recovered = v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {})
+      expect(recovered.reader).toBe('sqlite-v3')
+      if (recovered.reader === 'sqlite-v3') recovered.db.close()
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary))).toBe(false)
+      expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
+    } finally { fx.close() }
+  })
+
+  it('preserves a replacement temp and refuses when the link input changes', async () => {
+    const fx = await publicationFixture()
+    try {
+      const tempPath = join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary)
+      const replacement = Buffer.from('invented foreign restore temp')
+      const result = v3RestorePublicationTestSeams.restoreWithSynchronizer(
+        fx.input,
+        () => {},
+        (stage) => {
+          if (stage !== 'link') return
+          unlinkSync(tempPath)
+          writeFileSync(tempPath, replacement, { flag: 'wx', mode: 0o600 })
+        },
+      )
+      expect(result).toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))).toBe(false)
+      expect(readFileSync(tempPath)).toEqual(replacement)
+      expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
+    } finally { fx.close() }
+  })
+
+  it('re-proves the exact published pair after link sync before removing its temp name', async () => {
+    const fx = await publicationFixture()
+    try {
+      const tempPath = join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary)
+      const replacement = Buffer.from('invented post-link replacement')
+      const result = v3RestorePublicationTestSeams.restoreWithSynchronizer(
+        fx.input,
+        (_root, phase) => {
+          if (phase !== 'link') return
+          unlinkSync(tempPath)
+          writeFileSync(tempPath, replacement, { flag: 'wx', mode: 0o600 })
+        },
+      )
+      expect(result).toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
+      expect(readFileSync(tempPath)).toEqual(replacement)
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))).toBe(true)
+      expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
     } finally { fx.close() }
   })
 })

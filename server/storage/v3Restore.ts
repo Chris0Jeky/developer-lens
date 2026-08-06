@@ -17,6 +17,7 @@ import Database from 'better-sqlite3'
 import { ArtifactIdV3Schema, IsoWeekV3Schema, ScopeIdV3Schema } from './v3Proposal.js'
 import {
   assertStorageV3ArtifactCatalogue,
+  assertStorageV3ArtifactDirectorySyncSupported,
   assertStorageV3ArtifactRootInstallationKey,
   bindStorageV3ArtifactRoot,
   openStorageV3ArtifactRoot,
@@ -401,6 +402,12 @@ function assertRestoreNoSidecars(root: StorageV3ArtifactRoot, locator: string): 
   }
 }
 
+function assertRestoreSidecarsAbsent(root: StorageV3ArtifactRoot, locator: string): void {
+  for (const suffix of ['-wal', '-shm', '-journal']) {
+    if (lstatRestore(storageV3ArtifactFilePath(root, `${locator}${suffix}`)) !== undefined) return fail()
+  }
+}
+
 function closeRestoreInput(raw: unknown): Readonly<StorageV3RestoreFromSelectionInput> {
   if (!raw || typeof raw !== 'object' || Array.isArray(raw) || Object.getPrototypeOf(raw) !== Object.prototype) return fail()
   const expected = ['directory', 'backupAt', 'backupArtifactId', 'installationKey', 'selection'] as const
@@ -531,10 +538,64 @@ function removeClaimedRestoreTemp(root: StorageV3ArtifactRoot, locator: string, 
   unlinkSync(path)
 }
 
+function removePublishedRestoreTemp(
+  root: StorageV3ArtifactRoot,
+  identity: Readonly<{ dev: bigint; ino: bigint }>,
+): void {
+  const tempPath = storageV3ArtifactFilePath(root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary)
+  const selectedPath = storageV3ArtifactFilePath(root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+  let tempDescriptor: number | undefined
+  let selectedDescriptor: number | undefined
+  try {
+    tempDescriptor = openSync(tempPath, constants.O_RDONLY | NO_FOLLOW)
+    selectedDescriptor = openSync(selectedPath, constants.O_RDONLY | NO_FOLLOW)
+    const temp = assertRestoreRegular(tempPath, tempDescriptor, 2n)
+    const selected = assertRestoreRegular(selectedPath, selectedDescriptor, 2n)
+    if (!sameRestoreIdentity(temp, identity) || !sameRestoreIdentity(selected, identity)) return fail()
+    unlinkSync(tempPath)
+    if (lstatRestore(tempPath) !== undefined) return fail()
+    const selectedAfter = assertRestoreRegular(selectedPath, selectedDescriptor, 1n)
+    if (!sameRestoreIdentity(selectedAfter, identity)) return fail()
+  } finally {
+    if (selectedDescriptor !== undefined) closeSync(selectedDescriptor)
+    if (tempDescriptor !== undefined) closeSync(tempDescriptor)
+  }
+}
+
+function recoverPublishedRestore(
+  root: StorageV3ArtifactRoot,
+  synchronize: RestoreSynchronizer,
+): void {
+  const tempPath = storageV3ArtifactFilePath(root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary)
+  const selectedPath = storageV3ArtifactFilePath(root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+  const tempEntry = lstatRestore(tempPath)
+  if (tempEntry === undefined) {
+    synchronize(root, 'temp-unlink')
+    return
+  }
+  let selectedDescriptor: number | undefined
+  try {
+    selectedDescriptor = openSync(selectedPath, constants.O_RDONLY | NO_FOLLOW)
+    const selected = assertRestoreRegular(selectedPath, selectedDescriptor, 2n)
+    const tempDescriptor = openSync(tempPath, constants.O_RDONLY | NO_FOLLOW)
+    try {
+      const temp = assertRestoreRegular(tempPath, tempDescriptor, 2n)
+      if (!sameRestoreIdentity(selected, temp)) return fail()
+    } finally { closeSync(tempDescriptor) }
+    const identity = Object.freeze({ dev: selected.dev, ino: selected.ino })
+    synchronize(root, 'link')
+    removePublishedRestoreTemp(root, identity)
+    synchronize(root, 'temp-unlink')
+  } finally {
+    if (selectedDescriptor !== undefined) closeSync(selectedDescriptor)
+  }
+}
+
 function restoreFromVerifiedSelection(
   rawInput: unknown,
   synchronize: RestoreSynchronizer,
   failAfterStage?: RestoreFailureInjector,
+  preflight?: () => void,
 ): StorageV3RestoreResult {
   let closed: Readonly<StorageV3RestoreFromSelectionInput>
   try { closed = closeRestoreInput(rawInput) } catch { return restoreUnavailable() }
@@ -543,6 +604,7 @@ function restoreFromVerifiedSelection(
   let publishedIdentity: Readonly<{ dev: bigint; ino: bigint }> | undefined
   let writable: Database.Database | undefined
   try {
+    preflight?.()
     root = openStorageV3ArtifactRoot(closed.directory)
     assertStorageV3ArtifactRootInstallationKey(root, closed.installationKey)
     return withStorageV3WriterLease(root, () => {
@@ -552,6 +614,7 @@ function restoreFromVerifiedSelection(
       const selectedEntry = lstatRestore(selectedPath)
       if (selectedEntry !== undefined) {
         if (selectedEntry.isSymbolicLink() || !selectedEntry.isFile()) return restoreUnavailable()
+        recoverPublishedRestore(root!, synchronize)
         const replay = openSelectedStorageV3StoreReadonly(closed.directory)
         try {
           const receipt = readStorageV3MigrationSelection(replay)
@@ -600,25 +663,31 @@ function restoreFromVerifiedSelection(
       assertExactRestoreSelection(recorded.selection, closed.selection)
       writable.close()
       writable = undefined
-      assertRestoreNoSidecars(root!, tempLocator)
-      const tempDescriptor = openSync(tempPath, constants.O_RDONLY | NO_FOLLOW)
+      failAfterStage?.('link')
+      assertRestoreSidecarsAbsent(root!, tempLocator)
+      // Windows rejects fsync on a read-only handle even though the bytes are
+      // already closed; O_RDWR is required only for the durability flush.
+      const tempDescriptor = openSync(tempPath, constants.O_RDWR | NO_FOLLOW)
       try {
         const stable = assertRestoreRegular(tempPath, tempDescriptor, 1n)
         fsyncSync(tempDescriptor)
         if (!sameRestoreIdentity(stable, claimedTemp!)) return fail()
+        const beforeLink = assertRestoreRegular(tempPath, tempDescriptor, 1n)
+        if (!sameRestoreIdentity(beforeLink, claimedTemp!)) return fail()
+        linkSync(tempPath, selectedPath)
+        const selectedDescriptor = openSync(selectedPath, constants.O_RDONLY | NO_FOLLOW)
+        try {
+          const linkedTemp = assertRestoreRegular(tempPath, tempDescriptor, 2n)
+          if (!sameRestoreIdentity(linkedTemp, claimedTemp!)) return fail()
+          const selectedStable = assertRestoreRegular(selectedPath, selectedDescriptor, 2n)
+          if (!sameRestoreIdentity(selectedStable, claimedTemp!)) return fail()
+          publishedIdentity = Object.freeze({ dev: selectedStable.dev, ino: selectedStable.ino })
+        } finally { closeSync(selectedDescriptor) }
       } finally { closeSync(tempDescriptor) }
-      failAfterStage?.('link')
-      linkSync(tempPath, selectedPath)
-      const selectedDescriptor = openSync(selectedPath, constants.O_RDONLY | NO_FOLLOW)
-      try {
-        const selectedStable = assertRestoreRegular(selectedPath, selectedDescriptor, 2n)
-        if (!sameRestoreIdentity(selectedStable, claimedTemp!)) return fail()
-        publishedIdentity = Object.freeze({ dev: selectedStable.dev, ino: selectedStable.ino })
-      } finally { closeSync(selectedDescriptor) }
       failAfterStage?.('directory-sync')
       synchronize(root!, 'link')
       failAfterStage?.('temp-unlink')
-      unlinkSync(tempPath)
+      removePublishedRestoreTemp(root!, publishedIdentity!)
       synchronize(root!, 'temp-unlink')
       failAfterStage?.('readonly-reopen')
       const reader = openSelectedStorageV3StoreReadonly(closed.directory)
@@ -646,7 +715,12 @@ function restoreFromVerifiedSelection(
 export function restoreStorageV3SelectedStoreFromVerifiedSelection(
   input: StorageV3RestoreFromSelectionInput,
 ): StorageV3RestoreResult {
-  return restoreFromVerifiedSelection(input, syncStorageV3ArtifactDirectory)
+  return restoreFromVerifiedSelection(
+    input,
+    syncStorageV3ArtifactDirectory,
+    undefined,
+    assertStorageV3ArtifactDirectorySyncSupported,
+  )
 }
 
 /** @internal invented-fixture synchronizer/failure seam; unavailable to production callers. */
@@ -656,7 +730,8 @@ export const v3RestorePublicationTestSeams = Object.freeze({
     synchronize: RestoreSynchronizer,
     failAfterStage?: RestoreFailureInjector,
   ): StorageV3RestoreResult {
-    if (typeof synchronize !== 'function' || (failAfterStage !== undefined && typeof failAfterStage !== 'function')) return restoreUnavailable()
+    if (typeof synchronize !== 'function'
+      || (failAfterStage !== undefined && typeof failAfterStage !== 'function')) return restoreUnavailable()
     return restoreFromVerifiedSelection(input, synchronize, failAfterStage)
   },
 })
