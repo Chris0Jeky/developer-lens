@@ -1,16 +1,15 @@
 import { z } from 'zod'
 import { CapabilityScopeAliasSchema, LowercaseSha256Schema } from '../../../shared/capabilities.js'
+import { isCanonicalTaskId } from '../../taskId.js'
 
 export const GITHUB_CORE_ACTIVATION_GRANT_ERROR_CODE =
   'GITHUB_CORE_ACTIVATION_GRANT_DENIED' as const
-
-const OPAQUE_TASK_ID = /^[A-Za-z0-9_-]{1,128}$/
 
 const inventedGrantInputSchema = z
   .object({
     fixture: z.literal('invented'),
     capabilityId: z.literal('github.core'),
-    taskId: z.string().regex(OPAQUE_TASK_ID),
+    taskId: z.string().refine(isCanonicalTaskId),
     taskCardSha256: LowercaseSha256Schema,
     installationKeyFingerprint: LowercaseSha256Schema,
     scopeAlias: CapabilityScopeAliasSchema,

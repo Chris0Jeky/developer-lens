@@ -1,15 +1,27 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
-import { constants, type BigIntStats } from 'node:fs'
+import {
+  closeSync,
+  constants,
+  fstatSync,
+  lstatSync,
+  openSync,
+  readSync,
+  type BigIntStats,
+} from 'node:fs'
 import { lstat, open, realpath, type FileHandle } from 'node:fs/promises'
 import { isAbsolute, join, relative, resolve } from 'node:path'
 import {
   createInstallationAliases,
   type InstallationAliases,
 } from './installationAliases.js'
+import { isCanonicalTaskId } from '../taskId.js'
+import {
+  assertGithubCoreActivationGrant,
+  type GithubCoreActivationGrant,
+} from '../connectors/github/activationGrant.js'
 
 export const TASK_INSTALLATION_KEY_ERROR_CODE = 'INVALID_TASK_INSTALLATION_KEY' as const
 
-const TASK_ID = /^[A-Za-z0-9_-]{1,128}$/
 const INSTALLATION_KEY_BYTES = 32
 const INSTALLATION_KEY_SIZE = 32n
 const INSTALLATION_KEY_FILE = 'installation-key.bin'
@@ -20,9 +32,9 @@ const RESTRICTIVE_FILE_MODE = 0o600
 /**
  * Default-off continuity foundation only.
  *
- * No durable report or activation card binds the returned fingerprint yet. A real runtime must
- * be introduced by a separate reviewed seam that supplies `expectedFingerprint`; loading without
- * that binding is suitable only for setup/inspection and is not continuity authorization.
+ * A bare expected fingerprint is only an integrity assertion because callers can copy it from an
+ * inspection handle. Continuity authorization requires fresh setup or a separately issued opaque
+ * source grant; there is still no production grant issuer or backup caller.
  */
 export class TaskInstallationKeyError extends Error {
   readonly code = TASK_INSTALLATION_KEY_ERROR_CODE
@@ -44,6 +56,11 @@ export type TaskInstallationKeyLoadInput = Readonly<{
   expectedFingerprint?: string
 }>
 
+export type GithubCoreTaskInstallationKeyLoadInput = Readonly<{
+  workspaceRoot: string
+  grant: GithubCoreActivationGrant
+}>
+
 export type TaskInstallationKeyHandle = Readonly<{
   taskId: string
   fingerprint: string
@@ -52,10 +69,13 @@ export type TaskInstallationKeyHandle = Readonly<{
 
 type HandleRecord = Readonly<{
   key: Buffer
+  keyPath: string
   taskDirectory: DirectoryIdentity
 }>
 
 const HANDLE_KEYS = new WeakMap<object, HandleRecord>()
+/** Private capability: only a fresh setup or anchored reload may sign durable backup material. */
+const CONTINUITY_AUTHORIZED_HANDLES = new WeakSet<object>()
 const TASK_INSTALLATION_BINDING_DOMAIN = 'developer-lens.storage-v3-backup-key-binding.v1' as const
 
 type ClosedInput = Readonly<{
@@ -125,6 +145,26 @@ function snapshotClosedInput(value: unknown, allowExpectedFingerprint: boolean):
   return { workspaceRoot, taskId, expectedFingerprint }
 }
 
+function snapshotGithubCoreGrantInput(value: unknown): Readonly<{
+  workspaceRoot: string
+  grant: GithubCoreActivationGrant
+}> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) invalidKey()
+  const keys = Reflect.ownKeys(value)
+  if (keys.length !== 2 || !keys.includes('workspaceRoot') || !keys.includes('grant')
+    || keys.some((key) => typeof key !== 'string' || !['workspaceRoot', 'grant'].includes(key))) {
+    invalidKey()
+  }
+  const workspaceRoot = ownDataValue(value, 'workspaceRoot')
+  const grantValue = ownDataValue(value, 'grant')
+  if (typeof workspaceRoot !== 'string') invalidKey()
+  try {
+    return Object.freeze({ workspaceRoot, grant: assertGithubCoreActivationGrant(grantValue) })
+  } catch {
+    return invalidKey()
+  }
+}
+
 function portableIdentityMatches(left: PortableIdentity, right: PortableIdentity): boolean {
   const leftAvailable = left.dev !== 0n || left.ino !== 0n
   const rightAvailable = right.dev !== 0n || right.ino !== 0n
@@ -147,6 +187,51 @@ function stableFileStateMatches(left: BigIntStats, right: BigIntStats): boolean 
     left.ctimeNs === right.ctimeNs
 }
 
+function assertCurrentKeyFileMatches(record: HandleRecord): void {
+  let descriptor: number | undefined
+  const firstRead = Buffer.alloc(INSTALLATION_KEY_BYTES)
+  const secondRead = Buffer.alloc(INSTALLATION_KEY_BYTES)
+  const overflow = Buffer.alloc(1)
+  try {
+    const before = lstatSync(record.keyPath, { bigint: true })
+    assertRegularKeyFile(before, INSTALLATION_KEY_SIZE)
+    descriptor = openSync(
+      record.keyPath,
+      constants.O_RDONLY | NON_BLOCKING_FLAG | NO_FOLLOW_FLAG,
+    )
+    const opened = fstatSync(descriptor, { bigint: true })
+    assertRegularKeyFile(opened, INSTALLATION_KEY_SIZE)
+    if (!stableFileStateMatches(before, opened)) invalidKey()
+    for (const bytes of [firstRead, secondRead]) {
+      let offset = 0
+      while (offset < bytes.length) {
+        const count = readSync(descriptor, bytes, offset, bytes.length - offset, offset)
+        if (count === 0) invalidKey()
+        offset += count
+      }
+      if (readSync(descriptor, overflow, 0, overflow.length, INSTALLATION_KEY_BYTES) !== 0) invalidKey()
+      const observed = fstatSync(descriptor, { bigint: true })
+      if (!stableFileStateMatches(opened, observed)) invalidKey()
+    }
+    const after = lstatSync(record.keyPath, { bigint: true })
+    if (!stableFileStateMatches(opened, after)
+      || !timingSafeEqual(firstRead, secondRead)
+      || !timingSafeEqual(firstRead, record.key)) invalidKey()
+  } catch (error) {
+    if (error instanceof TaskInstallationKeyError) throw error
+    return invalidKey()
+  } finally {
+    let closeFailed = false
+    if (descriptor !== undefined) {
+      try { closeSync(descriptor) } catch { closeFailed = true }
+    }
+    firstRead.fill(0)
+    secondRead.fill(0)
+    overflow.fill(0)
+    if (closeFailed) invalidKey()
+  }
+}
+
 async function captureCanonicalDirectory(path: string): Promise<DirectoryIdentity> {
   const before = await lstat(path, { bigint: true })
   const canonical = await realpath(path)
@@ -167,7 +252,7 @@ async function resolveCanonicalKeyPath(input: ClosedInput): Promise<CanonicalKey
     input.workspaceRoot.length === 0 ||
     !isAbsolute(input.workspaceRoot) ||
     resolve(input.workspaceRoot) !== input.workspaceRoot ||
-    !TASK_ID.test(input.taskId)
+    !isCanonicalTaskId(input.taskId)
   ) {
     invalidKey()
   }
@@ -269,6 +354,7 @@ function createOpaqueHandle(
   path: CanonicalKeyPath,
   key: Buffer,
   expectedFingerprint?: string,
+  continuityAuthorized = false,
 ): TaskInstallationKeyHandle {
   const fingerprint = createHash('sha256').update(key).digest('hex')
   if (expectedFingerprint !== undefined) {
@@ -286,7 +372,8 @@ function createOpaqueHandle(
   const handle = Object.freeze({ taskId: path.taskId, fingerprint, aliases: Object.freeze(aliases) })
   const taskDirectory = path.directories.at(-1)
   if (taskDirectory === undefined) invalidKey()
-  HANDLE_KEYS.set(handle, Object.freeze({ key: Buffer.from(key), taskDirectory }))
+  HANDLE_KEYS.set(handle, Object.freeze({ key: Buffer.from(key), keyPath: path.keyPath, taskDirectory }))
+  if (continuityAuthorized) CONTINUITY_AUTHORIZED_HANDLES.add(handle)
   return handle
 }
 
@@ -296,6 +383,13 @@ export type TaskInstallationKeyDirectoryIdentity = Readonly<{
   ino: bigint
 }>
 
+/** Prove that this opaque handle was freshly created or loaded against its reviewed fingerprint. */
+export function assertTaskInstallationKeyContinuity(handle: TaskInstallationKeyHandle): void {
+  if (!handle || typeof handle !== 'object'
+    || !HANDLE_KEYS.has(handle) || !CONTINUITY_AUTHORIZED_HANDLES.has(handle)) invalidKey()
+  assertCurrentKeyFileMatches(HANDLE_KEYS.get(handle) ?? invalidKey())
+}
+
 /** Prove that an opaque handle was loaded from this exact canonical task directory. */
 export function assertTaskInstallationKeyTaskDirectory(
   handle: TaskInstallationKeyHandle,
@@ -304,7 +398,7 @@ export function assertTaskInstallationKeyTaskDirectory(
   if (!handle || typeof handle !== 'object' || !directory || typeof directory !== 'object') invalidKey()
   const record = HANDLE_KEYS.get(handle)
   if (record === undefined
-    || !TASK_ID.test(handle.taskId)
+    || !isCanonicalTaskId(handle.taskId)
     || directory.path !== record.taskDirectory.path
     || !portableIdentityMatches(directory, record.taskDirectory)) invalidKey()
 }
@@ -315,6 +409,7 @@ export function bindTaskInstallationKeyBody(
   bodySha256: string,
 ): string {
   if (!handle || typeof handle !== 'object' || !/^[a-f0-9]{64}$/.test(bodySha256)) invalidKey()
+  assertTaskInstallationKeyContinuity(handle)
   const record = HANDLE_KEYS.get(handle)
   if (!record || handle.fingerprint !== createHash('sha256').update(record.key).digest('hex')) invalidKey()
   try {
@@ -381,7 +476,7 @@ async function setupTaskInstallationKeyCore(
       await handle.close()
     }
     if (snapshot === undefined) invalidKey()
-    return createOpaqueHandle(path, snapshot)
+    return createOpaqueHandle(path, snapshot, undefined, true)
   } catch (error) {
     if (error instanceof TaskInstallationKeyError) throw error
     return invalidKey()
@@ -396,6 +491,7 @@ async function setupTaskInstallationKeyCore(
 async function loadTaskInstallationKeyCore(
   input: TaskInstallationKeyLoadInput,
   hooks: InternalHooks,
+  continuityAuthorized = false,
 ): Promise<TaskInstallationKeyHandle> {
   let firstRead: Buffer | undefined
   let secondRead: Buffer | undefined
@@ -433,7 +529,12 @@ async function loadTaskInstallationKeyCore(
       await handle.close()
     }
     if (snapshot === undefined) invalidKey()
-    return createOpaqueHandle(path, snapshot, closedInput.expectedFingerprint)
+    return createOpaqueHandle(
+      path,
+      snapshot,
+      closedInput.expectedFingerprint,
+      continuityAuthorized,
+    )
   } catch (error) {
     if (error instanceof TaskInstallationKeyError) throw error
     return invalidKey()
@@ -452,13 +553,25 @@ export function setupTaskInstallationKey(
 }
 
 /**
- * Load an existing task-owned key without creating, replacing, or rotating it.
- * Omitting `expectedFingerprint` cannot establish continuity and is not a runtime authorization.
+ * Load an existing task-owned key without creating, replacing, or rotating it. A matching bare
+ * `expectedFingerprint` proves equality only; it never establishes backup continuity authority.
  */
 export function loadTaskInstallationKey(
   input: TaskInstallationKeyLoadInput,
 ): Promise<TaskInstallationKeyHandle> {
   return loadTaskInstallationKeyCore(input, NO_HOOKS)
+}
+
+/** Load an existing key through the process-local github.core grant that reviewed its binding. */
+export async function loadTaskInstallationKeyForGithubCoreGrant(
+  input: GithubCoreTaskInstallationKeyLoadInput,
+): Promise<TaskInstallationKeyHandle> {
+  const closed = snapshotGithubCoreGrantInput(input)
+  return loadTaskInstallationKeyCore({
+    workspaceRoot: closed.workspaceRoot,
+    taskId: closed.grant.taskId,
+    expectedFingerprint: closed.grant.installationKeyFingerprint,
+  }, NO_HOOKS, true)
 }
 
 /** @internal Invented-fixture seams only; production callers must use the closed public functions. */

@@ -14,8 +14,11 @@ import {
 import { tmpdir } from 'node:os'
 import { join, sep } from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
+import { githubCoreActivationGrantTestSeam } from '../connectors/github/activationGrant.js'
 import {
+  bindTaskInstallationKeyBody,
   loadTaskInstallationKey,
+  loadTaskInstallationKeyForGithubCoreGrant,
   setupTaskInstallationKey,
   TASK_INSTALLATION_KEY_ERROR_CODE,
   taskInstallationKeyTestSeams,
@@ -26,6 +29,8 @@ const TASK_ID = 'fixture-key-01'
 const KEY = Buffer.from(Array.from({ length: 32 }, (_, index) => index + 1))
 const OTHER_KEY = Buffer.from(Array.from({ length: 32 }, (_, index) => 255 - index))
 const RAW_REPOSITORY_ID = 'invented-repository-101'
+const CARD_SHA256 = 'a'.repeat(64)
+const SCOPE_ALIAS = `repo-${'c'.repeat(64)}`
 
 let roots: string[] = []
 
@@ -56,6 +61,17 @@ async function setupWithKey(root: string, bytes = KEY): ReturnType<
     { workspaceRoot: root, taskId: TASK_ID },
     () => Buffer.from(bytes),
   )
+}
+
+function inventedGrant(fingerprint: string, taskId = TASK_ID) {
+  return githubCoreActivationGrantTestSeam.issueInventedGrant({
+    fixture: 'invented',
+    capabilityId: 'github.core',
+    taskId,
+    taskCardSha256: CARD_SHA256,
+    installationKeyFingerprint: fingerprint,
+    scopeAlias: SCOPE_ALIAS,
+  })
 }
 
 async function expectInvalid(
@@ -191,6 +207,70 @@ describe('task-owned installation-key continuity', () => {
     expect(reopened.aliases.githubCoreAlias('page', 'invented-page-1')).toBe(
       created.aliases.githubCoreAlias('page', 'invented-page-1'),
     )
+  })
+
+  it('authorizes backup signing only for setup or an opaque grant-backed fingerprint', async () => {
+    const root = await fixtureRoot()
+    const created = await setupWithKey(root)
+    const body = 'a'.repeat(64)
+    const setupBinding = bindTaskInstallationKeyBody(created, body)
+
+    const ordinary = await loadTaskInstallationKey({ workspaceRoot: root, taskId: TASK_ID })
+    expect(() => bindTaskInstallationKeyBody(ordinary, body)).toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
+    const matchingInspection = await loadTaskInstallationKey({
+      workspaceRoot: root,
+      taskId: TASK_ID,
+      expectedFingerprint: created.fingerprint,
+    })
+    expect(() => bindTaskInstallationKeyBody(matchingInspection, body))
+      .toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
+    const anchored = await loadTaskInstallationKeyForGithubCoreGrant({
+      workspaceRoot: root,
+      grant: inventedGrant(created.fingerprint),
+    })
+    expect(bindTaskInstallationKeyBody(anchored, body)).toBe(setupBinding)
+
+    const forged = Object.freeze({ ...anchored })
+    expect(() => bindTaskInstallationKeyBody(forged, body)).toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
+
+    await writeFile(keyPath(root), OTHER_KEY, { mode: 0o600 })
+    expect(() => bindTaskInstallationKeyBody(created, body)).toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
+    const replacement = await loadTaskInstallationKey({ workspaceRoot: root, taskId: TASK_ID })
+    expect(() => bindTaskInstallationKeyBody(replacement, body)).toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
+    const copiedFingerprint = await loadTaskInstallationKey({
+      workspaceRoot: root,
+      taskId: TASK_ID,
+      expectedFingerprint: replacement.fingerprint,
+    })
+    expect(() => bindTaskInstallationKeyBody(copiedFingerprint, body))
+      .toThrow(TASK_INSTALLATION_KEY_ERROR_CODE)
+    await expectInvalid(loadTaskInstallationKeyForGithubCoreGrant({
+      workspaceRoot: root,
+      grant: inventedGrant(created.fingerprint),
+    }), [root, OTHER_KEY.toString('hex')])
+    await expectInvalid(loadTaskInstallationKey({
+      workspaceRoot: root,
+      taskId: TASK_ID,
+      expectedFingerprint: created.fingerprint,
+    }), [root, OTHER_KEY.toString('hex')])
+  })
+
+  it('closes the source-grant adapter before awaiting and rejects forged or accessor grants', async () => {
+    const root = await fixtureRoot()
+    const created = await setupWithKey(root)
+    const forged = Object.freeze({ ...inventedGrant(created.fingerprint) })
+    await expectInvalid(loadTaskInstallationKeyForGithubCoreGrant({ workspaceRoot: root, grant: forged }))
+
+    let getterCalled = false
+    const accessor = { workspaceRoot: root } as Record<string, unknown>
+    Object.defineProperty(accessor, 'grant', {
+      enumerable: true,
+      get: () => { getterCalled = true; return inventedGrant(created.fingerprint) },
+    })
+    await expectInvalid(loadTaskInstallationKeyForGithubCoreGrant(
+      accessor as unknown as Parameters<typeof loadTaskInstallationKeyForGithubCoreGrant>[0],
+    ))
+    expect(getterCalled).toBe(false)
   })
 
   it('snapshots closed data properties before awaiting and rejects accessors or mutations', async () => {

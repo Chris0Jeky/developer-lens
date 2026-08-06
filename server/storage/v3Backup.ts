@@ -38,6 +38,7 @@ import {
   bindTaskInstallationKeyBody,
   type TaskInstallationKeyHandle,
 } from './taskInstallationKey.js'
+import { isCanonicalTaskId } from '../taskId.js'
 
 export const STORAGE_V3_BACKUP_ERROR = 'STORAGE_V3_BACKUP_INVALID' as const
 const BACKUP_DOMAIN = 'developer-lens.storage-v3-backup-manifest.v1' as const
@@ -210,7 +211,7 @@ function assertInput(input: StorageV3BackupInput): void {
   validateAt(input.backupAt)
   if (!/^art-[0-9a-f]{64}$/.test(input.artifactId)) fail()
   if (!input.installationKey || typeof input.installationKey !== 'object'
-    || !/^[a-z0-9_-]{1,128}$/.test(input.installationKey.taskId)
+    || !isCanonicalTaskId(input.installationKey.taskId)
     || !/^[a-f0-9]{64}$/.test(input.installationKey.fingerprint)) fail()
   const scopes = input.ownerScopeIds
   if (!Array.isArray(scopes) || scopes.length === 0
@@ -391,7 +392,11 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
   ).get(tempLocator) as { artifact_id: string; content_sha256: string; manifest_sha256: string } | undefined
   if (stagedRow) {
     assertStorageV3ArtifactCatalogue(input.db)
-    const intentSha256 = storageV3MigrationBackupIntentSha256(input.artifactId, locator)
+    const intentSha256 = storageV3MigrationBackupIntentSha256(
+      input.artifactId,
+      locator,
+      input.installationKey.fingerprint,
+    )
     if (stagedRow.artifact_id !== input.artifactId
       || stagedRow.content_sha256 !== intentSha256
       || stagedRow.manifest_sha256 !== intentSha256) fail()
@@ -412,6 +417,7 @@ function attempt(input: StorageV3BackupInput): StorageV3BackupResult | Promise<S
       artifactId: input.artifactId,
       finalLocator: locator,
       scopeIds: input.ownerScopeIds,
+      installationKey: input.installationKey,
     })
     input.failAfterStage?.('intentCommitted')
   }
