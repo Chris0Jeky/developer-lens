@@ -837,7 +837,10 @@ const selectionReceiptSqlBlock = `CREATE TABLE IF NOT EXISTS migration_selection
   backup_artifact_id TEXT NOT NULL CHECK (${key('backup_artifact_id', 'art-')}),
   successful_report_at TEXT NOT NULL CHECK (${canonicalTimestampShape('successful_report_at')}),
   grace_deadline_at TEXT NOT NULL CHECK (${canonicalTimestampShape('grace_deadline_at')}),
-  CHECK (strftime('%Y-%m-%dT%H:%M:%fZ', successful_report_at, '+7 days') = grace_deadline_at)
+  CHECK (
+    strftime('%Y-%m-%dT%H:%M:%fZ', successful_report_at, '+7 days') IS NOT NULL
+    AND strftime('%Y-%m-%dT%H:%M:%fZ', successful_report_at, '+7 days') = grace_deadline_at
+  )
 ) STRICT;
 CREATE TRIGGER IF NOT EXISTS storage_v3_selection_insert_guard
 BEFORE INSERT ON migration_selection_state

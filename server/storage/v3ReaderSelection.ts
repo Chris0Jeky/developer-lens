@@ -14,10 +14,13 @@ import {
 } from './v3Backup.js'
 import {
   recordStorageV3MigrationSelection,
+  issueStorageV3MigrationSuccessReport,
+  storageV3MigrationRootBinding,
   readStorageV3MigrationSelection,
   StorageV3MigrationSelectionError,
   v3SelectionReceiptTestSeams,
   type StorageV3MigrationSelection,
+  type StorageV3MigrationSuccessReportProof,
 } from './v3SelectionReceipt.js'
 import {
   openSelectedStorageV3Store,
@@ -50,7 +53,6 @@ export type StorageV3ReaderSelectionCode = typeof STORAGE_V3_READER_SELECTION_CO
 export type StorageV3ReaderSelectionInput = Readonly<{
   directory: string
   legacySourceId: string
-  successfulReportAt: string
   backupArtifactId: string
   backupAt: string
   installationKey: TaskInstallationKeyHandle
@@ -159,8 +161,7 @@ function assertReplayRequest(
 ): void {
   if (selection.legacySourceId !== input.legacySourceId
     || selection.selectedArtifactId !== selectedArtifactId
-    || selection.backupArtifactId !== input.backupArtifactId
-    || selection.successfulReportAt !== input.successfulReportAt) {
+    || selection.backupArtifactId !== input.backupArtifactId) {
     throw new StorageV3SelectedRefusalError()
   }
 }
@@ -171,7 +172,6 @@ function closeInput(input: unknown): ClosedSelectionInput {
   const expected = [
     'directory',
     'legacySourceId',
-    'successfulReportAt',
     'backupArtifactId',
     'backupAt',
     'installationKey',
@@ -188,20 +188,17 @@ function closeInput(input: unknown): ClosedSelectionInput {
   }
   const directory = value('directory')
   const legacySourceId = value('legacySourceId')
-  const successfulReportAt = value('successfulReportAt')
   const backupArtifactId = value('backupArtifactId')
   const backupAt = value('backupAt')
   const installationKey = value('installationKey')
   if (typeof directory !== 'string' || directory.length === 0
     || typeof legacySourceId !== 'string'
-    || typeof successfulReportAt !== 'string'
     || typeof backupArtifactId !== 'string'
     || typeof backupAt !== 'string'
     || !installationKey || typeof installationKey !== 'object') throw new Error('INVALID')
   return Object.freeze({
     directory,
     legacySourceId,
-    successfulReportAt,
     backupArtifactId,
     backupAt,
     installationKey: installationKey as TaskInstallationKeyHandle,
@@ -229,7 +226,17 @@ function selectStorageV3ReaderInternal(
   beforeReceiptCommit?: () => void,
   publishProof: SelectionProofPublisher = publishStorageV3MigrationSelectionProof,
   preflightProof: () => void = assertStorageV3ArtifactDirectorySyncSupported,
+  issueSuccessReport: (input: {
+    legacySourceId: string
+    selectedArtifactId: string
+    backupArtifactId: string
+    backupAt: string
+    taskId: string
+    taskFingerprint: string
+    rootBinding: string
+  }) => StorageV3MigrationSuccessReportProof = issueStorageV3MigrationSuccessReport,
 ): StorageV3ReaderSelection {
+  const rootBindingFor = storageV3MigrationRootBinding
   let stage: SelectionStage = 'request'
   let openedDb: Database.Database | undefined
   let root: ReturnType<typeof openStorageV3ArtifactRoot> | undefined
@@ -278,7 +285,19 @@ function selectStorageV3ReaderInternal(
           legacySourceId: closed.legacySourceId,
           selectedArtifactId: backup.selectedArtifactId,
           backupArtifactId: backup.artifactId,
-          successfulReportAt: closed.successfulReportAt,
+          backupAt: closed.backupAt,
+          taskId: closed.installationKey.taskId,
+          taskFingerprint: closed.installationKey.fingerprint,
+          rootBinding: rootBindingFor(closed.directory),
+          successReportProof: issueSuccessReport({
+            legacySourceId: closed.legacySourceId,
+            selectedArtifactId: backup.selectedArtifactId,
+            backupArtifactId: backup.artifactId,
+            backupAt: closed.backupAt,
+            taskId: closed.installationKey.taskId,
+            taskFingerprint: closed.installationKey.fingerprint,
+            rootBinding: rootBindingFor(closed.directory),
+          }),
         })
         const recorded = beforeReceiptCommit === undefined
           ? recordStorageV3MigrationSelection(db, receiptInput)
@@ -334,6 +353,7 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
   selectWithBeforeReceiptCommit(
     input: StorageV3ReaderSelectionInput,
     beforeReceiptCommit: () => void,
+    successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof beforeReceiptCommit !== 'function') return fallback('v3-selection-request-invalid')
     return selectStorageV3ReaderInternal(
@@ -343,6 +363,10 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, () => {},
       ),
       () => {},
+      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        report,
+        successfulReportAt,
+      ),
     )
   },
   selectWithProofDirectorySynchronizer(
@@ -351,6 +375,7 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
       root: ReturnType<typeof openStorageV3ArtifactRoot>,
       stage: StorageV3SelectionProofPublicationStage,
     ) => void,
+    successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof synchronizer !== 'function') return fallback('v3-selection-request-invalid')
     return selectStorageV3ReaderInternal(
@@ -360,11 +385,16 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, synchronizer,
       ),
       () => {},
+      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        report,
+        successfulReportAt,
+      ),
     )
   },
   selectWithProofPreflight(
     input: StorageV3ReaderSelectionInput,
     preflight: () => void,
+    successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof preflight !== 'function') return fallback('v3-selection-request-invalid')
     return selectStorageV3ReaderInternal(
@@ -374,6 +404,20 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, () => {},
       ),
       preflight,
+      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        report,
+        successfulReportAt,
+      ),
+    )
+  },
+  selectWithRuntimeSuccessReport(input: StorageV3ReaderSelectionInput): StorageV3ReaderSelection {
+    return selectStorageV3ReaderInternal(
+      input,
+      undefined,
+      (db, root, installationKey) => v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        db, root, installationKey, () => {},
+      ),
+      () => {},
     )
   },
 })

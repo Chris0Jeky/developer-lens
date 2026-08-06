@@ -19,7 +19,12 @@ import {
   verifyStorageV3MigrationSelectionProof,
 } from './v3SelectionProof.js'
 import { taskInstallationKeyTestSeams } from './taskInstallationKey.js'
-import { recordStorageV3MigrationSelection, type StorageV3MigrationSelection } from './v3SelectionReceipt.js'
+import {
+  recordStorageV3MigrationSelection,
+  replayStorageV3MigrationSuccessReport,
+  storageV3MigrationRootBinding,
+  type StorageV3MigrationSelection,
+} from './v3SelectionReceipt.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 
 const selection: StorageV3MigrationSelection = Object.freeze({
@@ -36,6 +41,7 @@ async function fixture(taskId = 'invented-selection-proof-task') {
   const rootPath = join(workspaceRoot, '.developer-lens', 'activation', taskId)
   mkdirSync(rootPath, { recursive: true })
   const root = createStorageV3ArtifactRoot(rootPath)
+  const key = await taskInstallationKeyTestSeams.setupWithRandomBytes({ workspaceRoot, taskId }, () => Buffer.alloc(32, 7))
   const db = new Database(join(rootPath, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))
   installStorageV3ShadowSchema(db)
   db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(`scope-${'a'.repeat(64)}`)
@@ -45,9 +51,20 @@ async function fixture(taskId = 'invented-selection-proof-task') {
     legacySourceId: selection.legacySourceId,
     selectedArtifactId,
     backupArtifactId: selection.backupArtifactId,
-    successfulReportAt: selection.successfulReportAt,
+    backupAt: '2026-08-06T12:34:55Z',
+    taskId: key.taskId,
+    taskFingerprint: key.fingerprint,
+    rootBinding: storageV3MigrationRootBinding(rootPath),
+    successReportProof: replayStorageV3MigrationSuccessReport({
+      legacySourceId: selection.legacySourceId,
+      selectedArtifactId,
+      backupArtifactId: selection.backupArtifactId,
+      backupAt: '2026-08-06T12:34:55Z',
+      taskId: key.taskId,
+      taskFingerprint: key.fingerprint,
+      rootBinding: storageV3MigrationRootBinding(rootPath),
+    }, selection.successfulReportAt),
   })
-  const key = await taskInstallationKeyTestSeams.setupWithRandomBytes({ workspaceRoot, taskId }, () => Buffer.alloc(32, 7))
   return {
     workspaceRoot,
     rootPath,
@@ -144,7 +161,19 @@ describe('LIFE-03 durable migration selection proof', () => {
           legacySourceId: selection.legacySourceId,
           selectedArtifactId: selection.selectedArtifactId,
           backupArtifactId: selection.backupArtifactId,
-          successfulReportAt: selection.successfulReportAt,
+          backupAt: '2026-08-06T12:34:55Z',
+          taskId: fx.key.taskId,
+          taskFingerprint: fx.key.fingerprint,
+          rootBinding: storageV3MigrationRootBinding(fx.rootPath),
+          successReportProof: replayStorageV3MigrationSuccessReport({
+            legacySourceId: selection.legacySourceId,
+            selectedArtifactId: selection.selectedArtifactId,
+            backupArtifactId: selection.backupArtifactId,
+            backupAt: '2026-08-06T12:34:55Z',
+            taskId: fx.key.taskId,
+            taskFingerprint: fx.key.fingerprint,
+            rootBinding: storageV3MigrationRootBinding(fx.rootPath),
+          }, selection.successfulReportAt),
         })
         expect(() => v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
           forged, fx.root, fx.key, noop,

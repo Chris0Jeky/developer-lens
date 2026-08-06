@@ -41,7 +41,7 @@ const BACKUP_AT = '2026-08-06T12:34:56Z'
 const SUCCESS_AT = '2026-08-06T12:35:00.000Z'
 
 const selectStorageV3Reader = (input: StorageV3ReaderSelectionInput) =>
-  v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(input, () => {})
+  v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(input, () => {}, SUCCESS_AT)
 
 type Fixture = Readonly<{
   workspaceRoot: string
@@ -54,7 +54,7 @@ type Fixture = Readonly<{
 
 async function fixture(): Promise<Fixture> {
   const workspaceRoot = mkdtempSync(join(tmpdir(), 'developer-lens-life03-selection-'))
-  const taskId = 'invented-selection-task'
+  const taskId = 'DL-LIFE-03'
   const root = join(workspaceRoot, '.developer-lens', 'activation', taskId)
   mkdirSync(root, { recursive: true })
   const rootHandle = createStorageV3ArtifactRoot(root)
@@ -89,7 +89,6 @@ async function fixture(): Promise<Fixture> {
       input: Object.freeze({
         directory: root,
         legacySourceId: LEGACY_SOURCE_ID,
-        successfulReportAt: SUCCESS_AT,
         backupArtifactId: BACKUP_ARTIFACT_ID,
         backupAt: BACKUP_AT,
         installationKey: key,
@@ -168,6 +167,7 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
         (_root, stage) => {
           if (stage === 'tempDurable') throw new Error('invented proof sync failure')
         },
+        SUCCESS_AT,
       )
       expect(refused).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
       const selected = openSelectedStorageV3Store(fx.root)
@@ -187,7 +187,7 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       writeFileSync(proofPath, foreign, { flag: 'wx', mode: 0o600 })
       expect(v3ReaderSelectionTestSeams.selectWithProofPreflight(fx.input, () => {
         throw new Error('invented proof preflight failure')
-      })).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      }, SUCCESS_AT)).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
       const beforeReceipt = openSelectedStorageV3Store(fx.root)
       expect(readStorageV3MigrationSelection(beforeReceipt)).toBeUndefined()
       beforeReceipt.close()
@@ -220,7 +220,7 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
     try {
       const interrupted = v3ReaderSelectionTestSeams.selectWithBeforeReceiptCommit(fx.input, () => {
         throw new Error('invented pre-commit interruption')
-      })
+      }, SUCCESS_AT)
       expect(interrupted).toEqual({ reader: 'legacy-json', code: 'v3-selection-receipt-refused' })
       expect(existsSync(storageV3WriterLeasePath(openStorageV3ArtifactRoot(fx.root)))).toBe(false)
 
@@ -234,19 +234,26 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
     } finally { fx.cleanup() }
   })
 
-  it('preserves the original success time and deadline instead of extending grace', async () => {
+  it('owns the production success time and preserves its deadline on replay', async () => {
     const fx = await fixture()
     try {
-      const first = expectSelected(selectStorageV3Reader(fx.input))
-      first.db.close()
-      expect(selectStorageV3Reader({
+      expect(v3ReaderSelectionTestSeams.selectWithRuntimeSuccessReport({
         ...fx.input,
-        successfulReportAt: '2026-08-06T12:35:01.000Z',
-      })).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+        successfulReportAt: SUCCESS_AT,
+      } as unknown as StorageV3ReaderSelectionInput)).toEqual({
+        reader: 'legacy-json', code: 'v3-selection-request-invalid',
+      })
 
-      const exact = expectSelected(selectStorageV3Reader(fx.input))
-      expect(exact.selection.successfulReportAt).toBe(SUCCESS_AT)
-      expect(exact.selection.graceDeadlineAt).toBe('2026-08-13T12:35:00.000Z')
+      const before = Date.now()
+      const first = expectSelected(v3ReaderSelectionTestSeams.selectWithRuntimeSuccessReport(fx.input))
+      const after = Date.now()
+      expect(Date.parse(first.selection.successfulReportAt)).toBeGreaterThanOrEqual(before)
+      expect(Date.parse(first.selection.successfulReportAt)).toBeLessThanOrEqual(after)
+      const originalSelection = first.selection
+      first.db.close()
+
+      const exact = expectSelected(v3ReaderSelectionTestSeams.selectWithRuntimeSuccessReport(fx.input))
+      expect(exact.selection).toEqual(originalSelection)
       exact.db.close()
     } finally { fx.cleanup() }
   })

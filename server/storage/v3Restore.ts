@@ -34,6 +34,8 @@ import {
 import {
   readStorageV3MigrationSelection,
   recordStorageV3MigrationSelection,
+  replayStorageV3MigrationSuccessReport,
+  storageV3MigrationRootBinding,
   type StorageV3MigrationSelection,
 } from './v3SelectionReceipt.js'
 import {
@@ -637,7 +639,19 @@ function restoreFromVerifiedSelection(
         legacySourceId: selection.legacySourceId,
         selectedArtifactId: selection.selectedArtifactId,
         backupArtifactId: selection.backupArtifactId,
-        successfulReportAt: selection.successfulReportAt,
+        backupAt: verified.backupAt,
+        taskId: closed.installationKey.taskId,
+        taskFingerprint: closed.installationKey.fingerprint,
+        rootBinding: storageV3MigrationRootBinding(closed.directory),
+        successReportProof: replayStorageV3MigrationSuccessReport({
+          legacySourceId: selection.legacySourceId,
+          selectedArtifactId: selection.selectedArtifactId,
+          backupArtifactId: selection.backupArtifactId,
+          backupAt: verified.backupAt,
+          taskId: closed.installationKey.taskId,
+          taskFingerprint: closed.installationKey.fingerprint,
+          rootBinding: storageV3MigrationRootBinding(closed.directory),
+        }, selection.successfulReportAt),
       })
       assertExactRestoreSelection(recorded.selection, selection)
       writable.close()
