@@ -298,6 +298,17 @@ describe('LIFE-02 B4 app-owned artifact catalogue', { timeout: 30_000 }, () => {
         relativeLocator: 'invented-linked.sqlite',
         scopeIds: [SCOPE_A],
       }))
+      writeInventedSqlite(join(fixture.root, 'invented-ownerless.sqlite'))
+      expectArtifactError(() => registerStorageV3Artifact({
+        db: fixture.store,
+        kind: 'invented_fixture_store',
+        relativeLocator: 'invented-ownerless.sqlite',
+        scopeIds: [],
+      }))
+      expect(fixture.store.prepare(
+        'SELECT 1 FROM app_artifact WHERE relative_locator = ?',
+      ).get('invented-ownerless.sqlite')).toBeUndefined()
+      expect(() => assertPublishedStorageV3ArtifactCatalogue(fixture.store)).not.toThrow()
       expect(() => fixture.store.prepare(
         `INSERT INTO app_artifact (
           artifact_id, kind, state, manifest_sha256, content_sha256, relative_locator

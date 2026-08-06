@@ -2429,9 +2429,9 @@ below is history. The live resume point is the rest of the analytics-core kernel
   ownership, checkpoints/TRUNCATEs WAL, VACUUMs, checkpoints again, and only then marks maintenance
   complete. Every artifact phase and all five maintenance phases have close/reopen crash fixtures;
   a shared multi-scope backup is deleted whole while another scope's artifact remains.
-- **Proof.** Focused storage/analysis-pack proof: 9 files, 162 passed and 1 opt-in scale test skipped.
+- **Proof.** Focused storage/analysis-pack proof: 9 files, 163 passed and 1 opt-in scale test skipped.
   The full local gate passed: lint, context verification (27 Markdown / 12 required), 73 test files,
-  1,194 passed and 1 opt-in scale test skipped, TypeScript/build, and credential scan over 13 build
+  1,195 passed and 1 opt-in scale test skipped, TypeScript/build, and credential scan over 13 build
   outputs. The first full-gate attempt correctly failed the storage-v3 AST boundary on the new
   catalogue; the final head narrows that gate to the catalogue's two runtime consumers and exact
   schema/proposal dependencies, and the rerun is green.

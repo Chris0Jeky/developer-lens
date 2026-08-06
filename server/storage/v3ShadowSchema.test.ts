@@ -503,6 +503,31 @@ describe('storage-v3 B2a shadow schema', () => {
     }
   })
 
+  it('refuses INSERT OR REPLACE from discarding pending maintenance identity', () => {
+    const db = new Database(':memory:')
+    try {
+      installStorageV3ShadowSchema(db)
+      db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(scopeA)
+      db.prepare(`INSERT INTO storage_maintenance_state (
+        singleton, state, operation_id, scope_id, event_week
+      ) VALUES (1, 'pending', ?, ?, '2026-W05')`).run(id('del-'), scopeA)
+
+      expect(() => db.prepare(`INSERT OR REPLACE INTO storage_maintenance_state (
+        singleton, state, operation_id, scope_id, event_week
+      ) VALUES (1, 'complete', NULL, NULL, NULL)`).run())
+        .toThrow('STORAGE_V3_ARTIFACT_INVALID')
+      expect(db.prepare(`SELECT state, operation_id, scope_id, event_week
+        FROM storage_maintenance_state WHERE singleton = 1`).get()).toEqual({
+        state: 'pending',
+        operation_id: id('del-'),
+        scope_id: scopeA,
+        event_week: '2026-W05',
+      })
+    } finally {
+      db.close()
+    }
+  })
+
   it('binds ownerless artifact and deletion lineage to a single scope', () => {
     const db = new Database(':memory:')
     try {

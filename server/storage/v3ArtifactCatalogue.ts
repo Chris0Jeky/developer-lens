@@ -479,7 +479,10 @@ function insertArtifact(
 ): void {
   validateLocator(input.kind, input.locator)
   const scopes = [...new Set(input.scopeIds)].sort()
-  if (scopes.length !== input.scopeIds.length) fail()
+  if (
+    scopes.length !== input.scopeIds.length
+    || (input.kind !== 'selected_store' && scopes.length === 0)
+  ) fail()
   for (const scopeId of scopes) {
     if (!ScopeIdV3Schema.safeParse(scopeId).success) fail()
     if (!db.prepare('SELECT 1 FROM claim_scope WHERE scope_id = ?').get(scopeId)) fail()

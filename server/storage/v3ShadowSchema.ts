@@ -95,6 +95,7 @@ export const STORAGE_V3_ARTIFACT_TRIGGER_NAMES = Object.freeze([
   'storage_v3_artifact_scope_delete_guard',
   'storage_v3_artifact_scope_no_update',
   'storage_v3_artifact_state_transition',
+  'storage_v3_maintenance_insert_guard',
   'storage_v3_maintenance_no_delete',
   'storage_v3_maintenance_transition',
 ] as const)
@@ -587,6 +588,14 @@ CREATE TABLE IF NOT EXISTS storage_maintenance_state (
     (state = 'pending' AND operation_id IS NOT NULL AND scope_id IS NOT NULL AND event_week IS NOT NULL)
   )
 ) STRICT;
+CREATE TRIGGER IF NOT EXISTS storage_v3_maintenance_insert_guard
+BEFORE INSERT ON storage_maintenance_state
+WHEN EXISTS (
+  SELECT 1 FROM storage_maintenance_state WHERE singleton = NEW.singleton
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
 CREATE TRIGGER IF NOT EXISTS storage_v3_artifact_identity_immutable
 BEFORE UPDATE OF artifact_id, kind, manifest_sha256, content_sha256, relative_locator ON app_artifact
 WHEN OLD.artifact_id IS NOT NEW.artifact_id
