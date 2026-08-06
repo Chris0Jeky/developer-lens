@@ -8,12 +8,14 @@ import {
 } from './v3Backup.js'
 import {
   recordStorageV3MigrationSelection,
+  readStorageV3MigrationSelection,
   StorageV3MigrationSelectionError,
   v3SelectionReceiptTestSeams,
   type StorageV3MigrationSelection,
 } from './v3SelectionReceipt.js'
 import {
   openSelectedStorageV3Store,
+  openSelectedStorageV3StoreReadonly,
   StorageV3StoreFileError,
 } from './v3StoreFiles.js'
 import type { TaskInstallationKeyHandle } from './taskInstallationKey.js'
@@ -149,7 +151,22 @@ function selectStorageV3ReaderInternal(
       const receipt = beforeReceiptCommit === undefined
         ? recordStorageV3MigrationSelection(db, receiptInput)
         : v3SelectionReceiptTestSeams.recordWithBeforeCommit(db, receiptInput, beforeReceiptCommit)
-      return Object.freeze({ reader: 'sqlite-v3' as const, db, selection: receipt.selection })
+      db.close()
+      openedDb = undefined
+      stage = 'store'
+      const readerDb = openSelectedStorageV3StoreReadonly(closed.directory)
+      openedDb = readerDb
+      stage = 'receipt'
+      const durableSelection = readStorageV3MigrationSelection(readerDb)
+      if (durableSelection === undefined
+        || durableSelection.legacySourceId !== receipt.selection.legacySourceId
+        || durableSelection.selectedArtifactId !== receipt.selection.selectedArtifactId
+        || durableSelection.backupArtifactId !== receipt.selection.backupArtifactId
+        || durableSelection.successfulReportAt !== receipt.selection.successfulReportAt
+        || durableSelection.graceDeadlineAt !== receipt.selection.graceDeadlineAt) {
+        throw new StorageV3MigrationSelectionError()
+      }
+      return Object.freeze({ reader: 'sqlite-v3' as const, db: readerDb, selection: durableSelection })
     })
     openedDb = undefined
     return selected

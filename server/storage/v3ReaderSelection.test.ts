@@ -112,6 +112,8 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
     try {
       const first = expectSelected(selectStorageV3Reader(fx.input))
       expect(first.db.open).toBe(true)
+      expect(first.db.readonly).toBe(true)
+      expect(() => first.db.prepare('DELETE FROM claim_scope').run()).toThrow()
       expect(first.selection).toEqual({
         readerState: 'v3_selected',
         legacySourceId: LEGACY_SOURCE_ID,
