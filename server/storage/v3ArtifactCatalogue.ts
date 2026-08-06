@@ -610,6 +610,7 @@ export function registerStorageV3Artifact(
   options: RegisterStorageV3ArtifactOptions,
 ): Readonly<{ artifactId: string; state: 'active' }> {
   const { db, kind, relativeLocator, scopeIds } = options
+  if (kind === 'migration_backup_v1') fail()
   assertSelectedStoreIdentity(db)
   assertStorageV3ArtifactCatalogue(db)
   if (readMaintenance(db).state !== 'complete') fail()

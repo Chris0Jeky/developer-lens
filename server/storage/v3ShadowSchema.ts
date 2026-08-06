@@ -28,9 +28,9 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.0-shadow-b4' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.1-shadow-life03-backup' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 307
+export const STORAGE_V3_SHADOW_USER_VERSION = 308
 
 /**
  * B4's closed app-owned artifact domain.  Analysis packs are deliberately absent:
