@@ -41,10 +41,10 @@ function schemaObject(value: unknown, label: string): JsonSchemaObject {
 
 // Runtime-validation-only invariants (see research-contracts/research-pack/v1/README.md).
 // The standalone Draft 2020-12 schema is necessary-but-not-sufficient: several ResearchPack
-// `superRefine` rules cannot be faithfully expressed in standard Draft 2020-12 because they
-// require comparing or de-duplicating values across sibling fields, which the vocabulary has
-// no keyword for. External Draft 2020-12 consumers MUST still run the authoritative TypeScript
-// validator (shared/researchPack.ts) to reject:
+// `superRefine` rules cannot be faithfully expressed in standard Draft 2020-12 — most require
+// comparing or de-duplicating values across sibling fields (no keyword for that), and one enforces
+// calendar validity a shape pattern cannot. External Draft 2020-12 consumers MUST still run the
+// authoritative TypeScript validator (shared/researchPack.ts) to reject:
 //   1. Reversed temporal windows — TimeWindowSchema requires window.start strictly before
 //      window.end; comparing two sibling instant strings has no standard keyword.
 //   2. Distinct artifact digests — present relations must not share one artifact.sha256;
@@ -54,6 +54,9 @@ function schemaObject(value: unknown, label: string): JsonSchemaObject {
 //   4. The C1 ISO-week Monday-ness of each floored boundary and the rolling 36-calendar-month
 //      cutoff relative to generated_at; the schema only floors the `T00:00:00Z` midnight via a
 //      pattern (the surrounding $comment records the residual runtime obligation).
+//   5. Calendar validity — a shape-valid but impossible instant (e.g. 2026-02-30T12:00:00Z) passes
+//      the date-time pattern but CanonicalUtcSchema/canonicalUtcMicros rejects it; pattern/format
+//      checks lexical shape, not calendar existence.
 // What the standalone schema DOES encode toward parity: present/non-present relation and
 // availability field-presence, the relation-specific schema_id const (a present relation must
 // carry exactly its own schema_id), the Parquet artifact media_type, the nonempty-coverage

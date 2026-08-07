@@ -31,9 +31,10 @@ accepts is not guaranteed valid — the runtime validator remains the source of 
 
 ## Runtime-validation-only invariants (NOT expressible in Draft 2020-12)
 
-These `superRefine` rules require comparing or de-duplicating values across sibling fields, for
-which standard Draft 2020-12 has no keyword. A Draft 2020-12 validator **cannot** reject these;
-consumers that need full validity MUST run the TypeScript validator:
+These `superRefine` rules are not expressible in standard Draft 2020-12 — most require comparing or
+de-duplicating values across sibling fields (for which the vocabulary has no keyword), and one
+enforces calendar validity that a shape pattern cannot. A Draft 2020-12 validator **cannot** reject
+these; consumers that need full validity MUST run the TypeScript validator:
 
 1. **Ordered temporal windows.** `window.start` must be strictly before `window.end`; a reversed
    window (end before start) passes the standalone schema. No standard keyword compares two
@@ -47,5 +48,10 @@ consumers that need full validity MUST run the TypeScript validator:
    requires each floored boundary to fall on a UTC Monday and every present window `start` to lie
    within 36 UTC calendar months of `generated_at`. Monday-ness and the rolling `generated_at`-
    relative cutoff are runtime-only (the corresponding `$comment` in the schema records this).
+5. **Calendar validity.** A syntactically well-shaped but impossible instant — e.g.
+   `2026-02-30T12:00:00Z` — passes the standalone schema's `date-time` pattern but is rejected by the
+   runtime `CanonicalUtcSchema` (`canonicalUtcMicros`), which parses real calendar micros. Draft
+   2020-12 `pattern`/`format` validates lexical shape, not calendar existence, so this is a
+   single-field runtime-only check (not a sibling comparison).
 
 [draft]: https://json-schema.org/draft/2020-12/schema
