@@ -38,8 +38,8 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
 active_slice: 'PR #187: the connector-repair round, closed public-copy boundary, and final local
   product gates are green; finish the exact-head hosted gate, connector-thread triage, and merge,
   then publish the lazy `?view=method-trial` rejection story with the
-  exact lab exhibit run `wbc1_demo` from lab commit `27a779bd`. The committed fixture is invented C0
-  only; its exact exported SHA-256 is `49f381a992f0483e0af88d257e95b356fd5a8cbdb282e2f4420b287531150fb7`.'
+  exact lab exhibit run `wbc1_demo` from lab commit `796f85e`. The committed fixture is invented C0
+  only; its exact exported SHA-256 is `dee7b6c2221eb2226e6b95363da752f1834994d64e95e328e530543ec4396435`.'
 next_value_slice: 'After #187 merges, publish the smallest lab follow-up PR containing the reviewed
   MethodTrialView exporter and producer proof against already-merged lab PR #3. Demonstrate the
   product/lab pair and close this bounded programme before considering the separate #174/#80 Phase E

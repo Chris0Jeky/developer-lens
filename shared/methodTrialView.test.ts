@@ -360,23 +360,23 @@ describe('DeveloperLensMethodTrialView.v1', () => {
 
     expect(validate(fixture), JSON.stringify(validate.errors)).toBe(true)
     expect(createHash('sha256').update(fixtureText, 'utf8').digest('hex')).toBe(
-      '49f381a992f0483e0af88d257e95b356fd5a8cbdb282e2f4420b287531150fb7',
+      'dee7b6c2221eb2226e6b95363da752f1834994d64e95e328e530543ec4396435',
     )
     expect(fixtureText.endsWith('\n')).toBe(true)
     expect(fixtureText.endsWith('\n\n')).toBe(false)
     expect(fixtureText).not.toContain('"system_alias"')
     expect(fixtureText).not.toContain('"generator_seed"')
     expect(parsed.reproducibility.product_contract_commit).toBe(
-      '8220584a4f63b0807f886fd4a88461e704f8c734',
+      'b48fea579936671397a0486ae7a0342197ee6e4b',
     )
-    expect(parsed.reproducibility.lab_commit).toBe('27a779bd7915f3cc65fb35f5bcf841155e5a6434')
+    expect(parsed.reproducibility.lab_commit).toBe('796f85ea9ffb758bfb5575bd9c67ca40274bbcb0')
     expect(parsed.reproducibility.run_id).toBe('wbc1_demo')
     expect(parsed.reproducibility.digests.schema).toBe(
-      'sha256:6c596fc7ce3c75b1d25de5dd804d635a92696c0c7a33a5e146e88439fb78b746',
+      'sha256:634b0cc7a0c3dbcefe8b9cf258e157695beae06d08cc9d02bb781a4267f633ef',
     )
     expect(parsed.reproducibility.digests.schema).toBe(schemaSha256())
     expect(parsed.reproducibility.digests.evaluation_bundle).toBe(
-      'sha256:7632999256589be7f35af243fe5674a97a047393de5cf115765cb25ad9cda5f0',
+      'sha256:1e55e5a6c053f6fae5bb863bf64d11680e1198cfa898d1e85b84eac75f4df095',
     )
     expect(parsed.dataset).toMatchObject({
       system_count: 54,

@@ -3388,23 +3388,23 @@ whitespace verification rather than represented as a second full code gate.
 
 ## 2026-08-07 — WB-C1 Method Trial final contract reconciliation
 
-Product contract commit `8220584a4f63b0807f886fd4a88461e704f8c734` closes the remaining public
+Product contract commit `b48fea579936671397a0486ae7a0342197ee6e4b` closes the remaining public
 prose boundary: every narrative field now accepts only product-owned copy, and runtime Zod plus
 standalone AJV reject adversarial identity/review prose across all narrative shapes. Lab commit
-`27a779bd7915f3cc65fb35f5bcf841155e5a6434` synchronizes that schema, records producer provenance
+`796f85ea9ffb758bfb5575bd9c67ca40274bbcb0` synchronizes that schema, records producer provenance
 per run, confines check-only reads, verifies same-byte later commits without rewriting source
 provenance, and materializes reports through the confined artifact writer.
 
 A new clean-worktree `wbc1_demo` benchmark/reproduce/export/report flow produced the exact tracked
 fixture without hand editing. Source and product bytes are identical at 167,935 bytes with SHA-256
-`49f381a992f0483e0af88d257e95b356fd5a8cbdb282e2f4420b287531150fb7`. The schema,
+`dee7b6c2221eb2226e6b95363da752f1834994d64e95e328e530543ec4396435`. The schema,
 EvaluationBundle, custody, ResearchPack, Markdown, and HTML SHA-256 values are respectively
-`6c596fc7ce3c75b1d25de5dd804d635a92696c0c7a33a5e146e88439fb78b746`,
-`7632999256589be7f35af243fe5674a97a047393de5cf115765cb25ad9cda5f0`,
+`634b0cc7a0c3dbcefe8b9cf258e157695beae06d08cc9d02bb781a4267f633ef`,
+`1e55e5a6c053f6fae5bb863bf64d11680e1198cfa898d1e85b84eac75f4df095`,
 `036f62f5f9ade272eba907513e7ab0bbef4a888bb1d86f8ae6e401aebd5c8238`,
 `bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`,
-`95362a7d3c42d806c5527c20bad8819ab5691767df571a56a3bd1009b0af583d`, and
-`585ab7645a3f1353b854817759e2721f0eb01a4b9525d008c5191f626973d07d`.
+`8785e5f694664964099f951f33ffe6b3fd920b91fcda7aff114506852a99ac9e`, and
+`0a8d7285411bec262bfdcc478020f11b69793cf732418aca9a2f03004f593e6f`.
 The scientific result and no-promotion boundary are unchanged. Exact-head hosted gates and merge
 state are recorded only after they complete.
 
