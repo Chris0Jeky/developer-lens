@@ -110,6 +110,13 @@ publication route remains active.
   build artifacts plus a partial copy of already-pushed tracked files — nothing unique is at risk.
   q-8 stays open.
 
+- [x] **q-9 — Claude subagent model pins approved.** On 2026-08-07 the owner directed, in the
+  session that introduced the dual-runtime harness (PR #191), that Claude subagent pins use
+  Opus 4.8 (high effort) for implementation and review and Sonnet 4.6 (high effort) for mechanical
+  work, with the coordinating session staying at the orchestration/decision/architecture level.
+  Opus 5 is deliberately not used for subagents (owner-observed regressions). The pins live in
+  `.claude/agents/`; changing them requires a new owner decision.
+
 ## Changelog
 
 - 2026-08-05: closed q-7 after the owner configured `main` branch protection and live REST plus

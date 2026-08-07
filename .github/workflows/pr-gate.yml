@@ -1,7 +1,7 @@
 name: PR gate
 
 # Hosted proving gate for pull requests. Every step mirrors a local proving command from
-# AGENTS.md "Run and prove"; a failure here is meant to block the merge. Read-only by design:
+# CLAUDE.md "Run and prove" (the shared canon); a failure here is meant to block the merge. Read-only by design:
 # no secrets, no real data, no capability activation — the showcase build is the synthetic
 # privacy canary (`verify:showcase` runs at the end of `npm run build:showcase`).
 # `main` pushes keep their own gate in `pages.yml`, so this workflow has no push trigger.

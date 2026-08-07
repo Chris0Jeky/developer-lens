@@ -225,8 +225,10 @@ npm run build:showcase
 
 ## Continuing development
 
-Start with [`AGENTS.md`](AGENTS.md), then invoke the tracked
-[`$developer-lens-continuation`](.agents/skills/developer-lens-continuation/SKILL.md) skill. Those
+Start with [`CLAUDE.md`](CLAUDE.md) (the shared canon; [`AGENTS.md`](AGENTS.md) is the Codex
+adapter), then invoke the tracked continuation skill for your runtime —
+[`$developer-lens-continuation`](.agents/skills/developer-lens-continuation/SKILL.md) for Codex or
+[`developer-lens-continuation`](.claude/skills/developer-lens-continuation/SKILL.md) for Claude. Those
 surfaces tell a fresh agent how to refresh live state and route information without reading every
 historical document.
 

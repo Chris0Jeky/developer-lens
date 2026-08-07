@@ -1,93 +1,41 @@
-# Developer Lens repository guide
+# Developer Lens — Codex adapter
 
-Developer Lens is a private, local-first GitHub/Git retrospective with a separate public synthetic
-showcase. Its product target is a humane system retrospective, never person scoring or workplace
-surveillance. Global working agreements still apply; this file contains only repository-specific
-facts and commands.
+`CLAUDE.md` is the shared repository canon: identity, cold start, source-of-truth map, authority
+boundary, protected-data rule, run/prove table, and repository map live there. Read it first and
+treat it as binding; this file adds only Codex-runtime deltas. `npm run verify:context` enforces
+required files, authority markers, links, and budgets in both (not full-text parity).
 
-## Cold start
+## Authority summary (full text in `CLAUDE.md` and `HUMAN_TODO.md`)
 
-1. Read `.agent-harness/tier.json` and `HUMAN_TODO.md` on every resume.
-2. Read `docs/analyser-program/CURRENT_STATE.md` (the single resume artifact); refresh Git and
-   GitHub because live state outranks it. The ledger is the history archive.
-3. Invoke `$developer-lens-continuation` for implementation, migration, sensitive-source,
-   architecture, or handoff work.
-4. Read `docs/data-charter.md` and `docs/source-capability-matrix.md` before any persistence,
-   migration, collector, export, private-source, retrieval, or external-model change.
-5. Consult the full architecture only for design decisions; do not read historical prompts as live
-   authority.
+- G1 and G2 are owner-approved; the existing charter lifetimes and copy-based seven-day migration
+  protocol bind.
+- G3 is standing-approved for the named, reviewed sources in the capability matrix; executable
+  definitions stay `never_authorized` until a bounded activation task implements and tests them.
+- G4 is owner-approved only for OpenAI `gpt-5.6-luna` inside the exact data-charter boundary;
+  `cap.external.model` stays `never_authorized` until a bounded default-off implementation and
+  exact-head gate pass.
+- The public `origin` route carries code, tests, docs, and invented synthetic assets only.
 
-## Source-of-truth map
+## Protected data (full rule in `CLAUDE.md`)
 
-| Surface | Authority |
-|---|---|
-| `.agent-harness/tier.json` | T2 authority, overlays, publication route, human-action alias |
-| `HUMAN_TODO.md` | Owner decisions and genuinely open owner gates |
-| `docs/data-charter.md` | Product boundary, data classes, retention, migration and sinks |
-| `docs/source-capability-matrix.md` | Per-source purpose, class, consent, deletion and refusal |
-| `docs/DEVELOPER_LENS_V2_ARCHITECTURE.md` | Stable design and phase dependencies |
-| `docs/analyser-program/CURRENT_STATE.md` | Live state and exact resume point (single artifact) |
-| `docs/IMPLEMENTATION_LEDGER.md` | Historical evidence archive (per-slice proofs and run IDs) |
-| `README.md` | User-facing product, run and verification instructions |
+Default to invented fixtures. Never inspect `.developer-lens/`, generated `public/data/`, `dist/`,
+credentials, browser profiles, caches, or real/private inputs during ordinary work; never track or
+publish them.
 
-## Current authority boundary
+## Codex continuation
 
-- G1 and G2 are owner-approved. The existing charter's 36m/13m/90d/process lifetimes and
-  copy-based seven-day migration protocol bind.
-- G3 is standing-approved for the named, reviewed sources in the capability matrix. Current
-  executable definitions stay `never_authorized` until a bounded task implements and tests an
-  activation path for explicitly selected repositories with existing read-only credentials.
-- G4 is owner-approved only for OpenAI `gpt-5.6-luna` within the exact C1 payload, local-retrieval,
-  provider-retention, credential, spend, output, and deletion boundary in the data charter and
-  capability matrix. `cap.external.model` remains `never_authorized` until a bounded default-off
-  implementation and exact-head gate pass; approval is not permission to send an unreviewed payload.
-- The public `origin` route may carry code, tests, docs, and invented synthetic assets only.
-  Authority to design or implement a source is not authority to publish its private output.
+Invoke `$developer-lens-continuation` for implementation, migration, sensitive-source,
+architecture, documentation-reconciliation, or handoff work.
 
-## Protected-data rule
-
-Default to invented fixtures. Do not inspect `.developer-lens/`, generated `public/data/`, `dist/`,
-credentials, browser profiles, caches, or real/private inputs during ordinary work. A deliberately
-activated real-data task must first name its exact paths/scope, purpose, retained fields,
-rollback/deletion behavior, and proving checks. Never track or publish those inputs or outputs.
-
-## Run and prove
-
-Use one Node major per installation because `better-sqlite3` is ABI-specific. On Windows use
-PowerShell and quote paths; prefer explicit Vitest paths over shell globs.
-
-| Seam | Narrow proof |
-|---|---|
-| Offline V2 UI | `npm run test:demo:v2` |
-| Server or one contract | `npm test -- <explicit-test-path>` |
-| Analysis pack | `npm test -- server/analysisPack/analysisPack.test.ts` |
-| Storage/importer | `npm test -- server/storage/migration.test.ts` |
-| Docs, authority or skills | `npm run verify:context` and `git diff --check` |
-| Any code/config milestone | `npm run check` |
-| Public/demo/export seam only | `npm run build:showcase` |
-
-`npm run dev` starts API plus Vite; `npm run dev:web` serves the offline demo at
-`http://127.0.0.1:5173/?demo=v2`. The API binds to `127.0.0.1:4141`.
-
-## Repository map and pitfalls
-
-- `scripts/`: collection, analysis and synthetic showcase generation/verification.
-- `server/`: GitHub/local-Git ingestion, storage, analytics, API and analysis packs.
-- `shared/`: closed privacy, capability, coverage, provenance and presentation contracts.
-- `src/`: dashboard, Wrapped story and offline V2 demo.
-- Vitest always loads `src/test/setup.ts`; a Node-only environment directive breaks that setup.
-- PRs run the hosted gate `.github/workflows/pr-gate.yml`; `main` branch protection requires its
-  `Prove the pull request` job. `main` pushes still run the full gate and Pages deploy via
-  `.github/workflows/pages.yml`.
-- `COMPLETE` packs are immutable by contract. A future activated reader must address the recorded
-  concurrent-mutation snapshot risk before claiming hostile local-writer integrity.
-
-## Continuation discipline
+## Codex swarm routing
 
 For decomposable work, discover the live collaboration ceiling and keep every useful Luna slot
 occupied from a deduplicated queue of disjoint bounded lanes; replenish slots as results arrive and
 never hard-code a smaller normal fleet. Use one writer per checkout; parallel writers require
-separate coordinator-owned worktrees and non-overlapping paths. Keep volatile SHAs, PR/check state
-and next-slice evidence in the implementation ledger, not this file or the architecture. Update
-`HUMAN_TODO.md` only for explicit owner decisions. Close under changed / verified / NOT verified /
+separate coordinator-owned worktrees and non-overlapping paths. Escalate judgment-heavy
+implementation or review to Terra/Sol.
+
+## Prove and close
+
+Use the run-and-prove table in `CLAUDE.md`. Close under changed / verified / NOT verified /
 failures and workarounds / docs-state sync / residual risk / human actions / exact resume point.

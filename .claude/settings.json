@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "deny": [
+      "Read(./.developer-lens/**)",
+      "Read(./dist/**)",
+      "Read(./public/data/**)"
+    ]
+  },
+  "includeCoAuthoredBy": false
+}
