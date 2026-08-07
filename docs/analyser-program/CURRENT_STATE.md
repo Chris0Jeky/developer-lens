@@ -37,10 +37,11 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
 active_slice: 'None active in this checkout. Last product-repo slice: PR #194 (`24f55d4`) added the
-  `check:research-pack` and `check:method-trial-view` drift guards to `.github/workflows/pr-gate.yml`
-  and reconciled this artifact; it merged after hosted Prove green at final head `a593e1d`, one
-  fresh-context review, one triaged Codex P2, the 15-minute window, and a clean post-merge sweep. The
-  prior `codex/method-trial-final-evidence` slice merged as PR #190 (`8de65a2`).'
+  `check:research-pack` and `check:method-trial-view` drift-check steps to
+  `.github/workflows/pr-gate.yml` and reconciled this artifact; it merged on its pre-merge gates
+  (hosted Prove green at final head `a593e1d`, one fresh-context review, one triaged Codex P2, the
+  aging floor, and the 15-minute window with a fresh pre-merge sweep), then had a clean post-merge
+  sweep. The prior `codex/method-trial-final-evidence` slice merged as PR #190 (`8de65a2`).'
 next_value_slice: 'Cross-repo (SEPARATE `developer-lens-lab` sibling checkout, not this repo): finish
   and merge lab PR #8, demonstrate the product/lab pair, and close this bounded programme before
   considering the separate #174/#80 Phase E bridge. Do not turn the follow-up into a generic

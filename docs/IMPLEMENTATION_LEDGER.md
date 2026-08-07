@@ -3500,7 +3500,8 @@ and merge before lab PR #8; neither result is inferred by this entry.
 ## 2026-08-07 — Hosted PR gate: explicit generated-artifact drift steps (#193)
 
 PR #194 merged as merge commit `24f55d4d3685964dbf5edcf866e38a65d5e251a1` (branch
-`claude/pr-gate-drift-checks`, final head `a593e1d`, two commits). `.github/workflows/pr-gate.yml`
+`claude/pr-gate-drift-checks`, final head `a593e1d`; three commits over `e97f17d..a593e1d` —
+`93dc67a`, `e4d6903`, `a593e1d`). `.github/workflows/pr-gate.yml`
 now runs `npm run check:research-pack` and `npm run check:method-trial-view` beside the existing
 planning-artifact drift guard, so the branch-protection-required `Prove the pull request` job carries
 the same explicit generated-artifact drift steps as the local `npm run check` aggregate. Both
@@ -3534,8 +3535,10 @@ complete (#187 `7b22491`, #190 `8de65a2`), the dual-runtime harness milestone as
   bytes).
 - Review: one fresh-context `dl-reviewer` adversarial pass on #194, no merge-blocking findings. Codex
   P2s: on #194 the reconciled `blockers` checklist understated the binding review-timing gate (fixed
-  in `a593e1d`, merged after CI green + the 15-minute window + a clean post-merge sweep); on #195 the
-  rationale overstatement above was flagged and is corrected by this entry.
+  in `a593e1d`); #194 then merged on its pre-merge gates — CI green at `a593e1d`, the aging floor, and
+  the 15-minute post-push window with a fresh pre-merge sweep showing no new review — and was followed
+  by a clean post-merge sweep. On #195 the rationale overstatement above, plus the commit count and
+  this same pre-merge/post-merge sweep distinction, were flagged by Codex and corrected in this entry.
 - NOT verified: the aggregate `npm run check` was not run end-to-end for these heads (the hosted gate
   runs its own step set). No capability, source, or publication boundary changed;
   `cap.external.model` and registry/API capabilities remain `never_authorized`. Read-only,
