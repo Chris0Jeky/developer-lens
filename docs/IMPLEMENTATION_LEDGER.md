@@ -3233,6 +3233,8 @@ Proof boundary at the checkpoint:
   proof**;
 - Terra reviewed exact code head `d135a1c` against `0951648`, reran 6 focused files / 56 tests, and
   found no cohort, censoring, privacy, source-wiring, publication-boundary or humane-language defect.
+  Its exact-head scorecard was analytical validity 7/10, privacy 9/10, evidence completeness 4/10,
+  UX usefulness 7/10, and genericity 8/10; the evidence score reflects the blocker below.
 
 The candidate is intentionally parked and has no PR. Terra found one P1 merge blocker: the UI uses
 one stratum/cohort/sensitivity mark for both current and baseline cells, while
