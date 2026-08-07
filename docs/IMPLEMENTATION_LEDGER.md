@@ -3609,7 +3609,9 @@ debt, none dependency-forced.
   candidate false-alert measurement makes the neutralized headline/emphasis disagree with the fixed
   `publicCopy` gate reason / `decision.why_simple_baseline_won` / supported claim, whose real fix is the
   deferred #189 validator-parity subset because rendering must not override validated schema data. PR
-  #196 merged as merge commit `63354ef` at 2026-08-07T21:44Z; the immediate post-merge sweep was clean.
+  #196 merged as merge commit `63354ef` at 2026-08-07T21:44Z; both the immediate and the delayed
+  post-merge sweeps were clean — rechecked at 22:02Z (~18 min after merge, beyond the measured 3–10 min
+  Codex delay) with no late reviews or comments on #196.
 - NOT verified: no browser/visual screenshot (the change is proven by segment-count and text
   assertions, not pixels); the hosted `Prove the pull request` result is green at both #196 heads
   (`dad2c0e` and final `d805b8d`, 2m27s) per the checks API. Live Git/CI still outrank. No capability, source, or publication boundary changed; `cap.external.model` and
