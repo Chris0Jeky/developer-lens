@@ -76,7 +76,7 @@ demo at `http://127.0.0.1:5173/?demo=v2`.
 - `src/`: dashboard, Wrapped story and offline V2 demo.
 - Vitest always loads `src/test/setup.ts`; a Node-only environment directive breaks that setup.
 - PRs run the hosted gate `.github/workflows/pr-gate.yml`; `main` branch protection requires its
-  `Prove the pull request` job. `main` pushes also run the Pages deploy `.github/workflows/pages.yml`.
+  `Prove the pull request` job. `main` pushes rerun the full gate + Pages deploy via `pages.yml`.
 - `COMPLETE` packs are immutable by contract. A future activated reader must address the recorded
   concurrent-mutation snapshot risk before claiming hostile local-writer integrity.
 

@@ -1,3 +1,4 @@
+import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fg from 'fast-glob'
@@ -25,6 +26,9 @@ const requiredFiles = [
   '.agent-harness/tier.json',
   '.agents/skills/developer-lens-continuation/SKILL.md',
   '.agents/skills/developer-lens-continuation/agents/openai.yaml',
+  '.claude/agents/dl-implementer.md',
+  '.claude/agents/dl-mechanic.md',
+  '.claude/agents/dl-reviewer.md',
   '.claude/settings.json',
   '.claude/skills/developer-lens-continuation/SKILL.md',
   'AGENTS.md',
@@ -85,6 +89,21 @@ if (failures.length === 0) {
     failures.push(`.claude/settings.json is not valid JSON: ${String(error)}`)
   }
 
+  try {
+    const trackedLocalSettings = execFileSync(
+      'git',
+      ['ls-files', '--cached', '--', '.claude/settings.local.json'],
+      { cwd: root, encoding: 'utf8' },
+    ).trim()
+    if (trackedLocalSettings.length > 0) {
+      failures.push(
+        '.claude/settings.local.json is tracked; machine-local trust settings must stay gitignored',
+      )
+    }
+  } catch {
+    // Not a git checkout (e.g. exported archive): the tracked-file guard cannot apply.
+  }
+
   const skillInterface = read('.agents/skills/developer-lens-continuation/agents/openai.yaml')
   if (!skillInterface.includes('$developer-lens-continuation')) {
     failures.push('continuation skill default prompt must mention $developer-lens-continuation')
@@ -92,8 +111,14 @@ if (failures.length === 0) {
 }
 
 const authorityMarkers: Record<string, readonly string[]> = {
-  'AGENTS.md': ['G1 and G2 are owner-approved', 'G3 is standing-approved', 'G4 is owner-approved only for OpenAI'],
-  'CLAUDE.md': ['G1 and G2 are owner-approved', 'G3 is standing-approved', 'G4 is owner-approved only for OpenAI'],
+  'AGENTS.md': ['CLAUDE.md', 'G1 and G2 are owner-approved', 'G3 is standing-approved', 'G4 is owner-approved only for OpenAI'],
+  'CLAUDE.md': [
+    'G1 and G2 are owner-approved',
+    'G3 is standing-approved',
+    'G4 is owner-approved only for OpenAI `gpt-5.6-luna`',
+    '`cap.external.model` remains `never_authorized`',
+    'Protected-data rule',
+  ],
   'HUMAN_TODO.md': ['G1 and G2 are owner-approved', 'G3 standing authorization is owner-approved', 'G4 is owner-approved only for the OpenAI/GPT-5.6-Luna boundary'],
   'docs/data-charter.md': ['G1 and G2 are approved', 'standing G3 authorization', 'G4 is approved 2026-08-04 only for the bounded OpenAI'],
   'docs/source-capability-matrix.md': ['G2 is satisfied', 'Standing G3 authorization', 'G4 is satisfied only for the OpenAI'],
@@ -151,6 +176,7 @@ const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md', '.cla
   cwd: root,
   dot: true,
   onlyFiles: true,
+  ignore: ['**/node_modules/**', '.claude/worktrees/**'],
 })
 
 for (const path of markdownFiles) {

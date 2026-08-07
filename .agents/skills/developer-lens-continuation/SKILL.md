@@ -9,9 +9,11 @@ Use the repository's tracked sources rather than caching project state in this s
 
 ## Resume from truth
 
-1. Read `AGENTS.md`, `.agent-harness/tier.json`, and `HUMAN_TODO.md` completely.
+1. Read `CLAUDE.md` (shared canon), `AGENTS.md`, `.agent-harness/tier.json`, and `HUMAN_TODO.md`
+   completely.
 2. Refresh Git status, upstream, worktrees, open PRs, checks, and unresolved review threads.
-3. Read `docs/IMPLEMENTATION_LEDGER.md` for the current phase and exact resume point.
+3. Read `docs/analyser-program/CURRENT_STATE.md` for the live state and exact resume point (the
+   single resume artifact); `docs/IMPLEMENTATION_LEDGER.md` is the historical evidence archive.
 4. Read only the objective-relevant charter, capability matrix, architecture, README, code, and
    tests. Do not recursively inspect generated or private paths.
 5. Correct stale live-state or owner-gate prose in the same bounded slice when authorized.
@@ -58,7 +60,8 @@ Use the repository's tracked sources rather than caching project state in this s
 
 ## Prove and hand off
 
-1. Run the narrow test from `AGENTS.md`, then `npm run check` for a code/config milestone.
+1. Run the narrow test from the `CLAUDE.md` run-and-prove table, then `npm run check` for a
+   code/config milestone.
 2. Run `npm run verify:context` for docs, authority, prompt, or skill changes.
 3. Review the exact diff against the charter and matrix; use one fresh-context adversarial pass for
    non-trivial privacy or logic work.

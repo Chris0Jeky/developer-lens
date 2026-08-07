@@ -3,7 +3,7 @@
 `CLAUDE.md` is the shared repository canon: identity, cold start, source-of-truth map, authority
 boundary, protected-data rule, run/prove table, and repository map live there. Read it first and
 treat it as binding; this file adds only Codex-runtime deltas. `npm run verify:context` enforces
-parity between the two.
+required files, authority markers, links, and budgets in both (not full-text parity).
 
 ## Authority summary (full text in `CLAUDE.md` and `HUMAN_TODO.md`)
 
@@ -15,6 +15,12 @@ parity between the two.
   `cap.external.model` stays `never_authorized` until a bounded default-off implementation and
   exact-head gate pass.
 - The public `origin` route carries code, tests, docs, and invented synthetic assets only.
+
+## Protected data (full rule in `CLAUDE.md`)
+
+Default to invented fixtures. Never inspect `.developer-lens/`, generated `public/data/`, `dist/`,
+credentials, browser profiles, caches, or real/private inputs during ordinary work; never track or
+publish them.
 
 ## Codex continuation
 
