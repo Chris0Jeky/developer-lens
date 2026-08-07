@@ -194,13 +194,14 @@ function caseFoldPattern(value: string): string {
   return [...value].map((character) => `[${character.toLowerCase()}${character.toUpperCase()}]`).join('')
 }
 
-function caseFoldTokenPattern(value: string, prefix = false): string {
+function caseFoldTokenPattern(value: string, prefix = false, pluralSuffix = false): string {
   const core = value.split('_').map(caseFoldPattern).join('[._-]+')
-  return `(?:^|[._-])${core}${prefix ? '[A-Za-z0-9]*' : ''}(?:$|[._-])`
+  return `(?:^|[._-])${core}${pluralSuffix ? '[sS]?' : ''}${prefix ? '[A-Za-z0-9]*' : ''}(?:$|[._-])`
 }
 
 function caseFoldStemPattern(value: string): string {
-  const core = value.split('_').map(caseFoldPattern).join('')
+  const parts = value.split('_').map(caseFoldPattern)
+  const core = parts.length === 1 ? parts[0] : `(?:${parts.join('')}|${parts.join('[._-]+')})`
   // `authorization` is a safe system-state word, not an author/person feature.
   const safeAuthorSuffix = value === 'author' ? '(?![iI][zZ][aA][tT][iI][oO][nN])' : ''
   return `(?:^|[._-])${core}${safeAuthorSuffix}[A-Za-z0-9]*`
@@ -223,7 +224,7 @@ const additionalForbiddenFeatureTerms = [
 ] as const
 
 const forbiddenFeatureTokenPattern = [
-  ...FORBIDDEN_PERSON_SUBJECT_TERMS.flatMap((term) => [caseFoldTokenPattern(term), caseFoldStemPattern(term)]),
+  ...FORBIDDEN_PERSON_SUBJECT_TERMS.flatMap((term) => [caseFoldTokenPattern(term, false, true), caseFoldStemPattern(term)]),
   ...FORBIDDEN_CONSTRUCT_TERMS.map((term) => caseFoldTokenPattern(term)),
   caseFoldTokenPattern('productiv', true),
   ...additionalForbiddenFeatureTerms.map((term) => caseFoldTokenPattern(term)),

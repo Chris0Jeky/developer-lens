@@ -202,6 +202,12 @@ describe('ResearchPack v1 producer contract', () => {
       'DL.INDIVIDUALOUTPUT.v1',
       'DL.PERSONAL.OUTPUT.v1',
       'DL.TEAMMEMBER.OUTPUT.v1',
+      'DL.TEAM_MEMBERS.OUTPUT.v1',
+      'DL.teamMembers.OUTPUT.v1',
+      'DL.TEAMMEMBERS.OUTPUT.v1',
+      'DL.USER_LOGINS.COUNT.v1',
+      'DL.userLogins.COUNT.v1',
+      'DL.user-logins.COUNT.v1',
       'DL.REPO.HEALTH.SCORE.v1',
       'DL.PORT.ENGAGEMENT.v1',
     ]
@@ -232,6 +238,11 @@ describe('ResearchPack v1 producer contract', () => {
       'person_hours',
       'reviewer_response_hours',
       'contributor_output',
+      'team_members',
+      'teamMembers',
+      'teammembers',
+      'user-logins',
+      'userLogins',
     ]) {
       expect(() =>
         ResearchPackSchema.parse({
