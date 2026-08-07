@@ -115,12 +115,12 @@ lands, install its locked environment and run the exact disclosure recorded in t
 ```powershell
 uv sync --locked --all-groups
 uv run dllab doctor
-uv run dllab benchmark wb-c1 --smoke --run-id wbc1_method_trial_v1_final
-uv run dllab run reproduce wbc1_method_trial_v1_final
-uv run dllab report build wbc1_method_trial_v1_final
-uv run dllab export method-trial wbc1_method_trial_v1_final
+uv run dllab benchmark wb-c1 --smoke --run-id wbc1_method_trial_v1_exhibit
+uv run dllab run reproduce wbc1_method_trial_v1_exhibit
+uv run dllab report build wbc1_method_trial_v1_exhibit
+uv run dllab export method-trial wbc1_method_trial_v1_exhibit
 uv run dllab contracts check
 ```
 
 The exported `method-trial-view.json` should validate against the vendored product schema and have
-SHA-256 `3871c2c694fd5508c1c578417d754eb70caabf936eec28d2afd1c7914c9b8e00`.
+SHA-256 `8a3f07f40b082b10632fc1fd777d5e020768156af7b67b4914a84d94769a55dd`.

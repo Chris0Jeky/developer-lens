@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { Ajv2020 } from 'ajv/dist/2020.js'
@@ -338,15 +339,20 @@ async function standaloneValidator() {
 
 describe('DeveloperLensMethodTrialView.v1', () => {
   it('accepts the exact committed lab fixture in runtime and standalone validators', async () => {
-    const fixture = JSON.parse(await readFile(fixturePath, 'utf8'))
+    const fixtureText = await readFile(fixturePath, 'utf8')
+    const fixture = JSON.parse(fixtureText)
     const parsed = MethodTrialViewSchema.parse(fixture)
     const validate = await standaloneValidator()
 
     expect(validate(fixture), JSON.stringify(validate.errors)).toBe(true)
+    expect(createHash('sha256').update(fixtureText, 'utf8').digest('hex')).toBe(
+      '8a3f07f40b082b10632fc1fd777d5e020768156af7b67b4914a84d94769a55dd',
+    )
     expect(parsed.reproducibility.product_contract_commit).toBe(
       '3ac919f6129374acae564883ef9196c1d4aaf54c',
     )
-    expect(parsed.reproducibility.lab_commit).toBe('bcf446f6495b39f5bf8316ca39c7e95d8d1585cc')
+    expect(parsed.reproducibility.lab_commit).toBe('5c0a8814bc3df94383d6b947898952a273c6c449')
+    expect(parsed.reproducibility.run_id).toBe('wbc1_method_trial_v1_exhibit')
     expect(parsed.reproducibility.digests.schema).toBe(
       'sha256:86cf53a48660967c07329f02be01c05d773c16ac96c28ddcd8110aed3b827fdc',
     )
@@ -366,6 +372,9 @@ describe('DeveloperLensMethodTrialView.v1', () => {
       104,
       104,
     ])
+    expect(parsed.representative_cases[2].summary).toBe(
+      'A fixed window exposes a parser shift and keeps instrumentation confounds explicit.',
+    )
   })
 
   it('accepts the invented presentation sample in runtime and standalone validators', async () => {
