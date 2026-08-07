@@ -1,0 +1,1193 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "properties": {
+        "classification": {
+          "const": "C0"
+        },
+        "schema_version": {
+          "const": "DeveloperLensMethodTrialView.v1"
+        }
+      }
+    },
+    {
+      "properties": {
+        "timelines": {
+          "maxItems": 3,
+          "minItems": 3,
+          "type": "array"
+        }
+      }
+    }
+  ],
+  "properties": {
+    "claim_codes": {
+      "items": {
+        "enum": [
+          "baseline_fewer_false_alerts",
+          "both_threshold_selections_nonviable",
+          "bocpd_not_promoted",
+          "c0_synthetic_only_no_real_world_effect"
+        ],
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "classification": {
+      "const": "C0",
+      "type": "string"
+    },
+    "dataset": {
+      "additionalProperties": false,
+      "properties": {
+        "absent_count": {
+          "maximum": 10000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "observed_count": {
+          "maximum": 10000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "opportunity_count": {
+          "maximum": 10000,
+          "minimum": 0,
+          "type": "integer"
+        },
+        "scenario_codes": {
+          "items": false,
+          "maxItems": 3,
+          "minItems": 3,
+          "prefixItems": [
+            {
+              "const": "no_change_control",
+              "type": "string"
+            },
+            {
+              "const": "planted_change",
+              "type": "string"
+            },
+            {
+              "const": "instrumentation_confound",
+              "type": "string"
+            }
+          ],
+          "type": "array"
+        },
+        "system_code": {
+          "const": "WB-C1",
+          "type": "string"
+        }
+      },
+      "required": [
+        "system_code",
+        "opportunity_count",
+        "observed_count",
+        "absent_count",
+        "scenario_codes"
+      ],
+      "type": "object"
+    },
+    "decision": {
+      "additionalProperties": false,
+      "properties": {
+        "candidate_promoted": {
+          "const": false,
+          "type": "boolean"
+        },
+        "fallback": {
+          "additionalProperties": false,
+          "properties": {
+            "method_code": {
+              "const": "rolling_median_mad",
+              "type": "string"
+            },
+            "retained": {
+              "const": true,
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "method_code",
+            "retained"
+          ],
+          "type": "object"
+        },
+        "outcome": {
+          "const": "reject",
+          "type": "string"
+        },
+        "reason_codes": {
+          "items": {
+            "enum": [
+              "BOTH_SELECTIONS_NONVIABLE",
+              "BASELINE_WINS_PRIMARY",
+              "COVERAGE_CONFOUND_LIMIT",
+              "CALIBRATION_LIMIT"
+            ],
+            "type": "string"
+          },
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "outcome",
+        "reason_codes",
+        "fallback",
+        "candidate_promoted"
+      ],
+      "type": "object"
+    },
+    "gates": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "gate_code": {
+            "enum": [
+              "support",
+              "threshold_selection",
+              "online_primary",
+              "coverage_confound",
+              "calibration",
+              "promotion"
+            ],
+            "type": "string"
+          },
+          "order": {
+            "maximum": 8,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "outcome": {
+            "enum": [
+              "pass",
+              "fail",
+              "not_run"
+            ],
+            "type": "string"
+          },
+          "reason_code": {
+            "enum": [
+              "SUPPORT_SUFFICIENT",
+              "SUPPORT_INSUFFICIENT",
+              "BOTH_SELECTIONS_NONVIABLE",
+              "BASELINE_WINS_PRIMARY",
+              "COVERAGE_CONFOUND_LIMIT",
+              "CALIBRATION_LIMIT",
+              "PELT_OFFLINE_ONLY",
+              "CANDIDATE_NOT_PROMOTED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "order",
+          "gate_code",
+          "outcome",
+          "reason_code"
+        ],
+        "type": "object"
+      },
+      "maxItems": 6,
+      "minItems": 6,
+      "prefixItems": [
+        {
+          "properties": {
+            "gate_code": {
+              "const": "support"
+            },
+            "order": {
+              "const": 1
+            }
+          },
+          "required": [
+            "order",
+            "gate_code"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "gate_code": {
+              "const": "threshold_selection"
+            },
+            "order": {
+              "const": 2
+            }
+          },
+          "required": [
+            "order",
+            "gate_code"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "gate_code": {
+              "const": "online_primary"
+            },
+            "order": {
+              "const": 3
+            }
+          },
+          "required": [
+            "order",
+            "gate_code"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "gate_code": {
+              "const": "coverage_confound"
+            },
+            "order": {
+              "const": 4
+            }
+          },
+          "required": [
+            "order",
+            "gate_code"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "gate_code": {
+              "const": "calibration"
+            },
+            "order": {
+              "const": 5
+            }
+          },
+          "required": [
+            "order",
+            "gate_code"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "gate_code": {
+              "const": "promotion"
+            },
+            "order": {
+              "const": 6
+            }
+          },
+          "required": [
+            "order",
+            "gate_code"
+          ],
+          "type": "object"
+        }
+      ],
+      "type": "array"
+    },
+    "limitation_codes": {
+      "items": {
+        "enum": [
+          "missingness_limits_interpretation",
+          "instrumentation_confound_caveat",
+          "pelt_offline_only",
+          "synthetic_c0_no_real_world_effect"
+        ],
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "methods": {
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "additionalProperties": false,
+          "properties": {
+            "evaluation_mode": {
+              "const": "online"
+            },
+            "family": {
+              "const": "deterministic_baseline"
+            },
+            "label": {
+              "maxLength": 96,
+              "minLength": 3,
+              "type": "string"
+            },
+            "method_code": {
+              "const": "rolling_median_mad"
+            },
+            "promotion_eligible": {
+              "const": false
+            },
+            "role": {
+              "const": "baseline"
+            },
+            "threshold": {
+              "anyOf": [
+                {
+                  "maximum": 1000000,
+                  "minimum": -1000000,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "method_code",
+            "label",
+            "family",
+            "evaluation_mode",
+            "role",
+            "threshold",
+            "promotion_eligible"
+          ],
+          "type": "object"
+        },
+        "candidate": {
+          "additionalProperties": false,
+          "properties": {
+            "evaluation_mode": {
+              "const": "online"
+            },
+            "family": {
+              "const": "online_candidate"
+            },
+            "label": {
+              "maxLength": 96,
+              "minLength": 3,
+              "type": "string"
+            },
+            "method_code": {
+              "const": "bocpd"
+            },
+            "promotion_eligible": {
+              "const": false
+            },
+            "role": {
+              "const": "candidate"
+            },
+            "threshold": {
+              "anyOf": [
+                {
+                  "maximum": 1000000,
+                  "minimum": -1000000,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "method_code",
+            "label",
+            "family",
+            "evaluation_mode",
+            "role",
+            "threshold",
+            "promotion_eligible"
+          ],
+          "type": "object"
+        },
+        "offline_descriptive": {
+          "additionalProperties": false,
+          "properties": {
+            "evaluation_mode": {
+              "const": "offline_descriptive"
+            },
+            "family": {
+              "const": "offline_descriptive"
+            },
+            "label": {
+              "maxLength": 96,
+              "minLength": 3,
+              "type": "string"
+            },
+            "method_code": {
+              "const": "pelt"
+            },
+            "promotion_eligible": {
+              "const": false
+            },
+            "role": {
+              "const": "offline_descriptive"
+            },
+            "threshold": {
+              "anyOf": [
+                {
+                  "maximum": 1000000,
+                  "minimum": -1000000,
+                  "type": "number"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          },
+          "required": [
+            "method_code",
+            "label",
+            "family",
+            "evaluation_mode",
+            "role",
+            "threshold",
+            "promotion_eligible"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "baseline",
+        "candidate",
+        "offline_descriptive"
+      ],
+      "type": "object"
+    },
+    "reproducibility": {
+      "additionalProperties": false,
+      "properties": {
+        "lab_code_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "normalized_path_free_commands": {
+          "items": {
+            "pattern": "^(?:npm|node|npx|python)(?: [A-Za-z0-9_.:@=-]+)*$",
+            "type": "string"
+          },
+          "maxItems": 12,
+          "minItems": 1,
+          "type": "array"
+        },
+        "product_research_pack_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "product_schema_source_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "safe_run_id": {
+          "pattern": "^run-[a-z0-9][a-z0-9-]{7,63}$",
+          "type": "string"
+        },
+        "sha256_digests": {
+          "additionalProperties": false,
+          "properties": {
+            "lab_fixture": {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "method_trial_schema": {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "research_pack": {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "method_trial_schema",
+            "research_pack",
+            "lab_fixture"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "safe_run_id",
+        "product_research_pack_commit",
+        "product_schema_source_commit",
+        "lab_code_commit",
+        "sha256_digests",
+        "normalized_path_free_commands"
+      ],
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "DeveloperLensMethodTrialView.v1",
+      "type": "string"
+    },
+    "scorecard": {
+      "additionalProperties": false,
+      "properties": {
+        "metrics": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "canonical": {
+                "const": true,
+                "type": "boolean"
+              },
+              "code": {
+                "enum": [
+                  "false_alarms_per_year",
+                  "onset_to_alert_delay_weeks",
+                  "interval_coverage",
+                  "localisation_error_weeks",
+                  "segment_count_error",
+                  "coverage_confound_false_alert_rate"
+                ],
+                "type": "string"
+              },
+              "unit": {
+                "enum": [
+                  "alerts_per_year",
+                  "weeks",
+                  "proportion",
+                  "count"
+                ],
+                "type": "string"
+              },
+              "value": {
+                "anyOf": [
+                  {
+                    "maximum": 1000000,
+                    "minimum": -1000000,
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "code",
+              "value",
+              "unit",
+              "canonical"
+            ],
+            "type": "object"
+          },
+          "maxItems": 6,
+          "minItems": 6,
+          "type": "array"
+        },
+        "primary_metric": {
+          "const": "false_alarms_per_year",
+          "type": "string"
+        },
+        "threshold_selection": {
+          "additionalProperties": false,
+          "properties": {
+            "baseline": {
+              "additionalProperties": false,
+              "properties": {
+                "method_code": {
+                  "enum": [
+                    "rolling_median_mad",
+                    "bocpd"
+                  ],
+                  "type": "string"
+                },
+                "reason_code": {
+                  "enum": [
+                    "INSUFFICIENT_SUPPORT",
+                    "NO_STABLE_SELECTION",
+                    "PRIMARY_GATE_FAILED",
+                    "SELECTED"
+                  ],
+                  "type": "string"
+                },
+                "selected_threshold": {
+                  "anyOf": [
+                    {
+                      "maximum": 1000000,
+                      "minimum": -1000000,
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "viable": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "method_code",
+                "selected_threshold",
+                "viable",
+                "reason_code"
+              ],
+              "type": "object"
+            },
+            "candidate": {
+              "additionalProperties": false,
+              "properties": {
+                "method_code": {
+                  "enum": [
+                    "rolling_median_mad",
+                    "bocpd"
+                  ],
+                  "type": "string"
+                },
+                "reason_code": {
+                  "enum": [
+                    "INSUFFICIENT_SUPPORT",
+                    "NO_STABLE_SELECTION",
+                    "PRIMARY_GATE_FAILED",
+                    "SELECTED"
+                  ],
+                  "type": "string"
+                },
+                "selected_threshold": {
+                  "anyOf": [
+                    {
+                      "maximum": 1000000,
+                      "minimum": -1000000,
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "viable": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "method_code",
+                "selected_threshold",
+                "viable",
+                "reason_code"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "baseline",
+            "candidate"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "primary_metric",
+        "metrics",
+        "threshold_selection"
+      ],
+      "type": "object"
+    },
+    "selector": {
+      "additionalProperties": false,
+      "properties": {
+        "allowed_views": {
+          "items": {
+            "const": "method-trial",
+            "type": "string"
+          },
+          "maxItems": 1,
+          "minItems": 1,
+          "type": "array"
+        },
+        "default_scenario": {
+          "enum": [
+            "no_change_control",
+            "planted_change",
+            "instrumentation_confound"
+          ],
+          "type": "string"
+        },
+        "query_key": {
+          "const": "view",
+          "type": "string"
+        },
+        "selected_view": {
+          "const": "method-trial",
+          "type": "string"
+        }
+      },
+      "required": [
+        "query_key",
+        "selected_view",
+        "allowed_views",
+        "default_scenario"
+      ],
+      "type": "object"
+    },
+    "supported_codes": {
+      "items": {
+        "enum": [
+          "weekly_relative_grain",
+          "online_baseline_candidate_comparison",
+          "offline_pelt_localisation"
+        ],
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    },
+    "timelines": {
+      "items": {
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "order": {
+                  "const": 1
+                }
+              },
+              "required": [
+                "order"
+              ]
+            },
+            "then": {
+              "properties": {
+                "scenario_code": {
+                  "const": "no_change_control"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "order": {
+                  "const": 2
+                }
+              },
+              "required": [
+                "order"
+              ]
+            },
+            "then": {
+              "properties": {
+                "scenario_code": {
+                  "const": "planted_change"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "order": {
+                  "const": 3
+                }
+              },
+              "required": [
+                "order"
+              ]
+            },
+            "then": {
+              "properties": {
+                "scenario_code": {
+                  "const": "instrumentation_confound"
+                }
+              }
+            }
+          },
+          {
+            "properties": {
+              "pelt": {
+                "properties": {
+                  "evaluation_mode": {
+                    "const": "offline_descriptive"
+                  }
+                },
+                "required": [
+                  "evaluation_mode"
+                ],
+                "type": "object"
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scenario_code": {
+                  "const": "planted_change"
+                }
+              },
+              "required": [
+                "scenario_code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "points": {
+                  "contains": {
+                    "properties": {
+                      "planted_marker": {
+                        "enum": [
+                          "level",
+                          "variance",
+                          "trend",
+                          "seasonal"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "planted_marker"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scenario_code": {
+                  "const": "instrumentation_confound"
+                }
+              },
+              "required": [
+                "scenario_code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "points": {
+                  "contains": {
+                    "properties": {
+                      "confound_marker": {
+                        "enum": [
+                          "permission_loss",
+                          "actions_cap",
+                          "shallow_boundary",
+                          "parser_major_change"
+                        ]
+                      }
+                    },
+                    "required": [
+                      "confound_marker"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "scenario_code": {
+                  "const": "no_change_control"
+                }
+              },
+              "required": [
+                "scenario_code"
+              ]
+            },
+            "then": {
+              "properties": {
+                "points": {
+                  "items": {
+                    "properties": {
+                      "confound_marker": {
+                        "const": "none"
+                      },
+                      "planted_marker": {
+                        "const": "none"
+                      }
+                    },
+                    "required": [
+                      "planted_marker",
+                      "confound_marker"
+                    ],
+                    "type": "object"
+                  },
+                  "type": "array"
+                }
+              }
+            }
+          }
+        ],
+        "properties": {
+          "order": {
+            "maximum": 3,
+            "minimum": 1,
+            "type": "integer"
+          },
+          "pelt": {
+            "additionalProperties": false,
+            "properties": {
+              "boundary_index": {
+                "anyOf": [
+                  {
+                    "maximum": 103,
+                    "minimum": 0,
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "evaluation_mode": {
+                "const": "offline_descriptive",
+                "type": "string"
+              }
+            },
+            "required": [
+              "evaluation_mode",
+              "boundary_index"
+            ],
+            "type": "object"
+          },
+          "points": {
+            "items": {
+              "additionalProperties": false,
+              "allOf": [
+                {
+                  "if": {
+                    "properties": {
+                      "observed": {
+                        "const": false
+                      }
+                    },
+                    "required": [
+                      "observed"
+                    ]
+                  },
+                  "then": {
+                    "properties": {
+                      "baseline_alert": {
+                        "const": false
+                      },
+                      "baseline_score": {
+                        "const": null
+                      },
+                      "baseline_threshold": {
+                        "const": null
+                      },
+                      "candidate_alert": {
+                        "const": false
+                      },
+                      "candidate_probability": {
+                        "const": null
+                      },
+                      "candidate_threshold": {
+                        "const": null
+                      },
+                      "value": {
+                        "const": null
+                      }
+                    }
+                  }
+                }
+              ],
+              "properties": {
+                "baseline_alert": {
+                  "type": "boolean"
+                },
+                "baseline_score": {
+                  "anyOf": [
+                    {
+                      "maximum": 1000000,
+                      "minimum": -1000000,
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "baseline_threshold": {
+                  "anyOf": [
+                    {
+                      "maximum": 1000000,
+                      "minimum": -1000000,
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "candidate_alert": {
+                  "type": "boolean"
+                },
+                "candidate_probability": {
+                  "anyOf": [
+                    {
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "candidate_threshold": {
+                  "anyOf": [
+                    {
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "confound_marker": {
+                  "enum": [
+                    "none",
+                    "permission_loss",
+                    "actions_cap",
+                    "shallow_boundary",
+                    "parser_major_change"
+                  ],
+                  "type": "string"
+                },
+                "observed": {
+                  "type": "boolean"
+                },
+                "planted_marker": {
+                  "enum": [
+                    "none",
+                    "level",
+                    "variance",
+                    "trend",
+                    "seasonal"
+                  ],
+                  "type": "string"
+                },
+                "value": {
+                  "anyOf": [
+                    {
+                      "maximum": 1000000,
+                      "minimum": -1000000,
+                      "type": "number"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "week_index": {
+                  "maximum": 103,
+                  "minimum": 0,
+                  "type": "integer"
+                },
+                "week_label": {
+                  "description": "Relative week label week-NN; NN is the zero-padded week_index.",
+                  "pattern": "^week-[0-9]{2}$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "week_index",
+                "week_label",
+                "observed",
+                "value",
+                "baseline_score",
+                "baseline_threshold",
+                "baseline_alert",
+                "candidate_probability",
+                "candidate_threshold",
+                "candidate_alert",
+                "planted_marker",
+                "confound_marker"
+              ],
+              "type": "object"
+            },
+            "maxItems": 104,
+            "minItems": 52,
+            "type": "array"
+          },
+          "scenario_code": {
+            "enum": [
+              "no_change_control",
+              "planted_change",
+              "instrumentation_confound"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 96,
+            "minLength": 3,
+            "type": "string"
+          }
+        },
+        "required": [
+          "order",
+          "scenario_code",
+          "title",
+          "points",
+          "pelt"
+        ],
+        "type": "object"
+      },
+      "maxItems": 3,
+      "minItems": 3,
+      "type": "array"
+    },
+    "trial": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence": {
+          "const": "Invented weekly system series only; no real repositories, people, providers, URLs, paths, or production effect.",
+          "type": "string"
+        },
+        "question": {
+          "const": "Can the BOCPD candidate reduce false alerts per year versus the rolling median/MAD baseline on the online arm without worsening coverage-confound alerts or interval calibration?",
+          "type": "string"
+        },
+        "trial_code": {
+          "const": "WB-C1",
+          "type": "string"
+        }
+      },
+      "required": [
+        "trial_code",
+        "question",
+        "evidence"
+      ],
+      "type": "object"
+    },
+    "unsupported_codes": {
+      "items": {
+        "enum": [
+          "real_world_effect",
+          "person_or_provider_identity",
+          "online_pelt_promotion"
+        ],
+        "type": "string"
+      },
+      "minItems": 1,
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "classification",
+    "trial",
+    "dataset",
+    "methods",
+    "scorecard",
+    "gates",
+    "decision",
+    "supported_codes",
+    "unsupported_codes",
+    "limitation_codes",
+    "claim_codes",
+    "selector",
+    "reproducibility",
+    "timelines"
+  ],
+  "type": "object"
+}
