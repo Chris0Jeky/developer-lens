@@ -46,11 +46,11 @@ function markerLabel(point: MethodTrialRepresentativeCase['points'][number]): st
 
 function TimelineFigure({ representativeCase }: { representativeCase: MethodTrialRepresentativeCase }) {
   const width = 760
-  const height = 190
+  const height = 212
   const left = 36
   const right = width - 20
   const top = 20
-  const bottom = height - 34
+  const bottom = height - 56
   const x = (position: number) => left + (position / Math.max(1, representativeCase.points.length - 1)) * (right - left)
   const y = (value: number) => bottom - Math.max(0, Math.min(1, value)) * (bottom - top)
   const baselineValues = representativeCase.points.flatMap((point) =>
@@ -101,7 +101,23 @@ function TimelineFigure({ representativeCase }: { representativeCase: MethodTria
               {baselineScore.status === 'measured' && <circle cx={pointX} cy={y(normalizeSeriesValue(baselineScore.value, baselineValues))} r="3.5" className="timeline-dot timeline-dot--baseline" />}
               {candidateProbability.status === 'measured' && <circle cx={pointX} cy={y(candidateProbability.value)} r="3.5" className="timeline-dot timeline-dot--candidate" />}
               {point.pelt_marker.boundary && <line x1={pointX} x2={pointX} y1={top} y2={bottom} className="timeline-pelt" />}
-              {(point.baseline.alert || point.candidate.alert) && <text x={pointX} y={bottom + 18} className="timeline-alert" textAnchor="middle">alert</text>}
+              {point.baseline.alert && (
+                <rect
+                  x={pointX - 3.5}
+                  y={bottom + 7.5}
+                  width="7"
+                  height="7"
+                  className="timeline-alert-marker timeline-alert-marker--baseline"
+                  data-testid="baseline-alert-marker"
+                />
+              )}
+              {point.candidate.alert && (
+                <polygon
+                  points={`${pointX},${bottom + 21} ${pointX + 4.5},${bottom + 25.5} ${pointX},${bottom + 30} ${pointX - 4.5},${bottom + 25.5}`}
+                  className="timeline-alert-marker timeline-alert-marker--candidate"
+                  data-testid="candidate-alert-marker"
+                />
+              )}
             </g>
           )
         })}
@@ -112,6 +128,8 @@ function TimelineFigure({ representativeCase }: { representativeCase: MethodTria
         <span><i className="timeline-key timeline-key--baseline" /> Baseline score · own normalized scale (solid)</span>
         <span><i className="timeline-key timeline-key--candidate" /> Candidate probability · 0–1 scale (dashed)</span>
         <span><i className="timeline-key timeline-key--pelt" /> PELT · offline descriptive</span>
+        <span><i className="timeline-key timeline-key--baseline-alert" /> Baseline alert (square)</span>
+        <span><i className="timeline-key timeline-key--candidate-alert" /> Candidate alert (diamond)</span>
       </div>
       <p className="method-trial-timeline__summary">
         {representativeCase.points.length} weeks · {missingCount} missing · {baselineAlertCount} baseline alerts ·{' '}

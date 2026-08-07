@@ -26,6 +26,18 @@ describe('MethodTrialViewPanel', () => {
     expect(screen.getByText(/deterministic final-holdout selection/i)).toBeInTheDocument()
     expect(screen.getAllByTestId('method-trial-timeline')).toHaveLength(3)
     expect(screen.getAllByRole('figure')).toHaveLength(3)
+    expect(screen.getAllByTestId('baseline-alert-marker')).toHaveLength(
+      fixture.representative_cases.flatMap((representativeCase) =>
+        representativeCase.points.filter((point) => point.baseline.alert),
+      ).length,
+    )
+    expect(screen.getAllByTestId('candidate-alert-marker')).toHaveLength(
+      fixture.representative_cases.flatMap((representativeCase) =>
+        representativeCase.points.filter((point) => point.candidate.alert),
+      ).length,
+    )
+    expect(screen.getAllByText('Baseline alert (square)')).toHaveLength(3)
+    expect(screen.getAllByText('Candidate alert (diamond)')).toHaveLength(3)
     expect(screen.getByText('CANDIDATE_FALSE_ALERT_IMPROVEMENT')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 3, name: 'Supported' })).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 3, name: 'Unsupported' })).toBeInTheDocument()
