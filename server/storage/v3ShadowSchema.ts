@@ -28,9 +28,9 @@ import {
  * B2a's target is deliberately a shadow database.  It is not the v2 store,
  * and this module contains no reader, writer, or migration caller.
  */
-export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.4-shadow-life03-selection' as const
+export const STORAGE_V3_SHADOW_SCHEMA_VERSION = '3.2.5-shadow-life03-expiry' as const
 export const STORAGE_V3_SHADOW_APPLICATION_ID = 0x444c5633
-export const STORAGE_V3_SHADOW_USER_VERSION = 311
+export const STORAGE_V3_SHADOW_USER_VERSION = 312
 
 /**
  * B4's closed app-owned artifact domain.  Analysis packs are deliberately absent:
@@ -83,10 +83,38 @@ export function storageV3SelectedStoreContentSha256(): string {
 export const STORAGE_V3_ARTIFACT_STATES = ['active', 'pending', 'deleting'] as const
 export type StorageV3ArtifactState = typeof STORAGE_V3_ARTIFACT_STATES[number]
 
+export const STORAGE_V3_MIGRATION_CLEANUP_PHASES = [
+  'backup_bound',
+  'ready',
+  'legacy_deleting',
+  'legacy_durable',
+  'backup_deleting',
+  'complete',
+] as const
+export type StorageV3MigrationCleanupPhase = typeof STORAGE_V3_MIGRATION_CLEANUP_PHASES[number]
+
+export const STORAGE_V3_MIGRATION_CLEANUP_FILE_ROLES = [
+  'legacy_base',
+  'legacy_wal',
+  'legacy_shm',
+  'legacy_journal',
+  'backup_sqlite',
+  'backup_wal',
+  'backup_shm',
+  'backup_journal',
+  'backup_manifest',
+  'backup_temp_sqlite',
+  'backup_temp_manifest',
+] as const
+export type StorageV3MigrationCleanupFileRole =
+  typeof STORAGE_V3_MIGRATION_CLEANUP_FILE_ROLES[number]
+
 export const STORAGE_V3_ARTIFACT_TABLES = [
   'app_artifact',
   'app_artifact_scope',
   'migration_backup_attempt',
+  'migration_cleanup_state',
+  'migration_cleanup_file',
   'storage_maintenance_state',
 ] as const
 export type StorageV3ArtifactTable = typeof STORAGE_V3_ARTIFACT_TABLES[number]
@@ -105,6 +133,12 @@ export const STORAGE_V3_ARTIFACT_TRIGGER_NAMES = Object.freeze([
   'storage_v3_migration_backup_attempt_insert_guard',
   'storage_v3_migration_backup_attempt_update_guard',
   'storage_v3_migration_backup_attempt_delete_guard',
+  'storage_v3_migration_cleanup_state_insert_guard',
+  'storage_v3_migration_cleanup_state_transition',
+  'storage_v3_migration_cleanup_state_no_delete',
+  'storage_v3_migration_cleanup_file_insert_guard',
+  'storage_v3_migration_cleanup_file_no_update',
+  'storage_v3_migration_cleanup_file_delete_guard',
   'storage_v3_artifact_delete_guard',
   'storage_v3_artifact_identity_immutable',
   'storage_v3_artifact_scope_delete_guard',
@@ -680,6 +714,179 @@ WHEN EXISTS (
 BEGIN
   SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
 END;
+CREATE TABLE IF NOT EXISTS migration_cleanup_state (
+  singleton INTEGER PRIMARY KEY NOT NULL CHECK (singleton = 1),
+  phase TEXT NOT NULL CHECK (phase IN (${quoted(STORAGE_V3_MIGRATION_CLEANUP_PHASES)})),
+  legacy_source_id TEXT CHECK (
+    legacy_source_id IS NULL OR (
+      length(legacy_source_id) = 71
+      AND legacy_source_id GLOB 'legacy-*'
+      AND substr(legacy_source_id, 8) NOT GLOB '*[^0-9a-f]*'
+    )
+  ),
+  selected_artifact_id TEXT CHECK (
+    selected_artifact_id IS NULL OR ${key('selected_artifact_id', 'art-')}
+  ),
+  backup_artifact_id TEXT CHECK (
+    backup_artifact_id IS NULL OR ${key('backup_artifact_id', 'art-')}
+  ),
+  task_fingerprint TEXT NOT NULL CHECK (
+    length(task_fingerprint) = 64 AND task_fingerprint NOT GLOB '*[^0-9a-f]*'
+  ),
+  root_binding TEXT NOT NULL CHECK (
+    length(root_binding) = 69
+    AND root_binding GLOB 'root-*'
+    AND substr(root_binding, 6) NOT GLOB '*[^0-9a-f]*'
+  ),
+  completed_week TEXT CHECK (completed_week IS NULL OR ${isoWeek('completed_week')}),
+  CHECK (
+    (phase = 'backup_bound'
+      AND legacy_source_id IS NULL
+      AND selected_artifact_id IS NOT NULL
+      AND backup_artifact_id IS NOT NULL
+      AND completed_week IS NULL)
+    OR
+    (phase IN ('ready', 'legacy_deleting', 'legacy_durable', 'backup_deleting')
+      AND legacy_source_id IS NOT NULL
+      AND selected_artifact_id IS NOT NULL
+      AND backup_artifact_id IS NOT NULL
+      AND completed_week IS NULL)
+    OR
+    (phase = 'complete'
+      AND legacy_source_id IS NULL
+      AND selected_artifact_id IS NULL
+      AND backup_artifact_id IS NULL
+      AND completed_week IS NOT NULL)
+  )
+) STRICT;
+CREATE TABLE IF NOT EXISTS migration_cleanup_file (
+  singleton INTEGER NOT NULL DEFAULT 1 CHECK (singleton = 1),
+  role TEXT PRIMARY KEY NOT NULL CHECK (role IN (${quoted(STORAGE_V3_MIGRATION_CLEANUP_FILE_ROLES)})),
+  relative_locator TEXT NOT NULL UNIQUE CHECK (
+    length(relative_locator) BETWEEN 1 AND 160
+    AND relative_locator GLOB '[A-Za-z0-9]*'
+    AND relative_locator NOT GLOB '*[^A-Za-z0-9._-]*'
+    AND relative_locator NOT IN ('.', '..')
+  ),
+  expected_present INTEGER NOT NULL CHECK (expected_present IN (0, 1)),
+  file_dev TEXT,
+  file_ino TEXT,
+  file_nlink TEXT,
+  content_sha256 TEXT,
+  CHECK (
+    (expected_present = 0
+      AND file_dev IS NULL AND file_ino IS NULL AND file_nlink IS NULL AND content_sha256 IS NULL)
+    OR
+    (expected_present = 1
+      AND file_dev IS NOT NULL AND file_ino IS NOT NULL AND file_nlink IS NOT NULL
+      AND content_sha256 IS NOT NULL
+      AND length(content_sha256) = 64 AND content_sha256 NOT GLOB '*[^0-9a-f]*')
+  ),
+  CHECK (file_dev IS NULL OR (
+    length(file_dev) BETWEEN 1 AND 20 AND file_dev NOT GLOB '*[^0-9]*'
+    AND (file_dev = '0' OR substr(file_dev, 1, 1) <> '0')
+  )),
+  CHECK (file_ino IS NULL OR (
+    length(file_ino) BETWEEN 1 AND 20 AND file_ino NOT GLOB '*[^0-9]*'
+    AND (file_ino = '0' OR substr(file_ino, 1, 1) <> '0')
+  )),
+  CHECK (file_nlink IS NULL OR (
+    length(file_nlink) BETWEEN 1 AND 20 AND file_nlink NOT GLOB '*[^0-9]*'
+    AND file_nlink <> '0' AND substr(file_nlink, 1, 1) <> '0'
+  )),
+  FOREIGN KEY (singleton) REFERENCES migration_cleanup_state(singleton) ON DELETE RESTRICT
+) STRICT;
+CREATE TRIGGER IF NOT EXISTS storage_v3_migration_cleanup_state_insert_guard
+BEFORE INSERT ON migration_cleanup_state
+WHEN NEW.phase <> 'backup_bound' OR EXISTS (SELECT 1 FROM migration_cleanup_state)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_migration_cleanup_state_transition
+BEFORE UPDATE ON migration_cleanup_state
+WHEN NOT (
+  NEW.singleton = OLD.singleton
+  AND NEW.task_fingerprint = OLD.task_fingerprint
+  AND NEW.root_binding = OLD.root_binding
+  AND (
+    (OLD.phase = 'backup_bound' AND NEW.phase = 'ready'
+      AND OLD.legacy_source_id IS NULL AND NEW.legacy_source_id IS NOT NULL
+      AND NEW.selected_artifact_id = OLD.selected_artifact_id
+      AND NEW.backup_artifact_id = OLD.backup_artifact_id
+      AND NEW.completed_week IS NULL)
+    OR
+    (OLD.phase = 'ready' AND NEW.phase = 'legacy_deleting'
+      AND NEW.legacy_source_id = OLD.legacy_source_id
+      AND NEW.selected_artifact_id = OLD.selected_artifact_id
+      AND NEW.backup_artifact_id = OLD.backup_artifact_id
+      AND NEW.completed_week IS NULL)
+    OR
+    (OLD.phase = 'legacy_deleting' AND NEW.phase = 'legacy_durable'
+      AND NEW.legacy_source_id = OLD.legacy_source_id
+      AND NEW.selected_artifact_id = OLD.selected_artifact_id
+      AND NEW.backup_artifact_id = OLD.backup_artifact_id
+      AND NEW.completed_week IS NULL)
+    OR
+    (OLD.phase = 'legacy_durable' AND NEW.phase = 'backup_deleting'
+      AND NEW.legacy_source_id = OLD.legacy_source_id
+      AND NEW.selected_artifact_id = OLD.selected_artifact_id
+      AND NEW.backup_artifact_id = OLD.backup_artifact_id
+      AND NEW.completed_week IS NULL)
+    OR
+    (OLD.phase = 'backup_deleting' AND NEW.phase = 'complete'
+      AND NEW.legacy_source_id IS NULL
+      AND NEW.selected_artifact_id IS NULL
+      AND NEW.backup_artifact_id IS NULL
+      AND NEW.completed_week IS NOT NULL)
+  )
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_migration_cleanup_state_no_delete
+BEFORE DELETE ON migration_cleanup_state
+WHEN NOT (
+  OLD.phase = 'backup_bound'
+  AND EXISTS (
+    SELECT 1 FROM app_artifact AS artifact
+    WHERE artifact.artifact_id = OLD.backup_artifact_id
+      AND artifact.kind = 'migration_backup_v1'
+      AND artifact.state = 'deleting'
+  )
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_migration_cleanup_file_insert_guard
+BEFORE INSERT ON migration_cleanup_file
+WHEN NOT EXISTS (
+  SELECT 1 FROM migration_cleanup_state WHERE singleton = 1 AND phase = 'backup_bound'
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_migration_cleanup_file_no_update
+BEFORE UPDATE ON migration_cleanup_file
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
+CREATE TRIGGER IF NOT EXISTS storage_v3_migration_cleanup_file_delete_guard
+BEFORE DELETE ON migration_cleanup_file
+WHEN NOT EXISTS (
+  SELECT 1 FROM migration_cleanup_state WHERE singleton = 1 AND phase = 'backup_deleting'
+)
+AND NOT EXISTS (
+  SELECT 1
+  FROM migration_cleanup_state AS cleanup
+  JOIN app_artifact AS artifact ON artifact.artifact_id = cleanup.backup_artifact_id
+  WHERE cleanup.singleton = 1
+    AND cleanup.phase = 'backup_bound'
+    AND artifact.kind = 'migration_backup_v1'
+    AND artifact.state = 'deleting'
+)
+BEGIN
+  SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
+END;
 CREATE TABLE IF NOT EXISTS storage_maintenance_state (
   singleton INTEGER PRIMARY KEY NOT NULL CHECK (singleton = 1),
   state TEXT NOT NULL CHECK (state IN ('complete', 'pending')),
@@ -773,6 +980,16 @@ END;
 CREATE TRIGGER IF NOT EXISTS storage_v3_artifact_delete_guard
 BEFORE DELETE ON app_artifact
 WHEN OLD.state <> 'deleting'
+AND NOT (
+  OLD.kind = 'migration_backup_v1'
+  AND OLD.state = 'active'
+  AND EXISTS (
+    SELECT 1 FROM migration_cleanup_state AS cleanup
+    WHERE cleanup.singleton = 1
+      AND cleanup.phase = 'backup_deleting'
+      AND cleanup.backup_artifact_id = OLD.artifact_id
+  )
+)
 BEGIN
   SELECT RAISE(ABORT, 'STORAGE_V3_ARTIFACT_INVALID');
 END;
@@ -786,6 +1003,16 @@ BEFORE DELETE ON app_artifact_scope
 WHEN NOT EXISTS (
   SELECT 1 FROM app_artifact AS artifact
   WHERE artifact.artifact_id = OLD.artifact_id AND artifact.state = 'deleting'
+)
+AND NOT EXISTS (
+  SELECT 1
+  FROM app_artifact AS artifact
+  JOIN migration_cleanup_state AS cleanup ON cleanup.singleton = 1
+  WHERE artifact.artifact_id = OLD.artifact_id
+    AND artifact.kind = 'migration_backup_v1'
+    AND artifact.state = 'active'
+    AND cleanup.backup_artifact_id = artifact.artifact_id
+    AND cleanup.phase IN ('ready', 'legacy_deleting', 'legacy_durable', 'backup_deleting')
 )
 AND NOT EXISTS (
   SELECT 1

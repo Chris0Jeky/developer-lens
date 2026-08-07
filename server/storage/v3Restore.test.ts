@@ -1,4 +1,4 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
@@ -41,6 +41,11 @@ import {
 import { installStorageV3ShadowSchema, storageV3ArtifactManifestSha256, storageV3SelectedStoreContentSha256 } from './v3ShadowSchema.js'
 import { taskInstallationKeyTestSeams } from './taskInstallationKey.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
+import {
+  registerStorageV3MigrationCleanup,
+  STORAGE_V3_LEGACY_SOURCE_LOCATOR,
+  v3MigrationCleanupTestSeams,
+} from './v3MigrationCleanup.js'
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -49,10 +54,13 @@ const BACKUP = `art-${'2'.repeat(64)}`
 const FINAL_LOCATOR = 'migration-backup-20260806T123456Z.sqlite'
 const STAGED_LOCATOR = `${FINAL_LOCATOR}.tmp`
 const INTENT = 'a'.repeat(64)
+const POST_BACKUP_CLAIM = `cl_${'6'.repeat(64)}`
 
 async function publicationFixture(options: Readonly<{
   interruptSelectionProof?: boolean
   revokeAfterBackup?: boolean
+  addClaimAfterBackup?: boolean
+  partialRevocationAfterBackup?: boolean
 }> = {}): Promise<{
   root: string
   input: StorageV3RestoreFromSelectionInput
@@ -93,6 +101,13 @@ async function publicationFixture(options: Readonly<{
       ownerScopeIds: [SCOPE_A, SCOPE_B],
       installationKey,
     }, () => {})
+    writeFileSync(join(root, STORAGE_V3_LEGACY_SOURCE_LOCATOR), '{"invented":true}\n', { flag: 'wx' })
+    registerStorageV3MigrationCleanup({
+      db,
+      root: rootHandle,
+      legacySourceId: `legacy-${'5'.repeat(64)}`,
+      installationKey,
+    })
     const selection = withStorageV3WriterLease(rootHandle, (lease) => {
       const recorded = recordStorageV3MigrationSelectionWithInitialization(db, {
         legacySourceId: `legacy-${'5'.repeat(64)}`,
@@ -152,6 +167,13 @@ async function publicationFixture(options: Readonly<{
     const backupBytes = readFileSync(backupPath)
     const manifestBytes = readFileSync(manifestPath)
     const selectionProofBytes = readFileSync(join(root, STORAGE_V3_SELECTION_PROOF_NAMES.final))
+    if (options.addClaimAfterBackup === true) db.prepare(`INSERT INTO claim (
+      scope_id, claim_id, layer, statement_code, method_id, method_version,
+      window_start, window_end, schema_version, claim_id_material_version, created_at
+    ) VALUES (?, ?, 'modelled', 'DELIVERY_FLOW', 'invented-method', '1.0.0',
+      '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z',
+      '1.0.0', 'claim-id.v3', '2026-02-01T00:00:00.000Z')`)
+      .run(SCOPE_A, POST_BACKUP_CLAIM)
     db.close()
     if (options.revokeAfterBackup === true) {
       v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
@@ -165,6 +187,21 @@ async function publicationFixture(options: Readonly<{
       // snapshot after revocation cleanup removed the app-controlled pair.
       writeFileSync(backupPath, backupBytes, { mode: 0o600 })
       writeFileSync(manifestPath, manifestBytes, { mode: 0o600 })
+    }
+    if (options.partialRevocationAfterBackup === true) {
+      let interrupted = false
+      expect(() => v3RevocationReplayTestSeams.deleteWithDirectorySynchronizer({
+        directory: root,
+        installationKey,
+        scopeId: SCOPE_A,
+        asOf: '2026-08-06T13:00:00.000Z',
+        randomBytes: () => Buffer.alloc(32, 9),
+      }, (_root, stage) => {
+        if (stage === 'headReplace' && !interrupted) {
+          interrupted = true
+          throw new Error('invented partial restore interruption')
+        }
+      }, undefined, 1)).toThrow('invented partial restore interruption')
     }
     unlinkSync(join(root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))
     return {
@@ -396,8 +433,32 @@ describe('LIFE-03 restore snapshot normalization', () => {
     } finally { fx.close() }
   })
 
+  it('rebuilds cleanup registration from the restore verifier and expires the retained pair', async () => {
+    const fx = await publicationFixture()
+    try {
+      const preserved = new Map(readdirSync(fx.root)
+        .filter((name) => name.startsWith('migration-selection-v1') || name.startsWith('revocation-replay-v1'))
+        .map((name) => [name, readFileSync(join(fx.root, name))]))
+      const restored = v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {})
+      expect(restored.reader).toBe('sqlite-v3')
+      if (restored.reader !== 'sqlite-v3') throw new Error('expected restored reader')
+      expect(restored.db.prepare('SELECT phase FROM migration_cleanup_state').pluck().get()).toBe('ready')
+      restored.db.close()
+
+      expect(v3MigrationCleanupTestSeams.cleanupAtWithDirectorySynchronizer(
+        { directory: fx.root, installationKey: fx.input.installationKey },
+        '2026-08-13T12:40:00.000Z',
+        () => {},
+      )).toEqual({ status: 'complete' })
+      expect(existsSync(fx.backupPath)).toBe(false)
+      expect(existsSync(fx.manifestPath)).toBe(false)
+      expect(existsSync(join(fx.root, STORAGE_V3_LEGACY_SOURCE_LOCATOR))).toBe(false)
+      for (const [name, bytes] of preserved) expect(readFileSync(join(fx.root, name))).toEqual(bytes)
+    } finally { fx.close() }
+  })
+
   it('replays a later revocation before publishing an old signed backup', async () => {
-    const fx = await publicationFixture({ revokeAfterBackup: true })
+    const fx = await publicationFixture({ revokeAfterBackup: true, addClaimAfterBackup: true })
     try {
       const result = v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {})
       expect(result.reader).toBe('sqlite-v3')
@@ -411,6 +472,12 @@ describe('LIFE-03 restore snapshot normalization', () => {
       expect(result.db.prepare(
         "SELECT operation_id, event_week FROM lineage_event WHERE subject_kind = 'scope' AND subject_id = ? AND event_kind = 'tombstone_cascade'",
       ).get(SCOPE_A)).toEqual({
+        operation_id: `del-${'09'.repeat(32)}`,
+        event_week: '2026-W32',
+      })
+      expect(result.db.prepare(
+        "SELECT operation_id, event_week FROM lineage_event WHERE subject_kind = 'claim' AND subject_id = ? AND event_kind = 'tombstone_cascade'",
+      ).get(POST_BACKUP_CLAIM)).toEqual({
         operation_id: `del-${'09'.repeat(32)}`,
         event_week: '2026-W32',
       })
@@ -429,6 +496,18 @@ describe('LIFE-03 restore snapshot normalization', () => {
       const headBytes = readFileSync(headPath)
       unlinkSync(join(fx.root, 'revocation-replay-v1-00000001.json'))
 
+      expect(v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {}))
+        .toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
+      expect(readFileSync(headPath)).toEqual(headBytes)
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))).toBe(false)
+    } finally { fx.close() }
+  })
+
+  it('refuses restore while a physically head-matched revocation group is incomplete', async () => {
+    const fx = await publicationFixture({ partialRevocationAfterBackup: true })
+    try {
+      const headPath = join(fx.root, STORAGE_V3_REVOCATION_REPLAY_NAMES.head)
+      const headBytes = readFileSync(headPath)
       expect(v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {}))
         .toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
       expect(readFileSync(headPath)).toEqual(headBytes)

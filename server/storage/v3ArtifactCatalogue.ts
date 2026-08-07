@@ -25,6 +25,7 @@ import {
   STORAGE_V3_ARTIFACT_KINDS,
   STORAGE_V3_ARTIFACT_LOCATORS,
   STORAGE_V3_ARTIFACT_STATES,
+  STORAGE_V3_MIGRATION_CLEANUP_FILE_ROLES,
   STORAGE_V3_SHADOW_APPLICATION_ID,
   STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT,
   STORAGE_V3_SHADOW_USER_VERSION,
@@ -191,6 +192,11 @@ export function assertStorageV3ArtifactRootInstallationKey(
   } catch {
     fail()
   }
+}
+
+/** Content-free binding shared by the cleanup registry and selection receipt. */
+export function storageV3ArtifactRootBinding(root: StorageV3ArtifactRoot): string {
+  return `root-${createHash('sha256').update(rootIdentity(root).path, 'utf8').digest('hex')}`
 }
 
 function lstatEntry(path: string): BigIntStats | undefined {
@@ -844,7 +850,14 @@ export function assertStorageV3ArtifactCatalogue(db: Database.Database): void {
     const owners = db.prepare(
       'SELECT scope_id FROM app_artifact_scope WHERE artifact_id = ? ORDER BY scope_id',
     ).pluck().all(row.artifact_id) as string[]
-    if (kind !== 'selected_store' && state === 'active' && owners.length === 0) fail()
+    if (kind !== 'selected_store' && state === 'active' && owners.length === 0) {
+      const retainedSelectedBackup = kind === 'migration_backup_v1' && db.prepare(
+        `SELECT 1 FROM migration_cleanup_state
+         WHERE singleton = 1 AND backup_artifact_id = ?
+           AND phase IN ('ready', 'legacy_deleting', 'legacy_durable', 'backup_deleting')`,
+      ).get(row.artifact_id) !== undefined
+      if (!retainedSelectedBackup) fail()
+    }
     for (const owner of owners) {
       if (!ScopeIdV3Schema.safeParse(owner).success) fail()
       if (!liveScopes.has(owner)) fail()
@@ -1415,6 +1428,47 @@ export function proveStorageV3MigrationBackupPublication(input: Readonly<Migrati
   return proof
 }
 
+function registerMigrationCleanupBackupEvidence(input: MigrationBackupPublication): void {
+  const attempt = readMigrationBackupAttemptRow(input.db, input.artifactId)
+  if (attempt.sqliteDev === null || attempt.sqliteIno === null
+    || attempt.manifestDev === null || attempt.manifestIno === null
+    || attempt.sqliteContentSha256 !== input.contentSha256) fail()
+  const rootBinding = storageV3ArtifactRootBinding(boundRoot(input.db))
+  const backupRoles = STORAGE_V3_MIGRATION_CLEANUP_FILE_ROLES.filter((role) => role.startsWith('backup_'))
+  if (backupRoles.length !== 7) fail()
+  input.db.prepare(
+    `INSERT INTO migration_cleanup_state (
+      singleton, phase, selected_artifact_id, backup_artifact_id, task_fingerprint, root_binding
+    ) VALUES (1, 'backup_bound', ?, ?, ?, ?)`,
+  ).run(
+    input.selectedArtifactId,
+    input.artifactId,
+    input.installationKey.fingerprint,
+    rootBinding,
+  )
+  const insert = input.db.prepare(
+    `INSERT INTO migration_cleanup_file (
+      role, relative_locator, expected_present, file_dev, file_ino, file_nlink, content_sha256
+    ) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+  )
+  const absent = (role: string, locator: string): void => {
+    insert.run(role, locator, 0, null, null, null, null)
+  }
+  insert.run(
+    'backup_sqlite', input.finalLocator, 1,
+    attempt.sqliteDev, attempt.sqliteIno, '1', input.contentSha256,
+  )
+  absent('backup_wal', `${input.finalLocator}-wal`)
+  absent('backup_shm', `${input.finalLocator}-shm`)
+  absent('backup_journal', `${input.finalLocator}-journal`)
+  insert.run(
+    'backup_manifest', `${input.finalLocator}.manifest.json`, 1,
+    attempt.manifestDev, attempt.manifestIno, '1', input.manifestSha256,
+  )
+  absent('backup_temp_sqlite', input.stagedLocator)
+  absent('backup_temp_manifest', `${input.stagedLocator}.manifest.json`)
+}
+
 export function promoteStorageV3MigrationBackupArtifact(
   proof: StorageV3MigrationBackupPublicationProof,
 ): void {
@@ -1436,6 +1490,11 @@ export function promoteStorageV3MigrationBackupArtifact(
       input.finalLocator, input.contentSha256, input.manifestSha256, input.artifactId, input.stagedLocator,
       intentSha256, intentSha256,
     ).changes !== 1) fail()
+    // Transfer the exact attempt identities into the seven-day cleanup registry
+    // before the attempt row is discarded. The final links intentionally bind
+    // nlink=1: publication removes its two known provisional links before the
+    // registry may advance from backup_bound to ready.
+    registerMigrationCleanupBackupEvidence(input)
     if (input.db.prepare('DELETE FROM migration_backup_attempt WHERE artifact_id = ?').run(input.artifactId).changes !== 1) fail()
   })()
   assertStorageV3ArtifactCatalogue(input.db)
@@ -1465,6 +1524,15 @@ export function scheduleStorageV3ArtifactsForScope(
      WHERE owner.scope_id = ?
        AND artifact.kind <> 'selected_store'
        AND artifact.state = 'active'
+       AND NOT (
+         artifact.kind = 'migration_backup_v1'
+         AND EXISTS (
+           SELECT 1 FROM migration_cleanup_state AS cleanup
+           WHERE cleanup.singleton = 1
+             AND cleanup.backup_artifact_id = artifact.artifact_id
+             AND cleanup.phase <> 'backup_bound'
+         )
+       )
      ORDER BY artifact.artifact_id`,
   ).pluck().all(input.scopeId) as string[]
   const schedule = db.prepare(
@@ -1628,6 +1696,16 @@ export function completeStorageV3ArtifactDeletions(
         existingDeletion.operation_id !== maintenance.operation_id
         || existingDeletion.event_week !== maintenance.event_week
       ) fail()
+      const cleanup = db.prepare(
+        `SELECT phase, backup_artifact_id FROM migration_cleanup_state WHERE singleton = 1`,
+      ).get() as { phase: string; backup_artifact_id: string | null } | undefined
+      if (cleanup !== undefined && cleanup.backup_artifact_id === row.artifact_id) {
+        if (cleanup.phase !== 'backup_bound') fail()
+        db.prepare('DELETE FROM migration_cleanup_file').run()
+        if (db.prepare(
+          "DELETE FROM migration_cleanup_state WHERE singleton = 1 AND phase = 'backup_bound'",
+        ).run().changes !== 1) fail()
+      }
       db.prepare('DELETE FROM app_artifact_scope WHERE artifact_id = ?').run(row.artifact_id)
       if (db.prepare(
         "DELETE FROM app_artifact WHERE artifact_id = ? AND state = 'deleting'",

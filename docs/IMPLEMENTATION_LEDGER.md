@@ -3066,12 +3066,130 @@ excludes success/grace timestamps. This state is not reachable through today's i
 normal crash ordering; the [#173 cleanup proof note](https://github.com/Chris0Jeky/developer-lens/issues/173#issuecomment-5208995872)
 records the requirement that future cleanup refuse, not recreate, an anchor-only/truncated C1 family.
 
-#172 remains open until this candidate is reviewed and merged; #173 owns physical expiry cleanup
-without early replay-family removal. Phase E stored-observation bridge, resolver lineage, and the
-change-batch/integration-tail second lens remain separate #174/#80 work. Hosted exact-head proof,
-PR, merge, and post-merge late-comment sweep are pending. No real source/store, legacy path,
-private/generated data, connector, credential, production issuer/caller, or external-model request
-was inspected or activated.
+#172 closed when PR #179 merged. #173 owns physical expiry cleanup without early replay-family
+removal. Phase E stored-observation bridge, resolver lineage, and the change-batch/integration-tail
+second lens remain separate #174/#80 work. PR #179 merged during the owner-directed pre-release
+Actions exception: hosted exact-head proof was unavailable and is not represented as green. No real
+source/store, legacy path, private/generated data, connector, credential, production issuer/caller,
+or external-model request was inspected or activated.
+
+## 2026-08-06 — revocation replay merged; large-scope chunk repair (PR #184)
+
+PR #179 carried code head `47cc12ebf9e9b807a7c26d35a6443dfff589596f` plus documentation
+head `654261cd7d341fc13026b36dd54e2e2575a316e3`, merged as
+`565efad47b543dbb2ae891b325d626b67dc4c630` at 2026-08-06T20:48:59Z, and closed #172.
+The owner explicitly continued the pre-release GitHub Actions exception: the local exact-head gate
+and independent reviews are recorded above, but hosted proof was unavailable and is **not** green.
+
+A delayed exact-head connector review then confirmed that the 100,000-subject total publication
+ceiling conflicted with the 16 MiB per-record ceiling and could make a sufficiently large selected
+scope impossible to revoke. The finding is tracked by #180; the original PR #179 thread remains
+open until this follow-up merges. PR #184 initial code head
+`7da6804f6f1cc993d7bc8296c3dcaff0a416f647` replaces the total ceiling with deterministic bounded
+chunks of at most 4,096 canonical subjects. Every record binds its chunk index/count, total subject
+count, partition size, and a domain-separated digest of the complete logical subject set. The whole
+publication plan, record sizes, and sequence capacity are validated before chunk zero; each record
+and its physical keyed head is made durable before the next record or any SQL deletion.
+
+Read, restore, and replay aggregate only contiguous complete chunk groups with one exact operation,
+scope tombstone, subject count, and total digest. A head-matched partial tail is recoverable but is
+never readable or restorable. Restart replans the still-live selected scope under the stored
+operation/week, requires the same total digest/count/partition and exact already-published prefix,
+and appends only the missing suffix. Selected-store reconciliation requires exact per-subject
+lineage, while stale-backup replay may add the missing committed tombstones for subjects introduced
+after the backup. One fresh review found that grouping deletion rows by event kind could ignore a
+second conflicting deletion event for one subject; the fix requires exactly one deletion lineage
+row across deletion event kinds and adds a discriminating test.
+
+Two fresh exact-diff reviews reran the original 69-test replay/read/restore seam. One found and the
+candidate fixed deletion-event-kind grouping that could otherwise ignore a conflicting row for the
+same subject; neither found another realistic CRITICAL/HIGH blocker at that head. A delayed PR #184
+connector review then found a second direct ambiguity: the set-based applied-lineage query selected
+rows through the revoked scope, so a conflicting scope-unbound row for the same non-scope identity
+could be hidden when its cause named another scope or was null. Fix head
+`7533865d6052c6727a481468c3dd20be2a2e7e4c` now joins bounded 400-identity batches against the indexed
+subject kind/ID prefix and evaluates every deletion row for each replay subject. A discriminating
+fixture inserts the formerly hidden row and proves refusal.
+
+The exact fix content passes `npm run check`: lint, context verification, 82 test files with 1,402
+tests passed and 10 declared skips, TypeScript/Vite build, and credential scanning over 13 outputs.
+The focused replay/read/restore seam passes 70 tests and range whitespace is clean. A fresh bounded
+fix review confirmed that 400 identities use 800 bind parameters, every deletion row for those
+identities is accumulated, and duplicate or mismatched operation/week/cause/kind/capability state
+fails closed; it found no realistic CRITICAL/HIGH regression. Invented-fixture proof publishes a
+100,002-subject intent as 25 bounded records before SQL in about 19 seconds, and the full
+delete/replay journey passes across the production 4,096-subject boundary with 4,098 subjects.
+
+Issue #183 separately records that the existing SQL tombstone deletion for the 100,002-subject
+fixture remained CPU-active beyond a ten-minute bound. No failure, data exposure, or publication
+rollback was observed, but timely 100k SQL deletion is **not** claimed. The complete production
+boundary journey, not the 100k SQL tail, is the current executable proof. The mandatory chunk fields
+also change the pre-activation event shape while retaining the v1 family name, so older invented v1
+bytes fail closed. That is accepted only while activation remains `never_authorized` and no real
+store exists; #168 still owns explicit marker/version evolution and stranded-preflight recovery
+before activation.
+
+Hosted exact-head Actions/POSIX proof remains NOT verified during the declared Actions incident.
+Native hostile same-user pathname/ABA and coordinated rollback remain #142. No real source/store,
+legacy path, private/generated data, credential, connector, production caller, or external-model
+request was inspected or activated. After #184, the next bounded slice is #173 expiry cleanup,
+already implemented in isolated commit `111881c`; #174/#80 remain the subsequent Phase E bridge.
+
+## 2026-08-06 — durable seven-day migration expiry candidate (#173 / PR #185)
+
+PR #184 merged as `a53b46772ebf257fa495c074e225100ca753a35a` at 2026-08-06T22:40:55Z
+and closed #180. Its original #179 defect thread and its own applied-lineage thread were replied to
+with exact fix/proof evidence and resolved; the immediate post-merge sweep found no later thread.
+Hosted checks remained absent while GitHub Status continued to report an Actions major outage with
+webhook triggers throttled, so the documented owner-directed pre-release exception is explicit and
+is not represented as a green hosted gate. #183 separately retains the 100k SQL-throughput result.
+
+The #173 implementation rebased cleanly onto that merge as code commit
+`f623ba941aeb49c8fc6e1a8529ec1005ead7dfb3`. Schema 3.2.5 adds a monotonic cleanup singleton and an
+immutable fixed file registry. Backup promotion transfers the exact final SQLite/manifest identity
+before discarding its attempt row; pre-selection registration captures the fixed app-owned legacy
+base and optional WAL/SHM/journal identities. Every present file is bound by confined locator,
+content hash, device/inode/link count, selected artifact, task-key fingerprint, and exact root;
+expected-absent sidecars/provisionals are recorded explicitly. Selection refuses until this registry
+is complete, and verified restore reconstructs the same ready registry from the immutable external
+backup proof rather than caller-supplied paths.
+
+The production cleanup input contains only `{ directory, installationKey }`; its clock is owned by
+the runtime. One millisecond before the exact committed grace deadline it is read-only. At or after
+the deadline it re-verifies selected-store/root/key continuity, the immutable selection proof and
+receipt, complete deletion maintenance, the full keyed replay family, and exact application of every
+revocation under the single writer lease. Unsupported exact-root directory sync refuses in preflight
+before the first unlink. The `ready -> legacy_deleting -> legacy_durable -> backup_deleting ->
+complete` state machine records intent, unlinks only registered identities in reviewed sidecar/base
+order, synchronizes the containing directory after each family, then finalizes the backup catalogue.
+Every phase is restartable; absent already-unlinked registered files converge, while a replacement,
+foreign link, unexpected file, wrong binding, incomplete maintenance, or invalid replay refuses.
+
+The selection marker/receipt and complete content-free revocation anchor/events/head remain byte
+exact through cleanup. The stale migration backup remains protected from ordinary scope deletion
+until this grace cleanup owns it. Restore rebuilds the registry and reapplies replay before service.
+Fix commit `6eb93f56462f53970b4dbcb51b98ba5e69fd9a17` adds the integrated chunk discriminator: a two-record
+committed replay family loses record one while its durable head remains, cleanup refuses with phase
+still `ready`, and every legacy/backup file remains present. This complements anchor-only,
+missing-head, malformed-head, replaced-name, link, directory-sync, per-stage crash, repeated-cleanup,
+selection-refusal, restore, and marker-preservation fixtures.
+
+The exact integrated head passes `npm run check`: lint, context verification, 83 test files with
+1,432 tests passed and 10 declared skips, TypeScript/Vite build, and credential scanning over 13
+outputs. The cleanup/replay/read/restore seam passes 100 tests; cleanup alone passes 29; range
+whitespace is clean. A fresh exact-code adversarial review reran six cleanup/selection/restore/replay/
+catalogue/schema files with 167 passed and three declared skips, verified the irreversible ordering
+and fixed-identity boundary, and found no realistic CRITICAL/HIGH defect. Invented temporary fixtures
+only were used. No real source/store, private or generated operational data, credential, connector,
+activation caller, scheduler, or external-model request was inspected or activated.
+
+NOT verified: hosted Linux/POSIX directory-sync proof during the declared Actions incident. Windows
+production intentionally refuses before the first unlink with the current primitive. Hostile
+same-user pathname ABA remains #142. This slice preserves C1/C2 integrity files and does not implement
+their terminal expiry; before future C2 receipt/proof removal, a durable committed-family
+discriminator must refuse rather than recreate anchor-only/truncated C1 replay state. #168 still
+owns pre-activation marker versioning/stranded preflight/hosted proof. After #173 is reviewed and
+merged, the exact next product slice is the Phase E stored-observation bridge #174/#80.
 
 ## 2026-08-06 — ResearchPack v1 C0 producer contract
 
