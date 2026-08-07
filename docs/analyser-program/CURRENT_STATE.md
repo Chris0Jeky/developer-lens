@@ -8,17 +8,22 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-07
-current_slice_override: 'No active product-repo implementation slice in this checkout. The WB-C1
-  Method Trial demo product side is COMPLETE (PR #187 `7b22491`, follow-up PR #190 `8de65a2`, invented
-  C0, verification honestly `not_run`); the dual-runtime harness milestone merged (PR #191 `dcf5897`,
-  ledger sync PR #192 `e97f17d`); and the hosted PR gate now runs explicit ResearchPack +
-  MethodTrialView drift-check steps for local/gate parity (issue #193 CLOSED via PR #194 `24f55d4` —
-  the `shared/*` test suite already caught that drift, so this added explicitness, not a missing
-  guard). The next value work is cross-repo (see next_value_slice) and not in this repo.'
-phase: 'WB-C1 Method Trial demo shipped product-side and the hosted proving gate hardened (#193). No
-  active product-repo slice; next value work is the cross-repo lab close-out. No real migration,
-  source activation, private output, stored-observation exporter, external model call, or model
-  promotion is part of this programme.'
+current_slice_override: 'Product-repo slice on branch `claude/method-trial-view-a11y-189`: the #189
+  MethodTrialView accessible-missing-state RENDERING subset (SVG lines break at missing/unavailable
+  observations, the timeline text alternative retains every distinct transition and PELT boundary
+  instead of truncating, and the headline/decision copy is derived from both measurements — neutral
+  when a metric is unavailable). Rendering only: the shared validator and the committed C0 fixture are
+  untouched, so product/lab validator parity is intact. The WB-C1 Method Trial demo product side is
+  COMPLETE (PR #187 `7b22491`, #190 `8de65a2`); the dual-runtime harness merged (#191 `dcf5897`, #192
+  `e97f17d`); the hosted gate carries explicit ResearchPack + MethodTrialView drift steps (#193 via #194
+  `24f55d4`). Cross-repo close-out: lab PR #8 is MERGED (2026-08-07) and the product/lab pair is
+  demonstrated green on both sides, so the bounded WB-C1 programme is complete; everything else is
+  tracked post-programme debt (see next_value_slice).'
+phase: 'WB-C1 Method Trial demo complete on both product and lab sides; the product/lab pair is
+  demonstrated green and lab PR #8 is merged, so the bounded WB-C1 programme is closed. Current
+  product-repo slice: #189 accessible-missing-state rendering hardening. No real migration, source
+  activation, private output, stored-observation exporter, external model call, or model promotion is
+  part of this programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -36,19 +41,24 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'None active in this checkout. Last product-repo slice: PR #194 (`24f55d4`) added the
-  `check:research-pack` and `check:method-trial-view` drift-check steps to
-  `.github/workflows/pr-gate.yml` and reconciled this artifact; it merged on its pre-merge gates
-  (hosted Prove green at final head `a593e1d`, one fresh-context review, one triaged Codex P2, the
-  aging floor, and the 15-minute window with a fresh pre-merge sweep), then had a clean post-merge
-  sweep. The prior `codex/method-trial-final-evidence` slice merged as PR #190 (`8de65a2`).'
-next_value_slice: 'Cross-repo (SEPARATE `developer-lens-lab` sibling checkout, not this repo): finish
-  and merge lab PR #8, demonstrate the product/lab pair, and close this bounded programme before
-  considering the separate #174/#80 Phase E bridge. Do not turn the follow-up into a generic
-  research dashboard or EvaluationBundle parser. Product-repo backlog readiest bounded items: #189
-  (MethodTrialView v2 hardening — future), #181/#182 (ResearchPack refinements).'
+active_slice: 'Product-repo slice on branch `claude/method-trial-view-a11y-189`: the #189
+  accessible-missing-state RENDERING subset (src/components/MethodTrialRoute.tsx + its test only).
+  Local proof green: full `npm run check` (1462 tests pass / 10 skipped, tsc -b + vite build +
+  verify:no-secrets) plus the focused MethodTrialRoute + test:demo:v2 suites on independent
+  coordinator re-run; one fresh-context dl-reviewer adversarial pass returned no CRITICAL/HIGH/MEDIUM
+  findings. The shared validator and the committed fixture are untouched. Prior product-repo slice:
+  PR #194 (`24f55d4`) added the drift-check steps to `.github/workflows/pr-gate.yml`.'
+next_value_slice: 'The bounded WB-C1 programme is COMPLETE: lab PR #8 merged (2026-08-07), the
+  product/lab pair is demonstrated green on both sides, and product #189''s rendering subset shipped.
+  Remaining tracked post-programme debt, none dependency-forced: product #189 (the two DEFERRED bullets
+  — future-v2 wire dedup + closed-copy/source-identity canary) plus its validator-parity subset
+  (deferred-caveat uniqueness, all-seven-gates on rejection, alert-evidence, viable-selection reason —
+  which WOULD be a cross-repo product+lab validator change and needs the cross-repo-contract skill);
+  #181/#182 (ResearchPack refinements); lab #6 (six WB-C1 methodology findings) and lab #7 (fallback
+  case labels). The separate #174/#80 Phase E stored-observation bridge is out of this demo programme.
+  Do not turn any follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
-  [DL-WB-C1 Method Trial demo — product side COMPLETE (#187/#190); remaining close-out is cross-repo lab PR #8]
+  [DL-WB-C1 Method Trial demo — COMPLETE both sides (product #187/#190, lab PR #8 merged); pair demonstrated green; bounded programme closed]
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. No product-repo slice is in
   flight. The binding review-timing gate stated below (`review_timing_defect`) governs any merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the
