@@ -3246,3 +3246,20 @@ the single repair round added the compact base/suffix boundary, and the final re
 remaining realistic CRITICAL/HIGH defect. Hosted `Prove the pull request` remains pending after the
 next push and is not represented as green; no current repository authority extends an outage
 exception to PR #178.
+
+The first refreshed hosted run, `31138305001`, checked out the exact PR merge ref for ResearchPack
+head `5a498f02c81c92fd9db800b373a55acc8848994f` and exposed two inherited Linux storage failures rather
+than a ResearchPack regression. The same failures were present on PRs #184/#185 and current main:
+the selection-proof test created a simulated protected temp with the default POSIX mode instead of
+`0600`, and restore publication released its original temp descriptor before link validation, which
+let ext4 recycle the same device/inode for an unlink/recreate replacement. The deliberately isolated
+prerequisite PR #186 retained that descriptor through link validation and corrected the test fixture.
+Its commit `0a69d374eaff97d6408fe8f5ac3cf52bb0b84a69` passed the two exact tests 33/33 on Windows and on an
+Ubuntu/ext4 checkout, passed the full local gate (83 files, 1,432 passed, 10 skipped), received a fresh
+review with no CRITICAL/HIGH finding, and passed hosted run `31139652039`. It merged with commit
+preservation as `f576fc4c234426e3ba737e4a7bd888ce0fd8f624`.
+
+PR #178 then merged that repaired `origin/main` through merge commit
+`7fb568c088b89ed11c72afe1115fcfbf92bbd75b`; the merge touched only the two already-proven storage
+files and had no ResearchPack or state conflict. Exact refreshed ResearchPack proof and the required
+hosted result remain owed after the final state push; no exception is claimed.
