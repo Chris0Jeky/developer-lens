@@ -3263,3 +3263,187 @@ PR #178 then merged that repaired `origin/main` through merge commit
 `7fb568c088b89ed11c72afe1115fcfbf92bbd75b`; the merge touched only the two already-proven storage
 files and had no ResearchPack or state conflict. Exact refreshed ResearchPack proof and the required
 hosted result remain owed after the final state push; no exception is claimed.
+
+## 2026-08-07 — WB-C1 Method Trial product vertical (PR #187)
+
+ResearchPack PR #178 ultimately merged at authoritative product main
+`be9c2451e983e776850c4cd4700cc8c234ea5e14` after hosted run `31140838615` passed. The additive
+product-owned `DeveloperLensMethodTrialView.v1` contract is fixed at commit
+`3ac919f6129374acae564883ef9196c1d4aaf54c`. Its generated Draft 2020-12 schema is
+`research-contracts/method-trial-view/v1/schema.json`, SHA-256
+`86cf53a48660967c07329f02be01c05d773c16ac96c28ddcd8110aed3b827fdc`. It is a strict,
+path-free C0 presentation projection, not a ResearchPack, generic research dashboard, stored-
+observation export, product EvaluationBundle parser, or production evaluation result.
+
+Developer Lens Lab PR #3 was merged concurrently at `0435c2f24af9359429a4e9dee8f744cd4d8049c1`
+before the presentation exporter existed. That external ordering cannot be rewritten and is not
+represented as an exporter merge. The bounded recovery preserves product ownership: PR #187 lands
+the canonical consumer first, then one lab follow-up PR will add the exporter against the already-
+merged WB-C1 vertical. Draft product PR #188 contains the same contract plus one two-line test-
+threshold alignment; that alignment is preserved in PR #187 and #188 is superseded rather than
+becoming a second product slice.
+
+The lab exporter code is commit `5c0a8814bc3df94383d6b947898952a273c6c449`. From that exact code,
+the fresh deterministic run `wbc1_method_trial_v1_exhibit` completed benchmark, reproduction,
+report, export, and producer-schema validation. The exact exported bytes were copied without hand
+editing to `research-contracts/method-trial-view/v1/wbc1.fixture.json`; both source and committed
+file have SHA-256 `8a3f07f40b082b10632fc1fd777d5e020768156af7b67b4914a84d94769a55dd`.
+The fixture names that lab commit and run, product contract commit `3ac919f`, ResearchPack product
+commit `be9c2451`, EvaluationBundle digest
+`sha256:5534294e303c9d622e264ebeabeef86a8fde14e9b4080c2a212b0bb3d825244e`, custody digest
+`sha256:d5d33f19d437dfa47eff26cfe961d07cad241bce563b454aac5cdc2b0163a1f4`, ResearchPack digest
+`sha256:bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`, and report digest
+`sha256:aec5261e0b6764d8ddfb8f137980ab107a0222fec4e91343c74395af92782202`.
+
+The committed C0 projection records 54 systems, 5,616 weekly opportunities, 5,346 observations,
+270 explicit absences, and exactly three deterministic 104-week final-holdout windows: no-change,
+planted level change, and parser-shift instrumentation confound. The corrected confound narrative
+names the parser shift and never substitutes permission loss. The baseline records
+`2.966666666666667` false alerts/year and `0.75` detection; the candidate records `4.2`, `0.75`, and
+Brier `0.017341137335170863`. Both threshold selections are nonviable. Seven ordered gates retain
+measured/unavailable/not-applicable distinctions, the candidate is rejected, and the complete
+deterministic rolling-median/MAD baseline remains the fallback. PELT is only offline descriptive;
+the three windows are fixed selections, not manually selected anecdotes.
+
+The product route lazy-loads only for `?view=method-trial`, imports and runtime-validates the
+committed fixture without a fetch, and leaves Dashboard, Wrapped, V2, Coverage Cockpit, Atlas, and
+the default bundle path intact. A visible entry in the existing Evidence surfaces navigation reads
+“Method Trial — why the more complex detector was rejected.” Desktop and 390-pixel browser checks
+confirmed the rejection hierarchy, disclosure, three timelines, distinct square/diamond alert
+markers, no stale permission-loss narrative, and no horizontal overflow. The collapsed
+reproducibility disclosure expands to the exact run, commits, digests, commands, and statuses.
+
+Exact local product proof after the final logic/fixture commits passed: the focused runtime,
+standalone-schema, route, and fallback seam passed 15 tests; `npm run check:method-trial-view`,
+TypeScript, lint, and whitespace checks passed; `npm run check` passed lint, context, both generator
+drift checks, 86 test files with 1,451 passed and 10 declared skips, TypeScript/Vite build, and
+credential scanning across 19 outputs. `npm run build:showcase` regenerated and verified synthetic
+dashboard data, the social card, summary/full export boundaries, credential/local-path canaries,
+and the Pages build. Vite retained the pre-existing large-main-chunk and browser-externalized
+`node:crypto` warnings; the Method Trial itself remains a separate lazy chunk (about 194 kB, 23.7
+kB gzip). One substantial fresh-context Terra review at product head `89d55b1` inspected route
+reachability and preservation, story fidelity, responsive/non-color-only timelines, strict C0
+boundaries, provenance, and the cross-repository ordering record. It reran the 15 focused tests,
+the MethodTrial drift check, and range whitespace proof and found no realistic CRITICAL/HIGH merge
+blocker or non-blocking finding. The hosted exact-head result is recorded by the publication
+closeout after it exists; it is not inferred here.
+
+No real/private input, `.developer-lens` state, private generated output, local path, credential,
+provider/person identifier, source activation, external-model request, or production effect was
+inspected, committed, or invoked. The evidence establishes only deterministic mechanics on invented
+C0 data. #174/#80, #183, LIFE-03 hardening, real-source activation, and broader #181/#182 refinements
+remain outside this bounded programme.
+
+## 2026-08-07 — WB-C1 Method Trial exact-evidence repair
+
+The exact-head connector review of product PR #187 found two realistic blocking contract defects:
+the reproducibility command allowlist admitted inline credential-bearing variants, and the seven
+displayed acceptance-gate outcomes were accepted as producer prose rather than derived from the
+scorecard. Contract commit `b0c6c24ab487534b7853b59effd3bd50ec072382` closes both. Commands now
+match the exact run identifier and reject extra flags or inline passwords; measurement domains are
+nonnegative while signed observed signals remain separate; and runtime validation derives all seven
+WB-C1 outcomes and their relevant values from the scorecard and threshold selections. The generated
+schema SHA-256 is `a93616a0c6de82b0846fcd1346182d8aa77fa54a31a8413c623428375c5cf8f2`.
+The remaining parity and accessible missing-state improvements are non-blocking for this fixed,
+committed C0 fixture and are tracked together in #189 rather than expanding the vertical.
+
+Developer Lens Lab repair head `307d1ad592791f57e25fd84b3d44b07600be20cf` synchronized that exact
+product contract and made the exporter evidence-derived and smoke-only. A fresh deterministic
+benchmark/reproduce/report/export run `wbc1_method_trial_v1_exhibit_v2` produced the committed bytes
+without hand editing. The source export and product fixture both have SHA-256
+`f2dadf79938b1a36248b7b5e0c69c25cc695d88711a351bba861c1deca5b6fda`. Its EvaluationBundle,
+custody, ResearchPack, and report digests are respectively
+`sha256:6817268480f4d313969080d5f78149d2c740d0dbaf94594cb3a5a5f69f306dad`,
+`sha256:7da2400ec64e73f47a8fbcdc91ea03b566d364b1096b22654e93ad29a8723668`,
+`sha256:bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`, and
+`sha256:dec6764d75cf36e917b96e619ee921a48a121bfd929709097966fdfcd82b0d1b`.
+
+The repaired projection still records the same honest rejection: baseline/candidate false alerts
+`2.966666666666667`/`4.2`, detection `0.75`/`0.75`, median delay `2`/`1`, coverage-confound false-alert
+rate `0.5`/`0.5`, candidate Brier `0.017341137335170863`, and frozen thresholds `2.5`/`0.05`.
+The seven derived gate outcomes are fail, fail, pass, pass, fail, pass, pass; both selections are
+nonviable and the deterministic baseline remains the fallback. The lab's final full local gate
+passed 41 tests with one declared symlink skip plus Ruff, Pyright, contract, and whitespace checks.
+On the product side, the repaired fixture/runtime/route seam passed 18 focused tests and the
+MethodTrial generator drift check. Exact final full product and hosted proof are recorded by the
+publication closeout after they exist and are not inferred here.
+
+The integrated product code head `2da4c2cdff4b1d2711a30565df479631fd941070` also preserves remote
+fixture-refresh commit `21e070b2dec881a16b13ba9d8e3543c6e3ae9f3d` and its useful byte,
+privacy-key, dataset, decision, selector, and case-boundary assertions while retaining the reviewed
+`f2dadf79...` exporter bytes. `npm run check` passed lint, context validation, both generator drift
+checks, 86 test files with 1,454 passed and 10 declared skips, TypeScript/Vite build, and credential
+scanning across 19 outputs. `npm run build:showcase` regenerated and verified the invented dashboard,
+social card, summary/full export boundaries, credential/local-path canaries, and Pages build. The
+Method Trial remains a separate lazy chunk (about 196.6 kB, 24.1 kB gzip); the pre-existing
+browser-externalized `node:crypto` and large-main-chunk warnings remain.
+
+The prior remote head `21e070b` failed hosted run `31147334095` only in the unchanged
+`v3Backup.test.ts` replacement-inode collision fixture; all 1,458 other tests passed. The same
+storage code passed on the preceding PR head and authoritative main, and the final integrated local
+gate also passed it. That is evidence of an intermittent inherited test failure, not permission to
+dismiss it or change the out-of-scope storage seam. The final pushed head still requires a fresh
+hosted result. The docs-only publication closeout after this code proof is covered by context and
+whitespace verification rather than represented as a second full code gate.
+
+## 2026-08-07 — WB-C1 Method Trial final contract reconciliation
+
+Product contract commit `b48fea579936671397a0486ae7a0342197ee6e4b` closes the remaining public
+prose boundary: every narrative field now accepts only product-owned copy, and runtime Zod plus
+standalone AJV reject adversarial identity/review prose across all narrative shapes. Lab commit
+`5c79236beb0a0b25819f14510b79bb15813d7337` synchronizes that schema, records producer provenance
+per run, confines check-only reads, verifies same-byte later commits without rewriting source
+provenance, and materializes reports through the confined artifact writer.
+
+A new clean-worktree `wbc1_demo` benchmark/reproduce/export/report flow produced the exact tracked
+fixture without hand editing. Source and product bytes are identical at 167,935 bytes with SHA-256
+`26c3a9184adfce4ff5756e702b36d6db7af7c5f2dab9eb3eb3081ca598eafd95`. The schema,
+EvaluationBundle, custody, ResearchPack, Markdown, and HTML SHA-256 values are respectively
+`634b0cc7a0c3dbcefe8b9cf258e157695beae06d08cc9d02bb781a4267f633ef`,
+`cbd9415bf9e26683656259bcef5a402b1745570c2a31e5c44dbfee74cfaea75f`,
+`036f62f5f9ade272eba907513e7ab0bbef4a888bb1d86f8ae6e401aebd5c8238`,
+`bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`,
+`8144410775717d8b280a41b95c18dd22a8de45c765186ecaeb1fd5c6745e30f0`, and
+`fca7aac3e567f6de84b6dd60f476e77bf2a18f7a20cefde4563856e6ada99eec`.
+The scientific result and no-promotion boundary are unchanged. Exact-head hosted gates and merge
+state are recorded only after they complete.
+
+### Structural-schema boundary and semantic acceptance closure
+
+The final repair review proved that Draft 2020-12 accepted relationally false artifacts which the
+product runtime rejected: mismatched run commands, gate outcomes/relevant values, decision reasons,
+threshold viability, and timeline index/marker coherence. Product commit
+`5c2cff834b2763aa5646a99c20f61abcba6943b4` makes the boundary explicit in the generated schema's
+standard `$comment`, the contract README, the root README, and the showcase runbook. The standalone
+schema is structural transport validation only; `MethodTrialViewSchema` is the normative product
+semantic validator before acceptance or display. Regression tests deliberately demonstrate the
+distinction across eight relational mutations. The product route already runtime-parses its fixture
+before display, so there is no AJV-only product exposure.
+
+The lab synchronized that exact contract and schema SHA-256
+`f1511ca6f4bca7d770bf0e646825792b27144249ff86fcbccdee5fb24a75cbbe`, then added an equivalent
+semantic validator in lab commit `aa21dbd68ec9cd759240f551948a8bdeb59df9aa`. Export now fails closed
+after structural validation unless command/run binding, threshold viability, gate derivation and
+mirrored evidence, decision reasons, timeline sequence, missing-state behavior, and case-role marker
+coherence all hold. The contract sync also refuses a product schema that omits the structural-only
+annotation. Focused lab proof passed seven tests with one declared Windows symlink skip, plus Ruff,
+strict Pyright, and whitespace checks.
+
+From that exact clean lab commit, fresh run `wbc1_method_trial_v1_exhibit_v3` completed benchmark,
+reproduction, report, and semantic export. The generated source and mechanically copied product
+fixture have SHA-256 `b5953543ca9ad8726c5fca0a0c808e2d874a713e8098c0dc440f9a4ab27fb29c`.
+The EvaluationBundle and custody digests are
+`sha256:181b08c280795222d7ef7b5f3a7272d2f397be6f3a59987913d4499e6045c6b4` and
+`sha256:cc8e828efedc87e62cf9b3f45bee5f3118ff105ab93c6159996e1d1d2185a610`; the ResearchPack digest
+remains `sha256:bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`.
+The report digests are Markdown
+`sha256:4c99d1df51e706e9044cbed8ad0382ffb726a97b4d2183e941ec47401e78826b` and HTML
+`sha256:0f1b913a06a0ef37b7e6d6bb249c9d8b7608a8c3e154240cf3953e08b38e39aa`.
+The result remains unchanged and honest: false alerts `2.966666666666667`/`4.2`, detection
+`0.75`/`0.75`, delay `2`/`1`, confound rate `0.5`/`0.5`, candidate Brier
+`0.017341137335170863`, thresholds `2.5`/`0.05`, and gates fail, fail, pass, pass, fail, pass, pass.
+The repaired product fixture/runtime/route seam passes 19 focused tests. On exact code/evidence head
+`bb92df0454fe9c5e46961074c455c6973bc4f04d`, `npm run check` passed lint, context, both generator
+drift checks, 86 test files with 1,455 passed and 10 declared skips, TypeScript/Vite build, and the
+credential scan across 19 outputs. `npm run build:showcase` passed the invented export, social-card,
+boundary, path/credential, and Pages-build checks. Hosted proof remains pending and is not inferred.
