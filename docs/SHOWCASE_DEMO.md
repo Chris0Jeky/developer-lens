@@ -103,9 +103,12 @@ npm run check
 npm run build:showcase
 ```
 
-The focused test validates the committed lab fixture through the product runtime and standalone
-schemas, renders all three cases without network access, and protects the lazy route plus existing
-fallbacks. `build:showcase` regenerates the invented public data, renders the social card, builds the
+The focused test validates the committed lab fixture through the normative product runtime semantics
+and the standalone structural schema, renders all three cases without network access, and protects
+the lazy route plus existing fallbacks. Draft 2020-12 alone is not semantic acceptance: any producer
+or consumer must also enforce the runtime-equivalent cross-field rules for exact run commands,
+scorecard-derived gates and decisions, threshold viability, and coherent timeline indexes/markers.
+`build:showcase` regenerates the invented public data, renders the social card, builds the
 Pages artifact, verifies synthetic identities and export boundaries, and scans for credential and
 local-path patterns.
 
@@ -122,5 +125,6 @@ uv run dllab export method-trial wbc1_demo
 uv run dllab contracts check
 ```
 
-The exported `method-trial-view.json` should validate against the vendored product schema and have
-SHA-256 `49f381a992f0483e0af88d257e95b356fd5a8cbdb282e2f4420b287531150fb7`.
+The exported `method-trial-view.json` must pass the vendored structural schema and an equivalent
+implementation of the product semantic rules before it is copied into the product. Its current
+SHA-256 is `49f381a992f0483e0af88d257e95b356fd5a8cbdb282e2f4420b287531150fb7`.

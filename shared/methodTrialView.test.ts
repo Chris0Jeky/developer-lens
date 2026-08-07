@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { Ajv2020 } from 'ajv/dist/2020.js'
 import { describe, expect, it } from 'vitest'
-import { renderMethodTrialViewSchema } from '../scripts/generateMethodTrialView.js'
+import { renderMethodTrialViewSchema, schemaSha256 } from '../scripts/generateMethodTrialView.js'
 import {
   METHOD_TRIAL_EVIDENCE_LABEL,
   METHOD_TRIAL_QUESTION,
@@ -374,6 +374,7 @@ describe('DeveloperLensMethodTrialView.v1', () => {
     expect(parsed.reproducibility.digests.schema).toBe(
       'sha256:6c596fc7ce3c75b1d25de5dd804d635a92696c0c7a33a5e146e88439fb78b746',
     )
+    expect(parsed.reproducibility.digests.schema).toBe(schemaSha256())
     expect(parsed.reproducibility.digests.evaluation_bundle).toBe(
       'sha256:7632999256589be7f35af243fe5674a97a047393de5cf115765cb25ad9cda5f0',
     )
@@ -489,6 +490,69 @@ describe('DeveloperLensMethodTrialView.v1', () => {
     }
     expect(MethodTrialViewSchema.safeParse(fakeZero).success).toBe(false)
     expect(validate(fakeZero)).toBe(false)
+  })
+
+  it('treats Draft 2020-12 as structural and runtime validation as normative semantics', async () => {
+    const validate = await standaloneValidator()
+
+    const mismatchedCommand = structuredClone(sample())
+    mismatchedCommand.reproducibility.commands.export =
+      'uv run dllab export method-trial wbc1_other'
+
+    const mismatchedGate = structuredClone(sample())
+    ;(mismatchedGate.acceptance_gates[5] as unknown as MutableGate).outcome = 'fail'
+
+    const mismatchedRelevantValue = structuredClone(sample())
+    ;(
+      mismatchedRelevantValue.acceptance_gates[4] as unknown as MutableGate
+    ).relevant_values!.candidate = measured(1)
+
+    const mismatchedDecision = structuredClone(sample())
+    ;(mismatchedDecision.decision as unknown as { reason_codes: string[] }).reason_codes = [
+      'CANDIDATE_FALSE_ALERT_IMPROVEMENT',
+    ]
+
+    const unavailableViableThreshold = structuredClone(sample())
+    ;(
+      unavailableViableThreshold.scorecard.threshold_selection.candidate as unknown as {
+        viable: boolean
+        selected_value: TestMeasurement
+      }
+    ).viable = true
+    ;(
+      unavailableViableThreshold.scorecard.threshold_selection.candidate as unknown as {
+        selected_value: TestMeasurement
+      }
+    ).selected_value = unavailable('not_measured')
+
+    const mismatchedWeekLabel = structuredClone(sample())
+    mismatchedWeekLabel.representative_cases[0].points[0].relative_week_label = 'week-001'
+
+    const nonSequentialWeek = structuredClone(sample())
+    nonSequentialWeek.representative_cases[0].points[1].relative_week_index = 2
+
+    const markedControl = structuredClone(sample())
+    markedControl.representative_cases[0].points[0].planted_marker = 'level'
+
+    const structuralOnlyMutations = [
+      ['run-bound command', mismatchedCommand],
+      ['derived gate outcome', mismatchedGate],
+      ['mirrored gate value', mismatchedRelevantValue],
+      ['derived decision reasons', mismatchedDecision],
+      ['threshold viability', unavailableViableThreshold],
+      ['week label', mismatchedWeekLabel],
+      ['sequential week index', nonSequentialWeek],
+      ['case-role marker', markedControl],
+    ] as const
+
+    for (const [name, value] of structuralOnlyMutations) {
+      expect(validate(value), `${name} remains structurally valid`).toBe(true)
+      expect(MethodTrialViewSchema.safeParse(value).success, `${name} fails semantics`).toBe(false)
+    }
+
+    const schema = JSON.parse(await readFile(schemaPath, 'utf8')) as { $comment?: string }
+    expect(schema.$comment).toContain('Structural transport validation only')
+    expect(schema.$comment).toContain('before this artifact is accepted or displayed')
   })
 
   it('rejects permissive or mismatched reproducibility commands', () => {

@@ -156,8 +156,9 @@ Gaussian BOCPD candidate matched the rolling median/MAD baseline's `0.75` detect
 false alerts from `2.966666666666667` to `4.2` per year, so the candidate was rejected and the
 deterministic baseline remained. The route is lazy, fixture-driven, and offline-capable. It needs no
 API, lab process, Python environment, GitHub account, or generated `.dllab` directory, and the
-committed C0 fixture is checked against both the product runtime contract and its generated
-standalone schema.
+committed C0 fixture is checked against both the normative product runtime semantics and its
+generated structural transport schema. The standalone schema is not semantic acceptance on its
+own; producers must also enforce the runtime-equivalent cross-field rules before publication.
 
 The route is also available in the
 [hosted synthetic showcase](https://chris0jeky.github.io/developer-lens/?view=method-trial) and from
