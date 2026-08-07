@@ -8,14 +8,12 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-07
-current_slice_override: 'ResearchPack v1 producer PR #178 is merged at `be9c2451`. The principal
-  product vertical is PR #187: a product-owned DeveloperLensMethodTrialView.v1 contract, exact
-  lab-generated C0 fixture, lazy offline route, navigation entry, and combined showcase runbook.
-  Lab PR #3 was merged concurrently at `0435c2f` before the presentation exporter existed; that
-  ordering cannot be rewritten. The bounded recovery is product PR #187 first, then one lab
-  exporter follow-up PR against the already-merged WB-C1 vertical. Duplicate draft product PR #188
-  is superseded by the integrated #187 vertical.'
-phase: 'Synthetic Method Trial demo in final product review. No real migration, source activation,
+current_slice_override: 'Product MethodTrial PR #187 merged at `7b22491`; its contract, lazy route,
+  and rejection story are authoritative. A bounded evidence-only follow-up now replaces its
+  semantic-precursor fixture with byte-identical output from integrated lab producer `0ef1930`,
+  which combines semantic acceptance, safe export publication, and honest verification status.
+  That correction must merge before lab PR #8.'
+phase: 'Synthetic Method Trial final-evidence correction in review. No real migration, source activation,
   private output, stored-observation exporter, external model call, or model promotion is part of
   this programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
@@ -35,18 +33,18 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'PR #187: finish the exact-head hosted/review gate and merge the lazy
-  `?view=method-trial` rejection story with the exact semantically accepted `wbc1_demo` export from
-  lab commit `5c79236`. The committed fixture is invented C0 only; its exact SHA-256 is
-  `26c3a9184adfce4ff5756e702b36d6db7af7c5f2dab9eb3eb3081ca598eafd95`.'
-next_value_slice: 'After #187 merges, finish and merge lab PR #8, demonstrate the product/lab pair,
+active_slice: 'Branch `codex/method-trial-final-evidence`: pin the exact integrated `wbc1_demo`
+  export from lab producer `0ef1930`. The committed fixture is invented C0 only; its exact SHA-256
+  is `afcc1ed9535d9b22fb399375027792489ce6b97949f8f684682943c11152b5f9` and its append-only local
+  verification status is honestly `not_run`.'
+next_value_slice: 'After the evidence correction merges, finish and merge lab PR #8, demonstrate the product/lab pair,
   and close this bounded programme before considering the separate #174/#80 Phase E bridge. Do not
   turn the follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-WB-C1 Method Trial demo]
-blockers: 'No owner blocker for invented-fixture work. PR #187 still requires its exact final
-  hosted Prove result, repair-review triage, connector-thread replies, and merge. The lab exporter follow-up must wait for that
-  product merge. Lab PR #3 already merged without the exporter due concurrent external action; this
+blockers: 'No owner blocker for invented-fixture work. The product evidence correction requires an
+  exact-head hosted Prove result, final review, aging, and merge before lab PR #8. Lab PR #3 already
+  merged without the exporter due concurrent external action; this
   is a sequencing deviation, not evidence that the exporter landed. A real migration/connector still
   requires #168 and a separately reviewed production grant issuer/caller. #80/#174 remain outside
   this demo programme.'

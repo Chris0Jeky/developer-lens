@@ -3447,3 +3447,24 @@ The repaired product fixture/runtime/route seam passes 19 focused tests. On exac
 drift checks, 86 test files with 1,455 passed and 10 declared skips, TypeScript/Vite build, and the
 credential scan across 19 outputs. `npm run build:showcase` passed the invented export, social-card,
 boundary, path/credential, and Pages-build checks. Hosted proof remains pending and is not inferred.
+
+## 2026-08-07 — Post-merge integrated-producer evidence correction
+
+Product PR #187 merged as `7b22491b28acbe467e2facb85723a91fd37af52b`, preserving the product-owned
+contract and lazy offline route. Its fixture came from semantic-only lab precursor `5c79236` and
+claimed `verification.local: passed` before the later reproduction command could occur. The
+scientific story was correct, but that provenance field was not.
+
+Integrated lab producer `0ef193070a9b80b81cef5a1710a1d65e0b271c15` contains both semantic
+acceptance and atomic final-path export with honest `local: not_run`. A fresh detached
+benchmark/reproduce/export/report flow produced the mechanically copied product fixture: 167,936
+bytes, SHA-256 `afcc1ed9535d9b22fb399375027792489ce6b97949f8f684682943c11152b5f9`.
+EvaluationBundle, custody, ResearchPack, Markdown, and HTML digests are respectively
+`sha256:e925c8ac44d914ce0003ef218d90187535eedfef3eb8d436a3c9a135e3d1a3a9`,
+`sha256:036f62f5f9ade272eba907513e7ab0bbef4a888bb1d86f8ae6e401aebd5c8238`,
+`sha256:bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`,
+`sha256:f9173354e86b20ccabe91334136017ff03ae68b3ba4432666f6af72172fb11b8`, and
+`sha256:22ca8c03e78c6185e527fa4c0f7312caf7d9077619d46f795f8d8dd25c530a29`.
+The seven gates, rejection reasons, metrics, three 104-point cases, no-alias/no-seed boundary, and
+deterministic fallback are byte-for-byte unchanged. This correction must pass its own product gate
+and merge before lab PR #8; neither result is inferred by this entry.

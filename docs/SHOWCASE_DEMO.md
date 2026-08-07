@@ -127,4 +127,4 @@ uv run dllab contracts check
 
 The exported `method-trial-view.json` must pass the vendored structural schema and an equivalent
 implementation of the product semantic rules before it is copied into the product. Its current
-SHA-256 is `26c3a9184adfce4ff5756e702b36d6db7af7c5f2dab9eb3eb3081ca598eafd95`.
+SHA-256 is `afcc1ed9535d9b22fb399375027792489ce6b97949f8f684682943c11152b5f9`.
