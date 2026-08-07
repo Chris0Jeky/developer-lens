@@ -3420,5 +3420,8 @@ The report digests are Markdown
 The result remains unchanged and honest: false alerts `2.966666666666667`/`4.2`, detection
 `0.75`/`0.75`, delay `2`/`1`, confound rate `0.5`/`0.5`, candidate Brier
 `0.017341137335170863`, thresholds `2.5`/`0.05`, and gates fail, fail, pass, pass, fail, pass, pass.
-The repaired product fixture/runtime/route seam passes 19 focused tests; final full and hosted proof
-are recorded only after those exact heads run.
+The repaired product fixture/runtime/route seam passes 19 focused tests. On exact code/evidence head
+`bb92df0454fe9c5e46961074c455c6973bc4f04d`, `npm run check` passed lint, context, both generator
+drift checks, 86 test files with 1,455 passed and 10 declared skips, TypeScript/Vite build, and the
+credential scan across 19 outputs. `npm run build:showcase` passed the invented export, social-card,
+boundary, path/credential, and Pages-build checks. Hosted proof remains pending and is not inferred.
