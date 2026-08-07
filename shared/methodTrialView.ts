@@ -516,7 +516,7 @@ export const MethodTrialViewSchema = z
         baseline: value.scorecard.baseline.detection_rate,
         candidate: value.scorecard.candidate.detection_rate,
         requiresBaseline: false,
-        evaluate: (baseline: number, candidate: number) => candidate >= 0.75,
+        evaluate: (_baseline: number, candidate: number) => candidate >= 0.75,
       },
       {
         baseline: value.scorecard.baseline.median_detection_delay_weeks,
@@ -549,7 +549,7 @@ export const MethodTrialViewSchema = z
       const candidate = metricValue(rule.candidate)
       const expectedOutcome = candidate === null || (rule.requiresBaseline && baseline === null)
         ? 'not_applicable'
-        : rule.evaluate(baseline, candidate) ? 'pass' : 'fail'
+        : rule.evaluate(baseline ?? 0, candidate) ? 'pass' : 'fail'
       expectedOutcomes.push(expectedOutcome)
       if (gate.outcome !== expectedOutcome) {
         ctx.addIssue({ code: 'custom', path: ['acceptance_gates', index + 2, 'outcome'], message: 'gate outcome must derive from scorecard evidence' })

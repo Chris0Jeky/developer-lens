@@ -26,6 +26,12 @@ function unavailable(
   return { status: 'unavailable' as const, reason }
 }
 
+type TestMeasurement = ReturnType<typeof measured> | ReturnType<typeof unavailable>
+type MutableGate = {
+  outcome: 'pass' | 'fail' | 'not_applicable'
+  relevant_values?: { baseline: TestMeasurement; candidate: TestMeasurement }
+}
+
 function point(index: number, scenario: 'control' | 'planted' | 'confound') {
   const missing = index === 2
   return {
@@ -346,21 +352,36 @@ describe('DeveloperLensMethodTrialView.v1', () => {
 
     expect(validate(fixture), JSON.stringify(validate.errors)).toBe(true)
     expect(createHash('sha256').update(fixtureText, 'utf8').digest('hex')).toBe(
-      '8a3f07f40b082b10632fc1fd777d5e020768156af7b67b4914a84d94769a55dd',
+      'f2dadf79938b1a36248b7b5e0c69c25cc695d88711a351bba861c1deca5b6fda',
     )
     expect(parsed.reproducibility.product_contract_commit).toBe(
-      '3ac919f6129374acae564883ef9196c1d4aaf54c',
+      'b0c6c24ab487534b7853b59effd3bd50ec072382',
     )
-    expect(parsed.reproducibility.lab_commit).toBe('5c0a8814bc3df94383d6b947898952a273c6c449')
-    expect(parsed.reproducibility.run_id).toBe('wbc1_method_trial_v1_exhibit')
+    expect(parsed.reproducibility.lab_commit).toBe('307d1ad592791f57e25fd84b3d44b07600be20cf')
+    expect(parsed.reproducibility.run_id).toBe('wbc1_method_trial_v1_exhibit_v2')
     expect(parsed.reproducibility.digests.schema).toBe(
-      'sha256:86cf53a48660967c07329f02be01c05d773c16ac96c28ddcd8110aed3b827fdc',
+      'sha256:a93616a0c6de82b0846fcd1346182d8aa77fa54a31a8413c623428375c5cf8f2',
     )
     expect(parsed.scorecard.baseline.false_alerts_per_year).toEqual(measured(2.966666666666667))
     expect(parsed.scorecard.candidate.false_alerts_per_year).toEqual(measured(4.2))
     expect(parsed.scorecard.baseline.detection_rate).toEqual(measured(0.75))
     expect(parsed.scorecard.candidate.detection_rate).toEqual(measured(0.75))
+    expect(parsed.scorecard.baseline.median_detection_delay_weeks).toEqual(measured(2))
+    expect(parsed.scorecard.candidate.median_detection_delay_weeks).toEqual(measured(1))
+    expect(parsed.scorecard.baseline.coverage_confound_false_alert_rate).toEqual(measured(0.5))
+    expect(parsed.scorecard.candidate.coverage_confound_false_alert_rate).toEqual(measured(0.5))
     expect(parsed.scorecard.candidate.calibration_brier).toEqual(measured(0.017341137335170863))
+    expect(parsed.scorecard.threshold_selection.baseline.selected_value).toEqual(measured(2.5))
+    expect(parsed.scorecard.threshold_selection.candidate.selected_value).toEqual(measured(0.05))
+    expect(parsed.acceptance_gates.map((gate) => gate.outcome)).toEqual([
+      'fail',
+      'fail',
+      'pass',
+      'pass',
+      'fail',
+      'pass',
+      'pass',
+    ])
     expect(parsed.decision.outcome).toBe('reject')
     expect(parsed.representative_cases.map((representativeCase) => representativeCase.role)).toEqual([
       'no_change_control',
@@ -462,25 +483,31 @@ describe('DeveloperLensMethodTrialView.v1', () => {
 
   it('derives gate outcomes and relevant values from WB-C1 evidence', () => {
     const selectionMismatch = structuredClone(sample())
-    selectionMismatch.acceptance_gates[0].outcome = 'pass'
+    ;(selectionMismatch.acceptance_gates[0] as unknown as MutableGate).outcome = 'pass'
     expect(MethodTrialViewSchema.safeParse(selectionMismatch).success).toBe(false)
 
     const outcomeMismatch = structuredClone(sample())
-    outcomeMismatch.acceptance_gates[5].outcome = 'fail'
+    ;(outcomeMismatch.acceptance_gates[5] as unknown as MutableGate).outcome = 'fail'
     expect(MethodTrialViewSchema.safeParse(outcomeMismatch).success).toBe(false)
 
     const relevantMismatch = structuredClone(sample())
-    relevantMismatch.acceptance_gates[4].relevant_values!.candidate = measured(1)
+    ;(relevantMismatch.acceptance_gates[4] as unknown as MutableGate).relevant_values!.candidate = measured(1)
     expect(MethodTrialViewSchema.safeParse(relevantMismatch).success).toBe(false)
 
     const unavailableMetric = structuredClone(sample())
-    unavailableMetric.scorecard.candidate.median_detection_delay_weeks = unavailable('not_measured')
-    unavailableMetric.scorecard.baseline.median_detection_delay_weeks = unavailable('not_measured')
-    unavailableMetric.acceptance_gates[3].outcome = 'not_applicable'
-    unavailableMetric.acceptance_gates[3].relevant_values = {
+    const unavailableScorecard = unavailableMetric.scorecard as unknown as {
+      candidate: { median_detection_delay_weeks: TestMeasurement }
+      baseline: { median_detection_delay_weeks: TestMeasurement }
+    }
+    unavailableScorecard.candidate.median_detection_delay_weeks = unavailable('not_measured')
+    unavailableScorecard.baseline.median_detection_delay_weeks = unavailable('not_measured')
+    const unavailableGate = unavailableMetric.acceptance_gates[3] as unknown as MutableGate
+    unavailableGate.outcome = 'not_applicable'
+    const unavailableValues = {
       baseline: unavailable('not_measured'),
       candidate: unavailable('not_measured'),
-    }
+    } as unknown as MutableGate['relevant_values']
+    unavailableGate.relevant_values = unavailableValues
     expect(MethodTrialViewSchema.safeParse(unavailableMetric).success).toBe(true)
   })
 
