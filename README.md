@@ -149,10 +149,24 @@ on its complete evidence walk. It needs no API and no data: the facts are the in
 composition in `shared/integrationShape.ts`, so it works on the hosted showcase too. Both this route
 and the cockpit are linked from the dashboard's *Coverage & privacy* section.
 
-For a prepared 3-5 minute walkthrough, use the
-[`showcase demo runbook`](docs/SHOWCASE_DEMO.md). It gives the exact hosted and local routes, a short
-talk track, the privacy boundary to state aloud, and the unfinished activation paths that must not
-be presented as live.
+### Try the Method Trial
+
+<http://127.0.0.1:5173/?view=method-trial> tells the complete synthetic WB-C1 decision story: the
+Gaussian BOCPD candidate matched the rolling median/MAD baseline's `0.75` detection rate, but raised
+false alerts from `2.966666666666667` to `4.2` per year, so the candidate was rejected and the
+deterministic baseline remained. The route is lazy, fixture-driven, and offline-capable. It needs no
+API, lab process, Python environment, GitHub account, or generated `.dllab` directory, and the
+committed C0 fixture is checked against both the normative product runtime semantics and its
+generated structural transport schema. The standalone schema is not semantic acceptance on its
+own; producers must also enforce the runtime-equivalent cross-field rules before publication.
+
+The route is also available in the
+[hosted synthetic showcase](https://chris0jeky.github.io/developer-lens/?view=method-trial) and from
+the dashboard's *Coverage & privacy* section. For the prepared 5-8 minute Method Trial walkthrough,
+with the earlier 3-5 minute V2 story retained as a fallback, use the
+[`showcase demo runbook`](docs/SHOWCASE_DEMO.md). It gives the exact routes, decision-focused talk
+track, boundary to state aloud, reproducibility checks, and claims that must not be presented as
+live.
 
 By default, `collect` produces both the six-month and twelve-month lenses. To refresh only one range:
 

@@ -5,16 +5,22 @@ import {
   evaluateStorageV3MigrationGrace,
   readStorageV3MigrationSelection,
   recordStorageV3MigrationSelection,
+  recordStorageV3MigrationSelectionWithInitialization,
+
   StorageV3MigrationSelectionError,
   v3SelectionReceiptTestSeams,
 } from './v3SelectionReceipt.js'
 
 const artifact = (letter: string): string => `art-${letter.repeat(64)}`
-const input = {
+const reportInput = {
   legacySourceId: `legacy-${'a'.repeat(64)}`,
   selectedArtifactId: artifact('b'),
   backupArtifactId: artifact('c'),
-  successfulReportAt: '2026-08-06T12:34:56.789Z',
+  backupAt: '2026-08-06T12:34:55Z',
+  taskId: 'task-invented',
+  taskFingerprint: 'fp-invented',
+  rootBinding: 'root-invented',
+
 } as const
 
 function fixture(): Database.Database {
@@ -24,6 +30,14 @@ function fixture(): Database.Database {
 }
 
 describe('LIFE-03 migration selection receipt', () => {
+  const input = {
+    ...reportInput,
+    successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
+      reportInput, '2026-08-06T12:34:56.789Z',
+    ),
+  } as const
+
+
   it('records once, replays exact values, and never extends the deadline', () => {
     const db = fixture()
     try {
@@ -31,7 +45,11 @@ describe('LIFE-03 migration selection receipt', () => {
       expect(first.status).toBe('recorded')
       expect(first.selection).toEqual({
         readerState: 'v3_selected',
-        ...input,
+        legacySourceId: reportInput.legacySourceId,
+        selectedArtifactId: reportInput.selectedArtifactId,
+        backupArtifactId: reportInput.backupArtifactId,
+        successfulReportAt: '2026-08-06T12:34:56.789Z',
+
         graceDeadlineAt: '2026-08-13T12:34:56.789Z',
       })
       expect(recordStorageV3MigrationSelection(db, input)).toEqual({
@@ -39,7 +57,11 @@ describe('LIFE-03 migration selection receipt', () => {
       })
       expect(readStorageV3MigrationSelection(db)).toEqual(first.selection)
       expect(() => recordStorageV3MigrationSelection(db, {
-        ...input, successfulReportAt: '2026-08-07T12:34:56.789Z',
+        ...input,
+        successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
+          reportInput, '2026-08-07T12:34:56.789Z',
+        ),
+
       })).toThrow(StorageV3MigrationSelectionError)
     } finally { db.close() }
   })
@@ -51,6 +73,33 @@ describe('LIFE-03 migration selection receipt', () => {
     } finally { db.close() }
   })
 
+  it('runs one initialization inside the new receipt transaction only', () => {
+    const db = fixture()
+    try {
+      let initialized = 0
+      const recorded = recordStorageV3MigrationSelectionWithInitialization(
+        db,
+        input,
+        (selection, grant) => {
+          expect(db.inTransaction).toBe(true)
+          expect(selection.successfulReportAt).toBe('2026-08-06T12:34:56.789Z')
+          expect(grant).toBeDefined()
+          initialized += 1
+        },
+      )
+      expect(recorded.status).toBe('recorded')
+      expect(initialized).toBe(1)
+      const replayed = recordStorageV3MigrationSelectionWithInitialization(
+        db,
+        input,
+        () => { initialized += 1 },
+      )
+      expect(replayed.status).toBe('replayed')
+      expect(initialized).toBe(1)
+    } finally { db.close() }
+  })
+
+
   it('closes direct INSERT OR REPLACE, UPDATE, and DELETE attempts', () => {
     const db = fixture()
     try {
@@ -59,7 +108,8 @@ describe('LIFE-03 migration selection receipt', () => {
         `INSERT OR REPLACE INTO migration_selection_state
          (singleton, reader_state, legacy_source_id, selected_artifact_id, backup_artifact_id, successful_report_at, grace_deadline_at)
          VALUES (1, 'v3_selected', ?, ?, ?, ?, ?)`,
-      ).run(input.legacySourceId, input.selectedArtifactId, input.backupArtifactId, input.successfulReportAt, '2026-08-13T12:34:56.789Z'))
+      ).run(input.legacySourceId, input.selectedArtifactId, input.backupArtifactId, '2026-08-06T12:34:56.789Z', '2026-08-13T12:34:56.789Z'))
+
         .toThrow('STORAGE_V3_SELECTION_INVALID')
       expect(() => db.prepare('UPDATE migration_selection_state SET reader_state = ?').run('v3_selected'))
         .toThrow('STORAGE_V3_SELECTION_INVALID')
@@ -67,6 +117,36 @@ describe('LIFE-03 migration selection receipt', () => {
         .toThrow('STORAGE_V3_SELECTION_INVALID')
     } finally { db.close() }
   })
+
+  it('requires an opaque report proof bound to the backup and task/root boundary', () => {
+    const db = fixture()
+    try {
+      expect(() => v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        reportInput, '2026-08-06T12:34:54.999Z',
+      )).toThrow(StorageV3MigrationSelectionError)
+      expect(() => recordStorageV3MigrationSelection(db, {
+        ...input,
+        taskId: 'different-task',
+      })).toThrow(StorageV3MigrationSelectionError)
+      expect(() => recordStorageV3MigrationSelection(db, {
+        ...input,
+        successReportProof: {} as never,
+      })).toThrow(StorageV3MigrationSelectionError)
+    } finally { db.close() }
+  })
+
+  it('rejects a direct row whose seven-day calculation overflows to SQLite NULL', () => {
+    const db = fixture()
+    try {
+      expect(() => db.prepare(
+        `INSERT INTO migration_selection_state
+         (singleton, reader_state, legacy_source_id, selected_artifact_id, backup_artifact_id, successful_report_at, grace_deadline_at)
+         VALUES (1, 'v3_selected', ?, ?, ?, '9999-12-31T23:59:59.999Z', '9999-12-31T23:59:59.999Z')`,
+      ).run(input.legacySourceId, input.selectedArtifactId, input.backupArtifactId))
+        .toThrow(/CHECK constraint failed/)
+    } finally { db.close() }
+  })
+
 
   it('evaluates just-before, exact, just-after, and clock rollback/advance', () => {
     const db = fixture()

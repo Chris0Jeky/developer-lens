@@ -24,6 +24,8 @@ import {
 } from './v3Deletion.js'
 import {
   readStorageV3MigrationSelection,
+  replayStorageV3MigrationSuccessReport,
+
   recordStorageV3MigrationSelection,
 } from './v3SelectionReceipt.js'
 import { rewriteStorageV3Shadow } from './v3ShadowRewrite.js'
@@ -271,7 +273,20 @@ describe('B3 v3 scope deletion', { timeout: 30_000 }, () => {
         legacySourceId: `legacy-${'a'.repeat(64)}`,
         selectedArtifactId: `art-${'b'.repeat(64)}`,
         backupArtifactId: `art-${'c'.repeat(64)}`,
-        successfulReportAt: '2026-03-05T00:00:00.000Z',
+        backupAt: '2026-03-04T00:00:00Z',
+        taskId: 'task-deletion-fixture',
+        taskFingerprint: 'deletion-fixture-fingerprint',
+        rootBinding: 'root-deletion-fixture',
+        successReportProof: replayStorageV3MigrationSuccessReport({
+          legacySourceId: `legacy-${'a'.repeat(64)}`,
+          selectedArtifactId: `art-${'b'.repeat(64)}`,
+          backupArtifactId: `art-${'c'.repeat(64)}`,
+          backupAt: '2026-03-04T00:00:00Z',
+          taskId: 'task-deletion-fixture',
+          taskFingerprint: 'deletion-fixture-fingerprint',
+          rootBinding: 'root-deletion-fixture',
+        }, '2026-03-05T00:00:00.000Z'),
+
       }).selection
       deleteStorageV3Scope({
         db: fixture.target,

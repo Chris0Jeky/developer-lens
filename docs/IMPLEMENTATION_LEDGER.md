@@ -2814,3 +2814,657 @@ seams, not physically induced on this machine. Same-user ABA/native-VFS strength
 sidecar/WAL identity, seven-day expiry cleanup, restore/reopen, and tombstone replay remain dependent
 LIFE-03 slices. No real store, legacy source, connector, production issuer/caller, external-model
 request, generated output, or private input was inspected or used.
+
+## 2026-08-06 — crash-durability owner exception; atomic selection/grace candidate
+
+PR #161 final head `7a23f62a7e01f49e7b052b6338f0f773d2da3cbf` merged as
+`faa548cc2020def9bf363de8ccf65c1d553f3b67` at 2026-08-06T16:03:34Z and closed #154/#155 under an
+explicit owner-directed gate exception. Exact-head hosted run `31115867132` never reached checkout
+or repository code: attempts 1 and 2 each exhausted action-metadata download retries on `Service
+Unavailable` during GitHub's declared Actions partial outage. The merge therefore has green local
+full proof and fresh-context review, but **no green exact-head hosted proof**; this is recorded as a
+deliberate exception, not recast as compliance. The delayed thread-aware sweep found no new connector
+review and all three earlier threads remained resolved. Restore-bound provisional metadata stays
+tracked by #163, and the conditional all-zero native identity boundary stays tracked by #142.
+
+The #162 candidate advances schema `3.2.4-shadow-life03-selection` (`user_version=311`). A strict
+singleton `migration_selection_state` records only `v3_selected`, an opaque `legacy-` identifier,
+the selected and backup `art-` identifiers, a canonical successful-report timestamp, and its exact
+seven-day deadline. It has no SQL foreign key to `app_artifact`, is registered `global` in the
+exhaustive deletion inventory, survives scope revocation, and rejects replacement, update, or delete.
+The recorder uses `BEGIN IMMEDIATE`; exact replay preserves the original time/deadline, while a
+mismatch or injected pre-commit interruption fails closed without a row. Injected UTC proof covers
+just-before, exact-boundary, just-after, clock rollback, and clock advance. This slice records expiry
+eligibility only and performs no cleanup.
+
+`verifyStorageV3MigrationBackup` is a dedicated synchronous read-only proof for the already-finalized
+singleton backup. Under the selected-store writer lease it revalidates the live task key, maintenance
+state, active final catalogue rows, selected and backup owner equality, absent provisional names and
+SQLite sidecars, stable no-follow physical hashes, exact task-key HMAC manifest, and backup snapshot
+application/schema/fingerprint/integrity/foreign-key/selected-ID state. It returns only values derived
+from those re-proven rows/files and closes every descriptor/readonly snapshot handle on refusal.
+
+`selectStorageV3Reader` accepts no legacy path and performs no legacy read, write, delete, or fallback
+open. It validates closed own-data input, opens the reviewed v3 root, and uses a deliberately narrow
+read-only receipt-presence probe before and inside the writer lease. First selection opens and proves
+the selected store, proves the finalized backup, commits the receipt, closes the writable provisional
+connection, then reopens read-only. Exact receipt replay revalidates the selected store and live
+task-key/root continuity but skips backup revalidation because normal scope revocation may validly
+delete that backup. Present or ambiguous durable-selection state returns only
+`v3-selection-selected-refused` on failure; only a plainly absent receipt may retain the content-free
+`legacy-json` fallback. The invented integration proves exact replay, pre-commit interruption/restart,
+no grace extension, forged-handle refusal, lease contention, invalid root/store/backup fallback, no
+legacy-path input, write refusal, and selection -> both-scope revocation -> backup deletion -> restart
+without legacy resurrection.
+
+The original product-code head `6bc1db2` passed `npm run check`: lint, context verification (27
+Markdown / 12 required), 79 files / 1,323 tests / 10 declared skips, TypeScript/Vite build, and
+credential scanning over 13 outputs. The combined focused selection/schema/backup/deletion/import-
+boundary proof passed 145 assertions / 2 platform skips. Independent Luna reviews found no
+CRITICAL/HIGH verifier or receipt/selector defect.
+
+Fresh Terra review at published head `12cfd36` then reproduced one HIGH privacy/durability defect:
+scope revocation validly deleted the finalized backup, restart re-ran backup proof before receipt
+replay, and the refusal returned `legacy-json` while the seven-day source could still contain the
+revoked scope. Fix head `dabbb10` makes durable or ambiguous selection state non-legacy and replays an
+exact receipt without requiring the deleted backup. Integration review then found that skipping the
+backup verifier also skipped its task-key/root continuity proof; `0c37ef2` restores that proof and
+adds a forged-handle regression. The exact code head passes `npm run check`: lint, context verification
+(27 Markdown / 12 required), 79 files / 1,324 tests / 10 declared skips, TypeScript/Vite build, and
+credential scanning over 13 outputs. Focused selector proof passes 5 tests and range whitespace is
+clean. Initial hosted run `31119973871` remained queued without a step start and was automatically
+cancelled when the repaired head was pushed. Exact-head run `31121191791` is likewise queued without
+a step start during GitHub's declared critical Actions incident; this is not green hosted proof.
+Fresh fix review, merge, and post-merge sweep remain pending.
+
+The exported backup verifier's selected-store structural assumptions remain bounded to its current
+selector caller; #163 requires a separate standalone restore verifier rather than reusing it when the
+selected store is absent. Connector review's lower findings on runtime-opaque success-report binding
+and a NULL-producing upper timestamp boundary are tracked together by #165; neither is hidden or
+treated as activation-ready. No real store, legacy source/path, connector, production issuer/caller,
+external-model request, generated output, credential, or private input was inspected or used.
+Success-report/grace hardening (#165), restore/reopen (#163), tombstone replay, and physical
+legacy/backup/WAL/SHM/journal cleanup remain dependent LIFE-03 slices.
+
+## 2026-08-06 — atomic selection merged; late rollback-floor follow-up
+
+PR #164 final head `eca8e86d8d79d7b5ab41a5e32d1209132aa9826b` merged as
+`fee152d5e458b5f9574521471ef0b23183a2ab77` at 2026-08-06T16:58:22Z and closed #162.
+The exact code head passed `npm run check`: lint, context verification, 79 files / 1,324 tests / 10
+declared skips, TypeScript/Vite build, and credential scanning over 13 outputs. Fresh Terra review at
+the final head reran the 5-test selector proof and range whitespace check and found no remaining
+CRITICAL/HIGH blocker. Five connector threads were triaged once: the post-commit and revoked-backup
+P1s were fixed; the volatile-state P1 was fixed; and the two grace-contract P2s are tracked by #165.
+
+Exact-head hosted run `31121328404` remained queued without a repository step while GitHub's official
+status reported a critical Actions incident. The owner explicitly directed the program to document
+the external gate gap and keep moving pre-release, so PR #164 merged under that exception. This is
+not green hosted proof. Exact-merge showcase run `31121665220` also entered the outage queue; its
+eventual result must be refreshed rather than inferred.
+
+Two additional connector P1s posted at 16:57Z and were discovered by the immediate post-merge thread
+sweep. A lease loser could return legacy immediately before the winner committed selection, and a
+missing selected-store file was treated as an absent receipt even though the receipt lived inside the
+missing file. Both are confirmed privacy rollback paths during the seven-day grace and are linked to
+follow-up #166 from their original PR threads.
+
+Follow-up commits `4fb0655` and `122b36a` make every writer-lease contention and every missing/moved
+selected-store probe return only `v3-selection-selected-refused`. The invented race proves the loser
+is unavailable and the winner then commits v3; the store-loss fixture proves a prior durable switch
+cannot fall back after its file disappears. Focused selector proof passes 7 tests, TypeScript/Vite and
+the credential scan pass, and range whitespace is clean. The exact candidate passes `npm run check`:
+lint, context verification, 79 files / 1,326 tests / 10 declared skips, TypeScript/Vite build, and
+credential scanning over 13 outputs. Hosted, fresh-review, PR, merge, and delayed post-merge proof
+remain pending. Restore #163 is the recovery path behind this deliberate unavailable state; no real
+source, legacy path, private/generated data, connector, or production caller was inspected or
+activated.
+
+## 2026-08-06 — rollback floor merged; external selection proof candidate
+
+PR #167 final head `18d0c31eabe9fe206b44c9bbdfa788274abc54f8` merged as
+`b1c75c52852af276cd913473d816b7a79123d260` at 2026-08-06T17:09:55Z and closed #166.
+The final local gate passed 79 files / 1,326 tests / 10 declared skips, the focused race/store-loss
+proof passed 7 tests, and a fresh Terra exact-head review found no CRITICAL/HIGH blocker. Hosted run
+`31122116478` and exact-merge showcase run `31122305206` remained queued without repository steps
+during the declared critical GitHub Actions incident. The owner explicitly continued the documented
+pre-release outage exception; those runs are not represented as green hosted proof.
+
+Issue #168 records the prerequisite discovered while implementing restore #163: the deliberately
+pre-selection backup cannot authenticate the later success timestamp or grace deadline. Code head
+`00e6161` therefore adds a canonical installation-key-bound local C2 marker, publishes it only
+from the committed selected-store receipt under the writer lease, and returns unavailable after any
+post-receipt failure. Exact replay reconstructs a missing marker from that immutable row; conflicting
+bytes, wrong roots/keys, links, sidecars, and deadline extension fail closed. The standalone marker
+survives process restart at every publication stage and re-synchronizes final-only recovery before
+claiming replay. Its opaque single-use handle is reserved for restore; plain caller-supplied receipt
+objects do not cross the production restore boundary.
+
+Focused proof/selector/allowlist verification passes 25 tests. `npm run check` passes lint, context
+verification, 80 files / 1,336 tests / 10 declared skips, TypeScript/Vite build, and credential
+scanning over 13 outputs; range whitespace is clean. The first standalone review found and the bounded
+fix round repaired restart-stuck empty provisionals and directory-sync replay laundering; the exact
+standalone head `441f5cb` then received a clean CRITICAL/HIGH review. Fresh integration review found
+and the fix head `00e6161` repaired two preflight/foreign-marker legacy-fallback paths; its final
+17-test review, TypeScript check, and whitespace check found no remaining CRITICAL/HIGH blocker.
+PR #169 final head `b8592ec343ba09df108a3e83d55736d89701545c` merged as
+`93a342c85ba8a4bee96f18f71c0b269f5e536234` at 2026-08-06T18:04:46Z. The PR had no
+reported hosted checks, connector review, comments, or review threads while GitHub Status continued
+to classify Actions as a critical major outage. After more than three minutes at the pushed head,
+the owner-directed pre-release outage exception carried the green local gate and independent reviews;
+this is explicitly not hosted proof. A late connector review then raised five P2 marker-hardening
+findings. They were triaged once, replied to, resolved on PR #169, and recorded in #170: task-ID
+minimization, exact-root primitive probing, durable-publication/verification coordination,
+case-variant reserved-name detection, and recovered-final re-sync ordering. Issue #168 remains open
+because those follow-ups refine its original acceptance criteria; restore consumes the handle but does
+not claim the complete marker contract or hosted proof.
+
+Restore code head `90ff38f` composes standalone signed-backup verification, exact copied-snapshot
+normalization, identity-safe publication/recovery, and opaque single-use proof consumption. A real
+filesystem fixture deletes the selected store, restores only from the immutable backup plus marker,
+preserves backup/manifest/marker bytes, removes only staged backup catalogue state in the copy,
+records the exact original receipt, and reopens read-only. Caller-minted receipts, extra re-signed
+catalogue artifacts, pre/post-link name replacement, and repeated directory-sync failure all refuse.
+The focused storage chain passes 117 tests / 2 platform skips; restore itself passes 22 tests.
+`npm run check` passes lint, context verification, 81 files / 1,362 tests / 10 declared skips,
+TypeScript/Vite build, and credential scanning over 13 outputs. Fresh exact-head Terra review found no
+CRITICAL/HIGH blocker within the declared single-owner boundary. It recorded two remaining pathname
+TOCTOU windows under #142: a hostile same-user process can race the native path-only link/unlink APIs,
+so this slice makes no hostile-writer containment claim; the writer lease excludes compliant writers,
+post-link identity failure refuses without legacy fallback, and native handle/VFS binding remains the
+tracked remedy. Hosted proof, PR/merge, issue closure, and post-merge sweep remain pending. #165 still
+separately blocks authority for the initially supplied
+successful-report timestamp. No real source, store, legacy path, private/generated data, connector,
+credential, or production caller was inspected or activated.
+
+## 2026-08-06 — restore/grace/marker hardening merged; revocation replay candidate
+
+PR #171 final head `0dfdd02e5a05daf6b5b12e1eb7a8dd3e654bda10` merged as
+`171b319f3ed740f398690c802258a5f1bdde0446` at 2026-08-06T18:24:29Z and closed #163. The
+standalone restore consumes a fresh opaque selection-proof handle, independently verifies the signed
+backup after selected-store loss, copies and normalizes only the provisional backup state, restores
+the exact committed receipt/deadline, publishes durably, and reopens read-only. Invented fixtures
+prove backup/manifest/marker immutability and stale-path refusal. The accepted single-owner boundary
+still leaves native pathname ABA under #142.
+
+PR #175 final head `7659be907d12a5c59bae26c14f4b97cab0424bd8` merged as
+`eb69cc6d632df4984a0ce26624614b03fff75625` at 2026-08-06T19:02:04Z and closed #165.
+Fresh review found and the fix head repaired two HIGH defects: production had committed a runtime
+timestamp and then compared it with a caller timestamp, and lowercase-only validation rejected
+canonical task IDs such as `DL-LIFE-03`. The public selector no longer accepts a success timestamp;
+production owns the clock, replay preserves the committed time, and the changed storage seam passed
+66 tests plus TypeScript, lint, build/no-secrets, and whitespace proof. Connector P2 proof-replay
+capability hardening remains tracked by #177.
+
+PR #176 final head `bbf8da004be691bfb06cc4901de4159a71f93615` merged as
+`68473dcb01c457fa20ac9fdaa7f101d657e1102c` at 2026-08-06T19:23:36Z and closed #170.
+It minimizes the local marker to a keyed task fingerprint, probes exact-root hard-link/directory-sync
+support under the writer lease, rejects case-variant reserved names, and re-synchronizes recovered
+publication. Delayed review exposed an authenticated temp/final pair that could block restore after
+the selected database was lost; the final head re-verifies and finalizes that pair under the writer
+lease before minting a handle. The full exact-head local gate passed 81 files / 1,367 tests / 10
+declared skips, TypeScript/Vite, context, lint, credential scanning, and whitespace proof; a fresh
+exact-head review reran 42 focused assertions and found no CRITICAL/HIGH blocker. #168 remains open
+for pre-activation marker versioning, restart-safe fixed-probe recovery, and hosted proof.
+
+All three PRs used the owner's explicit pre-release GitHub Actions outage exception. Hosted checks
+were absent or unavailable and are **not** represented as green. Review findings were triaged once,
+blocking defects were fixed, non-blocking residuals were tracked, and each pushed final head aged at
+least three minutes before merge.
+
+The #172 integrated candidate is branch `codex/life03-tombstone-replay-integrated`, exact code head
+`47cc12e`. It adds `revocation-replay-v1-00000000.json`, a mandatory keyed
+`revocation-replay-v1-head.json`, and chained immutable entries under the selected task root. Every
+entry is published before SQL deletion with exclusive no-follow creation, file fsync, no-clobber
+hard link, and directory-sync ordering. Its schema is content-free local C1: opaque
+scope/subject/operation IDs, controlled capability and ISO-week values, selection/task/key bindings,
+and integrity hashes only — no raw task ID, names, aliases, paths, prose, exact timestamps, or
+observed values. Missing, truncated, foreign/case-variant, non-canonical, or unapplied state fails
+closed and never enables legacy fallback.
+
+Selected read and restore verify the complete family and keyed head, then replay every intent before
+serving data. The invented stale-backup journey deletes a scope, reintroduces the old signed backup
+bytes, restores, and proves the revoked scope/observation remain absent while the exact content-free
+tombstone remains present. Crash fixtures cover interruption after durable intent and after SQL
+deletion commit. Early review found that post-commit interruption could leave deletion maintenance
+permanently pending; fix `a67d1c9` resumes the exact pending saga before replay and proves
+catalogue/backup cleanup reaches complete.
+
+Two later fresh reviews found initial-publication gaps. Fix `b333309` makes the keyed head mandatory,
+refuses whole-family loss and tail truncation after a committed receipt, and prevents a committed
+empty family from minting a new receipt. Fix `844e7a6` couples first-family publication to the
+receipt transaction: a single-use opaque grant publishes only an empty `initializing` family inside
+that transaction, the SQLite commit makes the receipt authoritative, and a durable head replacement
+to `committed` must finish before proof publication or service. A crash before the SQLite commit
+rolls the receipt back and may resume only the exact empty initializing family, even when the new
+runtime success time differs; a crash after SQLite commit resumes only final head publication from
+the exact receipt. Foreign head-only state is rejected before anchor mutation. Committed, missing,
+or non-empty families with a surviving receipt/proof cannot enter this initialization path.
+
+The first full gate on `844e7a6` correctly exposed a local binding defect: the reader declared replay
+state `const` and reassigned it during readonly reopen verification, producing 19 fail-closed
+selection refusals. Fix `47cc12e` changes only that binding to `let`. Its reader suite passes 23/23;
+the exact-head `npm run check` passes lint, context verification, all 82 test files with 1,388 tests
+passed and 10 declared skips, TypeScript/Vite build, and credential scanning over 13 outputs.
+A fresh exact-head Terra crash/privacy review reran 65 focused assertions plus TypeScript and
+whitespace proof and found no realistic CRITICAL/HIGH blocker. An independent exact-head Luna
+review reran the 56-test replay/read/restore seam, audited publication/recovery ordering and
+fail-closed boundaries, and likewise found no CRITICAL/HIGH blocker.
+
+The replay family deliberately survives #173's seven-day old-source/backup cleanup so a stale
+filesystem snapshot cannot resurrect revoked data. It remains local/unexported and must be removed
+no later than the C1 36-month boundary or whole-task-root deletion. Coordinated rollback of both an
+entry and its keyed head to an older mutually authenticated snapshot remains outside the declared
+single-owner/#142 ABA boundary because no external monotonic witness exists. The raw
+`deleteStorageV3Scope` primitive also remains exported for invented lifecycle composition; production
+integration must use the replay-first wrapper and keep that boundary enforced.
+
+The future C2-expiry transition needs an additional durable discriminator before it may remove the
+receipt/proof. If that future cleanup is combined with a coordinated snapshot/fault that removes a
+formerly committed head and all tail entries but leaves the valid anchor, the remaining bytes are
+indistinguishable from an anchor-only rolled-back first attempt because the retry binding deliberately
+excludes success/grace timestamps. This state is not reachable through today's immutable receipt or
+normal crash ordering; the [#173 cleanup proof note](https://github.com/Chris0Jeky/developer-lens/issues/173#issuecomment-5208995872)
+records the requirement that future cleanup refuse, not recreate, an anchor-only/truncated C1 family.
+
+#172 closed when PR #179 merged. #173 owns physical expiry cleanup without early replay-family
+removal. Phase E stored-observation bridge, resolver lineage, and the change-batch/integration-tail
+second lens remain separate #174/#80 work. PR #179 merged during the owner-directed pre-release
+Actions exception: hosted exact-head proof was unavailable and is not represented as green. No real
+source/store, legacy path, private/generated data, connector, credential, production issuer/caller,
+or external-model request was inspected or activated.
+
+## 2026-08-06 — revocation replay merged; large-scope chunk repair (PR #184)
+
+PR #179 carried code head `47cc12ebf9e9b807a7c26d35a6443dfff589596f` plus documentation
+head `654261cd7d341fc13026b36dd54e2e2575a316e3`, merged as
+`565efad47b543dbb2ae891b325d626b67dc4c630` at 2026-08-06T20:48:59Z, and closed #172.
+The owner explicitly continued the pre-release GitHub Actions exception: the local exact-head gate
+and independent reviews are recorded above, but hosted proof was unavailable and is **not** green.
+
+A delayed exact-head connector review then confirmed that the 100,000-subject total publication
+ceiling conflicted with the 16 MiB per-record ceiling and could make a sufficiently large selected
+scope impossible to revoke. The finding is tracked by #180; the original PR #179 thread remains
+open until this follow-up merges. PR #184 initial code head
+`7da6804f6f1cc993d7bc8296c3dcaff0a416f647` replaces the total ceiling with deterministic bounded
+chunks of at most 4,096 canonical subjects. Every record binds its chunk index/count, total subject
+count, partition size, and a domain-separated digest of the complete logical subject set. The whole
+publication plan, record sizes, and sequence capacity are validated before chunk zero; each record
+and its physical keyed head is made durable before the next record or any SQL deletion.
+
+Read, restore, and replay aggregate only contiguous complete chunk groups with one exact operation,
+scope tombstone, subject count, and total digest. A head-matched partial tail is recoverable but is
+never readable or restorable. Restart replans the still-live selected scope under the stored
+operation/week, requires the same total digest/count/partition and exact already-published prefix,
+and appends only the missing suffix. Selected-store reconciliation requires exact per-subject
+lineage, while stale-backup replay may add the missing committed tombstones for subjects introduced
+after the backup. One fresh review found that grouping deletion rows by event kind could ignore a
+second conflicting deletion event for one subject; the fix requires exactly one deletion lineage
+row across deletion event kinds and adds a discriminating test.
+
+Two fresh exact-diff reviews reran the original 69-test replay/read/restore seam. One found and the
+candidate fixed deletion-event-kind grouping that could otherwise ignore a conflicting row for the
+same subject; neither found another realistic CRITICAL/HIGH blocker at that head. A delayed PR #184
+connector review then found a second direct ambiguity: the set-based applied-lineage query selected
+rows through the revoked scope, so a conflicting scope-unbound row for the same non-scope identity
+could be hidden when its cause named another scope or was null. Fix head
+`7533865d6052c6727a481468c3dd20be2a2e7e4c` now joins bounded 400-identity batches against the indexed
+subject kind/ID prefix and evaluates every deletion row for each replay subject. A discriminating
+fixture inserts the formerly hidden row and proves refusal.
+
+The exact fix content passes `npm run check`: lint, context verification, 82 test files with 1,402
+tests passed and 10 declared skips, TypeScript/Vite build, and credential scanning over 13 outputs.
+The focused replay/read/restore seam passes 70 tests and range whitespace is clean. A fresh bounded
+fix review confirmed that 400 identities use 800 bind parameters, every deletion row for those
+identities is accumulated, and duplicate or mismatched operation/week/cause/kind/capability state
+fails closed; it found no realistic CRITICAL/HIGH regression. Invented-fixture proof publishes a
+100,002-subject intent as 25 bounded records before SQL in about 19 seconds, and the full
+delete/replay journey passes across the production 4,096-subject boundary with 4,098 subjects.
+
+Issue #183 separately records that the existing SQL tombstone deletion for the 100,002-subject
+fixture remained CPU-active beyond a ten-minute bound. No failure, data exposure, or publication
+rollback was observed, but timely 100k SQL deletion is **not** claimed. The complete production
+boundary journey, not the 100k SQL tail, is the current executable proof. The mandatory chunk fields
+also change the pre-activation event shape while retaining the v1 family name, so older invented v1
+bytes fail closed. That is accepted only while activation remains `never_authorized` and no real
+store exists; #168 still owns explicit marker/version evolution and stranded-preflight recovery
+before activation.
+
+Hosted exact-head Actions/POSIX proof remains NOT verified during the declared Actions incident.
+Native hostile same-user pathname/ABA and coordinated rollback remain #142. No real source/store,
+legacy path, private/generated data, credential, connector, production caller, or external-model
+request was inspected or activated. After #184, the next bounded slice is #173 expiry cleanup,
+already implemented in isolated commit `111881c`; #174/#80 remain the subsequent Phase E bridge.
+
+## 2026-08-06 — durable seven-day migration expiry candidate (#173 / PR #185)
+
+PR #184 merged as `a53b46772ebf257fa495c074e225100ca753a35a` at 2026-08-06T22:40:55Z
+and closed #180. Its original #179 defect thread and its own applied-lineage thread were replied to
+with exact fix/proof evidence and resolved; the immediate post-merge sweep found no later thread.
+Hosted checks remained absent while GitHub Status continued to report an Actions major outage with
+webhook triggers throttled, so the documented owner-directed pre-release exception is explicit and
+is not represented as a green hosted gate. #183 separately retains the 100k SQL-throughput result.
+
+The #173 implementation rebased cleanly onto that merge as code commit
+`f623ba941aeb49c8fc6e1a8529ec1005ead7dfb3`. Schema 3.2.5 adds a monotonic cleanup singleton and an
+immutable fixed file registry. Backup promotion transfers the exact final SQLite/manifest identity
+before discarding its attempt row; pre-selection registration captures the fixed app-owned legacy
+base and optional WAL/SHM/journal identities. Every present file is bound by confined locator,
+content hash, device/inode/link count, selected artifact, task-key fingerprint, and exact root;
+expected-absent sidecars/provisionals are recorded explicitly. Selection refuses until this registry
+is complete, and verified restore reconstructs the same ready registry from the immutable external
+backup proof rather than caller-supplied paths.
+
+The production cleanup input contains only `{ directory, installationKey }`; its clock is owned by
+the runtime. One millisecond before the exact committed grace deadline it is read-only. At or after
+the deadline it re-verifies selected-store/root/key continuity, the immutable selection proof and
+receipt, complete deletion maintenance, the full keyed replay family, and exact application of every
+revocation under the single writer lease. Unsupported exact-root directory sync refuses in preflight
+before the first unlink. The `ready -> legacy_deleting -> legacy_durable -> backup_deleting ->
+complete` state machine records intent, unlinks only registered identities in reviewed sidecar/base
+order, synchronizes the containing directory after each family, then finalizes the backup catalogue.
+Every phase is restartable; absent already-unlinked registered files converge, while a replacement,
+foreign link, unexpected file, wrong binding, incomplete maintenance, or invalid replay refuses.
+
+The selection marker/receipt and complete content-free revocation anchor/events/head remain byte
+exact through cleanup. The stale migration backup remains protected from ordinary scope deletion
+until this grace cleanup owns it. Restore rebuilds the registry and reapplies replay before service.
+Fix commit `6eb93f56462f53970b4dbcb51b98ba5e69fd9a17` adds the integrated chunk discriminator: a two-record
+committed replay family loses record one while its durable head remains, cleanup refuses with phase
+still `ready`, and every legacy/backup file remains present. This complements anchor-only,
+missing-head, malformed-head, replaced-name, link, directory-sync, per-stage crash, repeated-cleanup,
+selection-refusal, restore, and marker-preservation fixtures.
+
+The exact integrated head passes `npm run check`: lint, context verification, 83 test files with
+1,432 tests passed and 10 declared skips, TypeScript/Vite build, and credential scanning over 13
+outputs. The cleanup/replay/read/restore seam passes 100 tests; cleanup alone passes 29; range
+whitespace is clean. A fresh exact-code adversarial review reran six cleanup/selection/restore/replay/
+catalogue/schema files with 167 passed and three declared skips, verified the irreversible ordering
+and fixed-identity boundary, and found no realistic CRITICAL/HIGH defect. Invented temporary fixtures
+only were used. No real source/store, private or generated operational data, credential, connector,
+activation caller, scheduler, or external-model request was inspected or activated.
+
+NOT verified: hosted Linux/POSIX directory-sync proof during the declared Actions incident. Windows
+production intentionally refuses before the first unlink with the current primitive. Hostile
+same-user pathname ABA remains #142. This slice preserves C1/C2 integrity files and does not implement
+their terminal expiry; before future C2 receipt/proof removal, a durable committed-family
+discriminator must refuse rather than recreate anchor-only/truncated C1 replay state. #168 still
+owns pre-activation marker versioning/stranded preflight/hosted proof. After #173 is reviewed and
+merged, the exact next product slice is the Phase E stored-observation bridge #174/#80.
+
+## 2026-08-06 — ResearchPack v1 C0 producer contract
+
+The product-owned additive producer seam lives in `shared/researchPack.ts` and
+`scripts/generateResearchPack.ts`; it is intentionally separate from AnalysisPack 1.0/2.0. The
+deterministic generator writes only `research-contracts/research-pack/v1/schema.json` and
+`invented.fixture.json`, and `npm run check:research-pack` detects byte drift. The fixture is
+invented C0 with all seven relation slots explicitly `intentionally_omitted`, path-free relation
+artifact metadata, opaque bundle-local IDs, fixed synthetic provenance, and no private or Git
+reads. The sibling lab sync path is `dllab contracts sync --from <checkout> --ref <40-hex-commit>`;
+the generated files are the only producer boundary it may copy. Focused contract tests cover
+round-trip, strict rejection, feature/person-scoring prohibitions, deterministic bytes, and the
+fixture was validated by the lab's Pydantic consumer. No AnalysisPack or runtime source activation
+was changed.
+
+Late exact-head Codex review of PR #178 exposed five blocking contract defects. Commit
+`9aeb60973d80e9c65d5ebe9b4f352a9663957f4e` closes them: feature identifiers now use the canonical
+person-subject vocabulary and token-aware case folding across dot, underscore, and hyphen
+separators; interpretation codes are a closed vocabulary and require `NOT_PERSON_MEASURE`; C1
+`generated_at` is the UTC Monday ISO-week floor; and `.gitattributes` pins the two generated JSON
+artifacts to LF. The standalone schema carries the closed enum, required-code `contains`, and C1
+midnight conditional while typed consumers enforce the Monday rule. The exact code head passed
+`npm run check`: 83 test files, 1,396 tests passed and 10 declared skips, plus lint, context,
+generator drift, TypeScript/Vite build, credential scanning, and whitespace proof. The generated
+schema SHA-256 is `dbeb7c88434dc0849567d3f756304ee25b9f4f0d4b7f985ca16232675bb788b0`.
+Five non-blocking semantic refinements were consolidated in #182; broader standalone-schema/runtime
+parity remains #181. Hosted proof remains absent during the declared GitHub Actions incident and is
+not represented as green.
+
+## 2026-08-07 — ResearchPack main refresh and identifier closure
+
+The PR #178 branch merged current `origin/main` `095164896ed40ac0f2d0c521ad68d672e21e9987` through merge commit
+`5f8ada64b01e7ccfbad8721277efa2983262aede`. The ledger conflict kept the merged #179/#184/#185
+history and then retained this ResearchPack record; `CURRENT_STATE.md` now describes #184/#185 as
+merged and the owner-directed Method Trial as the active synthetic value slice.
+
+Code commit `47987f6521e95b257730eedf8e3d9d3aba81d317` closes the remaining demo-blocking identifier
+bypasses without absorbing #181/#182. Runtime validation and the generated standalone schema reject
+the shared prohibited construct vocabulary, plural person roles, lower-camel/acronym joins, and
+bounded uppercase concatenations such as `DEVELOPERS`, `developerURL`, `AUTHORURL`, `ENGINEERURL`,
+`TEAM_MEMBERURL`, `USER_LOGINURL`, `HEALTHURL`, and `ENGAGEMENTURL`. Explicit near-miss canaries keep
+`authorization`, `inactivity`, `integrating`, `engineering`, `authority`, and `authoritative`
+available. The generated schema SHA-256 is
+`50f885d3901aac714b9b5599c6ff4a719a626ac4bcee600f523c0cc5758414d1`; the regenerated invented
+fixture SHA-256 is `6a9af8471a847cc14434763e873d6ef86063251caba5deae4e5ae54f2973e9f1` and changes only its embedded
+contract digest.
+
+Focused ResearchPack proof passed 8 tests and the generator drift check. The final code tree passed
+`npm run check`: lint, context verification, ResearchPack drift, 84 test files with 1,440 tests
+passed and 10 declared skips, TypeScript/Vite build, and credential scanning over 13 outputs.
+`npm run build:showcase` regenerated and verified the C0 dashboard, social card, export boundaries,
+credential canaries, and local-path canaries. One bounded fresh review found an acronym-suffix gap;
+the single repair round added the compact base/suffix boundary, and the final re-review found no
+remaining realistic CRITICAL/HIGH defect. Hosted `Prove the pull request` remains pending after the
+next push and is not represented as green; no current repository authority extends an outage
+exception to PR #178.
+
+The first refreshed hosted run, `31138305001`, checked out the exact PR merge ref for ResearchPack
+head `5a498f02c81c92fd9db800b373a55acc8848994f` and exposed two inherited Linux storage failures rather
+than a ResearchPack regression. The same failures were present on PRs #184/#185 and current main:
+the selection-proof test created a simulated protected temp with the default POSIX mode instead of
+`0600`, and restore publication released its original temp descriptor before link validation, which
+let ext4 recycle the same device/inode for an unlink/recreate replacement. The deliberately isolated
+prerequisite PR #186 retained that descriptor through link validation and corrected the test fixture.
+Its commit `0a69d374eaff97d6408fe8f5ac3cf52bb0b84a69` passed the two exact tests 33/33 on Windows and on an
+Ubuntu/ext4 checkout, passed the full local gate (83 files, 1,432 passed, 10 skipped), received a fresh
+review with no CRITICAL/HIGH finding, and passed hosted run `31139652039`. It merged with commit
+preservation as `f576fc4c234426e3ba737e4a7bd888ce0fd8f624`.
+
+PR #178 then merged that repaired `origin/main` through merge commit
+`7fb568c088b89ed11c72afe1115fcfbf92bbd75b`; the merge touched only the two already-proven storage
+files and had no ResearchPack or state conflict. Exact refreshed ResearchPack proof and the required
+hosted result remain owed after the final state push; no exception is claimed.
+
+## 2026-08-07 — WB-C1 Method Trial product vertical (PR #187)
+
+ResearchPack PR #178 ultimately merged at authoritative product main
+`be9c2451e983e776850c4cd4700cc8c234ea5e14` after hosted run `31140838615` passed. The additive
+product-owned `DeveloperLensMethodTrialView.v1` contract is fixed at commit
+`3ac919f6129374acae564883ef9196c1d4aaf54c`. Its generated Draft 2020-12 schema is
+`research-contracts/method-trial-view/v1/schema.json`, SHA-256
+`86cf53a48660967c07329f02be01c05d773c16ac96c28ddcd8110aed3b827fdc`. It is a strict,
+path-free C0 presentation projection, not a ResearchPack, generic research dashboard, stored-
+observation export, product EvaluationBundle parser, or production evaluation result.
+
+Developer Lens Lab PR #3 was merged concurrently at `0435c2f24af9359429a4e9dee8f744cd4d8049c1`
+before the presentation exporter existed. That external ordering cannot be rewritten and is not
+represented as an exporter merge. The bounded recovery preserves product ownership: PR #187 lands
+the canonical consumer first, then one lab follow-up PR will add the exporter against the already-
+merged WB-C1 vertical. Draft product PR #188 contains the same contract plus one two-line test-
+threshold alignment; that alignment is preserved in PR #187 and #188 is superseded rather than
+becoming a second product slice.
+
+The lab exporter code is commit `5c0a8814bc3df94383d6b947898952a273c6c449`. From that exact code,
+the fresh deterministic run `wbc1_method_trial_v1_exhibit` completed benchmark, reproduction,
+report, export, and producer-schema validation. The exact exported bytes were copied without hand
+editing to `research-contracts/method-trial-view/v1/wbc1.fixture.json`; both source and committed
+file have SHA-256 `8a3f07f40b082b10632fc1fd777d5e020768156af7b67b4914a84d94769a55dd`.
+The fixture names that lab commit and run, product contract commit `3ac919f`, ResearchPack product
+commit `be9c2451`, EvaluationBundle digest
+`sha256:5534294e303c9d622e264ebeabeef86a8fde14e9b4080c2a212b0bb3d825244e`, custody digest
+`sha256:d5d33f19d437dfa47eff26cfe961d07cad241bce563b454aac5cdc2b0163a1f4`, ResearchPack digest
+`sha256:bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`, and report digest
+`sha256:aec5261e0b6764d8ddfb8f137980ab107a0222fec4e91343c74395af92782202`.
+
+The committed C0 projection records 54 systems, 5,616 weekly opportunities, 5,346 observations,
+270 explicit absences, and exactly three deterministic 104-week final-holdout windows: no-change,
+planted level change, and parser-shift instrumentation confound. The corrected confound narrative
+names the parser shift and never substitutes permission loss. The baseline records
+`2.966666666666667` false alerts/year and `0.75` detection; the candidate records `4.2`, `0.75`, and
+Brier `0.017341137335170863`. Both threshold selections are nonviable. Seven ordered gates retain
+measured/unavailable/not-applicable distinctions, the candidate is rejected, and the complete
+deterministic rolling-median/MAD baseline remains the fallback. PELT is only offline descriptive;
+the three windows are fixed selections, not manually selected anecdotes.
+
+The product route lazy-loads only for `?view=method-trial`, imports and runtime-validates the
+committed fixture without a fetch, and leaves Dashboard, Wrapped, V2, Coverage Cockpit, Atlas, and
+the default bundle path intact. A visible entry in the existing Evidence surfaces navigation reads
+“Method Trial — why the more complex detector was rejected.” Desktop and 390-pixel browser checks
+confirmed the rejection hierarchy, disclosure, three timelines, distinct square/diamond alert
+markers, no stale permission-loss narrative, and no horizontal overflow. The collapsed
+reproducibility disclosure expands to the exact run, commits, digests, commands, and statuses.
+
+Exact local product proof after the final logic/fixture commits passed: the focused runtime,
+standalone-schema, route, and fallback seam passed 15 tests; `npm run check:method-trial-view`,
+TypeScript, lint, and whitespace checks passed; `npm run check` passed lint, context, both generator
+drift checks, 86 test files with 1,451 passed and 10 declared skips, TypeScript/Vite build, and
+credential scanning across 19 outputs. `npm run build:showcase` regenerated and verified synthetic
+dashboard data, the social card, summary/full export boundaries, credential/local-path canaries,
+and the Pages build. Vite retained the pre-existing large-main-chunk and browser-externalized
+`node:crypto` warnings; the Method Trial itself remains a separate lazy chunk (about 194 kB, 23.7
+kB gzip). One substantial fresh-context Terra review at product head `89d55b1` inspected route
+reachability and preservation, story fidelity, responsive/non-color-only timelines, strict C0
+boundaries, provenance, and the cross-repository ordering record. It reran the 15 focused tests,
+the MethodTrial drift check, and range whitespace proof and found no realistic CRITICAL/HIGH merge
+blocker or non-blocking finding. The hosted exact-head result is recorded by the publication
+closeout after it exists; it is not inferred here.
+
+No real/private input, `.developer-lens` state, private generated output, local path, credential,
+provider/person identifier, source activation, external-model request, or production effect was
+inspected, committed, or invoked. The evidence establishes only deterministic mechanics on invented
+C0 data. #174/#80, #183, LIFE-03 hardening, real-source activation, and broader #181/#182 refinements
+remain outside this bounded programme.
+
+## 2026-08-07 — WB-C1 Method Trial exact-evidence repair
+
+The exact-head connector review of product PR #187 found two realistic blocking contract defects:
+the reproducibility command allowlist admitted inline credential-bearing variants, and the seven
+displayed acceptance-gate outcomes were accepted as producer prose rather than derived from the
+scorecard. Contract commit `b0c6c24ab487534b7853b59effd3bd50ec072382` closes both. Commands now
+match the exact run identifier and reject extra flags or inline passwords; measurement domains are
+nonnegative while signed observed signals remain separate; and runtime validation derives all seven
+WB-C1 outcomes and their relevant values from the scorecard and threshold selections. The generated
+schema SHA-256 is `a93616a0c6de82b0846fcd1346182d8aa77fa54a31a8413c623428375c5cf8f2`.
+The remaining parity and accessible missing-state improvements are non-blocking for this fixed,
+committed C0 fixture and are tracked together in #189 rather than expanding the vertical.
+
+Developer Lens Lab repair head `307d1ad592791f57e25fd84b3d44b07600be20cf` synchronized that exact
+product contract and made the exporter evidence-derived and smoke-only. A fresh deterministic
+benchmark/reproduce/report/export run `wbc1_method_trial_v1_exhibit_v2` produced the committed bytes
+without hand editing. The source export and product fixture both have SHA-256
+`f2dadf79938b1a36248b7b5e0c69c25cc695d88711a351bba861c1deca5b6fda`. Its EvaluationBundle,
+custody, ResearchPack, and report digests are respectively
+`sha256:6817268480f4d313969080d5f78149d2c740d0dbaf94594cb3a5a5f69f306dad`,
+`sha256:7da2400ec64e73f47a8fbcdc91ea03b566d364b1096b22654e93ad29a8723668`,
+`sha256:bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`, and
+`sha256:dec6764d75cf36e917b96e619ee921a48a121bfd929709097966fdfcd82b0d1b`.
+
+The repaired projection still records the same honest rejection: baseline/candidate false alerts
+`2.966666666666667`/`4.2`, detection `0.75`/`0.75`, median delay `2`/`1`, coverage-confound false-alert
+rate `0.5`/`0.5`, candidate Brier `0.017341137335170863`, and frozen thresholds `2.5`/`0.05`.
+The seven derived gate outcomes are fail, fail, pass, pass, fail, pass, pass; both selections are
+nonviable and the deterministic baseline remains the fallback. The lab's final full local gate
+passed 41 tests with one declared symlink skip plus Ruff, Pyright, contract, and whitespace checks.
+On the product side, the repaired fixture/runtime/route seam passed 18 focused tests and the
+MethodTrial generator drift check. Exact final full product and hosted proof are recorded by the
+publication closeout after they exist and are not inferred here.
+
+The integrated product code head `2da4c2cdff4b1d2711a30565df479631fd941070` also preserves remote
+fixture-refresh commit `21e070b2dec881a16b13ba9d8e3543c6e3ae9f3d` and its useful byte,
+privacy-key, dataset, decision, selector, and case-boundary assertions while retaining the reviewed
+`f2dadf79...` exporter bytes. `npm run check` passed lint, context validation, both generator drift
+checks, 86 test files with 1,454 passed and 10 declared skips, TypeScript/Vite build, and credential
+scanning across 19 outputs. `npm run build:showcase` regenerated and verified the invented dashboard,
+social card, summary/full export boundaries, credential/local-path canaries, and Pages build. The
+Method Trial remains a separate lazy chunk (about 196.6 kB, 24.1 kB gzip); the pre-existing
+browser-externalized `node:crypto` and large-main-chunk warnings remain.
+
+The prior remote head `21e070b` failed hosted run `31147334095` only in the unchanged
+`v3Backup.test.ts` replacement-inode collision fixture; all 1,458 other tests passed. The same
+storage code passed on the preceding PR head and authoritative main, and the final integrated local
+gate also passed it. That is evidence of an intermittent inherited test failure, not permission to
+dismiss it or change the out-of-scope storage seam. The final pushed head still requires a fresh
+hosted result. The docs-only publication closeout after this code proof is covered by context and
+whitespace verification rather than represented as a second full code gate.
+
+## 2026-08-07 — WB-C1 Method Trial final contract reconciliation
+
+Product contract commit `b48fea579936671397a0486ae7a0342197ee6e4b` closes the remaining public
+prose boundary: every narrative field now accepts only product-owned copy, and runtime Zod plus
+standalone AJV reject adversarial identity/review prose across all narrative shapes. Lab commit
+`5c79236beb0a0b25819f14510b79bb15813d7337` synchronizes that schema, records producer provenance
+per run, confines check-only reads, verifies same-byte later commits without rewriting source
+provenance, and materializes reports through the confined artifact writer.
+
+A new clean-worktree `wbc1_demo` benchmark/reproduce/export/report flow produced the exact tracked
+fixture without hand editing. Source and product bytes are identical at 167,935 bytes with SHA-256
+`26c3a9184adfce4ff5756e702b36d6db7af7c5f2dab9eb3eb3081ca598eafd95`. The schema,
+EvaluationBundle, custody, ResearchPack, Markdown, and HTML SHA-256 values are respectively
+`634b0cc7a0c3dbcefe8b9cf258e157695beae06d08cc9d02bb781a4267f633ef`,
+`cbd9415bf9e26683656259bcef5a402b1745570c2a31e5c44dbfee74cfaea75f`,
+`036f62f5f9ade272eba907513e7ab0bbef4a888bb1d86f8ae6e401aebd5c8238`,
+`bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`,
+`8144410775717d8b280a41b95c18dd22a8de45c765186ecaeb1fd5c6745e30f0`, and
+`fca7aac3e567f6de84b6dd60f476e77bf2a18f7a20cefde4563856e6ada99eec`.
+The scientific result and no-promotion boundary are unchanged. Exact-head hosted gates and merge
+state are recorded only after they complete.
+
+### Structural-schema boundary and semantic acceptance closure
+
+The final repair review proved that Draft 2020-12 accepted relationally false artifacts which the
+product runtime rejected: mismatched run commands, gate outcomes/relevant values, decision reasons,
+threshold viability, and timeline index/marker coherence. Product commit
+`5c2cff834b2763aa5646a99c20f61abcba6943b4` makes the boundary explicit in the generated schema's
+standard `$comment`, the contract README, the root README, and the showcase runbook. The standalone
+schema is structural transport validation only; `MethodTrialViewSchema` is the normative product
+semantic validator before acceptance or display. Regression tests deliberately demonstrate the
+distinction across eight relational mutations. The product route already runtime-parses its fixture
+before display, so there is no AJV-only product exposure.
+
+The lab synchronized that exact contract and schema SHA-256
+`f1511ca6f4bca7d770bf0e646825792b27144249ff86fcbccdee5fb24a75cbbe`, then added an equivalent
+semantic validator in lab commit `aa21dbd68ec9cd759240f551948a8bdeb59df9aa`. Export now fails closed
+after structural validation unless command/run binding, threshold viability, gate derivation and
+mirrored evidence, decision reasons, timeline sequence, missing-state behavior, and case-role marker
+coherence all hold. The contract sync also refuses a product schema that omits the structural-only
+annotation. Focused lab proof passed seven tests with one declared Windows symlink skip, plus Ruff,
+strict Pyright, and whitespace checks.
+
+From that exact clean lab commit, fresh run `wbc1_method_trial_v1_exhibit_v3` completed benchmark,
+reproduction, report, and semantic export. The generated source and mechanically copied product
+fixture have SHA-256 `b5953543ca9ad8726c5fca0a0c808e2d874a713e8098c0dc440f9a4ab27fb29c`.
+The EvaluationBundle and custody digests are
+`sha256:181b08c280795222d7ef7b5f3a7272d2f397be6f3a59987913d4499e6045c6b4` and
+`sha256:cc8e828efedc87e62cf9b3f45bee5f3118ff105ab93c6159996e1d1d2185a610`; the ResearchPack digest
+remains `sha256:bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`.
+The report digests are Markdown
+`sha256:4c99d1df51e706e9044cbed8ad0382ffb726a97b4d2183e941ec47401e78826b` and HTML
+`sha256:0f1b913a06a0ef37b7e6d6bb249c9d8b7608a8c3e154240cf3953e08b38e39aa`.
+The result remains unchanged and honest: false alerts `2.966666666666667`/`4.2`, detection
+`0.75`/`0.75`, delay `2`/`1`, confound rate `0.5`/`0.5`, candidate Brier
+`0.017341137335170863`, thresholds `2.5`/`0.05`, and gates fail, fail, pass, pass, fail, pass, pass.
+The repaired product fixture/runtime/route seam passes 19 focused tests. On exact code/evidence head
+`bb92df0454fe9c5e46961074c455c6973bc4f04d`, `npm run check` passed lint, context, both generator
+drift checks, 86 test files with 1,455 passed and 10 declared skips, TypeScript/Vite build, and the
+credential scan across 19 outputs. `npm run build:showcase` passed the invented export, social-card,
+boundary, path/credential, and Pages-build checks. Hosted proof remains pending and is not inferred.
+
+## 2026-08-07 — Post-merge integrated-producer evidence correction
+
+Product PR #187 merged as `7b22491b28acbe467e2facb85723a91fd37af52b`, preserving the product-owned
+contract and lazy offline route. Its fixture came from semantic-only lab precursor `5c79236` and
+claimed `verification.local: passed` before the later reproduction command could occur. The
+scientific story was correct, but that provenance field was not.
+
+Integrated lab producer `0ef193070a9b80b81cef5a1710a1d65e0b271c15` contains both semantic
+acceptance and atomic final-path export with honest `local: not_run`. A fresh detached
+benchmark/reproduce/export/report flow produced the mechanically copied product fixture: 167,936
+bytes, SHA-256 `afcc1ed9535d9b22fb399375027792489ce6b97949f8f684682943c11152b5f9`.
+EvaluationBundle, custody, ResearchPack, Markdown, and HTML digests are respectively
+`sha256:e925c8ac44d914ce0003ef218d90187535eedfef3eb8d436a3c9a135e3d1a3a9`,
+`sha256:036f62f5f9ade272eba907513e7ab0bbef4a888bb1d86f8ae6e401aebd5c8238`,
+`sha256:bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`,
+`sha256:f9173354e86b20ccabe91334136017ff03ae68b3ba4432666f6af72172fb11b8`, and
+`sha256:22ca8c03e78c6185e527fa4c0f7312caf7d9077619d46f795f8d8dd25c530a29`.
+The seven gates, rejection reasons, metrics, three 104-point cases, no-alias/no-seed boundary, and
+deterministic fallback are byte-for-byte unchanged. This correction must pass its own product gate
+and merge before lab PR #8; neither result is inferred by this entry.

@@ -16,7 +16,7 @@ transmission remains default-off and is not active until its own reviewed task c
 
 | Capability ID | Purpose and retained minimum | Class ceiling | Consent / phase | Retention policy | Delete / revoke behavior | Refusal or absence |
 |---|---|---:|---|---|---|---|
-| `github.core` | Repository/system lifecycle: stable IDs, flags, dates, numeric surfaces, PR/check/issue/release edges, and coverage; no names, prose, URLs, or people dimensions | C2 source → C1 facts | **G2 approved**; implement no earlier than P4/P7 for repositories explicitly selected locally | C1 36m; C2 13m | Delete source observations and every dependent fact, feature, alias, checkpoint, and pack | Remain `never_authorized` until implemented; when later refused/absent, record the exact coverage state and never infer zero |
+| `github.core` | Repository/system lifecycle: stable IDs, flags, dates, numeric surfaces, PR/check/issue/release edges, and coverage; no names, prose, URLs, or people dimensions | C2 source → C1 facts | **G2 approved**; implement no earlier than P4/P7 for repositories explicitly selected locally | C1 36m, including the content-free revocation replay family; C2 13m; old source and migration backup seven days after successful selection | Delete source observations and every dependent fact, feature, alias, checkpoint, and pack only after a content-free C1 replay intent is durable; retain that replay family through stale-backup risk, then delete it by 36m or whole-task-root deletion | Remain `never_authorized` until implemented; when later refused/absent, record the exact coverage state and never infer zero; a missing/foreign/unapplied replay family is unavailable, never legacy fallback |
 | `cap.local.git` | Explicit selected-ref topology and self-attributed aggregate change facts | C2 | **G2 approved**; explicit selected roots/refs in P6, with no implicit fetch or working-tree scope | 13m | Delete observations, topology descendants, checkpoints, aliases, and derived outputs | `refused`; do not inspect roots or execute Git |
 | `cap.git.signatures` | Aggregate commit/tag verification-policy coverage | C3 source → C1 summary | **G2 approved**; separate runtime opt-in after local-Git activation | C3 90d; C1 36m | Delete verification grades and dependent summaries | `refused` or `unavailable`; never run repository verifiers |
 | `cap.commit.intent` | Aggregate controlled maintenance/feature/test/docs/refactor/unknown mix | C4 input → C1 summary | **G2 approved**; separate ephemeral runtime opt-in; no external model | C4 process only; C1 36m | Destroy subjects immediately; delete summaries and classifier cache | `refused`; do not read subjects |
@@ -34,6 +34,11 @@ Ordering note (2026-08-04): the deletion column above is not aspirational — an
 implementation creates retained C2/C3 descendants (dependency aliases, graphs, security facts,
 retrieval indexes) is schedulable only after the registry-derived deletion planner exists
 (programme card DL-LIFE-02); rollback prose never substitutes for an implemented cascade.
+
+The revocation replay family, including its mandatory tail head, is local-only integrity state: it
+reaches no API, export, public asset, or model payload. Seven-day legacy/backup cleanup must preserve
+it; C1 expiry or whole-task-root deletion removes it. Its presence never activates collection or
+authorizes a fallback reader.
 
 ## Rejected capabilities
 

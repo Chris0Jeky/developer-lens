@@ -30,6 +30,7 @@ import {
   storageV3ArtifactFilePath,
   storageV3MigrationBackupIntentSha256,
   storageV3MigrationBackupManifest,
+  storageV3MaintenanceStatus,
   syncStorageV3ArtifactDirectory,
   type StorageV3ArtifactRoot,
 } from './v3ArtifactCatalogue.js'
@@ -107,6 +108,48 @@ export type StorageV3BackupResult = Readonly<{
   artifactId: string
   locator: string
   manifestLocator: string
+  contentSha256: string
+  manifestSha256: string
+}>
+
+/** Caller-owned inputs for the read-only finalized-backup verifier. */
+export type StorageV3MigrationBackupVerificationInput = Readonly<{
+  db: Database.Database
+  root: StorageV3ArtifactRoot
+  backupAt: string
+  artifactId: string
+  installationKey: TaskInstallationKeyHandle
+}>
+
+/** Proof returned after every physical/catalogue/manifest/snapshot check passes. */
+export type StorageV3MigrationBackupVerification = Readonly<{
+  artifactId: string
+  locator: string
+  backupAt: string
+  selectedArtifactId: string
+  ownerScopeIds: readonly string[]
+  contentSha256: string
+  manifestSha256: string
+}>
+
+/** Caller-owned inputs for the restore-boundary verifier.  No live selected-store
+ * connection is accepted: the finalized backup pair is the complete proof input. */
+export type StorageV3MigrationBackupRestoreVerificationInput = Readonly<{
+  root: StorageV3ArtifactRoot
+  backupAt: string
+  artifactId: string
+  installationKey: TaskInstallationKeyHandle
+}>
+
+/** Content-free proof returned by the restore-boundary verifier. */
+export type StorageV3MigrationBackupRestoreVerification = Readonly<{
+  artifactId: string
+  locator: string
+  stagedLocator: string
+  backupAt: string
+  selectedArtifactId: string
+  ownerScopeIds: readonly string[]
+  intentSha256: string
   contentSha256: string
   manifestSha256: string
 }>
@@ -370,6 +413,71 @@ function captureInput(input: unknown, allowHooks: boolean, retainHooks = allowHo
   return closed
 }
 
+function captureVerificationInput(input: unknown): StorageV3MigrationBackupVerificationInput {
+  if (!input || typeof input !== 'object' || Array.isArray(input)
+    || Object.getPrototypeOf(input) !== Object.prototype) fail()
+  const objectInput = input as object
+  const expected = ['db', 'root', 'backupAt', 'artifactId', 'installationKey']
+  const keys = Reflect.ownKeys(objectInput)
+  if (keys.length !== expected.length
+    || keys.some((key) => typeof key !== 'string' || !expected.includes(key))) fail()
+  const value = (key: string): unknown => {
+    const descriptor = Object.getOwnPropertyDescriptor(objectInput, key)
+    if (!descriptor || !Object.hasOwn(descriptor, 'value')) fail()
+    return (descriptor as PropertyDescriptor & { value: unknown }).value
+  }
+  const closed = Object.freeze({
+    db: value('db'),
+    root: value('root'),
+    backupAt: value('backupAt'),
+    artifactId: value('artifactId'),
+    installationKey: value('installationKey'),
+  }) as StorageV3MigrationBackupVerificationInput
+  if (!closed.db?.open || closed.db.inTransaction
+    || typeof closed.root !== 'object' || closed.root === null
+    || typeof closed.backupAt !== 'string'
+    || typeof closed.artifactId !== 'string'
+    || !closed.installationKey || typeof closed.installationKey !== 'object'
+    || !isCanonicalTaskId(closed.installationKey.taskId)
+    || !/^[a-f0-9]{64}$/.test(closed.installationKey.fingerprint)) fail()
+  validateAt(closed.backupAt)
+  if (!/^art-[0-9a-f]{64}$/.test(closed.artifactId)) fail()
+  // This binds continuity without exposing key bytes or making the verifier an HMAC oracle.
+  bindTaskInstallationKeyBody(closed.installationKey, sha256(`${BACKUP_DOMAIN}\0closed-verifier-input`))
+  return closed
+}
+
+function captureRestoreVerificationInput(input: unknown): StorageV3MigrationBackupRestoreVerificationInput {
+  if (!input || typeof input !== 'object' || Array.isArray(input)
+    || Object.getPrototypeOf(input) !== Object.prototype) fail()
+  const objectInput = input as object
+  const expected = ['root', 'backupAt', 'artifactId', 'installationKey']
+  const keys = Reflect.ownKeys(objectInput)
+  if (keys.length !== expected.length
+    || keys.some((key) => typeof key !== 'string' || !expected.includes(key))) fail()
+  const value = (key: string): unknown => {
+    const descriptor = Object.getOwnPropertyDescriptor(objectInput, key)
+    if (!descriptor || !Object.hasOwn(descriptor, 'value')) fail()
+    return (descriptor as PropertyDescriptor & { value: unknown }).value
+  }
+  const closed = Object.freeze({
+    root: value('root'),
+    backupAt: value('backupAt'),
+    artifactId: value('artifactId'),
+    installationKey: value('installationKey'),
+  }) as StorageV3MigrationBackupRestoreVerificationInput
+  if (!closed.root || typeof closed.root !== 'object'
+    || !closed.installationKey || typeof closed.installationKey !== 'object'
+    || !isCanonicalTaskId(closed.installationKey.taskId)
+    || !/^[a-f0-9]{64}$/.test(closed.installationKey.fingerprint)) fail()
+  validateAt(closed.backupAt)
+  if (!/^art-[0-9a-f]{64}$/.test(closed.artifactId)) fail()
+  // Bind continuity before any filesystem or SQLite reads.  This is a proof of
+  // possession, not a general HMAC oracle.
+  bindTaskInstallationKeyBody(closed.installationKey, sha256(`${BACKUP_DOMAIN}\0restore-verifier-input`))
+  return closed
+}
+
 function sidecarsAbsent(path: string): void {
   for (const suffix of ['-wal', '-shm', '-journal']) if (stat(`${path}${suffix}`)) fail()
 }
@@ -422,6 +530,146 @@ function inspectBackupDb(
   }
 }
 
+interface RestoreBackupSnapshotIdentity extends BackupSnapshotIdentity {
+  readonly backupAttemptSqliteDev: string
+  readonly backupAttemptSqliteIno: string
+}
+
+function canonicalAttemptIdentity(value: unknown): string {
+  if (typeof value !== 'string' || !/^(?:0|[1-9][0-9]{0,19})$/.test(value)) fail()
+  return value as string
+}
+
+/**
+ * Inspect the pre-selection image captured by the SQLite backup API.  The image
+ * deliberately retains the staged, self-referential backup catalogue row and its
+ * one attempt row; restore must validate that shape, never normalize it.
+ */
+function inspectRestoreBackupDb(
+  path: string,
+  descriptor: number,
+  expectedNlink: bigint,
+  artifactId: string,
+  finalLocator: string,
+  installationKey: TaskInstallationKeyHandle,
+): RestoreBackupSnapshotIdentity {
+  assertDescriptorPath(path, descriptor, expectedNlink)
+  let backup: Database.Database | undefined
+  try {
+    backup = new Database(path, { fileMustExist: true, readonly: true })
+    backup.pragma('foreign_keys = ON')
+    if (Number(backup.pragma('application_id', { simple: true })) !== STORAGE_V3_SHADOW_APPLICATION_ID
+      || Number(backup.pragma('user_version', { simple: true })) !== STORAGE_V3_SHADOW_USER_VERSION
+      || storageV3ShadowSchemaFingerprint(backup) !== STORAGE_V3_SHADOW_SCHEMA_FINGERPRINT
+      || String(backup.pragma('integrity_check', { simple: true })) !== 'ok'
+      || (backup.pragma('foreign_key_check') as unknown[]).length !== 0) fail()
+
+    const maintenance = backup.prepare(
+      'SELECT state, operation_id, scope_id, event_week FROM storage_maintenance_state',
+    ).all() as Array<{ state: string; operation_id: string | null; scope_id: string | null; event_week: string | null }>
+    if (maintenance.length > 1 || (maintenance.length === 1
+      && (maintenance[0]?.state !== 'complete'
+        || maintenance[0].operation_id !== null || maintenance[0].scope_id !== null
+        || maintenance[0].event_week !== null))) fail()
+
+    const selection = backup.prepare('SELECT 1 FROM migration_selection_state').all()
+    if (selection.length !== 0) fail()
+    if (backup.prepare("SELECT 1 FROM app_artifact WHERE state <> 'active' LIMIT 1").get() !== undefined) fail()
+    if (Number(backup.prepare('SELECT COUNT(*) FROM app_artifact').pluck().get()) !== 2) fail()
+
+    const selected = backup.prepare(
+      `SELECT artifact_id, kind, state, relative_locator,
+              deletion_operation_id, deletion_scope_id, deletion_week
+       FROM app_artifact WHERE kind = 'selected_store'`,
+    ).all() as Array<{
+      artifact_id: string; kind: string; state: string; relative_locator: string
+      deletion_operation_id: string | null; deletion_scope_id: string | null; deletion_week: string | null
+    }>
+    if (selected.length !== 1 || selected[0]?.kind !== 'selected_store'
+      || selected[0].state !== 'active' || selected[0].relative_locator !== 'v3-store.sqlite'
+      || selected[0].deletion_operation_id !== null || selected[0].deletion_scope_id !== null
+      || selected[0].deletion_week !== null || !/^art-[0-9a-f]{64}$/.test(selected[0].artifact_id)) fail()
+    const selectedArtifactId = selected[0].artifact_id
+
+    const ownerScopeIds = backup.prepare('SELECT scope_id FROM claim_scope ORDER BY scope_id').pluck().all() as string[]
+    if (ownerScopeIds.length === 0
+      || ownerScopeIds.some((scope, index) => !/^scope-[0-9a-f]{64}$/.test(scope)
+        || scope !== [...ownerScopeIds].sort()[index])) fail()
+    assertOwners(
+      backup.prepare('SELECT scope_id FROM app_artifact_scope WHERE artifact_id = ? ORDER BY scope_id')
+        .pluck().all(selectedArtifactId) as string[],
+      ownerScopeIds,
+    )
+
+    const backups = backup.prepare(
+      `SELECT artifact_id, kind, state, manifest_sha256, content_sha256,
+              relative_locator, deletion_operation_id, deletion_scope_id, deletion_week
+       FROM app_artifact WHERE kind = 'migration_backup_v1'`,
+    ).all() as Array<{
+      artifact_id: string; kind: string; state: string; manifest_sha256: string; content_sha256: string
+      relative_locator: string; deletion_operation_id: string | null; deletion_scope_id: string | null
+      deletion_week: string | null
+    }>
+    if (backups.length !== 1) fail()
+    const staged = backups[0]!
+    const stagedLocator = `${finalLocator}.tmp`
+    const intentSha256 = storageV3MigrationBackupIntentSha256(
+      artifactId, finalLocator, installationKey.fingerprint,
+    )
+    if (staged.artifact_id !== artifactId || staged.kind !== 'migration_backup_v1'
+      || staged.state !== 'active' || staged.relative_locator !== stagedLocator
+      || staged.content_sha256 !== intentSha256 || staged.manifest_sha256 !== intentSha256
+      || staged.deletion_operation_id !== null || staged.deletion_scope_id !== null
+      || staged.deletion_week !== null) fail()
+    assertOwners(
+      backup.prepare('SELECT scope_id FROM app_artifact_scope WHERE artifact_id = ? ORDER BY scope_id')
+        .pluck().all(artifactId) as string[],
+      ownerScopeIds,
+    )
+    const ownership = backup.prepare(
+      'SELECT artifact_id, scope_id FROM app_artifact_scope ORDER BY artifact_id, scope_id',
+    ).all() as Array<{ artifact_id: string; scope_id: string }>
+    const expectedOwnership = [selectedArtifactId, artifactId]
+      .flatMap((ownedArtifactId) => ownerScopeIds.map((scopeId) => ({
+        artifact_id: ownedArtifactId,
+        scope_id: scopeId,
+      })))
+      .sort((left, right) => left.artifact_id.localeCompare(right.artifact_id)
+        || left.scope_id.localeCompare(right.scope_id))
+    if (ownership.length !== expectedOwnership.length
+      || ownership.some((row, index) => row.artifact_id !== expectedOwnership[index]?.artifact_id
+        || row.scope_id !== expectedOwnership[index]?.scope_id)) fail()
+
+    const attempts = backup.prepare(
+      `SELECT artifact_id, sqlite_dev, sqlite_ino, manifest_dev, manifest_ino,
+              sqlite_content_sha256 FROM migration_backup_attempt`,
+    ).all() as Array<{
+      artifact_id: string; sqlite_dev: string | null; sqlite_ino: string | null
+      manifest_dev: string | null; manifest_ino: string | null; sqlite_content_sha256: string | null
+    }>
+    if (attempts.length !== 1) fail()
+    const attempt = attempts[0]!
+    if (attempt.artifact_id !== artifactId || attempt.sqlite_dev === null || attempt.sqlite_ino === null
+      || attempt.manifest_dev !== null || attempt.manifest_ino !== null
+      || attempt.sqlite_content_sha256 !== null) fail()
+    const backupAttemptSqliteDev = canonicalAttemptIdentity(attempt.sqlite_dev)
+    const backupAttemptSqliteIno = canonicalAttemptIdentity(attempt.sqlite_ino)
+
+    return Object.freeze({
+      selectedArtifactId,
+      ownerScopeIds: Object.freeze(ownerScopeIds),
+      backupAttemptSqliteDev,
+      backupAttemptSqliteIno,
+    })
+  } catch (error) {
+    if (error instanceof StorageV3BackupError) throw error
+    return fail()
+  } finally {
+    if (backup?.open) backup.close()
+    assertDescriptorPath(path, descriptor, expectedNlink)
+  }
+}
+
 function openExactManifest(
   path: string,
   expected: Buffer,
@@ -437,6 +685,187 @@ function openExactManifest(
   } catch {
     closeSync(descriptor)
     return fail()
+  }
+}
+
+/**
+ * Verify one already-finalized singleton backup without taking a lease or mutating state.
+ *
+ * The caller supplies only the opaque task identity and backup timestamp.  The selected
+ * artifact and owner set are read from the open store, and every returned field is derived
+ * from the exact catalogue row and physically re-proven files.
+ */
+export function verifyStorageV3MigrationBackup(
+  input: StorageV3MigrationBackupVerificationInput,
+): StorageV3MigrationBackupVerification {
+  let sqliteDescriptor: number | undefined
+  let manifestDescriptor: number | undefined
+  try {
+    const closed = captureVerificationInput(input)
+    const locator = `migration-backup-${closed.backupAt.replace(/[-:]/g, '')}.sqlite`
+    const stagedLocator = `${locator}.tmp`
+    const manifestLocator = `${locator}.manifest.json`
+    const tempLocator = stagedLocator
+    const manifestTempLocator = `${tempLocator}.manifest.json`
+    const source = storageV3ArtifactFilePath(closed.root, 'v3-store.sqlite')
+    if (typeof closed.db.name !== 'string' || closed.db.name !== source) fail()
+    assertStorageV3ArtifactRootInstallationKey(closed.root, closed.installationKey)
+    sidecarsAbsent(source)
+    // A finalized backup cannot coexist with an open/expired migration or any catalogue
+    // state other than the immutable active selected store and one active final backup.
+    if (storageV3MaintenanceStatus(closed.db) !== 'complete') fail()
+    assertPublishedStorageV3ArtifactCatalogue(closed.db)
+    const selected = closed.db.prepare(
+      `SELECT artifact_id, state, relative_locator
+       FROM app_artifact WHERE kind = 'selected_store'`,
+    ).all() as Array<{ artifact_id: string; state: string; relative_locator: string }>
+    if (selected.length !== 1 || selected[0]?.state !== 'active'
+      || selected[0].relative_locator !== 'v3-store.sqlite') fail()
+    const selectedArtifactId = selected[0]!.artifact_id
+    const liveOwnerScopeIds = liveOwners(closed.db)
+    if (liveOwnerScopeIds.length === 0) fail()
+    assertOwners(catalogueOwners(closed.db, selectedArtifactId), liveOwnerScopeIds)
+
+    const backups = closed.db.prepare(
+      `SELECT artifact_id, kind, state, manifest_sha256, content_sha256,
+              relative_locator, deletion_operation_id, deletion_scope_id, deletion_week
+       FROM app_artifact WHERE kind = 'migration_backup_v1'`,
+    ).all() as Array<{
+      artifact_id: string; kind: string; state: string; manifest_sha256: string; content_sha256: string
+      relative_locator: string; deletion_operation_id: string | null; deletion_scope_id: string | null
+      deletion_week: string | null
+    }>
+    if (backups.length !== 1) fail()
+    const row = backups[0]!
+    if (row.artifact_id !== closed.artifactId || row.kind !== 'migration_backup_v1'
+      || row.state !== 'active' || row.relative_locator !== locator
+      || row.relative_locator.endsWith('.sqlite.tmp')
+      || row.deletion_operation_id !== null || row.deletion_scope_id !== null || row.deletion_week !== null) fail()
+    assertOwners(catalogueOwners(closed.db, row.artifact_id), liveOwnerScopeIds)
+
+    const finalPath = storageV3ArtifactFilePath(closed.root, locator)
+    const manifestPath = storageV3ArtifactFilePath(closed.root, manifestLocator)
+    const tempPath = storageV3ArtifactFilePath(closed.root, tempLocator)
+    const manifestTempPath = storageV3ArtifactFilePath(closed.root, manifestTempLocator)
+    // Published cleanup is part of the finalized state.  Refuse orphaned provisional names
+    // instead of silently selecting through a staged or foreign pair.
+    sidecarsAbsent(tempPath)
+    assertAbsent(tempPath)
+    assertAbsent(manifestTempPath)
+    sidecarsAbsent(finalPath)
+
+    sqliteDescriptor = openBoundDescriptor(finalPath, constants.O_RDONLY, 1n)
+    const contentSha256 = hashSqliteDescriptor(sqliteDescriptor)
+    if (row.content_sha256 !== contentSha256) fail()
+    const snapshot = inspectBackupDb(finalPath, sqliteDescriptor, 1n)
+    if (snapshot.selectedArtifactId !== selectedArtifactId) fail()
+    assertOwners(snapshot.ownerScopeIds, liveOwnerScopeIds)
+
+    const expectedManifest = storageV3MigrationBackupManifest({
+      locator,
+      backupAt: closed.backupAt,
+      artifactId: closed.artifactId,
+      selectedArtifactId,
+      contentSha256,
+      ownerScopeIds: liveOwnerScopeIds,
+      installationKey: closed.installationKey,
+    })
+    const manifestSha256 = sha256(expectedManifest.bytes)
+    if (row.manifest_sha256 !== manifestSha256) fail()
+    manifestDescriptor = openExactManifest(manifestPath, expectedManifest.bytes, 1n)
+    return Object.freeze({
+      artifactId: closed.artifactId,
+      locator,
+      backupAt: closed.backupAt,
+      selectedArtifactId,
+      ownerScopeIds: Object.freeze([...liveOwnerScopeIds]),
+      contentSha256,
+      manifestSha256,
+    })
+  } catch (error) {
+    if (error instanceof StorageV3BackupError) throw error
+    return fail()
+  } finally {
+    if (manifestDescriptor !== undefined) closeSync(manifestDescriptor)
+    if (sqliteDescriptor !== undefined) closeSync(sqliteDescriptor)
+  }
+}
+
+/**
+ * Verify one finalized backup pair for restore without opening the live selected
+ * store or reading its catalogue.  The backup image itself is the catalogue
+ * authority at this boundary and must still contain the reviewed pre-selection
+ * staged intent/attempt shape.
+ */
+export function verifyStorageV3MigrationBackupForRestore(
+  input: StorageV3MigrationBackupRestoreVerificationInput,
+): StorageV3MigrationBackupRestoreVerification {
+  let sqliteDescriptor: number | undefined
+  let manifestDescriptor: number | undefined
+  try {
+    const closed = captureRestoreVerificationInput(input)
+    const locator = `migration-backup-${closed.backupAt.replace(/[-:]/g, '')}.sqlite`
+    const stagedLocator = `${locator}.tmp`
+    const manifestLocator = `${locator}.manifest.json`
+    const tempLocator = stagedLocator
+    const manifestTempLocator = `${tempLocator}.manifest.json`
+    assertStorageV3ArtifactRootInstallationKey(closed.root, closed.installationKey)
+
+    const finalPath = storageV3ArtifactFilePath(closed.root, locator)
+    const manifestPath = storageV3ArtifactFilePath(closed.root, manifestLocator)
+    const tempPath = storageV3ArtifactFilePath(closed.root, tempLocator)
+    const manifestTempPath = storageV3ArtifactFilePath(closed.root, manifestTempLocator)
+    // Publication is a closed pair: no provisional names or SQLite family
+    // sidecars may remain in the task-key-bound root.
+    sidecarsAbsent(finalPath)
+    sidecarsAbsent(manifestPath)
+    sidecarsAbsent(tempPath)
+    sidecarsAbsent(manifestTempPath)
+    assertAbsent(tempPath)
+    assertAbsent(manifestTempPath)
+
+    sqliteDescriptor = openBoundDescriptor(finalPath, constants.O_RDONLY, 1n)
+    const contentSha256 = hashSqliteDescriptor(sqliteDescriptor)
+    const snapshot = inspectRestoreBackupDb(
+      finalPath,
+      sqliteDescriptor,
+      1n,
+      closed.artifactId,
+      locator,
+      closed.installationKey,
+    )
+    const expectedManifest = storageV3MigrationBackupManifest({
+      locator,
+      backupAt: closed.backupAt,
+      artifactId: closed.artifactId,
+      selectedArtifactId: snapshot.selectedArtifactId,
+      contentSha256,
+      ownerScopeIds: snapshot.ownerScopeIds,
+      installationKey: closed.installationKey,
+    })
+    const manifestSha256 = sha256(expectedManifest.bytes)
+    manifestDescriptor = openExactManifest(manifestPath, expectedManifest.bytes, 1n)
+    return Object.freeze({
+      artifactId: closed.artifactId,
+      locator,
+      stagedLocator,
+      backupAt: closed.backupAt,
+      selectedArtifactId: snapshot.selectedArtifactId,
+      ownerScopeIds: Object.freeze([...snapshot.ownerScopeIds]),
+      intentSha256: storageV3MigrationBackupIntentSha256(
+        closed.artifactId,
+        locator,
+        closed.installationKey.fingerprint,
+      ),
+      contentSha256,
+      manifestSha256,
+    })
+  } catch (error) {
+    if (error instanceof StorageV3BackupError) throw error
+    return fail()
+  } finally {
+    if (manifestDescriptor !== undefined) closeSync(manifestDescriptor)
+    if (sqliteDescriptor !== undefined) closeSync(sqliteDescriptor)
   }
 }
 
