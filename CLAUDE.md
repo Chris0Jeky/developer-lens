@@ -90,7 +90,7 @@ demo at `http://127.0.0.1:5173/?demo=v2`.
 - One writer per checkout; parallel writers require separate coordinator-owned worktrees and
   non-overlapping paths. Subagents can move HEAD — pin git state in prompts, re-verify after each.
 - Keep volatile SHAs, PR/check state and next-slice evidence in the implementation ledger, not this
-  file. Update `HUMAN_TODO.md` only for explicit owner decisions.
+  file. Route owner decisions and genuinely open owner gates to `HUMAN_TODO.md`.
 - `bypassPermissions` lives only in gitignored `.claude/settings.local.json`, never committed.
 
 ## Closeout

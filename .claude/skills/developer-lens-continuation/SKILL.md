@@ -31,7 +31,8 @@ Use the repository's tracked sources rather than caching project state in this s
 
 ## Select, bound, and route the slice
 
-1. Prefer the ledger's first dependency-safe incomplete product slice.
+1. Prefer the first dependency-safe incomplete product slice in
+   `docs/analyser-program/CURRENT_STATE.md`; the ledger is history, never the task source.
 2. State objective, owned paths, non-goals, acceptance behavior, rollback and focused checks.
 3. Keep orchestration, authority interpretation, and architecture in the coordinating session.
    Delegate bounded implementation to `dl-implementer`, fresh-context adversarial review to

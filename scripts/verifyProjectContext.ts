@@ -85,6 +85,18 @@ if (failures.length === 0) {
         '.claude/settings.json must not commit bypassPermissions; it belongs in gitignored .claude/settings.local.json',
       )
     }
+    const permissions = settings['permissions'] as Record<string, unknown> | undefined
+    const deny = Array.isArray(permissions?.['deny']) ? (permissions['deny'] as unknown[]) : []
+    const requiredDenies = [
+      'Read(./.developer-lens/**)',
+      'Read(./dist/**)',
+      'Read(./public/data/**)',
+    ]
+    for (const rule of requiredDenies) {
+      if (!deny.includes(rule)) {
+        failures.push(`.claude/settings.json must keep the protected-path deny rule: ${rule}`)
+      }
+    }
   } catch (error) {
     failures.push(`.claude/settings.json is not valid JSON: ${String(error)}`)
   }
