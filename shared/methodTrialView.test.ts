@@ -354,6 +354,10 @@ describe('DeveloperLensMethodTrialView.v1', () => {
     expect(createHash('sha256').update(fixtureText, 'utf8').digest('hex')).toBe(
       'f2dadf79938b1a36248b7b5e0c69c25cc695d88711a351bba861c1deca5b6fda',
     )
+    expect(fixtureText.endsWith('\n')).toBe(true)
+    expect(fixtureText.endsWith('\n\n')).toBe(false)
+    expect(fixtureText).not.toContain('"system_alias"')
+    expect(fixtureText).not.toContain('"generator_seed"')
     expect(parsed.reproducibility.product_contract_commit).toBe(
       'b0c6c24ab487534b7853b59effd3bd50ec072382',
     )
@@ -362,6 +366,15 @@ describe('DeveloperLensMethodTrialView.v1', () => {
     expect(parsed.reproducibility.digests.schema).toBe(
       'sha256:a93616a0c6de82b0846fcd1346182d8aa77fa54a31a8413c623428375c5cf8f2',
     )
+    expect(parsed.reproducibility.digests.evaluation_bundle).toBe(
+      'sha256:6817268480f4d313969080d5f78149d2c740d0dbaf94594cb3a5a5f69f306dad',
+    )
+    expect(parsed.dataset).toMatchObject({
+      system_count: 54,
+      weekly_opportunity_count: 5616,
+      observed_count: 5346,
+      absent_count: 270,
+    })
     expect(parsed.scorecard.baseline.false_alerts_per_year).toEqual(measured(2.966666666666667))
     expect(parsed.scorecard.candidate.false_alerts_per_year).toEqual(measured(4.2))
     expect(parsed.scorecard.baseline.detection_rate).toEqual(measured(0.75))
@@ -371,8 +384,10 @@ describe('DeveloperLensMethodTrialView.v1', () => {
     expect(parsed.scorecard.baseline.coverage_confound_false_alert_rate).toEqual(measured(0.5))
     expect(parsed.scorecard.candidate.coverage_confound_false_alert_rate).toEqual(measured(0.5))
     expect(parsed.scorecard.candidate.calibration_brier).toEqual(measured(0.017341137335170863))
-    expect(parsed.scorecard.threshold_selection.baseline.selected_value).toEqual(measured(2.5))
-    expect(parsed.scorecard.threshold_selection.candidate.selected_value).toEqual(measured(0.05))
+    expect(parsed.scorecard.threshold_selection).toMatchObject({
+      baseline: { viable: false, selected_value: measured(2.5) },
+      candidate: { viable: false, selected_value: measured(0.05) },
+    })
     expect(parsed.acceptance_gates.map((gate) => gate.outcome)).toEqual([
       'fail',
       'fail',
@@ -383,15 +398,38 @@ describe('DeveloperLensMethodTrialView.v1', () => {
       'pass',
     ])
     expect(parsed.decision.outcome).toBe('reject')
+    expect(parsed.decision.candidate_promoted).toBe(false)
+    expect(parsed.decision.fallback).toEqual({ method_code: 'rolling_median_mad', retained: true })
+    expect(parsed.decision.reason_codes).toEqual([
+      'BASELINE_SELECTION_VIABLE',
+      'CANDIDATE_SELECTION_VIABLE',
+      'CANDIDATE_FALSE_ALERT_IMPROVEMENT',
+    ])
+    expect(parsed.representative_selection).toMatchObject({
+      version: 'wbc1-final-holdout-v1',
+      partition: 'final_holdout',
+      planted_preference: ['level', 'slope', 'variance', 'seasonal_amplitude'],
+      confound_preference: ['parser_shift', 'coverage_gap', 'permission_shift'],
+      tie_break: 'lexicographically_lowest_stable_opaque_alias',
+      missing_role_policy: 'fail_export',
+      aliases_not_exposed: true,
+    })
     expect(parsed.representative_cases.map((representativeCase) => representativeCase.role)).toEqual([
       'no_change_control',
       'planted_change',
       'instrumentation_confound',
     ])
-    expect(parsed.representative_cases.map((representativeCase) => representativeCase.points.length)).toEqual([
-      104,
-      104,
-      104,
+    expect(
+      parsed.representative_cases.map(({ scenario_code, points }) => [
+        scenario_code,
+        points.length,
+        points[0]?.relative_week_label,
+        points.at(-1)?.relative_week_label,
+      ]),
+    ).toEqual([
+      ['no_change', 104, 'week-000', 'week-103'],
+      ['level', 104, 'week-000', 'week-103'],
+      ['parser_shift', 104, 'week-000', 'week-103'],
     ])
     expect(parsed.representative_cases[2].summary).toBe(
       'A fixed window exposes a parser shift and keeps instrumentation confounds explicit.',
