@@ -3391,20 +3391,20 @@ whitespace verification rather than represented as a second full code gate.
 Product contract commit `b48fea579936671397a0486ae7a0342197ee6e4b` closes the remaining public
 prose boundary: every narrative field now accepts only product-owned copy, and runtime Zod plus
 standalone AJV reject adversarial identity/review prose across all narrative shapes. Lab commit
-`796f85ea9ffb758bfb5575bd9c67ca40274bbcb0` synchronizes that schema, records producer provenance
+`5c79236beb0a0b25819f14510b79bb15813d7337` synchronizes that schema, records producer provenance
 per run, confines check-only reads, verifies same-byte later commits without rewriting source
 provenance, and materializes reports through the confined artifact writer.
 
 A new clean-worktree `wbc1_demo` benchmark/reproduce/export/report flow produced the exact tracked
 fixture without hand editing. Source and product bytes are identical at 167,935 bytes with SHA-256
-`dee7b6c2221eb2226e6b95363da752f1834994d64e95e328e530543ec4396435`. The schema,
+`26c3a9184adfce4ff5756e702b36d6db7af7c5f2dab9eb3eb3081ca598eafd95`. The schema,
 EvaluationBundle, custody, ResearchPack, Markdown, and HTML SHA-256 values are respectively
 `634b0cc7a0c3dbcefe8b9cf258e157695beae06d08cc9d02bb781a4267f633ef`,
-`1e55e5a6c053f6fae5bb863bf64d11680e1198cfa898d1e85b84eac75f4df095`,
+`cbd9415bf9e26683656259bcef5a402b1745570c2a31e5c44dbfee74cfaea75f`,
 `036f62f5f9ade272eba907513e7ab0bbef4a888bb1d86f8ae6e401aebd5c8238`,
 `bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`,
-`8785e5f694664964099f951f33ffe6b3fd920b91fcda7aff114506852a99ac9e`, and
-`0a8d7285411bec262bfdcc478020f11b69793cf732418aca9a2f03004f593e6f`.
+`8144410775717d8b280a41b95c18dd22a8de45c765186ecaeb1fd5c6745e30f0`, and
+`fca7aac3e567f6de84b6dd60f476e77bf2a18f7a20cefde4563856e6ada99eec`.
 The scientific result and no-promotion boundary are unchanged. Exact-head hosted gates and merge
 state are recorded only after they complete.
 

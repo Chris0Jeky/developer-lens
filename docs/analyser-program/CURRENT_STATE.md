@@ -35,15 +35,13 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'PR #187: the connector-repair round, closed public-copy boundary, and final local
-  product gates are green; finish the exact-head hosted gate, connector-thread triage, and merge,
-  then publish the lazy `?view=method-trial` rejection story with the
-  exact lab exhibit run `wbc1_demo` from lab commit `796f85e`. The committed fixture is invented C0
-  only; its exact exported SHA-256 is `dee7b6c2221eb2226e6b95363da752f1834994d64e95e328e530543ec4396435`.'
-next_value_slice: 'After #187 merges, publish the smallest lab follow-up PR containing the reviewed
-  MethodTrialView exporter and producer proof against already-merged lab PR #3. Demonstrate the
-  product/lab pair and close this bounded programme before considering the separate #174/#80 Phase E
-  bridge. Do not turn the follow-up into a generic research dashboard or EvaluationBundle parser.'
+active_slice: 'PR #187: finish the exact-head hosted/review gate and merge the lazy
+  `?view=method-trial` rejection story with the exact semantically accepted `wbc1_demo` export from
+  lab commit `5c79236`. The committed fixture is invented C0 only; its exact SHA-256 is
+  `26c3a9184adfce4ff5756e702b36d6db7af7c5f2dab9eb3eb3081ca598eafd95`.'
+next_value_slice: 'After #187 merges, finish and merge lab PR #8, demonstrate the product/lab pair,
+  and close this bounded programme before considering the separate #174/#80 Phase E bridge. Do not
+  turn the follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-WB-C1 Method Trial demo]
 blockers: 'No owner blocker for invented-fixture work. PR #187 still requires its exact final
