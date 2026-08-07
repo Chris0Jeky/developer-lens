@@ -3638,9 +3638,11 @@ ResearchPack schema (`research-contracts/research-pack/v1/schema.json`, produced
   impossible instant like `2026-02-30` that `CanonicalUtcSchema`/`canonicalUtcMicros` rejects) are
   documented as runtime-validation-only in a new `research-contracts/research-pack/v1/README.md` and a
   generator comment block. #181 stays open as the schema-parity parent that #182 defers to.
-- Four standalone Draft 2020-12 canaries (ajv2020, already a devDependency) assert BOTH the standalone
-  schema and the runtime Zod validator per case. Committed `schema.json` regenerated; the only fixture
-  delta is `provenance.contract_sha256`.
+- Four standalone Draft 2020-12 canaries (ajv2020, already a devDependency): the three invalid-case
+  canaries assert BOTH the standalone schema and the runtime Zod validator; the fixture-acceptance
+  canary asserts the standalone validator (runtime acceptance of the committed fixture is covered by the
+  pre-existing round-trip test). Committed `schema.json` regenerated; the only fixture delta is
+  `provenance.contract_sha256`.
 - Verified: full `npm run check` green (full suite 1466 tests / 10 skipped — 1462 prior + 4 new cases,
   as `shared/researchPack.test.ts` went 12→16 — plus `tsc -b` + `vite build` + `verify:no-secrets`);
   `check:research-pack` no drift; focused `shared/researchPack.test.ts` 16/16. Review: one fresh-context
