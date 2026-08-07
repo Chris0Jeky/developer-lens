@@ -72,7 +72,7 @@ function representativeCase(
     order,
     selection_rule: {
       code: selectionCode,
-      label: 'Fixed deterministic eight-week window',
+      label: 'Final holdout series selected by the declared deterministic rule',
       deterministic: true as const,
     },
     role: scenario,
@@ -144,29 +144,27 @@ function sample() {
       baseline: {
         false_alerts_per_year: measured(2.966666666666667),
         detection_rate: measured(0.75),
-        median_detection_delay_weeks: unavailable('not_measured'),
-        detection_delay_weeks: unavailable('not_measured'),
-        coverage_confound_false_alert_rate: measured(0),
+        median_detection_delay_weeks: measured(2),
+        coverage_confound_false_alert_rate: measured(0.5),
         calibration_brier: unavailable('not_applicable'),
       },
       candidate: {
         false_alerts_per_year: measured(4.2),
         detection_rate: measured(0.75),
-        median_detection_delay_weeks: measured(3),
-        detection_delay_weeks: measured(3),
+        median_detection_delay_weeks: measured(1),
         coverage_confound_false_alert_rate: measured(0.5),
         calibration_brier: measured(0.017341137335170863),
       },
       threshold_selection: {
         baseline: {
           viable: false,
-          selected_value: measured(3.5),
+          selected_value: measured(2.5),
           reason_code: 'frozen_best_available' as const,
           summary: 'No stable baseline configuration met the declared selection gate.',
         },
         candidate: {
           viable: false,
-          selected_value: measured(0.35),
+          selected_value: measured(0.05),
           reason_code: 'frozen_best_available' as const,
           summary: 'No stable candidate configuration met the declared selection gate.',
         },
@@ -205,7 +203,7 @@ function sample() {
         outcome: 'pass',
         reason_code: 'CANDIDATE_DELAY_BUDGET',
         reason: 'The candidate median delay remains inside the declared budget.',
-        relevant_values: { baseline: measured(0.75), candidate: measured(0.75) },
+        relevant_values: { baseline: measured(2), candidate: measured(1) },
       },
       {
         order: 5,
@@ -234,8 +232,8 @@ function sample() {
         label: 'Candidate confound guard',
         outcome: 'pass',
         reason_code: 'CANDIDATE_CONFOUND_GUARD',
-        reason: 'Coverage-confound false-alert rate is reported for both methods.',
-        relevant_values: { baseline: measured(0), candidate: measured(0.5) },
+        reason: 'Candidate coverage-confound false-alert rate does not exceed the baseline.',
+        relevant_values: { baseline: measured(0.5), candidate: measured(0.5) },
       },
     ] as const,
     decision: {
@@ -249,7 +247,7 @@ function sample() {
       ] as const,
       summary: 'Reject Gaussian BOCPD for this bounded C0 trial and retain the deterministic fallback.',
       why_simple_baseline_won:
-        'Detection was equal, the candidate added 1.2333 false alerts per year, and neither selected configuration was viable.',
+        'Detection was equal, the candidate produced more false alerts, and neither selected configuration was viable.',
     },
     representative_cases: [
       representativeCase(1, 'no_change_control'),
@@ -257,7 +255,7 @@ function sample() {
       representativeCase(3, 'instrumentation_confound'),
     ],
     representative_selection: {
-      version: 'v1' as const,
+      version: 'wbc1-final-holdout-v1' as const,
       partition: 'final_holdout' as const,
       planted_preference: ['level', 'slope', 'variance', 'seasonal_amplitude'] as const,
       confound_preference: ['parser_shift', 'coverage_gap', 'permission_shift'] as const,
@@ -309,7 +307,7 @@ function sample() {
       product_contract_commit: commit,
       product_research_pack_commit: commit,
       lab_commit: commit,
-      run_id: 'wbc1_method_trial_v1',
+      run_id: 'wbc1_demo',
       recipe_code: 'wbc1-smoke-c0-v1' as const,
       digests: {
         schema: digest,
@@ -318,10 +316,10 @@ function sample() {
         research_pack: digest,
       },
       commands: {
-        benchmark: 'uv run dllab benchmark wb-c1 --smoke --run-id wbc1_method_trial_v1',
-        reproduce: 'uv run dllab run reproduce wbc1_method_trial_v1',
+        benchmark: 'uv run dllab benchmark wb-c1 --smoke --run-id wbc1_demo',
+        reproduce: 'uv run dllab run reproduce wbc1_demo',
         export: 'uv run dllab demo export wbc1_demo --output product-fixture',
-        report: 'uv run dllab report build wbc1_method_trial_v1',
+        report: 'uv run dllab report build wbc1_demo',
       },
       verification: {
         local: 'passed' as const,
@@ -390,9 +388,10 @@ describe('DeveloperLensMethodTrialView.v1', () => {
     const countDrift = structuredClone(sample())
     countDrift.dataset.absent_count -= 1
     expect(MethodTrialViewSchema.safeParse(countDrift).success).toBe(false)
+    expect(validate(countDrift)).toBe(false)
 
     const oversized = structuredClone(sample())
-    oversized.representative_cases[0].points = Array.from({ length: 25 }, (_, index) =>
+    oversized.representative_cases[0].points = Array.from({ length: 105 }, (_, index) =>
       point(index, 'control'),
     )
     expect(MethodTrialViewSchema.safeParse(oversized).success).toBe(false)

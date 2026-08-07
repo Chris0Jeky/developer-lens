@@ -134,7 +134,6 @@ const MethodScoreSchema = z.strictObject({
   false_alerts_per_year: MeasurementSchema,
   detection_rate: ProbabilityMeasurementSchema,
   median_detection_delay_weeks: MeasurementSchema,
-  detection_delay_weeks: MeasurementSchema.optional(),
   coverage_confound_false_alert_rate: ProbabilityMeasurementSchema,
   calibration_brier: ProbabilityMeasurementSchema,
 })
@@ -317,7 +316,7 @@ const ClaimsSchema = z.strictObject({
 })
 
 const RepresentativeSelectionSchema = z.strictObject({
-  version: z.literal('v1'),
+  version: z.literal('wbc1-final-holdout-v1'),
   partition: z.literal('final_holdout'),
   planted_preference: z.tuple([
     z.literal('level'),
