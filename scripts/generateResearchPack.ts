@@ -92,6 +92,138 @@ function enrichStandaloneSchema(value: unknown): JsonSchemaObject {
       },
     },
   ]
+  const nonPresentStates = ['absent', 'unsupported', 'intentionally_omitted']
+  const notNull = { not: { const: null } }
+  for (const availabilityName of ['event', 'collection', 'feature'] as const) {
+    allOf.push({
+      if: {
+        properties: {
+          temporal_availability: {
+            properties: {
+              [availabilityName]: {
+                properties: { state: { const: 'present' } },
+                required: ['state'],
+              },
+            },
+          },
+        },
+        required: ['temporal_availability'],
+      },
+      then: {
+        $comment: 'Present availability requires a window and no reason_code.',
+        properties: {
+          temporal_availability: {
+            properties: {
+              [availabilityName]: {
+                properties: { window: notNull, reason_code: { const: null } },
+                required: ['window', 'reason_code'],
+              },
+            },
+          },
+        },
+      },
+    })
+    allOf.push({
+      if: {
+        properties: {
+          temporal_availability: {
+            properties: {
+              [availabilityName]: {
+                properties: { state: { enum: nonPresentStates } },
+                required: ['state'],
+              },
+            },
+          },
+        },
+        required: ['temporal_availability'],
+      },
+      then: {
+        $comment: 'Non-present availability requires a reason_code and no window.',
+        properties: {
+          temporal_availability: {
+            properties: {
+              [availabilityName]: {
+                properties: { window: { const: null }, reason_code: notNull },
+                required: ['window', 'reason_code'],
+              },
+            },
+          },
+        },
+      },
+    })
+  }
+  for (const relationName of RELATION_NAMES) {
+    const relationPath = {
+      properties: {
+        relations: {
+          properties: {
+            [relationName]: {
+              properties: { state: { const: 'present' } },
+              required: ['state'],
+            },
+          },
+        },
+      },
+      required: ['relations'],
+    }
+    allOf.push({
+      if: relationPath,
+      then: {
+        $comment: 'Present relations require schema_id, row_count, Parquet artifact, and no reason_code.',
+        properties: {
+          relations: {
+            properties: {
+              [relationName]: {
+                properties: {
+                  schema_id: notNull,
+                  row_count: notNull,
+                  artifact: {
+                    ...notNull,
+                    properties: { media_type: { const: 'application/x-parquet' } },
+                  },
+                  reason_code: { const: null },
+                },
+                required: ['schema_id', 'row_count', 'artifact', 'reason_code'],
+              },
+            },
+          },
+        },
+      },
+    })
+    allOf.push({
+      if: {
+        properties: {
+          relations: {
+            properties: {
+              [relationName]: {
+                properties: { state: { enum: nonPresentStates } },
+                required: ['state'],
+              },
+            },
+          },
+        },
+        required: ['relations'],
+      },
+      then: {
+        $comment: 'Non-present relations require a reason_code and no schema, count, or artifact.',
+        properties: {
+          relations: {
+            properties: {
+              [relationName]: {
+                properties: {
+                  schema_id: { const: null },
+                  row_count: { const: null },
+                  artifact: { const: null },
+                  reason_code: notNull,
+                },
+                required: ['schema_id', 'row_count', 'artifact', 'reason_code'],
+              },
+            },
+          },
+        },
+      },
+    })
+  }
   for (const relationName of RELATION_NAMES.filter((name) => name !== 'coverage')) {
     allOf.push({
       if: {
