@@ -13,6 +13,8 @@
     "seed:v2": "tsx server/api/v2/syntheticImporter.ts",
     "store:lifecycle": "tsx scripts/storeLifecycle.ts",
     "render:social": "tsx scripts/renderSocialCard.ts",
+    "generate:research-pack": "tsx scripts/generateResearchPack.ts",
+    "check:research-pack": "tsx scripts/generateResearchPack.ts --check",
     "build": "tsc -b && vite build && npm run verify:no-secrets",
     "build:showcase": "npm run export:demo && npm run render:social && tsc -b && vite build --base=/developer-lens/ --mode showcase && npm run verify:showcase",
     "start": "tsx server/index.ts --production",
@@ -23,7 +25,7 @@
     "verify:context": "tsx scripts/verifyProjectContext.ts",
     "verify:no-secrets": "tsx scripts/verifyNoSecretsInDist.ts",
     "verify:showcase": "tsx scripts/verifyShowcase.ts",
-    "check": "npm run lint && npm run verify:context && npm run test && npm run build"
+    "check": "npm run lint && npm run verify:context && npm run check:research-pack && npm run test && npm run build"
   },
   "dependencies": {
     "@duckdb/node-api": "1.5.5-r.3",
