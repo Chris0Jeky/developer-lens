@@ -11,6 +11,7 @@ import {
 } from './methodTrialView.js'
 
 const schemaPath = resolve('research-contracts', 'method-trial-view', 'v1', 'schema.json')
+const fixturePath = resolve('research-contracts', 'method-trial-view', 'v1', 'wbc1.fixture.json')
 const digest = `sha256:${'a'.repeat(64)}`
 const commit = 'b'.repeat(40)
 
@@ -342,6 +343,97 @@ describe('DeveloperLensMethodTrialView.v1', () => {
     const schemaText = await readFile(schemaPath, 'utf8')
     expect(schemaText).toBe(renderMethodTrialViewSchema())
     expect((await standaloneValidator())(value)).toBe(true)
+  })
+
+  it('accepts and pins the canonical invented WB-C1 fixture', async () => {
+    const fixtureText = await readFile(fixturePath, 'utf8')
+    const value: unknown = JSON.parse(fixtureText)
+    const parsed = MethodTrialViewSchema.parse(value)
+
+    expect((await standaloneValidator())(value)).toBe(true)
+    expect(fixtureText.endsWith('\n')).toBe(true)
+    expect(fixtureText.endsWith('\n\n')).toBe(false)
+    expect(fixtureText).not.toContain('"system_alias"')
+    expect(fixtureText).not.toContain('"generator_seed"')
+    expect(parsed.dataset).toMatchObject({
+      system_count: 54,
+      weekly_opportunity_count: 5616,
+      observed_count: 5346,
+      absent_count: 270,
+    })
+    expect(parsed.scorecard.baseline).toEqual({
+      calibration_brier: { status: 'unavailable', reason: 'not_applicable' },
+      coverage_confound_false_alert_rate: { status: 'measured', value: 0.5 },
+      detection_rate: { status: 'measured', value: 0.75 },
+      false_alerts_per_year: { status: 'measured', value: 2.966666666666667 },
+      median_detection_delay_weeks: { status: 'measured', value: 2 },
+    })
+    expect(parsed.scorecard.candidate).toEqual({
+      calibration_brier: { status: 'measured', value: 0.017341137335170863 },
+      coverage_confound_false_alert_rate: { status: 'measured', value: 0.5 },
+      detection_rate: { status: 'measured', value: 0.75 },
+      false_alerts_per_year: { status: 'measured', value: 4.2 },
+      median_detection_delay_weeks: { status: 'measured', value: 1 },
+    })
+    expect(parsed.scorecard.threshold_selection).toMatchObject({
+      baseline: { viable: false, selected_value: { status: 'measured', value: 2.5 } },
+      candidate: { viable: false, selected_value: { status: 'measured', value: 0.05 } },
+    })
+    expect(parsed.decision).toMatchObject({
+      outcome: 'reject',
+      candidate_promoted: false,
+      fallback: { method_code: 'rolling_median_mad', retained: true },
+      reason_codes: [
+        'BASELINE_SELECTION_VIABLE',
+        'CANDIDATE_SELECTION_VIABLE',
+        'CANDIDATE_FALSE_ALERT_IMPROVEMENT',
+      ],
+    })
+    expect(parsed.acceptance_gates.map(({ code, outcome, reason_code }) => [
+      code,
+      outcome,
+      reason_code,
+    ])).toEqual([
+      ['baseline_selection', 'fail', 'BASELINE_SELECTION_VIABLE'],
+      ['candidate_selection', 'fail', 'CANDIDATE_SELECTION_VIABLE'],
+      ['detection_floor', 'pass', 'CANDIDATE_DETECTION_FLOOR'],
+      ['delay_budget', 'pass', 'CANDIDATE_DELAY_BUDGET'],
+      ['false_alert_improvement', 'fail', 'CANDIDATE_FALSE_ALERT_IMPROVEMENT'],
+      ['not_worse_detection', 'pass', 'CANDIDATE_NOT_WORSE_DETECTION'],
+      ['confound_guard', 'pass', 'CANDIDATE_CONFOUND_GUARD'],
+    ])
+    expect(parsed.representative_selection).toMatchObject({
+      version: 'wbc1-final-holdout-v1',
+      partition: 'final_holdout',
+      planted_preference: ['level', 'slope', 'variance', 'seasonal_amplitude'],
+      confound_preference: ['parser_shift', 'coverage_gap', 'permission_shift'],
+      tie_break: 'lexicographically_lowest_stable_opaque_alias',
+      missing_role_policy: 'fail_export',
+      aliases_not_exposed: true,
+    })
+    expect(
+      parsed.representative_cases.map(({ scenario_code, points }) => [
+        scenario_code,
+        points.length,
+        points[0]?.relative_week_label,
+        points.at(-1)?.relative_week_label,
+      ]),
+    ).toEqual([
+      ['no_change', 104, 'week-000', 'week-103'],
+      ['level', 104, 'week-000', 'week-103'],
+      ['parser_shift', 104, 'week-000', 'week-103'],
+    ])
+    expect(parsed.reproducibility).toMatchObject({
+      product_contract_commit: '2fd1637156eae378a5bc0da8401873618ccb8b42',
+      product_research_pack_commit: 'be9c2451e983e776850c4cd4700cc8c234ea5e14',
+      lab_commit: '9ae6b6eeca7172ae0a228a701c9e01c59d783706',
+      run_id: 'wbc1_demo',
+      digests: {
+        schema: 'sha256:86cf53a48660967c07329f02be01c05d773c16ac96c28ddcd8110aed3b827fdc',
+        evaluation_bundle:
+          'sha256:9497073c03516ed04c8ea2c304d4ce8f30055e3be44d3b760d16892ea778c46e',
+      },
+    })
   })
 
   it('rejects unknown fields, missing-state inconsistencies, and unavailable fake zeroes', async () => {
