@@ -38,12 +38,12 @@ function point(index: number, scenario: 'control' | 'planted' | 'confound') {
     baseline: {
       alert: !missing && index === 5,
       score: missing ? unavailable() : measured(0.2),
-      threshold: measured(3.5),
+      threshold: measured(2.5),
     },
     candidate: {
       probability: missing ? unavailable() : measured(0.2),
       alert: !missing && index === 6,
-      threshold: measured(0.35),
+      threshold: measured(0.05),
     },
     pelt_marker: {
       evaluation_mode: 'offline_descriptive' as const,
