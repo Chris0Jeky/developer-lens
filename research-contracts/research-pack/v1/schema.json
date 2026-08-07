@@ -411,7 +411,7 @@
         ]
       },
       "then": {
-        "$comment": "Present relations require schema_id, row_count, Parquet artifact, and no reason_code.",
+        "$comment": "Present relations require the relation-specific schema_id, row_count, Parquet artifact, and no reason_code.",
         "properties": {
           "relations": {
             "properties": {
@@ -436,9 +436,7 @@
                     }
                   },
                   "schema_id": {
-                    "not": {
-                      "const": null
-                    }
+                    "const": "developer-lens.coverage.v1"
                   }
                 },
                 "required": [
@@ -536,7 +534,7 @@
         ]
       },
       "then": {
-        "$comment": "Present relations require schema_id, row_count, Parquet artifact, and no reason_code.",
+        "$comment": "Present relations require the relation-specific schema_id, row_count, Parquet artifact, and no reason_code.",
         "properties": {
           "relations": {
             "properties": {
@@ -561,9 +559,7 @@
                     }
                   },
                   "schema_id": {
-                    "not": {
-                      "const": null
-                    }
+                    "const": "developer-lens.repository-week.v1"
                   }
                 },
                 "required": [
@@ -661,7 +657,7 @@
         ]
       },
       "then": {
-        "$comment": "Present relations require schema_id, row_count, Parquet artifact, and no reason_code.",
+        "$comment": "Present relations require the relation-specific schema_id, row_count, Parquet artifact, and no reason_code.",
         "properties": {
           "relations": {
             "properties": {
@@ -686,9 +682,7 @@
                     }
                   },
                   "schema_id": {
-                    "not": {
-                      "const": null
-                    }
+                    "const": "developer-lens.pr-episode.v1"
                   }
                 },
                 "required": [
@@ -786,7 +780,7 @@
         ]
       },
       "then": {
-        "$comment": "Present relations require schema_id, row_count, Parquet artifact, and no reason_code.",
+        "$comment": "Present relations require the relation-specific schema_id, row_count, Parquet artifact, and no reason_code.",
         "properties": {
           "relations": {
             "properties": {
@@ -811,9 +805,7 @@
                     }
                   },
                   "schema_id": {
-                    "not": {
-                      "const": null
-                    }
+                    "const": "developer-lens.ci-attempt.v1"
                   }
                 },
                 "required": [
@@ -911,7 +903,7 @@
         ]
       },
       "then": {
-        "$comment": "Present relations require schema_id, row_count, Parquet artifact, and no reason_code.",
+        "$comment": "Present relations require the relation-specific schema_id, row_count, Parquet artifact, and no reason_code.",
         "properties": {
           "relations": {
             "properties": {
@@ -936,9 +928,7 @@
                     }
                   },
                   "schema_id": {
-                    "not": {
-                      "const": null
-                    }
+                    "const": "developer-lens.release-episode.v1"
                   }
                 },
                 "required": [
@@ -1036,7 +1026,7 @@
         ]
       },
       "then": {
-        "$comment": "Present relations require schema_id, row_count, Parquet artifact, and no reason_code.",
+        "$comment": "Present relations require the relation-specific schema_id, row_count, Parquet artifact, and no reason_code.",
         "properties": {
           "relations": {
             "properties": {
@@ -1061,9 +1051,7 @@
                     }
                   },
                   "schema_id": {
-                    "not": {
-                      "const": null
-                    }
+                    "const": "developer-lens.collection-probe.v1"
                   }
                 },
                 "required": [
@@ -1161,7 +1149,7 @@
         ]
       },
       "then": {
-        "$comment": "Present relations require schema_id, row_count, Parquet artifact, and no reason_code.",
+        "$comment": "Present relations require the relation-specific schema_id, row_count, Parquet artifact, and no reason_code.",
         "properties": {
           "relations": {
             "properties": {
@@ -1186,9 +1174,7 @@
                     }
                   },
                   "schema_id": {
-                    "not": {
-                      "const": null
-                    }
+                    "const": "developer-lens.system-event.v1"
                   }
                 },
                 "required": [
