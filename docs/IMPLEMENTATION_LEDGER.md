@@ -1,8 +1,8 @@
 # Developer Lens implementation ledger
 
 Last updated: **2026-08-07** (MethodTrialView accessible-missing-state rendering hardening — #189
-rendering subset; the bounded WB-C1 programme is closed — lab PR #8 merged and the product/lab pair
-demonstrated green on both sides. Prior same day: hosted PR gate drift steps — PR #194 / issue #193;
+rendering subset, PR #196 merge `63354ef`; the bounded WB-C1 programme is closed — lab PR #8 merged and
+the product/lab pair demonstrated green on both sides. Prior same day: hosted PR gate drift steps — PR #194 / issue #193;
 dual-runtime Claude harness — see the dated sections at the end)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
@@ -3595,8 +3595,22 @@ debt, none dependency-forced.
   decision-paragraph detection-gain coherence gap (P2, code, above); the byte-identical overclaim (P2,
   corrected above); and three resume-artifact fixes on CURRENT_STATE — internal active-slice
   consistency, a recommended next bounded slice, and removing a reference to a `cross-repo-contract`
-  skill that is not committed in this repo. Fixes pushed to a new head; re-proved below.
+  skill that is not committed in this repo.
+- Re-proved on the fix head `d805b8d`: full `npm run check` green (1462 tests pass / 10 skipped,
+  `tsc -b` + `vite build` + `verify:no-secrets`), focused `MethodTrialRoute.test.tsx` 7/7,
+  `verify:context` green, `git diff --check` clean, plus a scoped fresh-context `dl-reviewer` pass on
+  the incremental fix diff (no CRITICAL/HIGH/MEDIUM; one LOW — the resume artifact's post-merge voice,
+  accepted as the deliberate resolution of the internal-consistency finding). The exact-head Codex
+  round on `d805b8d` (review 21:37Z) returned three P2s, all triaged under the two-round ceiling: the
+  ledger post-fix-proof gap (fixed by this paragraph), plus two tracked, non-blocking follow-ups that
+  affect only constructed schema-valid variants (the committed C0 fixture triggers neither) — (i) the
+  timeline text alternative marks each missing/marked run's onset and a collapsed count but not where
+  the run ends/resumes (folded into the #189 accessible-rendering follow-up), and (ii) an unavailable
+  candidate false-alert measurement makes the neutralized headline/emphasis disagree with the fixed
+  `publicCopy` gate reason / `decision.why_simple_baseline_won` / supported claim, whose real fix is the
+  deferred #189 validator-parity subset because rendering must not override validated schema data. PR
+  #196 merged as merge commit `63354ef` at 2026-08-07T21:44Z; the immediate post-merge sweep was clean.
 - NOT verified: no browser/visual screenshot (the change is proven by segment-count and text
-  assertions, not pixels); the hosted `Prove the pull request` result is recorded at merge (live Git/CI
-  outrank). No capability, source, or publication boundary changed; `cap.external.model` and
+  assertions, not pixels); the hosted `Prove the pull request` result is green at both #196 heads
+  (`dad2c0e` and final `d805b8d`, 2m27s) per the checks API. Live Git/CI still outrank. No capability, source, or publication boundary changed; `cap.external.model` and
   registry/API capabilities remain `never_authorized`. Rendering-only, synthetic-only, no fetch path.
