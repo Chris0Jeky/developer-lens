@@ -346,34 +346,74 @@ describe('DeveloperLensMethodTrialView.v1', () => {
 
     expect(validate(fixture), JSON.stringify(validate.errors)).toBe(true)
     expect(createHash('sha256').update(fixtureText, 'utf8').digest('hex')).toBe(
-      '8a3f07f40b082b10632fc1fd777d5e020768156af7b67b4914a84d94769a55dd',
+      '43ceaccc47e152bb6eaf5c18368e1dc7a5ee6eab2eb9f5db8594f82c8266bbcb',
     )
+    expect(fixtureText.endsWith('\n')).toBe(true)
+    expect(fixtureText.endsWith('\n\n')).toBe(false)
+    expect(fixtureText).not.toContain('"system_alias"')
+    expect(fixtureText).not.toContain('"generator_seed"')
     expect(parsed.reproducibility.product_contract_commit).toBe(
       '3ac919f6129374acae564883ef9196c1d4aaf54c',
     )
-    expect(parsed.reproducibility.lab_commit).toBe('5c0a8814bc3df94383d6b947898952a273c6c449')
-    expect(parsed.reproducibility.run_id).toBe('wbc1_method_trial_v1_exhibit')
+    expect(parsed.reproducibility.lab_commit).toBe('449241c3747f14000e1f570531b12b781f8e60a7')
+    expect(parsed.reproducibility.run_id).toBe('wbc1_demo')
     expect(parsed.reproducibility.digests.schema).toBe(
       'sha256:86cf53a48660967c07329f02be01c05d773c16ac96c28ddcd8110aed3b827fdc',
     )
+    expect(parsed.reproducibility.digests.evaluation_bundle).toBe(
+      'sha256:eeb678c0445ba15ee5a9acbff7008f79ffa22fd739f2c68f1eb7275b8e58ab69',
+    )
+    expect(parsed.dataset).toMatchObject({
+      system_count: 54,
+      weekly_opportunity_count: 5616,
+      observed_count: 5346,
+      absent_count: 270,
+    })
     expect(parsed.scorecard.baseline.false_alerts_per_year).toEqual(measured(2.966666666666667))
     expect(parsed.scorecard.candidate.false_alerts_per_year).toEqual(measured(4.2))
     expect(parsed.scorecard.baseline.detection_rate).toEqual(measured(0.75))
     expect(parsed.scorecard.candidate.detection_rate).toEqual(measured(0.75))
     expect(parsed.scorecard.candidate.calibration_brier).toEqual(measured(0.017341137335170863))
+    expect(parsed.scorecard.threshold_selection).toMatchObject({
+      baseline: { viable: false, selected_value: measured(2.5) },
+      candidate: { viable: false, selected_value: measured(0.05) },
+    })
     expect(parsed.decision.outcome).toBe('reject')
+    expect(parsed.decision.candidate_promoted).toBe(false)
+    expect(parsed.decision.fallback).toEqual({ method_code: 'rolling_median_mad', retained: true })
+    expect(parsed.decision.reason_codes).toEqual([
+      'BASELINE_SELECTION_VIABLE',
+      'CANDIDATE_SELECTION_VIABLE',
+      'CANDIDATE_FALSE_ALERT_IMPROVEMENT',
+    ])
+    expect(parsed.representative_selection).toMatchObject({
+      version: 'wbc1-final-holdout-v1',
+      partition: 'final_holdout',
+      planted_preference: ['level', 'slope', 'variance', 'seasonal_amplitude'],
+      confound_preference: ['parser_shift', 'coverage_gap', 'permission_shift'],
+      tie_break: 'lexicographically_lowest_stable_opaque_alias',
+      missing_role_policy: 'fail_export',
+      aliases_not_exposed: true,
+    })
     expect(parsed.representative_cases.map((representativeCase) => representativeCase.role)).toEqual([
       'no_change_control',
       'planted_change',
       'instrumentation_confound',
     ])
-    expect(parsed.representative_cases.map((representativeCase) => representativeCase.points.length)).toEqual([
-      104,
-      104,
-      104,
+    expect(
+      parsed.representative_cases.map(({ scenario_code, points }) => [
+        scenario_code,
+        points.length,
+        points[0]?.relative_week_label,
+        points.at(-1)?.relative_week_label,
+      ]),
+    ).toEqual([
+      ['no_change', 104, 'week-000', 'week-103'],
+      ['level', 104, 'week-000', 'week-103'],
+      ['parser_shift', 104, 'week-000', 'week-103'],
     ])
     expect(parsed.representative_cases[2].summary).toBe(
-      'A fixed window exposes a parser shift and keeps instrumentation confounds explicit.',
+      'The full 104-week holdout series exposes an instrument shift explicitly.',
     )
   })
 
