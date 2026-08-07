@@ -1,7 +1,8 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-05** (LIFE-02 §7 simplification: inert continuity/owner-PKI chain deleted,
-PR #111/#109 acceptance-seam defects fixed, late-review-timing record corrected)
+Last updated: **2026-08-07** (dual-runtime Claude harness: CLAUDE.md canon + thin AGENTS.md
+adapter, Claude settings/skill/agent pins, verify:context parity enforcement — see the dated
+section at the end; prior: 2026-08-05 LIFE-02 §7 simplification)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -3468,3 +3469,29 @@ EvaluationBundle, custody, ResearchPack, Markdown, and HTML digests are respecti
 The seven gates, rejection reasons, metrics, three 104-point cases, no-alias/no-seed boundary, and
 deterministic fallback are byte-for-byte unchanged. This correction must pass its own product gate
 and merge before lab PR #8; neither result is inferred by this entry.
+
+## 2026-08-07 — Dual-runtime Claude harness
+
+- PR #191 merged with merge commit `dcf5897b` after two bounded review rounds (one independent
+  fresh-context adversarial pass, two Codex rounds triaged). `CLAUDE.md` became the shared canon
+  (cold start, source-of-truth map, authority boundary, protected-data rule, run/prove table,
+  Claude routing); `AGENTS.md` slimmed to a thin Codex adapter with an inline protected-data
+  summary and the Luna swarm-routing deltas.
+- Claude runtime added: committed `.claude/settings.json` (acceptEdits + protected-path Read
+  denies on `.developer-lens/`, `dist/`, `public/data/`), the `developer-lens-continuation`
+  skill, and pinned agents `dl-implementer`/`dl-reviewer` (Opus 4.8 high; owner decision recorded
+  as HUMAN_TODO q-9) and `dl-mechanic` (Sonnet 4.6 high).
+- `verify:context` now requires the Claude files and the three agent-pin files to exist
+  (existence only — pin frontmatter is not parsed), enforces CLAUDE.md's 100-line
+  budget and exact G4 markers (`gpt-5.6-luna`, `cap.external.model` `never_authorized`), scans
+  `.claude/**` links (ignoring `node_modules` and `.claude/worktrees`), and fails on committed
+  `bypassPermissions` or a tracked `settings.local.json`.
+- Review rounds also fixed both continuation skills to resume and select slices from
+  `docs/analyser-program/CURRENT_STATE.md` (the ledger is history, never the task source) and
+  retargeted stale AGENTS.md pointers in the Codex skill, CURRENT_STATE `authority_order`,
+  `pr-gate.yml`, and README.
+- Verified: hosted `Prove the pull request` green at `2f0cc3e` and `b36fbe4`; local
+  verify:context, oxlint, validation tests 5/5, `tsc -b`. NOT verified: the aggregate
+  `npm run check` was not executed anywhere for these heads — the hosted gate runs its own step
+  set, which omits `check:research-pack` and `check:method-trial-view`; `effort:` frontmatter key
+  semantics (model pins are the enforced part). No capability, source, or publication boundary changed.
