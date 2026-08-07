@@ -30,6 +30,9 @@ public/data/dashboard-*.json
 # Test and coverage output.
 coverage/
 
+# Machine-local Claude trust settings. Never commit; bypassPermissions lives only here.
+.claude/settings.local.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
