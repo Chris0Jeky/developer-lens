@@ -9,9 +9,10 @@ file can resume deleted work (PR #127 late review).
 ```yaml
 updated: 2026-08-07
 current_slice_override: 'LIFE-03 revocation replay, its large-scope repair, and seven-day physical
-  expiry cleanup are merged through PRs #179/#184/#185; origin/main is `095164896ed40ac0f2d0c521ad68d672e21e9987`.
+  expiry cleanup are merged through PRs #179/#184/#185. The Linux storage-gate repair PR #186 is
+  merged as `f576fc4c234426e3ba737e4a7bd888ce0fd8f624` and restores the required main gate.
   The only open product PR is #178, the ResearchPack v1 C0 producer dependency for lab PR #3. It is
-  being refreshed onto main and bounded to the current person/construct identifier blocker; #181/#182
+  refreshed onto main and closes the current person/construct identifier blocker; #181/#182
   retain broader schema and semantic refinements. The principal owner-directed value slice is the
   offline Method Trial presentation of the rejected WB-C1 candidate after #178 merges.'
 phase: 'Integrated synthetic Method Trial demo active. The product-owned ResearchPack producer lands
@@ -32,7 +33,8 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   atomic reader selection/grace #162/PR #164, rollback floor #166/PR #167,
   external immutable selection marker PR #169, restore PR #171, success/grace proof PR #175,
   selection-proof durability PR #176, tombstone replay #172/PR #179,
-  large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185',
+  large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
+  Linux storage-gate repair PR #186',
   'state syncs #126']
 active_slice: 'ResearchPack v1 producer PR #178: steward the refreshed branch, preserve the exact seven-slot
   deterministic C0 fixture, and reject ordinary plural/camel/concatenated person-subject identifiers
@@ -45,9 +47,9 @@ next_value_slice: 'After #178 merges, create one principal product PR for the
   it does not create a generic research dashboard.'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-WB-C1 Method Trial demo]
-blockers: 'No owner blocker for invented-fixture work. PR #178''s required Prove the pull request
-  check was skipped during the Actions outage; no current authority extends a hosted-gate exception
-  to this PR, so merge waits for green hosted proof. Lab PR #3 depends on that exact product contract.
+blockers: 'No owner blocker for invented-fixture work. PR #178 is refreshed onto the gate-repair
+  main merge and still requires a green exact-head Prove the pull request result after its final push;
+  no hosted-gate exception is being used. Lab PR #3 depends on that exact product contract.
   A real migration/connector still requires the remaining pre-activation #168 contract items and a
   separately reviewed production grant issuer/caller. LIFE-02/#80 and Phase-E #174 remain open and
   outside this demo programme.'
