@@ -8,16 +8,17 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-07
-current_slice_override: 'The WB-C1 Method Trial demo product side is COMPLETE: PR #187 (`7b22491`)
-  landed the contract, lazy route, and rejection story, and the evidence-only follow-up PR #190
-  (`8de65a2`) pinned the integrated `wbc1_demo` export from lab producer `0ef1930` (invented C0,
-  verification status honestly `not_run`). The dual-runtime harness milestone then merged (PR #191
-  `dcf5897`, ledger sync PR #192 `e97f17d`). Current bounded slice: harden the hosted PR gate so the
-  required `Prove the pull request` job runs the same generated-artifact drift guards as the local
-  `npm run check` aggregate (issue #193; branch `claude/pr-gate-drift-checks`).'
-phase: 'WB-C1 Method Trial demo shipped product-side; hardening the hosted proving gate (issue #193)
-  and reconciling this resume artifact. No real migration, source activation, private output,
-  stored-observation exporter, external model call, or model promotion is part of this programme.'
+current_slice_override: 'No active product-repo implementation slice in this checkout. The WB-C1
+  Method Trial demo product side is COMPLETE (PR #187 `7b22491`, follow-up PR #190 `8de65a2`, invented
+  C0, verification honestly `not_run`); the dual-runtime harness milestone merged (PR #191 `dcf5897`,
+  ledger sync PR #192 `e97f17d`); and the hosted PR gate now runs explicit ResearchPack +
+  MethodTrialView drift-check steps for local/gate parity (issue #193 CLOSED via PR #194 `24f55d4` —
+  the `shared/*` test suite already caught that drift, so this added explicitness, not a missing
+  guard). The next value work is cross-repo (see next_value_slice) and not in this repo.'
+phase: 'WB-C1 Method Trial demo shipped product-side and the hosted proving gate hardened (#193). No
+  active product-repo slice; next value work is the cross-repo lab close-out. No real migration,
+  source activation, private output, stored-observation exporter, external model call, or model
+  promotion is part of this programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -35,12 +36,12 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'Branch `claude/pr-gate-drift-checks`: add `check:research-pack` and
-  `check:method-trial-view` steps to `.github/workflows/pr-gate.yml` so the required hosted gate
-  fails closed on committed-C0-artifact drift (issue #193). Both `--check` commands pass at the
-  branch base (`e97f17d`), so the new steps are green, not red on pre-existing drift. Besides the
-  workflow the only change is docs-state sync: this artifact. The prior
-  `codex/method-trial-final-evidence` slice merged as PR #190 (`8de65a2`).'
+active_slice: 'None active in this checkout. Last product-repo slice: PR #194 (`24f55d4`) added the
+  `check:research-pack` and `check:method-trial-view` drift-check steps to
+  `.github/workflows/pr-gate.yml` and reconciled this artifact; it merged on its pre-merge gates
+  (hosted Prove green at final head `a593e1d`, one fresh-context review, one triaged Codex P2, the
+  aging floor, and the 15-minute window with a fresh pre-merge sweep), then had a clean post-merge
+  sweep. The prior `codex/method-trial-final-evidence` slice merged as PR #190 (`8de65a2`).'
 next_value_slice: 'Cross-repo (SEPARATE `developer-lens-lab` sibling checkout, not this repo): finish
   and merge lab PR #8, demonstrate the product/lab pair, and close this bounded programme before
   considering the separate #174/#80 Phase E bridge. Do not turn the follow-up into a generic
@@ -48,14 +49,14 @@ next_value_slice: 'Cross-repo (SEPARATE `developer-lens-lab` sibling checkout, n
   (MethodTrialView v2 hardening — future), #181/#182 (ResearchPack refinements).'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-WB-C1 Method Trial demo — product side COMPLETE (#187/#190); remaining close-out is cross-repo lab PR #8]
-blockers: 'No owner blocker for invented-fixture or CI-gate-hardening work. The #193 gate slice needs an
-  exact-head hosted Prove result, one fresh-context review, the 3-minute aging floor, AND the binding
-  review-timing gate stated below (`review_timing_defect`): merge only once the exact-final-head Codex
-  review has arrived and every finding is fixed/tracked/rejected, OR 15 minutes have passed since the
-  last push with a fresh clean sweep — any fix push restarts that clock. Lab PR #3 merged without the
-  exporter due to concurrent external action; this is a sequencing deviation, not evidence that the
-  exporter landed. A real migration/connector still requires #168 and a separately reviewed production
-  grant issuer/caller. #80/#174 remain outside this demo programme.'
+blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. No product-repo slice is in
+  flight. The binding review-timing gate stated below (`review_timing_defect`) governs any merge:
+  exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the
+  exact-final-head Codex review triaged or 15 minutes since the last push with a fresh clean sweep —
+  any fix push restarts that clock. Lab PR #3 merged without the exporter due to concurrent external
+  action; this is a sequencing deviation, not evidence that the exporter landed. A real
+  migration/connector still requires #168 and a separately reviewed production grant issuer/caller.
+  #80/#174 remain outside this demo programme.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'

@@ -1,8 +1,9 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-07** (dual-runtime Claude harness: CLAUDE.md canon + thin AGENTS.md
-adapter, Claude settings/skill/agent pins, verify:context parity enforcement — see the dated
-section at the end; prior: 2026-08-05 LIFE-02 §7 simplification)
+Last updated: **2026-08-07** (hosted PR gate now runs explicit ResearchPack + MethodTrialView
+drift-check steps for local/gate parity — PR #194 / issue #193, though the `shared/*` test suite
+already caught that drift; prior same day: dual-runtime Claude harness — see the dated sections at
+the end)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -3495,3 +3496,50 @@ and merge before lab PR #8; neither result is inferred by this entry.
   `npm run check` was not executed anywhere for these heads — the hosted gate runs its own step
   set, which omits `check:research-pack` and `check:method-trial-view`; `effort:` frontmatter key
   semantics (model pins are the enforced part). No capability, source, or publication boundary changed.
+
+## 2026-08-07 — Hosted PR gate: explicit generated-artifact drift steps (#193)
+
+PR #194 merged as merge commit `24f55d4d3685964dbf5edcf866e38a65d5e251a1` (branch
+`claude/pr-gate-drift-checks`, final head `a593e1d`; three commits over `e97f17d..a593e1d` —
+`93dc67a`, `e4d6903`, `a593e1d`). `.github/workflows/pr-gate.yml`
+now runs `npm run check:research-pack` and `npm run check:method-trial-view` beside the existing
+planning-artifact drift guard, so the branch-protection-required `Prove the pull request` job carries
+the same explicit generated-artifact drift steps as the local `npm run check` aggregate. Both
+`--check` commands are non-mutating and need no secrets, network, or real data. Issue #193 closed as
+COMPLETED.
+
+**Rationale correction (from the PR #195 review, verified here).** Issue #193's premise — that the
+required job could stay green while a committed ResearchPack or MethodTrialView artifact drifted — was
+inaccurate, and so was PR #194's original "strictly stricter / could stay green" wording. The gate
+already ran `npm test` (`vitest run`, whose include covers `shared/**/*.test.ts`), and two
+unconditional tests already failed closed on that drift: `shared/researchPack.test.ts` compares
+`renderResearchPackFiles()` byte-for-byte against the committed schema and fixture, and
+`shared/methodTrialView.test.ts` compares `renderMethodTrialViewSchema()` against the committed schema
+and pins the committed fixture by SHA-256. The two new steps therefore add explicitness, earlier and
+dedicated failure attribution, step-list parity with local `npm run check`, and defense-in-depth were
+a drift test ever removed — but they do not close a previously-open hole. The change is benign and was
+left merged; only the rationale is corrected.
+
+The same slice reconciled `docs/analyser-program/CURRENT_STATE.md`, which still described the merged
+PR #190 evidence correction as *in review* and pointed a resuming agent at the merged branch
+`codex/method-trial-final-evidence`. It now records the WB-C1 Method Trial demo as product-side
+complete (#187 `7b22491`, #190 `8de65a2`), the dual-runtime harness milestone as merged (#191
+`dcf5897`, #192 `e97f17d`), and the cross-repo lab PR #8 close-out as the next value slice.
+
+- Verified: hosted `Prove the pull request` green at both #194 heads — `e4d6903` (2m42s) and final
+  `a593e1d` (2m47s); the two new steps confirmed `completed/success` in the run-31202386995 job step
+  list (executed, not skipped). Local at base: `check:research-pack` and `check:method-trial-view`
+  exit 0 (no drift), `verify:context` passed (32 md / 18 required), `git diff --check` clean,
+  `pr-gate.yml` parses as valid YAML (11 steps). The pre-existing `shared/*` drift coverage was
+  confirmed by reading both test files (unconditional `it()`s comparing render output to the committed
+  bytes).
+- Review: one fresh-context `dl-reviewer` adversarial pass on #194, no merge-blocking findings. Codex
+  P2s: on #194 the reconciled `blockers` checklist understated the binding review-timing gate (fixed
+  in `a593e1d`); #194 then merged on its pre-merge gates — CI green at `a593e1d`, the aging floor, and
+  the 15-minute post-push window with a fresh pre-merge sweep showing no new review — and was followed
+  by a clean post-merge sweep. On #195 the rationale overstatement above, plus the commit count and
+  this same pre-merge/post-merge sweep distinction, were flagged by Codex and corrected in this entry.
+- NOT verified: the aggregate `npm run check` was not run end-to-end for these heads (the hosted gate
+  runs its own step set). No capability, source, or publication boundary changed;
+  `cap.external.model` and registry/API capabilities remain `never_authorized`. Read-only,
+  synthetic-only.
