@@ -46,8 +46,9 @@ active_slice: 'None in flight. This 2026-08-07 parallel-lanes session merged thr
   #196 (`63354ef`, #189 accessible-missing-state RENDERING subset), #197 (`41fe76a`, WB-C1 close-out
   ledger/state sync), and #198 (`73cb31e`, #181 ResearchPack standalone Draft-2020-12 schema parity —
   pin relation-specific schema_id, document runtime-only invariants). Each: full `npm run check` green,
-  one fresh-context dl-reviewer pass, and exact-head Codex rounds triaged (two per code PR), merged with
-  a merge commit. Shared validators and committed fixtures untouched by #196/#198. Lab side: lab #6
+  one fresh-context dl-reviewer pass, and exact-head Codex triaged (two rounds on #196, one on #198),
+  merged with a merge commit. Shared validators untouched; #196 left committed fixtures untouched, #198
+  regenerated `invented.fixture.json` (only `provenance.contract_sha256` repinned). Lab side: lab #6
   preserved as `developer-lens-lab` PR #24 (parked — q-8 concurrent-writer), lab #7 dispositioned as
   tracked cross-repo debt. Prior product-repo slice before this session: PR #194 (`24f55d4`).'
 next_value_slice: 'The bounded WB-C1 programme is COMPLETE: lab PR #8 merged (2026-08-07), the
@@ -58,7 +59,9 @@ next_value_slice: 'The bounded WB-C1 programme is COMPLETE: lab PR #8 merged (20
   change — the shared `methodTrialView` contract must move in lockstep across both repos, so run it
   from the coordinating session via the `developer-lens-continuation` skill (there is no committed
   cross-repo-contract skill in this repo) and re-generate the committed fixture only through the
-  producer. Other tracked debt, pick by owner priority: product #189''s accessible-rendering follow-ups
+  producer. GATE: all lab-touching work (this validator-parity subset, #182, and merging lab PR #24)
+  is blocked on HUMAN_TODO q-8 — a competing writer was active in the lab checkout this session; do NOT
+  begin write work in that checkout until q-8 is resolved or a verified isolated worktree is confirmed. Other tracked debt, pick by owner priority: product #189''s accessible-rendering follow-ups
   (the timeline text alternative should mark where each missing/marked run ends/resumes — Codex #196
   round 2; and the unavailable-metric page-coherence gap, whose real fix is the validator-parity subset
   above) plus its two DEFERRED bullets (future-v2 wire dedup + closed-copy/source-identity canary);

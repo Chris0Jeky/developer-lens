@@ -3641,7 +3641,8 @@ ResearchPack schema (`research-contracts/research-pack/v1/schema.json`, produced
 - Four standalone Draft 2020-12 canaries (ajv2020, already a devDependency) assert BOTH the standalone
   schema and the runtime Zod validator per case. Committed `schema.json` regenerated; the only fixture
   delta is `provenance.contract_sha256`.
-- Verified: full `npm run check` green (1462+16 tests, `tsc -b` + `vite build` + `verify:no-secrets`);
+- Verified: full `npm run check` green (full suite 1466 tests / 10 skipped — 1462 prior + 4 new cases,
+  as `shared/researchPack.test.ts` went 12→16 — plus `tsc -b` + `vite build` + `verify:no-secrets`);
   `check:research-pack` no drift; focused `shared/researchPack.test.ts` 16/16. Review: one fresh-context
   `dl-reviewer` pass (no CRITICAL/HIGH/MEDIUM — const faithfulness across all 7 relations, non-tautological
   tests, documentation honesty), plus the exact-head Codex round on `c8075f8` (one P2, the calendar-validity
