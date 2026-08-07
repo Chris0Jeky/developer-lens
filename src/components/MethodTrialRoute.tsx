@@ -9,6 +9,7 @@ import './MethodTrialRoute.css'
 const committedMethodTrialView = MethodTrialViewSchema.parse(JSON.parse(fixtureText))
 
 type Measurement = MethodTrialView['scorecard']['baseline']['false_alerts_per_year']
+type TimelinePoint = MethodTrialRepresentativeCase['points'][number]
 
 function numberLabel(measurement: Measurement, digits = 4): string {
   if (measurement.status === 'unavailable') {
@@ -44,6 +45,91 @@ function markerLabel(point: MethodTrialRepresentativeCase['points'][number]): st
   return markers.length > 0 ? markers.join(', ') : 'no marker'
 }
 
+function toSeriesSegments(
+  points: readonly TimelinePoint[],
+  toCoord: (point: TimelinePoint, position: number) => string | null,
+): string[] {
+  const segments: string[] = []
+  let run: string[] = []
+  points.forEach((point, position) => {
+    const coord = toCoord(point, position)
+    if (coord === null) {
+      if (run.length > 0) {
+        segments.push(run.join(' '))
+        run = []
+      }
+      return
+    }
+    run.push(coord)
+  })
+  if (run.length > 0) segments.push(run.join(' '))
+  return segments
+}
+
+function pointStateTuple(point: TimelinePoint): string {
+  const state = point.observed.state === 'missing' ? `missing:${point.observed.reason}` : 'observed'
+  return `${state}|${point.planted_marker}|${point.confound_marker}`
+}
+
+function selectNotablePoints(points: readonly TimelinePoint[]): {
+  visible: TimelinePoint[]
+  collapsedCount: number
+} {
+  const visible: TimelinePoint[] = []
+  let collapsedCount = 0
+  points.forEach((point, index) => {
+    const isNotable =
+      point.observed.state === 'missing' ||
+      point.planted_marker !== 'none' ||
+      point.confound_marker !== 'none' ||
+      point.pelt_marker.boundary
+    if (!isNotable) return
+    const isDistinctTransition = index === 0 || pointStateTuple(point) !== pointStateTuple(points[index - 1])
+    if (isDistinctTransition || point.pelt_marker.boundary) {
+      visible.push(point)
+    } else {
+      collapsedCount += 1
+    }
+  })
+  return { visible, collapsedCount }
+}
+
+function detectionHeadline(baseline: Measurement, candidate: Measurement): string {
+  if (baseline.status !== 'measured' || candidate.status !== 'measured') {
+    return 'Detection comparison unavailable'
+  }
+  if (baseline.value === candidate.value) {
+    return `Equal detection at ${percentLabel(baseline)}`
+  }
+  return `Detection: baseline ${percentLabel(baseline)} vs candidate ${percentLabel(candidate)}`
+}
+
+function falseAlertHeadline(
+  baselineAlerts: Measurement,
+  candidateAlerts: Measurement,
+  excessPercent: number | null,
+): string {
+  if (
+    baselineAlerts.status !== 'measured' ||
+    candidateAlerts.status !== 'measured' ||
+    excessPercent === null ||
+    !Number.isFinite(excessPercent)
+  ) {
+    return 'the candidate false-alert comparison is unavailable'
+  }
+  const magnitude = Math.abs(excessPercent).toFixed(1)
+  const comparison =
+    excessPercent > 0 ? `~${magnitude}% more` : excessPercent < 0 ? `~${magnitude}% fewer` : 'the same number of'
+  return `the candidate produced ${comparison} candidate false alerts per year (${numberLabel(candidateAlerts)} vs ${numberLabel(baselineAlerts)})`
+}
+
+function detectionGainClause(baseline: Measurement, candidate: Measurement): string {
+  if (baseline.status !== 'measured' || candidate.status !== 'measured') return 'with detection not directly comparable'
+  if (candidate.value > baseline.value) return 'with a candidate detection gain'
+  if (candidate.value < baseline.value) return 'with lower candidate detection'
+  return 'with no detection gain'
+}
+
 function TimelineFigure({ representativeCase }: { representativeCase: MethodTrialRepresentativeCase }) {
   const width = 760
   const height = 212
@@ -56,24 +142,21 @@ function TimelineFigure({ representativeCase }: { representativeCase: MethodTria
   const baselineValues = representativeCase.points.flatMap((point) =>
     point.baseline.score.status === 'measured' ? [point.baseline.score.value] : [],
   )
-  const baselinePoints = representativeCase.points
-    .flatMap((point, position) => point.baseline.score.status === 'measured' ? [`${x(position)},${y(normalizeSeriesValue(point.baseline.score.value, baselineValues))}`] : [])
-    .join(' ')
-  const candidatePoints = representativeCase.points
-    .flatMap((point, position) => point.candidate.probability.status === 'measured' ? [`${x(position)},${y(point.candidate.probability.value)}`] : [])
-    .join(' ')
+  const baselineSegments = toSeriesSegments(representativeCase.points, (point, position) =>
+    point.baseline.score.status === 'measured'
+      ? `${x(position)},${y(normalizeSeriesValue(point.baseline.score.value, baselineValues))}`
+      : null,
+  )
+  const candidateSegments = toSeriesSegments(representativeCase.points, (point, position) =>
+    point.candidate.probability.status === 'measured' ? `${x(position)},${y(point.candidate.probability.value)}` : null,
+  )
   const missingCount = representativeCase.points.filter((point) => point.observed.state === 'missing').length
   const baselineAlertCount = representativeCase.points.filter((point) => point.baseline.alert).length
   const candidateAlertCount = representativeCase.points.filter((point) => point.candidate.alert).length
   const peltBoundaryCount = representativeCase.points.filter((point) => point.pelt_marker.boundary).length
-  const notablePoints = representativeCase.points.filter(
-    (point) =>
-      point.observed.state === 'missing' ||
-      point.planted_marker !== 'none' ||
-      point.confound_marker !== 'none' ||
-      point.pelt_marker.boundary,
+  const { visible: visibleNotablePoints, collapsedCount: collapsedNotableCount } = selectNotablePoints(
+    representativeCase.points,
   )
-  const visibleNotablePoints = notablePoints.slice(0, 8)
 
   return (
     <figure
@@ -87,8 +170,24 @@ function TimelineFigure({ representativeCase }: { representativeCase: MethodTria
       </figcaption>
       <svg className="method-trial-timeline__svg" viewBox={`0 0 ${width} ${height}`} role="img" aria-label={`${representativeCase.title} score overlay. Solid baseline and dashed candidate; marker labels are repeated in text below.`}>
         <line x1={left} x2={right} y1={bottom} y2={bottom} className="timeline-axis" />
-        <polyline points={baselinePoints} className="timeline-line timeline-line--baseline" fill="none" />
-        <polyline points={candidatePoints} className="timeline-line timeline-line--candidate" fill="none" />
+        {baselineSegments.map((segment, index) => (
+          <polyline
+            key={`baseline-${index}`}
+            points={segment}
+            className="timeline-line timeline-line--baseline"
+            data-testid="timeline-segment-baseline"
+            fill="none"
+          />
+        ))}
+        {candidateSegments.map((segment, index) => (
+          <polyline
+            key={`candidate-${index}`}
+            points={segment}
+            className="timeline-line timeline-line--candidate"
+            data-testid="timeline-segment-candidate"
+            fill="none"
+          />
+        ))}
         {representativeCase.points.map((point, position) => {
           const pointX = x(position)
           const baselineScore = point.baseline.score
@@ -141,7 +240,7 @@ function TimelineFigure({ representativeCase }: { representativeCase: MethodTria
             <strong>{point.relative_week_label}</strong>: {point.observed.state === 'missing' ? `missing (${point.observed.reason.replaceAll('_', ' ')})` : 'observed'}; {markerLabel(point)}
           </li>
         ))}
-        {notablePoints.length > visibleNotablePoints.length && <li>{notablePoints.length - visibleNotablePoints.length} more declared missing/marker events remain in the validated fixture.</li>}
+        {collapsedNotableCount > 0 && <li>{collapsedNotableCount} more declared missing/marker events remain in the validated fixture.</li>}
       </ul>}
     </figure>
   )
@@ -167,9 +266,8 @@ export function MethodTrialViewPanel({ view }: { view: MethodTrialView }) {
         <div className="method-trial-verdict"><span>Verdict</span><strong>REJECTED</strong></div>
         <h1>{view.trial.title}</h1>
         <p className="method-trial-headline">
-          Equal detection at {percentLabel(view.scorecard.baseline.detection_rate)}; the candidate produced{' '}
-          {excessPercent === null ? 'more' : `~${excessPercent.toFixed(1)}% more`} candidate false alerts per year
-          ({numberLabel(candidateAlerts)} vs {numberLabel(baselineAlerts)}). This is invented C0 evidence only:
+          {detectionHeadline(view.scorecard.baseline.detection_rate, view.scorecard.candidate.detection_rate)};{' '}
+          {falseAlertHeadline(baselineAlerts, candidateAlerts, excessPercent)}. This is invented C0 evidence only:
           it does not establish validity on real repositories.
         </p>
         <p className="method-trial-question"><strong>Question:</strong> {view.trial.question}</p>
@@ -233,7 +331,12 @@ export function MethodTrialViewPanel({ view }: { view: MethodTrialView }) {
       <section className="method-trial-section method-trial-section--decision" aria-labelledby="method-trial-decision">
         <div className="method-trial-section__heading"><span>05 · Decision</span><h2 id="method-trial-decision">Why the simple baseline won</h2></div>
         <p>{view.decision.why_simple_baseline_won}</p>
-        <p className="method-trial-emphasis">The candidate added exactly {additionalAlerts === null ? '1.2333' : additionalAlerts.toFixed(4)} false alerts per year, with no detection gain. Neither threshold selection was viable, so the complete deterministic baseline remains the retained fallback.</p>
+        <p className="method-trial-emphasis">
+          {additionalAlerts === null
+            ? `The candidate added an unavailable number of additional false alerts per year, ${detectionGainClause(view.scorecard.baseline.detection_rate, view.scorecard.candidate.detection_rate)}.`
+            : `The candidate added exactly ${additionalAlerts.toFixed(4)} false alerts per year, ${detectionGainClause(view.scorecard.baseline.detection_rate, view.scorecard.candidate.detection_rate)}.`}{' '}
+          Neither threshold selection was viable, so the complete deterministic baseline remains the retained fallback.
+        </p>
       </section>
 
       <section className="method-trial-section" aria-labelledby="method-trial-claims">

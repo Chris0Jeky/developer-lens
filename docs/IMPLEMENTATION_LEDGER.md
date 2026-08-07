@@ -1,9 +1,9 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-07** (hosted PR gate now runs explicit ResearchPack + MethodTrialView
-drift-check steps for local/gate parity — PR #194 / issue #193, though the `shared/*` test suite
-already caught that drift; prior same day: dual-runtime Claude harness — see the dated sections at
-the end)
+Last updated: **2026-08-07** (MethodTrialView accessible-missing-state rendering hardening — #189
+rendering subset; the bounded WB-C1 programme is closed — lab PR #8 merged and the product/lab pair
+demonstrated green on both sides. Prior same day: hosted PR gate drift steps — PR #194 / issue #193;
+dual-runtime Claude harness — see the dated sections at the end)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -3543,3 +3543,60 @@ complete (#187 `7b22491`, #190 `8de65a2`), the dual-runtime harness milestone as
   runs its own step set). No capability, source, or publication boundary changed;
   `cap.external.model` and registry/API capabilities remain `never_authorized`. Read-only,
   synthetic-only.
+
+## 2026-08-07 — MethodTrialView accessible-missing-state rendering (#189 subset) + WB-C1 programme close-out
+
+Branch `claude/method-trial-view-a11y-189` off `main` `e6ef6a6`. Rendering-layer hardening of the
+Method Trial view (`src/components/MethodTrialRoute.tsx` + its test only); the shared validator
+`shared/methodTrialView.ts` and the committed C0 fixture are untouched, so product↔lab validator
+parity is trivially preserved. Three behaviors from the exact-head #189 review of PR #187:
+
+- **SVG lines never bridge missing evidence.** The baseline and candidate series now render as maximal
+  runs of consecutive `measured` positions (one `<polyline>` per run, split at any missing/unavailable
+  point) instead of one polyline over all measured points, which silently connected a gap's neighbors.
+- **The timeline text alternative retains every distinct transition and every offline PELT boundary**,
+  collapsing only persistent-continuation notable weeks into the trailing summary count, replacing the
+  blind `.slice(0, 8)` truncation that could bury later distinct events behind an early persistent run.
+- **Headline and decision prose are derived from both measurements.** The detection phrase only says
+  "Equal detection" when both rates are measured and equal (neutral factual copy when unequal,
+  comparison-neutral when either is unavailable); the false-alert phrase is sign-aware and goes neutral
+  when either value is unavailable; the decision section no longer prints a fabricated additional-alerts
+  number when that measurement is unavailable, and its detection-gain clause is likewise derived from
+  both detection rates (a candidate gain / lower detection / no gain, or "not directly comparable" when
+  either is unavailable) instead of hardcoding "no detection gain" — a coherence gap the Codex round
+  caught. A `Number.isFinite` guard also closes a latent divide-by-zero when baseline false-alerts are
+  zero.
+
+The committed C0 fixture (0 missing observations, ≤3 isolated notable points per case, both detection
+rates measured and equal at 0.75) renders identically in every visible and textual respect — one
+continuous segment per series, the same notable-states list, and the same headline and decision copy;
+the only DOM delta is the added `data-testid` attributes on the timeline polylines (so the markup is
+not byte-identical, but the rendered content is). Six new tests construct schema-valid variants
+(deep-clone → mutate → `MethodTrialViewSchema.parse`) that exercise interior gaps, a long persistent
+missing run with later distinct/PELT events, unequal-but-measured detection, and an unavailable
+false-alert measurement.
+
+**WB-C1 programme close-out.** The resume artifact's stale `next_value_slice` — "finish and merge lab
+PR #8" — was corrected: lab PR #8 merged 2026-08-07T06:04Z (the lab has since advanced through PR #16),
+and the product/lab pair was demonstrated green this session — product `check:method-trial-view` +
+`check:research-pack` + `test:demo:v2`, and lab `pytest` over
+contract-sync/method-trial-export/methods/report (25 passed, 2 host-symlink skips). The bounded WB-C1
+programme is therefore complete on both sides; the remaining #189 bullets (future-v2 wire dedup,
+closed-copy canary), the validator-parity subset, #181/#182, and lab #6/#7 are tracked post-programme
+debt, none dependency-forced.
+
+- Verified: full `npm run check` green at branch head — 1462 tests pass / 10 skipped, `tsc -b` + `vite
+  build` + `verify:no-secrets` (19 files, no credential patterns); focused `MethodTrialRoute.test.tsx`
+  7/7 and `test:demo:v2` 9/9 on independent coordinator re-run; `verify:context` green; `git diff
+  --check` clean. Review: one fresh-context `dl-reviewer` adversarial pass — no CRITICAL/HIGH/MEDIUM
+  findings; its two non-blocking observations (a degenerate 1-point polyline still renders its dot; the
+  inherited "…in the validated fixture" string) warranted no change. The exact-head Codex connector
+  (commit `dad2c0e`, review 21:07Z) returned five findings, all triaged and fixed in one round: the
+  decision-paragraph detection-gain coherence gap (P2, code, above); the byte-identical overclaim (P2,
+  corrected above); and three resume-artifact fixes on CURRENT_STATE — internal active-slice
+  consistency, a recommended next bounded slice, and removing a reference to a `cross-repo-contract`
+  skill that is not committed in this repo. Fixes pushed to a new head; re-proved below.
+- NOT verified: no browser/visual screenshot (the change is proven by segment-count and text
+  assertions, not pixels); the hosted `Prove the pull request` result is recorded at merge (live Git/CI
+  outrank). No capability, source, or publication boundary changed; `cap.external.model` and
+  registry/API capabilities remain `never_authorized`. Rendering-only, synthetic-only, no fetch path.
