@@ -3333,3 +3333,37 @@ provider/person identifier, source activation, external-model request, or produc
 inspected, committed, or invoked. The evidence establishes only deterministic mechanics on invented
 C0 data. #174/#80, #183, LIFE-03 hardening, real-source activation, and broader #181/#182 refinements
 remain outside this bounded programme.
+
+## 2026-08-07 — WB-C1 Method Trial exact-evidence repair
+
+The exact-head connector review of product PR #187 found two realistic blocking contract defects:
+the reproducibility command allowlist admitted inline credential-bearing variants, and the seven
+displayed acceptance-gate outcomes were accepted as producer prose rather than derived from the
+scorecard. Contract commit `b0c6c24ab487534b7853b59effd3bd50ec072382` closes both. Commands now
+match the exact run identifier and reject extra flags or inline passwords; measurement domains are
+nonnegative while signed observed signals remain separate; and runtime validation derives all seven
+WB-C1 outcomes and their relevant values from the scorecard and threshold selections. The generated
+schema SHA-256 is `a93616a0c6de82b0846fcd1346182d8aa77fa54a31a8413c623428375c5cf8f2`.
+The remaining parity and accessible missing-state improvements are non-blocking for this fixed,
+committed C0 fixture and are tracked together in #189 rather than expanding the vertical.
+
+Developer Lens Lab repair head `307d1ad592791f57e25fd84b3d44b07600be20cf` synchronized that exact
+product contract and made the exporter evidence-derived and smoke-only. A fresh deterministic
+benchmark/reproduce/report/export run `wbc1_method_trial_v1_exhibit_v2` produced the committed bytes
+without hand editing. The source export and product fixture both have SHA-256
+`f2dadf79938b1a36248b7b5e0c69c25cc695d88711a351bba861c1deca5b6fda`. Its EvaluationBundle,
+custody, ResearchPack, and report digests are respectively
+`sha256:6817268480f4d313969080d5f78149d2c740d0dbaf94594cb3a5a5f69f306dad`,
+`sha256:7da2400ec64e73f47a8fbcdc91ea03b566d364b1096b22654e93ad29a8723668`,
+`sha256:bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`, and
+`sha256:dec6764d75cf36e917b96e619ee921a48a121bfd929709097966fdfcd82b0d1b`.
+
+The repaired projection still records the same honest rejection: baseline/candidate false alerts
+`2.966666666666667`/`4.2`, detection `0.75`/`0.75`, median delay `2`/`1`, coverage-confound false-alert
+rate `0.5`/`0.5`, candidate Brier `0.017341137335170863`, and frozen thresholds `2.5`/`0.05`.
+The seven derived gate outcomes are fail, fail, pass, pass, fail, pass, pass; both selections are
+nonviable and the deterministic baseline remains the fallback. The lab's final full local gate
+passed 41 tests with one declared symlink skip plus Ruff, Pyright, contract, and whitespace checks.
+On the product side, the repaired fixture/runtime/route seam passed 18 focused tests and the
+MethodTrial generator drift check. Exact final full product and hosted proof are recorded by the
+publication closeout after they exist and are not inferred here.
