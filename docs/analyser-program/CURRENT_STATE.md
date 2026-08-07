@@ -8,17 +8,16 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-07
-current_slice_override: 'LIFE-03 revocation replay, its large-scope repair, and seven-day physical
-  expiry cleanup are merged through PRs #179/#184/#185. The Linux storage-gate repair PR #186 is
-  merged as `f576fc4c234426e3ba737e4a7bd888ce0fd8f624` and restores the required main gate.
-  The only open product PR is #178, the ResearchPack v1 C0 producer dependency for lab PR #3. It is
-  refreshed onto main and closes the current person/construct identifier blocker; #181/#182
-  retain broader schema and semantic refinements. The principal owner-directed value slice is the
-  offline Method Trial presentation of the rejected WB-C1 candidate after #178 merges.'
-phase: 'Integrated synthetic Method Trial demo active. The product-owned ResearchPack producer lands
-  first, followed by one principal DeveloperLensMethodTrialView.v1 consumer/route PR and the exact
-  lab exporter/fixture handshake. No real migration, source activation, private output, or model
-  promotion is part of this programme.'
+current_slice_override: 'ResearchPack v1 producer PR #178 is merged at `be9c2451`. The principal
+  product vertical is PR #187: a product-owned DeveloperLensMethodTrialView.v1 contract, exact
+  lab-generated C0 fixture, lazy offline route, navigation entry, and combined showcase runbook.
+  Lab PR #3 was merged concurrently at `0435c2f` before the presentation exporter existed; that
+  ordering cannot be rewritten. The bounded recovery is product PR #187 first, then one lab
+  exporter follow-up PR against the already-merged WB-C1 vertical. Duplicate draft product PR #188
+  is superseded by the integrated #187 vertical.'
+phase: 'Synthetic Method Trial demo in final product review. No real migration, source activation,
+  private output, stored-observation exporter, external model call, or model promotion is part of
+  this programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -34,25 +33,23 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   external immutable selection marker PR #169, restore PR #171, success/grace proof PR #175,
   selection-proof durability PR #176, tombstone replay #172/PR #179,
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
-  Linux storage-gate repair PR #186',
+  Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'ResearchPack v1 producer PR #178: steward the refreshed branch, preserve the exact seven-slot
-  deterministic C0 fixture, and reject ordinary plural/camel/concatenated person-subject identifiers
-  plus the canonical prohibited construct vocabulary in both runtime and standalone schema. Broader
-  temporal, relation, feature grammar, and value/unit refinements remain #181/#182.'
-next_value_slice: 'After #178 merges, create one principal product PR for the
-  DeveloperLensMethodTrialView.v1 contract, lab-generated/product-validated C0 fixture, lazy
-  ?view=method-trial route, existing-navigation entry, and combined 5-8 minute showcase runbook.
-  The route tells why BOCPD was rejected while the deterministic rolling median/MAD baseline remains;
-  it does not create a generic research dashboard.'
+active_slice: 'PR #187: finish exact-head product gates and one substantial Terra product/UX/
+  integration review, then publish the lazy `?view=method-trial` rejection story with the exact
+  lab exhibit run `wbc1_method_trial_v1_exhibit`. The committed fixture is invented C0 only.'
+next_value_slice: 'After #187 merges, publish the smallest lab follow-up PR containing the reviewed
+  MethodTrialView exporter and producer proof against already-merged lab PR #3. Demonstrate the
+  product/lab pair and close this bounded programme before considering the separate #174/#80 Phase E
+  bridge. Do not turn the follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-WB-C1 Method Trial demo]
-blockers: 'No owner blocker for invented-fixture work. PR #178 is refreshed onto the gate-repair
-  main merge and still requires a green exact-head Prove the pull request result after its final push;
-  no hosted-gate exception is being used. Lab PR #3 depends on that exact product contract.
-  A real migration/connector still requires the remaining pre-activation #168 contract items and a
-  separately reviewed production grant issuer/caller. LIFE-02/#80 and Phase-E #174 remain open and
-  outside this demo programme.'
+blockers: 'No owner blocker for invented-fixture work. PR #187 still requires its exact final local
+  gate, hosted Prove result, review triage, and merge. The lab exporter follow-up must wait for that
+  product merge. Lab PR #3 already merged without the exporter due concurrent external action; this
+  is a sequencing deviation, not evidence that the exporter landed. A real migration/connector still
+  requires #168 and a separately reviewed production grant issuer/caller. #80/#174 remain outside
+  this demo programme.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
