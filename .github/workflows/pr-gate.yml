@@ -53,6 +53,18 @@ jobs:
         # stale; --check is non-mutating and fails on drift.
         run: node docs/analyser-program/taskdeck/tools/generate.mjs --check
 
+      - name: Check the synthetic ResearchPack for drift
+        # `npm run check` (the local aggregate) guards the committed C0 ResearchPack, but this
+        # hosted gate did not — a generateResearchPack.ts edit could drift the committed pack
+        # while the required job stayed green (issue #193). --check is non-mutating and fails
+        # closed on drift.
+        run: npm run check:research-pack
+
+      - name: Check the synthetic Method Trial view for drift
+        # Same drift guard for the committed MethodTrialView C0 exhibit, likewise missing from
+        # the hosted gate before issue #193. --check regenerates in memory and compares only.
+        run: npm run check:method-trial-view
+
       - name: Lint
         run: npm run lint
 
