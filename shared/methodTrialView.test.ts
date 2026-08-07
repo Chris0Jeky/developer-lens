@@ -360,22 +360,22 @@ describe('DeveloperLensMethodTrialView.v1', () => {
 
     expect(validate(fixture), JSON.stringify(validate.errors)).toBe(true)
     expect(createHash('sha256').update(fixtureText, 'utf8').digest('hex')).toBe(
-      'f2dadf79938b1a36248b7b5e0c69c25cc695d88711a351bba861c1deca5b6fda',
+      '49f381a992f0483e0af88d257e95b356fd5a8cbdb282e2f4420b287531150fb7',
     )
     expect(fixtureText.endsWith('\n')).toBe(true)
     expect(fixtureText.endsWith('\n\n')).toBe(false)
     expect(fixtureText).not.toContain('"system_alias"')
     expect(fixtureText).not.toContain('"generator_seed"')
     expect(parsed.reproducibility.product_contract_commit).toBe(
-      'b0c6c24ab487534b7853b59effd3bd50ec072382',
+      '8220584a4f63b0807f886fd4a88461e704f8c734',
     )
-    expect(parsed.reproducibility.lab_commit).toBe('307d1ad592791f57e25fd84b3d44b07600be20cf')
-    expect(parsed.reproducibility.run_id).toBe('wbc1_method_trial_v1_exhibit_v2')
+    expect(parsed.reproducibility.lab_commit).toBe('27a779bd7915f3cc65fb35f5bcf841155e5a6434')
+    expect(parsed.reproducibility.run_id).toBe('wbc1_demo')
     expect(parsed.reproducibility.digests.schema).toBe(
-      'sha256:a93616a0c6de82b0846fcd1346182d8aa77fa54a31a8413c623428375c5cf8f2',
+      'sha256:6c596fc7ce3c75b1d25de5dd804d635a92696c0c7a33a5e146e88439fb78b746',
     )
     expect(parsed.reproducibility.digests.evaluation_bundle).toBe(
-      'sha256:6817268480f4d313969080d5f78149d2c740d0dbaf94594cb3a5a5f69f306dad',
+      'sha256:7632999256589be7f35af243fe5674a97a047393de5cf115765cb25ad9cda5f0',
     )
     expect(parsed.dataset).toMatchObject({
       system_count: 54,
@@ -440,7 +440,7 @@ describe('DeveloperLensMethodTrialView.v1', () => {
       ['parser_shift', 104, 'week-000', 'week-103'],
     ])
     expect(parsed.representative_cases[2].summary).toBe(
-      'A fixed window exposes a parser shift and keeps instrumentation confounds explicit.',
+      'The full 104-week holdout series exposes an instrument shift explicitly.',
     )
   })
 
