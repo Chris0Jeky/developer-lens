@@ -32,6 +32,8 @@ function fixedObject(properties: JsonObject): JsonObject {
 function enrichStandaloneSchema(value: unknown): JsonObject {
   const schema = value as JsonObject
   schema.$schema = 'https://json-schema.org/draft/2020-12/schema'
+  schema.$comment =
+    'Structural transport validation only. Semantic acceptance requires shared/methodTrialView.ts#MethodTrialViewSchema, or an equivalent implementation of its cross-field rules, before this artifact is accepted or displayed.'
   const root = schema.properties as JsonObject
 
   const scenarioCodes = root.dataset.properties.scenario_codes as JsonObject
