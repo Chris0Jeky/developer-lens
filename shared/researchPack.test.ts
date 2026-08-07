@@ -16,6 +16,45 @@ async function fixtureValue(): Promise<Record<string, any>> {
   return JSON.parse(await readFile(fixturePath, 'utf8')) as Record<string, any>
 }
 
+function presentRelation(digestCharacter: string, rowCount = 1): Record<string, any> {
+  return {
+    state: 'present',
+    schema_id: 'developer-lens.repository-week.v1',
+    row_count: rowCount,
+    artifact: {
+      sha256: `sha256:${digestCharacter.repeat(64)}`,
+      size_bytes: 1,
+      media_type: 'application/x-parquet',
+    },
+    reason_code: null,
+  }
+}
+
+function c1AvailabilityWindow() {
+  return {
+    state: 'present',
+    window: {
+      start: '2024-08-05T00:00:00Z',
+      end: '2026-08-03T00:00:00Z',
+    },
+    reason_code: null,
+  }
+}
+
+function c1Fixture(fixture: Record<string, any>): Record<string, any> {
+  const availability = c1AvailabilityWindow()
+  return {
+    ...fixture,
+    classification: 'C1',
+    generated_at: '2026-08-03T00:00:00Z',
+    temporal_availability: {
+      event: availability,
+      collection: structuredClone(availability),
+      feature: structuredClone(availability),
+    },
+  }
+}
+
 describe('ResearchPack v1 producer contract', () => {
   it('round-trips the deterministic invented C0 fixture with exactly seven relation slots', async () => {
     const parsed = ResearchPackSchema.parse(await fixtureValue())
@@ -151,6 +190,78 @@ describe('ResearchPack v1 producer contract', () => {
     ).toThrow()
   })
 
+  it('rejects inflected or concatenated person subjects and shared forbidden constructs while preserving safe system words', async () => {
+    const fixture = await fixtureValue()
+    const feature = fixture.feature_registry[0]
+    const rejected = [
+      'DL.DEVELOPERS.OUTPUT.v1',
+      'DL.developerOutput.v1',
+      'DL.DEVELOPEROUTPUT.v1',
+      'DL.REVIEWER.RESPONSE_HOURS.v1',
+      'DL.reviewerResponseHours.v1',
+      'DL.INDIVIDUALOUTPUT.v1',
+      'DL.PERSONAL.OUTPUT.v1',
+      'DL.TEAMMEMBER.OUTPUT.v1',
+      'DL.REPO.HEALTH.SCORE.v1',
+      'DL.PORT.ENGAGEMENT.v1',
+    ]
+    for (const featureId of rejected) {
+      expect(() =>
+        ResearchPackSchema.parse({
+          ...fixture,
+          feature_registry: [{ ...feature, feature_id: featureId }],
+        }),
+      ).toThrow()
+    }
+
+    for (const featureId of [
+      'DL.WEEK.AUTHORIZATION_STATE.v1',
+      'DL.WEEK.INACTIVITY.v1',
+      'DL.WEEK.INTEGRATING.v1',
+    ]) {
+      expect(() =>
+        ResearchPackSchema.parse({
+          ...fixture,
+          feature_registry: [{ ...feature, feature_id: featureId }],
+        }),
+      ).not.toThrow()
+    }
+
+    for (const unitCode of [
+      'developer_hours',
+      'person_hours',
+      'reviewer_response_hours',
+      'contributor_output',
+    ]) {
+      expect(() =>
+        ResearchPackSchema.parse({
+          ...fixture,
+          feature_registry: [{ ...feature, unit_code: unitCode }],
+        }),
+      ).toThrow()
+    }
+
+    const schema = JSON.parse(await readFile(schemaPath, 'utf8')) as Record<string, any>
+    const pattern = new RegExp(schema.properties.feature_registry.items.properties.feature_id.pattern as string)
+    for (const featureId of rejected) expect(pattern.test(featureId)).toBe(false)
+    for (const featureId of [
+      'DL.WEEK.AUTHORIZATION_STATE.v1',
+      'DL.WEEK.INACTIVITY.v1',
+      'DL.WEEK.INTEGRATING.v1',
+    ]) {
+      expect(pattern.test(featureId)).toBe(true)
+    }
+    const unitPattern = new RegExp(schema.properties.feature_registry.items.properties.unit_code.pattern as string)
+    for (const unitCode of [
+      'developer_hours',
+      'person_hours',
+      'reviewer_response_hours',
+      'contributor_output',
+    ]) {
+      expect(unitPattern.test(unitCode)).toBe(false)
+    }
+  })
+
   it('publishes the closed interpretation-code vocabulary and required no-person code in JSON Schema', async () => {
     const schema = JSON.parse(await readFile(schemaPath, 'utf8')) as Record<string, any>
     const codes = schema.properties.feature_registry.items.properties.prohibited_interpretation_codes
@@ -183,6 +294,54 @@ describe('ResearchPack v1 producer contract', () => {
     expect(schema.allOf[0].then.properties.generated_at.pattern).toBe(
       '^\\d{4}-\\d{2}-\\d{2}T00:00:00Z$',
     )
+  })
+
+  it('floors every present C1 availability boundary and applies the rolling 36-month cutoff', async () => {
+    const fixture = c1Fixture(await fixtureValue())
+    expect(() => ResearchPackSchema.parse(fixture)).not.toThrow()
+
+    for (const boundary of ['start', 'end'] as const) {
+      const invalid = c1Fixture(await fixtureValue())
+      invalid.temporal_availability.event.window[boundary] = '2024-08-06T00:00:00Z'
+      expect(() => ResearchPackSchema.parse(invalid)).toThrow()
+    }
+
+    const tooOld = c1Fixture(await fixtureValue())
+    tooOld.temporal_availability.event.window.start = '2023-07-31T00:00:00Z'
+    expect(() => ResearchPackSchema.parse(tooOld)).toThrow(/36 UTC calendar months/)
+
+    const schema = JSON.parse(await readFile(schemaPath, 'utf8')) as Record<string, any>
+    const floorRule = schema.allOf.find((rule: any) =>
+      String(rule.then?.$comment ?? '').includes('operational availability'),
+    )
+    expect(floorRule.then.properties.temporal_availability.properties.event.properties.window.properties.start.pattern).toBe(
+      '^\\d{4}-\\d{2}-\\d{2}T00:00:00Z$',
+    )
+    expect(String(floorRule.then.$comment)).toContain('36 UTC calendar months')
+  })
+
+  it('requires nonempty coverage whenever any analytical relation has rows', async () => {
+    const fixture = c1Fixture(await fixtureValue())
+    fixture.relations.repository_week = presentRelation('a')
+    expect(() => ResearchPackSchema.parse(fixture)).toThrow(/nonempty present coverage/)
+
+    const c0FixtureValue = await fixtureValue()
+    c0FixtureValue.relations.repository_week = presentRelation('a')
+    expect(() => ResearchPackSchema.parse(c0FixtureValue)).toThrow(/nonempty present coverage/)
+
+    const covered = c1Fixture(await fixtureValue())
+    covered.relations.repository_week = presentRelation('a')
+    covered.relations.coverage = {
+      ...presentRelation('b'),
+      schema_id: 'developer-lens.coverage.v1',
+    }
+    expect(() => ResearchPackSchema.parse(covered)).not.toThrow()
+
+    const schema = JSON.parse(await readFile(schemaPath, 'utf8')) as Record<string, any>
+    const coverageRules = schema.allOf.filter((rule: any) =>
+      String(rule.then?.$comment ?? '').includes('nonempty analytical relation'),
+    )
+    expect(coverageRules).toHaveLength(6)
   })
 
   it('orders far-future microseconds exactly and rejects invalid calendar dates', () => {

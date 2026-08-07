@@ -50,7 +50,23 @@ function enrichStandaloneSchema(value: unknown): JsonSchemaObject {
   )
 
   interpretationCodes.contains = { const: REQUIRED_NO_PERSON_INTERPRETATION }
-  schema.allOf = [
+  const mondayMidnightPattern = '^\\d{4}-\\d{2}-\\d{2}T00:00:00Z$'
+  const availabilityWindowProperties = Object.fromEntries(
+    (['event', 'collection', 'feature'] as const).map((name) => [
+      name,
+      {
+        properties: {
+          window: {
+            properties: {
+              start: { pattern: mondayMidnightPattern },
+              end: { pattern: mondayMidnightPattern },
+            },
+          },
+        },
+      },
+    ]),
+  )
+  const allOf: JsonSchemaObject[] = [
     {
       if: {
         properties: { classification: { const: 'C1' } },
@@ -62,7 +78,58 @@ function enrichStandaloneSchema(value: unknown): JsonSchemaObject {
         required: ['generated_at'],
       },
     },
+    {
+      if: {
+        properties: { classification: { const: 'C1' } },
+        required: ['classification'],
+      },
+      then: {
+        $comment:
+          'Runtime and typed consumers additionally require every present operational availability boundary to be a UTC Monday ISO-week floor and the start to be within 36 UTC calendar months of generated_at.',
+        properties: {
+          temporal_availability: { properties: availabilityWindowProperties },
+        },
+      },
+    },
   ]
+  for (const relationName of RELATION_NAMES.filter((name) => name !== 'coverage')) {
+    allOf.push({
+      if: {
+        properties: {
+          relations: {
+            properties: {
+              [relationName]: {
+                properties: {
+                  state: { const: 'present' },
+                  row_count: { exclusiveMinimum: 0 },
+                },
+                required: ['state', 'row_count'],
+              },
+            },
+          },
+        },
+        required: ['relations'],
+      },
+      then: {
+        $comment: 'Any nonempty analytical relation requires a nonempty present coverage relation.',
+        properties: {
+          relations: {
+            properties: {
+              coverage: {
+                properties: {
+                  state: { const: 'present' },
+                  row_count: { exclusiveMinimum: 0 },
+                },
+                required: ['state', 'row_count'],
+              },
+            },
+            required: ['coverage'],
+          },
+        },
+      },
+    })
+  }
+  schema.allOf = allOf
   return schema
 }
 

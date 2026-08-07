@@ -17,7 +17,7 @@
   "generated_at": "2026-08-06T12:00:00Z",
   "pack_id": "pack_demo",
   "provenance": {
-    "contract_sha256": "sha256:dbeb7c88434dc0849567d3f756304ee25b9f4f0d4b7f985ca16232675bb788b0",
+    "contract_sha256": "sha256:e52139fedf55ef0801ae760d306f35c0475fb9459c2468c91edd4ba7656620f6",
     "fixture_revision": "invented.v1",
     "producer_code": "developer-lens.research-pack.v1",
     "product_commit": "dddddddddddddddddddddddddddddddddddddddd"

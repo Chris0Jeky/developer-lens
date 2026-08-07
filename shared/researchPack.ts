@@ -1,5 +1,5 @@
 import { z } from 'zod'
-import { FORBIDDEN_PERSON_SUBJECT_TERMS } from './metrics.js'
+import { FORBIDDEN_CONSTRUCT_TERMS, FORBIDDEN_PERSON_SUBJECT_TERMS } from './metrics.js'
 
 export const RESEARCH_PACK_SCHEMA_VERSION = 'DeveloperLensResearchPack.v1' as const
 export const RESEARCH_PACK_PRODUCER_CODE = 'developer-lens.research-pack.v1' as const
@@ -92,6 +92,24 @@ function isIsoWeekFloor(value: string): boolean {
   )
 }
 
+function utcCalendarMonthsBefore(value: string, months: number): bigint | undefined {
+  const match = canonicalUtcPattern.exec(value)
+  if (!match) return undefined
+  const [, yearText, monthText, dayText, hourText, minuteText, secondText, fractionText] = match
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  const hour = Number(hourText)
+  const minute = Number(minuteText)
+  const second = Number(secondText)
+  const fractionMicros = Number((fractionText ?? '').padEnd(6, '0') || 0)
+  const date = new Date(0)
+  date.setUTCFullYear(year, month - 1, day)
+  date.setUTCHours(hour, minute, second, Math.floor(fractionMicros / 1000))
+  date.setUTCMonth(date.getUTCMonth() - months)
+  return BigInt(date.getTime()) * 1000n + BigInt(fractionMicros % 1000)
+}
+
 export const CodeSchema = z.string().regex(/^[A-Za-z][A-Za-z0-9_.-]{0,95}$/)
 export const OpaqueIdSchema = z.string().regex(/^[a-z][a-z0-9_]{2,63}$/)
 export const Sha256Schema = z.string().regex(/^sha256:[0-9a-f]{64}$/)
@@ -181,37 +199,47 @@ function caseFoldTokenPattern(value: string, prefix = false): string {
   return `(?:^|[._-])${core}${prefix ? '[A-Za-z0-9]*' : ''}(?:$|[._-])`
 }
 
+function caseFoldStemPattern(value: string): string {
+  const core = value.split('_').map(caseFoldPattern).join('')
+  // `authorization` is a safe system-state word, not an author/person feature.
+  const safeAuthorSuffix = value === 'author' ? '(?![iI][zZ][aA][tT][iI][oO][nN])' : ''
+  return `(?:^|[._-])${core}${safeAuthorSuffix}[A-Za-z0-9]*`
+}
+
+const additionalForbiddenFeatureTerms = [
+  'effort',
+  'attendance',
+  'hours_worked',
+  'availability',
+  'diligence',
+  'quality',
+  'worth',
+  'personality',
+  'sentiment',
+  'burnout',
+  'surveillance',
+  'bus_factor',
+  'individual_output',
+] as const
+
 const forbiddenFeatureTokenPattern = [
-  ...FORBIDDEN_PERSON_SUBJECT_TERMS.map((term) => caseFoldTokenPattern(term)),
+  ...FORBIDDEN_PERSON_SUBJECT_TERMS.flatMap((term) => [caseFoldTokenPattern(term), caseFoldStemPattern(term)]),
+  ...FORBIDDEN_CONSTRUCT_TERMS.map((term) => caseFoldTokenPattern(term)),
   caseFoldTokenPattern('productiv', true),
-  ...[
-    'performance',
-    'effort',
-    'attendance',
-    'hours_worked',
-    'availability',
-    'diligence',
-    'quality',
-    'worth',
-    'personality',
-    'sentiment',
-    'burnout',
-    'surveillance',
-    'bus_factor',
-    'individual_output',
-  ].map((term) => caseFoldTokenPattern(term)),
+  ...additionalForbiddenFeatureTerms.map((term) => caseFoldTokenPattern(term)),
 ].join('|')
 const featureIdPattern = new RegExp(
   `^(?!.*(?:${forbiddenFeatureTokenPattern}))[A-Za-z][A-Za-z0-9_.-]{0,95}$`,
 )
 const forbiddenFeaturePattern = new RegExp(forbiddenFeatureTokenPattern)
+const FeatureCodeSchema = z.string().regex(featureIdPattern)
 
 export const FeatureDefinitionSchema = z
   .strictObject({
-    feature_id: z.string().regex(featureIdPattern),
+    feature_id: FeatureCodeSchema,
     relation: z.enum(RELATION_NAMES),
     value_kind: z.enum(['count', 'duration_hours', 'ratio', 'category', 'boolean']),
-    unit_code: CodeSchema,
+    unit_code: FeatureCodeSchema,
     evidence_layer: z.enum(['observed', 'deterministic']),
     prohibited_interpretation_codes: z.array(z.enum(RESEARCH_PACK_INTERPRETATION_CODES)).min(1).max(12),
   })
@@ -254,6 +282,42 @@ export const ResearchPackSchema = z
         path: ['generated_at'],
         message: 'C1 generated_at must be the UTC Monday start of an ISO week',
       })
+    }
+    if (value.classification === 'C1') {
+      const cutoff = utcCalendarMonthsBefore(value.generated_at, 36)
+      for (const availabilityName of ['event', 'collection', 'feature'] as const) {
+        const availability = value.temporal_availability[availabilityName]
+        if (availability.state !== 'present' || availability.window === null) continue
+        for (const boundary of ['start', 'end'] as const) {
+          if (!isIsoWeekFloor(availability.window[boundary])) {
+            ctx.addIssue({
+              code: 'custom',
+              path: ['temporal_availability', availabilityName, 'window', boundary],
+              message: `C1 ${availabilityName} window ${boundary} must be the UTC Monday start of an ISO week`,
+            })
+          }
+        }
+        if (cutoff !== undefined && canonicalUtcMicros(availability.window.start)! < cutoff) {
+          ctx.addIssue({
+            code: 'custom',
+            path: ['temporal_availability', availabilityName, 'window', 'start'],
+            message: 'C1 availability windows may not begin more than 36 UTC calendar months before generated_at',
+          })
+        }
+      }
+    }
+    const hasNonemptyAnalyticalRelation = RELATION_NAMES.some(
+      (relationName) => relationName !== 'coverage' && value.relations[relationName].state === 'present' && value.relations[relationName].row_count! > 0,
+    )
+    if (hasNonemptyAnalyticalRelation) {
+      const coverage = value.relations.coverage
+      if (coverage.state !== 'present' || coverage.row_count === null || coverage.row_count <= 0) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['relations', 'coverage'],
+          message: 'nonempty analytical relations require a nonempty present coverage relation',
+        })
+      }
     }
     const featureIds = value.feature_registry.map((feature) => feature.feature_id)
     if (new Set(featureIds).size !== featureIds.length) {
