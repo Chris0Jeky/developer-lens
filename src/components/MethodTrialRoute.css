@@ -1,3 +1,20 @@
+.method-trial-shell {
+  min-height: 100vh;
+}
+
+.method-trial-route__brand {
+  color: inherit;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  text-decoration: none;
+  transition: color 0.18s ease;
+}
+
+.method-trial-route__brand:hover,
+.method-trial-route__brand:focus-visible {
+  color: var(--aqua);
+}
+
 .method-trial-route {
   width: min(1120px, calc(100% - 40px));
   margin: 0 auto;
@@ -29,6 +46,10 @@
 .method-trial-question { margin: 0; color: var(--text-muted); line-height: 1.5; }
 .method-trial-verdict { display: inline-flex; width: fit-content; gap: 10px; align-items: center; color: var(--rose); font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; }
 .method-trial-verdict strong { padding: 5px 10px; border: 1px solid rgba(255, 140, 163, 0.55); border-radius: 999px; color: #ffd3dc; }
+.method-trial-sample { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; }
+.method-trial-sample > div { min-width: 132px; padding: 10px 12px; border: 1px solid var(--line); border-radius: var(--radius-sm); background: rgba(255, 255, 255, 0.035); }
+.method-trial-sample dt { color: var(--text-muted); font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; }
+.method-trial-sample dd { margin: 3px 0 0; color: var(--text); font-size: 1rem; font-weight: 700; }
 
 .method-trial-section { display: grid; gap: 14px; border-top: 1px solid var(--line); padding-top: 22px; }
 .method-trial-section__heading { display: grid; gap: 4px; }
@@ -67,6 +88,9 @@
 .timeline-key { display: inline-block; width: 19px; border-top: 2px solid var(--aqua); }
 .timeline-key--candidate { border-top: 2px dashed var(--violet); }
 .timeline-key--pelt { border-top: 2px dashed var(--gold); }
+.method-trial-selection-note, .method-trial-timeline__summary { margin: 0; color: var(--text-muted); font-size: 0.8rem; line-height: 1.5; }
+.method-trial-selection-note { max-width: 850px; }
+.method-trial-timeline__summary { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--line); }
 .method-trial-timeline__states { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 4px 12px; margin: 12px 0 0; padding: 12px 0 0 16px; border-top: 1px solid var(--line); color: var(--text-muted); font-size: 0.75rem; line-height: 1.45; }
 
 .method-trial-gates { display: grid; gap: 9px; margin: 0; padding: 0; list-style: none; counter-reset: gates; }

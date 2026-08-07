@@ -11,6 +11,7 @@ import {
 } from './methodTrialView.js'
 
 const schemaPath = resolve('research-contracts', 'method-trial-view', 'v1', 'schema.json')
+const fixturePath = resolve('research-contracts', 'method-trial-view', 'v1', 'wbc1.fixture.json')
 const digest = `sha256:${'a'.repeat(64)}`
 const commit = 'b'.repeat(40)
 
@@ -336,6 +337,37 @@ async function standaloneValidator() {
 }
 
 describe('DeveloperLensMethodTrialView.v1', () => {
+  it('accepts the exact committed lab fixture in runtime and standalone validators', async () => {
+    const fixture = JSON.parse(await readFile(fixturePath, 'utf8'))
+    const parsed = MethodTrialViewSchema.parse(fixture)
+    const validate = await standaloneValidator()
+
+    expect(validate(fixture), JSON.stringify(validate.errors)).toBe(true)
+    expect(parsed.reproducibility.product_contract_commit).toBe(
+      '3ac919f6129374acae564883ef9196c1d4aaf54c',
+    )
+    expect(parsed.reproducibility.lab_commit).toBe('bcf446f6495b39f5bf8316ca39c7e95d8d1585cc')
+    expect(parsed.reproducibility.digests.schema).toBe(
+      'sha256:86cf53a48660967c07329f02be01c05d773c16ac96c28ddcd8110aed3b827fdc',
+    )
+    expect(parsed.scorecard.baseline.false_alerts_per_year).toEqual(measured(2.966666666666667))
+    expect(parsed.scorecard.candidate.false_alerts_per_year).toEqual(measured(4.2))
+    expect(parsed.scorecard.baseline.detection_rate).toEqual(measured(0.75))
+    expect(parsed.scorecard.candidate.detection_rate).toEqual(measured(0.75))
+    expect(parsed.scorecard.candidate.calibration_brier).toEqual(measured(0.017341137335170863))
+    expect(parsed.decision.outcome).toBe('reject')
+    expect(parsed.representative_cases.map((representativeCase) => representativeCase.role)).toEqual([
+      'no_change_control',
+      'planted_change',
+      'instrumentation_confound',
+    ])
+    expect(parsed.representative_cases.map((representativeCase) => representativeCase.points.length)).toEqual([
+      104,
+      104,
+      104,
+    ])
+  })
+
   it('accepts the invented presentation sample in runtime and standalone validators', async () => {
     const value = sample()
     expect(MethodTrialViewSchema.safeParse(value).success).toBe(true)

@@ -158,6 +158,21 @@ describe('Developer Lens app', () => {
     expect(screen.getByRole('link', { name: /integration shape/i })).toHaveAttribute('href', '?')
   })
 
+  it('renders the lazy offline Method Trial route without fetching or disturbing the dashboard fallback', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    window.history.replaceState({}, '', '/?view=method-trial')
+
+    render(<App />)
+
+    expect(await screen.findByTestId('method-trial-panel')).toBeInTheDocument()
+    expect(screen.getByText('Method trial · C0 invented evidence')).toBeInTheDocument()
+    expect(screen.getByText('REJECTED')).toBeInTheDocument()
+    expect(screen.getAllByTestId('method-trial-timeline')).toHaveLength(3)
+    expect(screen.getByRole('link', { name: /developer lens.*method trial/i })).toHaveAttribute('href', '?')
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
   it('renders the offline V2 story, filters every evidence level, and never fetches', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)

@@ -521,7 +521,7 @@ function DashboardApp() {
 }
 
 /**
- * The three non-default routes are lazy so the dashboard's chunk carries only the dashboard.
+ * The four non-default routes are lazy so the dashboard's chunk carries only the dashboard.
  * Each is a whole surface with its own dependency subtree — the V2 story, the coverage cockpit,
  * and the Atlas with the Evidence Drawer behind it — and a visitor loads exactly one of the four.
  * Statically importing all of them put every surface in one chunk that everyone downloaded.
@@ -532,6 +532,9 @@ const CoverageCockpitV2Route = lazy(() =>
 )
 const IntegrationShapeAtlasRoute = lazy(() =>
   import('./components/IntegrationShapeAtlas').then((module) => ({ default: module.IntegrationShapeAtlasRoute })),
+)
+const MethodTrialRoute = lazy(() =>
+  import('./components/MethodTrialRoute').then((module) => ({ default: module.MethodTrialRoute })),
 )
 
 /**
@@ -552,6 +555,8 @@ function App() {
       <CoverageCockpitV2Route />
     ) : route?.get('view') === 'integration-shape' ? (
       <IntegrationShapeAtlasRoute />
+    ) : route?.get('view') === 'method-trial' ? (
+      <MethodTrialRoute />
     ) : null
 
   if (lazyRoute === null) return <DashboardApp />
