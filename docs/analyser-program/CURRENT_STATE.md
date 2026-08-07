@@ -49,11 +49,13 @@ next_value_slice: 'Cross-repo (SEPARATE `developer-lens-lab` sibling checkout, n
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-WB-C1 Method Trial demo — product side COMPLETE (#187/#190); remaining close-out is cross-repo lab PR #8]
 blockers: 'No owner blocker for invented-fixture or CI-gate-hardening work. The #193 gate slice needs an
-  exact-head hosted Prove result, one fresh-context review, the 3-minute aging floor, and merge. Lab
-  PR #3 merged without the exporter due to concurrent external action; this is a sequencing
-  deviation, not evidence that the exporter landed. A real migration/connector still requires #168
-  and a separately reviewed production grant issuer/caller. #80/#174 remain outside this demo
-  programme.'
+  exact-head hosted Prove result, one fresh-context review, the 3-minute aging floor, AND the binding
+  review-timing gate stated below (`review_timing_defect`): merge only once the exact-final-head Codex
+  review has arrived and every finding is fixed/tracked/rejected, OR 15 minutes have passed since the
+  last push with a fresh clean sweep — any fix push restarts that clock. Lab PR #3 merged without the
+  exporter due to concurrent external action; this is a sequencing deviation, not evidence that the
+  exporter landed. A real migration/connector still requires #168 and a separately reviewed production
+  grant issuer/caller. #80/#174 remain outside this demo programme.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
