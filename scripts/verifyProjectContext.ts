@@ -25,7 +25,10 @@ const requiredFiles = [
   '.agent-harness/tier.json',
   '.agents/skills/developer-lens-continuation/SKILL.md',
   '.agents/skills/developer-lens-continuation/agents/openai.yaml',
+  '.claude/settings.json',
+  '.claude/skills/developer-lens-continuation/SKILL.md',
   'AGENTS.md',
+  'CLAUDE.md',
   'HUMAN_TODO.md',
   'README.md',
   'docs/DEVELOPER_LENS_V2_ARCHITECTURE.md',
@@ -48,18 +51,38 @@ if (failures.length === 0) {
     failures.push(`tier declaration is not valid JSON: ${String(error)}`)
   }
 
-  const agentLines = read('AGENTS.md').split('\n').length
-  if (agentLines > 100) {
-    failures.push(`AGENTS.md exceeds the T2 context budget: ${agentLines} lines (maximum 100)`)
+  for (const coldStartFile of ['AGENTS.md', 'CLAUDE.md'] as const) {
+    const lines = read(coldStartFile).split('\n').length
+    if (lines > 100) {
+      failures.push(`${coldStartFile} exceeds the T2 context budget: ${lines} lines (maximum 100)`)
+    }
   }
 
-  const skill = read('.agents/skills/developer-lens-continuation/SKILL.md')
-  const parsedSkill = parseSkillFrontmatter(skill)
-  for (const error of parsedSkill.errors) {
-    failures.push(`continuation skill frontmatter is invalid: ${error}`)
+  const continuationSkills = [
+    '.agents/skills/developer-lens-continuation/SKILL.md',
+    '.claude/skills/developer-lens-continuation/SKILL.md',
+  ] as const
+  for (const skillPath of continuationSkills) {
+    const skill = read(skillPath)
+    const parsedSkill = parseSkillFrontmatter(skill)
+    for (const error of parsedSkill.errors) {
+      failures.push(`${skillPath} frontmatter is invalid: ${error}`)
+    }
+    if (skill.includes('[TODO') || skill.includes('TODO:')) {
+      failures.push(`${skillPath} still contains template TODO text`)
+    }
   }
-  if (skill.includes('[TODO') || skill.includes('TODO:')) {
-    failures.push('continuation skill still contains template TODO text')
+
+  try {
+    const settings = JSON.parse(read('.claude/settings.json')) as Record<string, unknown>
+    const settingsText = JSON.stringify(settings)
+    if (settingsText.includes('bypassPermissions')) {
+      failures.push(
+        '.claude/settings.json must not commit bypassPermissions; it belongs in gitignored .claude/settings.local.json',
+      )
+    }
+  } catch (error) {
+    failures.push(`.claude/settings.json is not valid JSON: ${String(error)}`)
   }
 
   const skillInterface = read('.agents/skills/developer-lens-continuation/agents/openai.yaml')
@@ -70,6 +93,7 @@ if (failures.length === 0) {
 
 const authorityMarkers: Record<string, readonly string[]> = {
   'AGENTS.md': ['G1 and G2 are owner-approved', 'G3 is standing-approved', 'G4 is owner-approved only for OpenAI'],
+  'CLAUDE.md': ['G1 and G2 are owner-approved', 'G3 is standing-approved', 'G4 is owner-approved only for OpenAI'],
   'HUMAN_TODO.md': ['G1 and G2 are owner-approved', 'G3 standing authorization is owner-approved', 'G4 is owner-approved only for the OpenAI/GPT-5.6-Luna boundary'],
   'docs/data-charter.md': ['G1 and G2 are approved', 'standing G3 authorization', 'G4 is approved 2026-08-04 only for the bounded OpenAI'],
   'docs/source-capability-matrix.md': ['G2 is satisfied', 'Standing G3 authorization', 'G4 is satisfied only for the OpenAI'],
@@ -123,7 +147,7 @@ for (const [path, markers] of Object.entries(swarmMarkers)) {
   }
 }
 
-const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md'], {
+const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md', '.claude/**/*.md'], {
   cwd: root,
   dot: true,
   onlyFiles: true,
