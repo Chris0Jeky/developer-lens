@@ -15,6 +15,14 @@ import type { AnalyticReference } from '../../shared/findings.js'
 import type { ComparisonResult, ResidualSegment } from '../../shared/comparison.js'
 import type { Finding } from '../../shared/findings.js'
 import type { MetricResult } from '../../shared/metrics.js'
+import type { IntegrationShapeEvidenceResolution } from '../../shared/integrationShapeEvidence.js'
+import type {
+  ChangeBatchIntegrationTailPresentation,
+  ChangeBatchStratum,
+  ChangeBatchStratumSummary,
+  ChangeBatchWindowSummary,
+  StoredDeletionLineageSummary,
+} from '../../shared/changeBatchIntegrationTail.js'
 import './IntegrationShapeAtlas.css'
 
 /**
@@ -499,6 +507,294 @@ export function IntegrationShapeAtlasPanel({
   )
 }
 
+function tailValue(summary: ChangeBatchStratumSummary, quantile: number): number | null {
+  return summary.integrationTail.quantiles?.find((entry) => entry.quantile === quantile)?.value ?? null
+}
+
+function StoredNumber({
+  value,
+  reference,
+  onOpen,
+  label,
+  duration = false,
+}: {
+  value: number | null
+  reference: AnalyticReference
+  onOpen: (reference: AnalyticReference) => void
+  label: string
+  duration?: boolean
+}) {
+  if (value === null) return <>â€”</>
+  return (
+    <Mark
+      value={duration ? secondsToDayLabel(value) : String(value)}
+      reference={reference}
+      onOpen={onOpen}
+      label={label}
+    />
+  )
+}
+
+function windowStratum(
+  summary: ChangeBatchWindowSummary,
+  stratum: ChangeBatchStratum,
+): ChangeBatchStratumSummary {
+  const row = summary.strata.find((entry) => entry.stratum === stratum)
+  if (row === undefined) throw new Error(`stored observation is missing ${stratum} stratum`)
+  return row
+}
+
+function StoredWindowCounts({
+  label,
+  summary,
+  reference,
+  onOpen,
+}: {
+  label: string
+  summary: ChangeBatchWindowSummary
+  reference: AnalyticReference
+  onOpen: (reference: AnalyticReference) => void
+}) {
+  return (
+    <div>
+      <dt>{label} Â· {summary.weekLabels.start} â†’ {summary.weekLabels.end}</dt>
+      <dd>
+        ready and sized{' '}
+        <StoredNumber value={summary.eligible} reference={reference} onOpen={onOpen} label={`${label} ready and sized`} />
+        {' '}Â· excluded{' '}
+        <StoredNumber value={summary.excluded} reference={reference} onOpen={onOpen} label={`${label} excluded`} />
+        {' '}Â· open/censored{' '}
+        <StoredNumber value={summary.censored} reference={reference} onOpen={onOpen} label={`${label} censored`} />
+        {' '}Â· close without merge{' '}
+        <StoredNumber value={summary.competing} reference={reference} onOpen={onOpen} label={`${label} competing outcomes`} />
+        {' '}Â· missing batch size{' '}
+        <StoredNumber value={summary.missingSizeExcluded} reference={reference} onOpen={onOpen} label={`${label} missing batch size`} />
+      </dd>
+    </div>
+  )
+}
+
+function descriptiveDirection(summary: ChangeBatchWindowSummary): string {
+  const lower = tailValue(windowStratum(summary, 'lower'), 0.9)
+  const upper = tailValue(windowStratum(summary, 'upper'), 0.9)
+  if (lower === null || upper === null || lower === upper) {
+    return 'The upper and lower value thirds do not separate at the reported tail.'
+  }
+  return upper > lower
+    ? 'The upper value third has the longer reported integration tail in this window.'
+    : 'The lower value third has the longer reported integration tail in this window.'
+}
+
+/** Phase E's live/synthetic second lens, consuming one strict stored-observation presentation. */
+export function ChangeBatchIntegrationTailPanel({
+  presentation,
+  finding,
+  resolutions,
+  sourceMode,
+}: {
+  presentation: ChangeBatchIntegrationTailPresentation
+  finding: Finding
+  resolutions: Readonly<Record<string, IntegrationShapeEvidenceResolution>>
+  sourceMode: IntegrationShapePresentationEnvelope['mode']
+}) {
+  const [drawerReference, setDrawerReference] = useState<AnalyticReference | null>(null)
+  const resolveEvidence = useIntegrationShapeEvidenceResolver(drawerReference, resolutions, sourceMode)
+  const cohortReference = markReference(finding, 'mark_integration_tail_cohort')
+  const stratumReference = (stratum: ChangeBatchStratum) =>
+    markReference(finding, `mark_integration_tail_${stratum}`)
+  const sensitivityReference = markReference(finding, 'mark_integration_tail_changed_files')
+
+  return (
+    <article className="atlas-panel" data-testid="change-batch-integration-tail">
+      <header className="atlas-panel__head">
+        <span className="atlas-panel__eyebrow">Stored observation Â· change batch / integration tail</span>
+        <p className="atlas-panel__observation">{finding.observation}</p>
+        <div className="atlas-panel__meta">
+          <span className="atlas-scope">scope surrogate {presentation.scopeId.slice(0, 12)}â€¦</span>
+          <span className="atlas-golden">{sourceMode === 'synthetic' ? 'invented public corpus' : 'accepted selected store'}</span>
+        </div>
+      </header>
+
+      <Stage id="stored-question" kicker="Question" title="Do larger change batches carry a longer integration tail?">
+        <p>
+          Primary batch value is additions plus deletions. Changed-file count is the sensitivity basis.
+          Pull requests enter when they became ready for review; open work is right-censored and a close
+          without merge is a competing terminal outcome.
+        </p>
+        <p data-testid="stored-direction">{descriptiveDirection(presentation.current)}</p>
+      </Stage>
+
+      <Stage id="stored-counts" kicker="Cohort" title="Support, exclusions, censoring and missingness">
+        <dl className="atlas-facts">
+          <StoredWindowCounts label="Current" summary={presentation.current} reference={cohortReference} onOpen={setDrawerReference} />
+          <StoredWindowCounts label="Baseline" summary={presentation.baseline} reference={cohortReference} onOpen={setDrawerReference} />
+        </dl>
+      </Stage>
+
+      <Stage id="stored-deletion-lineage" kicker="Lineage" title="Deletion and tombstone history">
+        {presentation.deletionLineage.status === 'present' ? (
+          <ul className="atlas-list">
+            {presentation.deletionLineage.events.map((event) => (
+              <li key={`${event.week}:${event.eventKind}:${event.subjectKind}`}>
+                {event.eventKind} for {event.subjectKind} in {event.week}:{' '}
+                <StoredNumber
+                  value={event.count}
+                  reference={cohortReference}
+                  onOpen={setDrawerReference}
+                  label={`${event.eventKind} ${event.subjectKind} lineage events in ${event.week}`}
+                />
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p>
+            {presentation.deletionLineage.status === 'none_recorded'
+              ? 'No deletion or tombstone lineage is recorded for this scope.'
+              : 'Deletion and tombstone lineage is unavailable, so no clean absence is claimed.'}
+          </p>
+        )}
+      </Stage>
+
+      <Stage id="stored-primary" kicker="Primary basis" title="Additions plus deletions Â· value thirds with ties kept together">
+        <table className="atlas-table" data-testid="stored-primary-table">
+          <thead>
+            <tr>
+              <th scope="col">Window / third</th>
+              <th scope="col">Batch range</th>
+              <th scope="col">n</th>
+              <th scope="col">excluded</th>
+              <th scope="col">censored</th>
+              <th scope="col">competing</th>
+              <th scope="col">p50</th>
+              <th scope="col">p75</th>
+              <th scope="col">p90 tail</th>
+            </tr>
+          </thead>
+          <tbody>
+            {(['current', 'baseline'] as const).flatMap((windowKey) =>
+              (['lower', 'middle', 'upper'] as const).map((stratum) => {
+                const row = windowStratum(presentation[windowKey], stratum)
+                const reference = stratumReference(stratum)
+                const prefix = `${windowKey} ${stratum}`
+                return (
+                  <tr key={`${windowKey}:${stratum}`} data-window={windowKey} data-stratum={stratum}>
+                    <th scope="row">{windowKey} Â· {stratum}</th>
+                    <td>
+                      <StoredNumber value={row.minChange} reference={reference} onOpen={setDrawerReference} label={`${prefix} minimum batch value`} />
+                      {' '}â€“{' '}
+                      <StoredNumber value={row.maxChange} reference={reference} onOpen={setDrawerReference} label={`${prefix} maximum batch value`} />
+                    </td>
+                    <td><StoredNumber value={row.n} reference={reference} onOpen={setDrawerReference} label={`${prefix} cohort`} /></td>
+                    <td><StoredNumber value={row.excluded} reference={reference} onOpen={setDrawerReference} label={`${prefix} excluded`} /></td>
+                    <td><StoredNumber value={row.censored} reference={reference} onOpen={setDrawerReference} label={`${prefix} censored`} /></td>
+                    <td><StoredNumber value={row.competing} reference={reference} onOpen={setDrawerReference} label={`${prefix} competing`} /></td>
+                    {[0.5, 0.75, 0.9].map((quantile) => (
+                      <td key={quantile}>
+                        <StoredNumber
+                          value={tailValue(row, quantile)}
+                          reference={reference}
+                          onOpen={setDrawerReference}
+                          label={`${prefix} p${quantile * 100}`}
+                          duration
+                        />
+                      </td>
+                    ))}
+                  </tr>
+                )
+              }),
+            )}
+          </tbody>
+        </table>
+      </Stage>
+
+      <Stage id="stored-sensitivity" kicker="Sensitivity" title="Changed-file value thirds">
+        <p data-testid="stored-robustness" data-status={finding.robustness.status}>
+          {finding.robustness.checks[0]?.statement} Outcome: <strong>{finding.robustness.checks[0]?.outcome}</strong>.
+        </p>
+        <table className="atlas-table" data-testid="stored-sensitivity-table">
+          <thead>
+            <tr><th scope="col">Third</th><th scope="col">Current p90</th><th scope="col">Baseline p90</th><th scope="col">Current n</th></tr>
+          </thead>
+          <tbody>
+            {(['lower', 'middle', 'upper'] as const).map((stratum) => {
+              const current = windowStratum(presentation.sensitivity.current, stratum)
+              const baseline = windowStratum(presentation.sensitivity.baseline, stratum)
+              return (
+                <tr key={stratum}>
+                  <th scope="row">{stratum}</th>
+                  <td><StoredNumber value={tailValue(current, 0.9)} reference={sensitivityReference} onOpen={setDrawerReference} label={`${stratum} changed-files current tail`} duration /></td>
+                  <td><StoredNumber value={tailValue(baseline, 0.9)} reference={sensitivityReference} onOpen={setDrawerReference} label={`${stratum} changed-files baseline tail`} duration /></td>
+                  <td><StoredNumber value={current.n} reference={sensitivityReference} onOpen={setDrawerReference} label={`${stratum} changed-files current cohort`} /></td>
+                </tr>
+              )
+            })}
+          </tbody>
+        </table>
+      </Stage>
+
+      <Stage id="stored-provenance" kicker="Evidence" title="Coverage and provenance carried with the reading">
+        <p>
+          Capability <strong>{presentation.capabilityId}</strong> Â· consent revision <strong>{presentation.consentRevision}</strong>.
+          Coverage is {presentation.provenance.current.coverage.status}: expected{' '}
+          <StoredNumber value={presentation.provenance.current.coverage.expectedUnits} reference={cohortReference} onOpen={setDrawerReference} label="Current expected coverage units" />
+          {' '}and observed{' '}
+          <StoredNumber value={presentation.provenance.current.coverage.observedUnits} reference={cohortReference} onOpen={setDrawerReference} label="Current observed coverage units" />.
+        </p>
+        <p data-testid="stored-fact-provenance-limitation">
+          Limitation: the current schema records aggregate job, snapshot and coverage proof, but pull-request facts do not yet carry a per-fact job edge.
+        </p>
+      </Stage>
+
+      <Stage id="stored-alternatives" kicker="Alternatives" title="What else could shape the pattern">
+        <ul className="atlas-list">
+          {finding.alternativeExplanations.map((alternative) => (
+            <li key={alternative.code}><strong>{alternative.code}</strong> â€” {alternative.statement}</li>
+          ))}
+        </ul>
+        <p><strong>What would discriminate:</strong> {finding.discriminatingEvidence?.statement}</p>
+      </Stage>
+
+      <Stage id="stored-decision" kicker="Decision use" title="Useful for investigation, never for scoring">
+        <p>
+          This lens can support a decision to inspect review flow, release timing, or coordination around larger change batches.
+          It cannot establish causality, rate quality, set a target, or evaluate a person.
+        </p>
+        <ul className="atlas-list">
+          {finding.prohibitedInterpretations.map((entry) => <li key={entry.code}>{entry.statement}</li>)}
+        </ul>
+      </Stage>
+
+      <EvidenceDrawer
+        open={drawerReference !== null}
+        reference={drawerReference ?? { kind: 'claim', claimId: '', claimLayer: 'deterministic' }}
+        resolve={resolveEvidence}
+        onClose={() => setDrawerReference(null)}
+        discriminatingQuestion={finding.discriminatingEvidence?.statement ?? null}
+      />
+    </article>
+  )
+}
+
+function StoredObservationAbstention({
+  code,
+  finding,
+  deletionLineage,
+}: {
+  code: string
+  finding: Finding
+  deletionLineage: StoredDeletionLineageSummary
+}) {
+  return (
+    <section className="atlas-route__status" data-testid="stored-observation-abstention" role="status">
+      <span className="atlas-panel__eyebrow">Stored observation Â· abstained</span>
+      <h1>No change-batch reading is shown.</h1>
+      <p data-testid="stored-observation-abstention-code">{code}</p>
+      <p>{finding.abstention?.statement ?? finding.observation}</p>
+      <p>Deletion lineage: {deletionLineage.status.replaceAll('_', ' ')}.</p>
+    </section>
+  )
+}
+
 export function atlasPresentationEndpoint(
   staticDemo = import.meta.env.VITE_STATIC_DEMO === 'true',
   baseUrl = import.meta.env.BASE_URL,
@@ -556,18 +852,35 @@ export function IntegrationShapeAtlasRoute() {
     return () => controller.abort()
   }, [])
 
-  const content =
-    state.kind === 'loading' ? (
-      <AtlasLoading />
-    ) : state.kind === 'unavailable' ? (
-      <AtlasUnavailable />
-    ) : (
-      <IntegrationShapeAtlasPanel
-        presentation={state.envelope.presentation}
-        resolutions={state.envelope.resolutions}
-        sourceMode={state.envelope.mode}
-      />
+  let content: ReactNode
+  if (state.kind === 'loading') {
+    content = <AtlasLoading />
+  } else if (state.kind === 'unavailable') {
+    content = <AtlasUnavailable />
+  } else {
+    const stored = state.envelope.storedObservation
+    content = (
+      <>
+        {state.envelope.presentation !== null && (
+          <IntegrationShapeAtlasPanel
+            presentation={state.envelope.presentation}
+            resolutions={state.envelope.resolutions}
+            sourceMode={state.envelope.mode}
+          />
+        )}
+        {stored.status === 'complete' ? (
+          <ChangeBatchIntegrationTailPanel
+            presentation={stored.presentation}
+            finding={stored.finding}
+            resolutions={state.envelope.resolutions}
+            sourceMode={state.envelope.mode}
+          />
+        ) : (
+          <StoredObservationAbstention code={stored.code} finding={stored.finding} deletionLineage={stored.deletionLineage} />
+        )}
+      </>
     )
+  }
 
   return (
     <div className="app atlas-route" id="top">

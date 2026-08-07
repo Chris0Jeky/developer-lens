@@ -2,6 +2,7 @@ import { readFile, readdir } from 'node:fs/promises'
 import { extname, join, resolve } from 'node:path'
 import type { DashboardData, RangeKey } from '../shared/types.js'
 import { analyticReferenceId } from '../shared/findings.js'
+import { INTEGRATION_SHAPE_SCOPE_ALIAS } from '../shared/integrationShape.js'
 import {
   parseIntegrationShapePresentationEnvelope,
 } from '../shared/integrationShapeStoredPresentation.js'
@@ -174,11 +175,22 @@ const integrationShape = parseIntegrationShapePresentationEnvelope(
   JSON.parse(await readFile(join(publicData, 'integration-shape.json'), 'utf8')) as unknown,
 )
 assert(integrationShape.mode === 'synthetic', 'Integration Shape public bundle is not explicitly synthetic')
-const renderedReferences = [
+assert(integrationShape.storedObservation.status === 'complete', 'Stored observation public bundle abstained')
+assert(
+  integrationShape.storedObservation.presentation.mode === 'synthetic',
+  'Stored observation public presentation is not explicitly synthetic',
+)
+const legacyReferences = [
   ...integrationShape.presentation.finding.marks.map((mark) => mark.reference),
   ...integrationShape.presentation.finding.evidence,
   ...integrationShape.presentation.finding.counterEvidence,
 ]
+const storedObservationReferences = [
+  ...integrationShape.storedObservation.finding.marks.map((mark) => mark.reference),
+  ...integrationShape.storedObservation.finding.evidence,
+  ...integrationShape.storedObservation.finding.counterEvidence,
+]
+const renderedReferences = [...legacyReferences, ...storedObservationReferences]
 for (const reference of renderedReferences) {
   assert(
     integrationShape.resolutions[analyticReferenceId(reference)] !== undefined,
@@ -188,7 +200,6 @@ for (const reference of renderedReferences) {
 const integrationShapeText = JSON.stringify(integrationShape)
 for (const forbidden of [
   'scope_alias',
-  'scopeAlias',
   'coverage_id',
   'coverageId',
   'storePath',
@@ -196,6 +207,32 @@ for (const forbidden of [
   'snapshotId',
 ]) {
   assert(!integrationShapeText.includes(`"${forbidden}"`), `Integration Shape exports forbidden field ${forbidden}`)
+}
+
+function fieldOccurrences(
+  candidate: unknown,
+  field: string,
+  path: readonly string[] = [],
+): Array<{ readonly path: readonly string[]; readonly value: unknown }> {
+  if (Array.isArray(candidate)) {
+    return candidate.flatMap((value, index) => fieldOccurrences(value, field, [...path, String(index)]))
+  }
+  if (candidate === null || typeof candidate !== 'object') return []
+  return Object.entries(candidate).flatMap(([key, value]) => [
+    ...(key === field ? [{ path: [...path, key], value }] : []),
+    ...fieldOccurrences(value, field, [...path, key]),
+  ])
+}
+
+const legacyReferenceIds = new Set(legacyReferences.map(analyticReferenceId))
+for (const occurrence of fieldOccurrences(integrationShape, 'scopeAlias')) {
+  const [root, referenceId] = occurrence.path
+  const allowedLegacySyntheticField = occurrence.value === INTEGRATION_SHAPE_SCOPE_ALIAS
+    && (root === 'presentation' || (root === 'resolutions' && legacyReferenceIds.has(referenceId ?? '')))
+  assert(
+    allowedLegacySyntheticField,
+    `Integration Shape exports scopeAlias outside the frozen invented Atlas fixture at ${occurrence.path.join('.')}`,
+  )
 }
 
 const socialCard = await readFile(join(dist, 'social-card.png'))

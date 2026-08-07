@@ -6,6 +6,10 @@ import { createDemoDataset } from '../server/demo'
 import { payloadForSink } from '../shared/privacy'
 import { V2_DEMO_INSIGHTS, V2_DEMO_PAYLOAD, V2_DEMO_REGISTRATION } from '../shared/v2Demo'
 import { buildIntegrationShapePresentation } from '../shared/integrationShape'
+import { analyticReferenceId } from '../shared/findings'
+import { INTEGRATION_SHAPE_REFERENCES, resolveIntegrationShapeEvidence } from '../shared/integrationShapeEvidence'
+import { buildSyntheticV3StoredObservation } from '../server/analysis/syntheticV3StoredObservation'
+import { buildV3StoredObservationEvidence } from '../server/analysis/v3StoredObservationEvidence'
 import App from './App'
 
 const demo = analyzeDataset(createDemoDataset('6m'))
@@ -13,11 +17,24 @@ const publicDemo = {
   ...demo,
   meta: { ...demo.meta, privacy: 'public-demo' as const },
 }
+const appStoredObservation = buildSyntheticV3StoredObservation()
+const appStoredEvidence = buildV3StoredObservationEvidence(appStoredObservation.envelope, appStoredObservation.finding)
 const integrationShapeEnvelope = {
-  presentationContractVersion: '1.0.0' as const,
+  presentationContractVersion: '2.0.0' as const,
   mode: 'synthetic' as const,
   presentation: buildIntegrationShapePresentation(),
-  resolutions: {},
+  storedObservation: {
+    status: 'complete' as const,
+    presentation: appStoredObservation.envelope,
+    finding: appStoredObservation.finding,
+  },
+  resolutions: {
+    ...Object.fromEntries(INTEGRATION_SHAPE_REFERENCES.map((reference) => [
+      analyticReferenceId(reference),
+      resolveIntegrationShapeEvidence(reference),
+    ])),
+    ...appStoredEvidence.resolutions,
+  },
 }
 
 describe('Developer Lens app', () => {
@@ -164,6 +181,7 @@ describe('Developer Lens app', () => {
     render(<App />)
 
     expect(await screen.findByTestId('integration-shape-atlas')).toBeInTheDocument()
+    expect(screen.getByTestId('change-batch-integration-tail')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /integration shape/i })).toHaveAttribute('href', '?')
   })
 

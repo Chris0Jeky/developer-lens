@@ -13,6 +13,8 @@ import {
   INTEGRATION_SHAPE_PRESENTATION_CONTRACT_VERSION,
   parseIntegrationShapePresentationEnvelope,
 } from '../shared/integrationShapeStoredPresentation.js'
+import { buildSyntheticV3StoredObservation } from '../server/analysis/syntheticV3StoredObservation.js'
+import { buildV3StoredObservationEvidence } from '../server/analysis/v3StoredObservationEvidence.js'
 
 const outputDirectory = resolve('public', 'data')
 
@@ -53,16 +55,29 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
 }
 
 const integrationShapePath = resolve(outputDirectory, 'integration-shape.json')
+const storedObservation = buildSyntheticV3StoredObservation()
+const storedEvidence = buildV3StoredObservationEvidence(
+  storedObservation.envelope,
+  storedObservation.finding,
+)
 const integrationShape = parseIntegrationShapePresentationEnvelope({
   presentationContractVersion: INTEGRATION_SHAPE_PRESENTATION_CONTRACT_VERSION,
   mode: 'synthetic',
   presentation: buildIntegrationShapePresentation(),
-  resolutions: Object.fromEntries(
-    INTEGRATION_SHAPE_REFERENCES.map((reference) => [
-      analyticReferenceId(reference),
-      resolveIntegrationShapeEvidence(reference),
-    ]),
-  ),
+  storedObservation: {
+    status: 'complete',
+    presentation: storedObservation.envelope,
+    finding: storedObservation.finding,
+  },
+  resolutions: {
+    ...Object.fromEntries(
+      INTEGRATION_SHAPE_REFERENCES.map((reference) => [
+        analyticReferenceId(reference),
+        resolveIntegrationShapeEvidence(reference),
+      ]),
+    ),
+    ...storedEvidence.resolutions,
+  },
 })
 await writeFile(integrationShapePath, `${JSON.stringify(integrationShape, null, 2)}\n`, 'utf8')
 console.log(`Generated synthetic Integration Shape presentation: ${integrationShapePath}`)

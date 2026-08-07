@@ -1,16 +1,86 @@
 import { cleanup, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { atlasPresentationEndpoint, IntegrationShapeAtlasPanel, IntegrationShapeAtlasRoute } from './IntegrationShapeAtlas'
+import {
+  atlasPresentationEndpoint,
+  ChangeBatchIntegrationTailPanel,
+  IntegrationShapeAtlasPanel,
+  IntegrationShapeAtlasRoute,
+} from './IntegrationShapeAtlas'
 import { UNRESOLVABLE_COPY } from './evidenceDrawerCopy'
 import { CLAIM_IDS, buildIntegrationShapePresentation } from '../../shared/integrationShape'
-import { CAUSAL_OR_EVALUATIVE_TERMS } from '../../shared/findings'
+import { analyticReferenceId, CAUSAL_OR_EVALUATIVE_TERMS } from '../../shared/findings'
+import { ChangeBatchIntegrationTailPresentationSchema } from '../../shared/changeBatchIntegrationTail'
+import {
+  INTEGRATION_SHAPE_REFERENCES,
+  resolveIntegrationShapeEvidence,
+} from '../../shared/integrationShapeEvidence'
+import {
+  SYNTHETIC_STORED_OBSERVATION_CURRENT,
+  buildSyntheticV3StoredObservation,
+  createSyntheticV3StoredObservationDatabase,
+} from '../../server/analysis/syntheticV3StoredObservation'
+import { buildV3StoredObservationEvidence } from '../../server/analysis/v3StoredObservationEvidence'
+import { bridgeV3StoredObservation } from '../../server/analysis/v3StoredObservationBridge'
 
 const presentation = buildIntegrationShapePresentation()
+const stored = buildSyntheticV3StoredObservation()
+const storedEvidence = buildV3StoredObservationEvidence(stored.envelope, stored.finding)
+const resolutions = {
+  ...Object.fromEntries(INTEGRATION_SHAPE_REFERENCES.map((reference) => [
+    analyticReferenceId(reference),
+    resolveIntegrationShapeEvidence(reference),
+  ])),
+  ...storedEvidence.resolutions,
+}
 const envelope = {
-  presentationContractVersion: '1.0.0' as const,
+  presentationContractVersion: '2.0.0' as const,
   mode: 'synthetic' as const,
   presentation,
+  storedObservation: {
+    status: 'complete' as const,
+    presentation: stored.envelope,
+    finding: stored.finding,
+  },
+  resolutions,
+}
+const selectedEnvelope = {
+  ...envelope,
+  mode: 'selected_store' as const,
+  presentation: null,
+  storedObservation: {
+    ...envelope.storedObservation,
+    presentation: { ...stored.envelope, mode: 'selected_store' as const },
+  },
+}
+const abstained = (() => {
+  const db = createSyntheticV3StoredObservationDatabase()
+  try {
+    db.prepare(`UPDATE pull_request_fact SET state = 'OPEN', merged_at = NULL, closed_at = NULL
+      WHERE ready_for_review_at >= ? AND ready_for_review_at < ?`)
+      .run(SYNTHETIC_STORED_OBSERVATION_CURRENT.start, SYNTHETIC_STORED_OBSERVATION_CURRENT.end)
+    return bridgeV3StoredObservation({
+      db,
+      scopeId: stored.envelope.scopeId,
+      capabilityId: 'github.core',
+      consentRevision: stored.envelope.consentRevision,
+      baselineWindow: { start: '2026-06-05T00:00:00.000Z', end: '2026-07-03T00:00:00.000Z' },
+      currentWindow: SYNTHETIC_STORED_OBSERVATION_CURRENT,
+      asOf: '2026-08-01T00:00:00.000Z',
+    })
+  } finally {
+    db.close()
+  }
+})()
+if (abstained.status !== 'abstained') throw new Error('expected invented abstention fixture')
+const abstainedEnvelope = {
+  ...selectedEnvelope,
+  storedObservation: {
+    status: 'abstained' as const,
+    code: abstained.code,
+    finding: abstained.finding,
+    deletionLineage: abstained.deletionLineage,
+  },
   resolutions: {},
 }
 
@@ -199,13 +269,96 @@ describe('IntegrationShapeAtlas — copy discipline', () => {
   })
 })
 
+describe('ChangeBatchIntegrationTail stored second lens', () => {
+  function renderStored(sourceMode: 'synthetic' | 'selected_store' = 'synthetic') {
+    return render(
+      <ChangeBatchIntegrationTailPanel
+        presentation={{ ...stored.envelope, mode: sourceMode }}
+        finding={stored.finding}
+        resolutions={storedEvidence.resolutions}
+        sourceMode={sourceMode}
+      />,
+    )
+  }
+
+  it('renders cohort rules, value strata, sensitivity, alternatives and the decision boundary', () => {
+    renderStored()
+    expect(screen.getByTestId('stored-question')).toHaveTextContent(/larger change batches/i)
+    expect(screen.getByTestId('stored-question')).toHaveTextContent(/right-censored/i)
+    expect(screen.getByTestId('stored-counts')).toHaveTextContent(/close without merge/i)
+    expect(screen.getByTestId('stored-primary-table')).toHaveTextContent(/upper/i)
+    expect(screen.getByTestId('stored-sensitivity')).toHaveTextContent(/changed-file/i)
+    expect(screen.getByTestId('stored-alternatives')).toHaveTextContent(/REVIEW_AVAILABILITY/)
+    expect(screen.getByTestId('stored-decision')).toHaveTextContent(/cannot establish causality/i)
+    expect(screen.getByTestId('stored-fact-provenance-limitation')).toHaveTextContent(/do not yet carry a per-fact job edge/i)
+    expect(screen.getByTestId('stored-deletion-lineage')).toHaveTextContent(/no deletion or tombstone lineage/i)
+  })
+
+  it('renders retained tombstone counts as evidence marks at week grain', async () => {
+    const presentationWithLineage = ChangeBatchIntegrationTailPresentationSchema.parse({
+      ...stored.envelope,
+      deletionLineage: {
+        status: 'present',
+        eventCount: 2,
+        events: [{ subjectKind: 'coverage', eventKind: 'tombstone_cascade', week: '2026-W31', count: 2 }],
+      },
+    })
+    const lineageEvidence = buildV3StoredObservationEvidence(presentationWithLineage, stored.finding)
+    const user = userEvent.setup()
+    render(
+      <ChangeBatchIntegrationTailPanel
+        presentation={presentationWithLineage}
+        finding={stored.finding}
+        resolutions={lineageEvidence.resolutions}
+        sourceMode="synthetic"
+      />,
+    )
+    const lineage = screen.getByTestId('stored-deletion-lineage')
+    expect(lineage).toHaveTextContent(/tombstone_cascade.*coverage.*2026-W31/i)
+    await user.click(within(lineage).getByRole('button', { name: /lineage events/i }))
+    expect(screen.getByRole('dialog')).toHaveAccessibleName(/why this number/i)
+  })
+
+  it('makes every displayed table number an evidence mark and opens its aggregate walk', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    renderStored('synthetic')
+    for (const tableId of ['stored-primary-table', 'stored-sensitivity-table']) {
+      const table = screen.getByTestId(tableId)
+      for (const cell of within(table).getAllByRole('cell')) {
+        expect(within(cell).getAllByRole('button').length).toBeGreaterThan(0)
+      }
+    }
+
+    await user.click(screen.getByRole('button', { name: /current upper p90/i }))
+    const drawer = screen.getByRole('dialog')
+    expect(drawer).toHaveAccessibleName(/why this number/i)
+    expect(within(drawer).getByTestId('edge-group-coverage_basis')).toHaveTextContent(/complete/i)
+    expect(fetchMock).not.toHaveBeenCalled()
+  })
+
+  it('uses the selected-store evidence endpoint without substituting the authored Integration Shape walk', async () => {
+    const fetchMock = vi.fn(async () => { throw new TypeError('offline') })
+    vi.stubGlobal('fetch', fetchMock)
+    const user = userEvent.setup()
+    renderStored('selected_store')
+    await user.click(screen.getByRole('button', { name: /current lower p50/i }))
+    const drawer = screen.getByRole('dialog')
+    await user.click(within(drawer).getByRole('button', { name: /evidence ev_/i }))
+    expect(within(drawer).getByText(/stored-observation\.v1/i)).toBeInTheDocument()
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1))
+  })
+})
+
 describe('IntegrationShapeAtlas — explicit presentation source', () => {
   it('uses the private analysis endpoint and renders the served presentation', async () => {
-    const fetchMock = vi.fn(async () => new Response(JSON.stringify({ ...envelope, mode: 'selected_store' }), { status: 200 }))
+    const fetchMock = vi.fn(async () => new Response(JSON.stringify(selectedEnvelope), { status: 200 }))
     vi.stubGlobal('fetch', fetchMock)
     render(<IntegrationShapeAtlasRoute />)
 
-    expect(await screen.findByTestId('integration-shape-atlas')).toBeInTheDocument()
+    expect(await screen.findByTestId('change-batch-integration-tail')).toBeInTheDocument()
+    expect(screen.queryByTestId('integration-shape-atlas')).not.toBeInTheDocument()
     expect(fetchMock).toHaveBeenCalledWith('/api/v2/analysis/integration-shape', expect.any(Object))
     expect(screen.getByText('Selected store')).toBeInTheDocument()
   })
@@ -231,6 +384,24 @@ describe('IntegrationShapeAtlas — explicit presentation source', () => {
 
     expect(await screen.findByTestId('integration-shape-unavailable')).toBeInTheDocument()
     expect(screen.queryByTestId('atlas-observation')).not.toBeInTheDocument()
+  })
+
+  it('renders the authored Integration Shape and stored second lens together in the synthetic bundle', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(envelope), { status: 200 })))
+    render(<IntegrationShapeAtlasRoute />)
+
+    expect(await screen.findByTestId('integration-shape-atlas')).toBeInTheDocument()
+    expect(screen.getByTestId('change-batch-integration-tail')).toBeInTheDocument()
+  })
+
+  it('renders a typed stored-observation abstention without reviving either numeric panel', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(abstainedEnvelope), { status: 200 })))
+    render(<IntegrationShapeAtlasRoute />)
+
+    expect(await screen.findByTestId('stored-observation-abstention')).toHaveTextContent(/no change-batch reading/i)
+    expect(screen.getByTestId('stored-observation-abstention-code')).toHaveTextContent('ALL_CENSORED')
+    expect(screen.queryByTestId('integration-shape-atlas')).not.toBeInTheDocument()
+    expect(screen.queryByTestId('change-batch-integration-tail')).not.toBeInTheDocument()
   })
 
   it('never substitutes the bundled local composition for missing selected-store evidence', async () => {
