@@ -21,6 +21,7 @@ import { getISOWeek, getISOWeekYear, parseISO } from 'date-fns'
  * and the server projection — sees the same week for the same instant.
  */
 export function isoWeekLabel(timestamp: string): string {
+  if (/^\d{4}-W\d{2}$/.test(timestamp)) return timestamp
   const parsed = parseISO(timestamp)
   if (Number.isNaN(parsed.getTime())) return 'unknown'
   const utcCalendarDate = new Date(

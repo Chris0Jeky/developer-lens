@@ -7,6 +7,13 @@ import {
 } from './integrationShape.js'
 import { MetricResultSchema } from './metrics.js'
 import { WhyResolutionSchema } from './whyContract.js'
+import { whyResolutionAnswersReference } from './whyContract.js'
+import {
+  ChangeBatchIntegrationTailAbstentionCodeSchema,
+  ChangeBatchIntegrationTailPresentationSchema,
+  StoredDeletionLineageSummarySchema,
+} from './changeBatchIntegrationTail.js'
+import { analyticReferenceId } from './findings.js'
 
 /**
  * The one browser-facing envelope for Integration Shape.
@@ -15,7 +22,7 @@ import { WhyResolutionSchema } from './whyContract.js'
  * showcase exporter. The browser never manufactures either mode, and a failed private request
  * must not silently cross the boundary into the invented public composition.
  */
-export const INTEGRATION_SHAPE_PRESENTATION_CONTRACT_VERSION = '1.0.0' as const
+export const INTEGRATION_SHAPE_PRESENTATION_CONTRACT_VERSION = '2.0.0' as const
 
 const IntegrationShapeOutcomeRowSchema = z
   .object({
@@ -64,14 +71,87 @@ export const IntegrationShapePresentationSchema = z
   })
   .strict() satisfies z.ZodType<IntegrationShapePresentation>
 
-export const IntegrationShapePresentationEnvelopeSchema = z
+const StoredObservationCompleteSchema = z
   .object({
-    presentationContractVersion: z.literal(INTEGRATION_SHAPE_PRESENTATION_CONTRACT_VERSION),
-    mode: z.enum(['selected_store', 'synthetic']),
-    presentation: IntegrationShapePresentationSchema,
-    resolutions: z.record(z.string().min(1), WhyResolutionSchema),
+    status: z.literal('complete'),
+    presentation: ChangeBatchIntegrationTailPresentationSchema,
+    finding: FindingSchema,
   })
   .strict()
+
+const StoredObservationAbstainedSchema = z
+  .object({
+    status: z.literal('abstained'),
+    code: ChangeBatchIntegrationTailAbstentionCodeSchema,
+    finding: FindingSchema,
+    deletionLineage: StoredDeletionLineageSummarySchema,
+  })
+  .strict()
+
+const ResolutionMapSchema = z.record(z.string().min(1), WhyResolutionSchema)
+
+const SyntheticPresentationEnvelopeSchema = z
+  .object({
+    presentationContractVersion: z.literal(INTEGRATION_SHAPE_PRESENTATION_CONTRACT_VERSION),
+    mode: z.literal('synthetic'),
+    presentation: IntegrationShapePresentationSchema,
+    storedObservation: StoredObservationCompleteSchema,
+    resolutions: ResolutionMapSchema,
+  })
+  .strict()
+
+const SelectedStorePresentationEnvelopeSchema = z
+  .object({
+    presentationContractVersion: z.literal(INTEGRATION_SHAPE_PRESENTATION_CONTRACT_VERSION),
+    mode: z.literal('selected_store'),
+    presentation: z.null(),
+    storedObservation: z.discriminatedUnion('status', [
+      StoredObservationCompleteSchema,
+      StoredObservationAbstainedSchema,
+    ]),
+    resolutions: ResolutionMapSchema,
+  })
+  .strict()
+
+function findingReferences(finding: z.infer<typeof FindingSchema>) {
+  return [
+    ...finding.marks.map((mark) => mark.reference),
+    ...finding.evidence,
+    ...finding.counterEvidence,
+  ]
+}
+
+export const IntegrationShapePresentationEnvelopeSchema = z
+  .discriminatedUnion('mode', [
+    SyntheticPresentationEnvelopeSchema,
+    SelectedStorePresentationEnvelopeSchema,
+  ])
+  .superRefine((envelope, context) => {
+    if (envelope.storedObservation.status === 'complete') {
+      if (envelope.storedObservation.presentation.mode !== envelope.mode) {
+        context.addIssue({
+          code: 'custom',
+          message: 'stored observation mode must match its presentation envelope',
+          path: ['storedObservation', 'presentation', 'mode'],
+        })
+      }
+    }
+    const findings = [
+      ...(envelope.presentation === null ? [] : [envelope.presentation.finding]),
+      envelope.storedObservation.finding,
+    ]
+    for (const reference of findings.flatMap(findingReferences)) {
+      const id = analyticReferenceId(reference)
+      const resolution = envelope.resolutions[id]
+      if (resolution === undefined || !whyResolutionAnswersReference(reference, resolution)) {
+        context.addIssue({
+          code: 'custom',
+          message: `presentation reference ${id} is not answered by its bundled resolution`,
+          path: ['resolutions', id],
+        })
+      }
+    }
+  })
 
 export type IntegrationShapePresentationEnvelope = z.infer<
   typeof IntegrationShapePresentationEnvelopeSchema

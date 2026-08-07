@@ -14,6 +14,11 @@ import {
 } from './contract.js'
 import { V2Error, v2ErrorBody } from './errors.js'
 import { registerEvidenceRoutes } from './evidence.js'
+import {
+  createSelectedStoredObservationSource,
+  registerIntegrationShapeRoute,
+  type SelectedStoredObservationSource,
+} from './integrationShape.js'
 import { assertV2Request } from './guard.js'
 import { readSyntheticCoverageStore } from './store.js'
 
@@ -25,7 +30,14 @@ import { readSyntheticCoverageStore } from './store.js'
  * endpoints are read-only: `capabilities` reports registry lifecycle state and
  * performs no transition, and `coverage` serves only a synthetic-marked store.
  */
-export function createV2Router(config: V2RuntimeConfig): express.Router {
+export interface V2RouterDependencies {
+  readonly createPhaseESource?: (config: NonNullable<V2RuntimeConfig['phaseEAnalysis']>) => SelectedStoredObservationSource
+}
+
+export function createV2Router(
+  config: V2RuntimeConfig,
+  dependencies: V2RouterDependencies = {},
+): express.Router {
   const router = express.Router()
 
   router.use((_request, response, next) => {
@@ -88,9 +100,16 @@ export function createV2Router(config: V2RuntimeConfig): express.Router {
     }
   })
 
-  // DL-VALUE-01: the minimal evidence endpoint. Native-dependency free and presentation-safe; it
-  // inherits the guard middleware registered above.
-  registerEvidenceRoutes(router)
+  // Phase E is absent by default. Once every explicit binding is present, presentation and drawer
+  // routes share one immutable selected-store snapshot; no synthetic fallback crosses this seam.
+  const phaseE = config.phaseEAnalysis === undefined
+    ? undefined
+    : (dependencies.createPhaseESource ?? createSelectedStoredObservationSource)(config.phaseEAnalysis)
+  if (phaseE !== undefined) registerIntegrationShapeRoute(router, phaseE)
+
+  // DL-VALUE-01: the minimal evidence endpoint. It remains the existing invented composition when
+  // Phase E is absent and switches as one unit with the selected presentation when configured.
+  registerEvidenceRoutes(router, phaseE?.evidenceSource)
 
   router.use((_request, _response, next) => {
     next(new V2Error('V2_NOT_FOUND'))

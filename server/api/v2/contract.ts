@@ -16,6 +16,8 @@ import { INTEGRATION_SHAPE_ANALYSIS_VERSION } from '../../../shared/integrationS
 import { ISO_WEEK_LABEL_PATTERN, isoWeekLabel } from '../../../shared/presentationGrain.js'
 import { DataClassSchema } from '../../../shared/privacy.js'
 import { WhyResolutionSchema, whyResolutionAnswersReference } from '../../../shared/whyContract.js'
+import { SYNTHETIC_STORE_MARKER } from '../../../shared/storeProvenance.js'
+export { SYNTHETIC_STORE_MARKER } from '../../../shared/storeProvenance.js'
 
 /**
  * Response contracts for the `/api/v2` bootstrap slice (card DL-BRIDGE-01, ADR-04).
@@ -27,8 +29,6 @@ import { WhyResolutionSchema, whyResolutionAnswersReference } from '../../../sha
 export const V2_API_CONTRACT_VERSION = '1.0.0' as const
 
 /** The explicit synthetic-mode marker required by the ADR-04 provenance rule. */
-export const SYNTHETIC_STORE_MARKER = 'developer-lens.synthetic-importer.v1' as const
-
 export const V2_STORE_PROVENANCE_MODES = ['synthetic', 'activation_card'] as const
 export const V2StoreProvenanceModeSchema = z.enum(V2_STORE_PROVENANCE_MODES)
 export type V2StoreProvenanceMode = z.infer<typeof V2StoreProvenanceModeSchema>

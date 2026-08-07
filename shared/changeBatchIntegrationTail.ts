@@ -7,9 +7,30 @@ import { z } from 'zod'
  */
 export const CHANGE_BATCH_INTEGRATION_TAIL_PRESENTATION_VERSION = '1.0.0' as const
 
+export const CHANGE_BATCH_INTEGRATION_TAIL_ABSTENTION_CODES = [
+  'REQUIRED_TABLE_MISSING',
+  'COVERAGE_NOT_COMPLETE',
+  'COVERAGE_AMBIGUOUS',
+  'COVERAGE_BINDING_MISMATCH',
+  'READY_COLUMNS_MISSING',
+  'READY_FACT_MISSING',
+  'INVALID_LIFECYCLE_TIMESTAMP',
+  'RETENTION_EXPIRED',
+  'SOURCE_NOT_AUTHORIZED',
+  'ALL_CENSORED',
+  'SUPPORT_BELOW_MINIMUM',
+] as const
+export const ChangeBatchIntegrationTailAbstentionCodeSchema = z.enum(
+  CHANGE_BATCH_INTEGRATION_TAIL_ABSTENTION_CODES,
+)
+export type ChangeBatchIntegrationTailAbstentionCode = z.infer<
+  typeof ChangeBatchIntegrationTailAbstentionCodeSchema
+>
+
 export const CHANGE_BATCH_STRATA = ['lower', 'middle', 'upper'] as const
 export const ChangeBatchStratumSchema = z.enum(CHANGE_BATCH_STRATA)
 export type ChangeBatchStratum = z.infer<typeof ChangeBatchStratumSchema>
+export const ChangeBatchScopeIdSchema = z.string().regex(/^scope-[0-9a-f]{64}$/)
 
 const WeekLabelSchema = z.string().regex(/^\d{4}-W\d{2}$/)
 const CountSchema = z.number().int().nonnegative()
@@ -29,6 +50,19 @@ export const IntegrationTailSummarySchema = z
   .superRefine((summary, context) => {
     if ((summary.sampleSize === 0) !== (summary.quantiles === null)) {
       context.addIssue({ code: 'custom', message: 'An empty integration tail has no quantiles', path: ['quantiles'] })
+    }
+    if (summary.quantiles !== null) {
+      const quantiles = summary.quantiles.map((entry) => entry.quantile)
+      if (
+        quantiles.length !== 3
+        || !([0.5, 0.75, 0.9] as const).every((quantile) => quantiles.filter((value) => value === quantile).length === 1)
+      ) {
+        context.addIssue({
+          code: 'custom',
+          message: 'A rendered integration tail carries exactly p50, p75, and p90 once each',
+          path: ['quantiles'],
+        })
+      }
     }
   })
 export type IntegrationTailSummary = z.infer<typeof IntegrationTailSummarySchema>
@@ -61,7 +95,49 @@ export const ChangeBatchWindowSummarySchema = z
     strata: z.array(ChangeBatchStratumSummarySchema),
   })
   .strict()
+  .superRefine((summary, context) => {
+    const order = summary.strata.map((entry) => entry.stratum)
+    if (
+      order.length !== CHANGE_BATCH_STRATA.length
+      || !CHANGE_BATCH_STRATA.every((stratum, index) => order[index] === stratum)
+    ) {
+      context.addIssue({
+        code: 'custom',
+        message: 'A change-batch window carries exactly the lower, middle, and upper strata in order',
+        path: ['strata'],
+      })
+    }
+  })
 export type ChangeBatchWindowSummary = z.infer<typeof ChangeBatchWindowSummarySchema>
+
+export const StoredDeletionLineageEventSchema = z
+  .object({
+    subjectKind: z.enum(['scope', 'claim', 'job', 'snapshot', 'checkpoint', 'coverage', 'evidence', 'artifact', 'deletion']),
+    eventKind: z.enum(['tombstone_cascade', 'index_deleted', 'legacy_deletion_operation']),
+    week: WeekLabelSchema,
+    count: CountSchema.min(1),
+  })
+  .strict()
+export type StoredDeletionLineageEvent = z.infer<typeof StoredDeletionLineageEventSchema>
+
+/** Content-free scope lineage: closed kinds, ISO-week grain, and aggregate counts only. */
+export const StoredDeletionLineageSummarySchema = z
+  .object({
+    status: z.enum(['none_recorded', 'present', 'unavailable']),
+    eventCount: CountSchema,
+    events: z.array(StoredDeletionLineageEventSchema),
+  })
+  .strict()
+  .superRefine((summary, context) => {
+    const total = summary.events.reduce((sum, event) => sum + event.count, 0)
+    if (total !== summary.eventCount) {
+      context.addIssue({ code: 'custom', message: 'Deletion-lineage eventCount must equal its aggregate rows', path: ['eventCount'] })
+    }
+    if ((summary.status === 'present') !== (summary.eventCount > 0)) {
+      context.addIssue({ code: 'custom', message: 'Only present deletion lineage carries retained events', path: ['status'] })
+    }
+  })
+export type StoredDeletionLineageSummary = z.infer<typeof StoredDeletionLineageSummarySchema>
 
 /**
  * Presentation-safe stored-observation envelope.  User-facing windows are ISO-week grain and
@@ -100,7 +176,7 @@ export const ChangeBatchIntegrationTailPresentationSchema = z
   .object({
     presentationContractVersion: z.literal(CHANGE_BATCH_INTEGRATION_TAIL_PRESENTATION_VERSION),
     mode: z.enum(['selected_store', 'synthetic']),
-    scopeId: z.string().min(1),
+    scopeId: ChangeBatchScopeIdSchema,
     capabilityId: z.literal('github.core'),
     consentRevision: z.string().min(1),
     current: ChangeBatchWindowSummarySchema,
@@ -111,6 +187,7 @@ export const ChangeBatchIntegrationTailPresentationSchema = z
       current: ChangeBatchWindowSummarySchema,
       baseline: ChangeBatchWindowSummarySchema,
     }).strict(),
+    deletionLineage: StoredDeletionLineageSummarySchema,
     provenance: z.object({ current: IntegrationShapeProvenanceSchema, baseline: IntegrationShapeProvenanceSchema }).strict(),
     factProvenanceLimitation: z.literal('pull_request_fact_has_no_job_provenance'),
   })
@@ -133,7 +210,13 @@ export interface ChangeBatchValueGroup<T> {
 }
 
 export function partitionChangeBatchValueThirds<T>(groups: readonly ChangeBatchValueGroup<T>[]): Readonly<Record<ChangeBatchStratum, readonly T[]>> {
-  const ordered = [...groups].sort((left, right) => left.value - right.value)
+  const coalesced = new Map<number, T[]>()
+  for (const group of groups) {
+    coalesced.set(group.value, [...(coalesced.get(group.value) ?? []), ...group.rows])
+  }
+  const ordered = [...coalesced.entries()]
+    .map(([value, rows]) => ({ value, rows }))
+    .sort((left, right) => left.value - right.value)
   const total = ordered.reduce((sum, group) => sum + group.rows.length, 0)
   const targets = [total / 3, (2 * total) / 3]
   const output: Record<ChangeBatchStratum, T[]> = { lower: [], middle: [], upper: [] }

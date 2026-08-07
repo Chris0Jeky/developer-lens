@@ -396,7 +396,7 @@ describe('storage-v3 B1a proposal', () => {
     expect(liveClaims.LineageEventKindSchema.safeParse('legacy_deletion_operation').success).toBe(false)
   })
 
-  it('allows only the bounded executable storage-v3 chain and its default-off CLI caller', () => {
+  it('allows only the bounded executable storage-v3 chain and its explicit default-off callers', () => {
     const root = resolve(__dirname, '../..')
     const roots = ['server', 'shared', 'src', 'scripts'].map((name) => join(root, name))
     const files: string[] = []
@@ -450,6 +450,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3SelectionReceipt.ts',
             'server/storage/v3Restore.ts',
             'server/storage/v3MigrationCleanup.ts',
+            'server/analysis/syntheticV3StoredObservation.ts',
           ].includes(sourcePath)) {
             offenders.push(`${sourcePath} -> ${target}`)
           }
@@ -514,7 +515,8 @@ describe('storage-v3 B1a proposal', () => {
             && sourcePath !== 'server/storage/v3Backup.ts'
             && sourcePath !== 'server/storage/v3ReaderSelection.ts'
             && sourcePath !== 'server/storage/v3Restore.ts'
-            && sourcePath !== 'server/storage/v3RevocationReplay.ts') {
+            && sourcePath !== 'server/storage/v3RevocationReplay.ts'
+            && sourcePath !== 'server/api/v2/integrationShape.ts') {
             offenders.push(`${sourcePath} -> ${target}`)
           }
         }
