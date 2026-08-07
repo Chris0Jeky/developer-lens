@@ -1,60 +1,1217 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "additionalProperties": false,
-  "allOf": [
-    {
-      "properties": {
-        "classification": {
-          "const": "C0"
-        },
-        "schema_version": {
-          "const": "DeveloperLensMethodTrialView.v1"
-        }
-      }
-    },
-    {
-      "properties": {
-        "timelines": {
-          "maxItems": 3,
-          "minItems": 3,
-          "type": "array"
-        }
-      }
-    }
-  ],
   "properties": {
-    "claim_codes": {
-      "items": {
-        "enum": [
-          "baseline_fewer_false_alerts",
-          "both_threshold_selections_nonviable",
-          "bocpd_not_promoted",
-          "c0_synthetic_only_no_real_world_effect"
-        ],
-        "type": "string"
-      },
-      "minItems": 1,
+    "acceptance_gates": {
+      "items": false,
+      "maxItems": 6,
+      "minItems": 6,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "support",
+                    "threshold_viability",
+                    "false_alerts",
+                    "detection",
+                    "calibration",
+                    "promotion"
+                  ],
+                  "type": "string"
+                },
+                "label": {
+                  "maxLength": 80,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "order": {
+                  "maximum": 6,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "outcome": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "not_applicable"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "maxLength": 200,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "reason_code": {
+                  "enum": [
+                    "support_sufficient",
+                    "both_selections_nonviable",
+                    "candidate_false_alerts_higher",
+                    "same_detection_no_gain",
+                    "candidate_brier_reported",
+                    "candidate_rejected"
+                  ],
+                  "type": "string"
+                },
+                "relevant_values": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "baseline": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "candidate": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "baseline",
+                    "candidate"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "order",
+                "code",
+                "label",
+                "outcome",
+                "reason_code",
+                "reason"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "support"
+                },
+                "order": {
+                  "const": 1
+                }
+              },
+              "required": [
+                "order",
+                "code"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "support",
+                    "threshold_viability",
+                    "false_alerts",
+                    "detection",
+                    "calibration",
+                    "promotion"
+                  ],
+                  "type": "string"
+                },
+                "label": {
+                  "maxLength": 80,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "order": {
+                  "maximum": 6,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "outcome": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "not_applicable"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "maxLength": 200,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "reason_code": {
+                  "enum": [
+                    "support_sufficient",
+                    "both_selections_nonviable",
+                    "candidate_false_alerts_higher",
+                    "same_detection_no_gain",
+                    "candidate_brier_reported",
+                    "candidate_rejected"
+                  ],
+                  "type": "string"
+                },
+                "relevant_values": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "baseline": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "candidate": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "baseline",
+                    "candidate"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "order",
+                "code",
+                "label",
+                "outcome",
+                "reason_code",
+                "reason"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "threshold_viability"
+                },
+                "order": {
+                  "const": 2
+                }
+              },
+              "required": [
+                "order",
+                "code"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "support",
+                    "threshold_viability",
+                    "false_alerts",
+                    "detection",
+                    "calibration",
+                    "promotion"
+                  ],
+                  "type": "string"
+                },
+                "label": {
+                  "maxLength": 80,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "order": {
+                  "maximum": 6,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "outcome": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "not_applicable"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "maxLength": 200,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "reason_code": {
+                  "enum": [
+                    "support_sufficient",
+                    "both_selections_nonviable",
+                    "candidate_false_alerts_higher",
+                    "same_detection_no_gain",
+                    "candidate_brier_reported",
+                    "candidate_rejected"
+                  ],
+                  "type": "string"
+                },
+                "relevant_values": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "baseline": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "candidate": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "baseline",
+                    "candidate"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "order",
+                "code",
+                "label",
+                "outcome",
+                "reason_code",
+                "reason"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "false_alerts"
+                },
+                "order": {
+                  "const": 3
+                }
+              },
+              "required": [
+                "order",
+                "code"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "support",
+                    "threshold_viability",
+                    "false_alerts",
+                    "detection",
+                    "calibration",
+                    "promotion"
+                  ],
+                  "type": "string"
+                },
+                "label": {
+                  "maxLength": 80,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "order": {
+                  "maximum": 6,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "outcome": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "not_applicable"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "maxLength": 200,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "reason_code": {
+                  "enum": [
+                    "support_sufficient",
+                    "both_selections_nonviable",
+                    "candidate_false_alerts_higher",
+                    "same_detection_no_gain",
+                    "candidate_brier_reported",
+                    "candidate_rejected"
+                  ],
+                  "type": "string"
+                },
+                "relevant_values": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "baseline": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "candidate": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "baseline",
+                    "candidate"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "order",
+                "code",
+                "label",
+                "outcome",
+                "reason_code",
+                "reason"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "detection"
+                },
+                "order": {
+                  "const": 4
+                }
+              },
+              "required": [
+                "order",
+                "code"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "support",
+                    "threshold_viability",
+                    "false_alerts",
+                    "detection",
+                    "calibration",
+                    "promotion"
+                  ],
+                  "type": "string"
+                },
+                "label": {
+                  "maxLength": 80,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "order": {
+                  "maximum": 6,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "outcome": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "not_applicable"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "maxLength": 200,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "reason_code": {
+                  "enum": [
+                    "support_sufficient",
+                    "both_selections_nonviable",
+                    "candidate_false_alerts_higher",
+                    "same_detection_no_gain",
+                    "candidate_brier_reported",
+                    "candidate_rejected"
+                  ],
+                  "type": "string"
+                },
+                "relevant_values": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "baseline": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "candidate": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "baseline",
+                    "candidate"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "order",
+                "code",
+                "label",
+                "outcome",
+                "reason_code",
+                "reason"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "calibration"
+                },
+                "order": {
+                  "const": 5
+                }
+              },
+              "required": [
+                "order",
+                "code"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "code": {
+                  "enum": [
+                    "support",
+                    "threshold_viability",
+                    "false_alerts",
+                    "detection",
+                    "calibration",
+                    "promotion"
+                  ],
+                  "type": "string"
+                },
+                "label": {
+                  "maxLength": 80,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "order": {
+                  "maximum": 6,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "outcome": {
+                  "enum": [
+                    "pass",
+                    "fail",
+                    "not_applicable"
+                  ],
+                  "type": "string"
+                },
+                "reason": {
+                  "maxLength": 200,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "reason_code": {
+                  "enum": [
+                    "support_sufficient",
+                    "both_selections_nonviable",
+                    "candidate_false_alerts_higher",
+                    "same_detection_no_gain",
+                    "candidate_brier_reported",
+                    "candidate_rejected"
+                  ],
+                  "type": "string"
+                },
+                "relevant_values": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "baseline": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    },
+                    "candidate": {
+                      "oneOf": [
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "status": {
+                              "const": "measured",
+                              "type": "string"
+                            },
+                            "value": {
+                              "maximum": 1000000,
+                              "minimum": -1000000,
+                              "type": "number"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "value"
+                          ],
+                          "type": "object"
+                        },
+                        {
+                          "additionalProperties": false,
+                          "properties": {
+                            "reason": {
+                              "enum": [
+                                "insufficient_support",
+                                "not_applicable",
+                                "not_measured"
+                              ],
+                              "type": "string"
+                            },
+                            "status": {
+                              "const": "unavailable",
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "status",
+                            "reason"
+                          ],
+                          "type": "object"
+                        }
+                      ]
+                    }
+                  },
+                  "required": [
+                    "baseline",
+                    "candidate"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "order",
+                "code",
+                "label",
+                "outcome",
+                "reason_code",
+                "reason"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "code": {
+                  "const": "promotion"
+                },
+                "order": {
+                  "const": 6
+                }
+              },
+              "required": [
+                "order",
+                "code"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      ],
       "type": "array"
     },
-    "classification": {
-      "const": "C0",
-      "type": "string"
+    "claims": {
+      "additionalProperties": false,
+      "properties": {
+        "limitations": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "enum": [
+                  "c0_synthetic_only",
+                  "bounded_three_case_selection",
+                  "missingness_and_confound",
+                  "thresholds_nonviable"
+                ],
+                "type": "string"
+              },
+              "display_text": {
+                "maxLength": 180,
+                "minLength": 3,
+                "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "display_text"
+            ],
+            "type": "object"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "type": "array"
+        },
+        "supported": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "enum": [
+                  "same_detection_on_c0",
+                  "candidate_more_false_alerts_on_c0",
+                  "deterministic_case_windows",
+                  "offline_pelt_descriptive"
+                ],
+                "type": "string"
+              },
+              "display_text": {
+                "maxLength": 180,
+                "minLength": 3,
+                "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "display_text"
+            ],
+            "type": "object"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "type": "array"
+        },
+        "unsupported": {
+          "items": {
+            "additionalProperties": false,
+            "properties": {
+              "code": {
+                "enum": [
+                  "real_repository_validity",
+                  "person_level_inference",
+                  "model_promotion",
+                  "online_pelt_performance"
+                ],
+                "type": "string"
+              },
+              "display_text": {
+                "maxLength": 180,
+                "minLength": 3,
+                "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "display_text"
+            ],
+            "type": "object"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "type": "array"
+        }
+      },
+      "required": [
+        "supported",
+        "unsupported",
+        "limitations"
+      ],
+      "type": "object"
     },
     "dataset": {
       "additionalProperties": false,
       "properties": {
         "absent_count": {
-          "maximum": 10000,
+          "maximum": 100000,
           "minimum": 0,
           "type": "integer"
+        },
+        "limitations": {
+          "items": {
+            "maxLength": 180,
+            "minLength": 3,
+            "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+            "type": "string"
+          },
+          "maxItems": 4,
+          "minItems": 1,
+          "type": "array"
         },
         "observed_count": {
-          "maximum": 10000,
-          "minimum": 0,
-          "type": "integer"
-        },
-        "opportunity_count": {
-          "maximum": 10000,
+          "maximum": 100000,
           "minimum": 0,
           "type": "integer"
         },
@@ -78,45 +1235,30 @@
           ],
           "type": "array"
         },
-        "system_code": {
-          "const": "WB-C1",
-          "type": "string"
+        "system_count": {
+          "maximum": 100000,
+          "minimum": 1,
+          "type": "integer"
+        },
+        "weekly_opportunity_count": {
+          "maximum": 100000,
+          "minimum": 1,
+          "type": "integer"
         }
       },
       "required": [
-        "system_code",
-        "opportunity_count",
+        "system_count",
+        "weekly_opportunity_count",
         "observed_count",
         "absent_count",
-        "scenario_codes"
+        "scenario_codes",
+        "limitations"
       ],
       "type": "object"
     },
     "decision": {
       "additionalProperties": false,
       "properties": {
-        "candidate_promoted": {
-          "const": false,
-          "type": "boolean"
-        },
-        "fallback": {
-          "additionalProperties": false,
-          "properties": {
-            "method_code": {
-              "const": "rolling_median_mad",
-              "type": "string"
-            },
-            "retained": {
-              "const": true,
-              "type": "boolean"
-            }
-          },
-          "required": [
-            "method_code",
-            "retained"
-          ],
-          "type": "object"
-        },
         "outcome": {
           "const": "reject",
           "type": "string"
@@ -124,325 +1266,254 @@
         "reason_codes": {
           "items": {
             "enum": [
-              "BOTH_SELECTIONS_NONVIABLE",
-              "BASELINE_WINS_PRIMARY",
-              "COVERAGE_CONFOUND_LIMIT",
-              "CALIBRATION_LIMIT"
+              "both_thresholds_nonviable",
+              "candidate_more_false_alerts",
+              "no_detection_gain",
+              "candidate_not_promoted"
             ],
             "type": "string"
           },
+          "maxItems": 4,
           "minItems": 1,
           "type": "array"
+        },
+        "summary": {
+          "maxLength": 260,
+          "minLength": 3,
+          "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+          "type": "string"
+        },
+        "why_simple_baseline_won": {
+          "maxLength": 260,
+          "minLength": 3,
+          "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+          "type": "string"
         }
       },
       "required": [
         "outcome",
         "reason_codes",
-        "fallback",
-        "candidate_promoted"
+        "summary",
+        "why_simple_baseline_won"
       ],
       "type": "object"
-    },
-    "gates": {
-      "items": {
-        "additionalProperties": false,
-        "properties": {
-          "gate_code": {
-            "enum": [
-              "support",
-              "threshold_selection",
-              "online_primary",
-              "coverage_confound",
-              "calibration",
-              "promotion"
-            ],
-            "type": "string"
-          },
-          "order": {
-            "maximum": 8,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "outcome": {
-            "enum": [
-              "pass",
-              "fail",
-              "not_run"
-            ],
-            "type": "string"
-          },
-          "reason_code": {
-            "enum": [
-              "SUPPORT_SUFFICIENT",
-              "SUPPORT_INSUFFICIENT",
-              "BOTH_SELECTIONS_NONVIABLE",
-              "BASELINE_WINS_PRIMARY",
-              "COVERAGE_CONFOUND_LIMIT",
-              "CALIBRATION_LIMIT",
-              "PELT_OFFLINE_ONLY",
-              "CANDIDATE_NOT_PROMOTED"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "order",
-          "gate_code",
-          "outcome",
-          "reason_code"
-        ],
-        "type": "object"
-      },
-      "maxItems": 6,
-      "minItems": 6,
-      "prefixItems": [
-        {
-          "properties": {
-            "gate_code": {
-              "const": "support"
-            },
-            "order": {
-              "const": 1
-            }
-          },
-          "required": [
-            "order",
-            "gate_code"
-          ],
-          "type": "object"
-        },
-        {
-          "properties": {
-            "gate_code": {
-              "const": "threshold_selection"
-            },
-            "order": {
-              "const": 2
-            }
-          },
-          "required": [
-            "order",
-            "gate_code"
-          ],
-          "type": "object"
-        },
-        {
-          "properties": {
-            "gate_code": {
-              "const": "online_primary"
-            },
-            "order": {
-              "const": 3
-            }
-          },
-          "required": [
-            "order",
-            "gate_code"
-          ],
-          "type": "object"
-        },
-        {
-          "properties": {
-            "gate_code": {
-              "const": "coverage_confound"
-            },
-            "order": {
-              "const": 4
-            }
-          },
-          "required": [
-            "order",
-            "gate_code"
-          ],
-          "type": "object"
-        },
-        {
-          "properties": {
-            "gate_code": {
-              "const": "calibration"
-            },
-            "order": {
-              "const": 5
-            }
-          },
-          "required": [
-            "order",
-            "gate_code"
-          ],
-          "type": "object"
-        },
-        {
-          "properties": {
-            "gate_code": {
-              "const": "promotion"
-            },
-            "order": {
-              "const": 6
-            }
-          },
-          "required": [
-            "order",
-            "gate_code"
-          ],
-          "type": "object"
-        }
-      ],
-      "type": "array"
-    },
-    "limitation_codes": {
-      "items": {
-        "enum": [
-          "missingness_limits_interpretation",
-          "instrumentation_confound_caveat",
-          "pelt_offline_only",
-          "synthetic_c0_no_real_world_effect"
-        ],
-        "type": "string"
-      },
-      "minItems": 1,
-      "type": "array"
     },
     "methods": {
       "additionalProperties": false,
       "properties": {
         "baseline": {
           "additionalProperties": false,
+          "allOf": [
+            {
+              "properties": {
+                "deterministic": {
+                  "const": true
+                },
+                "method_code": {
+                  "const": "rolling_median_mad"
+                },
+                "role": {
+                  "const": "baseline"
+                }
+              },
+              "required": [
+                "role",
+                "method_code",
+                "deterministic"
+              ],
+              "type": "object"
+            }
+          ],
           "properties": {
-            "evaluation_mode": {
-              "const": "online"
-            },
-            "family": {
-              "const": "deterministic_baseline"
-            },
-            "label": {
-              "maxLength": 96,
+            "description": {
+              "maxLength": 180,
               "minLength": 3,
+              "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+              "type": "string"
+            },
+            "deterministic": {
+              "type": "boolean"
+            },
+            "display_name": {
+              "maxLength": 80,
+              "minLength": 3,
+              "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
               "type": "string"
             },
             "method_code": {
-              "const": "rolling_median_mad"
+              "enum": [
+                "rolling_median_mad",
+                "bocpd",
+                "pelt"
+              ],
+              "type": "string"
             },
-            "promotion_eligible": {
-              "const": false
+            "parameter_summary": {
+              "maxLength": 180,
+              "minLength": 3,
+              "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+              "type": "string"
             },
             "role": {
-              "const": "baseline"
-            },
-            "threshold": {
-              "anyOf": [
-                {
-                  "maximum": 1000000,
-                  "minimum": -1000000,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "enum": [
+                "baseline",
+                "candidate",
+                "offline_descriptive"
+              ],
+              "type": "string"
             }
           },
           "required": [
-            "method_code",
-            "label",
-            "family",
-            "evaluation_mode",
             "role",
-            "threshold",
-            "promotion_eligible"
+            "method_code",
+            "display_name",
+            "description",
+            "deterministic",
+            "parameter_summary"
           ],
           "type": "object"
         },
         "candidate": {
           "additionalProperties": false,
+          "allOf": [
+            {
+              "properties": {
+                "deterministic": {
+                  "const": true
+                },
+                "method_code": {
+                  "const": "bocpd"
+                },
+                "role": {
+                  "const": "candidate"
+                }
+              },
+              "required": [
+                "role",
+                "method_code",
+                "deterministic"
+              ],
+              "type": "object"
+            }
+          ],
           "properties": {
-            "evaluation_mode": {
-              "const": "online"
-            },
-            "family": {
-              "const": "online_candidate"
-            },
-            "label": {
-              "maxLength": 96,
+            "description": {
+              "maxLength": 180,
               "minLength": 3,
+              "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+              "type": "string"
+            },
+            "deterministic": {
+              "type": "boolean"
+            },
+            "display_name": {
+              "maxLength": 80,
+              "minLength": 3,
+              "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
               "type": "string"
             },
             "method_code": {
-              "const": "bocpd"
+              "enum": [
+                "rolling_median_mad",
+                "bocpd",
+                "pelt"
+              ],
+              "type": "string"
             },
-            "promotion_eligible": {
-              "const": false
+            "parameter_summary": {
+              "maxLength": 180,
+              "minLength": 3,
+              "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+              "type": "string"
             },
             "role": {
-              "const": "candidate"
-            },
-            "threshold": {
-              "anyOf": [
-                {
-                  "maximum": 1000000,
-                  "minimum": -1000000,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "enum": [
+                "baseline",
+                "candidate",
+                "offline_descriptive"
+              ],
+              "type": "string"
             }
           },
           "required": [
-            "method_code",
-            "label",
-            "family",
-            "evaluation_mode",
             "role",
-            "threshold",
-            "promotion_eligible"
+            "method_code",
+            "display_name",
+            "description",
+            "deterministic",
+            "parameter_summary"
           ],
           "type": "object"
         },
-        "offline_descriptive": {
+        "offline_pelt": {
           "additionalProperties": false,
+          "allOf": [
+            {
+              "properties": {
+                "deterministic": {
+                  "const": true
+                },
+                "method_code": {
+                  "const": "pelt"
+                },
+                "role": {
+                  "const": "offline_descriptive"
+                }
+              },
+              "required": [
+                "role",
+                "method_code",
+                "deterministic"
+              ],
+              "type": "object"
+            }
+          ],
           "properties": {
-            "evaluation_mode": {
-              "const": "offline_descriptive"
-            },
-            "family": {
-              "const": "offline_descriptive"
-            },
-            "label": {
-              "maxLength": 96,
+            "description": {
+              "maxLength": 180,
               "minLength": 3,
+              "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+              "type": "string"
+            },
+            "deterministic": {
+              "type": "boolean"
+            },
+            "display_name": {
+              "maxLength": 80,
+              "minLength": 3,
+              "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
               "type": "string"
             },
             "method_code": {
-              "const": "pelt"
+              "enum": [
+                "rolling_median_mad",
+                "bocpd",
+                "pelt"
+              ],
+              "type": "string"
             },
-            "promotion_eligible": {
-              "const": false
+            "parameter_summary": {
+              "maxLength": 180,
+              "minLength": 3,
+              "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+              "type": "string"
             },
             "role": {
-              "const": "offline_descriptive"
-            },
-            "threshold": {
-              "anyOf": [
-                {
-                  "maximum": 1000000,
-                  "minimum": -1000000,
-                  "type": "number"
-                },
-                {
-                  "type": "null"
-                }
-              ]
+              "enum": [
+                "baseline",
+                "candidate",
+                "offline_descriptive"
+              ],
+              "type": "string"
             }
           },
           "required": [
-            "method_code",
-            "label",
-            "family",
-            "evaluation_mode",
             "role",
-            "threshold",
-            "promotion_eligible"
+            "method_code",
+            "display_name",
+            "description",
+            "deterministic",
+            "parameter_summary"
           ],
           "type": "object"
         }
@@ -450,69 +1521,1371 @@
       "required": [
         "baseline",
         "candidate",
-        "offline_descriptive"
+        "offline_pelt"
       ],
       "type": "object"
+    },
+    "representative_cases": {
+      "items": false,
+      "maxItems": 3,
+      "minItems": 3,
+      "prefixItems": [
+        {
+          "allOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "order": {
+                  "maximum": 3,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "points": {
+                  "items": {
+                    "additionalProperties": false,
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "observed": {
+                              "properties": {
+                                "state": {
+                                  "const": "missing"
+                                }
+                              },
+                              "required": [
+                                "state"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "observed"
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "baseline": {
+                              "properties": {
+                                "alert": {
+                                  "const": false
+                                },
+                                "score": {
+                                  "properties": {
+                                    "status": {
+                                      "const": "unavailable"
+                                    }
+                                  },
+                                  "required": [
+                                    "status"
+                                  ],
+                                  "type": "object"
+                                }
+                              },
+                              "required": [
+                                "alert",
+                                "score"
+                              ],
+                              "type": "object"
+                            },
+                            "candidate": {
+                              "properties": {
+                                "alert": {
+                                  "const": false
+                                },
+                                "probability": {
+                                  "properties": {
+                                    "status": {
+                                      "const": "unavailable"
+                                    }
+                                  },
+                                  "required": [
+                                    "status"
+                                  ],
+                                  "type": "object"
+                                }
+                              },
+                              "required": [
+                                "alert",
+                                "probability"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "baseline",
+                            "candidate"
+                          ]
+                        }
+                      }
+                    ],
+                    "properties": {
+                      "baseline": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "alert": {
+                            "type": "boolean"
+                          },
+                          "score": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "status": {
+                                    "const": "measured",
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "maximum": 1000000,
+                                    "minimum": -1000000,
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "value"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "reason": {
+                                    "enum": [
+                                      "insufficient_support",
+                                      "not_applicable",
+                                      "not_measured"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "status": {
+                                    "const": "unavailable",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "reason"
+                                ],
+                                "type": "object"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "alert",
+                          "score"
+                        ],
+                        "type": "object"
+                      },
+                      "candidate": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "alert": {
+                            "type": "boolean"
+                          },
+                          "probability": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "status": {
+                                    "const": "measured",
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "maximum": 1,
+                                    "minimum": 0,
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "value"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "reason": {
+                                    "enum": [
+                                      "insufficient_support",
+                                      "not_applicable",
+                                      "not_measured"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "status": {
+                                    "const": "unavailable",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "reason"
+                                ],
+                                "type": "object"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "probability",
+                          "alert"
+                        ],
+                        "type": "object"
+                      },
+                      "confound_marker": {
+                        "enum": [
+                          "none",
+                          "permission_loss",
+                          "actions_cap",
+                          "shallow_boundary",
+                          "parser_major_change"
+                        ],
+                        "type": "string"
+                      },
+                      "observed": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "state": {
+                                "const": "observed",
+                                "type": "string"
+                              },
+                              "value": {
+                                "maximum": 1000000,
+                                "minimum": -1000000,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "value"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "reason": {
+                                "enum": [
+                                  "not_collected",
+                                  "permission_gap",
+                                  "instrumentation_gap"
+                                ],
+                                "type": "string"
+                              },
+                              "state": {
+                                "const": "missing",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "reason"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "pelt_marker": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "boundary": {
+                            "type": "boolean"
+                          },
+                          "evaluation_mode": {
+                            "const": "offline_descriptive",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "evaluation_mode",
+                          "boundary"
+                        ],
+                        "type": "object"
+                      },
+                      "planted_marker": {
+                        "enum": [
+                          "none",
+                          "level",
+                          "variance",
+                          "trend",
+                          "seasonal"
+                        ],
+                        "type": "string"
+                      },
+                      "relative_week_index": {
+                        "maximum": 23,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "relative_week_label": {
+                        "pattern": "^week-[0-9]{2}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "relative_week_index",
+                      "relative_week_label",
+                      "observed",
+                      "planted_marker",
+                      "confound_marker",
+                      "baseline",
+                      "candidate",
+                      "pelt_marker"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 24,
+                  "minItems": 8,
+                  "type": "array"
+                },
+                "scenario_code": {
+                  "enum": [
+                    "no_change_control",
+                    "planted_change",
+                    "instrumentation_confound"
+                  ],
+                  "type": "string"
+                },
+                "selection_rule": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "fixed_first_window",
+                        "fixed_change_window",
+                        "fixed_confound_window"
+                      ],
+                      "type": "string"
+                    },
+                    "deterministic": {
+                      "const": true,
+                      "type": "boolean"
+                    },
+                    "label": {
+                      "maxLength": 100,
+                      "minLength": 3,
+                      "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "label",
+                    "deterministic"
+                  ],
+                  "type": "object"
+                },
+                "summary": {
+                  "maxLength": 220,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "title": {
+                  "maxLength": 96,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order",
+                "scenario_code",
+                "selection_rule",
+                "title",
+                "summary",
+                "points"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "order": {
+                  "const": 1
+                },
+                "scenario_code": {
+                  "const": "no_change_control"
+                },
+                "selection_rule": {
+                  "properties": {
+                    "code": {
+                      "const": "fixed_first_window"
+                    },
+                    "deterministic": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "deterministic"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "order",
+                "scenario_code",
+                "selection_rule"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "order": {
+                  "maximum": 3,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "points": {
+                  "items": {
+                    "additionalProperties": false,
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "observed": {
+                              "properties": {
+                                "state": {
+                                  "const": "missing"
+                                }
+                              },
+                              "required": [
+                                "state"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "observed"
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "baseline": {
+                              "properties": {
+                                "alert": {
+                                  "const": false
+                                },
+                                "score": {
+                                  "properties": {
+                                    "status": {
+                                      "const": "unavailable"
+                                    }
+                                  },
+                                  "required": [
+                                    "status"
+                                  ],
+                                  "type": "object"
+                                }
+                              },
+                              "required": [
+                                "alert",
+                                "score"
+                              ],
+                              "type": "object"
+                            },
+                            "candidate": {
+                              "properties": {
+                                "alert": {
+                                  "const": false
+                                },
+                                "probability": {
+                                  "properties": {
+                                    "status": {
+                                      "const": "unavailable"
+                                    }
+                                  },
+                                  "required": [
+                                    "status"
+                                  ],
+                                  "type": "object"
+                                }
+                              },
+                              "required": [
+                                "alert",
+                                "probability"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "baseline",
+                            "candidate"
+                          ]
+                        }
+                      }
+                    ],
+                    "properties": {
+                      "baseline": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "alert": {
+                            "type": "boolean"
+                          },
+                          "score": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "status": {
+                                    "const": "measured",
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "maximum": 1000000,
+                                    "minimum": -1000000,
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "value"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "reason": {
+                                    "enum": [
+                                      "insufficient_support",
+                                      "not_applicable",
+                                      "not_measured"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "status": {
+                                    "const": "unavailable",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "reason"
+                                ],
+                                "type": "object"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "alert",
+                          "score"
+                        ],
+                        "type": "object"
+                      },
+                      "candidate": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "alert": {
+                            "type": "boolean"
+                          },
+                          "probability": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "status": {
+                                    "const": "measured",
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "maximum": 1,
+                                    "minimum": 0,
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "value"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "reason": {
+                                    "enum": [
+                                      "insufficient_support",
+                                      "not_applicable",
+                                      "not_measured"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "status": {
+                                    "const": "unavailable",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "reason"
+                                ],
+                                "type": "object"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "probability",
+                          "alert"
+                        ],
+                        "type": "object"
+                      },
+                      "confound_marker": {
+                        "enum": [
+                          "none",
+                          "permission_loss",
+                          "actions_cap",
+                          "shallow_boundary",
+                          "parser_major_change"
+                        ],
+                        "type": "string"
+                      },
+                      "observed": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "state": {
+                                "const": "observed",
+                                "type": "string"
+                              },
+                              "value": {
+                                "maximum": 1000000,
+                                "minimum": -1000000,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "value"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "reason": {
+                                "enum": [
+                                  "not_collected",
+                                  "permission_gap",
+                                  "instrumentation_gap"
+                                ],
+                                "type": "string"
+                              },
+                              "state": {
+                                "const": "missing",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "reason"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "pelt_marker": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "boundary": {
+                            "type": "boolean"
+                          },
+                          "evaluation_mode": {
+                            "const": "offline_descriptive",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "evaluation_mode",
+                          "boundary"
+                        ],
+                        "type": "object"
+                      },
+                      "planted_marker": {
+                        "enum": [
+                          "none",
+                          "level",
+                          "variance",
+                          "trend",
+                          "seasonal"
+                        ],
+                        "type": "string"
+                      },
+                      "relative_week_index": {
+                        "maximum": 23,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "relative_week_label": {
+                        "pattern": "^week-[0-9]{2}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "relative_week_index",
+                      "relative_week_label",
+                      "observed",
+                      "planted_marker",
+                      "confound_marker",
+                      "baseline",
+                      "candidate",
+                      "pelt_marker"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 24,
+                  "minItems": 8,
+                  "type": "array"
+                },
+                "scenario_code": {
+                  "enum": [
+                    "no_change_control",
+                    "planted_change",
+                    "instrumentation_confound"
+                  ],
+                  "type": "string"
+                },
+                "selection_rule": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "fixed_first_window",
+                        "fixed_change_window",
+                        "fixed_confound_window"
+                      ],
+                      "type": "string"
+                    },
+                    "deterministic": {
+                      "const": true,
+                      "type": "boolean"
+                    },
+                    "label": {
+                      "maxLength": 100,
+                      "minLength": 3,
+                      "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "label",
+                    "deterministic"
+                  ],
+                  "type": "object"
+                },
+                "summary": {
+                  "maxLength": 220,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "title": {
+                  "maxLength": 96,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order",
+                "scenario_code",
+                "selection_rule",
+                "title",
+                "summary",
+                "points"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "order": {
+                  "const": 2
+                },
+                "scenario_code": {
+                  "const": "planted_change"
+                },
+                "selection_rule": {
+                  "properties": {
+                    "code": {
+                      "const": "fixed_change_window"
+                    },
+                    "deterministic": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "deterministic"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "order",
+                "scenario_code",
+                "selection_rule"
+              ],
+              "type": "object"
+            }
+          ]
+        },
+        {
+          "allOf": [
+            {
+              "additionalProperties": false,
+              "properties": {
+                "order": {
+                  "maximum": 3,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                "points": {
+                  "items": {
+                    "additionalProperties": false,
+                    "allOf": [
+                      {
+                        "if": {
+                          "properties": {
+                            "observed": {
+                              "properties": {
+                                "state": {
+                                  "const": "missing"
+                                }
+                              },
+                              "required": [
+                                "state"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "observed"
+                          ]
+                        },
+                        "then": {
+                          "properties": {
+                            "baseline": {
+                              "properties": {
+                                "alert": {
+                                  "const": false
+                                },
+                                "score": {
+                                  "properties": {
+                                    "status": {
+                                      "const": "unavailable"
+                                    }
+                                  },
+                                  "required": [
+                                    "status"
+                                  ],
+                                  "type": "object"
+                                }
+                              },
+                              "required": [
+                                "alert",
+                                "score"
+                              ],
+                              "type": "object"
+                            },
+                            "candidate": {
+                              "properties": {
+                                "alert": {
+                                  "const": false
+                                },
+                                "probability": {
+                                  "properties": {
+                                    "status": {
+                                      "const": "unavailable"
+                                    }
+                                  },
+                                  "required": [
+                                    "status"
+                                  ],
+                                  "type": "object"
+                                }
+                              },
+                              "required": [
+                                "alert",
+                                "probability"
+                              ],
+                              "type": "object"
+                            }
+                          },
+                          "required": [
+                            "baseline",
+                            "candidate"
+                          ]
+                        }
+                      }
+                    ],
+                    "properties": {
+                      "baseline": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "alert": {
+                            "type": "boolean"
+                          },
+                          "score": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "status": {
+                                    "const": "measured",
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "maximum": 1000000,
+                                    "minimum": -1000000,
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "value"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "reason": {
+                                    "enum": [
+                                      "insufficient_support",
+                                      "not_applicable",
+                                      "not_measured"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "status": {
+                                    "const": "unavailable",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "reason"
+                                ],
+                                "type": "object"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "alert",
+                          "score"
+                        ],
+                        "type": "object"
+                      },
+                      "candidate": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "alert": {
+                            "type": "boolean"
+                          },
+                          "probability": {
+                            "oneOf": [
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "status": {
+                                    "const": "measured",
+                                    "type": "string"
+                                  },
+                                  "value": {
+                                    "maximum": 1,
+                                    "minimum": 0,
+                                    "type": "number"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "value"
+                                ],
+                                "type": "object"
+                              },
+                              {
+                                "additionalProperties": false,
+                                "properties": {
+                                  "reason": {
+                                    "enum": [
+                                      "insufficient_support",
+                                      "not_applicable",
+                                      "not_measured"
+                                    ],
+                                    "type": "string"
+                                  },
+                                  "status": {
+                                    "const": "unavailable",
+                                    "type": "string"
+                                  }
+                                },
+                                "required": [
+                                  "status",
+                                  "reason"
+                                ],
+                                "type": "object"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "probability",
+                          "alert"
+                        ],
+                        "type": "object"
+                      },
+                      "confound_marker": {
+                        "enum": [
+                          "none",
+                          "permission_loss",
+                          "actions_cap",
+                          "shallow_boundary",
+                          "parser_major_change"
+                        ],
+                        "type": "string"
+                      },
+                      "observed": {
+                        "oneOf": [
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "state": {
+                                "const": "observed",
+                                "type": "string"
+                              },
+                              "value": {
+                                "maximum": 1000000,
+                                "minimum": -1000000,
+                                "type": "number"
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "value"
+                            ],
+                            "type": "object"
+                          },
+                          {
+                            "additionalProperties": false,
+                            "properties": {
+                              "reason": {
+                                "enum": [
+                                  "not_collected",
+                                  "permission_gap",
+                                  "instrumentation_gap"
+                                ],
+                                "type": "string"
+                              },
+                              "state": {
+                                "const": "missing",
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "state",
+                              "reason"
+                            ],
+                            "type": "object"
+                          }
+                        ]
+                      },
+                      "pelt_marker": {
+                        "additionalProperties": false,
+                        "properties": {
+                          "boundary": {
+                            "type": "boolean"
+                          },
+                          "evaluation_mode": {
+                            "const": "offline_descriptive",
+                            "type": "string"
+                          }
+                        },
+                        "required": [
+                          "evaluation_mode",
+                          "boundary"
+                        ],
+                        "type": "object"
+                      },
+                      "planted_marker": {
+                        "enum": [
+                          "none",
+                          "level",
+                          "variance",
+                          "trend",
+                          "seasonal"
+                        ],
+                        "type": "string"
+                      },
+                      "relative_week_index": {
+                        "maximum": 23,
+                        "minimum": 0,
+                        "type": "integer"
+                      },
+                      "relative_week_label": {
+                        "pattern": "^week-[0-9]{2}$",
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "relative_week_index",
+                      "relative_week_label",
+                      "observed",
+                      "planted_marker",
+                      "confound_marker",
+                      "baseline",
+                      "candidate",
+                      "pelt_marker"
+                    ],
+                    "type": "object"
+                  },
+                  "maxItems": 24,
+                  "minItems": 8,
+                  "type": "array"
+                },
+                "scenario_code": {
+                  "enum": [
+                    "no_change_control",
+                    "planted_change",
+                    "instrumentation_confound"
+                  ],
+                  "type": "string"
+                },
+                "selection_rule": {
+                  "additionalProperties": false,
+                  "properties": {
+                    "code": {
+                      "enum": [
+                        "fixed_first_window",
+                        "fixed_change_window",
+                        "fixed_confound_window"
+                      ],
+                      "type": "string"
+                    },
+                    "deterministic": {
+                      "const": true,
+                      "type": "boolean"
+                    },
+                    "label": {
+                      "maxLength": 100,
+                      "minLength": 3,
+                      "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "label",
+                    "deterministic"
+                  ],
+                  "type": "object"
+                },
+                "summary": {
+                  "maxLength": 220,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                },
+                "title": {
+                  "maxLength": 96,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
+                }
+              },
+              "required": [
+                "order",
+                "scenario_code",
+                "selection_rule",
+                "title",
+                "summary",
+                "points"
+              ],
+              "type": "object"
+            },
+            {
+              "properties": {
+                "order": {
+                  "const": 3
+                },
+                "scenario_code": {
+                  "const": "instrumentation_confound"
+                },
+                "selection_rule": {
+                  "properties": {
+                    "code": {
+                      "const": "fixed_confound_window"
+                    },
+                    "deterministic": {
+                      "const": true
+                    }
+                  },
+                  "required": [
+                    "code",
+                    "deterministic"
+                  ],
+                  "type": "object"
+                }
+              },
+              "required": [
+                "order",
+                "scenario_code",
+                "selection_rule"
+              ],
+              "type": "object"
+            }
+          ]
+        }
+      ],
+      "type": "array"
     },
     "reproducibility": {
       "additionalProperties": false,
       "properties": {
-        "lab_code_commit": {
-          "pattern": "^[0-9a-f]{40}$",
-          "type": "string"
-        },
-        "normalized_path_free_commands": {
-          "items": {
-            "pattern": "^(?:npm|node|npx|python)(?: [A-Za-z0-9_.:@=-]+)*$",
-            "type": "string"
-          },
-          "maxItems": 12,
-          "minItems": 1,
-          "type": "array"
-        },
-        "product_research_pack_commit": {
-          "pattern": "^[0-9a-f]{40}$",
-          "type": "string"
-        },
-        "product_schema_source_commit": {
-          "pattern": "^[0-9a-f]{40}$",
-          "type": "string"
-        },
-        "safe_run_id": {
-          "pattern": "^run-[a-z0-9][a-z0-9-]{7,63}$",
-          "type": "string"
-        },
-        "sha256_digests": {
+        "commands": {
           "additionalProperties": false,
           "properties": {
-            "lab_fixture": {
+            "benchmark": {
+              "maxLength": 240,
+              "minLength": 16,
+              "pattern": "^uv run dllab(?: [A-Za-z0-9_.:@=_-]+)+$",
+              "type": "string"
+            },
+            "export": {
+              "maxLength": 240,
+              "minLength": 16,
+              "pattern": "^uv run dllab(?: [A-Za-z0-9_.:@=_-]+)+$",
+              "type": "string"
+            },
+            "report": {
+              "maxLength": 240,
+              "minLength": 16,
+              "pattern": "^uv run dllab(?: [A-Za-z0-9_.:@=_-]+)+$",
+              "type": "string"
+            },
+            "reproduce": {
+              "maxLength": 240,
+              "minLength": 16,
+              "pattern": "^uv run dllab(?: [A-Za-z0-9_.:@=_-]+)+$",
+              "type": "string"
+            }
+          },
+          "required": [
+            "benchmark",
+            "reproduce",
+            "export",
+            "report"
+          ],
+          "type": "object"
+        },
+        "digests": {
+          "additionalProperties": false,
+          "properties": {
+            "custody": {
               "pattern": "^sha256:[0-9a-f]{64}$",
               "type": "string"
             },
-            "method_trial_schema": {
+            "evaluation_bundle": {
               "pattern": "^sha256:[0-9a-f]{64}$",
               "type": "string"
             },
-            "research_pack": {
+            "report": {
+              "pattern": "^sha256:[0-9a-f]{64}$",
+              "type": "string"
+            },
+            "schema": {
               "pattern": "^sha256:[0-9a-f]{64}$",
               "type": "string"
             }
           },
           "required": [
-            "method_trial_schema",
-            "research_pack",
-            "lab_fixture"
+            "schema",
+            "evaluation_bundle",
+            "custody",
+            "report"
+          ],
+          "type": "object"
+        },
+        "lab_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "product_contract_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "product_research_pack_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "recipe_code": {
+          "const": "wbc1-smoke-c0-v1",
+          "type": "string"
+        },
+        "run_id": {
+          "pattern": "^[a-z0-9][a-z0-9_-]{7,63}$",
+          "type": "string"
+        },
+        "verification": {
+          "additionalProperties": false,
+          "properties": {
+            "lab_hosted": {
+              "enum": [
+                "passed",
+                "failed",
+                "not_run"
+              ],
+              "type": "string"
+            },
+            "local": {
+              "enum": [
+                "passed",
+                "failed",
+                "not_run"
+              ],
+              "type": "string"
+            },
+            "product_hosted": {
+              "enum": [
+                "passed",
+                "failed",
+                "not_run"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "local",
+            "product_hosted",
+            "lab_hosted"
           ],
           "type": "object"
         }
       },
       "required": [
-        "safe_run_id",
+        "product_contract_commit",
         "product_research_pack_commit",
-        "product_schema_source_commit",
-        "lab_code_commit",
-        "sha256_digests",
-        "normalized_path_free_commands"
+        "lab_commit",
+        "run_id",
+        "recipe_code",
+        "digests",
+        "commands",
+        "verification"
       ],
       "type": "object"
     },
@@ -523,149 +2896,600 @@
     "scorecard": {
       "additionalProperties": false,
       "properties": {
-        "metrics": {
-          "items": {
-            "additionalProperties": false,
-            "properties": {
-              "canonical": {
-                "const": true,
-                "type": "boolean"
-              },
-              "code": {
-                "enum": [
-                  "false_alarms_per_year",
-                  "onset_to_alert_delay_weeks",
-                  "interval_coverage",
-                  "localisation_error_weeks",
-                  "segment_count_error",
-                  "coverage_confound_false_alert_rate"
-                ],
-                "type": "string"
-              },
-              "unit": {
-                "enum": [
-                  "alerts_per_year",
-                  "weeks",
-                  "proportion",
-                  "count"
-                ],
-                "type": "string"
-              },
-              "value": {
-                "anyOf": [
-                  {
-                    "maximum": 1000000,
-                    "minimum": -1000000,
-                    "type": "number"
+        "baseline": {
+          "additionalProperties": false,
+          "properties": {
+            "calibration_brier": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "const": "measured",
+                      "type": "string"
+                    },
+                    "value": {
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number"
+                    }
                   },
-                  {
-                    "type": "null"
-                  }
-                ]
-              }
+                  "required": [
+                    "status",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "insufficient_support",
+                        "not_applicable",
+                        "not_measured"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "unavailable",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "reason"
+                  ],
+                  "type": "object"
+                }
+              ]
             },
-            "required": [
-              "code",
-              "value",
-              "unit",
-              "canonical"
-            ],
-            "type": "object"
+            "detection_delay_weeks": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "const": "measured",
+                      "type": "string"
+                    },
+                    "value": {
+                      "maximum": 1000000,
+                      "minimum": -1000000,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "insufficient_support",
+                        "not_applicable",
+                        "not_measured"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "unavailable",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "reason"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "detection_rate": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "const": "measured",
+                      "type": "string"
+                    },
+                    "value": {
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "insufficient_support",
+                        "not_applicable",
+                        "not_measured"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "unavailable",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "reason"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "false_alerts_per_year": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "const": "measured",
+                      "type": "string"
+                    },
+                    "value": {
+                      "maximum": 1000000,
+                      "minimum": -1000000,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "insufficient_support",
+                        "not_applicable",
+                        "not_measured"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "unavailable",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "reason"
+                  ],
+                  "type": "object"
+                }
+              ]
+            }
           },
-          "maxItems": 6,
-          "minItems": 6,
-          "type": "array"
+          "required": [
+            "false_alerts_per_year",
+            "detection_rate",
+            "detection_delay_weeks",
+            "calibration_brier"
+          ],
+          "type": "object"
         },
-        "primary_metric": {
-          "const": "false_alarms_per_year",
-          "type": "string"
+        "candidate": {
+          "additionalProperties": false,
+          "properties": {
+            "calibration_brier": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "const": "measured",
+                      "type": "string"
+                    },
+                    "value": {
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "insufficient_support",
+                        "not_applicable",
+                        "not_measured"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "unavailable",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "reason"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "detection_delay_weeks": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "const": "measured",
+                      "type": "string"
+                    },
+                    "value": {
+                      "maximum": 1000000,
+                      "minimum": -1000000,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "insufficient_support",
+                        "not_applicable",
+                        "not_measured"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "unavailable",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "reason"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "detection_rate": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "const": "measured",
+                      "type": "string"
+                    },
+                    "value": {
+                      "maximum": 1,
+                      "minimum": 0,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "insufficient_support",
+                        "not_applicable",
+                        "not_measured"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "unavailable",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "reason"
+                  ],
+                  "type": "object"
+                }
+              ]
+            },
+            "false_alerts_per_year": {
+              "oneOf": [
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "status": {
+                      "const": "measured",
+                      "type": "string"
+                    },
+                    "value": {
+                      "maximum": 1000000,
+                      "minimum": -1000000,
+                      "type": "number"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "value"
+                  ],
+                  "type": "object"
+                },
+                {
+                  "additionalProperties": false,
+                  "properties": {
+                    "reason": {
+                      "enum": [
+                        "insufficient_support",
+                        "not_applicable",
+                        "not_measured"
+                      ],
+                      "type": "string"
+                    },
+                    "status": {
+                      "const": "unavailable",
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "status",
+                    "reason"
+                  ],
+                  "type": "object"
+                }
+              ]
+            }
+          },
+          "required": [
+            "false_alerts_per_year",
+            "detection_rate",
+            "detection_delay_weeks",
+            "calibration_brier"
+          ],
+          "type": "object"
         },
         "threshold_selection": {
           "additionalProperties": false,
           "properties": {
             "baseline": {
               "additionalProperties": false,
-              "properties": {
-                "method_code": {
-                  "enum": [
-                    "rolling_median_mad",
-                    "bocpd"
+              "allOf": [
+                {
+                  "properties": {
+                    "viable": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "viable"
                   ],
-                  "type": "string"
+                  "type": "object"
                 },
+                {
+                  "properties": {
+                    "selected_value": {
+                      "properties": {
+                        "status": {
+                          "const": "unavailable"
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "selected_value"
+                  ]
+                }
+              ],
+              "properties": {
                 "reason_code": {
                   "enum": [
-                    "INSUFFICIENT_SUPPORT",
-                    "NO_STABLE_SELECTION",
-                    "PRIMARY_GATE_FAILED",
-                    "SELECTED"
+                    "selected",
+                    "no_stable_selection",
+                    "insufficient_support"
                   ],
                   "type": "string"
                 },
-                "selected_threshold": {
-                  "anyOf": [
+                "selected_value": {
+                  "oneOf": [
                     {
-                      "maximum": 1000000,
-                      "minimum": -1000000,
-                      "type": "number"
+                      "additionalProperties": false,
+                      "properties": {
+                        "status": {
+                          "const": "measured",
+                          "type": "string"
+                        },
+                        "value": {
+                          "maximum": 1000000,
+                          "minimum": -1000000,
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "value"
+                      ],
+                      "type": "object"
                     },
                     {
-                      "type": "null"
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "enum": [
+                            "insufficient_support",
+                            "not_applicable",
+                            "not_measured"
+                          ],
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": "unavailable",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "reason"
+                      ],
+                      "type": "object"
                     }
                   ]
+                },
+                "summary": {
+                  "maxLength": 180,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
                 },
                 "viable": {
                   "type": "boolean"
                 }
               },
               "required": [
-                "method_code",
-                "selected_threshold",
                 "viable",
-                "reason_code"
+                "selected_value",
+                "reason_code",
+                "summary"
               ],
               "type": "object"
             },
             "candidate": {
               "additionalProperties": false,
-              "properties": {
-                "method_code": {
-                  "enum": [
-                    "rolling_median_mad",
-                    "bocpd"
+              "allOf": [
+                {
+                  "properties": {
+                    "viable": {
+                      "const": false
+                    }
+                  },
+                  "required": [
+                    "viable"
                   ],
-                  "type": "string"
+                  "type": "object"
                 },
+                {
+                  "properties": {
+                    "selected_value": {
+                      "properties": {
+                        "status": {
+                          "const": "unavailable"
+                        }
+                      },
+                      "required": [
+                        "status"
+                      ],
+                      "type": "object"
+                    }
+                  },
+                  "required": [
+                    "selected_value"
+                  ]
+                }
+              ],
+              "properties": {
                 "reason_code": {
                   "enum": [
-                    "INSUFFICIENT_SUPPORT",
-                    "NO_STABLE_SELECTION",
-                    "PRIMARY_GATE_FAILED",
-                    "SELECTED"
+                    "selected",
+                    "no_stable_selection",
+                    "insufficient_support"
                   ],
                   "type": "string"
                 },
-                "selected_threshold": {
-                  "anyOf": [
+                "selected_value": {
+                  "oneOf": [
                     {
-                      "maximum": 1000000,
-                      "minimum": -1000000,
-                      "type": "number"
+                      "additionalProperties": false,
+                      "properties": {
+                        "status": {
+                          "const": "measured",
+                          "type": "string"
+                        },
+                        "value": {
+                          "maximum": 1000000,
+                          "minimum": -1000000,
+                          "type": "number"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "value"
+                      ],
+                      "type": "object"
                     },
                     {
-                      "type": "null"
+                      "additionalProperties": false,
+                      "properties": {
+                        "reason": {
+                          "enum": [
+                            "insufficient_support",
+                            "not_applicable",
+                            "not_measured"
+                          ],
+                          "type": "string"
+                        },
+                        "status": {
+                          "const": "unavailable",
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "status",
+                        "reason"
+                      ],
+                      "type": "object"
                     }
                   ]
+                },
+                "summary": {
+                  "maxLength": 180,
+                  "minLength": 3,
+                  "pattern": "^(?!.*(?:https?:\\/\\/|ftp:\\/\\/|[A-Za-z]:\\\\|\\\\\\\\|[\\w.+-]+@[\\w.-]+\\.[A-Za-z]{2,}|\\b[A-Za-z0-9_.-]{2,}\\/[A-Za-z0-9_.-]{2,}\\b))[\\s\\S]*$",
+                  "type": "string"
                 },
                 "viable": {
                   "type": "boolean"
                 }
               },
               "required": [
-                "method_code",
-                "selected_threshold",
                 "viable",
-                "reason_code"
+                "selected_value",
+                "reason_code",
+                "summary"
               ],
               "type": "object"
             }
@@ -678,516 +3502,57 @@
         }
       },
       "required": [
-        "primary_metric",
-        "metrics",
+        "baseline",
+        "candidate",
         "threshold_selection"
       ],
       "type": "object"
     },
-    "selector": {
-      "additionalProperties": false,
-      "properties": {
-        "allowed_views": {
-          "items": {
-            "const": "method-trial",
-            "type": "string"
-          },
-          "maxItems": 1,
-          "minItems": 1,
-          "type": "array"
-        },
-        "default_scenario": {
-          "enum": [
-            "no_change_control",
-            "planted_change",
-            "instrumentation_confound"
-          ],
-          "type": "string"
-        },
-        "query_key": {
-          "const": "view",
-          "type": "string"
-        },
-        "selected_view": {
-          "const": "method-trial",
-          "type": "string"
-        }
-      },
-      "required": [
-        "query_key",
-        "selected_view",
-        "allowed_views",
-        "default_scenario"
-      ],
-      "type": "object"
-    },
-    "supported_codes": {
-      "items": {
-        "enum": [
-          "weekly_relative_grain",
-          "online_baseline_candidate_comparison",
-          "offline_pelt_localisation"
-        ],
-        "type": "string"
-      },
-      "minItems": 1,
-      "type": "array"
-    },
-    "timelines": {
-      "items": {
-        "additionalProperties": false,
-        "allOf": [
-          {
-            "if": {
-              "properties": {
-                "order": {
-                  "const": 1
-                }
-              },
-              "required": [
-                "order"
-              ]
-            },
-            "then": {
-              "properties": {
-                "scenario_code": {
-                  "const": "no_change_control"
-                }
-              }
-            }
-          },
-          {
-            "if": {
-              "properties": {
-                "order": {
-                  "const": 2
-                }
-              },
-              "required": [
-                "order"
-              ]
-            },
-            "then": {
-              "properties": {
-                "scenario_code": {
-                  "const": "planted_change"
-                }
-              }
-            }
-          },
-          {
-            "if": {
-              "properties": {
-                "order": {
-                  "const": 3
-                }
-              },
-              "required": [
-                "order"
-              ]
-            },
-            "then": {
-              "properties": {
-                "scenario_code": {
-                  "const": "instrumentation_confound"
-                }
-              }
-            }
-          },
-          {
-            "properties": {
-              "pelt": {
-                "properties": {
-                  "evaluation_mode": {
-                    "const": "offline_descriptive"
-                  }
-                },
-                "required": [
-                  "evaluation_mode"
-                ],
-                "type": "object"
-              }
-            }
-          },
-          {
-            "if": {
-              "properties": {
-                "scenario_code": {
-                  "const": "planted_change"
-                }
-              },
-              "required": [
-                "scenario_code"
-              ]
-            },
-            "then": {
-              "properties": {
-                "points": {
-                  "contains": {
-                    "properties": {
-                      "planted_marker": {
-                        "enum": [
-                          "level",
-                          "variance",
-                          "trend",
-                          "seasonal"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "planted_marker"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                }
-              }
-            }
-          },
-          {
-            "if": {
-              "properties": {
-                "scenario_code": {
-                  "const": "instrumentation_confound"
-                }
-              },
-              "required": [
-                "scenario_code"
-              ]
-            },
-            "then": {
-              "properties": {
-                "points": {
-                  "contains": {
-                    "properties": {
-                      "confound_marker": {
-                        "enum": [
-                          "permission_loss",
-                          "actions_cap",
-                          "shallow_boundary",
-                          "parser_major_change"
-                        ]
-                      }
-                    },
-                    "required": [
-                      "confound_marker"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                }
-              }
-            }
-          },
-          {
-            "if": {
-              "properties": {
-                "scenario_code": {
-                  "const": "no_change_control"
-                }
-              },
-              "required": [
-                "scenario_code"
-              ]
-            },
-            "then": {
-              "properties": {
-                "points": {
-                  "items": {
-                    "properties": {
-                      "confound_marker": {
-                        "const": "none"
-                      },
-                      "planted_marker": {
-                        "const": "none"
-                      }
-                    },
-                    "required": [
-                      "planted_marker",
-                      "confound_marker"
-                    ],
-                    "type": "object"
-                  },
-                  "type": "array"
-                }
-              }
-            }
-          }
-        ],
-        "properties": {
-          "order": {
-            "maximum": 3,
-            "minimum": 1,
-            "type": "integer"
-          },
-          "pelt": {
-            "additionalProperties": false,
-            "properties": {
-              "boundary_index": {
-                "anyOf": [
-                  {
-                    "maximum": 103,
-                    "minimum": 0,
-                    "type": "integer"
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
-              },
-              "evaluation_mode": {
-                "const": "offline_descriptive",
-                "type": "string"
-              }
-            },
-            "required": [
-              "evaluation_mode",
-              "boundary_index"
-            ],
-            "type": "object"
-          },
-          "points": {
-            "items": {
-              "additionalProperties": false,
-              "allOf": [
-                {
-                  "if": {
-                    "properties": {
-                      "observed": {
-                        "const": false
-                      }
-                    },
-                    "required": [
-                      "observed"
-                    ]
-                  },
-                  "then": {
-                    "properties": {
-                      "baseline_alert": {
-                        "const": false
-                      },
-                      "baseline_score": {
-                        "const": null
-                      },
-                      "baseline_threshold": {
-                        "const": null
-                      },
-                      "candidate_alert": {
-                        "const": false
-                      },
-                      "candidate_probability": {
-                        "const": null
-                      },
-                      "candidate_threshold": {
-                        "const": null
-                      },
-                      "value": {
-                        "const": null
-                      }
-                    }
-                  }
-                }
-              ],
-              "properties": {
-                "baseline_alert": {
-                  "type": "boolean"
-                },
-                "baseline_score": {
-                  "anyOf": [
-                    {
-                      "maximum": 1000000,
-                      "minimum": -1000000,
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "baseline_threshold": {
-                  "anyOf": [
-                    {
-                      "maximum": 1000000,
-                      "minimum": -1000000,
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "candidate_alert": {
-                  "type": "boolean"
-                },
-                "candidate_probability": {
-                  "anyOf": [
-                    {
-                      "maximum": 1,
-                      "minimum": 0,
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "candidate_threshold": {
-                  "anyOf": [
-                    {
-                      "maximum": 1,
-                      "minimum": 0,
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "confound_marker": {
-                  "enum": [
-                    "none",
-                    "permission_loss",
-                    "actions_cap",
-                    "shallow_boundary",
-                    "parser_major_change"
-                  ],
-                  "type": "string"
-                },
-                "observed": {
-                  "type": "boolean"
-                },
-                "planted_marker": {
-                  "enum": [
-                    "none",
-                    "level",
-                    "variance",
-                    "trend",
-                    "seasonal"
-                  ],
-                  "type": "string"
-                },
-                "value": {
-                  "anyOf": [
-                    {
-                      "maximum": 1000000,
-                      "minimum": -1000000,
-                      "type": "number"
-                    },
-                    {
-                      "type": "null"
-                    }
-                  ]
-                },
-                "week_index": {
-                  "maximum": 103,
-                  "minimum": 0,
-                  "type": "integer"
-                },
-                "week_label": {
-                  "description": "Relative week label week-NN; NN is the zero-padded week_index.",
-                  "pattern": "^week-[0-9]{2}$",
-                  "type": "string"
-                }
-              },
-              "required": [
-                "week_index",
-                "week_label",
-                "observed",
-                "value",
-                "baseline_score",
-                "baseline_threshold",
-                "baseline_alert",
-                "candidate_probability",
-                "candidate_threshold",
-                "candidate_alert",
-                "planted_marker",
-                "confound_marker"
-              ],
-              "type": "object"
-            },
-            "maxItems": 104,
-            "minItems": 52,
-            "type": "array"
-          },
-          "scenario_code": {
-            "enum": [
-              "no_change_control",
-              "planted_change",
-              "instrumentation_confound"
-            ],
-            "type": "string"
-          },
-          "title": {
-            "maxLength": 96,
-            "minLength": 3,
-            "type": "string"
-          }
-        },
-        "required": [
-          "order",
-          "scenario_code",
-          "title",
-          "points",
-          "pelt"
-        ],
-        "type": "object"
-      },
-      "maxItems": 3,
-      "minItems": 3,
-      "type": "array"
-    },
     "trial": {
       "additionalProperties": false,
       "properties": {
-        "evidence": {
+        "classification": {
+          "const": "C0",
+          "type": "string"
+        },
+        "evidence_label": {
           "const": "Invented weekly system series only; no real repositories, people, providers, URLs, paths, or production effect.",
           "type": "string"
         },
         "question": {
-          "const": "Can the BOCPD candidate reduce false alerts per year versus the rolling median/MAD baseline on the online arm without worsening coverage-confound alerts or interval calibration?",
+          "const": "Can the BOCPD candidate reduce false alerts per year versus the rolling median and MAD baseline without worsening detection or calibration?",
           "type": "string"
         },
-        "trial_code": {
-          "const": "WB-C1",
+        "title": {
+          "const": "WB-C1 method trial: why the simple baseline won",
+          "type": "string"
+        },
+        "trial_id": {
+          "pattern": "^trial-[a-z0-9]{8,32}$",
           "type": "string"
         }
       },
       "required": [
-        "trial_code",
+        "trial_id",
+        "title",
         "question",
-        "evidence"
+        "classification",
+        "evidence_label"
       ],
       "type": "object"
-    },
-    "unsupported_codes": {
-      "items": {
-        "enum": [
-          "real_world_effect",
-          "person_or_provider_identity",
-          "online_pelt_promotion"
-        ],
-        "type": "string"
-      },
-      "minItems": 1,
-      "type": "array"
     }
   },
   "required": [
     "schema_version",
-    "classification",
     "trial",
     "dataset",
     "methods",
     "scorecard",
-    "gates",
+    "acceptance_gates",
     "decision",
-    "supported_codes",
-    "unsupported_codes",
-    "limitation_codes",
-    "claim_codes",
-    "selector",
-    "reproducibility",
-    "timelines"
+    "representative_cases",
+    "claims",
+    "reproducibility"
   ],
   "type": "object"
 }
