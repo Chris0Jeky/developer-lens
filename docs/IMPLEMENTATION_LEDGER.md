@@ -3481,7 +3481,8 @@ and merge before lab PR #8; neither result is inferred by this entry.
   denies on `.developer-lens/`, `dist/`, `public/data/`), the `developer-lens-continuation`
   skill, and pinned agents `dl-implementer`/`dl-reviewer` (Opus 4.8 high; owner decision recorded
   as HUMAN_TODO q-9) and `dl-mechanic` (Sonnet 4.6 high).
-- `verify:context` now requires the Claude files and agent pins, enforces CLAUDE.md's 100-line
+- `verify:context` now requires the Claude files and the three agent-pin files to exist
+  (existence only — pin frontmatter is not parsed), enforces CLAUDE.md's 100-line
   budget and exact G4 markers (`gpt-5.6-luna`, `cap.external.model` `never_authorized`), scans
   `.claude/**` links (ignoring `node_modules` and `.claude/worktrees`), and fails on committed
   `bypassPermissions` or a tracked `settings.local.json`.
@@ -3490,6 +3491,7 @@ and merge before lab PR #8; neither result is inferred by this entry.
   retargeted stale AGENTS.md pointers in the Codex skill, CURRENT_STATE `authority_order`,
   `pr-gate.yml`, and README.
 - Verified: hosted `Prove the pull request` green at `2f0cc3e` and `b36fbe4`; local
-  verify:context, oxlint, validation tests 5/5, `tsc -b`. NOT verified locally: full
-  `npm run check` (hosted gate ran it); `effort:` frontmatter key semantics (model pins are the
-  enforced part). No capability, source, or publication boundary changed.
+  verify:context, oxlint, validation tests 5/5, `tsc -b`. NOT verified: the aggregate
+  `npm run check` was not executed anywhere for these heads — the hosted gate runs its own step
+  set, which omits `check:research-pack` and `check:method-trial-view`; `effort:` frontmatter key
+  semantics (model pins are the enforced part). No capability, source, or publication boundary changed.
