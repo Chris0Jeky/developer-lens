@@ -1,5 +1,6 @@
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { Ajv2020 } from 'ajv/dist/2020.js'
 import { describe, expect, it } from 'vitest'
 import {
   RELATION_NAMES,
@@ -53,6 +54,13 @@ function c1Fixture(fixture: Record<string, any>): Record<string, any> {
       feature: structuredClone(availability),
     },
   }
+}
+
+// strict:false only relaxes ajv's strictTypes authoring lint (the generated conditional
+// subschemas carry no `type`); it does not weaken any validation keyword exercised here.
+async function standaloneValidate() {
+  const schema = JSON.parse(await readFile(schemaPath, 'utf8')) as Record<string, any>
+  return new Ajv2020({ allErrors: true, strict: false }).compile(schema)
 }
 
 describe('ResearchPack v1 producer contract', () => {
@@ -467,5 +475,62 @@ describe('ResearchPack v1 producer contract', () => {
         end: '9999-03-01T00:00:00Z',
       }),
     ).toThrow()
+  })
+})
+
+describe('ResearchPack v1 standalone Draft 2020-12 cross-field parity (issue #181)', () => {
+  it('accepts the committed invented fixture in the standalone Draft 2020-12 validator', async () => {
+    const validate = await standaloneValidate()
+    const fixture = await fixtureValue()
+    expect(validate(fixture), JSON.stringify(validate.errors)).toBe(true)
+  })
+
+  it('rejects an omitted relation that carries a present-relation field (row_count: 0)', async () => {
+    const validate = await standaloneValidate()
+    const fixture = await fixtureValue()
+    const invalid = structuredClone(fixture)
+    invalid.relations.repository_week = { ...invalid.relations.repository_week, row_count: 0 }
+    expect(validate(invalid)).toBe(false)
+    expect(() => ResearchPackSchema.parse(invalid)).toThrow()
+  })
+
+  it('rejects a present relation carrying the wrong relation-specific schema_id', async () => {
+    const validate = await standaloneValidate()
+    const fixture = await fixtureValue()
+    const covered = structuredClone(fixture)
+    covered.relations.repository_week = presentRelation('a')
+    covered.relations.coverage = { ...presentRelation('b'), schema_id: 'developer-lens.coverage.v1' }
+    // Baseline (both present with the correct schema_id) is valid in both validators.
+    expect(validate(covered), JSON.stringify(validate.errors)).toBe(true)
+    expect(() => ResearchPackSchema.parse(covered)).not.toThrow()
+
+    // A nonexistent schema_id is rejected by both validators.
+    const nonexistent = structuredClone(covered)
+    nonexistent.relations.repository_week.schema_id = 'developer-lens.wrong.v1'
+    expect(validate(nonexistent)).toBe(false)
+    expect(() => ResearchPackSchema.parse(nonexistent)).toThrow()
+
+    // A valid-but-mismatched OTHER relation's schema_id is also rejected by both validators.
+    const swapped = structuredClone(covered)
+    swapped.relations.repository_week.schema_id = 'developer-lens.coverage.v1'
+    expect(validate(swapped)).toBe(false)
+    expect(() => ResearchPackSchema.parse(swapped)).toThrow()
+  })
+
+  it('documents the reversed-window rule as runtime-validation-only (Draft 2020-12 cannot express it)', async () => {
+    const validate = await standaloneValidate()
+    const fixture = await fixtureValue()
+    const reversed = structuredClone(fixture)
+    reversed.temporal_availability.event = {
+      state: 'present',
+      window: { start: '2025-12-29T00:00:00Z', end: '2025-01-06T00:00:00Z' },
+      reason_code: null,
+    }
+    // The authoritative runtime validator rejects an end-before-start window ...
+    expect(() => ResearchPackSchema.parse(reversed)).toThrow()
+    // ... but standard Draft 2020-12 has no cross-field comparison keyword, so the standalone
+    // schema accepts it. This asserts the documented necessary-but-not-sufficient boundary; see
+    // research-contracts/research-pack/v1/README.md.
+    expect(validate(reversed)).toBe(true)
   })
 })
