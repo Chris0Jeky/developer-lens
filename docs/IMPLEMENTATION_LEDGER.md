@@ -3190,3 +3190,73 @@ their terminal expiry; before future C2 receipt/proof removal, a durable committ
 discriminator must refuse rather than recreate anchor-only/truncated C1 replay state. #168 still
 owns pre-activation marker versioning/stranded preflight/hosted proof. After #173 is reviewed and
 merged, the exact next product slice is the Phase E stored-observation bridge #174/#80.
+
+## 2026-08-07 — #173 merged; Phase E stored-observation checkpoint parked
+
+PR #185 final head `cff9b510e0e728c99529e077c60ce8953ce0c118` merged as
+`095164896ed40ac0f2d0c521ad68d672e21e9987` at 2026-08-06T22:59:40Z and closed #173 one
+second later. Its exact local gate and independent review were green. Hosted exact-head Actions
+proof remained absent under the owner's explicit pre-release exception and is **not** represented
+as green. The immediate post-merge PR sweep had no thread or flat comment to triage.
+
+Phase E issue #174 is preserved on branch `codex/phasee-stored-bridge-rebuild`; code head
+`d135a1c0c0ec69cc9a4b2f41f03e31635e271650` is ten commits above that merge. The candidate adds:
+
+- readiness schema `3.2.6-shadow-phasee-readiness` with explicit ready-for-review time/basis and
+  conservative null migration;
+- all-or-none, default-off selected-store analysis configuration with absolute-root, consent,
+  capability and adjacent equal-window binding;
+- a dialect-safe v2/v3 why resolver plus selected-source evidence routes;
+- a strict native-v3 stored change-batch/integration-tail bridge with coverage/job/snapshot proof,
+  right censoring, close-without-merge competing outcomes, tie-preserving thirds, support floors,
+  changed-files sensitivity, abstention, deletion/tombstone lineage and presentation-safe output;
+- a synthetic corpus exported through the same bridge, full-envelope publication canary, dynamic
+  evidence bundle, API/UI reachability and an Atlas panel exposing cohort, primary, sensitivity,
+  coverage, limitations, alternatives and humane non-scoring guidance;
+- request-time selected-store reopen/re-proof so revocation, retention change or store advancement
+  cannot be hidden behind a process-lifetime cache.
+
+Only invented in-memory or temporary synthetic fixtures were used. No real source/store, private or
+generated operational data, credential, browser profile, connector, activation caller, scheduler,
+or external-model request was inspected or activated.
+
+Proof boundary at the checkpoint:
+
+- focused exact-code Phase E lane: 9 files, 102 passed;
+- exact-code TypeScript server/app checks green;
+- targeted lint green apart from the existing Fast Refresh warning at
+  `src/components/IntegrationShapeAtlas.tsx:798`;
+- exact-code `npm run build:showcase` and `verify:showcase` green; the build retained the existing
+  `node:crypto` externalization and large-chunk warnings;
+- an earlier `npm run check` was green with 89 files, 1,478 passed and 10 declared skips, but it ran
+  before the final cache/deletion-lineage/reference repairs and is therefore **not exact-head
+  proof**;
+- Terra reviewed exact code head `d135a1c` against `0951648`, reran 6 focused files / 56 tests, and
+  found no cohort, censoring, privacy, source-wiring, publication-boundary or humane-language defect.
+
+The candidate is intentionally parked and has no PR. Terra found one P1 merge blocker: the UI uses
+one stratum/cohort/sensitivity mark for both current and baseline cells, while
+`v3StoredObservationEvidence.ts` composes only the current window and current provenance. A baseline
+p90, count or changed-files click therefore opens a valid-looking current-window walk. The same
+generic claim is reused across multiple measures and does not identify the displayed aggregate.
+The repair should mint presentation-safe aggregate references keyed by window, basis, stratum,
+measure and value; select matching current/baseline coverage and window facts; and add direct UI and
+resolution tests that open representative cells in both windows. Do not publish or close #174 until
+that evidence truth is fixed and re-reviewed.
+
+Visual QA is also incomplete. A local Vite preview opened the intended
+`/developer-lens/?view=integration-shape` URL but left `<div id="root"></div>` empty with no captured
+console warning/error. Direct HTTP probing showed the referenced
+`/developer-lens/assets/index-HIO8qZLz.js` returned the HTML SPA fallback (`200 text/html`) instead of
+the built JavaScript asset, even though `dist/assets/index-HIO8qZLz.js` existed. Resume by correcting
+or explicitly supplying preview base handling, verify the asset content type, then inspect the lens
+and current/baseline drawers in a browser. The preview process and browser tab were stopped cleanly.
+
+Exact resume: preserve the dirty primary checkout. Work only in
+`C:\Users\jekyt\Desktop\Printer Config\Others\Git\dl-luna-phasee-bridge` on
+`codex/phasee-stored-bridge-rebuild`. Refresh `origin/main`, confirm code ancestor `d135a1c`, repair
+the per-number/window evidence binding, run focused tests plus `npm run check` and
+`npm run build:showcase`, complete browser QA, then obtain one bounded fresh exact-head review. If
+green, update this ledger/current state, push and open a ready PR for #174. Keep #80 open for the
+separate 36-month scope-unbound C1 expiry path; keep #168 open for production pre-activation work.
+`HUMAN_TODO.md` remains unchanged: q-6 and q-8 open, q-7 complete.

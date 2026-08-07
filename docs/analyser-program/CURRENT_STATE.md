@@ -7,15 +7,23 @@ the historical record of how past slices were proven, and a fresh agent followin
 file can resume deleted work (PR #127 late review).
 
 ```yaml
-updated: 2026-08-06
-current_slice_override: 'LIFE-03 revocation replay #172 and its large-scope repair #180 are merged
-  through PRs #179/#184. The active #173/PR #185 candidate is `6eb93f5`: durable fixed-identity registration,
-  runtime-clock seven-day source/backup cleanup, restart-safe phases, selection/restore integration,
-  and refusal before any unlink when the committed replay family is incomplete. The exact local gate
-  and fresh exact-code review are green. #168 remains open for pre-activation marker versioning,
-  stranded-preflight recovery, and hosted proof. The owner-directed GitHub Actions outage exception
-  is recorded, never called a green hosted gate.'
-phase: 'R4 active horizon OPEN. B4 storage, PR #149 lifecycle safety, PR #150 tracked-source activation enforcement, PR #152 single-writer enforcement, and PR #153 selected-store backup are the foundation; LIFE-03 hardening is active. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
+updated: 2026-08-07
+current_slice_override: 'PR #185 merged as `095164896ed40ac0f2d0c521ad68d672e21e9987`
+  and closed #173. The Phase E stored-observation candidate is preserved on
+  `codex/phasee-stored-bridge-rebuild`; implemented code head `d135a1c` is ten commits above that
+  merge. It adds readiness provenance, strict selected-source configuration, v3 why resolution,
+  a stored change-batch/integration-tail bridge, a synthetic export through the same bridge, API/UI
+  reachability, abstention and privacy floors, and a second Atlas lens. It is intentionally parked,
+  not ready for PR: the exact-head Terra review found that baseline cells reuse current-window
+  evidence references, so half of the displayed why walks answer the wrong window. The local
+  showcase preview also remained blank because its module URL returned the HTML fallback instead
+  of JavaScript. Resume at the per-cell evidence-reference repair; do not publish or close #174
+  until that repair, exact-head full proof, and successful browser QA are complete.'
+phase: 'R4 active horizon OPEN. LIFE-03 physical expiry is merged. Phase E #174 is the active
+  product slice but is parked at one evidence-truth blocker. LIFE-02/#80 MUST remain open for the
+  separate 36-month scope-unbound C1 deletion-lineage expiry path. #168 still owns production
+  pre-activation marker/version and stranded-preflight work. No real migration, connector, source,
+  credential, or external-model call is authorized.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -30,34 +38,26 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   atomic reader selection/grace #162/PR #164, rollback floor #166/PR #167,
   external immutable selection marker PR #169, restore PR #171, success/grace proof PR #175,
   selection-proof durability PR #176, tombstone replay #172/PR #179,
-  large-scope replay repair #180/PR #184',
+  large-scope replay repair #180/PR #184, durable seven-day physical expiry #173/PR #185',
   'state syncs #126']
-active_slice: 'DL-LIFE-03 physical expiry cleanup (#173/PR #185): before selection, bind the exact app-owned
-  legacy source/sidecars and promoted immutable backup/manifest/provisionals into the selected store
-  by fixed locator, presence, hash, device/inode/link identity, task key, and root. At/after the exact
-  committed seven-day deadline, a runtime-owned clock may advance the monotonic cleanup state only
-  after selection/proof, lease, maintenance, and complete applied revocation replay verify. Unlink
-  the registered legacy family, sync its directory, then unlink the registered backup family, sync,
-  and finalize the catalogue. Restart resumes by phase; replaced, foreign, partial, anchor-only, or
-  missing-chunk state refuses before mutation. Preserve the selection marker/receipt through C2 and
-  the content-free replay family through C1. No scheduler or activation caller is added. Phase E
-  stored-observation work remains #174/#80.'
-next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
-  honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
-  stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
-  bridge, not another fixture module. The reachability half is done on
-  fable/boundary-and-reachability: the Atlas is linked from the dashboard coverage section and its
-  Evidence Drawer is /api/v2/evidence''s first client (served projection preferred, local
-  composition the silent offline fallback), so the second lens extends a surface users can reach
-  rather than adding another unreachable route'
+active_slice: 'Phase E #174 on `codex/phasee-stored-bridge-rebuild`, code head `d135a1c`: finish
+  value-bound evidence references for every current/baseline, primary/sensitivity, stratum and
+  measure cell. Each generated presentation-safe claim/evidence reference must identify the exact
+  window and aggregate value, and baseline walks must carry baseline coverage/job/window proof.
+  Then rerun the exact-head focused and full gates, rebuild the synthetic showcase, prove its module
+  assets are served as JavaScript, complete browser QA, and repeat one bounded exact-head review.'
+next_value_slice: 'After the evidence-reference repair, finish and publish the existing Phase E
+  candidate rather than opening another lens. If #174 acceptance is then fully proven, close it;
+  leave #80 open for the separate 36-month scope-unbound C1 expiry path. The next product choice is
+  made only after that bounded vertical lands.'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-LIFE-02]
-blockers: 'No owner blocker for invented-fixture work. Replay #172 and large-scope repair #180 are
-  merged. A real migration/connector still requires physical expiry cleanup #173 merged, the
-  remaining pre-activation #168 contract items, and a separately reviewed production grant
-  issuer/caller. LIFE-02/#80 remain open through the Phase-E #174 resolver lineage join and 36-month
-  scope-unbound C1 expiry path. Deliberate breaking change: pre-activation invented marker bytes fail
-  closed and are regenerated; no real store exists.'
+blockers: 'No owner blocker for invented-fixture work. The Phase E candidate has one direct product
+  blocker: baseline and per-number Evidence Drawer references are not yet bound to the displayed
+  aggregate and window. Local visual QA is also incomplete because the preview served the module
+  path as HTML. A real migration/connector remains blocked on #168 plus a separately reviewed
+  production grant issuer/caller. #80 remains open for 36-month scope-unbound C1 expiry. No real
+  store exists and pre-activation invented marker bytes may still fail closed and regenerate.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
@@ -92,6 +92,23 @@ card_source: docs/analyser-program/taskdeck/tools/cards.mjs (generate with tools
 local_board: seeded Taskdeck board outside Git; restart runbook in untracked RESUME.md beside its
   database (06_TASKDECK_DEMO_PLAN.md §1 describes it without paths)
 residual_risks:
+  - 'Phase E code head `d135a1c` is preserved but not merge-ready. Terra reviewed that exact code
+     head against `0951648` and found one P1 evidence-truth defect: current and baseline cells reuse
+     the same marks, while the composed claim/coverage walk is current-only. Repair with unique,
+     presentation-safe references keyed by window, basis, stratum, measure and rendered aggregate;
+     add discriminating baseline/current drawer tests before publishing.'
+  - 'The last exact-head Phase E proof is scoped, not full: nine focused files passed 102 tests;
+     TypeScript and targeted lint passed (one existing Fast Refresh warning); `build:showcase` and
+     its verifier passed. The earlier full `npm run check` passed 89 files / 1,478 tests / 10 skips,
+     but preceded the final cache/deletion-lineage/reference repairs and therefore is NOT exact-head
+     proof. Rerun it after the blocker fix.'
+  - 'Browser QA is NOT verified. The local preview opened a blank Atlas root with no console errors;
+     direct probing showed `/developer-lens/assets/index-HIO8qZLz.js` returned HTTP 200 `text/html`
+     (the SPA fallback) rather than JavaScript. Fix or invoke preview base handling, then verify the
+     second lens and representative current/baseline evidence drawers in the browser.'
+  - 'PR #185 merged and #173 closed under the same explicit pre-release hosted-gate exception.
+     Its exact local gate and independent review were green; hosted exact-head Actions proof was
+     absent and remains NOT verified rather than being inferred from the later merge.'
   - 'q-7 protection has strict=false and enforce_admins=false; repository law still forbids
      privileged merges with red or stale exact-head CI'
   - 'PR #161 is an explicit owner-directed exception during GitHub''s declared Actions incident.
