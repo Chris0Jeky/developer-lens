@@ -75,7 +75,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -122,7 +122,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -265,7 +265,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -312,7 +312,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -455,7 +455,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -502,7 +502,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -574,6 +574,12 @@
                 "reason_code"
               ],
               "type": "object"
+            },
+            {
+              "required": [
+                "relevant_values"
+              ],
+              "type": "object"
             }
           ]
         },
@@ -645,7 +651,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -692,7 +698,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -764,6 +770,12 @@
                 "reason_code"
               ],
               "type": "object"
+            },
+            {
+              "required": [
+                "relevant_values"
+              ],
+              "type": "object"
             }
           ]
         },
@@ -835,7 +847,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -882,7 +894,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -954,6 +966,12 @@
                 "reason_code"
               ],
               "type": "object"
+            },
+            {
+              "required": [
+                "relevant_values"
+              ],
+              "type": "object"
             }
           ]
         },
@@ -1025,7 +1043,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -1072,7 +1090,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -1144,6 +1162,12 @@
                 "reason_code"
               ],
               "type": "object"
+            },
+            {
+              "required": [
+                "relevant_values"
+              ],
+              "type": "object"
             }
           ]
         },
@@ -1215,7 +1239,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -1262,7 +1286,7 @@
                             },
                             "value": {
                               "maximum": 1000000,
-                              "minimum": -1000000,
+                              "minimum": 0,
                               "type": "number"
                             }
                           },
@@ -1332,6 +1356,12 @@
                 "order",
                 "code",
                 "reason_code"
+              ],
+              "type": "object"
+            },
+            {
+              "required": [
+                "relevant_values"
               ],
               "type": "object"
             }
@@ -1962,7 +1992,7 @@
                                   },
                                   "value": {
                                     "maximum": 1000000,
-                                    "minimum": -1000000,
+                                    "minimum": 0,
                                     "type": "number"
                                   }
                                 },
@@ -2009,7 +2039,7 @@
                                   },
                                   "value": {
                                     "maximum": 1000000,
-                                    "minimum": -1000000,
+                                    "minimum": 0,
                                     "type": "number"
                                   }
                                 },
@@ -2487,7 +2517,7 @@
                                   },
                                   "value": {
                                     "maximum": 1000000,
-                                    "minimum": -1000000,
+                                    "minimum": 0,
                                     "type": "number"
                                   }
                                 },
@@ -2534,7 +2564,7 @@
                                   },
                                   "value": {
                                     "maximum": 1000000,
-                                    "minimum": -1000000,
+                                    "minimum": 0,
                                     "type": "number"
                                   }
                                 },
@@ -3012,7 +3042,7 @@
                                   },
                                   "value": {
                                     "maximum": 1000000,
-                                    "minimum": -1000000,
+                                    "minimum": 0,
                                     "type": "number"
                                   }
                                 },
@@ -3059,7 +3089,7 @@
                                   },
                                   "value": {
                                     "maximum": 1000000,
-                                    "minimum": -1000000,
+                                    "minimum": 0,
                                     "type": "number"
                                   }
                                 },
@@ -3519,27 +3549,19 @@
           "additionalProperties": false,
           "properties": {
             "benchmark": {
-              "maxLength": 240,
-              "minLength": 16,
-              "pattern": "^uv run dllab(?: [A-Za-z0-9_.:@=_-]+)+$",
+              "pattern": "^uv run dllab benchmark wb-c1 --smoke --run-id [a-z0-9][a-z0-9_-]{7,63}$",
               "type": "string"
             },
             "export": {
-              "maxLength": 240,
-              "minLength": 16,
-              "pattern": "^uv run dllab(?: [A-Za-z0-9_.:@=_-]+)+$",
+              "pattern": "^uv run dllab export method-trial [a-z0-9][a-z0-9_-]{7,63}$",
               "type": "string"
             },
             "report": {
-              "maxLength": 240,
-              "minLength": 16,
-              "pattern": "^uv run dllab(?: [A-Za-z0-9_.:@=_-]+)+$",
+              "pattern": "^uv run dllab report build [a-z0-9][a-z0-9_-]{7,63}$",
               "type": "string"
             },
             "reproduce": {
-              "maxLength": 240,
-              "minLength": 16,
-              "pattern": "^uv run dllab(?: [A-Za-z0-9_.:@=_-]+)+$",
+              "pattern": "^uv run dllab run reproduce [a-z0-9][a-z0-9_-]{7,63}$",
               "type": "string"
             }
           },
@@ -3809,7 +3831,7 @@
                     },
                     "value": {
                       "maximum": 1000000,
-                      "minimum": -1000000,
+                      "minimum": 0,
                       "type": "number"
                     }
                   },
@@ -3856,7 +3878,7 @@
                     },
                     "value": {
                       "maximum": 1000000,
-                      "minimum": -1000000,
+                      "minimum": 0,
                       "type": "number"
                     }
                   },
@@ -4057,7 +4079,7 @@
                     },
                     "value": {
                       "maximum": 1000000,
-                      "minimum": -1000000,
+                      "minimum": 0,
                       "type": "number"
                     }
                   },
@@ -4104,7 +4126,7 @@
                     },
                     "value": {
                       "maximum": 1000000,
-                      "minimum": -1000000,
+                      "minimum": 0,
                       "type": "number"
                     }
                   },
@@ -4155,19 +4177,6 @@
           "properties": {
             "baseline": {
               "additionalProperties": false,
-              "allOf": [
-                {
-                  "properties": {
-                    "viable": {
-                      "const": false
-                    }
-                  },
-                  "required": [
-                    "viable"
-                  ],
-                  "type": "object"
-                }
-              ],
               "properties": {
                 "reason_code": {
                   "enum": [
@@ -4189,7 +4198,7 @@
                         },
                         "value": {
                           "maximum": 1000000,
-                          "minimum": -1000000,
+                          "minimum": 0,
                           "type": "number"
                         }
                       },
@@ -4245,19 +4254,6 @@
             },
             "candidate": {
               "additionalProperties": false,
-              "allOf": [
-                {
-                  "properties": {
-                    "viable": {
-                      "const": false
-                    }
-                  },
-                  "required": [
-                    "viable"
-                  ],
-                  "type": "object"
-                }
-              ],
               "properties": {
                 "reason_code": {
                   "enum": [
@@ -4279,7 +4275,7 @@
                         },
                         "value": {
                           "maximum": 1000000,
-                          "minimum": -1000000,
+                          "minimum": 0,
                           "type": "number"
                         }
                       },

@@ -76,13 +76,6 @@ function enrichStandaloneSchema(value: unknown): JsonObject {
     }),
   ]
 
-  const thresholdSelection = root.scorecard.properties.threshold_selection.properties as JsonObject
-  for (const method of ['baseline', 'candidate'] as const) {
-    thresholdSelection[method].allOf = [
-      fixedObject({ viable: { const: false } }),
-    ]
-  }
-
   const gateCodes = [
     'baseline_selection',
     'candidate_selection',
@@ -109,6 +102,7 @@ function enrichStandaloneSchema(value: unknown): JsonObject {
     allOf: [
       gateItem,
       fixedObject({ order: { const: index + 1 }, code: { const: code }, reason_code: { const: gateReasons[index] } }),
+      ...(index >= 2 ? [{ type: 'object', required: ['relevant_values'] }] : []),
     ],
   }))
   gates.items = false

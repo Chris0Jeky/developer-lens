@@ -8,13 +8,17 @@ export const METHOD_TRIAL_QUESTION =
 export const METHOD_TRIAL_EVIDENCE_LABEL =
   'Invented weekly system series only; no real repositories, people, providers, URLs, paths, or production effect.' as const
 
-const boundedNumber = z.number().finite().min(-1_000_000).max(1_000_000)
+const boundedNumber = z.number().finite().min(0).max(1_000_000)
+const signedBoundedNumber = z.number().finite().min(-1_000_000).max(1_000_000)
 const boundedCount = z.number().int().min(0).max(100_000)
 const unitInterval = z.number().finite().min(0).max(1)
 const sha256 = z.string().regex(/^sha256:[0-9a-f]{64}$/)
 const commit = z.string().regex(/^[0-9a-f]{40}$/)
 const safeRunId = z.string().regex(/^[a-z0-9][a-z0-9_-]{7,63}$/)
-const safeCommand = z.string().min(16).max(240).regex(/^uv run dllab(?: [A-Za-z0-9_.:@=_-]+)+$/)
+const benchmarkCommand = z.string().regex(/^uv run dllab benchmark wb-c1 --smoke --run-id [a-z0-9][a-z0-9_-]{7,63}$/)
+const reproduceCommand = z.string().regex(/^uv run dllab run reproduce [a-z0-9][a-z0-9_-]{7,63}$/)
+const exportCommand = z.string().regex(/^uv run dllab export method-trial [a-z0-9][a-z0-9_-]{7,63}$/)
+const reportCommand = z.string().regex(/^uv run dllab report build [a-z0-9][a-z0-9_-]{7,63}$/)
 const SAFE_TEXT_PATTERN = /^(?!.*(?:https?:\/\/|ftp:\/\/|[A-Za-z]:\\|\\\\|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|\b[A-Za-z0-9_.-]{2,}\/[A-Za-z0-9_.-]{2,}\b))[\s\S]*$/i
 const safeText = (min: number, max: number) => z.string().min(min).max(max).regex(SAFE_TEXT_PATTERN)
 
@@ -205,7 +209,7 @@ const PointSchema = z
     relative_week_index: z.number().int().min(0).max(103),
     relative_week_label: z.string().regex(/^week-[0-9]{3}$/),
     observed: z.discriminatedUnion('state', [
-      z.strictObject({ state: z.literal('observed'), value: boundedNumber }),
+      z.strictObject({ state: z.literal('observed'), value: signedBoundedNumber }),
       z.strictObject({
         state: z.literal('missing'),
         reason: z.enum(['not_collected', 'permission_gap', 'instrumentation_gap']),
@@ -359,16 +363,28 @@ const ReproducibilitySchema = z.strictObject({
     research_pack: sha256,
   }),
   commands: z.strictObject({
-    benchmark: safeCommand,
-    reproduce: safeCommand,
-    export: safeCommand,
-    report: safeCommand,
+    benchmark: benchmarkCommand,
+    reproduce: reproduceCommand,
+    export: exportCommand,
+    report: reportCommand,
   }),
   verification: z.strictObject({
     local: z.enum(['passed', 'failed', 'not_run']),
     product_hosted: z.enum(['passed', 'failed', 'not_run']),
     lab_hosted: z.enum(['passed', 'failed', 'not_run']),
   }),
+}).superRefine((value, ctx) => {
+  const expected = {
+    benchmark: `uv run dllab benchmark wb-c1 --smoke --run-id ${value.run_id}`,
+    reproduce: `uv run dllab run reproduce ${value.run_id}`,
+    export: `uv run dllab export method-trial ${value.run_id}`,
+    report: `uv run dllab report build ${value.run_id}`,
+  }
+  for (const key of Object.keys(expected) as Array<keyof typeof expected>) {
+    if (value.commands[key] !== expected[key]) {
+      ctx.addIssue({ code: 'custom', path: ['commands', key], message: 'command must exactly use run_id' })
+    }
+  }
 })
 
 export const MethodTrialViewSchema = z
@@ -470,22 +486,87 @@ export const MethodTrialViewSchema = z
         message: 'representative cases must be ordered 1 through 3',
       })
     }
-    if (
-      value.scorecard.threshold_selection.baseline.viable ||
-      value.scorecard.threshold_selection.candidate.viable
-    ) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['scorecard', 'threshold_selection'],
-        message: 'both threshold selections are nonviable for this rejected trial',
-      })
-    }
     const failedGateReasons = value.acceptance_gates
       .filter((gate) => gate.outcome === 'fail')
       .map((gate) => gate.reason_code)
     if (JSON.stringify(value.decision.reason_codes) !== JSON.stringify(failedGateReasons)) {
       ctx.addIssue({ code: 'custom', path: ['decision', 'reason_codes'], message: 'decision reasons derive from failed gates' })
     }
+
+    const metricValue = (measurement: z.infer<typeof MeasurementSchema> | z.infer<typeof ProbabilityMeasurementSchema>) =>
+      measurement.status === 'measured' ? measurement.value : null
+    const sameMeasurement = (
+      left: z.infer<typeof MeasurementSchema> | z.infer<typeof ProbabilityMeasurementSchema>,
+      right: z.infer<typeof MeasurementSchema> | z.infer<typeof ProbabilityMeasurementSchema>,
+    ) =>
+      left.status === right.status &&
+      (left.status === 'measured'
+        ? left.value === (right.status === 'measured' ? right.value : null)
+        : left.reason === (right.status === 'unavailable' ? right.reason : null))
+    const selectionOutcomes = [
+      value.scorecard.threshold_selection.baseline.viable,
+      value.scorecard.threshold_selection.candidate.viable,
+    ]
+    const expectedOutcomes: Array<'pass' | 'fail' | 'not_applicable'> = [
+      selectionOutcomes[0] ? 'pass' : 'fail',
+      selectionOutcomes[1] ? 'pass' : 'fail',
+    ]
+    const scoredGates = [
+      {
+        baseline: value.scorecard.baseline.detection_rate,
+        candidate: value.scorecard.candidate.detection_rate,
+        requiresBaseline: false,
+        evaluate: (baseline: number, candidate: number) => candidate >= 0.75,
+      },
+      {
+        baseline: value.scorecard.baseline.median_detection_delay_weeks,
+        candidate: value.scorecard.candidate.median_detection_delay_weeks,
+        requiresBaseline: false,
+        evaluate: (_baseline: number, candidate: number) => candidate <= 8,
+      },
+      {
+        baseline: value.scorecard.baseline.false_alerts_per_year,
+        candidate: value.scorecard.candidate.false_alerts_per_year,
+        requiresBaseline: true,
+        evaluate: (baseline: number, candidate: number) => candidate <= baseline * 0.8,
+      },
+      {
+        baseline: value.scorecard.baseline.detection_rate,
+        candidate: value.scorecard.candidate.detection_rate,
+        requiresBaseline: true,
+        evaluate: (baseline: number, candidate: number) => candidate >= baseline,
+      },
+      {
+        baseline: value.scorecard.baseline.coverage_confound_false_alert_rate,
+        candidate: value.scorecard.candidate.coverage_confound_false_alert_rate,
+        requiresBaseline: true,
+        evaluate: (baseline: number, candidate: number) => candidate <= baseline,
+      },
+    ]
+    scoredGates.forEach((rule, index) => {
+      const gate = value.acceptance_gates[index + 2]
+      const baseline = metricValue(rule.baseline)
+      const candidate = metricValue(rule.candidate)
+      const expectedOutcome = candidate === null || (rule.requiresBaseline && baseline === null)
+        ? 'not_applicable'
+        : rule.evaluate(baseline, candidate) ? 'pass' : 'fail'
+      expectedOutcomes.push(expectedOutcome)
+      if (gate.outcome !== expectedOutcome) {
+        ctx.addIssue({ code: 'custom', path: ['acceptance_gates', index + 2, 'outcome'], message: 'gate outcome must derive from scorecard evidence' })
+      }
+      if (
+        !gate.relevant_values ||
+        !sameMeasurement(gate.relevant_values.baseline, rule.baseline) ||
+        !sameMeasurement(gate.relevant_values.candidate, rule.candidate)
+      ) {
+        ctx.addIssue({ code: 'custom', path: ['acceptance_gates', index + 2, 'relevant_values'], message: 'relevant values must mirror scorecard evidence' })
+      }
+    })
+    expectedOutcomes.slice(0, 2).forEach((expectedOutcome, index) => {
+      if (value.acceptance_gates[index].outcome !== expectedOutcome) {
+        ctx.addIssue({ code: 'custom', path: ['acceptance_gates', index, 'outcome'], message: 'selection gate outcome must derive from viability' })
+      }
+    })
   })
 
 export type MethodTrialView = z.infer<typeof MethodTrialViewSchema>

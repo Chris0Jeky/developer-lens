@@ -320,7 +320,7 @@ function sample() {
       commands: {
         benchmark: 'uv run dllab benchmark wb-c1 --smoke --run-id wbc1_demo',
         reproduce: 'uv run dllab run reproduce wbc1_demo',
-        export: 'uv run dllab demo export wbc1_demo --output product-fixture',
+        export: 'uv run dllab export method-trial wbc1_demo',
         report: 'uv run dllab report build wbc1_demo',
       },
       verification: {
@@ -421,6 +421,67 @@ describe('DeveloperLensMethodTrialView.v1', () => {
     }
     expect(MethodTrialViewSchema.safeParse(fakeZero).success).toBe(false)
     expect(validate(fakeZero)).toBe(false)
+  })
+
+  it('rejects permissive or mismatched reproducibility commands', () => {
+    for (const field of ['benchmark', 'reproduce', 'export', 'report'] as const) {
+      const inlinePassword = structuredClone(sample())
+      inlinePassword.reproducibility.commands[field] = `${inlinePassword.reproducibility.commands[field]} --password=secret`
+      expect(MethodTrialViewSchema.safeParse(inlinePassword).success).toBe(false)
+
+      const extraFlag = structuredClone(sample())
+      extraFlag.reproducibility.commands[field] = `${extraFlag.reproducibility.commands[field]} --extra`
+      expect(MethodTrialViewSchema.safeParse(extraFlag).success).toBe(false)
+
+      const mismatchedRun = structuredClone(sample())
+      mismatchedRun.reproducibility.commands[field] = mismatchedRun.reproducibility.commands[field].replace(
+        'wbc1_demo',
+        'wbc1_other',
+      )
+      expect(MethodTrialViewSchema.safeParse(mismatchedRun).success).toBe(false)
+    }
+  })
+
+  it('rejects negative measured rates, delays, and thresholds while allowing signed observations', () => {
+    const negativeRate = structuredClone(sample())
+    negativeRate.scorecard.candidate.false_alerts_per_year = measured(-1)
+    expect(MethodTrialViewSchema.safeParse(negativeRate).success).toBe(false)
+
+    const negativeDelay = structuredClone(sample())
+    negativeDelay.scorecard.candidate.median_detection_delay_weeks = measured(-1)
+    expect(MethodTrialViewSchema.safeParse(negativeDelay).success).toBe(false)
+
+    const negativeThreshold = structuredClone(sample())
+    negativeThreshold.scorecard.threshold_selection.candidate.selected_value = measured(-1)
+    expect(MethodTrialViewSchema.safeParse(negativeThreshold).success).toBe(false)
+
+    const signedObservation = structuredClone(sample())
+    signedObservation.representative_cases[0].points[0].observed = { state: 'observed', value: -1 }
+    expect(MethodTrialViewSchema.safeParse(signedObservation).success).toBe(true)
+  })
+
+  it('derives gate outcomes and relevant values from WB-C1 evidence', () => {
+    const selectionMismatch = structuredClone(sample())
+    selectionMismatch.acceptance_gates[0].outcome = 'pass'
+    expect(MethodTrialViewSchema.safeParse(selectionMismatch).success).toBe(false)
+
+    const outcomeMismatch = structuredClone(sample())
+    outcomeMismatch.acceptance_gates[5].outcome = 'fail'
+    expect(MethodTrialViewSchema.safeParse(outcomeMismatch).success).toBe(false)
+
+    const relevantMismatch = structuredClone(sample())
+    relevantMismatch.acceptance_gates[4].relevant_values!.candidate = measured(1)
+    expect(MethodTrialViewSchema.safeParse(relevantMismatch).success).toBe(false)
+
+    const unavailableMetric = structuredClone(sample())
+    unavailableMetric.scorecard.candidate.median_detection_delay_weeks = unavailable('not_measured')
+    unavailableMetric.scorecard.baseline.median_detection_delay_weeks = unavailable('not_measured')
+    unavailableMetric.acceptance_gates[3].outcome = 'not_applicable'
+    unavailableMetric.acceptance_gates[3].relevant_values = {
+      baseline: unavailable('not_measured'),
+      candidate: unavailable('not_measured'),
+    }
+    expect(MethodTrialViewSchema.safeParse(unavailableMetric).success).toBe(true)
   })
 
   it('rejects count drift, oversized cases, and reordered scenarios', async () => {
