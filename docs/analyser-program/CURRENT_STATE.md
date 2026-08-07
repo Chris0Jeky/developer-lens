@@ -11,9 +11,10 @@ updated: 2026-08-07
 current_slice_override: 'No active product-repo implementation slice in this checkout. The WB-C1
   Method Trial demo product side is COMPLETE (PR #187 `7b22491`, follow-up PR #190 `8de65a2`, invented
   C0, verification honestly `not_run`); the dual-runtime harness milestone merged (PR #191 `dcf5897`,
-  ledger sync PR #192 `e97f17d`); and the hosted PR gate now runs the ResearchPack + MethodTrialView
-  drift guards it previously omitted (issue #193 CLOSED via PR #194 `24f55d4`). The next value work is
-  cross-repo (see next_value_slice) and not in this repo.'
+  ledger sync PR #192 `e97f17d`); and the hosted PR gate now runs explicit ResearchPack +
+  MethodTrialView drift-check steps for local/gate parity (issue #193 CLOSED via PR #194 `24f55d4` —
+  the `shared/*` test suite already caught that drift, so this added explicitness, not a missing
+  guard). The next value work is cross-repo (see next_value_slice) and not in this repo.'
 phase: 'WB-C1 Method Trial demo shipped product-side and the hosted proving gate hardened (#193). No
   active product-repo slice; next value work is the cross-repo lab close-out. No real migration,
   source activation, private output, stored-observation exporter, external model call, or model
