@@ -3190,3 +3190,76 @@ their terminal expiry; before future C2 receipt/proof removal, a durable committ
 discriminator must refuse rather than recreate anchor-only/truncated C1 replay state. #168 still
 owns pre-activation marker versioning/stranded preflight/hosted proof. After #173 is reviewed and
 merged, the exact next product slice is the Phase E stored-observation bridge #174/#80.
+
+## 2026-08-06 — ResearchPack v1 C0 producer contract
+
+The product-owned additive producer seam lives in `shared/researchPack.ts` and
+`scripts/generateResearchPack.ts`; it is intentionally separate from AnalysisPack 1.0/2.0. The
+deterministic generator writes only `research-contracts/research-pack/v1/schema.json` and
+`invented.fixture.json`, and `npm run check:research-pack` detects byte drift. The fixture is
+invented C0 with all seven relation slots explicitly `intentionally_omitted`, path-free relation
+artifact metadata, opaque bundle-local IDs, fixed synthetic provenance, and no private or Git
+reads. The sibling lab sync path is `dllab contracts sync --from <checkout> --ref <40-hex-commit>`;
+the generated files are the only producer boundary it may copy. Focused contract tests cover
+round-trip, strict rejection, feature/person-scoring prohibitions, deterministic bytes, and the
+fixture was validated by the lab's Pydantic consumer. No AnalysisPack or runtime source activation
+was changed.
+
+Late exact-head Codex review of PR #178 exposed five blocking contract defects. Commit
+`9aeb60973d80e9c65d5ebe9b4f352a9663957f4e` closes them: feature identifiers now use the canonical
+person-subject vocabulary and token-aware case folding across dot, underscore, and hyphen
+separators; interpretation codes are a closed vocabulary and require `NOT_PERSON_MEASURE`; C1
+`generated_at` is the UTC Monday ISO-week floor; and `.gitattributes` pins the two generated JSON
+artifacts to LF. The standalone schema carries the closed enum, required-code `contains`, and C1
+midnight conditional while typed consumers enforce the Monday rule. The exact code head passed
+`npm run check`: 83 test files, 1,396 tests passed and 10 declared skips, plus lint, context,
+generator drift, TypeScript/Vite build, credential scanning, and whitespace proof. The generated
+schema SHA-256 is `dbeb7c88434dc0849567d3f756304ee25b9f4f0d4b7f985ca16232675bb788b0`.
+Five non-blocking semantic refinements were consolidated in #182; broader standalone-schema/runtime
+parity remains #181. Hosted proof remains absent during the declared GitHub Actions incident and is
+not represented as green.
+
+## 2026-08-07 — ResearchPack main refresh and identifier closure
+
+The PR #178 branch merged current `origin/main` `095164896ed40ac0f2d0c521ad68d672e21e9987` through merge commit
+`5f8ada64b01e7ccfbad8721277efa2983262aede`. The ledger conflict kept the merged #179/#184/#185
+history and then retained this ResearchPack record; `CURRENT_STATE.md` now describes #184/#185 as
+merged and the owner-directed Method Trial as the active synthetic value slice.
+
+Code commit `47987f6521e95b257730eedf8e3d9d3aba81d317` closes the remaining demo-blocking identifier
+bypasses without absorbing #181/#182. Runtime validation and the generated standalone schema reject
+the shared prohibited construct vocabulary, plural person roles, lower-camel/acronym joins, and
+bounded uppercase concatenations such as `DEVELOPERS`, `developerURL`, `AUTHORURL`, `ENGINEERURL`,
+`TEAM_MEMBERURL`, `USER_LOGINURL`, `HEALTHURL`, and `ENGAGEMENTURL`. Explicit near-miss canaries keep
+`authorization`, `inactivity`, `integrating`, `engineering`, `authority`, and `authoritative`
+available. The generated schema SHA-256 is
+`50f885d3901aac714b9b5599c6ff4a719a626ac4bcee600f523c0cc5758414d1`; the regenerated invented
+fixture SHA-256 is `6a9af8471a847cc14434763e873d6ef86063251caba5deae4e5ae54f2973e9f1` and changes only its embedded
+contract digest.
+
+Focused ResearchPack proof passed 8 tests and the generator drift check. The final code tree passed
+`npm run check`: lint, context verification, ResearchPack drift, 84 test files with 1,440 tests
+passed and 10 declared skips, TypeScript/Vite build, and credential scanning over 13 outputs.
+`npm run build:showcase` regenerated and verified the C0 dashboard, social card, export boundaries,
+credential canaries, and local-path canaries. One bounded fresh review found an acronym-suffix gap;
+the single repair round added the compact base/suffix boundary, and the final re-review found no
+remaining realistic CRITICAL/HIGH defect. Hosted `Prove the pull request` remains pending after the
+next push and is not represented as green; no current repository authority extends an outage
+exception to PR #178.
+
+The first refreshed hosted run, `31138305001`, checked out the exact PR merge ref for ResearchPack
+head `5a498f02c81c92fd9db800b373a55acc8848994f` and exposed two inherited Linux storage failures rather
+than a ResearchPack regression. The same failures were present on PRs #184/#185 and current main:
+the selection-proof test created a simulated protected temp with the default POSIX mode instead of
+`0600`, and restore publication released its original temp descriptor before link validation, which
+let ext4 recycle the same device/inode for an unlink/recreate replacement. The deliberately isolated
+prerequisite PR #186 retained that descriptor through link validation and corrected the test fixture.
+Its commit `0a69d374eaff97d6408fe8f5ac3cf52bb0b84a69` passed the two exact tests 33/33 on Windows and on an
+Ubuntu/ext4 checkout, passed the full local gate (83 files, 1,432 passed, 10 skipped), received a fresh
+review with no CRITICAL/HIGH finding, and passed hosted run `31139652039`. It merged with commit
+preservation as `f576fc4c234426e3ba737e4a7bd888ce0fd8f624`.
+
+PR #178 then merged that repaired `origin/main` through merge commit
+`7fb568c088b89ed11c72afe1115fcfbf92bbd75b`; the merge touched only the two already-proven storage
+files and had no ResearchPack or state conflict. Exact refreshed ResearchPack proof and the required
+hosted result remain owed after the final state push; no exception is claimed.

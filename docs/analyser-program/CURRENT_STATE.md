@@ -7,15 +7,18 @@ the historical record of how past slices were proven, and a fresh agent followin
 file can resume deleted work (PR #127 late review).
 
 ```yaml
-updated: 2026-08-06
-current_slice_override: 'LIFE-03 revocation replay #172 and its large-scope repair #180 are merged
-  through PRs #179/#184. The active #173/PR #185 candidate is `6eb93f5`: durable fixed-identity registration,
-  runtime-clock seven-day source/backup cleanup, restart-safe phases, selection/restore integration,
-  and refusal before any unlink when the committed replay family is incomplete. The exact local gate
-  and fresh exact-code review are green. #168 remains open for pre-activation marker versioning,
-  stranded-preflight recovery, and hosted proof. The owner-directed GitHub Actions outage exception
-  is recorded, never called a green hosted gate.'
-phase: 'R4 active horizon OPEN. B4 storage, PR #149 lifecycle safety, PR #150 tracked-source activation enforcement, PR #152 single-writer enforcement, and PR #153 selected-store backup are the foundation; LIFE-03 hardening is active. LIFE-02 and #80 MUST remain open: resolver coverage/job deletion-lineage joins land with the Phase-E stored-observation bridge, and #80 tracks the C1-window expiry path for scope-unbound deletion lineage. No real migration or connector is authorized.'
+updated: 2026-08-07
+current_slice_override: 'LIFE-03 revocation replay, its large-scope repair, and seven-day physical
+  expiry cleanup are merged through PRs #179/#184/#185. The Linux storage-gate repair PR #186 is
+  merged as `f576fc4c234426e3ba737e4a7bd888ce0fd8f624` and restores the required main gate.
+  The only open product PR is #178, the ResearchPack v1 C0 producer dependency for lab PR #3. It is
+  refreshed onto main and closes the current person/construct identifier blocker; #181/#182
+  retain broader schema and semantic refinements. The principal owner-directed value slice is the
+  offline Method Trial presentation of the rejected WB-C1 candidate after #178 merges.'
+phase: 'Integrated synthetic Method Trial demo active. The product-owned ResearchPack producer lands
+  first, followed by one principal DeveloperLensMethodTrialView.v1 consumer/route PR and the exact
+  lab exporter/fixture handshake. No real migration, source activation, private output, or model
+  promotion is part of this programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -30,39 +33,32 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   atomic reader selection/grace #162/PR #164, rollback floor #166/PR #167,
   external immutable selection marker PR #169, restore PR #171, success/grace proof PR #175,
   selection-proof durability PR #176, tombstone replay #172/PR #179,
-  large-scope replay repair #180/PR #184',
+  large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
+  Linux storage-gate repair PR #186',
   'state syncs #126']
-active_slice: 'DL-LIFE-03 physical expiry cleanup (#173/PR #185): before selection, bind the exact app-owned
-  legacy source/sidecars and promoted immutable backup/manifest/provisionals into the selected store
-  by fixed locator, presence, hash, device/inode/link identity, task key, and root. At/after the exact
-  committed seven-day deadline, a runtime-owned clock may advance the monotonic cleanup state only
-  after selection/proof, lease, maintenance, and complete applied revocation replay verify. Unlink
-  the registered legacy family, sync its directory, then unlink the registered backup family, sync,
-  and finalize the catalogue. Restart resumes by phase; replaced, foreign, partial, anchor-only, or
-  missing-chunk state refuses before mutation. Preserve the selection marker/receipt through C2 and
-  the content-free replay family through C1. No scheduler or activation caller is added. Phase E
-  stored-observation work remains #174/#80.'
-next_value_slice: 'change-batch size vs integration tail is the selected second lens (cheapest
-  honest lens: additions/deletions/changedFiles + lifecycle timestamps are already collected,
-  stored in pull_request_fact, and computed by analytics.ts); it follows the stored-observation
-  bridge, not another fixture module. The reachability half is done on
-  fable/boundary-and-reachability: the Atlas is linked from the dashboard coverage section and its
-  Evidence Drawer is /api/v2/evidence''s first client (served projection preferred, local
-  composition the silent offline fallback), so the second lens extends a surface users can reach
-  rather than adding another unreachable route'
+active_slice: 'ResearchPack v1 producer PR #178: steward the refreshed branch, preserve the exact seven-slot
+  deterministic C0 fixture, and reject ordinary plural/camel/concatenated person-subject identifiers
+  plus the canonical prohibited construct vocabulary in both runtime and standalone schema. Broader
+  temporal, relation, feature grammar, and value/unit refinements remain #181/#182.'
+next_value_slice: 'After #178 merges, create one principal product PR for the
+  DeveloperLensMethodTrialView.v1 contract, lab-generated/product-validated C0 fixture, lazy
+  ?view=method-trial route, existing-navigation entry, and combined 5-8 minute showcase runbook.
+  The route tells why BOCPD was rejected while the deterministic rolling median/MAD baseline remains;
+  it does not create a generic research dashboard.'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
-  [DL-LIFE-02]
-blockers: 'No owner blocker for invented-fixture work. Replay #172 and large-scope repair #180 are
-  merged. A real migration/connector still requires physical expiry cleanup #173 merged, the
-  remaining pre-activation #168 contract items, and a separately reviewed production grant
-  issuer/caller. LIFE-02/#80 remain open through the Phase-E #174 resolver lineage join and 36-month
-  scope-unbound C1 expiry path. Deliberate breaking change: pre-activation invented marker bytes fail
-  closed and are regenerated; no real store exists.'
+  [DL-WB-C1 Method Trial demo]
+blockers: 'No owner blocker for invented-fixture work. PR #178 is refreshed onto the gate-repair
+  main merge and still requires a green exact-head Prove the pull request result after its final push;
+  no hosted-gate exception is being used. Lab PR #3 depends on that exact product contract.
+  A real migration/connector still requires the remaining pre-activation #168 contract items and a
+  separately reviewed production grant issuer/caller. LIFE-02/#80 and Phase-E #174 remain open and
+  outside this demo programme.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
-frozen_by_reassessment: horizon:frozen label (WB candidates, vector retrieval, GOV/SEC/PORT-02/
-  PROV-01 sources, ATLAS-03 parsers, EVQ-09/10, TRACE-03) — 07 §0a
+frozen_by_reassessment: horizon:frozen label (WB candidates except the owner-directed WB-C1 Method
+  Trial demonstration, vector retrieval, GOV/SEC/PORT-02/PROV-01 sources, ATLAS-03 parsers,
+  EVQ-09/10, TRACE-03) — 07 §0a
 authority_order: [AGENTS.md, .agent-harness/tier.json, HUMAN_TODO.md, data-charter.md,
   source-capability-matrix.md, DEVELOPER_LENS_V2_ARCHITECTURE.md (incl. Appendix I.1-I.4)]
 last_verified_checks: 'Exact heads, run IDs, test counts, and review outcomes live in docs/IMPLEMENTATION_LEDGER.md. Refresh live Git and CI, then rerun the relevant gate before relying on prior proof.'
@@ -118,13 +114,13 @@ residual_risks:
      Older invented v1 bytes therefore fail closed. This is accepted only because activation remains
      never_authorized and no real store exists; #168 still owns explicit marker versioning and
      stranded-preflight recovery before activation.'
-  - 'The #173 candidate is default-off and has no scheduler or activation caller. Windows production
+  - '#173 merged through PR #185 and remains default-off with no scheduler or activation caller. Windows production
      deliberately refuses before its first unlink because exact containing-directory sync is not
      available through the current primitive; hosted POSIX durability remains NOT verified during
      the Actions incident. Hostile same-user pathname ABA remains #142.'
-  - '#173 preserves the immutable C2 receipt/proof and C1 replay family. Before a future C2 expiry
+  - '#173/PR #185 preserves the immutable C2 receipt/proof and C1 replay family. Before a future C2 expiry
      removes the receipt/proof, that separate transition must add a durable committed-family
-     discriminator and refuse anchor-only/truncated C1 state; this candidate does not claim C1/C2
+     discriminator and refuse anchor-only/truncated C1 state; this merged slice does not claim C1/C2
      terminal expiry.'
   - '#78 RESOLVED on fable/boundary-and-reachability: the browser holds no bearer at all (the guard
      accepts a proven same-origin Sec-Fetch triple on an allowlisted Host OR a bearer for
