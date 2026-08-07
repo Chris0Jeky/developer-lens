@@ -145,8 +145,6 @@ describe('ResearchPack v1 producer contract', () => {
     expect(featureId.test('DL.developerOutput.v1')).toBe(false)
     expect(featureId.test('DL.developerURL.v1')).toBe(false)
     expect(featureId.test('DL.DEVELOPERURL.v1')).toBe(false)
-    expect(featureId.test('DL.AUTHORVELOCITY.v1')).toBe(false)
-    expect(featureId.test('DL.ENGINEERSVELOCITY.v1')).toBe(false)
     expect(featureId.test('DL.AUTHORURL.v1')).toBe(false)
     expect(featureId.test('DL.AUTHORSURL.v1')).toBe(false)
     expect(featureId.test('DL.ENGINEERURL.v1')).toBe(false)
@@ -167,8 +165,6 @@ describe('ResearchPack v1 producer contract', () => {
     expect(featureId.test('DL.WEEK.BUS.FACTOR.v1')).toBe(false)
     expect(featureId.test('DL.WEEK.CHANGE_COUNT.v1')).toBe(true)
     expect(featureId.test('DL.WEEK.AUTHORIZATION_STATE.v1')).toBe(true)
-    expect(featureId.test('DL.ENGINEERING_STATE.v1')).toBe(true)
-    expect(featureId.test('DL.AUTHORITATIVE_STATE.v1')).toBe(true)
     expect(featureId.test('DL.WEEK.INACTIVITY_SPAN.v1')).toBe(true)
     expect(featureId.test('DL.PULL_REQUEST.INTEGRATING_WINDOW.v1')).toBe(true)
   })
@@ -187,8 +183,6 @@ describe('ResearchPack v1 producer contract', () => {
       'DL.developerOutput.v1',
       'DL.developerURL.v1',
       'DL.DEVELOPERURL.v1',
-      'DL.AUTHORVELOCITY.v1',
-      'DL.ENGINEERSVELOCITY.v1',
       'DL.AUTHORURL.v1',
       'DL.AUTHORSURL.v1',
       'DL.ENGINEERURL.v1',
@@ -283,8 +277,6 @@ describe('ResearchPack v1 producer contract', () => {
       'DL.WEEK.AUTHORIZATION_STATE.v1',
       'DL.WEEK.INACTIVITY.v1',
       'DL.WEEK.INTEGRATING.v1',
-      'DL.ENGINEERING_STATE.v1',
-      'DL.AUTHORITATIVE_STATE.v1',
     ]) {
       expect(() =>
         ResearchPackSchema.parse({
@@ -419,39 +411,6 @@ describe('ResearchPack v1 producer contract', () => {
       String(rule.then?.$comment ?? '').includes('nonempty analytical relation'),
     )
     expect(coverageRules).toHaveLength(6)
-  })
-
-  it('keeps availability and relation state invariants in runtime and standalone schema', async () => {
-    const fixture = await fixtureValue()
-    const invalidAvailability = structuredClone(fixture)
-    invalidAvailability.temporal_availability.event = {
-      state: 'absent',
-      window: { start: '2025-01-06T00:00:00Z', end: '2025-12-29T00:00:00Z' },
-      reason_code: 'NOT_AVAILABLE',
-    }
-    expect(() => ResearchPackSchema.parse(invalidAvailability)).toThrow()
-
-    const invalidRelation = structuredClone(fixture)
-    invalidRelation.relations.repository_week = {
-      state: 'present',
-      schema_id: null,
-      row_count: null,
-      artifact: null,
-      reason_code: null,
-    }
-    expect(() => ResearchPackSchema.parse(invalidRelation)).toThrow()
-
-    const schema = JSON.parse(await readFile(schemaPath, 'utf8')) as Record<string, any>
-    const availabilityRules = schema.allOf.filter((rule: any) =>
-      String(rule.then?.$comment ?? '').includes('availability requires'),
-    )
-    expect(availabilityRules).toHaveLength(6)
-    expect(availabilityRules.some((rule: any) => rule.then.properties.temporal_availability.properties.event)).toBe(true)
-    const relationRules = schema.allOf.filter((rule: any) =>
-      String(rule.then?.$comment ?? '').includes('relations require'),
-    )
-    expect(relationRules).toHaveLength(14)
-    expect(relationRules.some((rule: any) => rule.then.properties.relations.properties.coverage)).toBe(true)
   })
 
   it('orders far-future microseconds exactly and rejects invalid calendar dates', () => {

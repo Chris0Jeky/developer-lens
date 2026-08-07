@@ -278,14 +278,9 @@ function caseFoldTokenCore(value: string, lowercaseFinal = false): string {
     .join(`(?:[._-]+|${camelBoundary})`)
 }
 
-function caseFoldTokenPattern(value: string, prefix = false, excludedSuffixes: readonly string[] = []): string {
+function caseFoldTokenPattern(value: string, prefix = false): string {
   const core = caseFoldTokenCore(value)
-  if (prefix) {
-    const exclusions = excludedSuffixes.length
-      ? `(?!${excludedSuffixes.map(caseFoldPattern).join('|')})`
-      : ''
-    return `${tokenStart}${core}${exclusions}[A-Za-z0-9]*${tokenEnd}`
-  }
+  if (prefix) return `${tokenStart}${core}[A-Za-z0-9]*${tokenEnd}`
   const camelCore = caseFoldTokenCore(value, true)
   return `(?:${tokenStart}${core}${tokenEnd}|${tokenStart}${camelCore}${camelBoundary})`
 }
@@ -303,10 +298,6 @@ const forbiddenFeatureTokenPattern = [
   ...FORBIDDEN_CONSTRUCT_TERMS.map((term) => caseFoldTokenPattern(term)),
   ...Object.values(PERSON_TERM_VARIANTS).flat().map((term) => caseFoldTokenPattern(term)),
   ...CONCATENATED_PERSON_PREFIX_TERMS.map((term) => caseFoldTokenPattern(term, true)),
-  caseFoldTokenPattern('author', true, ['ization', 'itative']),
-  caseFoldTokenPattern('authors', true),
-  caseFoldTokenPattern('engineer', true, ['ing']),
-  caseFoldTokenPattern('engineers', true),
   concatenatedForbiddenFeaturePattern,
   caseFoldTokenPattern('productiv', true),
   ...[
