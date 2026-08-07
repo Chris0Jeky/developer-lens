@@ -132,7 +132,7 @@ describe('LIFE-03 durable migration selection proof', () => {
       expect(v3SelectionProofTestSeams.publishWithDirectorySynchronizer(fx.root, selection, fx.key, noop)).toMatchObject({ status: 'published' })
       expect(existsSync(fx.tempPath)).toBe(false)
 
-      writeFileSync(foreign.tempPath, Buffer.alloc(0))
+      writeFileSync(foreign.tempPath, Buffer.alloc(0), { mode: 0o600 })
       expect(v3SelectionProofTestSeams.publishWithDirectorySynchronizer(foreign.root, selection, foreign.key, noop)).toMatchObject({ status: 'published' })
       expect(existsSync(foreign.tempPath)).toBe(false)
     } finally { fx.cleanup(); foreign.cleanup() }

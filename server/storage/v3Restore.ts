@@ -466,7 +466,7 @@ function copyRestoreBackup(
   verified: StorageV3MigrationBackupRestoreVerification,
   tempPath: string,
   failAfterStage?: RestoreFailureInjector,
-): Readonly<{ dev: bigint; ino: bigint; size: bigint }> {
+): Readonly<{ descriptor: number; dev: bigint; ino: bigint; size: bigint }> {
   const sourcePath = storageV3ArtifactFilePath(root, verified.locator)
   let sourceDescriptor: number | undefined
   let tempDescriptor: number | undefined
@@ -498,7 +498,10 @@ function copyRestoreBackup(
       || hash.digest('hex') !== verified.contentSha256
       || tempAfter.size !== sourceAfter.size
       || tempAfter.size < BigInt(SQLITE_HEADER.length)) return fail()
-    return Object.freeze({ dev: tempAfter.dev, ino: tempAfter.ino, size: tempAfter.size })
+    const transferredDescriptor = tempDescriptor
+    if (transferredDescriptor === undefined) return fail()
+    tempDescriptor = undefined
+    return Object.freeze({ descriptor: transferredDescriptor, dev: tempAfter.dev, ino: tempAfter.ino, size: tempAfter.size })
   } catch (error) {
     if (claimedIdentity !== undefined) {
       try {
@@ -584,6 +587,7 @@ function restoreFromVerifiedSelection(
   try { closed = closeRestoreInput(rawInput) } catch { return restoreUnavailable() }
   let root: StorageV3ArtifactRoot | undefined
   let claimedTemp: Readonly<{ dev: bigint; ino: bigint }> | undefined
+  let claimedTempDescriptor: number | undefined
   let publishedIdentity: Readonly<{ dev: bigint; ino: bigint }> | undefined
   let writable: Database.Database | undefined
   try {
@@ -632,7 +636,9 @@ function restoreFromVerifiedSelection(
       })
       if (verified.selectedArtifactId !== selection.selectedArtifactId
         || verified.artifactId !== selection.backupArtifactId) return restoreUnavailable()
-      claimedTemp = copyRestoreBackup(root!, verified, tempPath, failAfterStage)
+      const copiedTemp = copyRestoreBackup(root!, verified, tempPath, failAfterStage)
+      claimedTemp = Object.freeze({ dev: copiedTemp.dev, ino: copiedTemp.ino })
+      claimedTempDescriptor = copiedTemp.descriptor
       writable = new Database(tempPath, { fileMustExist: true })
       bindStorageV3ArtifactRoot(writable, root!)
       assertSelectableStorageV3Target(writable, { allowContinuityCasState: true })
@@ -681,25 +687,28 @@ function restoreFromVerifiedSelection(
       writable = undefined
       failAfterStage?.('link')
       assertRestoreSidecarsAbsent(root!, tempLocator)
-      // Windows rejects fsync on a read-only handle even though the bytes are
-      // already closed; O_RDWR is required only for the durability flush.
-      const tempDescriptor = openSync(tempPath, constants.O_RDWR | NO_FOLLOW)
+      // The creation handle stays open through normalization and link validation;
+      // it is O_RDWR so the final durability flush remains portable on Windows.
+      if (claimedTempDescriptor === undefined) return fail()
       try {
-        const stable = assertRestoreRegular(tempPath, tempDescriptor, 1n)
-        fsyncSync(tempDescriptor)
+        const stable = assertRestoreRegular(tempPath, claimedTempDescriptor, 1n)
+        fsyncSync(claimedTempDescriptor)
         if (!sameRestoreIdentity(stable, claimedTemp!)) return fail()
-        const beforeLink = assertRestoreRegular(tempPath, tempDescriptor, 1n)
+        const beforeLink = assertRestoreRegular(tempPath, claimedTempDescriptor, 1n)
         if (!sameRestoreIdentity(beforeLink, claimedTemp!)) return fail()
         linkSync(tempPath, selectedPath)
         const selectedDescriptor = openSync(selectedPath, constants.O_RDONLY | NO_FOLLOW)
         try {
-          const linkedTemp = assertRestoreRegular(tempPath, tempDescriptor, 2n)
+          const linkedTemp = assertRestoreRegular(tempPath, claimedTempDescriptor, 2n)
           if (!sameRestoreIdentity(linkedTemp, claimedTemp!)) return fail()
           const selectedStable = assertRestoreRegular(selectedPath, selectedDescriptor, 2n)
           if (!sameRestoreIdentity(selectedStable, claimedTemp!)) return fail()
           publishedIdentity = Object.freeze({ dev: selectedStable.dev, ino: selectedStable.ino })
         } finally { closeSync(selectedDescriptor) }
-      } finally { closeSync(tempDescriptor) }
+      } finally {
+        closeSync(claimedTempDescriptor)
+        claimedTempDescriptor = undefined
+      }
       failAfterStage?.('directory-sync')
       synchronize(root!, 'link')
       failAfterStage?.('temp-unlink')
@@ -721,6 +730,10 @@ function restoreFromVerifiedSelection(
     })
   } catch {
     if (writable?.open) { try { writable.close() } catch { /* refusal remains content-free */ } }
+    if (claimedTempDescriptor !== undefined) {
+      try { closeSync(claimedTempDescriptor) } catch { /* preserve the exact refusal state */ }
+      claimedTempDescriptor = undefined
+    }
     if (root !== undefined && publishedIdentity === undefined && claimedTemp !== undefined) {
       try { removeClaimedRestoreTemp(root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary, claimedTemp) } catch { /* preserve exact safe recovery state */ }
     }
