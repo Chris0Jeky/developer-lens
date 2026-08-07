@@ -3367,3 +3367,21 @@ passed 41 tests with one declared symlink skip plus Ruff, Pyright, contract, and
 On the product side, the repaired fixture/runtime/route seam passed 18 focused tests and the
 MethodTrial generator drift check. Exact final full product and hosted proof are recorded by the
 publication closeout after they exist and are not inferred here.
+
+The integrated product code head `2da4c2cdff4b1d2711a30565df479631fd941070` also preserves remote
+fixture-refresh commit `21e070b2dec881a16b13ba9d8e3543c6e3ae9f3d` and its useful byte,
+privacy-key, dataset, decision, selector, and case-boundary assertions while retaining the reviewed
+`f2dadf79...` exporter bytes. `npm run check` passed lint, context validation, both generator drift
+checks, 86 test files with 1,454 passed and 10 declared skips, TypeScript/Vite build, and credential
+scanning across 19 outputs. `npm run build:showcase` regenerated and verified the invented dashboard,
+social card, summary/full export boundaries, credential/local-path canaries, and Pages build. The
+Method Trial remains a separate lazy chunk (about 196.6 kB, 24.1 kB gzip); the pre-existing
+browser-externalized `node:crypto` and large-main-chunk warnings remain.
+
+The prior remote head `21e070b` failed hosted run `31147334095` only in the unchanged
+`v3Backup.test.ts` replacement-inode collision fixture; all 1,458 other tests passed. The same
+storage code passed on the preceding PR head and authoritative main, and the final integrated local
+gate also passed it. That is evidence of an intermittent inherited test failure, not permission to
+dismiss it or change the out-of-scope storage seam. The final pushed head still requires a fresh
+hosted result. The docs-only publication closeout after this code proof is covered by context and
+whitespace verification rather than represented as a second full code gate.

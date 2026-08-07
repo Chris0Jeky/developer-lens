@@ -35,8 +35,9 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'PR #187: finish the single connector-repair round, exact-head product gates, and
-  fresh narrow repair review, then publish the lazy `?view=method-trial` rejection story with the
+active_slice: 'PR #187: the single connector-repair round and final local product gates are green;
+  finish the fresh narrow repair review, exact-head hosted gate, connector-thread triage, and merge,
+  then publish the lazy `?view=method-trial` rejection story with the
   exact lab exhibit run `wbc1_method_trial_v1_exhibit_v2`. The committed fixture is invented C0 only;
   its exact exported SHA-256 is `f2dadf79938b1a36248b7b5e0c69c25cc695d88711a351bba861c1deca5b6fda`.'
 next_value_slice: 'After #187 merges, publish the smallest lab follow-up PR containing the reviewed
@@ -45,8 +46,8 @@ next_value_slice: 'After #187 merges, publish the smallest lab follow-up PR cont
   bridge. Do not turn the follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-WB-C1 Method Trial demo]
-blockers: 'No owner blocker for invented-fixture work. PR #187 still requires its exact final local
-  gate, hosted Prove result, repair-review triage, connector-thread replies, and merge. The lab exporter follow-up must wait for that
+blockers: 'No owner blocker for invented-fixture work. PR #187 still requires its exact final
+  hosted Prove result, repair-review triage, connector-thread replies, and merge. The lab exporter follow-up must wait for that
   product merge. Lab PR #3 already merged without the exporter due concurrent external action; this
   is a sequencing deviation, not evidence that the exporter landed. A real migration/connector still
   requires #168 and a separately reviewed production grant issuer/caller. #80/#174 remain outside
