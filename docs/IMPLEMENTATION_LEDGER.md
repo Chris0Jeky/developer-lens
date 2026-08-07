@@ -1,8 +1,8 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-07** (dual-runtime Claude harness: CLAUDE.md canon + thin AGENTS.md
-adapter, Claude settings/skill/agent pins, verify:context parity enforcement — see the dated
-section at the end; prior: 2026-08-05 LIFE-02 §7 simplification)
+Last updated: **2026-08-07** (hosted PR gate now runs the ResearchPack + MethodTrialView drift
+guards it previously omitted — PR #194 / issue #193; prior same day: dual-runtime Claude harness —
+see the dated sections at the end)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -3495,3 +3495,36 @@ and merge before lab PR #8; neither result is inferred by this entry.
   `npm run check` was not executed anywhere for these heads — the hosted gate runs its own step
   set, which omits `check:research-pack` and `check:method-trial-view`; `effort:` frontmatter key
   semantics (model pins are the enforced part). No capability, source, or publication boundary changed.
+
+## 2026-08-07 — Hosted PR gate: generated-artifact drift guards (#193)
+
+PR #194 merged as merge commit `24f55d4d3685964dbf5edcf866e38a65d5e251a1` (branch
+`claude/pr-gate-drift-checks`, final head `a593e1d`, two commits). It closes the gap the
+dual-runtime-harness entry above recorded: `.github/workflows/pr-gate.yml` now runs
+`npm run check:research-pack` and `npm run check:method-trial-view` beside the existing
+planning-artifact drift guard, so the branch-protection-required `Prove the pull request` job fails
+closed on committed-C0 ResearchPack or MethodTrialView drift instead of letting a generator edit stay
+green. Issue #193 closed as COMPLETED. Both `--check` commands are non-mutating and need no secrets,
+network, or real data; the change is additive to the gate (strictly stricter).
+
+The same slice reconciled `docs/analyser-program/CURRENT_STATE.md`, which still described the merged
+PR #190 evidence correction as *in review* and pointed a resuming agent at the merged branch
+`codex/method-trial-final-evidence`. It now records the WB-C1 Method Trial demo as product-side
+complete (#187 `7b22491`, #190 `8de65a2`), the dual-runtime harness milestone as merged (#191
+`dcf5897`, #192 `e97f17d`), and the cross-repo lab PR #8 close-out as the next value slice.
+
+- Verified: hosted `Prove the pull request` green at both heads — `e4d6903` (2m42s) and final
+  `a593e1d` (2m47s); the two new steps confirmed `completed/success` in the run-31202386995 job step
+  list (executed, not skipped). Local at base: `check:research-pack` and `check:method-trial-view`
+  exit 0 (no drift), `verify:context` passed (32 md / 18 required), `git diff --check` clean,
+  `pr-gate.yml` parses as valid YAML (11 steps).
+- Review: one fresh-context `dl-reviewer` adversarial pass, no merge-blocking findings (gate fails
+  closed in the required job, deterministic output, safe placement, docs reconciliation factually
+  consistent). One Codex P2 — the reconciled `blockers` checklist understated the binding
+  review-timing gate — fixed in `a593e1d` and triaged on the PR. Merged after CI green plus the
+  15-minute post-push window with no new review on the final head; the post-merge sweep was clean
+  through ~11 minutes past merge.
+- NOT verified: the aggregate `npm run check` was not run end-to-end for these heads (the hosted gate
+  runs its own step set, which now includes both drift guards). No capability, source, or publication
+  boundary changed; `cap.external.model` and registry/API capabilities remain `never_authorized`.
+  Read-only, synthetic-only.
