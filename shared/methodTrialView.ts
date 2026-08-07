@@ -19,8 +19,128 @@ const benchmarkCommand = z.string().regex(/^uv run dllab benchmark wb-c1 --smoke
 const reproduceCommand = z.string().regex(/^uv run dllab run reproduce [a-z0-9][a-z0-9_-]{7,63}$/)
 const exportCommand = z.string().regex(/^uv run dllab export method-trial [a-z0-9][a-z0-9_-]{7,63}$/)
 const reportCommand = z.string().regex(/^uv run dllab report build [a-z0-9][a-z0-9_-]{7,63}$/)
-const SAFE_TEXT_PATTERN = /^(?!.*(?:https?:\/\/|ftp:\/\/|[A-Za-z]:\\|\\\\|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|\b[A-Za-z0-9_.-]{2,}\/[A-Za-z0-9_.-]{2,}\b))[\s\S]*$/i
-const safeText = (min: number, max: number) => z.string().min(min).max(max).regex(SAFE_TEXT_PATTERN)
+const APPROVED_PUBLIC_COPY = [
+  'A bounded invented window selected by a declared deterministic rule.',
+  'A deterministic online posterior change-probability candidate.',
+  'A deterministic robust score with a fixed cooldown.',
+  'A deterministic robust weekly baseline with a complete fallback.',
+  'A fixed early window checks ordinary variation without a planted change.',
+  'A fixed window exposes a parser shift and keeps instrumentation confounds explicit.',
+  'A fixed window straddles the known level change for detection context.',
+  'A fixed-prior Bayesian online change-point probability.',
+  'All evidence is invented C0 material.',
+  'An offline segmentation marker, never an online delay measure.',
+  'Baseline and candidate detection match on this C0 run.',
+  'Baseline selection is viable',
+  'Baseline selection viable',
+  'Baseline train and validation selection is nonviable.',
+  'Both online methods reached 0.75 detection on this invented benchmark.',
+  'Both threshold selections are nonviable.',
+  'Candidate and baseline detection rates are equal.',
+  'Candidate confound false-alert rate is compared with baseline.',
+  'Candidate confound false-alert rate is measured within the guard.',
+  'Candidate confound guard',
+  'Candidate confound guard is measured',
+  'Candidate coverage-confound false-alert rate does not exceed the baseline.',
+  'Candidate delay budget',
+  'Candidate detection floor',
+  'Candidate detection is compared directly with baseline detection.',
+  'Candidate detection is evaluated against the preregistered floor.',
+  'Candidate detection is not worse',
+  'Candidate detection is not worse than baseline.',
+  'Candidate detection meets the preregistered floor.',
+  'Candidate false alerts are evaluated against the preregistered improvement rule.',
+  'Candidate false alerts are higher on this C0 run.',
+  'Candidate false alerts improve',
+  'Candidate false alerts per year exceed the baseline.',
+  'Candidate false-alert improvement',
+  'Candidate median delay is evaluated against the eight-week budget.',
+  'Candidate median delay remains inside the declared budget.',
+  'Candidate median detection delay meets the preregistered budget.',
+  'Candidate meets delay budget',
+  'Candidate meets detection floor',
+  'Candidate not-worse detection',
+  'Candidate selection is viable',
+  'Candidate selection viable',
+  'Candidate train and validation selection is nonviable.',
+  'Confound observability remains a deferred measurement refinement.',
+  'Corrupt manifests must fail export closed.',
+  'Corrupt-manifest failure reporting remains a deferred refinement.',
+  'Detection was equal, the candidate produced more false alerts, and neither selected configuration was viable.',
+  'Evidence is limited to invented C0 weekly system series.',
+  'Final holdout series selected by the declared deterministic rule',
+  'First eligible level-change series around the planted boundary',
+  'First eligible no-change series and first twelve weeks',
+  'First eligible parser-shift series around the confound',
+  'Fixed Normal-Inverse-Gamma prior and hashed parameters.',
+  'Fixed-prior Gaussian online change probability.',
+  'Frozen baseline selection viability is recorded in custody.',
+  'Frozen candidate selection viability is recorded in custody.',
+  'Gaussian BOCPD',
+  'Gaussian BOCPD candidate',
+  'Instrumentation confound',
+  'Invented systems demonstrate mechanics rather than real-world validity.',
+  'Lexical-lowest eligible no-change series across the final holdout',
+  'Lexical-lowest eligible preferred instrumentation-confound series',
+  'Lexical-lowest eligible preferred planted-change series',
+  'Missing observations and instrumentation confounds are explicit.',
+  'Missingness and confounds limit observability.',
+  'Missingness and instrumentation confounds remain explicit rather than zero-filled.',
+  'No person-level inference is supported or attempted.',
+  'No stable baseline configuration met the declared selection gate.',
+  'No stable candidate configuration met the declared selection gate.',
+  'No-change control',
+  'Offline boundary evidence for explanation only, never online promotion.',
+  'Offline descriptive boundary localization.',
+  'Offline PELT markers do not establish online performance.',
+  'Offline RBF segmentation with fixed penalty.',
+  'Only three bounded representative windows are exported.',
+  'PELT descriptive marker',
+  'PELT markers are offline descriptive evidence only.',
+  'PELT offline description',
+  'Planted level change',
+  'Primary-domain metric enforcement remains a deferred refinement.',
+  'Reject Gaussian BOCPD for this bounded C0 trial and retain the deterministic fallback.',
+  'Rolling median and MAD',
+  'Rolling median and MAD baseline',
+  'Rolling window with a median absolute deviation threshold.',
+  'Run-owned artifact lifecycle hardening remains deferred.',
+  'Synthetic mechanics evidence only; it does not establish real repository validity.',
+  'The baseline threshold is frozen best available but not viable.',
+  'The candidate is rejected because both selections are nonviable and false alerts are higher.',
+  'The candidate is rejected because the recorded acceptance gates do not all pass.',
+  'The candidate median delay remains inside the declared budget.',
+  'The candidate produced more false alerts per year than the baseline.',
+  'The candidate reaches the preregistered detection floor.',
+  'The candidate threshold is frozen best available but not viable.',
+  'The complete deterministic baseline has fewer false alerts with the same detection rate and no candidate promotion evidence.',
+  'The complete deterministic baseline remains the retained fallback under the recorded gate outcomes.',
+  'The frozen best available baseline threshold is retained for this smoke projection.',
+  'The frozen best available candidate threshold is retained for this smoke projection.',
+  'The full 104-week holdout series checks ordinary variation without a planted change.',
+  'The full 104-week holdout series exposes an instrument shift explicitly.',
+  'The full 104-week holdout series includes the known level-change boundary.',
+  'The primary domain metric remains explicitly enforced.',
+  'The result does not authorize model promotion.',
+  'The result does not establish validity on real repositories.',
+  'This rejected trial cannot promote a model.',
+  'This result does not establish validity on real repositories.',
+  'Three case windows are selected by fixed deterministic rules.',
+  'Three declared deterministic windows illustrate the larger run.',
+  'Three deterministic windows summarize a larger synthetic benchmark.',
+  'Threshold workload counts remain bounded to this run.',
+  'Threshold-selection workload counts remain a deferred refinement.',
+  'Training and validation did not yield a viable stable baseline threshold.',
+  'Training and validation did not yield a viable stable candidate threshold.',
+  'Twelve-week history, minimum eight observations, fixed cooldown.',
+  'Validation artifacts require explicit lifecycle handling.',
+  'Zero-delay fallback ordering remains a deferred refinement.',
+  'Zero-delay fallback ordering remains a known caveat.',
+  'instrumentation confound',
+  'no change control',
+  'planted change',
+] as const
+const publicCopy = z.enum(APPROVED_PUBLIC_COPY)
 
 export const GeneratorScenarioCodeSchema = z.enum([
   'no_change',
@@ -94,7 +214,7 @@ const DatasetSchema = z
       z.literal('permission_shift'),
       z.literal('parser_shift'),
     ]),
-    limitations: z.array(safeText(3, 180)).min(1).max(4),
+    limitations: z.array(publicCopy).min(1).max(4),
   })
   .superRefine((value, ctx) => {
     if (value.system_count !== 54 || value.weekly_opportunity_count !== 5616 || value.observed_count !== 5346 || value.absent_count !== 270) {
@@ -112,10 +232,10 @@ const DatasetSchema = z
 const MethodCardSchema = z.strictObject({
   role: z.enum(['baseline', 'candidate', 'offline_descriptive']),
   method_code: z.enum(['rolling_median_mad', 'bocpd_gaussian', 'pelt']),
-  display_name: safeText(3, 80),
-  description: safeText(3, 180),
+  display_name: publicCopy,
+  description: publicCopy,
   deterministic: z.boolean(),
-  parameter_summary: safeText(3, 180),
+  parameter_summary: publicCopy,
 })
 
 const ThresholdSelectionSchema = z
@@ -123,7 +243,7 @@ const ThresholdSelectionSchema = z
     viable: z.boolean(),
     selected_value: MeasurementSchema,
     reason_code: z.enum(['selected', 'frozen_best_available', 'no_stable_selection', 'insufficient_support']),
-    summary: safeText(3, 180),
+    summary: publicCopy,
   })
   .superRefine((value, ctx) => {
     if (value.viable && value.selected_value.status !== 'measured') {
@@ -162,7 +282,7 @@ const AcceptanceGateSchema = z.strictObject({
     'not_worse_detection',
     'confound_guard',
   ]),
-  label: safeText(3, 80),
+  label: publicCopy,
   outcome: z.enum(['pass', 'fail', 'not_applicable']),
   reason_code: z.enum([
     'BASELINE_SELECTION_VIABLE',
@@ -173,7 +293,7 @@ const AcceptanceGateSchema = z.strictObject({
     'CANDIDATE_NOT_WORSE_DETECTION',
     'CANDIDATE_CONFOUND_GUARD',
   ]),
-  reason: safeText(3, 200),
+  reason: publicCopy,
   relevant_values: z
     .strictObject({
       baseline: MeasurementSchema,
@@ -200,8 +320,8 @@ const DecisionSchema = z.strictObject({
     )
     .min(1)
     .max(4),
-  summary: safeText(3, 260),
-  why_simple_baseline_won: safeText(3, 260),
+  summary: publicCopy,
+  why_simple_baseline_won: publicCopy,
 })
 
 const PointSchema = z
@@ -259,11 +379,11 @@ const RepresentativeCaseSchema = z
     scenario_code: GeneratorScenarioCodeSchema,
     selection_rule: z.strictObject({
       code: z.enum(['fixed_first_window', 'fixed_change_window', 'fixed_confound_window']),
-      label: safeText(3, 100),
+      label: publicCopy,
       deterministic: z.literal(true),
     }),
-    title: safeText(3, 96),
-    summary: safeText(3, 220),
+    title: publicCopy,
+    summary: publicCopy,
     points: z.array(PointSchema).min(52).max(104),
   })
   .superRefine((value, ctx) => {
@@ -303,18 +423,18 @@ const RepresentativeCaseSchema = z
 const ClaimsSchema = z.strictObject({
   supported: z
     .array(
-      z.strictObject({ code: SupportedClaimCodeSchema, display_text: safeText(3, 180) }),
+      z.strictObject({ code: SupportedClaimCodeSchema, display_text: publicCopy }),
     )
     .min(1)
     .max(4),
   unsupported: z
     .array(
-      z.strictObject({ code: UnsupportedClaimCodeSchema, display_text: safeText(3, 180) }),
+      z.strictObject({ code: UnsupportedClaimCodeSchema, display_text: publicCopy }),
     )
     .min(1)
     .max(4),
   limitations: z
-    .array(z.strictObject({ code: LimitationCodeSchema, display_text: safeText(3, 180) }))
+    .array(z.strictObject({ code: LimitationCodeSchema, display_text: publicCopy }))
     .min(1)
     .max(4),
 })
@@ -347,7 +467,7 @@ const DeferredCaveatSchema = z.strictObject({
     'primary_domain_metric_enforcement',
     'zero_delay_fallback_ordering',
   ]),
-  display_text: safeText(3, 180),
+  display_text: publicCopy,
 })
 
 const ReproducibilitySchema = z.strictObject({

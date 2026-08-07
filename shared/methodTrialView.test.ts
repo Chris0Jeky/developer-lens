@@ -343,6 +343,14 @@ async function standaloneValidator() {
   return new Ajv2020({ allErrors: true, strict: true }).compile(schema)
 }
 
+function replaceAtPath(root: unknown, path: readonly PropertyKey[], replacement: string): void {
+  let cursor = root as Record<PropertyKey, unknown>
+  for (const segment of path.slice(0, -1)) {
+    cursor = cursor[segment] as Record<PropertyKey, unknown>
+  }
+  cursor[path.at(-1)!] = replacement
+}
+
 describe('DeveloperLensMethodTrialView.v1', () => {
   it('accepts the exact committed lab fixture in runtime and standalone validators', async () => {
     const fixtureText = await readFile(fixturePath, 'utf8')
@@ -438,7 +446,8 @@ describe('DeveloperLensMethodTrialView.v1', () => {
 
   it('accepts the invented presentation sample in runtime and standalone validators', async () => {
     const value = sample()
-    expect(MethodTrialViewSchema.safeParse(value).success).toBe(true)
+    const parsed = MethodTrialViewSchema.safeParse(value)
+    expect(parsed.success, parsed.success ? '' : JSON.stringify(parsed.error.issues)).toBe(true)
     const schemaText = await readFile(schemaPath, 'utf8')
     expect(schemaText).toBe(renderMethodTrialViewSchema())
     expect((await standaloneValidator())(value)).toBe(true)
@@ -587,6 +596,35 @@ describe('DeveloperLensMethodTrialView.v1', () => {
       invalid.dataset.limitations[0] = leaked
       expect(MethodTrialViewSchema.safeParse(invalid).success).toBe(false)
       expect(validate(invalid)).toBe(false)
+    }
+  })
+
+  it('rejects unapproved source prose across every public narrative shape', async () => {
+    const validate = await standaloneValidator()
+    const narrativePaths: ReadonlyArray<readonly PropertyKey[]> = [
+      ['dataset', 'limitations', 0],
+      ['methods', 'baseline', 'display_name'],
+      ['methods', 'baseline', 'description'],
+      ['methods', 'baseline', 'parameter_summary'],
+      ['scorecard', 'threshold_selection', 'baseline', 'summary'],
+      ['acceptance_gates', 0, 'label'],
+      ['acceptance_gates', 0, 'reason'],
+      ['decision', 'summary'],
+      ['decision', 'why_simple_baseline_won'],
+      ['representative_cases', 0, 'selection_rule', 'label'],
+      ['representative_cases', 0, 'title'],
+      ['representative_cases', 0, 'summary'],
+      ['claims', 'supported', 0, 'display_text'],
+      ['claims', 'unsupported', 0, 'display_text'],
+      ['claims', 'limitations', 0, 'display_text'],
+      ['deferred_caveats', 0, 'display_text'],
+    ]
+
+    for (const path of narrativePaths) {
+      const invalid = structuredClone(sample())
+      replaceAtPath(invalid, path, 'Chris0Jeky owner review title')
+      expect(MethodTrialViewSchema.safeParse(invalid).success, path.join('.')).toBe(false)
+      expect(validate(invalid), path.join('.')).toBe(false)
     }
   })
 })
