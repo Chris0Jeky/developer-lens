@@ -102,10 +102,32 @@ describe('ResearchPack v1 producer contract', () => {
     expect(featureId.test('DL.AUTHOR.OUTPUT.v1')).toBe(false)
     expect(featureId.test('DL.REVIEWER.OUTPUT.v1')).toBe(false)
     expect(featureId.test('DL.INDIVIDUAL.OUTPUT.v1')).toBe(false)
+    expect(featureId.test('DL.DEVELOPERS.OUTPUT.v1')).toBe(false)
+    expect(featureId.test('DL.developerOutput.v1')).toBe(false)
+    expect(featureId.test('DL.developerURL.v1')).toBe(false)
+    expect(featureId.test('DL.DEVELOPERURL.v1')).toBe(false)
+    expect(featureId.test('DL.AUTHORURL.v1')).toBe(false)
+    expect(featureId.test('DL.AUTHORSURL.v1')).toBe(false)
+    expect(featureId.test('DL.ENGINEERURL.v1')).toBe(false)
+    expect(featureId.test('DL.ENGINEERSURL.v1')).toBe(false)
+    expect(featureId.test('DL.SENIORITIESURL.v1')).toBe(false)
+    expect(featureId.test('DL.TEAM_MEMBERURL.v1')).toBe(false)
+    expect(featureId.test('DL.USER_LOGINURL.v1')).toBe(false)
+    expect(featureId.test('DL.reviewersResponseHours.v1')).toBe(false)
+    expect(featureId.test('DL.TEAM_MEMBERS.OUTPUT.v1')).toBe(false)
+    expect(featureId.test('DL.userLoginCount.v1')).toBe(false)
+    expect(featureId.test('DL.REPO.HEALTH.SCORE.v1')).toBe(false)
+    expect(featureId.test('DL.healthURL.v1')).toBe(false)
+    expect(featureId.test('DL.HEALTHURL.v1')).toBe(false)
+    expect(featureId.test('DL.PORT.ENGAGEMENT.v1')).toBe(false)
+    expect(featureId.test('DL.engagementURL.v1')).toBe(false)
+    expect(featureId.test('DL.ENGAGEMENTURL.v1')).toBe(false)
     expect(featureId.test('DL.WEEK.HOURS.WORKED.v1')).toBe(false)
     expect(featureId.test('DL.WEEK.BUS.FACTOR.v1')).toBe(false)
     expect(featureId.test('DL.WEEK.CHANGE_COUNT.v1')).toBe(true)
     expect(featureId.test('DL.WEEK.AUTHORIZATION_STATE.v1')).toBe(true)
+    expect(featureId.test('DL.WEEK.INACTIVITY_SPAN.v1')).toBe(true)
+    expect(featureId.test('DL.PULL_REQUEST.INTEGRATING_WINDOW.v1')).toBe(true)
   })
 
   it('rejects person-oriented feature tokens in every separator and requires a recognized no-person code', async () => {
@@ -118,6 +140,26 @@ describe('ResearchPack v1 producer contract', () => {
       'DL.AUTHOR.OUTPUT.v1',
       'DL.REVIEWER.OUTPUT.v1',
       'DL.INDIVIDUAL.OUTPUT.v1',
+      'DL.DEVELOPERS.OUTPUT.v1',
+      'DL.developerOutput.v1',
+      'DL.developerURL.v1',
+      'DL.DEVELOPERURL.v1',
+      'DL.AUTHORURL.v1',
+      'DL.AUTHORSURL.v1',
+      'DL.ENGINEERURL.v1',
+      'DL.ENGINEERSURL.v1',
+      'DL.SENIORITIESURL.v1',
+      'DL.TEAM_MEMBERURL.v1',
+      'DL.USER_LOGINURL.v1',
+      'DL.reviewersResponseHours.v1',
+      'DL.TEAM_MEMBERS.OUTPUT.v1',
+      'DL.userLoginCount.v1',
+      'DL.REPO.HEALTH.SCORE.v1',
+      'DL.healthURL.v1',
+      'DL.HEALTHURL.v1',
+      'DL.PORT.ENGAGEMENT.v1',
+      'DL.engagementURL.v1',
+      'DL.ENGAGEMENTURL.v1',
       'DL.WEEK.HOURS.WORKED.v1',
       'DL.WEEK.BUS.FACTOR.v1',
     ]) {
@@ -135,6 +177,17 @@ describe('ResearchPack v1 producer contract', () => {
         feature_registry: [{ ...feature, feature_id: 'DL.WEEK.AUTHORIZATION_STATE.v1' }],
       }),
     ).not.toThrow()
+    for (const featureId of [
+      'DL.WEEK.INACTIVITY_SPAN.v1',
+      'DL.PULL_REQUEST.INTEGRATING_WINDOW.v1',
+    ]) {
+      expect(() =>
+        ResearchPackSchema.parse({
+          ...fixture,
+          feature_registry: [{ ...feature, feature_id: featureId }],
+        }),
+      ).not.toThrow()
+    }
     expect(() =>
       ResearchPackSchema.parse({
         ...fixture,
