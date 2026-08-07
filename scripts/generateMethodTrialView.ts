@@ -35,9 +35,23 @@ function enrichStandaloneSchema(value: unknown): JsonObject {
   const root = schema.properties as JsonObject
 
   const scenarioCodes = root.dataset.properties.scenario_codes as JsonObject
-  scenarioCodes.minItems = 3
-  scenarioCodes.maxItems = 3
+  scenarioCodes.minItems = 9
+  scenarioCodes.maxItems = 9
   scenarioCodes.items = false
+  const representativeSelection = root.representative_selection.properties as JsonObject
+  for (const [key, length] of [['planted_preference', 4], ['confound_preference', 3]] as const) {
+    representativeSelection[key].minItems = length
+    representativeSelection[key].maxItems = length
+    representativeSelection[key].items = false
+  }
+  for (const [key, value] of Object.entries({
+    system_count: 54,
+    weekly_opportunity_count: 5616,
+    observed_count: 5346,
+    absent_count: 270,
+  })) {
+    root.dataset.properties[key] = { const: value }
+  }
 
   const methods = root.methods.properties as JsonObject
   methods.baseline.allOf = [
@@ -50,7 +64,7 @@ function enrichStandaloneSchema(value: unknown): JsonObject {
   methods.candidate.allOf = [
     fixedObject({
       role: { const: 'candidate' },
-      method_code: { const: 'bocpd' },
+      method_code: { const: 'bocpd_gaussian' },
       deterministic: { const: true },
     }),
   ]
@@ -66,22 +80,26 @@ function enrichStandaloneSchema(value: unknown): JsonObject {
   for (const method of ['baseline', 'candidate'] as const) {
     thresholdSelection[method].allOf = [
       fixedObject({ viable: { const: false } }),
-      {
-        properties: {
-          selected_value: fixedObject({ status: { const: 'unavailable' } }),
-        },
-        required: ['selected_value'],
-      },
     ]
   }
 
   const gateCodes = [
-    'support',
-    'threshold_viability',
-    'false_alerts',
-    'detection',
-    'calibration',
-    'promotion',
+    'baseline_selection',
+    'candidate_selection',
+    'detection_floor',
+    'delay_budget',
+    'false_alert_improvement',
+    'not_worse_detection',
+    'confound_guard',
+  ] as const
+  const gateReasons = [
+    'BASELINE_SELECTION_VIABLE',
+    'CANDIDATE_SELECTION_VIABLE',
+    'CANDIDATE_DETECTION_FLOOR',
+    'CANDIDATE_DELAY_BUDGET',
+    'CANDIDATE_FALSE_ALERT_IMPROVEMENT',
+    'CANDIDATE_NOT_WORSE_DETECTION',
+    'CANDIDATE_CONFOUND_GUARD',
   ] as const
   const gates = root.acceptance_gates as JsonObject
   const gateItem = gates.items as JsonObject
@@ -90,25 +108,26 @@ function enrichStandaloneSchema(value: unknown): JsonObject {
   gates.prefixItems = gateCodes.map((code, index) => ({
     allOf: [
       gateItem,
-      fixedObject({ order: { const: index + 1 }, code: { const: code } }),
+      fixedObject({ order: { const: index + 1 }, code: { const: code }, reason_code: { const: gateReasons[index] } }),
     ],
   }))
   gates.items = false
 
   const scenarios = [
-    ['no_change_control', 'fixed_first_window'],
-    ['planted_change', 'fixed_change_window'],
-    ['instrumentation_confound', 'fixed_confound_window'],
+    ['no_change_control', 'no_change', 'fixed_first_window'],
+    ['planted_change', 'level', 'fixed_change_window'],
+    ['instrumentation_confound', 'parser_shift', 'fixed_confound_window'],
   ] as const
   const representativeCases = root.representative_cases as JsonObject
   const representativeCaseItem = representativeCases.items as JsonObject
   representativeCases.minItems = scenarios.length
   representativeCases.maxItems = scenarios.length
-  representativeCases.prefixItems = scenarios.map(([scenarioCode, selectionCode], index) => ({
+  representativeCases.prefixItems = scenarios.map(([role, scenarioCode, selectionCode], index) => ({
     allOf: [
       representativeCaseItem,
       fixedObject({
         order: { const: index + 1 },
+        role: { const: role },
         scenario_code: { const: scenarioCode },
         selection_rule: fixedObject({
           code: { const: selectionCode },

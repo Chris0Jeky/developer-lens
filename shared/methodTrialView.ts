@@ -18,11 +18,23 @@ const safeCommand = z.string().min(16).max(240).regex(/^uv run dllab(?: [A-Za-z0
 const SAFE_TEXT_PATTERN = /^(?!.*(?:https?:\/\/|ftp:\/\/|[A-Za-z]:\\|\\\\|[\w.+-]+@[\w.-]+\.[A-Za-z]{2,}|\b[A-Za-z0-9_.-]{2,}\/[A-Za-z0-9_.-]{2,}\b))[\s\S]*$/i
 const safeText = (min: number, max: number) => z.string().min(min).max(max).regex(SAFE_TEXT_PATTERN)
 
-export const ScenarioCodeSchema = z.enum([
+export const GeneratorScenarioCodeSchema = z.enum([
+  'no_change',
+  'level',
+  'variance',
+  'slope',
+  'seasonal_amplitude',
+  'heavy_tailed_no_change',
+  'coverage_gap',
+  'permission_shift',
+  'parser_shift',
+])
+export const RepresentativeRoleSchema = z.enum([
   'no_change_control',
   'planted_change',
   'instrumentation_confound',
 ])
+export const ScenarioCodeSchema = RepresentativeRoleSchema
 
 export const SupportedClaimCodeSchema = z.enum([
   'same_detection_on_c0',
@@ -47,6 +59,8 @@ const UnavailableReasonSchema = z.enum([
   'insufficient_support',
   'not_applicable',
   'not_measured',
+  'warmup',
+  'missing_observation',
 ])
 
 const MeasurementSchema = z.discriminatedUnion('status', [
@@ -66,13 +80,22 @@ const DatasetSchema = z
     observed_count: boundedCount,
     absent_count: boundedCount,
     scenario_codes: z.tuple([
-      z.literal('no_change_control'),
-      z.literal('planted_change'),
-      z.literal('instrumentation_confound'),
+      z.literal('no_change'),
+      z.literal('level'),
+      z.literal('variance'),
+      z.literal('slope'),
+      z.literal('seasonal_amplitude'),
+      z.literal('heavy_tailed_no_change'),
+      z.literal('coverage_gap'),
+      z.literal('permission_shift'),
+      z.literal('parser_shift'),
     ]),
     limitations: z.array(safeText(3, 180)).min(1).max(4),
   })
   .superRefine((value, ctx) => {
+    if (value.system_count !== 54 || value.weekly_opportunity_count !== 5616 || value.observed_count !== 5346 || value.absent_count !== 270) {
+      ctx.addIssue({ code: 'custom', path: ['system_count'], message: 'canonical sample counts are fixed' })
+    }
     if (value.observed_count + value.absent_count !== value.weekly_opportunity_count) {
       ctx.addIssue({
         code: 'custom',
@@ -84,7 +107,7 @@ const DatasetSchema = z
 
 const MethodCardSchema = z.strictObject({
   role: z.enum(['baseline', 'candidate', 'offline_descriptive']),
-  method_code: z.enum(['rolling_median_mad', 'bocpd', 'pelt']),
+  method_code: z.enum(['rolling_median_mad', 'bocpd_gaussian', 'pelt']),
   display_name: safeText(3, 80),
   description: safeText(3, 180),
   deterministic: z.boolean(),
@@ -95,23 +118,24 @@ const ThresholdSelectionSchema = z
   .strictObject({
     viable: z.boolean(),
     selected_value: MeasurementSchema,
-    reason_code: z.enum(['selected', 'no_stable_selection', 'insufficient_support']),
+    reason_code: z.enum(['selected', 'frozen_best_available', 'no_stable_selection', 'insufficient_support']),
     summary: safeText(3, 180),
   })
   .superRefine((value, ctx) => {
-    if (value.viable !== (value.selected_value.status === 'measured')) {
-      ctx.addIssue({
-        code: 'custom',
-        path: ['selected_value'],
-        message: 'viable selections require a measured value and nonviable selections require unavailable',
-      })
+    if (value.viable && value.selected_value.status !== 'measured') {
+      ctx.addIssue({ code: 'custom', path: ['selected_value'], message: 'viable selections require a measured value' })
+    }
+    if (!value.viable && value.reason_code === 'selected') {
+      ctx.addIssue({ code: 'custom', path: ['reason_code'], message: 'nonviable selections need a reason separate from selected' })
     }
   })
 
 const MethodScoreSchema = z.strictObject({
   false_alerts_per_year: MeasurementSchema,
   detection_rate: ProbabilityMeasurementSchema,
-  detection_delay_weeks: MeasurementSchema,
+  median_detection_delay_weeks: MeasurementSchema,
+  detection_delay_weeks: MeasurementSchema.optional(),
+  coverage_confound_false_alert_rate: ProbabilityMeasurementSchema,
   calibration_brier: ProbabilityMeasurementSchema,
 })
 
@@ -125,24 +149,26 @@ const ScorecardSchema = z.strictObject({
 })
 
 const AcceptanceGateSchema = z.strictObject({
-  order: z.number().int().min(1).max(6),
+  order: z.number().int().min(1).max(7),
   code: z.enum([
-    'support',
-    'threshold_viability',
-    'false_alerts',
-    'detection',
-    'calibration',
-    'promotion',
+    'baseline_selection',
+    'candidate_selection',
+    'detection_floor',
+    'delay_budget',
+    'false_alert_improvement',
+    'not_worse_detection',
+    'confound_guard',
   ]),
   label: safeText(3, 80),
   outcome: z.enum(['pass', 'fail', 'not_applicable']),
   reason_code: z.enum([
-    'support_sufficient',
-    'both_selections_nonviable',
-    'candidate_false_alerts_higher',
-    'same_detection_no_gain',
-    'candidate_brier_reported',
-    'candidate_rejected',
+    'BASELINE_SELECTION_VIABLE',
+    'CANDIDATE_SELECTION_VIABLE',
+    'CANDIDATE_DETECTION_FLOOR',
+    'CANDIDATE_DELAY_BUDGET',
+    'CANDIDATE_FALSE_ALERT_IMPROVEMENT',
+    'CANDIDATE_NOT_WORSE_DETECTION',
+    'CANDIDATE_CONFOUND_GUARD',
   ]),
   reason: safeText(3, 200),
   relevant_values: z
@@ -155,13 +181,18 @@ const AcceptanceGateSchema = z.strictObject({
 
 const DecisionSchema = z.strictObject({
   outcome: z.literal('reject'),
+  candidate_promoted: z.literal(false),
+  fallback: z.strictObject({ method_code: z.literal('rolling_median_mad'), retained: z.literal(true) }),
   reason_codes: z
     .array(
       z.enum([
-        'both_thresholds_nonviable',
-        'candidate_more_false_alerts',
-        'no_detection_gain',
-        'candidate_not_promoted',
+        'BASELINE_SELECTION_VIABLE',
+        'CANDIDATE_SELECTION_VIABLE',
+        'CANDIDATE_DETECTION_FLOOR',
+        'CANDIDATE_DELAY_BUDGET',
+        'CANDIDATE_FALSE_ALERT_IMPROVEMENT',
+        'CANDIDATE_NOT_WORSE_DETECTION',
+        'CANDIDATE_CONFOUND_GUARD',
       ]),
     )
     .min(1)
@@ -172,8 +203,8 @@ const DecisionSchema = z.strictObject({
 
 const PointSchema = z
   .strictObject({
-    relative_week_index: z.number().int().min(0).max(23),
-    relative_week_label: z.string().regex(/^week-[0-9]{2}$/),
+    relative_week_index: z.number().int().min(0).max(103),
+    relative_week_label: z.string().regex(/^week-[0-9]{3}$/),
     observed: z.discriminatedUnion('state', [
       z.strictObject({ state: z.literal('observed'), value: boundedNumber }),
       z.strictObject({
@@ -181,18 +212,13 @@ const PointSchema = z
         reason: z.enum(['not_collected', 'permission_gap', 'instrumentation_gap']),
       }),
     ]),
-    planted_marker: z.enum(['none', 'level', 'variance', 'trend', 'seasonal']),
-    confound_marker: z.enum([
-      'none',
-      'permission_loss',
-      'actions_cap',
-      'shallow_boundary',
-      'parser_major_change',
-    ]),
-    baseline: z.strictObject({ alert: z.boolean(), score: MeasurementSchema }),
+    planted_marker: z.enum(['none', 'level', 'variance', 'slope', 'seasonal_amplitude']),
+    confound_marker: z.enum(['none', 'parser_shift', 'coverage_gap', 'permission_shift']),
+    baseline: z.strictObject({ alert: z.boolean(), score: MeasurementSchema, threshold: MeasurementSchema }),
     candidate: z.strictObject({
       probability: ProbabilityMeasurementSchema,
       alert: z.boolean(),
+      threshold: ProbabilityMeasurementSchema,
     }),
     pelt_marker: z.strictObject({
       evaluation_mode: z.literal('offline_descriptive'),
@@ -200,7 +226,7 @@ const PointSchema = z
     }),
   })
   .superRefine((value, ctx) => {
-    if (value.relative_week_label !== `week-${String(value.relative_week_index).padStart(2, '0')}`) {
+    if (value.relative_week_label !== `week-${String(value.relative_week_index).padStart(3, '0')}`) {
       ctx.addIssue({
         code: 'custom',
         path: ['relative_week_label'],
@@ -226,7 +252,8 @@ const PointSchema = z
 const RepresentativeCaseSchema = z
   .strictObject({
     order: z.number().int().min(1).max(3),
-    scenario_code: ScenarioCodeSchema,
+    role: RepresentativeRoleSchema,
+    scenario_code: GeneratorScenarioCodeSchema,
     selection_rule: z.strictObject({
       code: z.enum(['fixed_first_window', 'fixed_change_window', 'fixed_confound_window']),
       label: safeText(3, 100),
@@ -234,20 +261,17 @@ const RepresentativeCaseSchema = z
     }),
     title: safeText(3, 96),
     summary: safeText(3, 220),
-    points: z.array(PointSchema).min(8).max(24),
+    points: z.array(PointSchema).min(52).max(104),
   })
   .superRefine((value, ctx) => {
-    const expectedScenarios = [
-      'no_change_control',
-      'planted_change',
-      'instrumentation_confound',
-    ] as const
+    const expectedRoles = ['no_change_control', 'planted_change', 'instrumentation_confound'] as const
+    const expectedScenarios = ['no_change', 'level', 'parser_shift'] as const
     const expectedRules = [
       'fixed_first_window',
       'fixed_change_window',
       'fixed_confound_window',
     ] as const
-    if (value.scenario_code !== expectedScenarios[value.order - 1]) {
+    if (value.role !== expectedRoles[value.order - 1] || value.scenario_code !== expectedScenarios[value.order - 1]) {
       ctx.addIssue({ code: 'custom', path: ['scenario_code'], message: 'scenario order is fixed' })
     }
     if (value.selection_rule.code !== expectedRules[value.order - 1]) {
@@ -262,13 +286,13 @@ const RepresentativeCaseSchema = z
     }
     const planted = value.points.some((point) => point.planted_marker !== 'none')
     const confounded = value.points.some((point) => point.confound_marker !== 'none')
-    if (value.scenario_code === 'no_change_control' && (planted || confounded)) {
+    if (value.role === 'no_change_control' && (planted || confounded)) {
       ctx.addIssue({ code: 'custom', path: ['points'], message: 'control has no markers' })
     }
-    if (value.scenario_code === 'planted_change' && !planted) {
+    if (value.role === 'planted_change' && !planted) {
       ctx.addIssue({ code: 'custom', path: ['points'], message: 'planted case needs a marker' })
     }
-    if (value.scenario_code === 'instrumentation_confound' && !confounded) {
+    if (value.role === 'instrumentation_confound' && !confounded) {
       ctx.addIssue({ code: 'custom', path: ['points'], message: 'confound case needs a marker' })
     }
   })
@@ -292,6 +316,37 @@ const ClaimsSchema = z.strictObject({
     .max(4),
 })
 
+const RepresentativeSelectionSchema = z.strictObject({
+  version: z.literal('v1'),
+  partition: z.literal('final_holdout'),
+  planted_preference: z.tuple([
+    z.literal('level'),
+    z.literal('slope'),
+    z.literal('variance'),
+    z.literal('seasonal_amplitude'),
+  ]),
+  confound_preference: z.tuple([
+    z.literal('parser_shift'),
+    z.literal('coverage_gap'),
+    z.literal('permission_shift'),
+  ]),
+  tie_break: z.literal('lexicographically_lowest_stable_opaque_alias'),
+  missing_role_policy: z.literal('fail_export'),
+  aliases_not_exposed: z.literal(true),
+})
+
+const DeferredCaveatSchema = z.strictObject({
+  code: z.enum([
+    'missingness_confound_observability',
+    'validation_artifact_lifecycle',
+    'threshold_selection_workload_counts',
+    'corrupt_manifest_failure',
+    'primary_domain_metric_enforcement',
+    'zero_delay_fallback_ordering',
+  ]),
+  display_text: safeText(3, 180),
+})
+
 const ReproducibilitySchema = z.strictObject({
   product_contract_commit: commit,
   product_research_pack_commit: commit,
@@ -302,7 +357,7 @@ const ReproducibilitySchema = z.strictObject({
     schema: sha256,
     evaluation_bundle: sha256,
     custody: sha256,
-    report: sha256,
+    research_pack: sha256,
   }),
   commands: z.strictObject({
     benchmark: safeCommand,
@@ -334,10 +389,12 @@ export const MethodTrialViewSchema = z
       offline_pelt: MethodCardSchema,
     }),
     scorecard: ScorecardSchema,
-    acceptance_gates: z.array(AcceptanceGateSchema).length(6),
+    acceptance_gates: z.array(AcceptanceGateSchema).length(7),
     decision: DecisionSchema,
     representative_cases: z.array(RepresentativeCaseSchema).length(3),
+    representative_selection: RepresentativeSelectionSchema,
     claims: ClaimsSchema,
+    deferred_caveats: z.array(DeferredCaveatSchema).length(6),
     reproducibility: ReproducibilitySchema,
   })
   .superRefine((value, ctx) => {
@@ -354,7 +411,7 @@ export const MethodTrialViewSchema = z
     }
     if (
       value.methods.candidate.role !== 'candidate' ||
-      value.methods.candidate.method_code !== 'bocpd' ||
+      value.methods.candidate.method_code !== 'bocpd_gaussian' ||
       !value.methods.candidate.deterministic
     ) {
       ctx.addIssue({
@@ -375,16 +432,26 @@ export const MethodTrialViewSchema = z
       })
     }
     const gateCodes = [
-      'support',
-      'threshold_viability',
-      'false_alerts',
-      'detection',
-      'calibration',
-      'promotion',
+      'baseline_selection',
+      'candidate_selection',
+      'detection_floor',
+      'delay_budget',
+      'false_alert_improvement',
+      'not_worse_detection',
+      'confound_guard',
+    ] as const
+    const gateReasons = [
+      'BASELINE_SELECTION_VIABLE',
+      'CANDIDATE_SELECTION_VIABLE',
+      'CANDIDATE_DETECTION_FLOOR',
+      'CANDIDATE_DELAY_BUDGET',
+      'CANDIDATE_FALSE_ALERT_IMPROVEMENT',
+      'CANDIDATE_NOT_WORSE_DETECTION',
+      'CANDIDATE_CONFOUND_GUARD',
     ] as const
     if (
       value.acceptance_gates.some(
-        (gate, index) => gate.order !== index + 1 || gate.code !== gateCodes[index],
+        (gate, index) => gate.order !== index + 1 || gate.code !== gateCodes[index] || gate.reason_code !== gateReasons[index],
       )
     ) {
       ctx.addIssue({
@@ -414,8 +481,15 @@ export const MethodTrialViewSchema = z
         message: 'both threshold selections are nonviable for this rejected trial',
       })
     }
+    const failedGateReasons = value.acceptance_gates
+      .filter((gate) => gate.outcome === 'fail')
+      .map((gate) => gate.reason_code)
+    if (JSON.stringify(value.decision.reason_codes) !== JSON.stringify(failedGateReasons)) {
+      ctx.addIssue({ code: 'custom', path: ['decision', 'reason_codes'], message: 'decision reasons derive from failed gates' })
+    }
   })
 
 export type MethodTrialView = z.infer<typeof MethodTrialViewSchema>
 export type MethodTrialRepresentativeCase = z.infer<typeof RepresentativeCaseSchema>
 export type ScenarioCode = z.infer<typeof ScenarioCodeSchema>
+export type GeneratorScenarioCode = z.infer<typeof GeneratorScenarioCodeSchema>

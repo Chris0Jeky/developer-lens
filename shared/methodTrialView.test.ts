@@ -19,7 +19,7 @@ function measured(value: number) {
 }
 
 function unavailable(
-  reason: 'insufficient_support' | 'not_applicable' | 'not_measured' = 'not_measured',
+  reason: 'insufficient_support' | 'not_applicable' | 'not_measured' | 'warmup' | 'missing_observation' = 'not_measured',
 ) {
   return { status: 'unavailable' as const, reason }
 }
@@ -28,20 +28,22 @@ function point(index: number, scenario: 'control' | 'planted' | 'confound') {
   const missing = index === 2
   return {
     relative_week_index: index,
-    relative_week_label: `week-${String(index).padStart(2, '0')}`,
+    relative_week_label: `week-${String(index).padStart(3, '0')}`,
     observed: missing
       ? ({ state: 'missing', reason: 'not_collected' } as const)
       : ({ state: 'observed', value: 10 + index / 10 } as const),
     planted_marker: scenario === 'planted' && index === 4 ? ('level' as const) : ('none' as const),
     confound_marker:
-      scenario === 'confound' && index === 4 ? ('parser_major_change' as const) : ('none' as const),
+      scenario === 'confound' && index === 4 ? ('parser_shift' as const) : ('none' as const),
     baseline: {
       alert: !missing && index === 5,
       score: missing ? unavailable() : measured(0.2),
+      threshold: measured(3.5),
     },
     candidate: {
       probability: missing ? unavailable() : measured(0.2),
       alert: !missing && index === 6,
+      threshold: measured(0.35),
     },
     pelt_marker: {
       evaluation_mode: 'offline_descriptive' as const,
@@ -68,15 +70,16 @@ function representativeCase(
         : ('fixed_confound_window' as const)
   return {
     order,
-    scenario_code: scenario,
     selection_rule: {
       code: selectionCode,
       label: 'Fixed deterministic eight-week window',
       deterministic: true as const,
     },
+    role: scenario,
+    scenario_code: scenario === 'no_change_control' ? 'no_change' : scenario === 'planted_change' ? 'level' : 'parser_shift',
     title: scenario.replaceAll('_', ' '),
     summary: 'A bounded invented window selected by a declared deterministic rule.',
-    points: Array.from({ length: 8 }, (_, index) => point(index, kind)),
+    points: Array.from({ length: 104 }, (_, index) => point(index, kind)),
   }
 }
 
@@ -93,12 +96,18 @@ function sample() {
     dataset: {
       system_count: 54,
       weekly_opportunity_count: 5_616,
-      observed_count: 5_400,
-      absent_count: 216,
+      observed_count: 5_346,
+      absent_count: 270,
       scenario_codes: [
-        'no_change_control',
-        'planted_change',
-        'instrumentation_confound',
+        'no_change',
+        'level',
+        'variance',
+        'slope',
+        'seasonal_amplitude',
+        'heavy_tailed_no_change',
+        'coverage_gap',
+        'permission_shift',
+        'parser_shift',
       ] as const,
       limitations: [
         'Invented systems demonstrate mechanics rather than real-world validity.',
@@ -116,7 +125,7 @@ function sample() {
       },
       candidate: {
         role: 'candidate' as const,
-        method_code: 'bocpd' as const,
+        method_code: 'bocpd_gaussian' as const,
         display_name: 'Gaussian BOCPD candidate',
         description: 'A deterministic online posterior change-probability candidate.',
         deterministic: true,
@@ -135,26 +144,30 @@ function sample() {
       baseline: {
         false_alerts_per_year: measured(2.966666666666667),
         detection_rate: measured(0.75),
+        median_detection_delay_weeks: unavailable('not_measured'),
         detection_delay_weeks: unavailable('not_measured'),
+        coverage_confound_false_alert_rate: measured(0),
         calibration_brier: unavailable('not_applicable'),
       },
       candidate: {
         false_alerts_per_year: measured(4.2),
         detection_rate: measured(0.75),
-        detection_delay_weeks: unavailable('not_measured'),
+        median_detection_delay_weeks: measured(3),
+        detection_delay_weeks: measured(3),
+        coverage_confound_false_alert_rate: measured(0.5),
         calibration_brier: measured(0.017341137335170863),
       },
       threshold_selection: {
         baseline: {
           viable: false,
-          selected_value: unavailable('insufficient_support'),
-          reason_code: 'no_stable_selection' as const,
+          selected_value: measured(3.5),
+          reason_code: 'frozen_best_available' as const,
           summary: 'No stable baseline configuration met the declared selection gate.',
         },
         candidate: {
           viable: false,
-          selected_value: unavailable('insufficient_support'),
-          reason_code: 'no_stable_selection' as const,
+          selected_value: measured(0.35),
+          reason_code: 'frozen_best_available' as const,
           summary: 'No stable candidate configuration met the declared selection gate.',
         },
       },
@@ -162,69 +175,77 @@ function sample() {
     acceptance_gates: [
       {
         order: 1,
-        code: 'support',
-        label: 'Synthetic support',
-        outcome: 'pass',
-        reason_code: 'support_sufficient',
-        reason: 'The invented benchmark completed with explicit missingness.',
+        code: 'baseline_selection',
+        label: 'Baseline selection viable',
+        outcome: 'fail',
+        reason_code: 'BASELINE_SELECTION_VIABLE',
+        reason: 'The baseline threshold is frozen best available but not viable.',
       },
       {
         order: 2,
-        code: 'threshold_viability',
-        label: 'Threshold viability',
+        code: 'candidate_selection',
+        label: 'Candidate selection viable',
         outcome: 'fail',
-        reason_code: 'both_selections_nonviable',
-        reason: 'Neither method produced a viable selected configuration.',
+        reason_code: 'CANDIDATE_SELECTION_VIABLE',
+        reason: 'The candidate threshold is frozen best available but not viable.',
       },
       {
         order: 3,
-        code: 'false_alerts',
-        label: 'False alerts per year',
+        code: 'detection_floor',
+        label: 'Candidate detection floor',
+        outcome: 'pass',
+        reason_code: 'CANDIDATE_DETECTION_FLOOR',
+        reason: 'The candidate reaches the preregistered detection floor.',
+        relevant_values: { baseline: measured(0.75), candidate: measured(0.75) },
+      },
+      {
+        order: 4,
+        code: 'delay_budget',
+        label: 'Candidate delay budget',
+        outcome: 'pass',
+        reason_code: 'CANDIDATE_DELAY_BUDGET',
+        reason: 'The candidate median delay remains inside the declared budget.',
+        relevant_values: { baseline: measured(0.75), candidate: measured(0.75) },
+      },
+      {
+        order: 5,
+        code: 'false_alert_improvement',
+        label: 'Candidate false-alert improvement',
         outcome: 'fail',
-        reason_code: 'candidate_false_alerts_higher',
-        reason: 'The candidate produced more false alerts than the baseline.',
+        reason_code: 'CANDIDATE_FALSE_ALERT_IMPROVEMENT',
+        reason: 'The candidate produced more false alerts per year than the baseline.',
         relevant_values: {
           baseline: measured(2.966666666666667),
           candidate: measured(4.2),
         },
       },
       {
-        order: 4,
-        code: 'detection',
-        label: 'Detection',
-        outcome: 'fail',
-        reason_code: 'same_detection_no_gain',
-        reason: 'Both methods detected the same share of planted changes.',
+        order: 6,
+        code: 'not_worse_detection',
+        label: 'Candidate not-worse detection',
+        outcome: 'pass',
+        reason_code: 'CANDIDATE_NOT_WORSE_DETECTION',
+        reason: 'Candidate detection is not worse than baseline.',
         relevant_values: { baseline: measured(0.75), candidate: measured(0.75) },
       },
       {
-        order: 5,
-        code: 'calibration',
-        label: 'Candidate calibration',
+        order: 7,
+        code: 'confound_guard',
+        label: 'Candidate confound guard',
         outcome: 'pass',
-        reason_code: 'candidate_brier_reported',
-        reason: 'The candidate Brier score is reported without inventing a baseline value.',
-        relevant_values: {
-          baseline: unavailable('not_applicable'),
-          candidate: measured(0.017341137335170863),
-        },
-      },
-      {
-        order: 6,
-        code: 'promotion',
-        label: 'Promotion',
-        outcome: 'not_applicable',
-        reason_code: 'candidate_rejected',
-        reason: 'A rejected candidate cannot be promoted.',
+        reason_code: 'CANDIDATE_CONFOUND_GUARD',
+        reason: 'Coverage-confound false-alert rate is reported for both methods.',
+        relevant_values: { baseline: measured(0), candidate: measured(0.5) },
       },
     ] as const,
     decision: {
       outcome: 'reject' as const,
+      candidate_promoted: false,
+      fallback: { method_code: 'rolling_median_mad' as const, retained: true },
       reason_codes: [
-        'both_thresholds_nonviable',
-        'candidate_more_false_alerts',
-        'no_detection_gain',
-        'candidate_not_promoted',
+        'BASELINE_SELECTION_VIABLE',
+        'CANDIDATE_SELECTION_VIABLE',
+        'CANDIDATE_FALSE_ALERT_IMPROVEMENT',
       ] as const,
       summary: 'Reject Gaussian BOCPD for this bounded C0 trial and retain the deterministic fallback.',
       why_simple_baseline_won:
@@ -235,6 +256,15 @@ function sample() {
       representativeCase(2, 'planted_change'),
       representativeCase(3, 'instrumentation_confound'),
     ],
+    representative_selection: {
+      version: 'v1' as const,
+      partition: 'final_holdout' as const,
+      planted_preference: ['level', 'slope', 'variance', 'seasonal_amplitude'] as const,
+      confound_preference: ['parser_shift', 'coverage_gap', 'permission_shift'] as const,
+      tie_break: 'lexicographically_lowest_stable_opaque_alias' as const,
+      missing_role_policy: 'fail_export' as const,
+      aliases_not_exposed: true as const,
+    },
     claims: {
       supported: [
         {
@@ -267,6 +297,14 @@ function sample() {
         },
       ],
     },
+    deferred_caveats: [
+      { code: 'missingness_confound_observability', display_text: 'Missingness and confounds limit observability.' },
+      { code: 'validation_artifact_lifecycle', display_text: 'Validation artifacts require explicit lifecycle handling.' },
+      { code: 'threshold_selection_workload_counts', display_text: 'Threshold workload counts remain bounded to this run.' },
+      { code: 'corrupt_manifest_failure', display_text: 'Corrupt manifests must fail export closed.' },
+      { code: 'primary_domain_metric_enforcement', display_text: 'The primary domain metric remains explicitly enforced.' },
+      { code: 'zero_delay_fallback_ordering', display_text: 'Zero-delay fallback ordering remains a known caveat.' },
+    ],
     reproducibility: {
       product_contract_commit: commit,
       product_research_pack_commit: commit,
@@ -277,12 +315,12 @@ function sample() {
         schema: digest,
         evaluation_bundle: digest,
         custody: digest,
-        report: digest,
+        research_pack: digest,
       },
       commands: {
         benchmark: 'uv run dllab benchmark wb-c1 --smoke --run-id wbc1_method_trial_v1',
         reproduce: 'uv run dllab run reproduce wbc1_method_trial_v1',
-        export: 'uv run dllab export method-trial wbc1_method_trial_v1',
+        export: 'uv run dllab demo export wbc1_demo --output product-fixture',
         report: 'uv run dllab report build wbc1_method_trial_v1',
       },
       verification: {
@@ -320,6 +358,21 @@ describe('DeveloperLensMethodTrialView.v1', () => {
     expect(MethodTrialViewSchema.safeParse(missing).success).toBe(false)
     expect(validate(missing)).toBe(false)
 
+    const missingScore = structuredClone(sample())
+    missingScore.representative_cases[0].points[2].baseline.score = measured(0.1)
+    expect(MethodTrialViewSchema.safeParse(missingScore).success).toBe(false)
+    expect(validate(missingScore)).toBe(false)
+
+    const noFallback = structuredClone(sample())
+    delete (noFallback.decision as { fallback?: unknown }).fallback
+    expect(MethodTrialViewSchema.safeParse(noFallback).success).toBe(false)
+    expect(validate(noFallback)).toBe(false)
+
+    const wrongCandidate = structuredClone(sample())
+    ;(wrongCandidate.methods.candidate as { method_code: string }).method_code = 'bocpd'
+    expect(MethodTrialViewSchema.safeParse(wrongCandidate).success).toBe(false)
+    expect(validate(wrongCandidate)).toBe(false)
+
     const fakeZero = structuredClone(sample())
     const candidateScore = fakeZero.scorecard.candidate as unknown as Record<string, unknown>
     candidateScore.calibration_brier = {
@@ -345,8 +398,13 @@ describe('DeveloperLensMethodTrialView.v1', () => {
     expect(MethodTrialViewSchema.safeParse(oversized).success).toBe(false)
     expect(validate(oversized)).toBe(false)
 
+    const short = structuredClone(sample())
+    short.representative_cases[0].points = Array.from({ length: 51 }, (_, index) => point(index, 'control'))
+    expect(MethodTrialViewSchema.safeParse(short).success).toBe(false)
+    expect(validate(short)).toBe(false)
+
     const reordered = structuredClone(sample())
-    reordered.representative_cases[0].scenario_code = 'planted_change'
+    reordered.representative_cases[0].role = 'planted_change'
     expect(MethodTrialViewSchema.safeParse(reordered).success).toBe(false)
     expect(validate(reordered)).toBe(false)
   })
