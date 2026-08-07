@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { Ajv2020 } from 'ajv/dist/2020.js'
 import { describe, expect, it } from 'vitest'
-import { renderMethodTrialViewSchema } from '../scripts/generateMethodTrialView.js'
+import { renderMethodTrialViewSchema, schemaSha256 } from '../scripts/generateMethodTrialView.js'
 import {
   METHOD_TRIAL_EVIDENCE_LABEL,
   METHOD_TRIAL_QUESTION,
@@ -352,22 +352,23 @@ describe('DeveloperLensMethodTrialView.v1', () => {
 
     expect(validate(fixture), JSON.stringify(validate.errors)).toBe(true)
     expect(createHash('sha256').update(fixtureText, 'utf8').digest('hex')).toBe(
-      'f2dadf79938b1a36248b7b5e0c69c25cc695d88711a351bba861c1deca5b6fda',
+      'b5953543ca9ad8726c5fca0a0c808e2d874a713e8098c0dc440f9a4ab27fb29c',
     )
     expect(fixtureText.endsWith('\n')).toBe(true)
     expect(fixtureText.endsWith('\n\n')).toBe(false)
     expect(fixtureText).not.toContain('"system_alias"')
     expect(fixtureText).not.toContain('"generator_seed"')
     expect(parsed.reproducibility.product_contract_commit).toBe(
-      'b0c6c24ab487534b7853b59effd3bd50ec072382',
+      '5c2cff834b2763aa5646a99c20f61abcba6943b4',
     )
-    expect(parsed.reproducibility.lab_commit).toBe('307d1ad592791f57e25fd84b3d44b07600be20cf')
-    expect(parsed.reproducibility.run_id).toBe('wbc1_method_trial_v1_exhibit_v2')
+    expect(parsed.reproducibility.lab_commit).toBe('aa21dbd68ec9cd759240f551948a8bdeb59df9aa')
+    expect(parsed.reproducibility.run_id).toBe('wbc1_method_trial_v1_exhibit_v3')
     expect(parsed.reproducibility.digests.schema).toBe(
-      'sha256:a93616a0c6de82b0846fcd1346182d8aa77fa54a31a8413c623428375c5cf8f2',
+      'sha256:f1511ca6f4bca7d770bf0e646825792b27144249ff86fcbccdee5fb24a75cbbe',
     )
+    expect(parsed.reproducibility.digests.schema).toBe(schemaSha256())
     expect(parsed.reproducibility.digests.evaluation_bundle).toBe(
-      'sha256:6817268480f4d313969080d5f78149d2c740d0dbaf94594cb3a5a5f69f306dad',
+      'sha256:181b08c280795222d7ef7b5f3a7272d2f397be6f3a59987913d4499e6045c6b4',
     )
     expect(parsed.dataset).toMatchObject({
       system_count: 54,

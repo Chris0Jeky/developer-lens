@@ -3385,3 +3385,40 @@ gate also passed it. That is evidence of an intermittent inherited test failure,
 dismiss it or change the out-of-scope storage seam. The final pushed head still requires a fresh
 hosted result. The docs-only publication closeout after this code proof is covered by context and
 whitespace verification rather than represented as a second full code gate.
+
+### Structural-schema boundary and semantic acceptance closure
+
+The final repair review proved that Draft 2020-12 accepted relationally false artifacts which the
+product runtime rejected: mismatched run commands, gate outcomes/relevant values, decision reasons,
+threshold viability, and timeline index/marker coherence. Product commit
+`5c2cff834b2763aa5646a99c20f61abcba6943b4` makes the boundary explicit in the generated schema's
+standard `$comment`, the contract README, the root README, and the showcase runbook. The standalone
+schema is structural transport validation only; `MethodTrialViewSchema` is the normative product
+semantic validator before acceptance or display. Regression tests deliberately demonstrate the
+distinction across eight relational mutations. The product route already runtime-parses its fixture
+before display, so there is no AJV-only product exposure.
+
+The lab synchronized that exact contract and schema SHA-256
+`f1511ca6f4bca7d770bf0e646825792b27144249ff86fcbccdee5fb24a75cbbe`, then added an equivalent
+semantic validator in lab commit `aa21dbd68ec9cd759240f551948a8bdeb59df9aa`. Export now fails closed
+after structural validation unless command/run binding, threshold viability, gate derivation and
+mirrored evidence, decision reasons, timeline sequence, missing-state behavior, and case-role marker
+coherence all hold. The contract sync also refuses a product schema that omits the structural-only
+annotation. Focused lab proof passed seven tests with one declared Windows symlink skip, plus Ruff,
+strict Pyright, and whitespace checks.
+
+From that exact clean lab commit, fresh run `wbc1_method_trial_v1_exhibit_v3` completed benchmark,
+reproduction, report, and semantic export. The generated source and mechanically copied product
+fixture have SHA-256 `b5953543ca9ad8726c5fca0a0c808e2d874a713e8098c0dc440f9a4ab27fb29c`.
+The EvaluationBundle and custody digests are
+`sha256:181b08c280795222d7ef7b5f3a7272d2f397be6f3a59987913d4499e6045c6b4` and
+`sha256:cc8e828efedc87e62cf9b3f45bee5f3118ff105ab93c6159996e1d1d2185a610`; the ResearchPack digest
+remains `sha256:bd96e45eed454b0ed42f37fa0c518f3b2883816aab876bd6e2e5718c9e24fb90`.
+The report digests are Markdown
+`sha256:4c99d1df51e706e9044cbed8ad0382ffb726a97b4d2183e941ec47401e78826b` and HTML
+`sha256:0f1b913a06a0ef37b7e6d6bb249c9d8b7608a8c3e154240cf3953e08b38e39aa`.
+The result remains unchanged and honest: false alerts `2.966666666666667`/`4.2`, detection
+`0.75`/`0.75`, delay `2`/`1`, confound rate `0.5`/`0.5`, candidate Brier
+`0.017341137335170863`, thresholds `2.5`/`0.05`, and gates fail, fail, pass, pass, fail, pass, pass.
+The repaired product fixture/runtime/route seam passes 19 focused tests; final full and hosted proof
+are recorded only after those exact heads run.
