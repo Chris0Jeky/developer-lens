@@ -1,5 +1,8 @@
 import { z } from 'zod'
-import { FORBIDDEN_CONSTRUCT_TERMS, FORBIDDEN_PERSON_SUBJECT_TERMS } from './metrics.js'
+import {
+  FORBIDDEN_CONSTRUCT_TERMS,
+  FORBIDDEN_PERSON_SUBJECT_TERMS,
+} from './metrics.js'
 
 export const RESEARCH_PACK_SCHEMA_VERSION = 'DeveloperLensResearchPack.v1' as const
 export const RESEARCH_PACK_PRODUCER_CODE = 'developer-lens.research-pack.v1' as const
@@ -194,40 +197,125 @@ function caseFoldPattern(value: string): string {
   return [...value].map((character) => `[${character.toLowerCase()}${character.toUpperCase()}]`).join('')
 }
 
-function caseFoldTokenPattern(value: string, prefix = false, pluralSuffix = false): string {
-  const core = value.split('_').map(caseFoldPattern).join('[._-]+')
-  return `(?:^|[._-])${core}${pluralSuffix ? '[sS]?' : ''}${prefix ? '[A-Za-z0-9]*' : ''}(?:$|[._-])`
-}
+const PERSON_TERM_VARIANTS = {
+  person: ['person', 'persons'],
+  people: ['people'],
+  individual: ['individual', 'individuals'],
+  contributor: ['contributor', 'contributors'],
+  developer: ['developer', 'developers'],
+  author: ['author', 'authors'],
+  committer: ['committer', 'committers'],
+  reviewer: ['reviewer', 'reviewers'],
+  employee: ['employee', 'employees'],
+  engineer: ['engineer', 'engineers'],
+  teammate: ['teammate', 'teammates'],
+  team_member: ['team_member', 'team_members', 'teammember', 'teammembers'],
+  username: ['username', 'usernames'],
+  user_login: ['user_login', 'user_logins', 'userlogin', 'userlogins'],
+  headcount: ['headcount', 'headcounts'],
+  seniority: ['seniority', 'seniorities'],
+} as const satisfies Record<(typeof FORBIDDEN_PERSON_SUBJECT_TERMS)[number], readonly string[]>
 
-function caseFoldStemPattern(value: string): string {
-  const parts = value.split('_').map(caseFoldPattern)
-  const core = parts.length === 1 ? parts[0] : `(?:${parts.join('')}|${parts.join('[._-]+')})`
-  // `authorization` is a safe system-state word, not an author/person feature.
-  const safeAuthorSuffix = value === 'author' ? '(?![iI][zZ][aA][tT][iI][oO][nN])' : ''
-  return `(?:^|[._-])${core}${safeAuthorSuffix}[A-Za-z0-9]*`
-}
-
-const additionalForbiddenFeatureTerms = [
-  'effort',
-  'attendance',
-  'hours_worked',
-  'availability',
-  'diligence',
-  'quality',
-  'worth',
-  'personality',
-  'sentiment',
-  'burnout',
-  'surveillance',
-  'bus_factor',
-  'individual_output',
+const CONCATENATED_PERSON_PREFIX_TERMS = [
+  'person',
+  'people',
+  'individual',
+  'contributor',
+  'developer',
+  'committer',
+  'reviewer',
+  'employee',
+  'teammate',
+  'teammember',
+  'username',
+  'userlogin',
+  'headcount',
+  'seniority',
 ] as const
 
+const CONCATENATED_FEATURE_SUFFIXES = [
+  'id',
+  'ids',
+  'url',
+  'urls',
+  'output',
+  'outputs',
+  'count',
+  'counts',
+  'metric',
+  'metrics',
+  'measure',
+  'measures',
+  'score',
+  'scores',
+  'rating',
+  'ratings',
+  'ranking',
+  'rankings',
+  'rate',
+  'rates',
+  'hours',
+  'activity',
+  'engagement',
+  'performance',
+  'productivity',
+  'effort',
+  'impact',
+  'experience',
+] as const
+
+const camelBoundary = '(?=[A-Z])'
+const tokenStart = `(?:^|[._-]|[a-z0-9]${camelBoundary})`
+const tokenEnd = '(?:$|[._-])'
+
+function caseFoldTokenCore(value: string, lowercaseFinal = false): string {
+  const parts = value.split('_')
+  return parts
+    .map((part, index) => {
+      if (!lowercaseFinal || index !== parts.length - 1) return caseFoldPattern(part)
+      return `${caseFoldPattern(part.slice(0, -1))}${part.at(-1)!.toLowerCase()}`
+    })
+    .join(`(?:[._-]+|${camelBoundary})`)
+}
+
+function caseFoldTokenPattern(value: string, prefix = false): string {
+  const core = caseFoldTokenCore(value)
+  if (prefix) return `${tokenStart}${core}[A-Za-z0-9]*${tokenEnd}`
+  const camelCore = caseFoldTokenCore(value, true)
+  return `(?:${tokenStart}${core}${tokenEnd}|${tokenStart}${camelCore}${camelBoundary})`
+}
+
+function caseFoldAlternation(values: readonly string[]): string {
+  return `(?:${[...new Set(values)].map((value) => caseFoldTokenCore(value)).join('|')})`
+}
+
+const concatenatedForbiddenFeaturePattern = `${tokenStart}${caseFoldAlternation([
+  ...FORBIDDEN_CONSTRUCT_TERMS,
+  ...Object.values(PERSON_TERM_VARIANTS).flat(),
+])}${caseFoldAlternation(CONCATENATED_FEATURE_SUFFIXES)}${tokenEnd}`
+
 const forbiddenFeatureTokenPattern = [
-  ...FORBIDDEN_PERSON_SUBJECT_TERMS.flatMap((term) => [caseFoldTokenPattern(term, false, true), caseFoldStemPattern(term)]),
   ...FORBIDDEN_CONSTRUCT_TERMS.map((term) => caseFoldTokenPattern(term)),
+  ...Object.values(PERSON_TERM_VARIANTS).flat().map((term) => caseFoldTokenPattern(term)),
+  ...CONCATENATED_PERSON_PREFIX_TERMS.map((term) => caseFoldTokenPattern(term, true)),
+  concatenatedForbiddenFeaturePattern,
   caseFoldTokenPattern('productiv', true),
-  ...additionalForbiddenFeatureTerms.map((term) => caseFoldTokenPattern(term)),
+  ...[
+    'performance',
+    'effort',
+    'attendance',
+    'hours_worked',
+    'availability',
+    'diligence',
+    'quality',
+    'worth',
+    'personality',
+    'sentiment',
+    'burnout',
+    'surveillance',
+    'bus_factor',
+    'individual_output',
+  ].map((term) => caseFoldTokenPattern(term)),
 ].join('|')
 const featureIdPattern = new RegExp(
   `^(?!.*(?:${forbiddenFeatureTokenPattern}))[A-Za-z][A-Za-z0-9_.-]{0,95}$`,
