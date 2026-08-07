@@ -3263,3 +3263,15 @@ PR #178 then merged that repaired `origin/main` through merge commit
 `7fb568c088b89ed11c72afe1115fcfbf92bbd75b`; the merge touched only the two already-proven storage
 files and had no ResearchPack or state conflict. Exact refreshed ResearchPack proof and the required
 hosted result remain owed after the final state push; no exception is claimed.
+
+A delayed exact-head connector review then demonstrated one remaining no-person boundary bypass:
+all-uppercase `AUTHORVELOCITY` and `ENGINEERSVELOCITY` forms had neither camel boundaries nor a
+recognized suffix. This matched the mandate's late-blocker exception. The bounded repair adds an
+uppercase-only ambiguous-prefix rule for author/engineer variants while explicit canaries keep
+`AUTHORIZATION_STATE` and `ENGINEERING_WINDOW` available. Runtime and standalone-schema tests reject
+representative singular, plural, nested, and extended velocity forms. The regenerated schema SHA-256 is
+`d47b0de50a1e12f3356d94d78d5994240849ef59db59aad7a96f68468f4a6dc0`; the fixture SHA-256 is
+`9af88033da46432ca3b0573eda67c030c669ce0b6a238a78c7440b9df14c97fe` and again changes only its
+embedded contract digest. The same review's standalone availability-refinement finding is confirmed
+schema/runtime parity already tracked in #181; it does not invalidate the canonical C0 fixture or
+the product/lab runtime validators and is not folded into this demo dependency.

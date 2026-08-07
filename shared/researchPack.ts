@@ -294,11 +294,17 @@ const concatenatedForbiddenFeaturePattern = `${tokenStart}${caseFoldAlternation(
   ...Object.values(PERSON_TERM_VARIANTS).flat(),
 ])}${caseFoldAlternation(CONCATENATED_FEATURE_SUFFIXES)}${tokenEnd}`
 
+// AUTHOR and ENGINEER stay out of the general prefix list so ordinary terms such
+// as AUTHORIZATION and ENGINEERING remain usable. All-uppercase identifiers have
+// no camel boundary, so cover their concatenated person-subject forms explicitly.
+const uppercaseAmbiguousPersonPrefixPattern = `${tokenStart}(?:AUTHOR(?!(?:IZATION|ITY|ITATIVE|ITIES)${tokenEnd})|AUTHORS|ENGINEER(?!ING${tokenEnd})|ENGINEERS)[A-Z0-9]+${tokenEnd}`
+
 const forbiddenFeatureTokenPattern = [
   ...FORBIDDEN_CONSTRUCT_TERMS.map((term) => caseFoldTokenPattern(term)),
   ...Object.values(PERSON_TERM_VARIANTS).flat().map((term) => caseFoldTokenPattern(term)),
   ...CONCATENATED_PERSON_PREFIX_TERMS.map((term) => caseFoldTokenPattern(term, true)),
   concatenatedForbiddenFeaturePattern,
+  uppercaseAmbiguousPersonPrefixPattern,
   caseFoldTokenPattern('productiv', true),
   ...[
     'performance',

@@ -149,6 +149,12 @@ describe('ResearchPack v1 producer contract', () => {
     expect(featureId.test('DL.AUTHORSURL.v1')).toBe(false)
     expect(featureId.test('DL.ENGINEERURL.v1')).toBe(false)
     expect(featureId.test('DL.ENGINEERSURL.v1')).toBe(false)
+    expect(featureId.test('DL.AUTHORVELOCITY.v1')).toBe(false)
+    expect(featureId.test('DL.AUTHORVELOCITYCOUNT.v1')).toBe(false)
+    expect(featureId.test('DL.WEEK.AUTHORVELOCITY.v1')).toBe(false)
+    expect(featureId.test('DL.AUTHORSVELOCITY.v1')).toBe(false)
+    expect(featureId.test('DL.ENGINEERVELOCITY.v1')).toBe(false)
+    expect(featureId.test('DL.ENGINEERSVELOCITY.v1')).toBe(false)
     expect(featureId.test('DL.SENIORITIESURL.v1')).toBe(false)
     expect(featureId.test('DL.TEAM_MEMBERURL.v1')).toBe(false)
     expect(featureId.test('DL.USER_LOGINURL.v1')).toBe(false)
@@ -165,6 +171,9 @@ describe('ResearchPack v1 producer contract', () => {
     expect(featureId.test('DL.WEEK.BUS.FACTOR.v1')).toBe(false)
     expect(featureId.test('DL.WEEK.CHANGE_COUNT.v1')).toBe(true)
     expect(featureId.test('DL.WEEK.AUTHORIZATION_STATE.v1')).toBe(true)
+    expect(featureId.test('DL.WEEK.AUTHORITY_STATE.v1')).toBe(true)
+    expect(featureId.test('DL.WEEK.AUTHORITATIVE_SOURCE.v1')).toBe(true)
+    expect(featureId.test('DL.WEEK.ENGINEERING_WINDOW.v1')).toBe(true)
     expect(featureId.test('DL.WEEK.INACTIVITY_SPAN.v1')).toBe(true)
     expect(featureId.test('DL.PULL_REQUEST.INTEGRATING_WINDOW.v1')).toBe(true)
   })
@@ -187,6 +196,12 @@ describe('ResearchPack v1 producer contract', () => {
       'DL.AUTHORSURL.v1',
       'DL.ENGINEERURL.v1',
       'DL.ENGINEERSURL.v1',
+      'DL.AUTHORVELOCITY.v1',
+      'DL.AUTHORVELOCITYCOUNT.v1',
+      'DL.WEEK.AUTHORVELOCITY.v1',
+      'DL.AUTHORSVELOCITY.v1',
+      'DL.ENGINEERVELOCITY.v1',
+      'DL.ENGINEERSVELOCITY.v1',
       'DL.SENIORITIESURL.v1',
       'DL.TEAM_MEMBERURL.v1',
       'DL.USER_LOGINURL.v1',
@@ -219,6 +234,9 @@ describe('ResearchPack v1 producer contract', () => {
     for (const featureId of [
       'DL.WEEK.INACTIVITY_SPAN.v1',
       'DL.PULL_REQUEST.INTEGRATING_WINDOW.v1',
+      'DL.WEEK.AUTHORITY_STATE.v1',
+      'DL.WEEK.AUTHORITATIVE_SOURCE.v1',
+      'DL.WEEK.ENGINEERING_WINDOW.v1',
     ]) {
       expect(() =>
         ResearchPackSchema.parse({
