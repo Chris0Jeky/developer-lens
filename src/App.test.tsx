@@ -122,6 +122,9 @@ describe('Developer Lens app', () => {
     expect(
       within(surfaces).getByRole('link', { name: /integration shape atlas/i }),
     ).toHaveAttribute('href', '?view=integration-shape')
+    expect(
+      within(surfaces).getByRole('link', { name: /method trial.*more complex detector was rejected/i }),
+    ).toHaveAttribute('href', '?view=method-trial')
     expect(within(surfaces).getByRole('link', { name: /coverage cockpit/i })).toHaveAttribute(
       'href',
       '?view=cockpit-v2',
@@ -141,6 +144,7 @@ describe('Developer Lens app', () => {
 
     const surfaces = screen.getByRole('navigation', { name: /evidence surfaces/i })
     expect(within(surfaces).getByRole('link', { name: /integration shape atlas/i })).toBeInTheDocument()
+    expect(within(surfaces).getByRole('link', { name: /method trial.*more complex detector was rejected/i })).toBeInTheDocument()
     expect(within(surfaces).queryByRole('link', { name: /coverage cockpit/i })).not.toBeInTheDocument()
   })
 

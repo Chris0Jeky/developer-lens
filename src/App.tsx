@@ -467,6 +467,9 @@ function DashboardApp() {
                   <Layers3 size={13} aria-hidden="true" /> Integration Shape Atlas — one finding,
                   every number traced to its evidence
                 </a>
+                <a href="?view=method-trial">
+                  <Sparkles size={13} aria-hidden="true" /> Method Trial — why the more complex detector was rejected
+                </a>
                 {!publicShowcase && (
                   <a href="?view=cockpit-v2">
                     <ShieldCheck size={13} aria-hidden="true" /> Coverage cockpit — the V2 coverage
