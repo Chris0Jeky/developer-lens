@@ -152,6 +152,10 @@ describe('MethodTrialViewPanel', () => {
     const headline = document.querySelector('.method-trial-headline')!
     expect(headline).not.toHaveTextContent(/Equal detection/i)
     expect(headline).toHaveTextContent('Detection: baseline 75.0% vs candidate 80.0%')
+    // The decision paragraph derives the same detection claim rather than asserting "no detection gain".
+    const emphasis = document.querySelector('.method-trial-emphasis')!
+    expect(emphasis).toHaveTextContent('with a candidate detection gain')
+    expect(emphasis).not.toHaveTextContent('with no detection gain')
   })
 
   it('renders neutral copy when the candidate false-alert measurement is unavailable', () => {

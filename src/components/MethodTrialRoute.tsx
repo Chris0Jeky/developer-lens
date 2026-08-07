@@ -123,6 +123,13 @@ function falseAlertHeadline(
   return `the candidate produced ${comparison} candidate false alerts per year (${numberLabel(candidateAlerts)} vs ${numberLabel(baselineAlerts)})`
 }
 
+function detectionGainClause(baseline: Measurement, candidate: Measurement): string {
+  if (baseline.status !== 'measured' || candidate.status !== 'measured') return 'with detection not directly comparable'
+  if (candidate.value > baseline.value) return 'with a candidate detection gain'
+  if (candidate.value < baseline.value) return 'with lower candidate detection'
+  return 'with no detection gain'
+}
+
 function TimelineFigure({ representativeCase }: { representativeCase: MethodTrialRepresentativeCase }) {
   const width = 760
   const height = 212
@@ -326,8 +333,8 @@ export function MethodTrialViewPanel({ view }: { view: MethodTrialView }) {
         <p>{view.decision.why_simple_baseline_won}</p>
         <p className="method-trial-emphasis">
           {additionalAlerts === null
-            ? 'The candidate added an unavailable number of additional false alerts per year, with no detection gain.'
-            : `The candidate added exactly ${additionalAlerts.toFixed(4)} false alerts per year, with no detection gain.`}{' '}
+            ? `The candidate added an unavailable number of additional false alerts per year, ${detectionGainClause(view.scorecard.baseline.detection_rate, view.scorecard.candidate.detection_rate)}.`
+            : `The candidate added exactly ${additionalAlerts.toFixed(4)} false alerts per year, ${detectionGainClause(view.scorecard.baseline.detection_rate, view.scorecard.candidate.detection_rate)}.`}{' '}
           Neither threshold selection was viable, so the complete deterministic baseline remains the retained fallback.
         </p>
       </section>

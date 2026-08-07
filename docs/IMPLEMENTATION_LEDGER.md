@@ -3561,14 +3561,20 @@ parity is trivially preserved. Three behaviors from the exact-head #189 review o
   "Equal detection" when both rates are measured and equal (neutral factual copy when unequal,
   comparison-neutral when either is unavailable); the false-alert phrase is sign-aware and goes neutral
   when either value is unavailable; the decision section no longer prints a fabricated additional-alerts
-  number when that measurement is unavailable. A `Number.isFinite` guard also closes a latent
-  divide-by-zero when baseline false-alerts are zero.
+  number when that measurement is unavailable, and its detection-gain clause is likewise derived from
+  both detection rates (a candidate gain / lower detection / no gain, or "not directly comparable" when
+  either is unavailable) instead of hardcoding "no detection gain" — a coherence gap the Codex round
+  caught. A `Number.isFinite` guard also closes a latent divide-by-zero when baseline false-alerts are
+  zero.
 
 The committed C0 fixture (0 missing observations, ≤3 isolated notable points per case, both detection
-rates measured and equal at 0.75) renders byte-identically; six new tests construct schema-valid
-variants (deep-clone → mutate → `MethodTrialViewSchema.parse`) that exercise interior gaps, a long
-persistent missing run with later distinct/PELT events, unequal-but-measured detection, and an
-unavailable false-alert measurement.
+rates measured and equal at 0.75) renders identically in every visible and textual respect — one
+continuous segment per series, the same notable-states list, and the same headline and decision copy;
+the only DOM delta is the added `data-testid` attributes on the timeline polylines (so the markup is
+not byte-identical, but the rendered content is). Six new tests construct schema-valid variants
+(deep-clone → mutate → `MethodTrialViewSchema.parse`) that exercise interior gaps, a long persistent
+missing run with later distinct/PELT events, unequal-but-measured detection, and an unavailable
+false-alert measurement.
 
 **WB-C1 programme close-out.** The resume artifact's stale `next_value_slice` — "finish and merge lab
 PR #8" — was corrected: lab PR #8 merged 2026-08-07T06:04Z (the lab has since advanced through PR #16),
@@ -3584,7 +3590,12 @@ debt, none dependency-forced.
   7/7 and `test:demo:v2` 9/9 on independent coordinator re-run; `verify:context` green; `git diff
   --check` clean. Review: one fresh-context `dl-reviewer` adversarial pass — no CRITICAL/HIGH/MEDIUM
   findings; its two non-blocking observations (a degenerate 1-point polyline still renders its dot; the
-  inherited "…in the validated fixture" string) warranted no change.
+  inherited "…in the validated fixture" string) warranted no change. The exact-head Codex connector
+  (commit `dad2c0e`, review 21:07Z) returned five findings, all triaged and fixed in one round: the
+  decision-paragraph detection-gain coherence gap (P2, code, above); the byte-identical overclaim (P2,
+  corrected above); and three resume-artifact fixes on CURRENT_STATE — internal active-slice
+  consistency, a recommended next bounded slice, and removing a reference to a `cross-repo-contract`
+  skill that is not committed in this repo. Fixes pushed to a new head; re-proved below.
 - NOT verified: no browser/visual screenshot (the change is proven by segment-count and text
   assertions, not pixels); the hosted `Prove the pull request` result is recorded at merge (live Git/CI
   outrank). No capability, source, or publication boundary changed; `cap.external.model` and
