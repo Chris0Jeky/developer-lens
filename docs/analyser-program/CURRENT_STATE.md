@@ -8,14 +8,16 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-07
-current_slice_override: 'Product MethodTrial PR #187 merged at `7b22491`; its contract, lazy route,
-  and rejection story are authoritative. A bounded evidence-only follow-up now replaces its
-  semantic-precursor fixture with byte-identical output from integrated lab producer `0ef1930`,
-  which combines semantic acceptance, safe export publication, and honest verification status.
-  That correction must merge before lab PR #8.'
-phase: 'Synthetic Method Trial final-evidence correction in review. No real migration, source activation,
-  private output, stored-observation exporter, external model call, or model promotion is part of
-  this programme.'
+current_slice_override: 'The WB-C1 Method Trial demo product side is COMPLETE: PR #187 (`7b22491`)
+  landed the contract, lazy route, and rejection story, and the evidence-only follow-up PR #190
+  (`8de65a2`) pinned the integrated `wbc1_demo` export from lab producer `0ef1930` (invented C0,
+  verification status honestly `not_run`). The dual-runtime harness milestone then merged (PR #191
+  `dcf5897`, ledger sync PR #192 `e97f17d`). Current bounded slice: harden the hosted PR gate so the
+  required `Prove the pull request` job runs the same generated-artifact drift guards as the local
+  `npm run check` aggregate (issue #193; branch `claude/pr-gate-drift-checks`).'
+phase: 'WB-C1 Method Trial demo shipped product-side; hardening the hosted proving gate (issue #193)
+  and reconciling this resume artifact. No real migration, source activation, private output,
+  stored-observation exporter, external model call, or model promotion is part of this programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -33,21 +35,25 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'Branch `codex/method-trial-final-evidence`: pin the exact integrated `wbc1_demo`
-  export from lab producer `0ef1930`. The committed fixture is invented C0 only; its exact SHA-256
-  is `afcc1ed9535d9b22fb399375027792489ce6b97949f8f684682943c11152b5f9` and its append-only local
-  verification status is honestly `not_run`.'
-next_value_slice: 'After the evidence correction merges, finish and merge lab PR #8, demonstrate the product/lab pair,
-  and close this bounded programme before considering the separate #174/#80 Phase E bridge. Do not
-  turn the follow-up into a generic research dashboard or EvaluationBundle parser.'
+active_slice: 'Branch `claude/pr-gate-drift-checks`: add `check:research-pack` and
+  `check:method-trial-view` steps to `.github/workflows/pr-gate.yml` so the required hosted gate
+  fails closed on committed-C0-artifact drift (issue #193). Both `--check` commands pass at the
+  branch base (`e97f17d`), so the new steps are green, not red on pre-existing drift. Besides the
+  workflow the only change is docs-state sync: this artifact. The prior
+  `codex/method-trial-final-evidence` slice merged as PR #190 (`8de65a2`).'
+next_value_slice: 'Cross-repo (SEPARATE `developer-lens-lab` sibling checkout, not this repo): finish
+  and merge lab PR #8, demonstrate the product/lab pair, and close this bounded programme before
+  considering the separate #174/#80 Phase E bridge. Do not turn the follow-up into a generic
+  research dashboard or EvaluationBundle parser. Product-repo backlog readiest bounded items: #189
+  (MethodTrialView v2 hardening — future), #181/#182 (ResearchPack refinements).'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
-  [DL-WB-C1 Method Trial demo]
-blockers: 'No owner blocker for invented-fixture work. The product evidence correction requires an
-  exact-head hosted Prove result, final review, aging, and merge before lab PR #8. Lab PR #3 already
-  merged without the exporter due concurrent external action; this
-  is a sequencing deviation, not evidence that the exporter landed. A real migration/connector still
-  requires #168 and a separately reviewed production grant issuer/caller. #80/#174 remain outside
-  this demo programme.'
+  [DL-WB-C1 Method Trial demo — product side COMPLETE (#187/#190); remaining close-out is cross-repo lab PR #8]
+blockers: 'No owner blocker for invented-fixture or CI-gate-hardening work. The #193 gate slice needs an
+  exact-head hosted Prove result, one fresh-context review, the 3-minute aging floor, and merge. Lab
+  PR #3 merged without the exporter due to concurrent external action; this is a sequencing
+  deviation, not evidence that the exporter landed. A real migration/connector still requires #168
+  and a separately reviewed production grant issuer/caller. #80/#174 remain outside this demo
+  programme.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
   cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
   strict mode and admin enforcement off)'
