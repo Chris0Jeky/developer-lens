@@ -1,9 +1,10 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-07** (MethodTrialView accessible-missing-state rendering hardening — #189
-rendering subset, PR #196 merge `63354ef`; the bounded WB-C1 programme is closed — lab PR #8 merged and
-the product/lab pair demonstrated green on both sides. Prior same day: hosted PR gate drift steps — PR #194 / issue #193;
-dual-runtime Claude harness — see the dated sections at the end)
+Last updated: **2026-08-07** (ResearchPack standalone-schema parity — #181, PR #198 merge `73cb31e`;
+MethodTrialView accessible-missing-state rendering — #189 rendering subset, PR #196 merge `63354ef`;
+the bounded WB-C1 programme is closed — lab PR #8 merged and the product/lab pair demonstrated green on
+both sides. Prior same day: hosted PR gate drift steps — PR #194 / issue #193; dual-runtime Claude
+harness — see the dated sections at the end)
 
 Architecture: [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](./DEVELOPER_LENS_V2_ARCHITECTURE.md),
 evidence/design version 2026-08-03 + Appendix I.1–I.4.
@@ -3616,3 +3617,43 @@ debt, none dependency-forced.
   assertions, not pixels); the hosted `Prove the pull request` result is green at both #196 heads
   (`dad2c0e` and final `d805b8d`, 2m27s) per the checks API. Live Git/CI still outrank. No capability, source, or publication boundary changed; `cap.external.model` and
   registry/API capabilities remain `never_authorized`. Rendering-only, synthetic-only, no fetch path.
+
+## 2026-08-07 — ResearchPack standalone Draft 2020-12 schema parity (#181) + parallel-lanes closeout
+
+PR #198 merged as merge commit `73cb31e` (branch `claude/researchpack-standalone-schema-181`, heads
+`c8075f8` then doc-fix `ffa22e4`). Product-repo only: raises the GENERATED standalone Draft 2020-12
+ResearchPack schema (`research-contracts/research-pack/v1/schema.json`, produced by
+`scripts/generateResearchPack.ts`) toward the authoritative runtime `superRefine` in
+`shared/researchPack.ts`, which is UNCHANGED — runtime validation stays the source of truth.
+
+- Demonstrated gap 2 fixed: a present relation's `schema_id` is now pinned to its relation-specific
+  `const` (`RELATION_SCHEMA_IDS[relation]`) instead of merely non-null, so a present relation carrying
+  a nonexistent or another relation's `schema_id` is rejected by the standalone validator too, exactly
+  mirroring the runtime rule. Gap 1 (omitted relation with `row_count:0`) was already covered by the
+  non-present const-null rule; a confirming canary was added.
+- Gap 3 (reversed temporal window) is genuinely NOT expressible in standard Draft 2020-12 (no
+  cross-field comparison keyword; ajv's non-standard `$data` was deliberately avoided for portability).
+  It, plus distinct-`artifact.sha256`, `feature_id` uniqueness, the C1 ISO-week Monday-ness / rolling
+  36-month cutoff, and (from the Codex round) single-field CALENDAR VALIDITY (a shape-valid but
+  impossible instant like `2026-02-30` that `CanonicalUtcSchema`/`canonicalUtcMicros` rejects) are
+  documented as runtime-validation-only in a new `research-contracts/research-pack/v1/README.md` and a
+  generator comment block. #181 stays open as the schema-parity parent that #182 defers to.
+- Four standalone Draft 2020-12 canaries (ajv2020, already a devDependency) assert BOTH the standalone
+  schema and the runtime Zod validator per case. Committed `schema.json` regenerated; the only fixture
+  delta is `provenance.contract_sha256`.
+- Verified: full `npm run check` green (1462+16 tests, `tsc -b` + `vite build` + `verify:no-secrets`);
+  `check:research-pack` no drift; focused `shared/researchPack.test.ts` 16/16. Review: one fresh-context
+  `dl-reviewer` pass (no CRITICAL/HIGH/MEDIUM — const faithfulness across all 7 relations, non-tautological
+  tests, documentation honesty), plus the exact-head Codex round on `c8075f8` (one P2, the calendar-validity
+  doc gap, fixed in `ffa22e4`). Merged via CI-green + 15-min-window (no round-2 review); immediate
+  post-merge sweep clean.
+
+**Parallel-lanes session note.** This session ran several bounded lanes concurrently (one writer per
+checkout): product #196/#197/#198 merged; lab #7 investigated and dispositioned as tracked CROSS-REPO
+debt (its case title/summary/scenario_code are const/enum-pinned by the vendored product
+method-trial-view schema, and the fallback path is currently unreachable — two-repo plan posted on lab
+#7); lab #6 delivered 4/6 reproducer-backed correctness fixes (findings 6,5,4,2; findings 1 and 3
+mapped as they would move a recorded canonical digest) and was PRESERVED as `developer-lens-lab` PR #24
+but NOT merged, because a concurrent/zombie writer was observed in the lab checkout (recorded under
+HUMAN_TODO q-8). The product repo was verified unaffected. No capability, source, or publication
+boundary changed anywhere; `cap.external.model` and registry/API capabilities remain `never_authorized`.

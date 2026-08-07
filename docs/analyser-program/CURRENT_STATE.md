@@ -42,14 +42,14 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'None in flight. Last product-repo slice: the #189 accessible-missing-state RENDERING
-  subset (branch `claude/method-trial-view-a11y-189`; src/components/MethodTrialRoute.tsx + its test
-  only). Local proof green: full `npm run check` (1462 tests pass / 10 skipped, tsc -b + vite build +
-  verify:no-secrets) plus the focused MethodTrialRoute + test:demo:v2 suites on independent
-  coordinator re-run; reviewed by one fresh-context dl-reviewer adversarial pass (no
-  CRITICAL/HIGH/MEDIUM) and the exact-head Codex connector (findings triaged and fixed). The shared
-  validator and the committed fixture are untouched. Prior product-repo slice: PR #194 (`24f55d4`)
-  added the drift-check steps to `.github/workflows/pr-gate.yml`.'
+active_slice: 'None in flight. This 2026-08-07 parallel-lanes session merged three product PRs:
+  #196 (`63354ef`, #189 accessible-missing-state RENDERING subset), #197 (`41fe76a`, WB-C1 close-out
+  ledger/state sync), and #198 (`73cb31e`, #181 ResearchPack standalone Draft-2020-12 schema parity —
+  pin relation-specific schema_id, document runtime-only invariants). Each: full `npm run check` green,
+  one fresh-context dl-reviewer pass, and exact-head Codex rounds triaged (two per code PR), merged with
+  a merge commit. Shared validators and committed fixtures untouched by #196/#198. Lab side: lab #6
+  preserved as `developer-lens-lab` PR #24 (parked — q-8 concurrent-writer), lab #7 dispositioned as
+  tracked cross-repo debt. Prior product-repo slice before this session: PR #194 (`24f55d4`).'
 next_value_slice: 'The bounded WB-C1 programme is COMPLETE: lab PR #8 merged (2026-08-07), the
   product/lab pair is demonstrated green on both sides, and product #189''s rendering subset shipped.
   Remaining tracked post-programme debt is independent (none dependency-forced). Recommended next
@@ -62,8 +62,10 @@ next_value_slice: 'The bounded WB-C1 programme is COMPLETE: lab PR #8 merged (20
   (the timeline text alternative should mark where each missing/marked run ends/resumes — Codex #196
   round 2; and the unavailable-metric page-coherence gap, whose real fix is the validator-parity subset
   above) plus its two DEFERRED bullets (future-v2 wire dedup + closed-copy/source-identity canary);
-  #181 (ResearchPack standalone-schema parity — product-only) and #182 (ResearchPack semantic hardening
-  — cross-repo, one contract slice); lab #6 (six WB-C1 methodology findings — lab-only); lab #7
+  #181 SHIPPED (PR #198 `73cb31e`; #181 stays open as the schema-parity parent that #182 defers to)
+  and #182 (ResearchPack semantic hardening — cross-repo, one contract slice) remains; lab #6 — 4/6
+  reproducer-backed fixes delivered as `developer-lens-lab` PR #24, PARKED pending q-8 concurrent-writer
+  resolution (findings 1 and 3 mapped as digest-moving); lab #7
   (fallback case labels — CROSS-REPO: blocked on relaxing the product method-trial-view schema
   title/summary/scenario_code first, and the fallback path is currently unreachable — see the plan on
   lab #7). The separate #174/#80 Phase E stored-observation bridge is out of this demo programme. Do

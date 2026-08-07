@@ -110,6 +110,19 @@ publication route remains active.
   build artifacts plus a partial copy of already-pushed tracked files — nothing unique is at risk.
   q-8 stays open.
 
+  Update (2026-08-07, parallel-lanes session): a THIRD concurrent-writer instance was observed, this
+  time in the sibling `developer-lens-lab` checkout. During a delegated lab #6 correctness slice a
+  separate process ran `git checkout main` + `git pull --ff-only` inside the SAME lab working
+  directory mid-run (reflog-confirmed), briefly landing the worker's commits on `main` before the
+  worker remediated them onto its branch; local lab `main` also sat behind `origin/main`, and
+  today-dated branches this session did not create were present (`codex/wbc1-lab-steward-20260807`,
+  `recovery/main-6-commits`, `origin/claude/bocpd-semantics-4`, `origin/claude/ctx-hardening-18-19`),
+  alongside 38 live `node` processes. The product repo was verified UNAFFECTED (clean reflog,
+  `origin/main` unmoved). To avoid racing the other writer, the lab #6 work was preserved as
+  `developer-lens-lab` PR #24 (parked, do-not-merge) rather than merged, and no further lab lanes
+  were spawned. A human must identify and terminate any leaked session before lab merges proceed.
+  q-8 stays open.
+
 - [x] **q-9 — Claude subagent model pins approved.** On 2026-08-07 the owner directed, in the
   session that introduced the dual-runtime harness (PR #191), that Claude subagent pins use
   Opus 4.8 (high effort) for implementation and review and Sonnet 4.6 (high effort) for mechanical
@@ -119,6 +132,11 @@ publication route remains active.
 
 ## Changelog
 
+- 2026-08-07 (parallel-lanes session): expanded q-8 with a third concurrent-writer instance —
+  a separate process writing the sibling `developer-lens-lab` checkout mid-run (foreign
+  `git checkout main`/`pull` reflog entries, divergent local lab `main`, unfamiliar today-dated
+  branches, 38 node processes). Product repo verified unaffected. Lab #6 work parked as lab PR #24
+  rather than merged; no owner approval inferred and no other item changed. q-8 stays open.
 - 2026-08-05: closed q-7 after the owner configured `main` branch protection and live REST plus
   GraphQL reads confirmed `Prove the pull request` is required. No capability was activated;
   q-6 and q-8 remain open.
