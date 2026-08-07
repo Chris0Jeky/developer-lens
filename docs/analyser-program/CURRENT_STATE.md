@@ -58,11 +58,16 @@ next_value_slice: 'The bounded WB-C1 programme is COMPLETE: lab PR #8 merged (20
   change — the shared `methodTrialView` contract must move in lockstep across both repos, so run it
   from the coordinating session via the `developer-lens-continuation` skill (there is no committed
   cross-repo-contract skill in this repo) and re-generate the committed fixture only through the
-  producer. Other tracked debt, pick by owner priority: product #189''s two DEFERRED bullets (future-v2
-  wire dedup + closed-copy/source-identity canary); #181/#182 (ResearchPack refinements); lab #6 (six
-  WB-C1 methodology findings); lab #7 (fallback case labels). The separate #174/#80 Phase E
-  stored-observation bridge is out of this demo programme. Do not turn any follow-up into a generic
-  research dashboard or EvaluationBundle parser.'
+  producer. Other tracked debt, pick by owner priority: product #189''s accessible-rendering follow-ups
+  (the timeline text alternative should mark where each missing/marked run ends/resumes — Codex #196
+  round 2; and the unavailable-metric page-coherence gap, whose real fix is the validator-parity subset
+  above) plus its two DEFERRED bullets (future-v2 wire dedup + closed-copy/source-identity canary);
+  #181 (ResearchPack standalone-schema parity — product-only) and #182 (ResearchPack semantic hardening
+  — cross-repo, one contract slice); lab #6 (six WB-C1 methodology findings — lab-only); lab #7
+  (fallback case labels — CROSS-REPO: blocked on relaxing the product method-trial-view schema
+  title/summary/scenario_code first, and the fallback path is currently unreachable — see the plan on
+  lab #7). The separate #174/#80 Phase E stored-observation bridge is out of this demo programme. Do
+  not turn any follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
   [DL-WB-C1 Method Trial demo — COMPLETE both sides (product #187/#190, lab PR #8 merged); #189 rendering subset shipped; pair demonstrated green; bounded programme closed]
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. No product-repo slice is in
