@@ -67,19 +67,23 @@ open the pull request.
 | Server behaviour or one contract | `npm test -- <explicit-test-path>` |
 | Analysis pack | `npm test -- server/analysisPack/analysisPack.test.ts` |
 | Storage or importer | `npm test -- server/storage/migration.test.ts` |
-| Documentation, authority files, skills | `npm run verify:context` and `git diff --check origin/main..HEAD` |
+| Documentation, authority files, skills | `npm run verify:context` and `git diff --check origin/main...HEAD` |
 | Any code or configuration milestone | `npm run check` |
 | Public, demo, or export seam | `npm run build:showcase` |
 
 `npm run check` runs the linter, context verification, the generated-artifact drift checks, the test
 suite, and the production build. `npm run build:showcase` additionally rebuilds the synthetic export
 and runs the privacy checks that guard the published artifact. Give `git diff --check` an explicit
-range (`origin/main..HEAD`); the bare form inspects only the working tree and misses whitespace you
-have already committed.
+range, and use the three-dot form (`origin/main...HEAD`): bare `--check` inspects only the working
+tree and misses whitespace you have already committed, while the two-dot form compares the two tips
+and can flag base-era lines you never touched. Three dots compares against the merge base, so it
+reports your commits only.
 
-The hosted gate runs one check that `npm run check` does not: the Taskdeck planning-artifact drift
-guard, `node docs/analyser-program/taskdeck/tools/generate.mjs --check`. Run it yourself if you touch
-that tooling or its generated manifests, otherwise the first sign of drift is a red gate.
+The hosted gate runs two things that `npm run check` does not: the Taskdeck planning-artifact drift
+guard, `node docs/analyser-program/taskdeck/tools/generate.mjs --check`, and `npm run build:showcase`.
+Run the drift guard yourself if you touch that tooling or its generated manifests, and run the
+showcase build for the public, demo, or export seam as the table says; otherwise the first sign of
+either problem is a red gate.
 
 A run that never touches the files you changed is not a proof. Say in the pull request which command
 you ran and what it covered.
