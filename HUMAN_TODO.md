@@ -115,8 +115,14 @@ publication route remains active.
   head (`ef57045`). This session cannot verify whether a human performed that merge and infers no
   approval from it; every q-8 gate on lab-checkout write work and future lab merges was treated as
   still binding throughout the session (no lab writes, no lab merges were performed). Owner, please
-  confirm: (a) did you merge lab #24 yourself? (b) has the leaked-session sweep been done (Task
-  Manager or `tools/mcp-hygiene.ps1`)? A confirmed (b) closes q-8. q-8 stays open.
+  confirm: (a) did you merge lab #24 yourself? (b) has the leaked-session sweep been run (Task
+  Manager or `tools/mcp-hygiene.ps1`) AND did it confirm that no leaked session process remains?
+  q-8 closes only on that confirmed-clean result — the original condition is "no leaked session
+  remains", and merely having run the sweep does not satisfy it. (c) the merged CODE_OF_CONDUCT.md
+  (PR #212) lists your commit-metadata-public email as the confidential conduct-reporting route;
+  an agent cannot commit your inbox, so please confirm you will monitor it for such reports,
+  choose a different channel, or direct its removal — until you do, the public routes remain the
+  primary documented path. q-8 stays open.
 
   Update (2026-08-07, parallel-lanes session): a THIRD concurrent-writer instance was observed, this
   time in the sibling `developer-lens-lab` checkout. During a delegated lab #6 correctness slice a
@@ -161,9 +167,9 @@ publication route remains active.
   unverifiable from the session; no approval inferred; gates held binding) and asked the owner to
   confirm the merge authorship and the leaked-session sweep. No other item changed; no approval was
   inferred for any gate. Note for q-10(a)/(c): the AGPL baseline merged (PR #209) and community
-  scaffolding (PR #212) deliberately contain no CLA text; the CoC now lists the maintainer email
-  already public in commit metadata as the confidential conduct channel — veto with one line if
-  unwanted.
+  scaffolding (PR #212) deliberately contain no CLA text; the CoC lists the maintainer email
+  already public in commit metadata as the confidential conduct channel — this is question (c)
+  under the q-8 update above and needs explicit owner confirmation, not silence.
 - 2026-08-08 (governor bootstrap): recorded the owner mandate v2 reception. q-9 marked SUPERSEDED
   by owner decision A5 (Opus 5 routing, runtime-verified before the pin change); q-10 added as the
   consolidated owner/manual action register from the mandate (AGPL/CLA legal review, umbrella

@@ -75,13 +75,14 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   P0.5 step order vs the mandate: step 1 (licence) DONE, step 2 (community scaffolding) DONE,
   step 4 product half DONE (#211; lab half triaged on lab #5, not fixed), step 3 q-8-gated,
   steps 5-7 pending — order deviations are recorded here, never silent. EXACT NEXT ACTION for the
-  next session, in roadmap order: first the pre-QA doc touch-up batch tracked on #200 (version
-  bump to 0.1.0, README→COMMERCIAL_OPTION link, AGPL visible source-offer in the Pages app,
-  Discussions-link warning, cockpit seed-fixture wording, invented-vs-C0 terminology) so QA sees
-  final surfaces; then STEP 5 = final browser/visual QA proof for the q-10(c) five-minute owner
-  sign-off; then STEP 6 = tag v0.1.0 + publish C0 release assets and release notes — blocked on
-  q-8 (lab prep) + q-10(c), joint per H7=BOTH; step 7 descriptions/topics is partially done
-  (description, topics, Discussions live). Tracked from the #209 review (non-blocking LOWs,
+  next session, in roadmap order: first the pre-QA doc touch-up batch tracked on #200
+  (README→COMMERCIAL_OPTION link, AGPL visible source-offer in the Pages app, Discussions-link
+  warning, cockpit seed-fixture wording, invented-vs-C0 terminology) so QA sees final surfaces;
+  then STEP 5 = final browser/visual QA proof for the q-10(c) five-minute owner sign-off; then
+  STEP 6 = tag v0.1.0 + publish C0 release assets and release notes, and the 0.1.0 version bump
+  rides THAT tag PR (LOW-1 disposition), not the pre-QA batch — blocked on q-8 (lab prep) +
+  q-10(c), joint per H7=BOTH; step 7 descriptions/topics is partially done (description, topics,
+  Discussions live). Tracked from the #209 review (non-blocking LOWs,
   noted on #200): version 0.0.0 bump belongs to the release-tag step; README should link
   COMMERCIAL_OPTION.md; the Pages app needs a visible AGPL source-offer check before v0.1.0.
   Historical P0 lane record:
