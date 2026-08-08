@@ -7,24 +7,24 @@ the historical record of how past slices were proven, and a fresh agent followin
 file can resume deleted work (PR #127 late review).
 
 ```yaml
-updated: 2026-08-07
-current_slice_override: 'No product-repo implementation slice is currently in flight. The #189
-  MethodTrialView accessible-missing-state RENDERING subset SHIPPED (branch
-  `claude/method-trial-view-a11y-189`): SVG lines break at missing/unavailable observations, the
-  timeline text alternative retains every distinct transition and PELT boundary instead of truncating,
-  and the headline + decision copy are both derived from the detection and false-alert measurements —
-  neutral when a metric is unavailable. Rendering only: the shared validator and the committed C0
-  fixture are untouched, so product/lab validator parity is intact. The WB-C1 Method Trial demo product side is
-  COMPLETE (PR #187 `7b22491`, #190 `8de65a2`); the dual-runtime harness merged (#191 `dcf5897`, #192
-  `e97f17d`); the hosted gate carries explicit ResearchPack + MethodTrialView drift steps (#193 via #194
-  `24f55d4`). Cross-repo close-out: lab PR #8 is MERGED (2026-08-07) and the product/lab pair is
-  demonstrated green on both sides, so the bounded WB-C1 programme is complete; everything else is
-  tracked post-programme debt (see next_value_slice).'
-phase: 'WB-C1 Method Trial demo complete on both product and lab sides; the product/lab pair is
-  demonstrated green and lab PR #8 is merged, so the bounded WB-C1 programme is closed. Current
-  product-repo slice: #189 accessible-missing-state rendering hardening. No real migration, source
-  activation, private output, stored-observation exporter, external model call, or model promotion is
-  part of this programme.'
+updated: 2026-08-08
+current_slice_override: 'GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`): the
+  owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
+  docs/OWNER_CONSTITUTION.md (binding owner policy; layered subject policy supersedes the absolute
+  person-scoring prohibition; locked invariants preserved), .agent-harness/governor.yaml,
+  docs/agent-system/ (governor loop, work classes G0-G4, maintenance/idea protocols, 7-prompt
+  library incl. Governor Lite, cross-repo contract), docs/PROGRAMME_ROADMAP.md (P0-P4 + v0.1.0
+  release sequence + issue dispositions), Opus 5 model pins (owner decision A5 supersedes q-9;
+  runtime-verified), new dl-scout agent, verify:context enforcement of the control plane, and
+  GitHub taxonomy (14 labels; issues #200-#205). Reconciled without redoing: #193 already fixed
+  (PR #194 `24f55d4`); this file was already truthful re Method Trial. NO product feature work in
+  this programme; #174 does not start before the P0.5 v0.1.0 baseline.'
+phase: 'P0 control-plane reconciliation (governor bootstrap) shipping via PR #206. Prior
+  programme state: WB-C1 Method Trial demo complete on both sides (product #187/#190, lab PR #8),
+  #189 rendering subset shipped, dual-runtime harness merged (#191/#192). Next phases:
+  P0.5 v0.1.0 release programme (#200), then P1 #174 integrated vertical. No real migration,
+  source activation, private output, external model call, or model promotion is part of this
+  programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
@@ -42,7 +42,10 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'None in flight. This 2026-08-07 parallel-lanes session merged three product PRs:
+active_slice: 'Governor bootstrap PR #206 (control plane only; see current_slice_override). Lane
+  record: coordinator-owned single writer in the main checkout; owned paths were the new
+  control-plane files + CLAUDE.md/AGENTS.md/HUMAN_TODO.md/this file/ledger; stop condition: merge
+  under the standard gate. Previous session record (2026-08-07 parallel-lanes) merged three PRs:
   #196 (`63354ef`, #189 accessible-missing-state RENDERING subset), #197 (`41fe76a`, WB-C1 close-out
   ledger/state sync), and #198 (`73cb31e`, #181 ResearchPack standalone Draft-2020-12 schema parity —
   pin relation-specific schema_id, document runtime-only invariants). The two CODE PRs (#196, #198):
@@ -53,7 +56,13 @@ active_slice: 'None in flight. This 2026-08-07 parallel-lanes session merged thr
   regenerated `invented.fixture.json` (only `provenance.contract_sha256` repinned). Lab side: lab #6
   preserved as `developer-lens-lab` PR #24 (parked — q-8 concurrent-writer), lab #7 dispositioned as
   tracked cross-repo debt. Prior product-repo slice before this session: PR #194 (`24f55d4`).'
-next_value_slice: 'The bounded WB-C1 programme is COMPLETE: lab PR #8 merged (2026-08-07), the
+next_value_slice: 'NEXT WAVE after PR #206 merges: the P0.5 v0.1.0 release programme (#200 —
+  AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
+  owner sign-off; labels release/now). After the v0.1.0 tag: P1 = #174 integrated vertical with
+  #181/#182 contract semantics (H1), folding #135/#76/#80-resolver where touched. Data Charter v2 +
+  capability profiles = #201 (next, before any real activation). Lab-side lanes (lab #5/#6/#7/#23,
+  lab PR #24, lab release prep, lab governor seeding) ALL stay human-gated behind q-8. Older
+  post-WB-C1 debt map retained below for context: the bounded WB-C1 programme is COMPLETE, the
   product/lab pair is demonstrated green on both sides, and product #189''s rendering subset shipped.
   Remaining tracked post-programme debt is independent (none dependency-forced). Recommended next
   bounded slice: the product #189 validator-parity subset (deferred-caveat uniqueness, all-seven-gates
@@ -78,24 +87,28 @@ next_value_slice: 'The bounded WB-C1 programme is COMPLETE: lab PR #8 merged (20
   title/summary/scenario_code first, and the fallback path is currently unreachable — see the plan on
   lab #7). The separate #174/#80 Phase E stored-observation bridge is out of this demo programme. Do
   not turn any follow-up into a generic research dashboard or EvaluationBundle parser.'
-active_horizon: # <= 12, dependency-closed, horizon:active labels; 07_DELIVERY_ROADMAP.md §0a
-  [DL-WB-C1 Method Trial demo — COMPLETE both sides (product #187/#190, lab PR #8 merged); #189 rendering subset shipped; pair demonstrated green; bounded programme closed]
-blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. No product-repo slice is in
-  flight. The binding review-timing gate stated below (`review_timing_defect`) governs any merge:
+active_horizon: # dependency-closed focused wave; opportunity backlog = GitHub issues (governor.yaml queues)
+  [P0 governor bootstrap PR #206 — this slice, 'P0.5 v0.1.0 release programme #200 — next, after #206 merges']
+blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Governor bootstrap PR #206
+  is the in-flight slice. The binding review-timing gate stated below (`review_timing_defect`) governs any merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the
   exact-final-head Codex review triaged or 15 minutes since the last push with a fresh clean sweep —
   any fix push restarts that clock. Lab PR #3 merged without the exporter due to concurrent external
   action; this is a sequencing deviation, not evidence that the exporter landed. A real
   migration/connector still requires #168 and a separately reviewed production grant issuer/caller.
   #80/#174 remain outside this demo programme.'
-open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (process/orphan-directory
-  cleanup — human) remains open; q-7 verified complete (Prove the pull request is required on main,
-  strict mode and admin enforcement off)'
+open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (leaked-session/
+  concurrent-writer cleanup — human; gates ALL lab merges and lab-checkout write work) remains
+  open; q-9 SUPERSEDED by owner decision A5 (Opus 5 routing); q-10 (owner/manual action register
+  from mandate v2) added, none blocking; q-7 verified complete'
 frozen_by_reassessment: horizon:frozen label (WB candidates except the owner-directed WB-C1 Method
   Trial demonstration, vector retrieval, GOV/SEC/PORT-02/PROV-01 sources, ATLAS-03 parsers,
   EVQ-09/10, TRACE-03) — 07 §0a
-authority_order: [CLAUDE.md, AGENTS.md, .agent-harness/tier.json, HUMAN_TODO.md, data-charter.md,
+authority_order: [CLAUDE.md, AGENTS.md, .agent-harness/tier.json, OWNER_CONSTITUTION.md,
+  HUMAN_TODO.md, governor.yaml + docs/agent-system/, data-charter.md,
   source-capability-matrix.md, DEVELOPER_LENS_V2_ARCHITECTURE.md (incl. Appendix I.1-I.4)]
+  # data-charter binds day-to-day persistence until Charter v2 (#201) lands, except where
+  # OWNER_CONSTITUTION.md records an explicit supersession (constitution §6.1)
 last_verified_checks: 'Exact heads, run IDs, test counts, and review outcomes live in docs/IMPLEMENTATION_LEDGER.md. Refresh live Git and CI, then rerun the relevant gate before relying on prior proof.'
 review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently posts review comments
   3-10 minutes AFTER merge. The ledger sentences claiming an "empty late-comment sweep" for PRs
