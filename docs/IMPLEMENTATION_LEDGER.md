@@ -1,6 +1,18 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-07** (ResearchPack standalone-schema parity — #181, PR #198 merge `73cb31e`;
+Last updated: **2026-08-08** (governor bootstrap — owner mandate v2 + governor spec v1 received and
+unpacked via PR #206: `docs/OWNER_CONSTITUTION.md` (binding owner policy v2; layered subject policy
+supersedes the absolute person-scoring line; locked invariants R2+R3+R6 preserved; secrets stay
+absolute X), `.agent-harness/governor.yaml`, `docs/agent-system/` (governor loop, W0–W4 work
+classes, maintenance/idea protocols, 7-prompt library incl. Governor Lite, cross-repo contract —
+lab side QUEUED behind q-8), `docs/PROGRAMME_ROADMAP.md` (P0–P4; v0.1.0 = #200 before #174), Opus 5
+pins per owner decision A5 superseding q-9 (runtime-verified: Agent runtime resolves `opus` →
+`claude-opus-5`, live launch succeeded 2026-08-08), new `dl-scout`, verify:context control-plane
+enforcement, GitHub taxonomy (14 labels, issues #200–#205; milestone creation skipped — the
+2026-08-03 floor guard blocks arbitrary `gh api` mutations on this sensitive_data repo).
+Reconciled-not-redone: #193 was already fixed by PR #194 `24f55d4`; CURRENT_STATE was already
+truthful about Method Trial completion. Exact heads/checks recorded at merge in the PR thread.
+Prior: 2026-08-07 — ResearchPack standalone-schema parity — #181, PR #198 merge `73cb31e`;
 MethodTrialView accessible-missing-state rendering — #189 rendering subset, PR #196 merge `63354ef`;
 the bounded WB-C1 programme is closed — lab PR #8 merged and the product/lab pair demonstrated green on
 both sides. Prior same day: hosted PR gate drift steps — PR #194 / issue #193; dual-runtime Claude

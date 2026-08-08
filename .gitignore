@@ -18,6 +18,9 @@ dist-ssr
 # Local synthetic V2 bridge store. Invented C0 fixtures, rebuilt by npm run seed:v2.
 .developer-lens-synthetic/
 
+# Governor runtime cache — never authority. Losing it must not make the repo unresumable.
+.agent-harness/runtime/
+
 # Optional local environment configuration.
 .env
 .env.*

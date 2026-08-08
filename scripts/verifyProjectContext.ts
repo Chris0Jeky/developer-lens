@@ -23,12 +23,14 @@ function requireFile(path: string): void {
 }
 
 const requiredFiles = [
+  '.agent-harness/governor.yaml',
   '.agent-harness/tier.json',
   '.agents/skills/developer-lens-continuation/SKILL.md',
   '.agents/skills/developer-lens-continuation/agents/openai.yaml',
   '.claude/agents/dl-implementer.md',
   '.claude/agents/dl-mechanic.md',
   '.claude/agents/dl-reviewer.md',
+  '.claude/agents/dl-scout.md',
   '.claude/settings.json',
   '.claude/skills/developer-lens-continuation/SKILL.md',
   'AGENTS.md',
@@ -37,6 +39,14 @@ const requiredFiles = [
   'README.md',
   'docs/DEVELOPER_LENS_V2_ARCHITECTURE.md',
   'docs/IMPLEMENTATION_LEDGER.md',
+  'docs/OWNER_CONSTITUTION.md',
+  'docs/PROGRAMME_ROADMAP.md',
+  'docs/agent-system/CROSS_REPO_CONTRACT.md',
+  'docs/agent-system/IDEA_PROTOCOL.md',
+  'docs/agent-system/MAINTENANCE_PROTOCOL.md',
+  'docs/agent-system/PROMPT_LIBRARY.md',
+  'docs/agent-system/README.md',
+  'docs/agent-system/WORK_CLASSES.md',
   'docs/analyser-program/CURRENT_STATE.md',
   'docs/analyser-program/07_DELIVERY_ROADMAP.md',
   'docs/data-charter.md',
@@ -53,6 +63,28 @@ if (failures.length === 0) {
     }
   } catch (error) {
     failures.push(`tier declaration is not valid JSON: ${String(error)}`)
+  }
+
+  const governorPolicy = read('.agent-harness/governor.yaml')
+  const governorRequiredKeys = [
+    'governor_schema_version',
+    'owner_policy',
+    'authority_files',
+    'model_roles',
+    'risk_tiers',
+    'queues',
+    'review_merge_protocol',
+    'cross_repo',
+  ] as const
+  for (const key of governorRequiredKeys) {
+    if (!new RegExp(`^${key}:`, 'm').test(governorPolicy)) {
+      failures.push(`.agent-harness/governor.yaml must declare top-level key: ${key}`)
+    }
+  }
+  if (/[0-9a-f]{40}/.test(governorPolicy)) {
+    failures.push(
+      '.agent-harness/governor.yaml must stay low-volatility; it must not embed a commit SHA',
+    )
   }
 
   for (const coldStartFile of ['AGENTS.md', 'CLAUDE.md'] as const) {
@@ -135,6 +167,11 @@ const authorityMarkers: Record<string, readonly string[]> = {
   'docs/data-charter.md': ['G1 and G2 are approved', 'standing G3 authorization', 'G4 is approved 2026-08-04 only for the bounded OpenAI'],
   'docs/source-capability-matrix.md': ['G2 is satisfied', 'Standing G3 authorization', 'G4 is satisfied only for the OpenAI'],
   'docs/DEVELOPER_LENS_V2_ARCHITECTURE.md': ['G2 is approved', 'G3 sources have standing authorization', 'G4 is approved only for the OpenAI'],
+  'docs/OWNER_CONSTITUTION.md': [
+    'Locked invariants (owner red lines R2+R3+R6',
+    'A5 model routing (supersedes HUMAN_TODO q-9, runtime-verified 2026-08-08)',
+    'Recorded supersessions and reconciliations',
+  ],
   'docs/IMPLEMENTATION_LEDGER.md': ['G1 and G2 are owner-approved', 'G3 standing authorization', 'G4 is owner-approved only for OpenAI'],
   'docs/OVERNIGHT_EXECUTION_PROMPT.md': ['G1 and G2 are approved', 'G3 standing authorization', 'G4 is approved only for OpenAI'],
 }

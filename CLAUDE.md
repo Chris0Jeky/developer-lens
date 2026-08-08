@@ -1,27 +1,31 @@
 # Developer Lens repository canon
 
 Developer Lens is a private, local-first GitHub/Git retrospective with a separate public synthetic
-showcase. Its product target is a humane system retrospective, never person scoring or workplace
-surveillance. This file is the shared canon for every agent runtime; `AGENTS.md` is the thin Codex
-adapter. `npm run verify:context` enforces required files, markers, links, and budgets in both.
+showcase. The default/public product stays system-first — engineering evidence without developer
+surveillance; team/person analysis follows the layered subject policy in
+`docs/OWNER_CONSTITUTION.md`. This file is the shared canon for every agent runtime; `AGENTS.md`
+is the thin Codex adapter.
+`npm run verify:context` enforces required files, markers, links, and budgets in both.
 
 ## Cold start
 
-1. Read `.agent-harness/tier.json` and `HUMAN_TODO.md` on every resume.
+1. Read `.agent-harness/tier.json`, `docs/OWNER_CONSTITUTION.md`, `.agent-harness/governor.yaml`,
+   and `HUMAN_TODO.md` on every resume; the governor loop and prompts live under `docs/agent-system/`.
 2. Read `docs/analyser-program/CURRENT_STATE.md` (the single resume artifact); refresh Git and
    GitHub because live state outranks it. `docs/IMPLEMENTATION_LEDGER.md` is the history archive.
 3. Invoke the `developer-lens-continuation` skill for implementation, migration, sensitive-source,
    architecture, or handoff work (Codex form: `$developer-lens-continuation`).
 4. Read `docs/data-charter.md` and `docs/source-capability-matrix.md` before any persistence,
-   migration, collector, export, private-source, retrieval, or external-model change.
-5. Consult `docs/DEVELOPER_LENS_V2_ARCHITECTURE.md` only for design decisions; do not read
-   historical prompts as live authority.
+   migration, collector, export, private-source, retrieval, or external-model change; consult
+   `docs/DEVELOPER_LENS_V2_ARCHITECTURE.md` only for design decisions, never as live authority.
 
 ## Source-of-truth map
 
 | Surface | Authority |
 |---|---|
 | `.agent-harness/tier.json` | T2 authority, overlays, publication route, human-action alias |
+| `docs/OWNER_CONSTITUTION.md` | Binding owner policy (mandate v2); explicit supersessions |
+| `.agent-harness/governor.yaml` + `docs/agent-system/` | Governor policy, work classes, prompts |
 | `HUMAN_TODO.md` | Owner decisions and genuinely open owner gates |
 | `docs/data-charter.md` | Product boundary, data classes, retention, migration and sinks |
 | `docs/source-capability-matrix.md` | Per-source purpose, class, consent, deletion and refusal |
@@ -65,15 +69,14 @@ PowerShell and quote paths; prefer explicit Vitest paths over shell globs.
 | Any code/config milestone | `npm run check` |
 | Public/demo/export seam only | `npm run build:showcase` |
 
-`npm run dev` starts the API (`127.0.0.1:4141`) plus Vite; `npm run dev:web` serves the offline
-demo at `http://127.0.0.1:5173/?demo=v2`.
+`npm run dev` = API (`127.0.0.1:4141`) + Vite; `npm run dev:web` = offline demo (`http://127.0.0.1:5173/?demo=v2`).
 
 ## Repository map and pitfalls
 
-- `scripts/`: collection, analysis and synthetic showcase generation/verification.
-- `server/`: GitHub/local-Git ingestion, storage, analytics, API and analysis packs.
-- `shared/`: closed privacy, capability, coverage, provenance and presentation contracts.
-- `src/`: dashboard, Wrapped story and offline V2 demo.
+- `scripts/`: collection/analysis/showcase generation; `server/`: ingestion, storage, analytics,
+  API, analysis packs.
+- `shared/`: closed privacy/capability/coverage/provenance/presentation contracts; `src/`:
+  dashboard, Wrapped story, offline V2 demo.
 - Vitest always loads `src/test/setup.ts`; a Node-only environment directive breaks that setup.
 - PRs run the hosted gate `.github/workflows/pr-gate.yml`; `main` branch protection requires its
   `Prove the pull request` job. `main` pushes rerun the full gate + Pages deploy via `pages.yml`.
@@ -84,16 +87,13 @@ demo at `http://127.0.0.1:5173/?demo=v2`.
 
 - The coordinating session owns orchestration, decisions, and architecture: slice selection,
   authority interpretation, contract design, and final merge judgment stay with it.
-- Delegate bounded implementation to `dl-implementer`, fresh-context adversarial review to
-  `dl-reviewer` (both Opus 4.8 high, pinned in `.claude/agents/`), and mechanical sweeps to
-  `dl-mechanic` (Sonnet 4.6 high). Never route repo work to Haiku.
+- Delegate discovery to `dl-scout` (Opus 5 low), implementation to `dl-implementer`, adversarial
+  review to `dl-reviewer` (both Opus 5 high; owner decision A5 of 2026-08-08 supersedes the q-9
+  Opus 4.8 pin), mechanical sweeps to `dl-mechanic` (Sonnet 4.6 high). Never route work to Haiku.
 - One writer per checkout; parallel writers require separate coordinator-owned worktrees and
   non-overlapping paths. Subagents can move HEAD — pin git state in prompts, re-verify after each.
 - Keep volatile SHAs, PR/check state and next-slice evidence in the implementation ledger, not this
   file. Route owner decisions and genuinely open owner gates to `HUMAN_TODO.md`.
 - `bypassPermissions` lives only in gitignored `.claude/settings.local.json`, never committed.
-
-## Closeout
-
-Close under changed / verified / NOT verified / failures and workarounds / docs-state sync /
-residual risk / human actions / exact resume point.
+- Close under changed / verified / NOT verified / failures / docs-state sync / residual risk /
+  human actions / exact resume point.

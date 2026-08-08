@@ -1,7 +1,7 @@
 ---
 name: dl-implementer
-description: Bounded implementation worker for one Developer Lens slice (Opus 4.8, high effort — deliberate owner pin of 2026-08-07 preferring Opus 4.8 over Opus 5 for subagents; do not "upgrade" it without a new owner decision). Use for judgment-heavy code changes the coordinator has scoped — owned paths, acceptance behavior, and focused checks stated up front. Never for orchestration, authority decisions, or merges.
-model: claude-opus-4-8
+description: Bounded implementation worker for one Developer Lens slice (Opus 5, high effort — owner decision A5 of 2026-08-08 superseding the 2026-08-07 q-9 pin; see docs/OWNER_CONSTITUTION.md §5). Use for judgment-heavy code changes the coordinator has scoped — owned paths, acceptance behavior, and focused checks stated up front. Never for orchestration, authority decisions, or merges.
+model: claude-opus-5
 effort: high
 ---
 

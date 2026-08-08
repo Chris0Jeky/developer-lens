@@ -1,0 +1,62 @@
+# Developer Lens repository governor — machine-readable operating policy.
+# Low-volatility by design: no secrets, credentials, private paths, volatile SHAs, or live
+# PR/check status here (live truth stays on GitHub; execution state in CURRENT_STATE.md).
+# Human-readable architecture: docs/agent-system/README.md
+governor_schema_version: 1
+owner_policy:
+  constitution: docs/OWNER_CONSTITUTION.md
+  version: 2
+  received: '2026-08-08'
+  focus_weights: { research: 7, story_product: 5, distribution: 3, community: 2, realdata_standalone: 0 }
+  locked_red_lines: [missingness-honesty, deterministic-fallback, model-output-labelling,
+                     secret-prohibition, private-output-locality]
+authority_files:
+  tier: .agent-harness/tier.json
+  human_actions: HUMAN_TODO.md
+  canon: CLAUDE.md
+  codex_adapter: AGENTS.md
+  live_state: docs/analyser-program/CURRENT_STATE.md
+  history: docs/IMPLEMENTATION_LEDGER.md
+  data_policy: [docs/data-charter.md, docs/source-capability-matrix.md]
+  roadmap: docs/PROGRAMME_ROADMAP.md
+  work_classes: docs/agent-system/WORK_CLASSES.md
+  prompts: docs/agent-system/PROMPT_LIBRARY.md
+  maintenance: docs/agent-system/MAINTENANCE_PROTOCOL.md
+  ideas: docs/agent-system/IDEA_PROTOCOL.md
+  cross_repo: docs/agent-system/CROSS_REPO_CONTRACT.md
+model_roles:
+  # Owner decision A5 (supersedes q-9; runtime-verified 2026-08-08: `opus` -> claude-opus-5).
+  # Never commit an invented model ID; if a pin stops resolving, keep the last working pin and
+  # open one owner-visible compatibility issue.
+  coordinator: { target: fable-5, role: 'authority interpretation, architecture, sequencing, merge judgment' }
+  scout: { target: opus-5-low, agent: dl-scout, role: 'archaeology, large reads, inventory, idea mining' }
+  builder: { target: opus-5-high, agent: dl-implementer, role: bounded-implementation }
+  reviewer: { target: opus-5-high, agent: dl-reviewer, role: fresh-context-adversarial-review }
+  mechanic: { target: sonnet-4-6-high, agent: dl-mechanic, role: deterministic-sweeps }
+  governor_lite: { target: [terra, opus-5, opus-4-8-ultra], role: 'W0-W2 autonomous, W3 only with approved plan' }
+risk_tiers:
+  W0: observation-and-reporting          # any capable model; no writes
+  W1: mechanical-administration          # mechanic applies, scout only proposes; focused verification
+  W2: bounded-implementation             # builder implements, reviewer reviews
+  W3: architecture-cross-repo-data-model # coordinator designs; builder implements; independent review
+  W4: owner-only                         # prepare options; never self-authorise
+queues:
+  opportunity_backlog: github-issues     # unlimited; labels now/next/later/idea/owner-gated
+  focused_wave: docs/analyser-program/CURRENT_STATE.md   # small active set with lanes/stop conditions
+  ideas: github-issues-label-agent-generated
+review_merge_protocol:
+  required_check: 'Prove the pull request'   # exact branch-protection context (workflow: PR gate)
+  aging_floor_minutes: 3
+  late_review_fallback_minutes: 15       # exact-head; any fix push restarts the clock
+  fix_round_ceiling: 2
+  post_merge_sweep: required             # Codex posts 3-10 min after merge; sweep beyond delay
+  merge_style: merge-commit-never-squash
+recurring_checks: [state-truthfulness, generated-contract-drift, dependency-alerts,
+                   stale-branches-worktrees, late-review-comments, label-taxonomy,
+                   release-readiness, cross-repo-compatibility, human-todo-accuracy]
+cross_repo:
+  counterpart: Chris0Jeky/developer-lens-lab
+  contract: docs/agent-system/CROSS_REPO_CONTRACT.md
+  merge_rule: product-owns-stable-contracts; explicit merge order; compatibility proof both sides
+generated_state:
+  runtime_cache: .agent-harness/runtime/   # gitignored; cache only, never authority

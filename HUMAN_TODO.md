@@ -124,15 +124,37 @@ publication route remains active.
   here.** A human must identify and terminate any leaked session before lab merges proceed. q-8 stays
   open.
 
-- [x] **q-9 — Claude subagent model pins approved.** On 2026-08-07 the owner directed, in the
-  session that introduced the dual-runtime harness (PR #191), that Claude subagent pins use
-  Opus 4.8 (high effort) for implementation and review and Sonnet 4.6 (high effort) for mechanical
-  work, with the coordinating session staying at the orchestration/decision/architecture level.
-  Opus 5 is deliberately not used for subagents (owner-observed regressions). The pins live in
-  `.claude/agents/`; changing them requires a new owner decision.
+- [x] **q-9 — Claude subagent model pins: SUPERSEDED by owner decision A5 (mandate v2,
+  2026-08-08).** On 2026-08-07 the owner directed Opus 4.8 (high) pins for implementation/review
+  and Sonnet 4.6 (high) for mechanical work, deliberately avoiding Opus 5. The owner mandate v2
+  received 2026-08-08 (`docs/OWNER_CONSTITUTION.md` §5, decision A5) explicitly supersedes that
+  preference: Fable 5 coordinates, Opus 5 low is the discovery workforce (`dl-scout`), Opus 5
+  high implements and reviews (`dl-implementer`/`dl-reviewer`), Sonnet 4.6 high stays the
+  mechanic. Runtime identifiers were verified before the pins changed (the Claude Agent runtime
+  resolves `opus` to `claude-opus-5`; a live launch succeeded). Pins live in `.claude/agents/`;
+  a further change requires another owner decision.
+
+- [ ] **q-10 — Owner/manual action register from mandate v2 (none blocking for current work).**
+  Consolidated from the mandate's remaining human actions: (a) AGPL/CLA legal review — approve the
+  contributor-agreement approach before substantial external code is accepted; (b) choose the
+  external umbrella brand (N6, later); (c) final five-minute screenshot/video aesthetic sign-off per
+  release (H7/T3) — this one BLOCKS each release tag (roadmap P0.5 step 5 precedes the v0.1.0
+  tag); (d) choose the Taskdeck immutable ref when the dogfood card activates (T2,
+  after #174); (e) choose any remote telemetry destination and approve its privacy notice (O6);
+  (f) supply/approve npm/PyPI/packaging credentials when distribution reaches those rungs (O3);
+  (g) approve any future stable individual-ranking product mode (constitution §2.1 gate);
+  (h) approve private hosted URL architecture/provider later (U6). Agents may prepare options for
+  each; none may be self-authorised.
 
 ## Changelog
 
+- 2026-08-08 (governor bootstrap): recorded the owner mandate v2 reception. q-9 marked SUPERSEDED
+  by owner decision A5 (Opus 5 routing, runtime-verified before the pin change); q-10 added as the
+  consolidated owner/manual action register from the mandate (AGPL/CLA legal review, umbrella
+  brand, aesthetic sign-off, Taskdeck ref, telemetry destination, packaging credentials,
+  individual-ranking gate, private-URL provider). The binding policy unpacking lives in
+  `docs/OWNER_CONSTITUTION.md`; no capability was activated and q-8 remains open — lab-checkout
+  write work and ALL lab merges stay human-gated.
 - 2026-08-07 (parallel-lanes session): expanded q-8 with a third concurrent-writer instance —
   a separate process writing the sibling `developer-lens-lab` checkout mid-run (foreign
   `checkout main`/`pull` reflog entries, divergent local lab `main`, unexplained refs and an elevated
