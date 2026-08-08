@@ -1,0 +1,10 @@
+# Blank issues are disabled on purpose: they would bypass the invented-data-only
+# warning that both templates carry at the point where reproduction data is pasted.
+blank_issues_enabled: false
+contact_links:
+  - name: Questions, ideas and general discussion
+    url: https://github.com/Chris0Jeky/developer-lens/discussions
+    about: Ask a question or float an idea before it becomes an issue.
+  - name: Contributing guide and data boundary
+    url: https://github.com/Chris0Jeky/developer-lens/blob/main/CONTRIBUTING.md
+    about: Read this before attaching reproduction data, screenshots, or logs.
