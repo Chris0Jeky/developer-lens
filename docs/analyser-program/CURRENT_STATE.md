@@ -8,8 +8,8 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-08
-current_slice_override: 'GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`): the
-  owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
+current_slice_override: 'P0 delivered: GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`)
+  merged; the owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
   docs/OWNER_CONSTITUTION.md (binding owner policy; layered subject policy supersedes the absolute
   person-scoring prohibition; locked invariants preserved), .agent-harness/governor.yaml,
   docs/agent-system/ (governor loop, work classes W0-W4, maintenance/idea protocols, 7-prompt
@@ -17,12 +17,14 @@ current_slice_override: 'GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bo
   release sequence + issue dispositions), Opus 5 model pins (owner decision A5 supersedes q-9;
   runtime-verified), new dl-scout agent, verify:context enforcement of the control plane, and
   GitHub taxonomy (14 labels; issues #200-#205). Reconciled without redoing: #193 already fixed
-  (PR #194 `24f55d4`); this file was already truthful re Method Trial. NO product feature work in
-  this programme; #174 does not start before the P0.5 v0.1.0 baseline.'
-phase: 'P0 control-plane reconciliation (governor bootstrap) shipping via PR #206. Prior
+  (PR #194 `24f55d4`); this file was already truthful re Method Trial. The P0 bootstrap contained
+  no product feature work; P0.5 #200 is now the active product-only release-preparation sequence.
+  #174 does not start before the P0.5 v0.1.0 baseline.'
+phase: 'P0 control-plane reconciliation (governor bootstrap) delivered by merged PR #206. Prior
   programme state: WB-C1 Method Trial demo complete on both sides (product #187/#190, lab PR #8),
-  #189 rendering subset shipped, dual-runtime harness merged (#191/#192). Next phases:
-  P0.5 v0.1.0 release programme (#200), then P1 #174 integrated vertical. No real migration,
+  #189 rendering subset shipped, dual-runtime harness merged (#191/#192). Active phase:
+  P0.5 v0.1.0 release programme (#200), product-only release preparation. Downstream: P1 #174
+  integrated vertical. No real migration,
   source activation, private output, external model call, or model promotion is part of this
   programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
@@ -42,8 +44,38 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'Governor bootstrap PR #206 (control plane only; see current_slice_override). Lane
-  record: coordinator-owned single writer in the main checkout; owned paths were the new
+active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparation: AGPL-3.0-only +
+  community scaffolding + dependency triage + C0 release assets + visual QA with owner sign-off;
+  labels release/now). P0 governor bootstrap PR #206 is delivered. First-batch record (EXECUTED
+  2026-08-08 22:33-22:35Z): the authoring Codex-side session opened #209/#210/#211 and went silent
+  at 21:51Z; the Claude-side flagship coordinator adopted the wave with lane-claim comments on all
+  three PR threads, then merged the siblings SERIALIZED per the exclusive-lockfile review finding:
+  #211 NanoID audit first (merge `8ec605e`; npm-registry integrity hash verified byte-identical,
+  GHSA-2v37-7h3g-55p8 HIGH closed by 3.3.18, one fresh-context independent review, merged under
+  the 15-minute fallback because no connector review ever arrived), then #209 AGPL-3.0-only
+  release metadata (merge `3493e26`; fresh-context review verified the canonical 661-line AGPL
+  body, SPDX/lockfile-root sync, COMMERCIAL_OPTION intent-only; base-move re-proof per A9 via a
+  local merge-preview: npm ci with 0 vulnerabilities + verify:context green over the combined
+  lockfile). This state reconciliation (#210) merges LAST, revised post-merge; the round-2 review
+  findings (exclusive lockfile ownership, H7-consistent tag wording, mandated step order,
+  post-sibling reconciliation) are all dispositioned by this revision. Remaining active lanes:
+  (i) #212 community scaffolding (P0.5 step 2; claude/p05-community-scaffolding, dl-implementer
+  in a coordinator-owned worktree; owned paths CONTRIBUTING.md, CODE_OF_CONDUCT.md, ROADMAP.md,
+  .github templates; verify:context green at 44 md files; awaiting its review gate; Discussions
+  now enabled so its contact link resolves). (ii) Worktree/branch hygiene DONE: 12 clean
+  merged-branch worktrees and ~35 merged local branches removed; every surviving worktree holds
+  unmerged or active work, including unpushed-only branches codex/researchpack-v1-steward-20260807
+  and fable/life03-backup-crash-durability — never remove those without pushing first.
+  (iii) Lab dependency-alert triage POSTED on lab issue #5 (read-only: two pyarrow HIGH alerts are
+  one advisory whose vulnerable C++ path is not exposed to Python — batch constraint bump to
+  >=23.0.1,<24; pytest MEDIUM is dev-only — batch pytest-9 bump; lab writes stay q-8-gated).
+  P0.5 step order vs the mandate: step 1 (licence) DONE, step 4 product half DONE (#211; lab half
+  triaged, not fixed), step 2 in flight (#212), step 3 q-8-gated, steps 5-7 pending — order
+  deviations are recorded here, never silent. Tracked from the #209 review (non-blocking LOWs,
+  noted on #200): version 0.0.0 bump belongs to the release-tag step; README should link
+  COMMERCIAL_OPTION.md; the Pages app needs a visible AGPL source-offer check before v0.1.0.
+  Historical P0 lane record:
+  coordinator-owned single writer in the main checkout; owned paths were the new
   control-plane files + CLAUDE.md/AGENTS.md/HUMAN_TODO.md/this file/ledger; stop condition: merge
   under the standard gate. Previous session record (2026-08-07 parallel-lanes) merged three PRs:
   #196 (`63354ef`, #189 accessible-missing-state RENDERING subset), #197 (`41fe76a`, WB-C1 close-out
@@ -56,12 +88,18 @@ active_slice: 'Governor bootstrap PR #206 (control plane only; see current_slice
   regenerated `invented.fixture.json` (only `provenance.contract_sha256` repinned). Lab side: lab #6
   preserved as `developer-lens-lab` PR #24 (parked — q-8 concurrent-writer), lab #7 dispositioned as
   tracked cross-repo debt. Prior product-repo slice before this session: PR #194 (`24f55d4`).'
-next_value_slice: 'NEXT WAVE after PR #206 merges: the P0.5 v0.1.0 release programme (#200 —
+next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only release preparation:
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
-  owner sign-off; labels release/now). After the v0.1.0 tag: P1 = #174 integrated vertical with
-  #181/#182 contract semantics (H1), folding #135/#76/#80-resolver where touched. Data Charter v2 +
-  capability profiles = #201 (next, before any real activation). Lab-side lanes (lab #5/#6/#7/#23,
-  lab PR #24, lab release prep, lab governor seeding) ALL stay human-gated behind q-8. Older
+  owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
+  decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
+  H7 — none exists. The joint tag is blocked by q-8 (lab release preparation is lab write work) and
+  by the q-10(c) owner aesthetic sign-off. Do not
+  advance task selection beyond P0.5/#200. Downstream (not selected): after the v0.1.0 tag, P1 =
+  #174 integrated vertical with #181/#182 contract semantics (H1), folding #135/#76/#80-resolver
+  where touched. Data Charter v2 + capability profiles = #201 (next, before any real activation).
+  Lab-side lanes (lab #5/#6/#7/#23,
+  lab release prep, lab governor seeding) ALL stay human-gated behind q-8 (lab PR #24 was merged
+  2026-08-08 22:14Z by an unverified actor — see open_owner_gates; no gate relaxation is inferred). Older
   post-WB-C1 debt map retained below as CONTEXT ONLY — its embedded recommendation is SUPERSEDED by
   the wave above (do not select #189 validator-parity ahead of P0.5/P1; it stays tracked backlog per
   docs/PROGRAMME_ROADMAP.md): the bounded WB-C1 programme is COMPLETE, the
@@ -72,9 +110,11 @@ next_value_slice: 'NEXT WAVE after PR #206 merges: the P0.5 v0.1.0 release progr
   change — the shared `methodTrialView` contract must move in lockstep across both repos, so run it
   from the coordinating session via the `developer-lens-continuation` skill (there is no committed
   cross-repo-contract skill in this repo) and re-generate the committed fixture only through the
-  producer. GATE (q-8): a competing writer was active in the lab checkout this session. Merging lab
-  PR #24 — or ANY lab merge — stays blocked until a HUMAN terminates the leaked session; an isolated
-  worktree does NOT make a merge safe while the competing writer can still race the remote. Separately,
+  producer. GATE (q-8): a competing writer was active in the lab checkout (observed 2026-08-07).
+  ANY lab merge stays blocked until a HUMAN terminates the leaked session; an isolated
+  worktree does NOT make a merge safe while the competing writer can still race the remote. (Lab
+  PR #24 was nonetheless merged 2026-08-08 22:14Z by an actor this session cannot verify as human —
+  recorded as an observation, not treated as a relaxation of this gate.) Separately,
   do NOT begin WRITE work in the affected lab checkout until q-8 is resolved or a verified isolated
   worktree is used. The validator-parity subset and #182 are cross-repo (lab-touching), so both their
   lab write-work and their eventual merge fall under these two gates. Other tracked debt, pick by owner priority: product #189''s accessible-rendering follow-ups
@@ -83,26 +123,38 @@ next_value_slice: 'NEXT WAVE after PR #206 merges: the P0.5 v0.1.0 release progr
   above) plus its two DEFERRED bullets (future-v2 wire dedup + closed-copy/source-identity canary);
   #181 SHIPPED (PR #198 `73cb31e`; #181 stays open as the schema-parity parent that #182 defers to)
   and #182 (ResearchPack semantic hardening — cross-repo, one contract slice) remains; lab #6 — 4/6
-  reproducer-backed fixes delivered as `developer-lens-lab` PR #24, PARKED pending q-8 concurrent-writer
-  resolution (findings 1 and 3 mapped as digest-moving); lab #7
+  reproducer-backed fixes delivered as `developer-lens-lab` PR #24, MERGED 2026-08-08 22:14Z with
+  lab Check green (merger identity unverified — see open_owner_gates; lab follow-ups tracked as
+  lab #31; findings 1 and 3 mapped as digest-moving); lab #7
   (fallback case labels — CROSS-REPO: blocked on relaxing the product method-trial-view schema
   title/summary/scenario_code first, and the fallback path is currently unreachable — see the plan on
   lab #7). The separate #174/#80 Phase E stored-observation bridge is out of this demo programme. Do
   not turn any follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # dependency-closed focused wave; opportunity backlog = GitHub issues (governor.yaml queues)
-  [P0 governor bootstrap PR #206 — this slice, 'P0.5 v0.1.0 release programme #200 — next, after #206 merges']
-blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Governor bootstrap PR #206
-  is the in-flight slice. The binding review-timing gate stated below (`review_timing_defect`) governs any merge:
+  [P0 governor bootstrap PR #206 — delivered, P0.5 v0.1.0 release programme #200 — active, product-only release preparation]
+blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
+  preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
+  NEW recorded owner decision — none exists) and remains blocked by q-8 for the lab-side release
+  preparation plus the q-10(c) owner sign-off. The binding review-timing gate
+  stated below (`review_timing_defect`) governs any future merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the
   exact-final-head Codex review triaged or 15 minutes since the last push with a fresh clean sweep —
   any fix push restarts that clock. Lab PR #3 merged without the exporter due to concurrent external
   action; this is a sequencing deviation, not evidence that the exporter landed. A real
   migration/connector still requires #168 and a separately reviewed production grant issuer/caller.
-  #80/#174 remain outside this demo programme.'
+  #80/#174 remain outside this demo programme. HUMAN_TODO.md q-10(c) is non-blocking for current
+  product release preparation, but its five-minute owner aesthetic sign-off blocks every release tag,
+  even if q-8 resolves or the owner later chooses a product-only tag.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (leaked-session/
   concurrent-writer cleanup — human; gates ALL lab merges and lab-checkout write work) remains
   open; q-9 SUPERSEDED by owner decision A5 (Opus 5 routing); q-10 (owner/manual action register
-  from mandate v2) added, none blocking; q-7 verified complete'
+  from mandate v2) added; q-10(c) is non-blocking for current product release preparation, but its five-minute
+  owner aesthetic sign-off blocks every release tag, even if q-8 resolves or the owner later chooses
+  a product-only tag; q-7 verified complete. LIVE OBSERVATION (2026-08-08 22:14:27Z): lab PR #24 —
+  recorded above as parked behind q-8 — was MERGED by the account Chris0Jeky with lab Check green at
+  the merged head (`ef57045`); whether a human performed that merge is not verifiable from this
+  session, no approval is inferred, and every q-8 gate on lab write work and future lab merges is
+  treated as still binding until the owner confirms'
 frozen_by_reassessment: horizon:frozen label (WB candidates except the owner-directed WB-C1 Method
   Trial demonstration, vector retrieval, GOV/SEC/PORT-02/PROV-01 sources, ATLAS-03 parsers,
   EVQ-09/10, TRACE-03) — 07 §0a
