@@ -12,7 +12,7 @@ current_slice_override: 'GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bo
   owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
   docs/OWNER_CONSTITUTION.md (binding owner policy; layered subject policy supersedes the absolute
   person-scoring prohibition; locked invariants preserved), .agent-harness/governor.yaml,
-  docs/agent-system/ (governor loop, work classes G0-G4, maintenance/idea protocols, 7-prompt
+  docs/agent-system/ (governor loop, work classes W0-W4, maintenance/idea protocols, 7-prompt
   library incl. Governor Lite, cross-repo contract), docs/PROGRAMME_ROADMAP.md (P0-P4 + v0.1.0
   release sequence + issue dispositions), Opus 5 model pins (owner decision A5 supersedes q-9;
   runtime-verified), new dl-scout agent, verify:context enforcement of the control plane, and

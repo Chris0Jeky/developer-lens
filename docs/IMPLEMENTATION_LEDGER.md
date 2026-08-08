@@ -3,7 +3,7 @@
 Last updated: **2026-08-08** (governor bootstrap — owner mandate v2 + governor spec v1 received and
 unpacked via PR #206: `docs/OWNER_CONSTITUTION.md` (binding owner policy v2; layered subject policy
 supersedes the absolute person-scoring line; locked invariants R2+R3+R6 preserved; secrets stay
-absolute X), `.agent-harness/governor.yaml`, `docs/agent-system/` (governor loop, G0–G4 work
+absolute X), `.agent-harness/governor.yaml`, `docs/agent-system/` (governor loop, W0–W4 work
 classes, maintenance/idea protocols, 7-prompt library incl. Governor Lite, cross-repo contract —
 lab side QUEUED behind q-8), `docs/PROGRAMME_ROADMAP.md` (P0–P4; v0.1.0 = #200 before #174), Opus 5
 pins per owner decision A5 superseding q-9 (runtime-verified: Agent runtime resolves `opus` →
