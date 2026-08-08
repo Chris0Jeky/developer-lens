@@ -1,8 +1,8 @@
 ---
 name: dl-reviewer
-description: Toolset-restricted fresh-context adversarial reviewer for Developer Lens diffs and PRs (Opus 4.8, high effort — deliberate owner pin of 2026-08-07 preferring Opus 4.8 over Opus 5 for subagents; do not "upgrade" it without a new owner decision). It cannot run commands or edit files, so its only possible output is findings. Use for the review half of the tier gate on non-trivial privacy or logic work.
+description: Toolset-restricted fresh-context adversarial reviewer for Developer Lens diffs and PRs (Opus 5, high effort — owner decision A5 of 2026-08-08 superseding the 2026-08-07 q-9 pin; see docs/OWNER_CONSTITUTION.md §5). It cannot run commands or edit files, so its only possible output is findings. Use for the review half of the tier gate on non-trivial privacy or logic work.
 tools: Read, Grep, Glob
-model: claude-opus-4-8
+model: claude-opus-5
 effort: high
 ---
 
