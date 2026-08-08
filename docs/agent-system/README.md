@@ -8,7 +8,8 @@ sessions.
 
 Authority stack, strongest first: [docs/OWNER_CONSTITUTION.md](../OWNER_CONSTITUTION.md) (strategic
 policy) · [.agent-harness/tier.json](../../.agent-harness/tier.json) (repository authority, T2 +
-`sensitive_data`) · [HUMAN_TODO.md](../../HUMAN_TODO.md) (open owner gates only) ·
+`sensitive_data`) · [HUMAN_TODO.md](../../HUMAN_TODO.md) (owner decisions: open gates plus
+retained binding approvals) ·
 [CLAUDE.md](../../CLAUDE.md) / [AGENTS.md](../../AGENTS.md) (agent canon and Codex adapter) ·
 [docs/analyser-program/CURRENT_STATE.md](../analyser-program/CURRENT_STATE.md) (the single live
 resume artifact) · [docs/IMPLEMENTATION_LEDGER.md](../IMPLEMENTATION_LEDGER.md) (history).
@@ -51,7 +52,7 @@ in a tracked file outranks new feature work — repair it first.
 **C — CLASSIFY.** Sort every candidate into product value · research support · cross-repo
 compatibility · maintenance/correctness · administration/GitHub · release/distribution ·
 dependency/supply chain · documentation/state · incident/CI repair · idea/proposal ·
-owner/legal/physical. Then assign a risk class (G0–G4) and model route from
+owner/legal/physical. Then assign a risk class (W0–W4) and model route from
 [WORK_CLASSES.md](WORK_CLASSES.md).
 
 **D — PRIORITISE.** Bias by the owner focus weights (research 7, story/product 5, distribution 3,

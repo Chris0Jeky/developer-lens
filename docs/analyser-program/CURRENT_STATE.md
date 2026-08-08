@@ -62,9 +62,11 @@ next_value_slice: 'NEXT WAVE after PR #206 merges: the P0.5 v0.1.0 release progr
   #181/#182 contract semantics (H1), folding #135/#76/#80-resolver where touched. Data Charter v2 +
   capability profiles = #201 (next, before any real activation). Lab-side lanes (lab #5/#6/#7/#23,
   lab PR #24, lab release prep, lab governor seeding) ALL stay human-gated behind q-8. Older
-  post-WB-C1 debt map retained below for context: the bounded WB-C1 programme is COMPLETE, the
+  post-WB-C1 debt map retained below as CONTEXT ONLY — its embedded recommendation is SUPERSEDED by
+  the wave above (do not select #189 validator-parity ahead of P0.5/P1; it stays tracked backlog per
+  docs/PROGRAMME_ROADMAP.md): the bounded WB-C1 programme is COMPLETE, the
   product/lab pair is demonstrated green on both sides, and product #189''s rendering subset shipped.
-  Remaining tracked post-programme debt is independent (none dependency-forced). Recommended next
+  Remaining tracked post-programme debt is independent (none dependency-forced). Superseded former next
   bounded slice: the product #189 validator-parity subset (deferred-caveat uniqueness, all-seven-gates
   on rejection, alert-evidence, viable-selection reason). Note it is a cross-repo product+lab validator
   change — the shared `methodTrialView` contract must move in lockstep across both repos, so run it

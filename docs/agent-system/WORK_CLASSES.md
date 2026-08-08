@@ -1,32 +1,36 @@
 # Work classes and model routing
 
-Every candidate action gets one risk class (G0–G4) and one model route before execution. The class
+Every candidate action gets one risk class (W0–W4) and one model route before execution. (The
+governor spec's G0–G4 risk classes are named W0–W4 in this repository to avoid colliding with the
+G1–G4 authority gates in `HUMAN_TODO.md` and the data charter — "G3 standing-approved" is a source
+gate, never a work class.) The class
 answers "how much verification and whose authority", not "how much autonomy" — tiers add
 verification, never subtract permission. Loop context: [README.md](README.md). Machine-readable
 mirror: [.agent-harness/governor.yaml](../../.agent-harness/governor.yaml).
 
-## G0 — Observation and reporting
+## W0 — Observation and reporting
 
 Read Git and GitHub state, inventory files, inspect CI, compare documents, identify stale issues,
 produce a report or a bounded task plan.
 
 - **Models:** any capable model.
-- **Writes:** none. A G0 lane that writes has been misclassified.
+- **Writes:** none. A W0 lane that writes has been misclassified.
 - **Review:** none needed; the output is evidence, and evidence is checked by whoever consumes it.
 
-## G1 — Mechanical administration
+## W1 — Mechanical administration
 
 Update issue labels and milestones from an already-approved plan; regenerate indexes; update state
 after an already-verified merge; remove clean coordinator-owned worktrees; update repository
 descriptions, topics or release notes; fix formatting and broken links; inventory dependencies;
 sweep post-merge comments.
 
-- **Route:** `dl-scout` (Opus 5 low) or `dl-mechanic` (Sonnet 4.6 high); Governor Lite may own the lane.
+- **Route:** `dl-mechanic` (Sonnet 4.6 high) applies the writes; `dl-scout` may only propose them
+  (it is read-only by prompt); Governor Lite may own the lane.
 - **Writes:** tracked files and GitHub metadata inside the approved plan.
 - **Review:** focused verification against the narrowest proof. Escalate to a high-effort model the
   moment the "mechanical" recipe requires a judgment call.
 
-## G2 — Bounded implementation
+## W2 — Bounded implementation
 
 A contained CI or workflow gap with obvious acceptance criteria; a new context-verifier rule; a
 compatible dependency upgrade; an isolated bug fix under existing semantics; a packaging script;
@@ -39,7 +43,7 @@ prompt-library or control-plane generation.
   proof from the run-and-prove table in [CLAUDE.md](../../CLAUDE.md) (`npm run check` for a code or
   config milestone).
 
-## G3 — Architecture, cross-repository, data or model design
+## W3 — Architecture, cross-repository, data or model design
 
 A new product/lab contract; a data-charter change; source-activation architecture; model-promotion
 policy; a new analytical lens; migration design; public/private publication design; stable vs
@@ -47,12 +51,12 @@ experimental channel design.
 
 - **Route:** the flagship coordinator (Fable 5) owns design and sequencing; `dl-scout` performs
   archaeology; `dl-implementer` implements the approved design; an independent substantial review
-  follows. Governor Lite may **execute** a flagship-approved G3 plan but may never invent one.
+  follows. Governor Lite may **execute** a flagship-approved W3 plan but may never invent one.
 - **Writes:** contracts under `shared/`, charter and matrix prose, workflow and schema changes.
 - **Review:** independent fresh-context review is mandatory, plus cross-repo compatibility proof on
   both sides where a shared contract moves ([CROSS_REPO_CONTRACT.md](CROSS_REPO_CONTRACT.md)).
 
-## G4 — Owner-only or physically external
+## W4 — Owner-only or physically external
 
 Licence choice; credentials or billing; public release of private outputs; an irreversible
 policy red-line change; aesthetic sign-off; local machine process or orphan-worktree cleanup;
@@ -74,8 +78,9 @@ external account or legal decisions.
 
 Rules that bind the table:
 
-- The scout's default output is **evidence and a bounded task plan, never a diff**. It may make
-  small G1 changes only when a delegation prompt explicitly authorises them.
+- The scout's output is **evidence and a bounded task plan, never a diff**. Its agent definition
+  prohibits file and GitHub mutations, so W1 writes route to `dl-mechanic` or the coordinator;
+  the scout only proposes them.
 - Implementation and review are separate contexts for any non-trivial change. A model reviewing its
   own diff is not a review.
 - The mechanic never interprets owner policy and never designs a data or model boundary. If a
@@ -105,14 +110,14 @@ Terra, Opus 5 and Opus 4.8 Ultra (and equivalents) run as **Governor Lite**: rel
 narrower domain, not a substitute for flagship ingenuity. Prompt:
 [PROMPT_LIBRARY.md](PROMPT_LIBRARY.md) §2.
 
-**Autonomous (G0–G2):** documentation and state reconciliation; generated-file drift repair; CI or
+**Autonomous (W0–W2):** documentation and state reconciliation; generated-file drift repair; CI or
 workflow omissions with obvious acceptance criteria; dependency triage and compatible upgrades;
 post-merge review follow-ups; release preparation from an approved plan; issue, label and milestone
 maintenance; stale branch and worktree inventory; focused test repair; small already-specified
 accessibility or UX fixes; contract parity tests under an **existing** contract; reproducibility
 checks; small packaging improvements; idea deduplication and critic preparation; health reports.
 
-**G3 only with a flagship-approved plan** — implement, never redesign: issue #174 subtasks;
+**W3 only with a flagship-approved plan** — implement, never redesign: issue #174 subtasks;
 cross-repository schema changes; automatic source activation; real-data ingestion; raw-content
 pipelines; Team/Leadership analytics; model evaluation; migration; stable/experimental channels.
 
@@ -122,7 +127,7 @@ stale state, triage issues and dependency alerts, produce a ranked recommendatio
 
 ## Mandatory escalation
 
-Stop and hand off to a flagship coordinator (or the owner, for G4) when:
+Stop and hand off to a flagship coordinator (or the owner, for W4) when:
 
 1. owner decisions conflict with each other or with a tracked authority file;
 2. the current state is ambiguous and several strategic paths are credible;

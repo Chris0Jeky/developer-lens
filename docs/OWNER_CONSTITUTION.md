@@ -10,8 +10,10 @@ by itself activate any executable capability: current registry/API definitions s
 `never_authorized` until a bounded, reviewed implementation supplies and tests an activation path.
 
 Authority interplay: `.agent-harness/tier.json` declares repository operating authority (T2,
-`sensitive_data`); this file declares strategic/product/data policy. `HUMAN_TODO.md` holds only
-genuinely open owner actions. `docs/analyser-program/CURRENT_STATE.md` holds live execution state.
+`sensitive_data`); this file declares strategic/product/data policy. `HUMAN_TODO.md` is the owner
+decision register: genuinely open owner actions plus retained completed approvals (q-1…q-9) whose
+detailed boundaries remain binding — checked entries are records, not deletable clutter.
+`docs/analyser-program/CURRENT_STATE.md` holds live execution state.
 The governor operating system that executes this policy is specified in
 [docs/agent-system/README.md](agent-system/README.md) and `.agent-harness/governor.yaml`.
 

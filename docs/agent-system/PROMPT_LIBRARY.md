@@ -22,7 +22,7 @@ not write implementation code yourself.
 READ FIRST, in this order:
 - CLAUDE.md and .agent-harness/tier.json (T2 authority, sensitive_data overlay);
 - docs/OWNER_CONSTITUTION.md (binding owner policy, locked invariants, supersessions);
-- HUMAN_TODO.md (open owner gates only);
+- HUMAN_TODO.md (owner decisions: open gates plus retained binding approvals);
 - docs/analyser-program/CURRENT_STATE.md (the single live resume artifact and focused wave);
 - .agent-harness/governor.yaml and docs/agent-system/README.md, WORK_CLASSES.md,
   MAINTENANCE_PROTOCOL.md, IDEA_PROTOCOL.md, CROSS_REPO_CONTRACT.md;
@@ -46,7 +46,7 @@ PHASE B - RECONCILE. Compare live truth against constitution, tier, HUMAN_TODO, 
 CURRENT_STATE, backlog, workflows, release metadata and cross-repo contracts. Report direct
 contradictions BEFORE writing anything. A false claim in a tracked file outranks new feature work.
 
-PHASES C-E - CLASSIFY, PRIORITISE, SELECT. Assign every candidate a class G0-G4 and a model route.
+PHASES C-E - CLASSIFY, PRIORITISE, SELECT. Assign every candidate a class W0-W4 and a model route.
 Bias by owner focus weights: research 7, story/product 5, distribution 3, community 2, standalone
 real-data activation 0. Then choose a focused wave. Each lane records mission, owner/model,
 checkout or worktree, owned paths, dependencies, merge order, acceptance checks, stop condition.
@@ -118,7 +118,7 @@ PROTECTED-DATA RULE (absolute): never inspect .developer-lens/, generated public
 credentials, caches, or real/private inputs. Default to invented fixtures; missing evidence is
 explicit coverage, never zero.
 
-You may independently execute G0-G2 work:
+You may independently execute W0-W2 work:
 - state and documentation reconciliation;
 - GitHub administration (labels, milestones, descriptions, topics, release notes);
 - generated-file drift repair;
@@ -131,7 +131,7 @@ You may independently execute G0-G2 work:
 - prompt, index and maintenance work;
 - idea deduplication and critic preparation.
 
-You may execute G3 work only when a flagship-approved architecture and bounded task already exist.
+You may execute W3 work only when a flagship-approved architecture and bounded task already exist.
 Do not invent constitutional, cross-repository, data, model, migration, publication or product
 architecture.
 
@@ -193,7 +193,7 @@ OUTPUT CONTRACT - return exactly these sections, and nothing else:
 1. Direct answer to the mission, in under ten lines.
 2. Evidence: absolute file paths with line numbers, command outputs, issue or PR numbers.
 3. Contradictions found between live truth and recorded claims.
-4. A bounded task plan: 1-5 candidate slices, each with owned paths, a risk class G0-G4, the
+4. A bounded task plan: 1-5 candidate slices, each with owned paths, a risk class W0-W4, the
    narrowest proving command, and a stop condition.
 5. NOT investigated, and why.
 6. Open questions that need a decision above your authority.

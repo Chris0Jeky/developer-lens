@@ -9,8 +9,8 @@ is the thin Codex adapter.
 
 ## Cold start
 
-1. Read `.agent-harness/tier.json`, `.agent-harness/governor.yaml`, and `HUMAN_TODO.md` on every
-   resume; the governor loop and prompts live under `docs/agent-system/`.
+1. Read `.agent-harness/tier.json`, `docs/OWNER_CONSTITUTION.md`, `.agent-harness/governor.yaml`,
+   and `HUMAN_TODO.md` on every resume; the governor loop and prompts live under `docs/agent-system/`.
 2. Read `docs/analyser-program/CURRENT_STATE.md` (the single resume artifact); refresh Git and
    GitHub because live state outranks it. `docs/IMPLEMENTATION_LEDGER.md` is the history archive.
 3. Invoke the `developer-lens-continuation` skill for implementation, migration, sensitive-source,

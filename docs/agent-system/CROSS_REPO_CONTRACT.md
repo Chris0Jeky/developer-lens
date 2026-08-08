@@ -16,7 +16,7 @@ and §5 (A7 — cross-repository compatibility checking is mandatory).
    E2E research flows.
 3. **Model routing** — the same table: flagship coordinator, Opus 5 low scout, Opus 5 high builder
    and reviewer, Sonnet 4.6 high mechanic ([WORK_CLASSES.md](WORK_CLASSES.md)).
-4. **Risk tiers** — the same G0–G4 classes and the same mandatory-escalation list.
+4. **Risk tiers** — the same W0–W4 classes and the same mandatory-escalation list.
 5. **Queue vocabulary** — the same labels (`now`/`next`/`later`/`idea`/`agent-generated`/
    `owner-gated`/`human-action`/`product`/`lab`/`cross-repo`/`release`/`experimental`) and the same
    two-layer model: unlimited GitHub-issue backlog plus a focused wave in each repository's live
@@ -59,7 +59,10 @@ archaeology — the requirement is the proof, not a particular automation shape.
   q-8: a concurrent writer was observed in the `developer-lens-lab` checkout, and a competing writer
   in the same working directory can corrupt a branch mid-slice. **While q-8 stays open, all lab-side
   write work in that checkout and ALL lab merges are human-gated.** Lab work may be prepared and
-  parked as a pull request; it may not be merged by an agent.
+  parked as a pull request ONLY from a freshly created, verified isolated worktree — never from the
+  affected checkout itself (the hazard is the working directory, and isolation does not make a
+  MERGE safe while the competing writer can still race the remote); it may not be merged by an
+  agent. Without a verified isolated worktree, preparation stays a non-writing plan.
 - **Shared surfaces today:** the `methodTrialView` contract with C0 fixture parity, and the
   ResearchPack schema (issues #181/#182 — #181's schema slice has shipped). Both live under
   `shared/` on the product side with their generation and drift-check scripts in `scripts/`.

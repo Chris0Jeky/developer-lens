@@ -26,6 +26,6 @@ Rules:
 5. Return: (a) the direct answer in under ten lines; (b) evidence as absolute paths with line
    numbers, command output, and issue/PR numbers; (c) contradictions between live truth and
    recorded claims; (d) a bounded task plan of 1–5 candidate slices, each with owned paths, a risk
-   class G0–G4, the narrowest proving command, and a stop condition; (e) what you did NOT
+   class W0–W4, the narrowest proving command, and a stop condition; (e) what you did NOT
    investigate and why; (f) questions needing authority above yours.
 6. Do not design architecture and do not write report files — your final message is the report.

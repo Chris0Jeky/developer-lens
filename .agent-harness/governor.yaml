@@ -33,19 +33,19 @@ model_roles:
   builder: { target: opus-5-high, agent: dl-implementer, role: bounded-implementation }
   reviewer: { target: opus-5-high, agent: dl-reviewer, role: fresh-context-adversarial-review }
   mechanic: { target: sonnet-4-6-high, agent: dl-mechanic, role: deterministic-sweeps }
-  governor_lite: { target: [terra, opus-5, opus-4-8-ultra], role: 'G0-G2 autonomous, G3 only with approved plan' }
+  governor_lite: { target: [terra, opus-5, opus-4-8-ultra], role: 'W0-W2 autonomous, W3 only with approved plan' }
 risk_tiers:
-  G0: observation-and-reporting          # any capable model; no writes
-  G1: mechanical-administration          # scout/mechanic route; focused verification
-  G2: bounded-implementation             # builder implements, reviewer reviews
-  G3: architecture-cross-repo-data-model # coordinator designs; builder implements; independent review
-  G4: owner-only                         # prepare options; never self-authorise
+  W0: observation-and-reporting          # any capable model; no writes
+  W1: mechanical-administration          # mechanic applies, scout only proposes; focused verification
+  W2: bounded-implementation             # builder implements, reviewer reviews
+  W3: architecture-cross-repo-data-model # coordinator designs; builder implements; independent review
+  W4: owner-only                         # prepare options; never self-authorise
 queues:
   opportunity_backlog: github-issues     # unlimited; labels now/next/later/idea/owner-gated
   focused_wave: docs/analyser-program/CURRENT_STATE.md   # small active set with lanes/stop conditions
   ideas: github-issues-label-agent-generated
 review_merge_protocol:
-  required_check: 'PR gate / Prove the pull request'
+  required_check: 'Prove the pull request'   # exact branch-protection context (workflow: PR gate)
   aging_floor_minutes: 3
   late_review_fallback_minutes: 15       # exact-head; any fix push restarts the clock
   fix_round_ceiling: 2

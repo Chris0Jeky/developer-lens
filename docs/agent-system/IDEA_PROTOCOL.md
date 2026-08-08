@@ -41,7 +41,7 @@ promoting an idea nobody has asked for; capture it and move on.
 ## Promotion rules
 
 1. **An independent critic reviews before promotion.** The critic is a separate context and, for
-   anything above G1, a high-effort model. A `READY` state without a recorded critic verdict is
+   anything above W1, a high-effort model. A `READY` state without a recorded critic verdict is
    invalid.
 2. **An exploratory branch is not authority to merge.** A bounded exploratory branch or worktree is
    a legitimate way to resolve uncertainty cheaply (owner decision A6), but its output is evidence
@@ -51,7 +51,7 @@ promoting an idea nobody has asked for; capture it and move on.
 4. **`CURRENT_STATE.md` carries only wave-promoted ideas** — those at `ACTIVE`. Everything else
    stays in the backlog. The live resume artifact must remain compact enough to read cold.
 5. **Data, model, cross-repo or publication implications escalate**, regardless of how small the
-   idea looks: those are G3/G4 and belong to the coordinator or the owner
+   idea looks: those are W3/W4 and belong to the coordinator or the owner
    ([WORK_CLASSES.md](WORK_CLASSES.md) mandatory escalation).
 6. **Ideas never relax a boundary.** An idea whose value depends on weakening missingness honesty,
    the deterministic fallback, model-output labelling, private-output locality, the secret
