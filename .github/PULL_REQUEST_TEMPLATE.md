@@ -26,10 +26,12 @@ Result:
 
 - [ ] Invented or synthetic fixtures only — no real or private data, no `.developer-lens/` or
       generated `public/data/` content, no real repository, organisation, or user names.
-- [ ] No credentials, tokens, or secret-shaped strings in the diff, tests, or screenshots.
+- [ ] No real credentials or tokens in the diff, tests, or screenshots. Clearly invented
+      secret-shaped canaries are allowed inside rejection and privacy tests, and must not reach any
+      generated fixture, golden file, or export.
 - [ ] The narrowest proving command above was actually run, and it touches the changed files.
 - [ ] `npm run check` passes for a code or configuration change (`npm run verify:context` and
-      `git diff --check` for a documentation-only change).
+      `git diff --check origin/main..HEAD` for a documentation-only change).
 - [ ] Documentation state is in sync if an authority file moved: `CLAUDE.md`, `AGENTS.md`,
       `docs/data-charter.md`, `docs/source-capability-matrix.md`, `docs/OWNER_CONSTITUTION.md`,
       `HUMAN_TODO.md`, `docs/analyser-program/CURRENT_STATE.md`.
