@@ -27,6 +27,14 @@ publish them.
 Invoke `$developer-lens-continuation` for implementation, migration, sensitive-source,
 architecture, documentation-reconciliation, or handoff work.
 
+## Governor operating system
+
+The repository governor (sense → reconcile → classify → prioritise → select → delegate → prove →
+merge → learn), work classes G0–G4, prompt library (including Governor Lite for non-flagship
+orchestrators), and cross-repo contract live under `docs/agent-system/` with machine-readable
+policy in `.agent-harness/governor.yaml`. Binding owner policy: `docs/OWNER_CONSTITUTION.md`.
+Codex Sol/Luna/Terra specialisation maps onto the same work classes.
+
 ## Codex swarm routing
 
 For decomposable work, discover the live collaboration ceiling and keep every useful Luna slot
