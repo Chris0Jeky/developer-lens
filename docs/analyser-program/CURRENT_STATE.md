@@ -8,8 +8,8 @@ file can resume deleted work (PR #127 late review).
 
 ```yaml
 updated: 2026-08-08
-current_slice_override: 'GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`): the
-  owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
+current_slice_override: 'P0 delivered: GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`)
+  merged; the owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
   docs/OWNER_CONSTITUTION.md (binding owner policy; layered subject policy supersedes the absolute
   person-scoring prohibition; locked invariants preserved), .agent-harness/governor.yaml,
   docs/agent-system/ (governor loop, work classes W0-W4, maintenance/idea protocols, 7-prompt
@@ -17,12 +17,14 @@ current_slice_override: 'GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bo
   release sequence + issue dispositions), Opus 5 model pins (owner decision A5 supersedes q-9;
   runtime-verified), new dl-scout agent, verify:context enforcement of the control plane, and
   GitHub taxonomy (14 labels; issues #200-#205). Reconciled without redoing: #193 already fixed
-  (PR #194 `24f55d4`); this file was already truthful re Method Trial. NO product feature work in
-  this programme; #174 does not start before the P0.5 v0.1.0 baseline.'
-phase: 'P0 control-plane reconciliation (governor bootstrap) shipping via PR #206. Prior
+  (PR #194 `24f55d4`); this file was already truthful re Method Trial. The P0 bootstrap contained
+  no product feature work; P0.5 #200 is now the active product-only release-preparation sequence.
+  #174 does not start before the P0.5 v0.1.0 baseline.'
+phase: 'P0 control-plane reconciliation (governor bootstrap) delivered by merged PR #206. Prior
   programme state: WB-C1 Method Trial demo complete on both sides (product #187/#190, lab PR #8),
-  #189 rendering subset shipped, dual-runtime harness merged (#191/#192). Next phases:
-  P0.5 v0.1.0 release programme (#200), then P1 #174 integrated vertical. No real migration,
+  #189 rendering subset shipped, dual-runtime harness merged (#191/#192). Active phase:
+  P0.5 v0.1.0 release programme (#200), product-only release preparation. Downstream: P1 #174
+  integrated vertical. No real migration,
   source activation, private output, external model call, or model promotion is part of this
   programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
@@ -42,8 +44,10 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   large-scope replay repair #180/PR #184, physical expiry cleanup #173/PR #185,
   Linux storage-gate repair PR #186, ResearchPack v1 producer PR #178 (`be9c2451`)',
   'state syncs #126']
-active_slice: 'Governor bootstrap PR #206 (control plane only; see current_slice_override). Lane
-  record: coordinator-owned single writer in the main checkout; owned paths were the new
+active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparation: AGPL-3.0-only +
+  community scaffolding + dependency triage + C0 release assets + visual QA with owner sign-off;
+  labels release/now). P0 governor bootstrap PR #206 is delivered. Historical P0 lane record:
+  coordinator-owned single writer in the main checkout; owned paths were the new
   control-plane files + CLAUDE.md/AGENTS.md/HUMAN_TODO.md/this file/ledger; stop condition: merge
   under the standard gate. Previous session record (2026-08-07 parallel-lanes) merged three PRs:
   #196 (`63354ef`, #189 accessible-missing-state RENDERING subset), #197 (`41fe76a`, WB-C1 close-out
@@ -56,11 +60,14 @@ active_slice: 'Governor bootstrap PR #206 (control plane only; see current_slice
   regenerated `invented.fixture.json` (only `provenance.contract_sha256` repinned). Lab side: lab #6
   preserved as `developer-lens-lab` PR #24 (parked — q-8 concurrent-writer), lab #7 dispositioned as
   tracked cross-repo debt. Prior product-repo slice before this session: PR #194 (`24f55d4`).'
-next_value_slice: 'NEXT WAVE after PR #206 merges: the P0.5 v0.1.0 release programme (#200 —
+next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only release preparation:
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
-  owner sign-off; labels release/now). After the v0.1.0 tag: P1 = #174 integrated vertical with
-  #181/#182 contract semantics (H1), folding #135/#76/#80-resolver where touched. Data Charter v2 +
-  capability profiles = #201 (next, before any real activation). Lab-side lanes (lab #5/#6/#7/#23,
+  owner sign-off; labels release/now). The joint v0.1.0 tag remains blocked by q-8 for required Lab
+  release/control-plane preparation unless the owner explicitly chooses a product-only tag. Do not
+  advance task selection beyond P0.5/#200. Downstream (not selected): after the v0.1.0 tag, P1 =
+  #174 integrated vertical with #181/#182 contract semantics (H1), folding #135/#76/#80-resolver
+  where touched. Data Charter v2 + capability profiles = #201 (next, before any real activation).
+  Lab-side lanes (lab #5/#6/#7/#23,
   lab PR #24, lab release prep, lab governor seeding) ALL stay human-gated behind q-8. Older
   post-WB-C1 debt map retained below as CONTEXT ONLY — its embedded recommendation is SUPERSEDED by
   the wave above (do not select #189 validator-parity ahead of P0.5/P1; it stays tracked backlog per
@@ -90,9 +97,11 @@ next_value_slice: 'NEXT WAVE after PR #206 merges: the P0.5 v0.1.0 release progr
   lab #7). The separate #174/#80 Phase E stored-observation bridge is out of this demo programme. Do
   not turn any follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # dependency-closed focused wave; opportunity backlog = GitHub issues (governor.yaml queues)
-  [P0 governor bootstrap PR #206 — this slice, 'P0.5 v0.1.0 release programme #200 — next, after #206 merges']
-blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Governor bootstrap PR #206
-  is the in-flight slice. The binding review-timing gate stated below (`review_timing_defect`) governs any merge:
+  [P0 governor bootstrap PR #206 — delivered, P0.5 v0.1.0 release programme #200 — active, product-only release preparation]
+blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
+  preparation is active. The joint v0.1.0 tag remains blocked by q-8 for required Lab release/control-plane
+  preparation unless the owner explicitly chooses a product-only tag. The binding review-timing gate
+  stated below (`review_timing_defect`) governs any future merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the
   exact-final-head Codex review triaged or 15 minutes since the last push with a fresh clean sweep —
   any fix push restarts that clock. Lab PR #3 merged without the exporter due to concurrent external
