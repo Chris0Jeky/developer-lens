@@ -110,6 +110,14 @@ publication route remains active.
   build artifacts plus a partial copy of already-pushed tracked files — nothing unique is at risk.
   q-8 stays open.
 
+  Update (2026-08-08, P0.5 first-batch session): lab PR #24 — the exact PR this gate parked — was
+  MERGED at 22:14:27Z by the account Chris0Jeky, with the lab `Check` workflow green at the merged
+  head (`ef57045`). This session cannot verify whether a human performed that merge and infers no
+  approval from it; every q-8 gate on lab-checkout write work and future lab merges was treated as
+  still binding throughout the session (no lab writes, no lab merges were performed). Owner, please
+  confirm: (a) did you merge lab #24 yourself? (b) has the leaked-session sweep been done (Task
+  Manager or `tools/mcp-hygiene.ps1`)? A confirmed (b) closes q-8. q-8 stays open.
+
   Update (2026-08-07, parallel-lanes session): a THIRD concurrent-writer instance was observed, this
   time in the sibling `developer-lens-lab` checkout. During a delegated lab #6 correctness slice a
   separate process ran a `checkout main` + `pull` inside the SAME lab working directory mid-run
@@ -148,6 +156,14 @@ publication route remains active.
 
 ## Changelog
 
+- 2026-08-08 (P0.5 first-batch session, late evening): expanded q-8 with the lab PR #24 merge
+  observation (merged 22:14:27Z by account Chris0Jeky, lab CI green; human-vs-agent authorship
+  unverifiable from the session; no approval inferred; gates held binding) and asked the owner to
+  confirm the merge authorship and the leaked-session sweep. No other item changed; no approval was
+  inferred for any gate. Note for q-10(a)/(c): the AGPL baseline merged (PR #209) and community
+  scaffolding (PR #212) deliberately contain no CLA text; the CoC now lists the maintainer email
+  already public in commit metadata as the confidential conduct channel — veto with one line if
+  unwanted.
 - 2026-08-08 (governor bootstrap): recorded the owner mandate v2 reception. q-9 marked SUPERSEDED
   by owner decision A5 (Opus 5 routing, runtime-verified before the pin change); q-10 added as the
   consolidated owner/manual action register from the mandate (AGPL/CLA legal review, umbrella
