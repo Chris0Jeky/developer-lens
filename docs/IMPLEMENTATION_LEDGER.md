@@ -1,6 +1,55 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-08** (governor bootstrap — owner mandate v2 + governor spec v1 received and
+Last updated: **2026-08-08, late evening** (P0.5 first batch — PRs #209/#210/#211/#212. A
+Codex-side session authored #209/#210/#211, went silent at 21:51Z; the Claude-side flagship
+coordinator adopted the lanes via PR-thread claim comments and ran the gate. **#211** nanoid
+3.3.16→3.3.18 lockfile-only, merge `8ec605e` 22:33Z: the connector MISSED the PR entirely (zero
+reviews in 60+ min), so the 15-minute fallback + one fresh-context dl-reviewer pass carried the
+gate; npm-registry integrity hash verified byte-identical; GHSA-2v37-7h3g-55p8 (HIGH, <3.3.17)
+closed; post-merge sweeps at T+8 and T+13 min: zero connector activity. **#209** AGPL-3.0-only
+baseline (canonical 661-line LICENSE verified section-by-section, SPDX in package.json + lockfile
+root, README notice, COMMERCIAL_OPTION intent-only — q-10(a) untouched), merge `3493e26` 22:34Z:
+connector round covered only superseded `d9bca02` and its P2 was fixed at head `1324ef9`;
+dl-reviewer MERGE-SOUND; A9 base-move re-proof after #211 via local merge-preview (`npm ci` — 0
+vulnerabilities — plus verify:context on the combined lockfile); post-merge sweeps clean; LOW
+follow-ups tracked on #200 (0.1.0 version bump at tag time, README→COMMERCIAL_OPTION link, AGPL
+§5(d)/§13 visible source-offer for the Pages app). **#210** CURRENT_STATE reconciliation, merge
+`3195040` 22:47Z, final head `b3a0b59`: three connector rounds — round-1 fixed by the authoring
+session (`331400b`), round-2 by this session (serialized-lockfile lane record; H7=BOTH joint-tag
+wording verified against OWNER_CONSTITUTION §4/O2/H7 — a product-only tag needs a NEW recorded
+owner decision; mandate step-order record; post-sibling reconciliation + live lab-#24
+observation), round-3 at the exact final head triaged at the two-round ceiling (nanoid-version
+finding DECLINED as out-of-diff misreading; sweep finding RESOLVED with T+13 evidence; ledger
+finding TRACKED → this entry). **#212** community scaffolding (CONTRIBUTING, Contributor Covenant
+2.1, public ROADMAP, issue/PR templates; Discussions enabled first so its contact links resolve):
+Codex round-1 (7 findings incl. blank-issue bypass and CoC confidential route) + independent
+dl-reviewer (MERGE-SOUND + 3 accuracy LOWs) consolidated into ONE fix round, head `1dd4433`
+(all ten applied; the CoC confidential email is the maintainer address already public in every
+commit's author metadata — no new exposure; owner may veto). Round-2 at `1dd4433` (5 findings):
+4 applied in the final fix round `bdd2f58` (feature-template invented-details warning + `idea`
+label, three-dot merge-base diff range, both hosted-only commands named); the stale no-LICENSE P1
+declined with merge evidence. Round-3 at the exact final head (6 findings, post-ceiling): all
+tracked with dispositions — Discussions-link warning, cockpit seed-fixture wording, and
+invented-vs-C0 terminology on #200; bug queue-label mechanism and PR-template governor surfaces
+on #208; .github template verifier coverage on #207. MERGED 23:15:01Z, merge commit `1859ddc`,
+after Prove green at `bdd2f58` and the exact-final-head review triaged; post-merge sweep clean
+through 23:28Z (T+13).
+Session also: lab squash-merge DISABLED (estate standing decision 2026-07-18); lab
+dependency-alert triage posted on lab #5 read-only (pyarrow CVE-2026-25087 ×2 HIGH — one advisory,
+C++ path not exposed to Python bindings, batch constraint bump >=23.0.1,<24; pytest
+CVE-2025-71176 MEDIUM dev-only — batch pytest-9 bump); product Dependabot alerts verified a REAL
+ZERO (HTTP 200 empty array); hygiene removed 12 clean merged-branch worktrees + the session's own
+lane worktrees and ~35 merged local branches while preserving every unmerged/unpushed branch
+(notably local-only `codex/researchpack-v1-steward-20260807` and
+`fable/life03-backup-crash-durability`); 41 stale remote branches remain tracked (not swept).
+LIVE OBSERVATION: lab PR #24 — parked behind q-8 — was merged 22:14:27Z by account Chris0Jeky
+with lab Check green at `ef57045`; human-vs-agent authorship unverifiable, no approval inferred,
+q-8 treated as fully binding throughout (see HUMAN_TODO). Learnings promoted: the connector can
+MISS a PR outright — after 15 min launch the independent review instead of waiting; pushes from
+INSIDE any worktree of this repo are floor-denied — publish refs via `git -C <main-checkout> push
+origin <branch>`; instruct licence-text reviewers to verify structurally, never quote at length
+(a verbatim AGPL ingest tripped an API content filter once).
+Prior: 2026-08-08 — governor bootstrap — owner mandate v2 + governor spec v1 received and
 unpacked via PR #206: `docs/OWNER_CONSTITUTION.md` (binding owner policy v2; layered subject policy
 supersedes the absolute person-scoring line; locked invariants R2+R3+R6 preserved; secrets stay
 absolute X), `.agent-harness/governor.yaml`, `docs/agent-system/` (governor loop, W0–W4 work
