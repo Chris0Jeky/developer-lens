@@ -63,8 +63,9 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   CONTRIBUTING, Contributor Covenant 2.1 with the already-public maintainer email as the
   confidential route, public ROADMAP, issue/PR templates; Discussions enabled; gate = Prove green
   + one dl-reviewer MERGE-SOUND + three Codex rounds, two fix rounds at the ceiling, round-3
-  findings tracked on #200/#207/#208). The P0.5 FIRST BATCH IS COMPLETE: all four PRs
-  #209/#210/#211/#212 merged and post-merge-swept. (ii) Worktree/branch hygiene DONE: 12 clean
+  findings tracked on #200/#207/#208). The P0.5 FIRST BATCH IS COMPLETE: all four PRs merged and
+  each post-merge sweep individually closed beyond the measured 3-10 min window — #209/#211 clean
+  at 22:46:06Z (T+12/13), #210 clean through 22:59Z (T+12), #212 clean through 23:28Z (T+13). (ii) Worktree/branch hygiene DONE: 12 clean
   merged-branch worktrees and ~35 merged local branches removed; every surviving worktree holds
   unmerged or active work, including unpushed-only branches codex/researchpack-v1-steward-20260807
   and fable/life03-backup-crash-durability — never remove those without pushing first.
@@ -74,11 +75,13 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   P0.5 step order vs the mandate: step 1 (licence) DONE, step 2 (community scaffolding) DONE,
   step 4 product half DONE (#211; lab half triaged on lab #5, not fixed), step 3 q-8-gated,
   steps 5-7 pending — order deviations are recorded here, never silent. EXACT NEXT ACTION for the
-  next session: P0.5 step 5 — C0 release assets + the release-notes/doc touch-up batch tracked on
-  #200 (LOW-1 version bump to 0.1.0, README→COMMERCIAL_OPTION link, AGPL visible source-offer in
-  the Pages app, Discussions-link warning, cockpit seed-fixture wording, invented-vs-C0
-  terminology), then browser/visual QA proof for the q-10(c) five-minute owner sign-off. The tag
-  itself stays blocked on q-8 (lab prep) + q-10(c) per H7=BOTH. Tracked from the #209 review (non-blocking LOWs,
+  next session, in roadmap order: first the pre-QA doc touch-up batch tracked on #200 (version
+  bump to 0.1.0, README→COMMERCIAL_OPTION link, AGPL visible source-offer in the Pages app,
+  Discussions-link warning, cockpit seed-fixture wording, invented-vs-C0 terminology) so QA sees
+  final surfaces; then STEP 5 = final browser/visual QA proof for the q-10(c) five-minute owner
+  sign-off; then STEP 6 = tag v0.1.0 + publish C0 release assets and release notes — blocked on
+  q-8 (lab prep) + q-10(c), joint per H7=BOTH; step 7 descriptions/topics is partially done
+  (description, topics, Discussions live). Tracked from the #209 review (non-blocking LOWs,
   noted on #200): version 0.0.0 bump belongs to the release-tag step; README should link
   COMMERCIAL_OPTION.md; the Pages app needs a visible AGPL source-offer check before v0.1.0.
   Historical P0 lane record:

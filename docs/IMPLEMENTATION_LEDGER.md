@@ -32,7 +32,8 @@ declined with merge evidence. Round-3 at the exact final head (6 findings, post-
 tracked with dispositions — Discussions-link warning, cockpit seed-fixture wording, and
 invented-vs-C0 terminology on #200; bug queue-label mechanism and PR-template governor surfaces
 on #208; .github template verifier coverage on #207. MERGED 23:15:01Z, merge commit `1859ddc`,
-after Prove green at `bdd2f58` and the exact-final-head review triaged.
+after Prove green at `bdd2f58` and the exact-final-head review triaged; post-merge sweep clean
+through 23:28Z (T+13).
 Session also: lab squash-merge DISABLED (estate standing decision 2026-07-18); lab
 dependency-alert triage posted on lab #5 read-only (pyarrow CVE-2026-25087 ×2 HIGH — one advisory,
 C++ path not exposed to Python bindings, batch constraint bump >=23.0.1,<24; pytest
