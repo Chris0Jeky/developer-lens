@@ -46,7 +46,19 @@ merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRI
   'state syncs #126']
 active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparation: AGPL-3.0-only +
   community scaffolding + dependency triage + C0 release assets + visual QA with owner sign-off;
-  labels release/now). P0 governor bootstrap PR #206 is delivered. Historical P0 lane record:
+  labels release/now). P0 governor bootstrap PR #206 is delivered. First-batch lane record:
+  owner/route = coordinating session via the declared product origin route; posture = each sibling
+  uses its own isolated product worktree with one writer and no shared-checkout writes; owned path
+  groups = (a) AGPL release metadata: LICENSE, README.md, package.json, package-lock.json release-
+  metadata region, COMMERCIAL_OPTION.md; (b) NanoID audit repair: package-lock.json audit region.
+  Dependency/merge order = this state reconciliation merges first, then the two product siblings;
+  after either sibling merges, the remaining sibling refreshes base and lockfile and re-proves before
+  merge. Acceptance checks = focused changed-seam checks, npm run check, and exact required merge
+  checks; state-sync proof = npm run verify:context and git diff --check. Stop condition = stop on a failed check
+  or unresolved base/lockfile conflict; do not select a Lab lane, release tag, or downstream task.
+  Exact next action = after this state reconciliation merges, select the two product siblings in
+  isolated product worktrees and run their focused checks.
+  Historical P0 lane record:
   coordinator-owned single writer in the main checkout; owned paths were the new
   control-plane files + CLAUDE.md/AGENTS.md/HUMAN_TODO.md/this file/ledger; stop condition: merge
   under the standard gate. Previous session record (2026-08-07 parallel-lanes) merged three PRs:
@@ -107,11 +119,15 @@ blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-s
   any fix push restarts that clock. Lab PR #3 merged without the exporter due to concurrent external
   action; this is a sequencing deviation, not evidence that the exporter landed. A real
   migration/connector still requires #168 and a separately reviewed production grant issuer/caller.
-  #80/#174 remain outside this demo programme.'
+  #80/#174 remain outside this demo programme. HUMAN_TODO.md q-10(c) is non-blocking for current
+  product release preparation, but its five-minute owner aesthetic sign-off blocks every release tag,
+  even if q-8 resolves or the owner later chooses a product-only tag.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (leaked-session/
   concurrent-writer cleanup — human; gates ALL lab merges and lab-checkout write work) remains
   open; q-9 SUPERSEDED by owner decision A5 (Opus 5 routing); q-10 (owner/manual action register
-  from mandate v2) added, none blocking; q-7 verified complete'
+  from mandate v2) added; q-10(c) is non-blocking for current product release preparation, but its five-minute
+  owner aesthetic sign-off blocks every release tag, even if q-8 resolves or the owner later chooses
+  a product-only tag; q-7 verified complete'
 frozen_by_reassessment: horizon:frozen label (WB candidates except the owner-directed WB-C1 Method
   Trial demonstration, vector retrieval, GOV/SEC/PORT-02/PROV-01 sources, ATLAS-03 parsers,
   EVQ-09/10, TRACE-03) — 07 §0a
