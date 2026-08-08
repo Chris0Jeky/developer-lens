@@ -214,6 +214,11 @@ GitHub has important visibility limits. Search endpoints cap some result sets at
 
 This is a reflection on attention and integration patterns—not a productivity score, quality judgment, or measure of human value.
 
+## License
+
+Copyright (C) 2026 Cristian Tcaci. Developer Lens is licensed under
+[GNU AGPL v3.0 only](LICENSE) (`AGPL-3.0-only`).
+
 ## Verification
 
 ```powershell
