@@ -104,9 +104,10 @@ open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (leak
 frozen_by_reassessment: horizon:frozen label (WB candidates except the owner-directed WB-C1 Method
   Trial demonstration, vector retrieval, GOV/SEC/PORT-02/PROV-01 sources, ATLAS-03 parsers,
   EVQ-09/10, TRACE-03) — 07 §0a
-authority_order: [CLAUDE.md, AGENTS.md, .agent-harness/tier.json, OWNER_CONSTITUTION.md,
-  HUMAN_TODO.md, governor.yaml + docs/agent-system/, data-charter.md,
+authority_order: [OWNER_CONSTITUTION.md, .agent-harness/tier.json, HUMAN_TODO.md, CLAUDE.md,
+  AGENTS.md, governor.yaml + docs/agent-system/, data-charter.md,
   source-capability-matrix.md, DEVELOPER_LENS_V2_ARCHITECTURE.md (incl. Appendix I.1-I.4)]
+  # matches the authority stack in docs/agent-system/README.md
   # data-charter binds day-to-day persistence until Charter v2 (#201) lands, except where
   # OWNER_CONSTITUTION.md records an explicit supersession (constitution §6.1)
 last_verified_checks: 'Exact heads, run IDs, test counts, and review outcomes live in docs/IMPLEMENTATION_LEDGER.md. Refresh live Git and CI, then rerun the relevant gate before relying on prior proof.'

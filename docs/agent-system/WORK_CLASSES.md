@@ -67,7 +67,7 @@ external account or legal decisions.
 | Role | Model / effort | Agent pin | Owns |
 |---|---|---|---|
 | Coordinator | Fable 5 | — (the session itself) | Authority interpretation, architecture, sequencing, conflict resolution, final merge judgment |
-| Scout | Opus 5, **low** effort | `.claude/agents/dl-scout.md` | Discovery, archaeology, large reads, GitHub inspection, inventory, comparison, idea mining |
+| Scout | Opus 5, **low** effort | `.claude/agents/dl-scout.md` | Discovery, archaeology, large reads, GitHub inspection, inventory, comparison, idea mining. Its read-only property is prompt-enforced (it carries Bash for git/gh inspection), unlike the reviewer, which is read-only by construction |
 | Builder | Opus 5, **high** effort | `.claude/agents/dl-implementer.md` | One bounded implementation slice at a time |
 | Reviewer | Opus 5, **high** effort | `.claude/agents/dl-reviewer.md` | Fresh-context adversarial review, separate context from implementation |
 | Mechanic | Sonnet 4.6, **high** effort | `.claude/agents/dl-mechanic.md` | Deterministic sweeps only |

@@ -54,7 +54,9 @@ binding statement; this section is its operational form.
 ## Issue taxonomy upkeep
 
 Labels in use: `now` · `next` · `later` · `idea` · `agent-generated` · `owner-gated` ·
-`human-action` · `product` · `lab` · `cross-repo` · `release` · `experimental`.
+`human-action` · `product` · `lab` · `cross-repo` · `release` · `experimental` ·
+`horizon:active` · `horizon:frozen` (14 total). Milestone creation is currently blocked by the
+floor guard on `gh api` mutations; labels plus `docs/PROGRAMME_ROADMAP.md` carry phase structure.
 
 Each sweep: every open issue carries exactly one queue-position label (`now`/`next`/`later`/`idea`);
 `agent-generated` accompanies `idea` for agent-originated proposals

@@ -82,7 +82,9 @@ OWNER AUTHORITY AND NON-NEGOTIABLE BOUNDARIES
   private data, credentials, browser state, caches, local paths, raw private prose/content, or real
   inputs.
 - Missing permission, censored history, refusal, truncation, and errors are explicit coverage
-  states, never zero activity. No person scoring, surveillance, or prohibited capability.
+  states, never zero activity. No person scoring, surveillance, or prohibited capability in this
+  execution mode (the layered subject policy in `docs/OWNER_CONSTITUTION.md` §2.1 governs what a
+  separately scoped Team/Lab-research task may do; nothing here activates it).
 
 BUILD THE DEPENDENCY-AWARE READY QUEUE
 

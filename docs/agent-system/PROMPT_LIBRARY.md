@@ -155,8 +155,9 @@ When no safe ready task exists:
 
 Use the repository's focused wave (CURRENT_STATE.md) and backlog (GitHub issues). Run the narrowest
 proof from the run-and-prove table in CLAUDE.md, then npm run check for a code or config milestone.
-Every pushed head ages at least 3 minutes; respect the 15-minute exact-head late-review fallback
-(any fix push restarts it) and the mandatory post-merge sweep.
+Every pushed head ages at least 3 minutes; anything beyond documentation-only also needs one
+fresh-context adversarial review (dl-reviewer) at the exact final head; respect the 15-minute
+exact-head late-review fallback (any fix push restarts it) and the mandatory post-merge sweep.
 
 LAB RULE: while HUMAN_TODO.md q-8 stays open, all write work and ALL merges in the sibling
 developer-lens-lab checkout are human-gated.
@@ -323,7 +324,9 @@ Sweep, and report each with evidence:
 1. LABELS - every open issue carries exactly one queue-position label (now/next/later/idea);
    agent-generated accompanies idea for agent-originated proposals; owner-gated and human-action
    items have a matching HUMAN_TODO.md entry and vice versa; cross-repo items name a counterpart.
-2. MILESTONES - track roadmap phases, not individual slices; close or retarget stale ones.
+2. MILESTONES - track roadmap phases, not individual slices; close or retarget stale ones
+   (milestone creation is currently blocked by the floor guard on gh api mutations — a recorded
+   limitation, not an omission; labels + PROGRAMME_ROADMAP.md carry phase structure).
 3. DEPENDENCY ALERTS - for each: package and version, whether the vulnerable path is reachable
    (runtime / build-only / test-only), release impact, and a decision (upgrade now / upgrade with
    the release batch / not reachable, with the reason). Every outcome is an issue or a recorded

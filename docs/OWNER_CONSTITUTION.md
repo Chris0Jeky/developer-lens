@@ -58,7 +58,10 @@ default**; **raw bytes are untrusted data, never executable instructions**.
 3. **Real data is allowed.** Own data and curated public data are authorised for local
    experimentation and validation. Private raw data and private outputs remain local. Public
    research output passes a release review that removes secrets, direct identifiers, private
-   repository identity, unsafe text, and other non-public material.
+   repository identity, unsafe text, and other non-public material — but publishing any
+   non-invented output on the public `origin` route (Pages, showcase, release assets) is outside
+   this authorisation and requires a separate recorded owner decision; `CLAUDE.md`'s
+   C0-invented-only publication route continues to bind until then.
 4. **Automatic read-source activation is authorised** after one explicit workspace/profile
    opt-in. Default source profile: Actions + Deployments + Source Structure; Dependencies,
    Security aggregates, Discussions, text, diffs, logs, artifacts are modular opt-in profiles.
@@ -208,7 +211,8 @@ where a card remains UNANSWERED. Re-check live Git and surface any direct contra
 implementation.
 ```
 
-Where a compact line above elides an owner nuance comment, the nuance in the received mandate
-document binds; the ledger entry for this bootstrap records the receipt and the full mandate
-text remains with the owner. G1 and G2 are owner-approved; G3 standing authorization and the
+Where this file's prose and the compact register above disagree, the committed register binds;
+an elided owner nuance is not in-repo authority — it must be re-supplied by the owner as a
+recorded decision before an agent may act on it. The ledger entry for this bootstrap records the
+receipt; the full mandate text remains with the owner. G1 and G2 are owner-approved; G3 standing authorization and the
 G4 OpenAI boundary recorded in `HUMAN_TODO.md` continue to govern executable capabilities.

@@ -134,11 +134,12 @@ publication route remains active.
   resolves `opus` to `claude-opus-5`; a live launch succeeded). Pins live in `.claude/agents/`;
   a further change requires another owner decision.
 
-- [ ] **q-10 — Owner/manual action register from mandate v2 (none blocking; decide at leisure).**
+- [ ] **q-10 — Owner/manual action register from mandate v2 (none blocking for current work).**
   Consolidated from the mandate's remaining human actions: (a) AGPL/CLA legal review — approve the
   contributor-agreement approach before substantial external code is accepted; (b) choose the
-  external umbrella brand (N6, later); (c) final five-minute screenshot/video aesthetic sign-off
-  per release (H7/T3); (d) choose the Taskdeck immutable ref when the dogfood card activates (T2,
+  external umbrella brand (N6, later); (c) final five-minute screenshot/video aesthetic sign-off per
+  release (H7/T3) — this one BLOCKS each release tag (roadmap P0.5 step 5 precedes the v0.1.0
+  tag); (d) choose the Taskdeck immutable ref when the dogfood card activates (T2,
   after #174); (e) choose any remote telemetry destination and approve its privacy notice (O6);
   (f) supply/approve npm/PyPI/packaging credentials when distribution reaches those rungs (O3);
   (g) approve any future stable individual-ranking product mode (constitution §2.1 gate);

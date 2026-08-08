@@ -66,8 +66,20 @@ if (failures.length === 0) {
   }
 
   const governorPolicy = read('.agent-harness/governor.yaml')
-  if (!governorPolicy.includes('governor_schema_version')) {
-    failures.push('.agent-harness/governor.yaml must declare governor_schema_version')
+  const governorRequiredKeys = [
+    'governor_schema_version',
+    'owner_policy',
+    'authority_files',
+    'model_roles',
+    'risk_tiers',
+    'queues',
+    'review_merge_protocol',
+    'cross_repo',
+  ] as const
+  for (const key of governorRequiredKeys) {
+    if (!new RegExp(`^${key}:`, 'm').test(governorPolicy)) {
+      failures.push(`.agent-harness/governor.yaml must declare top-level key: ${key}`)
+    }
   }
   if (/[0-9a-f]{40}/.test(governorPolicy)) {
     failures.push(

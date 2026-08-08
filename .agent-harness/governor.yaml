@@ -28,12 +28,12 @@ model_roles:
   # Owner decision A5 (supersedes q-9; runtime-verified 2026-08-08: `opus` -> claude-opus-5).
   # Never commit an invented model ID; if a pin stops resolving, keep the last working pin and
   # open one owner-visible compatibility issue.
-  coordinator: { target: fable-5, role: authority-interpretation, architecture, sequencing, merge-judgment }
-  scout: { target: opus-5-low, agent: dl-scout, role: archaeology, large-reads, inventory, idea-mining }
+  coordinator: { target: fable-5, role: 'authority interpretation, architecture, sequencing, merge judgment' }
+  scout: { target: opus-5-low, agent: dl-scout, role: 'archaeology, large reads, inventory, idea mining' }
   builder: { target: opus-5-high, agent: dl-implementer, role: bounded-implementation }
   reviewer: { target: opus-5-high, agent: dl-reviewer, role: fresh-context-adversarial-review }
   mechanic: { target: sonnet-4-6-high, agent: dl-mechanic, role: deterministic-sweeps }
-  governor_lite: { target: [terra, opus-5, opus-4-8-ultra], role: G0-G2-autonomous, G3-with-approved-plan }
+  governor_lite: { target: [terra, opus-5, opus-4-8-ultra], role: 'G0-G2 autonomous, G3 only with approved plan' }
 risk_tiers:
   G0: observation-and-reporting          # any capable model; no writes
   G1: mechanical-administration          # scout/mechanic route; focused verification
