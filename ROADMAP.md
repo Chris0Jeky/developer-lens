@@ -10,7 +10,9 @@ policy it answers to lives in [`docs/OWNER_CONSTITUTION.md`](docs/OWNER_CONSTITU
 
 These hold across every phase.
 
-- Local-first. Private raw data and private output stay on the machine that produced them.
+- Local-first. Private raw data and private output stay on the machine that produced them by
+  default; a deliberate, reviewed export is the user's choice, never something the product does on
+  its own.
 - The public showcase carries invented synthetic data only.
 - Missing, censored, restricted, refused, stale, or failed evidence is never converted to zero.
 - Every modelled capability keeps a deterministic fallback that works when no model is available.
@@ -49,16 +51,19 @@ changed analysis runs, with the deterministic mode remaining a complete standalo
 Optional model-assisted hypotheses arrive later behind opt-in and cost ceilings. A raw-content
 pipeline follows, with secret rejection, parser isolation, and adversarial-input guardrails.
 
-**Packaging and broader modes.** Running from source today, then a thin `gh` launcher, an npm CLI,
-and a bootstrap desktop shell. A transparent aggregate team mode is a separately enabled surface,
-never a covert or default one.
+**Packaging and broader modes.** Running from source today, then the companion Lab published via
+`uvx`/PyPI, a thin `gh` launcher, an npm CLI, and a bootstrap desktop shell. A transparent aggregate
+team mode is a separately enabled surface, never a covert or default one.
 
 ## Not planned
 
 - Individual scoring, ranking, or any productivity, performance, effort, or surveillance metric in
-  the stable product.
+  the stable product. Such constructs may be *researched* in the separate Lab under the layered
+  subject policy, with consented, local, or curated data; productising any of them would take an
+  explicit, recorded decision and would never happen silently.
 - Publishing non-invented data or private output through the public site or release assets.
-- A hosted service holding your history. Developer Lens has no server that stores your data.
+- A hosted product. No hosted service holds your history. The only server is the local API running
+  on your own machine.
 
 Ideas and requests are welcome as
 [Discussions](https://github.com/Chris0Jeky/developer-lens/discussions) or issues. See

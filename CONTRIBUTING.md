@@ -22,9 +22,12 @@ Everything you contribute must follow the same split:
 - **Never include real or private data.** No `.developer-lens/` content, no generated
   `public/data/` output, no real repository or organisation names, no pull-request titles, issue
   bodies, commit subjects, file paths, or usernames taken from an actual history.
-- **Never include credentials.** Tokens, keys, cookies, `gh` auth material, and anything
-  secret-shaped are rejected at every sink and must not appear in a branch, a test, a screenshot, or
-  an issue comment.
+- **Never include real credentials.** Tokens, keys, cookies, `gh` auth material, and anything
+  genuinely secret must not appear in a branch, a test, a screenshot, or an issue comment. The
+  exception is deliberate: rejection and privacy tests need clearly invented secret-shaped canaries
+  to prove that the guards actually fire, and the data charter requires them. Keep such a canary
+  obviously fake, confine it to the test that exercises the guard, and never let one survive into a
+  generated fixture, golden file, export, or any other persistent output.
 - **Screenshots and recordings count as data.** Redact or, better, capture them from the synthetic
   demo (`npm run dev:web`, then `?demo=v2`).
 
@@ -33,9 +36,13 @@ example that reproduces the bug is always acceptable; a real one may not be.
 
 ## Setting up
 
-Prerequisites: Node.js 20 or later, Git, and (only for the private local lens) an authenticated
+Prerequisites: Node.js, Git, and (only for the private local lens) an authenticated
 [GitHub CLI](https://cli.github.com/) session. Contributing to the code and the synthetic demo needs
 no GitHub authentication at all.
+
+The hosted gate proves on **Node 24**, so that is the safest choice. The locked toolchain sets the
+floor: Vite 8 declares `^20.19.0 || >=22.12.0`, so an older 20.x or 22.x will not run the build. Use
+one recent even-numbered LTS major per installation; odd majors such as 21 are not supported.
 
 ```powershell
 npm ci
@@ -44,7 +51,7 @@ npm run dev:web   # offline synthetic demo at http://127.0.0.1:5173/?demo=v2
 
 **Use one Node major version per installation.** `better-sqlite3` is compiled against a specific
 Node ABI, so switching Node major versions between installs produces confusing native-module load
-failures. If you switch, delete `node_modules` and run `npm ci` again. The hosted gate runs Node 24.
+failures. If you switch, delete `node_modules` and run `npm ci` again.
 
 On Windows, use PowerShell and quote every path. Prefer explicit Vitest paths over shell globs,
 which expand inconsistently across shells.
@@ -60,13 +67,19 @@ open the pull request.
 | Server behaviour or one contract | `npm test -- <explicit-test-path>` |
 | Analysis pack | `npm test -- server/analysisPack/analysisPack.test.ts` |
 | Storage or importer | `npm test -- server/storage/migration.test.ts` |
-| Documentation, authority files, skills | `npm run verify:context` and `git diff --check` |
+| Documentation, authority files, skills | `npm run verify:context` and `git diff --check origin/main..HEAD` |
 | Any code or configuration milestone | `npm run check` |
 | Public, demo, or export seam | `npm run build:showcase` |
 
 `npm run check` runs the linter, context verification, the generated-artifact drift checks, the test
 suite, and the production build. `npm run build:showcase` additionally rebuilds the synthetic export
-and runs the privacy checks that guard the published artifact.
+and runs the privacy checks that guard the published artifact. Give `git diff --check` an explicit
+range (`origin/main..HEAD`); the bare form inspects only the working tree and misses whitespace you
+have already committed.
+
+The hosted gate runs one check that `npm run check` does not: the Taskdeck planning-artifact drift
+guard, `node docs/analyser-program/taskdeck/tools/generate.mjs --check`. Run it yourself if you touch
+that tooling or its generated manifests, otherwise the first sign of drift is a red gate.
 
 A run that never touches the files you changed is not a proof. Say in the pull request which command
 you ran and what it covered.

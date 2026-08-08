@@ -59,11 +59,16 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the maintainer responsible for enforcement through GitHub: open an
-issue at <https://github.com/Chris0Jeky/developer-lens/issues>, or contact the
-maintainer via the GitHub profile <https://github.com/Chris0Jeky>. If a report
-contains details you would rather not post publicly, say so in a short issue and
-the maintainer will arrange a private channel.
+reported to the maintainer responsible for enforcement.
+
+For a confidential report, email the maintainer directly at
+<jeky.tck@gmail.com>. Nothing sensitive needs to be posted in public first.
+
+Public routes also work: open an issue at
+<https://github.com/Chris0Jeky/developer-lens/issues>, or contact the maintainer
+via the GitHub profile <https://github.com/Chris0Jeky>. If a report contains
+details you would rather not post publicly, say so in any channel and the
+maintainer will arrange a private one.
 
 All complaints will be reviewed and investigated promptly and fairly.
 
