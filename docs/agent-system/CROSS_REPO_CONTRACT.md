@@ -92,16 +92,19 @@ archaeology — the requirement is the proof, not a particular automation shape.
   and idea protocols and this contract landed through product PR
   [#218](https://github.com/Chris0Jeky/developer-lens/pull/218).
 - **Lab side: delivered.** The lab prompt operating-system counterpart landed through lab PR #35
-  (merge commit `bba0c18261c0a2b77332a0408f63b10c774c91f4`). The q-8 closure is recorded in the
-  current owner-decision slice; it no longer blocks normal lab work. A concurrent writer was
+  (merge commit `bba0c18261c0a2b77332a0408f63b10c774c91f4`). The product
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` closure is recorded in the current
+  owner-decision slice; it no longer blocks normal lab work. The sibling
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remains a separate open real-study
+  publication gate and does not re-open or re-park normal lab work. A concurrent writer was
   previously observed in the `developer-lens-lab` checkout, and a competing writer in the same
-  working directory can corrupt a branch mid-slice. **While q-8 stays open, all lab-side
+  working directory can corrupt a branch mid-slice. **While the product q-8 stays open, all lab-side
   write work in that checkout and ALL lab merges are human-gated.** Lab work may be prepared and
   parked as a pull request ONLY from a freshly created, verified isolated worktree — never from the
   affected checkout itself (the hazard is the working directory, and isolation does not make a
   MERGE safe while the competing writer can still race the remote); it may not be merged by an
   agent. Without a verified isolated worktree, preparation stays a non-writing plan. That
-  conditional protocol remains preserved; q-8 is now closed.
+  conditional protocol remains preserved; the product q-8 is now closed.
 - **Shared surfaces today:** the `methodTrialView` contract with C0 fixture parity, and the
   ResearchPack schema (issues #181/#182 — #181's schema slice has shipped). Both live under
   `shared/` on the product side with their generation and drift-check scripts in `scripts/`.

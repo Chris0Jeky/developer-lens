@@ -117,7 +117,9 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   no full check / dl-reviewer). All merged with merge commits. Shared validators untouched; #196 left
   committed fixtures untouched, #198
   regenerated `invented.fixture.json` (only `provenance.contract_sha256` repinned). Lab side: lab #6
-  preserved as `developer-lens-lab` PR #24 (parked — q-8 concurrent-writer), lab #7 dispositioned as
+  preserved as `developer-lens-lab` PR #24 (historically parked while the product q-8
+  concurrent-writer gate was open; merged while that gate remained open, with no actor inferred;
+  the gate closed later on explicit owner confirmation plus a clean sweep), lab #7 dispositioned as
   tracked cross-repo debt. Prior product-repo slice before this session: PR #194 (`24f55d4`).'
 next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only release preparation:
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
@@ -220,6 +222,8 @@ open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) remains deferred and non-blocking. q-
   (2026-08-09): the owner explicitly confirmed merging lab PR #24 and the closure, followed by
   `claude agents --json --all` with no active sessions and a report-only MCP-hygiene result of
   claude.exe/orphan MCP/Docker MCP containers all 0. q-9 is SUPERSEDED by owner decision A5.
+  The sibling `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remains a separate open
+  real-study publication gate; it does not re-open the product q-8 work or merge gate.
   q-10(a) CLA review is deferred before substantial external code; all other q-10 decisions remain
   deferred except the reaffirmed joint H7 release and the selected separate CoC inbox. Its address
   is not yet supplied/approved; `CODE_OF_CONDUCT.md` removes the old personal address, forbids
