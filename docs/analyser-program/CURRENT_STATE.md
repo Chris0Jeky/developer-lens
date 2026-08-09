@@ -7,7 +7,7 @@ the historical record of how past slices were proven, and a fresh agent followin
 file can resume deleted work (PR #127 late review).
 
 ```yaml
-updated: 2026-08-09
+updated: 2026-08-10
 current_slice_override: 'P0 delivered: GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`)
   merged; the owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
   docs/OWNER_CONSTITUTION.md (binding owner policy; layered subject policy supersedes the absolute
@@ -104,17 +104,18 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   confirmed process defect is only the at-most-8m59s head age against the Lab 15-minute floor; Lab
   #29 tracks the merge-eligibility hardening. This is not release proof. EXACT NEXT ACTIONS:
   preserve the protected Lane-P candidate-content review
-  boundary under Lab #29; bounded tracked package-smoke P2 hardening may proceed without crossing
-  it. Complete all remaining STEP 3 Lab release-preparation pre-tag deliverables under Lab #29;
+  boundary under Lab #29; Lab PR #57 delivered the zero/multiple-wheel and full-call-sequence P2
+  hardening seam. Complete all remaining STEP 3 Lab release-preparation pre-tag deliverables under
+  Lab #29;
   then STEP 5 = final
   browser/visual QA proof for the `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` five-minute
   product owner sign-off plus
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package aesthetic
   sign-off; then STEP 6 = tag v0.1.0 +
   publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
-  disposition), not the pre-QA batch — the joint tag remains blocked on all remaining Lab #29
-  pre-tag deliverables (explicitly including the Lane-P candidate-content review, the selected P2
-  test-hardening seam, and any other remaining pre-tag work tracked there) plus
+  disposition), not the pre-QA batch — the joint tag remains blocked on the remaining Lab #29
+  pre-tag deliverables (explicitly including the Lane-P candidate-content review and any other
+  remaining pre-tag work tracked there; the selected P2 test-hardening seam is delivered) plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, per H7=BOTH; #29 closes only after the tag; step 7
   descriptions/topics is partially done (description, topics,
@@ -141,9 +142,9 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
-  H7 — none exists. The joint tag is blocked by all remaining Lab #29 pre-tag deliverables
-  (explicitly including the Lane-P candidate-content review, the selected P2 test-hardening seam,
-  and any other remaining pre-tag work tracked there) plus
+  H7 — none exists. The joint tag is blocked by the remaining Lab #29 pre-tag work
+  (explicitly including the Lane-P candidate-content review and any other remaining pre-tag work
+  tracked there; Lab PR #57 delivered the selected P2 test-hardening seam) plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` product owner aesthetic sign-off, and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 itself closes after the tag.
   Do not
@@ -188,8 +189,9 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   on branch `docs/prompt-system-overhaul`, not a phase advance. It does NOT change the active wave:
   P0.5 #200 remains the active programme, #174 remains NOT selected, and
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` plus
-  Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, the joint H7 tag, and all capability states
-  carry over untouched. q-8 later closed by owner confirmation and a
+  Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 and the joint H7 tag carry over untouched.
+  G1/G2 approval, standing bounded G3 approval, and bounded G4 Luna approval remain in force;
+  executable activation/default-deny gates remain unpassed. q-8 later closed by owner confirmation and a
   clean-session sweep. Scope: consolidate
   every executable prompt into docs/agent-system/PROMPT_LIBRARY.md behind stable IDs (12 common
   DL-P01..DL-P12 shared with the lab, plus product DL-PX extensions), pin the two repo-neutral
@@ -271,17 +273,21 @@ lab_release_handoff: 'Product PR #231 final head
   `93305956992`, received an independent no-CRITICAL/HIGH review, and completed the full 15-minute
   age from 2026-08-09T21:44:38Z. It merged at 2026-08-09T21:59:55Z as Lab main
   `64c725c61ab3ccf106c0a0b0fb6ea2489821e9ad`; the delayed 23:10:19 BST sweep was clean. PR #57
-  delivered the zero/multiple-wheel and full-call-sequence P2 seam. Lab PR #56 is PARKED at
-  `634b765e87c833756294bb1ea393cc7b994ab3a3` on obsolete base
-  `02dcfb261f7216f01aa5696888715ac42f0e3830` after the two-round ceiling. Open issue #58,
-  `Parse and enforce CURRENT_STATE fenced YAML`, is its explicit unlock; PR #56 must not merge
-  before that unlock. Exact next Lab action is the bounded tracked/synthetic issue #58 YAML repair,
-  then refresh PR #56 onto live main and continue every remaining Lab #29 pre-tag deliverable. The
-  joint tag remains blocked by all remaining Lab #29 pre-tag deliverables,
+  delivered the zero/multiple-wheel and full-call-sequence P2 seam. Lab issue #58 and its replacement
+  PR #59 delivered the tracked/synthetic CURRENT_STATE YAML repair: PR #59 merged as
+  `e5a85b20a130518a8307ebdb4cb48c3dbbb85052`, and issue #58 is closed. Lab state replacement PR #60
+  final head `925b8ba12c8257a111adb7ec1c7747d3d7da72e4` passed hosted run `31342280107`, exact-final review,
+  thread triage, and its age gate, then merged at 2026-08-09T23:47:08Z as Lab main
+  `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7`; the 2026-08-09T23:50:27Z delayed sweep was clean.
+  Continue the remaining Lab #29 pre-tag deliverables under their normal gates. The
+  joint tag remains blocked by the remaining Lab #29 pre-tag work,
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 closes only after the tag. Product #222
-  remains selected but not implemented. Every protected, release, tag, owner, and capability gate
-  remains unpassed; no protected lane or tag was authorized.'
+  remains selected but not implemented. `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is closed;
+  G1/G2 approval, standing bounded G3
+  approval, and bounded G4 Luna approval remain approved. Remaining executable activation/default-deny
+  gates are unpassed. No protected lane, release, tag, publication, data, model, telemetry, or
+  credential action was authorized.'
 preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 named product
   worktrees and branches at their mechanically measured full HEADs. Three had tracked modifications;
   two no-PR branches were remote-preserved and the other measured no-PR branches were local-only.
@@ -290,11 +296,15 @@ preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 na
   owns cleanup or reconciliation follow-up.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
-  NEW recorded owner decision — none exists) and remains blocked by all remaining Lab #29 pre-tag
-  deliverables (explicitly including the Lane-P candidate-content review, the selected P2
-  test-hardening seam, and any other remaining pre-tag work tracked there) plus
+  NEW recorded owner decision — none exists). Lab PR #57 delivered the zero/multiple-wheel and
+  full-call-sequence seam; Lab PR #59 delivered the CURRENT_STATE YAML repair and closed Lab issue
+  #58. Lab state replacement PR #60 merged as
+  `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7` after exact-head proof, review, thread triage, and
+  aging; its delayed sweep was clean. Remaining release blockers are the
+  Lane-P candidate-content review plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
-  Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 closes after the tag.
+  Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, followed by the joint tag; the remaining
+  Lab #29 pre-tag work must continue under its normal gates. #29 closes after the tag.
   Lab PRs #51 and #52 had exact-head hosted/review evidence but merged before the binding Lab
   15-minute eligibility floor; Lab FR-028 and #29 retain the repeated process defect and selected
   checked enforcement. PR #54 later satisfied its conservative exact-head age window and merged with
