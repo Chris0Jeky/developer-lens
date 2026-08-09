@@ -75,7 +75,10 @@ Rules that bind entries:
 - **promotion:** The physical process-cleanup half remains owner-only (W4); the owner confirmed its
   clean sweep and closed q-8 on 2026-08-09. The collision half is promoted to the one-writer,
   pinned-head, and refresh-before-mutation rules in the canon and continuous-work protocol. The
-  original Lab gate was also stated in
+  append-only `workaround` field above records the historical product-q-8 posture and is not a
+  current parking instruction. Current guidance is one writer per checkout, separate
+  coordinator-owned worktrees for non-overlapping parallel lanes, live refresh before mutation,
+  and relinquishment on unexpected ownership or head movement. The original Lab gate was also stated in
   [MAINTENANCE_PROTOCOL.md](MAINTENANCE_PROTOCOL.md), [CROSS_REPO_CONTRACT.md](CROSS_REPO_CONTRACT.md)
   and every active prompt's LAB RULE line while q-8 was open; it no longer binds after the owner's
   closure.
@@ -88,6 +91,11 @@ Rules that bind entries:
   across coordinators. The enforced response is to treat an unexpected head/write event as foreign
   ownership, refresh live state, and never race the writer. Issue #200 carries the live release-wave
   coordination context.
+
+  **2026-08-09 note (post-merge wording review):** The original `workaround` is retained verbatim
+  because this log is append-only. Its all-Lab-parking instruction applied only while
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` was open and is superseded by the current
+  `promotion` guidance after that gate's confirmed closure.
 
 ### FR-002 — review connector misses or lands late on an exact head
 
