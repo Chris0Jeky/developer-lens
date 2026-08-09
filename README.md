@@ -219,6 +219,9 @@ This is a reflection on attention and integration patterns—not a productivity 
 Copyright (C) 2026 Cristian Tcaci. Developer Lens is licensed under
 [GNU AGPL v3.0 only](LICENSE) (`AGPL-3.0-only`).
 
+For commercial conversations, see [COMMERCIAL_OPTION.md](COMMERCIAL_OPTION.md). It states intent
+only and does not set commercial terms.
+
 ## Verification
 
 ```powershell

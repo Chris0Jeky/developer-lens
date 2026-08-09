@@ -102,6 +102,10 @@ describe('Developer Lens app', () => {
     expect(await screen.findByText('Public demo')).toBeInTheDocument()
     expect(screen.getByText(/every event and repository below is synthetic/i)).toBeInTheDocument()
     expect(screen.getByText(/no personal github data/i)).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: /AGPL-3.0-only source/i })).toHaveAttribute(
+      'href',
+      'https://github.com/Chris0Jeky/developer-lens',
+    )
     expect(
       screen.queryByRole('link', { name: /shape the signal pipeline/i }),
     ).not.toBeInTheDocument()

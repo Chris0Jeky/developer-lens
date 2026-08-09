@@ -4,7 +4,7 @@ blank_issues_enabled: false
 contact_links:
   - name: Questions, ideas and general discussion
     url: https://github.com/Chris0Jeky/developer-lens/discussions
-    about: Ask a question or float an idea before it becomes an issue.
+    about: Ask a question or float an idea with invented examples only; do not include private repository data.
   - name: Contributing guide and data boundary
     url: https://github.com/Chris0Jeky/developer-lens/blob/main/CONTRIBUTING.md
     about: Read this before attaching reproduction data, screenshots, or logs.

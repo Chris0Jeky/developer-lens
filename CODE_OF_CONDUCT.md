@@ -62,9 +62,10 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the maintainer responsible for enforcement.
 
 A dedicated confidential inbox is being established and will be published here
-once approved. Meanwhile, do not post sensitive details in public. Use the
-maintainer's GitHub profile <https://github.com/Chris0Jeky> only to request
-arrangement of a private channel.
+once approved. Meanwhile, do not post sensitive details in public. Open a
+content-free request at <https://github.com/Chris0Jeky/developer-lens/issues>
+or use the maintainer's GitHub profile <https://github.com/Chris0Jeky> to ask
+for a private channel; share no incident details until that channel is arranged.
 
 All complaints will be reviewed and investigated promptly and fairly.
 
