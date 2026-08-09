@@ -16,11 +16,35 @@ resume artifact) · [docs/IMPLEMENTATION_LEDGER.md](../IMPLEMENTATION_LEDGER.md)
 
 Machine-readable policy: [.agent-harness/governor.yaml](../../.agent-harness/governor.yaml).
 Companions: [WORK_CLASSES.md](WORK_CLASSES.md) (risk classes and model routing) ·
-[PROMPT_LIBRARY.md](PROMPT_LIBRARY.md) (cold-start prompts) ·
+[PROMPT_LIBRARY.md](PROMPT_LIBRARY.md) (every executable prompt) ·
+[CONTINUOUS_WORK_PROTOCOL.md](CONTINUOUS_WORK_PROTOCOL.md) (unattended multi-wave execution) ·
+[FRICTION_LOG.md](FRICTION_LOG.md) (recorded friction debt) ·
 [MAINTENANCE_PROTOCOL.md](MAINTENANCE_PROTOCOL.md) (recurring checks) ·
 [IDEA_PROTOCOL.md](IDEA_PROTOCOL.md) (agent-generated ideas) ·
 [CROSS_REPO_CONTRACT.md](CROSS_REPO_CONTRACT.md) (product/lab handshake) ·
 [docs/PROGRAMME_ROADMAP.md](../PROGRAMME_ROADMAP.md) (phases and issue dispositions).
+
+## The prompt surface
+
+[PROMPT_LIBRARY.md](PROMPT_LIBRARY.md) is the **only** executable prompt surface. Each prompt sits
+behind a stable ID and is copy-ready: pasting one body into a fresh session carries everything the
+agent needs to find its own authority. Every other prompt-shaped document in the repository is
+classified `redirect` or `historical`, and `npm run verify:context` fails if one of them still
+reads as runnable.
+
+The twelve common IDs (`DL-P01`…`DL-P12`) are shared with `Chris0Jeky/developer-lens-lab`; the
+`DL-PX…` extensions are product-only. Two shared blocks — `runtime-bootstrap-v1` (which runtime
+reads which canon, and how it routes) and `friction-tasking-v1` (the no-silent-workaround rule) —
+are repo-neutral and SHA-256-pinned in
+[.agent-harness/prompt-parity.json](../../.agent-harness/prompt-parity.json), so editing a block in
+one prompt only is a verifier failure rather than a silent divergence. Human actions are always
+written as fully qualified `<owner>/<repo>::HUMAN_TODO.md::q-N` refs, because product `q-8` and lab
+`q-8` are different gates.
+
+Unattended multi-wave execution is specified in
+[CONTINUOUS_WORK_PROTOCOL.md](CONTINUOUS_WORK_PROTOCOL.md), which `DL-P03-OVERNIGHT-CONTINUOUS`
+launches: deterministic queue hopping, the anti-manufacture legitimacy test, work-while-waiting,
+resource-bounded fan-out, and the four explicit stop conditions.
 
 `.agent-harness/runtime/` is a **gitignored cache** — last refresh times, inspected heads, pending
 review windows, temporary lane ownership. It is never authority. Losing it must leave the
@@ -100,7 +124,9 @@ preserve dirty or unrelated ones.
 
 **I — RECONCILE AND LEARN.** Update `CURRENT_STATE.md` (wave, lanes, blockers, exact next action),
 append evidence to the ledger, update issues and labels, update release notes or version when
-relevant, record failures and workarounds, and stop background agents and servers. Then look at
+relevant, and stop background agents and servers. Material workarounds and friction are already in
+[FRICTION_LOG.md](FRICTION_LOG.md) by this point — `friction-tasking-v1` requires the entry in the
+same hop as the workaround, not at the end of the wave. Then look at
 where the session was surprised: repeated review findings, stale-state causes, PR collisions,
 unnecessary micro-PRs, failed delegations, over- or under-specified prompts, wasted tool calls,
 unhelpful generated ideas, work that produced little value. Turn a **recurring** pattern into one
