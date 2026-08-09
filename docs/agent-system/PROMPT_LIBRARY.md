@@ -736,8 +736,9 @@ Sweep, and report each with evidence:
    release notes drafted from merged PRs, C0-only assets verified, rollback notes written,
    descriptions/topics/social preview updated, owner-only items recorded in HUMAN_TODO.md.
 7. OWNER GATES AND CROSS-REPOSITORY PREREQUISITES ARE NOT INFERRED. The joint v0.1.0 tag needs
-   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 (c) - the five-minute aesthetic sign-off - plus
-   completed pre-tag deliverables tracked by Lab release preparation
+   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 (c) - the product five-minute aesthetic sign-off -
+   plus Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 - the Lab screenshot/video-package
+   aesthetic sign-off - plus completed pre-tag deliverables tracked by Lab release preparation
    (Chris0Jeky/developer-lens-lab#29) and completed dependency remediation
    (Chris0Jeky/developer-lens-lab#5), verified from live issue, merge and exact-head gate evidence.
    Do not require #29 itself to close before tagging: its acceptance condition includes the tag.

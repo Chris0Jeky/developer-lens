@@ -318,3 +318,20 @@ Rules that bind entries:
 - **promotion:** Task debt pending #221. A future cleanup path should prove the deletion rule and
   explicit authority before acting, and report any privileged bypass in the same hop; this slice
   changes no rules and does not recreate the branch.
+
+### FR-012 — fresh product worktree lacks the Node tool bootstrap
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **symptom:** In a fresh isolated product worktree, `npm run verify:context` stopped before the
+  verifier ran because the `tsx` executable was not installed locally.
+- **impact:** The required docs/authority gate cannot run until the worktree dependencies are
+  installed, so a clean checkout can be mistaken for an unverifiable lane.
+- **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
+  zero audit vulnerabilities and the verifier passed.
+- **occurrences:** 1 recorded — 2026-08-09 during the DL-P09/q-11 release-gate prerequisite.
+- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release
+  coordination).
+- **promotion:** Task debt at one occurrence. The dependency install is an environment action, not
+  a repository invariant; keep the recovery route documented and promote it only if the same
+  friction recurs independently.
