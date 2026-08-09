@@ -62,10 +62,12 @@ Instances of abusive, harassing, or otherwise unacceptable behavior may be
 reported to the maintainer responsible for enforcement.
 
 A private reporting channel has not been published yet. Until one is arranged,
-do not post sensitive details publicly. Open a [Private channel request](https://github.com/Chris0Jeky/developer-lens/issues/new?template=conduct_private_channel.md)
-and leave it unchanged; include no incident details, identities, screenshots,
-logs, links, or private data. This public request is only for arranging a
-private channel; it is not a conduct report.
+do not post sensitive details publicly. The [neutral private contact request](https://github.com/Chris0Jeky/developer-lens/issues/new?template=private_contact_request.md)
+is itself public: your GitHub account and the unchanged request will be visible.
+Use it only if that visibility is safe; otherwise wait for a genuinely private
+route. Never add incident details, identities, screenshots, logs, links, or
+private data. The neutral request identifies no topic and is not a conduct
+report.
 
 All complaints will be reviewed and investigated promptly and fairly.
 
