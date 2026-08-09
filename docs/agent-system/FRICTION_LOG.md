@@ -62,10 +62,15 @@ Rules that bind entries:
   briefly landing a worker's commits on `main` before the worker remediated them onto its branch.
 - **impact:** A competing writer in the same working directory can corrupt a branch mid-slice. It
   also wastes RAM and usage, and it makes lane ownership unverifiable from inside a session.
-- **workaround:** Product-side work continues normally; lab-side write work and **all** lab merges
-  are treated as human-gated, and lab work is prepared and parked rather than merged. Isolated
-  worktrees are used for preparation only — isolation does not make a *merge* safe while a
-  competing writer can race the remote.
+- **workaround:** While `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` was open, product-side work
+  continued normally; lab-side write
+  work and **all** lab merges were treated as human-gated, and isolated worktrees were used for
+  preparation only. That historical workaround no longer applies after the fully qualified product
+  q-8 closed.
+  Current guidance is conditional: keep one writer per checkout; run parallel writers only in
+  separate coordinator-owned worktrees with non-overlapping paths; refresh branch, HEAD, worktrees,
+  PR, check, and thread state before mutation; and stop and relinquish the checkout on unexpected
+  ownership or head movement, then refresh live state rather than racing or overwriting work.
 - **occurrences:** 4 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
   plus an orphaned partial worktree directory left for manual deletion), 2026-08-07 (lab checkout
   competing writer), 2026-08-09 (a separate coordinator advanced the active q-8 branch between
