@@ -7,7 +7,7 @@ the historical record of how past slices were proven, and a fresh agent followin
 file can resume deleted work (PR #127 late review).
 
 ```yaml
-updated: 2026-08-09
+updated: 2026-08-10
 current_slice_override: 'P0 delivered: GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`)
   merged; the owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
   docs/OWNER_CONSTITUTION.md (binding owner policy; layered subject policy supersedes the absolute
@@ -276,9 +276,10 @@ lab_release_handoff: 'Product PR #231 final head
   delivered the zero/multiple-wheel and full-call-sequence P2 seam. Lab issue #58 and its replacement
   PR #59 delivered the tracked/synthetic CURRENT_STATE YAML repair: PR #59 merged as
   `e5a85b20a130518a8307ebdb4cb48c3dbbb85052`, and issue #58 is closed. Lab state replacement PR #60
-  is OPEN and ready for review; refresh its live head, check, and thread state from GitHub before
-  action (no current SHA is recorded). Continue the remaining Lab #29 pre-tag deliverables under
-  their normal gates. The
+  final head `925b8ba12c8257a111adb7ec1c7747d3d7da72e4` passed hosted run `31342280107`, exact-final review,
+  thread triage, and its age gate, then merged at 2026-08-09T23:47:08Z as Lab main
+  `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7`; the 2026-08-09T23:50:27Z delayed sweep was clean.
+  Continue the remaining Lab #29 pre-tag deliverables under their normal gates. The
   joint tag remains blocked by the remaining Lab #29 pre-tag work,
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 closes only after the tag. Product #222
@@ -297,12 +298,13 @@ blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-s
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
   NEW recorded owner decision — none exists). Lab PR #57 delivered the zero/multiple-wheel and
   full-call-sequence seam; Lab PR #59 delivered the CURRENT_STATE YAML repair and closed Lab issue
-  #58. Lab state replacement PR #60 is OPEN and ready; refresh its live head, check, and thread
-  state from GitHub before action (no current SHA is recorded). Remaining release blockers are the
+  #58. Lab state replacement PR #60 merged as
+  `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7` after exact-head proof, review, thread triage, and
+  aging; its delayed sweep was clean. Remaining release blockers are the
   Lane-P candidate-content review plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, followed by the joint tag; the remaining
-  Lab #29 pre-tag work and PR #60 must continue under their normal gates. #29 closes after the tag.
+  Lab #29 pre-tag work must continue under its normal gates. #29 closes after the tag.
   Lab PRs #51 and #52 had exact-head hosted/review evidence but merged before the binding Lab
   15-minute eligibility floor; Lab FR-028 and #29 retain the repeated process defect and selected
   checked enforcement. PR #54 later satisfied its conservative exact-head age window and merged with
