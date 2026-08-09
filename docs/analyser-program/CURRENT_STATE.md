@@ -203,7 +203,16 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   GitHub-account event. Product PR #224 merged as `222d573`, closing its executable early-tag path
   by naming Lab #29's pre-tag deliverables and Lab #5 as joint-release prerequisites without
   requiring the tag-owning #29 issue to close first. Product PR #227 merged as `408a5b8`, explicitly
-  separating the two sign-off scopes. Lab counterpart PR #37 was archived at `4a044dce` after its
+  separating the two sign-off scopes. Product PR #229 then merged from exact head
+  `8fefd84ee4b0a7b069c010e494aa23af7f8d754d` as
+  `7ae4b31861ad5403587adf8fefb90a085598bd57`: exact hosted run `31332909748` succeeded, the local
+  full gate passed with 1,488 tests and 10 skipped, and the independent exact-head review was
+  MERGE-SOUND. All 14 active Product prompt bodies now name `dl-scout`, `dl-implementer`,
+  `dl-reviewer`, and `dl-mechanic`; shared blocks, hashes, IDs, and the overnight stop protocol are
+  unchanged. The exact-head connector surfaced three P2 verifier-hardening follow-ups; all three
+  were tracked on #216 and replied to without a fix cascade. This activated no capability. Lab PR
+  #54 is deliberately not frozen in this Product-only state; one final cross-repository
+  reconciliation remains after the Lab settles. Lab counterpart PR #37 was archived at `4a044dce` after its
   exact-head hosted check passed but its final fresh-context review confirmed that its wording still
   permits one approval to satisfy both gates. The two-fix-round ceiling is exhausted and its HIGH
   thread stays as provenance. Coordinator-owned replacement PR #42 started from Lab main

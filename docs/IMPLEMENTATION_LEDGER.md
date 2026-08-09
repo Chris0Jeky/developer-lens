@@ -1,7 +1,7 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-09** (Lab release-wave evidence through PR #51 and a read-only product
-worktree preservation reconciliation; exact records appended below).
+Last updated: **2026-08-09** (Product prompt-routing evidence through PR #229, the second MCP-hygiene
+measurement, and the preserved release/worktree boundaries; exact records appended below).
 
 Prior detailed update: **2026-08-08, late evening** (P0.5 first batch — PRs
 #209/#210/#211/#212. A
@@ -4104,3 +4104,40 @@ third occurrence. Lockfile-pinned `npm ci` then added 358 packages, audited 359 
 vulnerabilities, and the rerun passed (47 Markdown files, 31 required files). `git diff --check`
 passed with only Git's existing LF-to-CRLF working-copy warnings. No Lab check or protected-output
 inspection was performed by this product-side documentation slice.
+
+## 2026-08-09 — Product per-prompt Claude routing landing and preservation sync
+
+**Changed and merged.** [Product PR #229](https://github.com/Chris0Jeky/developer-lens/pull/229),
+"Enforce per-prompt Claude routing", merged from exact head
+`8fefd84ee4b0a7b069c010e494aa23af7f8d754d` as merge commit
+`7ae4b31861ad5403587adf8fefb90a085598bd57`. All 14 active Product prompt bodies now name
+`dl-scout`, `dl-implementer`, `dl-reviewer`, and `dl-mechanic`. The shared blocks and their hashes,
+prompt IDs, and overnight stop protocol are unchanged. This was prompt/verifier hardening only: it
+activated no capability and moved no protected-data, release, tag, publication, telemetry,
+credential, contract, or human-gate state.
+
+**Verified evidence.** Exact hosted PR-gate run `31332909748` completed successfully at the PR head.
+The recorded local full gate passed across 86 files with **1,488 passed / 10 skipped**, with build
+and credential scan green. A fresh-context exact-head review returned **MERGE-SOUND**. The exact-head
+connector then reported three P2 verifier-hardening findings: keep Product routing outside shared
+blocks, bind Product enforcement to the authoritative Product slug, and reject a valid clause plus
+a partially edited duplicate routing section. All three were tracked on
+[#216](https://github.com/Chris0Jeky/developer-lens/issues/216) and replied to on their review threads;
+the current 14 bodies were correct, so no CRITICAL/HIGH defect or fix-commit cascade was created.
+
+**Friction reconciliation.** FR-016 records the audited per-prompt Product Claude-routing gap as
+resolved by PR #229's exact verifier and tests, without capability activation. FR-015 now records a
+second independent report-only MCP-hygiene measurement at about 20:38 BST: 9,651 MB free and zero
+orphan MCP processes. Docker was unreachable (daemon down or CLI unavailable), so the container
+count was explicitly **unknown**, not zero, and the sweep was skipped. No restart or cleanup was
+warranted. Issue [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) still owns the
+unimplemented durable helper; its selected cheapest promotion must distinguish Docker-unavailable
+or unknown from measured zero while retaining fail-closed, report-only semantics.
+
+**NOT verified / exact resume boundary.** Lab PR #54 is deliberately not frozen into this Product
+snapshot. Perform one final cross-repository reconciliation only after that Lab pull request settles.
+Until then, preserve the protected Lane-P candidate-content review,
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`,
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`, the joint release/tag gate, and every deferred
+human or capability gate. No Lab ref, protected output, ignored content, or activated lane was
+inspected by this Product-only slice.

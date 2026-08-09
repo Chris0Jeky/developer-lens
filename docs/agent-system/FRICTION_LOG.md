@@ -422,14 +422,44 @@ Rules that bind entries:
   containers, 0 provably unowned, 0 orphan MCP processes, and 5,023 MB free, so no additional cleanup
   was warranted. The cleanup predicate spared live-owned containers; the unowned containers it
   removed were regenerable.
-- **occurrences:** 1 recorded sequence — 2026-08-09 canonical 468/440 report, timed-out first cleanup
-  pass, bounded successful retry, later stale-location correction, and live-owned re-measure.
+- **occurrences:** 2 independent occurrences — 2026-08-09 canonical 468/440 report, timed-out first
+  cleanup pass, bounded successful retry, later stale-location correction and live-owned re-measure;
+  then the 2026-08-09 approximately 20:38 BST report-only measurement with Docker unavailable.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns durable Windows-safe
   governor maintenance helpers for recurrent proof and cleanup checks.
-- **promotion:** Task debt at one occurrence. The reviewed cleanup predicate and bounded retry were
-  sufficient for this incident; #222 owns a durable helper so future sessions do not depend on a
-  remembered checkout location or an undersized one-shot wrapper timeout.
+- **promotion:** Promotion selected at the second independent occurrence, but not yet implemented:
+  #222 owns the cheapest durable layer, a Windows-safe executable helper that distinguishes
+  Docker-unavailable or unknown from a measured zero-container result and retains fail-closed,
+  report-only semantics. It must not infer a safe sweep from missing Docker evidence.
 
   **2026-08-09 truth-correction note:** The entry's first draft inverted the initial canonical
   468/440 report and the stale-location failure, which happened only during the later re-measure.
   The corrected fields above preserve the measured cleanup sequence and the later 56/0 result.
+
+  **2026-08-09 second-measurement note (approximately 20:38 BST):** The reviewed report-only MCP
+  hygiene path measured 9,651 MB free and 0 orphan MCP processes. Docker was unreachable because
+  either the daemon was down or the CLI was unavailable, so the container count was explicitly
+  **unknown**, not measured zero, and the sweep was skipped. No restart or cleanup was warranted
+  from the available evidence. Issue #222 still owns the selected helper above; it is not
+  implemented by this documentation update.
+
+### FR-016 — active Product prompts did not all carry their named Claude routing
+
+- **first-seen:** 2026-08-09
+- **status:** `resolved`
+- **symptom:** A prompt-parity closeout audit found that 11 of the 14 active Product prompt bodies
+  left the literal `dl-scout`, `dl-implementer`, `dl-reviewer`, and `dl-mechanic` routing implicit in
+  shared or general prose instead of carrying the named Product routing in each copy-ready body.
+- **impact:** A pasted Product prompt could omit the repository's concrete Claude role mapping even
+  though the agent definitions and surrounding canon named it, leaving the Product prompt surface
+  weaker than the already-explicit Lab counterpart.
+- **workaround:** No temporary workaround. The bounded #216 slice added one canonical Product-only
+  routing clause to every active Product body and extended the existing context validator with
+  omission, duplication, and required-role-token tests.
+- **occurrences:** 1 audited repository-wide gap — 2026-08-09 prompt-parity closeout.
+- **task:** [#216](https://github.com/Chris0Jeky/developer-lens/issues/216), fixed and enforced by
+  [PR #229](https://github.com/Chris0Jeky/developer-lens/pull/229).
+- **promotion:** Resolved by the existing executable context-verifier layer at exact merge head
+  `7ae4b31861ad5403587adf8fefb90a085598bd57`: all 14 active Product bodies name all four roles;
+  focused tests, `npm run verify:context`, and the full gate passed. Shared blocks, hashes, prompt
+  IDs, and the overnight stop protocol were unchanged. No capability was activated.
