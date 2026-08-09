@@ -560,3 +560,22 @@ Rules that bind entries:
   allocating the replacement, preserve production identity checks, and prove the focused case,
   full backup file, and declared gate. #233 tracks that repair; PR #232 takes no production-code
   detour.
+
+### FR-021 — PowerShell inner-quote stripping blocked a PR232 latest-field query
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **severity:** `LOW (CLI evidence friction)`
+- **symptom:** A `gh api --jq` projection used from PowerShell stripped inner quoting before the
+  request could be evaluated. The command failed before mutation; no GitHub write occurred.
+- **impact:** A latest-field comparison can be delayed or misread if shell quoting is mistaken for
+  API evidence, weakening exact-head PR proof without changing repository state.
+- **workaround:** Use a quote-safe latest-field projection and compare the returned values directly.
+  This is one factual occurrence only; it does not justify a broader PR232 review or a second
+  workaround layer in this slice.
+- **occurrences:** 1 independent command-boundary occurrence — 2026-08-09 during the PR232 P1
+  reconciliation.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns structured/JSON-input
+  Windows-safe CLI helpers for recurring evidence queries.
+- **promotion:** Deliberately NOT promoted after one occurrence. Keep the quote-safe projection and
+  direct comparison in the handoff until #222 provides the durable helper.
