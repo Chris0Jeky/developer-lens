@@ -3,9 +3,9 @@
 Developer Lens is a private, local-first GitHub/Git retrospective with a separate public synthetic
 showcase. The default/public product stays system-first — engineering evidence without developer
 surveillance; team/person analysis follows the layered subject policy in
-`docs/OWNER_CONSTITUTION.md`. This file is the shared canon for every agent runtime; `AGENTS.md`
-is the thin Codex adapter.
-`npm run verify:context` enforces required files, markers, links, and budgets in both.
+`docs/OWNER_CONSTITUTION.md`. This file is the shared canon for every agent runtime; `AGENTS.md` is
+the thin Codex adapter. `npm run verify:context` enforces required files, markers, links, prompt
+parity, and budgets in both.
 
 ## Cold start
 
@@ -25,10 +25,9 @@ is the thin Codex adapter.
 |---|---|
 | `.agent-harness/tier.json` | T2 authority, overlays, publication route, human-action alias |
 | `docs/OWNER_CONSTITUTION.md` | Binding owner policy (mandate v2); explicit supersessions |
-| `.agent-harness/governor.yaml` + `docs/agent-system/` | Governor policy, work classes, prompts |
+| `.agent-harness/governor.yaml` + `docs/agent-system/` + `.agent-harness/prompt-parity.json` | Governor policy, work classes, prompt library and its hash-pinned cross-repository parity, continuous loop, friction debt |
 | `HUMAN_TODO.md` | Owner decisions and genuinely open owner gates |
-| `docs/data-charter.md` | Product boundary, data classes, retention, migration and sinks |
-| `docs/source-capability-matrix.md` | Per-source purpose, class, consent, deletion and refusal |
+| `docs/data-charter.md` + `docs/source-capability-matrix.md` | Data classes, retention, migration, sinks; per-source purpose, consent, deletion, refusal |
 | `docs/DEVELOPER_LENS_V2_ARCHITECTURE.md` | Stable design and phase dependencies |
 | `docs/analyser-program/CURRENT_STATE.md` | Live state and exact resume point (single artifact) |
 | `docs/IMPLEMENTATION_LEDGER.md` | Historical evidence archive (per-slice proofs and run IDs) |
@@ -74,9 +73,8 @@ PowerShell and quote paths; prefer explicit Vitest paths over shell globs.
 ## Repository map and pitfalls
 
 - `scripts/`: collection/analysis/showcase generation; `server/`: ingestion, storage, analytics,
-  API, analysis packs.
-- `shared/`: closed privacy/capability/coverage/provenance/presentation contracts; `src/`:
-  dashboard, Wrapped story, offline V2 demo.
+  API, analysis packs; `shared/`: closed privacy/capability/coverage/provenance/presentation
+  contracts; `src/`: dashboard, Wrapped story, offline V2 demo.
 - Vitest always loads `src/test/setup.ts`; a Node-only environment directive breaks that setup.
 - PRs run the hosted gate `.github/workflows/pr-gate.yml`; `main` branch protection requires its
   `Prove the pull request` job. `main` pushes rerun the full gate + Pages deploy via `pages.yml`.
@@ -95,5 +93,7 @@ PowerShell and quote paths; prefer explicit Vitest paths over shell globs.
 - Keep volatile SHAs, PR/check state and next-slice evidence in the implementation ledger, not this
   file. Route owner decisions and genuinely open owner gates to `HUMAN_TODO.md`.
 - `bypassPermissions` lives only in gitignored `.claude/settings.local.json`, never committed.
+- `docs/agent-system/PROMPT_LIBRARY.md` is the only executable prompt surface; cite human actions
+  as `<owner>/<repo>::HUMAN_TODO.md::q-N`, and log friction to `FRICTION_LOG.md` in the same hop.
 - Close under changed / verified / NOT verified / failures / docs-state sync / residual risk /
   human actions / exact resume point.

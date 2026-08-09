@@ -66,6 +66,31 @@ in `HUMAN_TODO.md` and vice versa; `cross-repo` items name their counterpart
 reconciled against [docs/PROGRAMME_ROADMAP.md](../PROGRAMME_ROADMAP.md) rather than re-litigated.
 Milestones track roadmap phases, not individual slices.
 
+## Prompt-parity and friction burn-down
+
+Both are cheap to check and expensive to discover late.
+
+- **Prompt parity.** `npm run verify:context` is the whole check: it parses
+  [PROMPT_LIBRARY.md](PROMPT_LIBRARY.md), confirms the twelve common IDs and this repository's
+  extension IDs are present exactly once and in manifest order, recomputes each shared block's
+  SHA-256 against [.agent-harness/prompt-parity.json](../../.agent-harness/prompt-parity.json),
+  confirms every active body carries exactly one copy of each block, rejects a bare `q-N`, and
+  rejects an executable `prompt-id` marker in any document other than the library. A digest
+  mismatch means a block was edited in one place — fix the divergence, do not re-pin the manifest
+  to whatever the library happens to say.
+- **Cross-repository parity.** The manifest is repo-neutral and byte-identical on both sides. A
+  shared-block edit is a `cross-repo` change: it lands with the same bytes in
+  `Chris0Jeky/developer-lens-lab` under [CROSS_REPO_CONTRACT.md](CROSS_REPO_CONTRACT.md), and while
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` stays open the lab side is prepared and parked,
+  never merged by an agent.
+- **Friction burn-down.** Each sweep, read [FRICTION_LOG.md](FRICTION_LOG.md) end to end and check
+  that every `open` and `workaround-documented` entry still has a live linked task, that no entry
+  was marked `resolved` by inference (age, a merged PR and a quiet session are not proof), and that
+  any entry now at two independent occurrences has had its promotion decision recorded — the
+  cheapest enforcing layer, or the reason it stays task debt. The burn-down prompt is
+  `DL-P12-FRICTION-BURNDOWN`. Human-only friction stays `owner-gated` and keeps its `HUMAN_TODO.md`
+  link live.
+
 ## Dependency-alert triage
 
 For each open alert: identify the vulnerable package and version, determine whether the vulnerable

@@ -24,6 +24,30 @@ authority_files:
   maintenance: docs/agent-system/MAINTENANCE_PROTOCOL.md
   ideas: docs/agent-system/IDEA_PROTOCOL.md
   cross_repo: docs/agent-system/CROSS_REPO_CONTRACT.md
+  continuous_work: docs/agent-system/CONTINUOUS_WORK_PROTOCOL.md
+  friction_log: docs/agent-system/FRICTION_LOG.md
+  prompt_parity: .agent-harness/prompt-parity.json
+prompt_system:
+  # The library is the ONLY executable prompt surface; every other prompt-shaped document is
+  # classified redirect or historical and enforced by `npm run verify:context`.
+  executable_surface: docs/agent-system/PROMPT_LIBRARY.md
+  common_prompt_ids: 12                  # DL-P01..DL-P12, shared byte-for-byte with the lab
+  shared_blocks: [runtime-bootstrap-v1, friction-tasking-v1]   # sha256-pinned in prompt_parity
+  human_ref_form: '<owner>/<repo>::HUMAN_TODO.md::q-N'         # bare q-N is rejected in a prompt
+  non_library_prompt_status: [redirect, historical]
+continuous_work:
+  protocol: docs/agent-system/CONTINUOUS_WORK_PROTOCOL.md
+  queue_hop_order: [truth-and-red-state, active-wave, unblockers, tracked-maintenance,
+                    legitimate-idea-or-polish]
+  legitimacy_test: [provenance, consumer, proving-seam]   # all three, or capture as an issue only
+  stop_conditions: [policy, budget, tooling, queue]
+  never_activates: [real-data-collection, external-model, telemetry, credentials]
+friction:
+  log: docs/agent-system/FRICTION_LOG.md
+  capture: same-hop                      # log it, link it, continue; capture is not a detour
+  link_required: existing-issue-or-durable-task
+  promotion_trigger: second-independent-occurrence
+  forbidden_detail: [process-ids, absolute-paths, tokens, private-identifiers]
 model_roles:
   # Owner decision A5 (supersedes q-9; runtime-verified 2026-08-08: `opus` -> claude-opus-5).
   # Never commit an invented model ID; if a pin stops resolving, keep the last working pin and
@@ -53,7 +77,8 @@ review_merge_protocol:
   merge_style: merge-commit-never-squash
 recurring_checks: [state-truthfulness, generated-contract-drift, dependency-alerts,
                    stale-branches-worktrees, late-review-comments, label-taxonomy,
-                   release-readiness, cross-repo-compatibility, human-todo-accuracy]
+                   release-readiness, cross-repo-compatibility, human-todo-accuracy,
+                   prompt-parity-drift, friction-log-burndown]
 cross_repo:
   counterpart: Chris0Jeky/developer-lens-lab
   contract: docs/agent-system/CROSS_REPO_CONTRACT.md

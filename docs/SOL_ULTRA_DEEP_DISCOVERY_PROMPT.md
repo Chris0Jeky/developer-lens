@@ -1,26 +1,33 @@
-# Sol Ultra deep-discovery brief
+# Sol Ultra deep-discovery brief — RETIRED, historical record only
 
-> **Historical research input — do not execute as a continuation prompt.** Its durable output is
-> the architecture. Current instructions, owner decisions, phase state, and resume workflow live in
-> `AGENTS.md`, `HUMAN_TODO.md`, `docs/IMPLEMENTATION_LEDGER.md`, and
-> `$developer-lens-continuation`.
+<!-- prompt-source: historical target: DL-PX01-PRODUCT-DEEP-DISCOVERY -->
 
-Paste the prompt below into a new chat, choose **GPT-5.6 Sol**, and set reasoning to
-**Ultra**. Give that chat access to the Developer Lens checkout, but do not attach or
-paste the private `.developer-lens/` dataset.
+> **RETIRED PROMPT — HISTORICAL RECORD ONLY. DO NOT EXECUTE.** This brief is preserved as the
+> research input that produced the v2 architecture. It is not a continuation prompt, not project
+> state, and not authority. The executable deep-discovery prompt is
+> `DL-PX01-PRODUCT-DEEP-DISCOVERY` in
+> [docs/agent-system/PROMPT_LIBRARY.md](agent-system/PROMPT_LIBRARY.md) — use that one. Current
+> instructions, owner decisions, phase state and resume workflow live in
+> [CLAUDE.md](../CLAUDE.md), [AGENTS.md](../AGENTS.md), [HUMAN_TODO.md](../HUMAN_TODO.md),
+> [docs/analyser-program/CURRENT_STATE.md](analyser-program/CURRENT_STATE.md) and the
+> `developer-lens-continuation` skill.
 
-The first pass is deliberately research and architecture only. Its job is to map the
-maximum useful signal universe, validate what GitHub and Git can actually provide, and
-turn the result into a staged design before another agent changes collection or storage.
+The text below is kept verbatim for provenance. It describes a first pass that was deliberately
+research and architecture only: map the maximum useful signal universe, validate what GitHub and Git
+can actually provide, and turn the result into a staged design before another agent changed
+collection or storage. That work is done; its result is the architecture document.
 
 ## Durable outputs
 
 - [Developer Lens v2 architecture](DEVELOPER_LENS_V2_ARCHITECTURE.md) — the decision-ready result of this brief.
-- [Sol Ultra implementation orchestrator](SOL_ULTRA_ORCHESTRATOR_PROMPT.md) — the fresh-session prompt for executing the architecture with Terra and the installed Luna roles.
+- [Prompt library](agent-system/PROMPT_LIBRARY.md) — the canonical, enforced home of every executable prompt, including the deep-discovery successor `DL-PX01-PRODUCT-DEEP-DISCOVERY`.
 
-## Copy-ready prompt
+## Historical text (retired — not copy-ready)
 
 ```text
+RETIRED PROMPT - HISTORICAL RECORD ONLY - DO NOT EXECUTE.
+Superseded by DL-PX01-PRODUCT-DEEP-DISCOVERY in docs/agent-system/PROMPT_LIBRARY.md.
+
 You are GPT-5.6 Sol with Ultra reasoning. Work as a principal data-platform,
 privacy, applied-ML, and developer-tools architect for Developer Lens.
 
@@ -552,6 +559,9 @@ Quality bar
 - Do not edit the repository.
 - Do not end with generic questions or an offer to continue. End with the
   implementation handoff and only true owner gates.
+
+Superseded by DL-PX01-PRODUCT-DEEP-DISCOVERY in docs/agent-system/PROMPT_LIBRARY.md.
+RETIRED PROMPT - HISTORICAL RECORD ONLY - DO NOT EXECUTE.
 ```
 
 ## Expected result

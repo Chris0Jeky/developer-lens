@@ -32,6 +32,41 @@ and §5 (A7 — cross-repository compatibility checking is mandatory).
 10. **Late-review protocol** — the same aging floor, the same 15-minute exact-head fallback, the
     same two-round ceiling and the same mandatory post-merge sweep
     ([MAINTENANCE_PROTOCOL.md](MAINTENANCE_PROTOCOL.md)).
+11. **Prompt operating system** — the same twelve common prompt IDs (`DL-P01`…`DL-P12`), the same
+    two shared blocks, and a byte-identical
+    [.agent-harness/prompt-parity.json](../../.agent-harness/prompt-parity.json). See below.
+
+## Prompt parity
+
+The prompt library is per-repository, but its spine is shared. `.agent-harness/prompt-parity.json`
+is **repo-neutral and byte-identical in both repositories**: each side resolves its own entry by
+matching its declared repository slug, so the same file can be copied across without editing. It
+pins the twelve common IDs, each side's extension IDs (`DL-PX…` product, `DL-LX…` lab), and the
+SHA-256 of each shared block.
+
+Two blocks are shared: `runtime-bootstrap-v1` (which canon each runtime reads first, how Claude
+routes through named `dl-*` agents, how Codex routes through `AGENTS.md` → shared `CLAUDE.md` →
+continuation skill → Sol/Terra/Luna, and the fully qualified human-ref form) and
+`friction-tasking-v1` (log material friction in the same hop, link it to a durable task, and treat
+capture as a record rather than a licence to detour). Both must be **byte-for-byte identical** in
+both repositories, which is why the digest is pinned rather than the prose merely being "kept in
+sync".
+
+Editing a shared block is therefore a `cross-repo` change, and it runs like one:
+
+1. Edit the block once in the product library, recompute its digest, and update every prompt that
+   carries it plus the manifest **in the same commit** — `npm run verify:context` fails otherwise.
+2. Copy the identical block body and the identical manifest to the lab side.
+3. Prove on both sides with each repository's own context verifier.
+4. Record the merge order before either merge.
+
+While `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` stays open, step 2 may be **prepared and
+parked only** — the lab side is not merged by an agent (see *Current status*). A parked lab branch
+carrying a matching block is the correct outcome, not a failed lane.
+
+Because the two repositories have independent human-action registers, every human ref inside an
+active prompt body is written fully qualified — `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is
+a different gate from the lab's `q-8`, and a bare `q-N` fails the verifier for exactly that reason.
 
 ## Compatibility rule
 
@@ -66,6 +101,12 @@ archaeology — the requirement is the proof, not a particular automation shape.
 - **Shared surfaces today:** the `methodTrialView` contract with C0 fixture parity, and the
   ResearchPack schema (issues #181/#182 — #181's schema slice has shipped). Both live under
   `shared/` on the product side with their generation and drift-check scripts in `scripts/`.
+- **Prompt operating system: product side landed, lab side prepared-and-parked.** The library, the
+  repo-neutral parity manifest and both shared blocks exist in `developer-lens` (product issue
+  [#214](https://github.com/Chris0Jeky/developer-lens/issues/214), lab issue
+  `Chris0Jeky/developer-lens-lab#33`). The lab counterpart is authored for byte-for-byte reuse but
+  merges only after `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` closes; that gate is **open**
+  and is never inferred closed from a merged PR, a quiet session or another agent's message.
 - **Next cross-repo programme:** the #174 research-input and presentation-contract pair, which is
   the first surface to exercise this rule end to end
   ([docs/PROGRAMME_ROADMAP.md](../PROGRAMME_ROADMAP.md) P1).

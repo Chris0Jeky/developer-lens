@@ -3721,3 +3721,92 @@ mapped as they would move a recorded canonical digest) and was PRESERVED as `dev
 but NOT merged, because a concurrent/zombie writer was observed in the lab checkout (recorded under
 HUMAN_TODO q-8). The product repo was verified unaffected. No capability, source, or publication
 boundary changed anywhere; `cap.external.model` and registry/API capabilities remain `never_authorized`.
+
+## 2026-08-09 — #214 prompt operating system (control-plane side lane, branch `docs/prompt-system-overhaul`)
+
+**Additions-only record.** A control-plane side lane, not a phase advance: P0.5 #200 stays the
+active programme, #174 stays unselected, and no gate, capability, schema, contract, methodology,
+owner policy or release/tag state moved. C0 code and docs only.
+
+**Changed.** Every executable prompt now lives behind a stable ID in
+`docs/agent-system/PROMPT_LIBRARY.md` — the twelve common IDs `DL-P01-FLAGSHIP-GOVERNOR` through
+`DL-P12-FRICTION-BURNDOWN`, shared with `Chris0Jeky/developer-lens-lab`, plus the product extensions
+`DL-PX01-PRODUCT-DEEP-DISCOVERY` and `DL-PX02-PRODUCT-ANALYTICAL-VERTICAL`. Two repo-neutral shared
+blocks — `runtime-bootstrap-v1` (Claude reads CLAUDE.md and routes through the named `dl-*` agents;
+Codex reads AGENTS.md, then the shared CLAUDE.md canon, invokes the continuation skill and follows
+Sol/Terra/Luna routing) and `friction-tasking-v1` (the no-silent-workaround rule) — are SHA-256
+pinned in the new repo-neutral `.agent-harness/prompt-parity.json`, designed for byte-for-byte lab
+reuse. New `docs/agent-system/CONTINUOUS_WORK_PROTOCOL.md` (queue hopping, anti-manufacture
+legitimacy test, work-while-waiting, resource-bounded fan-out, four stop conditions, no
+data/model/telemetry/credential activation, factual termination) and append-only
+`docs/agent-system/FRICTION_LOG.md` (FR-001…FR-009). The three prompt-shaped documents outside the
+library are reclassified: `OVERNIGHT_EXECUTION_PROMPT.md` and `SOL_ULTRA_ORCHESTRATOR_PROMPT.md` as
+`redirect`, `SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md` as `historical` with sentinel-wrapped bodies; their
+bespoke authority/swarm marker checks were removed only where the manifest and classification fully
+replace them, and link validation is untouched. Enforcement lives in
+`scripts/projectContextValidation.ts` and `scripts/verifyProjectContext.ts`. `governor.yaml` gained
+`prompt_system`, `continuous_work` and `friction` surfaces plus two recurring checks, with every
+existing authority, model-role and risk value untouched. `docs/agent-system/README.md`,
+`MAINTENANCE_PROTOCOL.md` and `CROSS_REPO_CONTRACT.md` document the surface; `CLAUDE.md` and
+`AGENTS.md` carry the foundation rules.
+
+**Verified.** Full `npm run check` GREEN end to end (exit 0): `verify:context` (47 Markdown files,
+31 required files), `check:research-pack` and `check:method-trial-view` no drift, full suite **1479
+passed / 10 skipped across 86 files** (up from 1466 — the 13 new prompt-OS cases), `tsc -b`,
+`vite build`, and `verify:no-secrets` across 17 build outputs. Focused
+`npm test -- scripts/projectContextValidation.test.ts` = 18/18. `git diff --check` clean. The new
+suite was checked for vacuity by mutation: deleting the CRLF normalization in `normalizeSharedText`
+fails exactly the line-ending case and nothing else.
+
+**NOT verified.** No PR opened, nothing pushed or merged — the branch is local by instruction. No
+browser or visual QA. `npm run build:showcase` was NOT run, because no public, demo or export seam
+moved. The lab-side #33 counterpart was neither authored nor inspected here, so byte-for-byte lab
+reuse of the shared blocks is a design property proven on the product side only.
+
+**Failures and workarounds.** Two `npm run check` attempts, inside the three-attempt ceiling. The
+first failed at `tsc -b` with four TS2339/TS2322 errors in the new test file: Vitest does not
+typecheck, so the fixture-builder default `{ id }[]` and the reordered-ID array surfaced only in the
+build; annotating `PromptSpec[]` and `string[]` fixed it and the second run was green. Friction
+recorded in the same hop: **FR-007** — a delegated `dl-implementer` hit a 15-minute runtime limit
+and left a coherent partial diff with no handoff; the workaround was to terminate the surviving
+owned process, audit the dirty checkpoint against the repository verifier before touching it,
+preserve the sound work as its own commit, and resume with one replacement writer on the same branch
+and HEAD. **FR-008** — the runtime refused `.claude/**` writes in this non-interactive session, so
+the agent/skill sub-item is PARKED rather than worked around. **FR-009** — `CURRENT_STATE.md`'s
+declared `yaml` block does not parse, at `HEAD` as well as in the working tree, because unquoted
+` #NNN` issue refs open YAML comments inside flow sequences; observed and logged, not repaired,
+because repair is a separate bounded slice.
+
+**Docs-state sync.** `CURRENT_STATE.md` gained a `control_plane_side_lane` entry — single-quoted and
+therefore YAML-safe — recording the side-lane framing, the parked sub-item, and that #200 remains
+active, #174 remains unselected and every gate is unchanged. This ledger entry is additions-only.
+
+**Residual risk.** The parked sub-item (FR-008) means the four `dl-*` agent definitions and both
+continuation-skill copies still lack the explicit no-silent-workaround rule, and the #208 item-3
+locked-invariant reviewer lenses are not yet folded into `dl-reviewer`; the rule binds through
+`CLAUDE.md`, `AGENTS.md` and every active prompt body in the meantime. Parity between the `.agents/`
+and `.claude/` skill copies rests on review alone — `verify:context` compares required files,
+frontmatter and markers, never the two bodies, which FR-008 names as the promotion target. The
+prompt bodies are prose: the verifier proves structure, IDs, digests, classification and reference
+form, never that a pasted prompt produces good work.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` remains **OPEN** and continues to
+block agent merge of the paired lab PR. It is not inferred closed from any merge, quiet session or
+agent message. Explicit isolated preparation on the product side is allowed by the current owner
+commission.
+
+**2026-08-09 follow-up (bounded FR-008 fallback).** The exact files changed were `.claude/agents/dl-
+scout.md`, `.claude/agents/dl-implementer.md`, `.claude/agents/dl-mechanic.md`,
+`.claude/agents/dl-reviewer.md`, `.agents/skills/developer-lens-continuation/SKILL.md`,
+`.claude/skills/developer-lens-continuation/SKILL.md`, `scripts/projectContextValidation.ts`,
+`scripts/projectContextValidation.test.ts`, `scripts/verifyProjectContext.ts`,
+`docs/agent-system/FRICTION_LOG.md`, `docs/analyser-program/CURRENT_STATE.md`, and this ledger.
+FR-008 recurred in two 2026-08-09 non-interactive Claude contexts and was promoted here: the four
+agent definitions and both skills now carry the same-hop friction/task-link rule, #208 item 3 is
+folded into `dl-reviewer`, and the executable validator enforces the identical skill block. FR-008's
+runtime write limitation remains documented, not resolved. FR-009 is now tracked at #215. Real
+checks for this follow-up: focused test `npm test -- scripts/projectContextValidation.test.ts` passed
+22/22; `npm run verify:context` passed (47 Markdown files, 31 required files); `git diff --check`
+passed; and full `npm run check` passed (86 files, 1483 passed, 10 skipped; TypeScript/Vite build
+and 17-file no-secrets verification green). The first full-check wrapper attempt timed out before
+reporting output; the longer second attempt completed green.

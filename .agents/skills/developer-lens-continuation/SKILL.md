@@ -59,6 +59,13 @@ Use the repository's tracked sources rather than caching project state in this s
 - Permission to implement a capability never implies automatic collection, credential changes,
   external writes, or public/private-data publication.
 
+<!-- shared:continuation-friction-tasking-v1 start -->
+Every material workaround, tooling hiccup, repeated friction or surprising divergence is logged in
+docs/agent-system/FRICTION_LOG.md in the same hop and linked to an existing issue/card or durable
+task. Capture is not permission to widen scope; never record PID, absolute local path, token, or
+private identifier.
+<!-- shared:continuation-friction-tasking-v1 end -->
+
 ## Prove and hand off
 
 1. Run the narrow test from the `CLAUDE.md` run-and-prove table, then `npm run check` for a
