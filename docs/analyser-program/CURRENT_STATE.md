@@ -78,8 +78,9 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   steps 5-7 pending — order deviations are recorded here, never silent. This slice completes the
   pre-QA doc touch-up batch tracked on #200 (README→COMMERCIAL_OPTION link, AGPL visible source-offer
   in the Pages app, Discussions-link warning, cockpit seed-fixture wording, invented-vs-C0
-  terminology). EXACT NEXT ACTIONS after it lands, in roadmap order: complete STEP 3 Lab release
-  preparation's pre-tag deliverables (#29);
+  terminology). EXACT NEXT ACTIONS after it lands: first complete and merge Lab PR #37 under its
+  exact-final-head gates so the Lab executable release prompt has the same protections; then, in
+  roadmap order, complete STEP 3 Lab release preparation's pre-tag deliverables (#29);
   then STEP 5 = final
   browser/visual QA proof for the q-10(c) five-minute product owner sign-off plus
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package aesthetic

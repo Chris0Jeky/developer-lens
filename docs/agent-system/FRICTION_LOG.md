@@ -322,17 +322,18 @@ Rules that bind entries:
 ### FR-012 — fresh product worktree lacks the Node tool bootstrap
 
 - **first-seen:** 2026-08-09
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **symptom:** In a fresh isolated product worktree, `npm run verify:context` stopped before the
   verifier ran because the `tsx` executable was not installed locally.
 - **impact:** The required docs/authority gate cannot run until the worktree dependencies are
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 1 recorded — 2026-08-09 during the DL-P09/
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite.
+- **occurrences:** 2 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
+  (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite).
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release
   coordination).
-- **promotion:** Task debt at one occurrence. The dependency install is an environment action, not
-  a repository invariant; keep the recovery route documented and promote it only if the same
-  friction recurs independently.
+- **promotion:** Promoted at the second independent occurrence to the `CLAUDE.md` run-and-prove
+  preamble: a fresh worktree runs lockfile-pinned `npm ci` before any proof. Installation remains an
+  explicit environment action rather than a verifier side effect, so the check cannot silently
+  install or mutate dependencies on the caller's behalf.
