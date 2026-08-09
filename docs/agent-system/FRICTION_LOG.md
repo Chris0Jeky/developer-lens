@@ -345,3 +345,23 @@ Rules that bind entries:
   preamble: a fresh worktree runs lockfile-pinned `npm ci` before any proof. Installation remains an
   explicit environment action rather than a verifier side effect, so the check cannot silently
   install or mutate dependencies on the caller's behalf.
+
+### FR-013 — full product gate exceeded a compound shell timeout
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **symptom:** After PR #226 integrated the latest product base, a compound proving invocation gave
+  the full `npm run check` plus its later commands one 120-second shell window. The shell terminated
+  before the full gate returned a result, so the later context, diff and push steps never ran.
+- **impact:** A sound gate can lose its result near the timeout boundary, leaving the exact head
+  unproven and making later steps appear absent without identifying whether the gate failed.
+- **workaround:** Confirm that no Node process owned by the worktree remained, then rerun only
+  `npm run check` with a 300-second boundary. It passed in 114.7 seconds (86 files, 1,487 passed, 10
+  skipped, build and 17-file credential scan green); the narrow docs checks were then rerun after
+  this log entry.
+- **occurrences:** 1 independent occurrence — 2026-08-09 during PR #226's latest-base proof.
+- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
+  preparation and its exact-head evidence.
+- **promotion:** Deliberately NOT promoted after one occurrence. Keep full gates in their own
+  command-sized timeout window; if a second independent full gate hits the same boundary, record a
+  measured timeout budget in the run-and-prove table rather than relying on caller guesswork.

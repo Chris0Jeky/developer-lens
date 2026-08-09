@@ -1,7 +1,9 @@
-# Blank issues are disabled on purpose: they would bypass the invented-data-only
-# warning that both templates carry at the point where reproduction data is pasted.
+# Blank issues are disabled on purpose so public forms preserve their data-boundary warnings.
 blank_issues_enabled: false
 contact_links:
+  - name: Neutral private contact request
+    url: https://github.com/Chris0Jeky/developer-lens/issues/new?template=private_contact_request.md
+    about: This request and your account are public; use it only if that visibility is safe.
   - name: Questions, ideas and general discussion
     url: https://github.com/Chris0Jeky/developer-lens/discussions
     about: Ask a question or float an idea with invented examples only; do not include private repository data.
