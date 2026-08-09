@@ -737,10 +737,12 @@ Sweep, and report each with evidence:
    descriptions/topics/social preview updated, owner-only items recorded in HUMAN_TODO.md.
 7. OWNER GATES AND CROSS-REPOSITORY PREREQUISITES ARE NOT INFERRED. The joint v0.1.0 tag needs
    Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 (c) - the five-minute aesthetic sign-off - plus
-   completed Lab release preparation (Chris0Jeky/developer-lens-lab#29) and dependency remediation
-   (Chris0Jeky/developer-lens-lab#5), each verified from live issue, merge and exact-head gate
-   evidence. Under owner decision H7=BOTH, a product-only tag is not a fallback. None of these
-   conditions is satisfied by silence or by an agent message.
+   completed pre-tag deliverables tracked by Lab release preparation
+   (Chris0Jeky/developer-lens-lab#29) and completed dependency remediation
+   (Chris0Jeky/developer-lens-lab#5), verified from live issue, merge and exact-head gate evidence.
+   Do not require #29 itself to close before tagging: its acceptance condition includes the tag.
+   Under owner decision H7=BOTH, a product-only tag is not a fallback. None of these conditions is
+   satisfied by silence or by an agent message.
 8. LAB RULE: while Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8 stays open, lab-side write work
    and ALL lab merges are human-gated; report lab release state as prepared-and-parked.
 
