@@ -1,7 +1,9 @@
-# Blank issues are disabled on purpose: they would bypass the invented-data-only
-# warning that both templates carry at the point where reproduction data is pasted.
+# Blank issues are disabled on purpose so public forms preserve their data-boundary warnings.
 blank_issues_enabled: false
 contact_links:
+  - name: Private conduct channel request
+    url: https://github.com/Chris0Jeky/developer-lens/issues/new?template=conduct_private_channel.md
+    about: Request a private channel without posting incident details or other private data.
   - name: Questions, ideas and general discussion
     url: https://github.com/Chris0Jeky/developer-lens/discussions
     about: Ask a question or float an idea with invented examples only; do not include private repository data.
