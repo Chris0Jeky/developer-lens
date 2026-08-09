@@ -187,7 +187,8 @@ blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-s
   #80/#174 remain outside this demo programme. HUMAN_TODO.md q-10(c) is non-blocking for current
   product release preparation, but its five-minute owner aesthetic sign-off and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package sign-off block
-  every release tag, regardless of the closed q-8 process gate or a later product-only-tag decision.'
+  the joint v0.1.0 tag under H7=BOTH. No product-only tag is authorized by current policy; a future
+  superseding owner decision would govern its own prerequisites.'
 open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) remains deferred and non-blocking. q-8 is CLOSED
   (2026-08-09): the owner explicitly confirmed merging lab PR #24 and the closure, followed by
   `claude agents --json --all` with no active sessions and a report-only MCP-hygiene result of
@@ -199,7 +200,7 @@ open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) remains deferred and non-blocking. q-
   Publishing the dedicated address remains a q-10/release action. q-10(c) remains non-blocking for
   current preparation, but its five-minute owner aesthetic sign-off and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package sign-off block
-  every release tag. The
+  the joint v0.1.0 tag under H7=BOTH. No product-only tag is currently authorized. The
   deregistered `value01`
   directory remains manual owner review/delete and is not a q-8 blocker.'
 frozen_by_reassessment: horizon:frozen label (WB candidates except the owner-directed WB-C1 Method

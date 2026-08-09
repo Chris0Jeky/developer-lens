@@ -329,7 +329,8 @@ Rules that bind entries:
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 1 recorded — 2026-08-09 during the DL-P09/q-11 release-gate prerequisite.
+- **occurrences:** 1 recorded — 2026-08-09 during the DL-P09/
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release
   coordination).
 - **promotion:** Task debt at one occurrence. The dependency install is an environment action, not
