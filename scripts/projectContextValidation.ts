@@ -231,6 +231,21 @@ export const SHARED_BLOCK_REQUIRED_CLAUSES: Readonly<Record<string, readonly str
   ],
 }
 
+/** Exact unpinned clause every active Product prompt carries outside the shared blocks. */
+export const PRODUCT_CLAUDE_ROUTING_CLAUSE = [
+  'CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,',
+  'bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high',
+  '`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.',
+].join('\n')
+
+export const PRODUCT_CLAUDE_ROUTING_TOKENS = [
+  'CLAUDE.md',
+  'dl-scout',
+  'dl-implementer',
+  'dl-reviewer',
+  'dl-mechanic',
+] as const
+
 /** Ordered, each exactly once, in `CONTINUOUS_WORK_PROTOCOL.md`. */
 export const CONTINUOUS_SECTION_MARKERS = [
   'continuous-execution-begin',
@@ -694,6 +709,14 @@ export function validatePromptLibrary(
 
   for (const prompt of activePrompts) {
     const body = normalizeSharedText(prompt.body)
+    if (localRepository.role === 'product') {
+      const routingOccurrences = countOccurrences(body, PRODUCT_CLAUDE_ROUTING_CLAUSE)
+      if (routingOccurrences !== 1) {
+        errors.push(
+          `prompt ${prompt.id} must contain exactly one Product Claude routing clause naming ${PRODUCT_CLAUDE_ROUTING_TOKENS.join(', ')} (found ${routingOccurrences})`,
+        )
+      }
+    }
     for (const blockId of SHARED_BLOCK_IDS) {
       const blockBody = library.sharedBlocks.get(blockId)
       if (blockBody === undefined) {
