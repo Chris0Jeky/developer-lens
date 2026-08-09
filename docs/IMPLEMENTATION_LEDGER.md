@@ -3940,10 +3940,11 @@ bytes remain rejected for this release.
 Lab package-smoke PR #45 reached final head `7f07ce221b7a405c06af70d3a5215910dca72991`, passed hosted
 run `31304528858`, job `93222641130`, and merged as
 `6e13b6d84391ea7a2579e169151e3d765ad71583` after a fresh exact-final-head review found no causal
-CRITICAL/HIGH defect and all four threads were resolved. Its single review fix confined inherited
-Unix `TMPDIR`; the full local gate (154 passed, 3 declared symlink skips) and isolated wheel smoke
-passed afterward. Remaining PATH-uv, bounded-diagnostics and timeout observations stay P2 hardening
-on Lab #29.
+CRITICAL/HIGH defect and all six threads, including two delayed-sweep P2 findings, were resolved and
+tracked on Lab #29. Its single review fix confined inherited Unix `TMPDIR`; the full local gate
+(154 passed, 3 declared symlink skips) and isolated wheel smoke passed afterward. Remaining PATH-uv,
+bounded-diagnostics, timeout, sdist-to-wheel lineage, and ignored-smoke-tree link-scan observations
+stay P2 hardening on Lab #29.
 
 **Still NOT verified / blocked.** Lane-P candidate-content review is outside this session's
 protected-output boundary. Both owner sign-offs, the joint tag, publication, protected/private
