@@ -4258,4 +4258,9 @@ It did not rerun the Lab suite, inspect protected/generated/ignored output, or a
 **Failures and workaround.** An initial read-only `gh api --jq` timestamp filter lost its inner
 string quotes under PowerShell and failed before any repository mutation. A quote-safe latest-field
 projection succeeded. Existing Product issue #222 remains the task owner for Windows-safe GitHub
-CLI wrappers; no duplicate task was created.
+CLI wrappers; no duplicate task was created. Separately, exact-head run `31339262700` exposed the
+second immediate-inode-reuse occurrence in the pre-existing `v3Backup` fixture, outside PR #232's
+two-document range. [Issue #233](https://github.com/Chris0Jeky/developer-lens/issues/233) owns the
+bounded fixture repair. The focused local case, full backup file, and adjacent hosted success
+justify one rerun only; this ledger claims no rerun result and this documentation PR takes no
+production-code detour.

@@ -533,3 +533,30 @@ Rules that bind entries:
 - **promotion:** Do not create a parallel Product helper. The cheapest enforcing layers remain the
   checked Lab snapshot/launcher tasks on #29/#34, with the current workarounds retained until those
   tasks land. Product #222 remains a separate selected-but-unimplemented hygiene helper.
+
+### FR-020 — immediate inode reuse makes replacement fixtures nondeterministic
+
+- **first-seen:** 2026-08-06
+- **status:** `workaround-documented`
+- **symptom:** Exact-head hosted run `31339262700` failed only the `v3Backup` valid-replacement-inode
+  case. Its fixture unlinked the provisional path and immediately wrote a replacement; Linux reused
+  the original inode, so production recovery correctly observed the still-bound identity and
+  resolved. This is a pre-existing nondeterministic, platform-sensitive fixture defect, not a PR
+  #232 range regression and not a generic flaky-test label.
+- **impact:** An unrelated documentation PR can lose its required hosted gate even though production
+  behavior remains fail-closed and the changed range does not touch the fixture. Unbounded reruns
+  would hide the deterministic test-construction defect rather than repair it.
+- **workaround:** One focused local collision case and the full `v3Backup.test.ts` file passed after
+  the hosted failure; adjacent hosted run `31337964825` also passed the same file. That evidence
+  justifies exactly one rerun for PR #232, without treating the rerun as a repair or claiming its
+  result in this documentation hop.
+- **occurrences:** 2 independent occurrences — run `31112768523` exposed immediate inode reuse in
+  the sibling artifact-catalogue fixture on 2026-08-06; run `31339262700` exposed the corresponding
+  `v3Backup` fixture on 2026-08-09.
+- **task:** [#233](https://github.com/Chris0Jeky/developer-lens/issues/233) owns the bounded durable
+  fixture repair.
+- **promotion:** The cheapest enforcing layer is the affected test fixture: reuse commit
+  `1053cf8609108f1e7d0924bb42245185c6fce89e`'s established keep-original-inode-live pattern while
+  allocating the replacement, preserve production identity checks, and prove the focused case,
+  full backup file, and declared gate. #233 tracks that repair; PR #232 takes no production-code
+  detour.
