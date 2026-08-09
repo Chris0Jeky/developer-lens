@@ -3890,3 +3890,62 @@ facts recorded.
 release head. Lab #29 pre-tag deliverables, both owner aesthetic sign-offs, the joint tag, and every
 publication step remain open. No real/private data, generated operational output, external model,
 telemetry, credential, release, or tag lane was opened by this reconciliation.
+
+## 2026-08-09 — Joint release-prompt product landing and Lab park
+
+**Changed.** Product PR #227 repaired DL-P09 and the live resume order so the joint tag requires the
+distinct product release sign-off at `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and Lab
+screenshot/video-package sign-off at
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`. Final head
+`b5d8f5867283c08e2cf3251f81e825aea2f498af` merged as
+`408a5b8d22be2ab7d54838e3b36aeca807a99792`. The Lab counterpart did not merge: PR #37 was archived
+at `4a044dcec134cda313cffb7087389f64d28fe8c9` after exhausting two fix rounds. Coordinator-owned
+replacement PR #42 started from Lab main `f893f576f71202375fe93e8c7d9c02e54fbaf08a`, reached final
+head `e290d1b94aff9f39de677fd80670f4f9e8f15227`, and merged as
+`38ac2eb14c8c9ba742b5f269b7022c7e549b7a5d`.
+
+**Verified.** Product Actions run `31298518409`, job `93207390318`, succeeded on the exact final
+head. A fresh exact-final-head review found no causal CRITICAL/HIGH defect, all five connector
+threads were resolved, and the delayed post-merge sweep remained clean. Lab run `31297994488`, job
+`93206098872`, succeeded on PR #37's exact head, but its fresh final-head review confirmed a HIGH
+ambiguity: the wording can let one owner approval satisfy both distinct gates. That thread remains
+unresolved; its separate P2 worktree-command finding was tracked and resolved without a third fix
+round. Lab PR #42's hosted run `31299725193`, job `93210447311`, succeeded on its exact one-file
+head; fresh review found no causal CRITICAL/HIGH defect. Its only connector P2 (future bounded
+dependency residual wording) was tracked on Lab #34 and resolved without a fix commit before merge.
+A delayed post-merge sweep beyond the connector window found no new comments and no unresolved
+thread debt.
+
+**Reconciled live continuation.** Product community/contact PR #226 reached final head
+`c716672c99c03013b65ed4e867bf24a95f0ad883`, passed hosted run `31300080534`, job `93211341394`,
+and merged as `7bbb8ee6f9124424b3d8362170f0f4d738f5cb43`; its delayed sweep was clean. Lab friction PR #41
+merged as `178bd6d695119b74294a8fd6fbe46f54577e49b2`. Its late proof-integrity review debt was repaired
+through state PR #39, which reached final head `b36bbadd0365a8958ba741e27c2e36e9458237be` and merged as
+`4f355f1e58e1eca1191f899f1fc4354af8a23a00` after hosted run `31300971426`, job `93213564502`.
+Licence/package PR #40 then merged as `d203461c023e1661140a1fef38a0f4b68e3454b2`; community PR
+#43 merged as `56c889141cd4575d12f80c3e0a16a574277e0ddd`. Changelog PR #44 reached exact final head
+`ca8c075d286e7812873b86e12c54868b71519217`, passed hosted run `31302156997`, job `93216571555`,
+and merged as `2e6a7c2b7ff906cb771bb4e904dd18d2717fa536`; fresh review and its delayed sweep found no causal
+CRITICAL/HIGH defect or unresolved thread debt.
+
+The separate Lab C0 evidence lane first proved that current-head replay is deterministic but changes
+the export/report hashes because `lab_commit` is embedded. The binding frozen-exhibit decision was
+then applied in a detached checkout at producer `0ef193070a9b80b81cef5a1710a1d65e0b271c15`:
+automated context/contracts, invented `wbc1_demo`, reproduce, export, report and hygiene checks passed
+without opening candidate bytes, and all three printed hashes exactly matched the tracked frozen
+claims. On the product side, 26 focused MethodTrial/route/App tests and
+`npm run check:method-trial-view` passed against the tracked fixture/schema. Current-head candidate
+bytes remain rejected for this release.
+
+Lab package-smoke PR #45 reached final head `7f07ce221b7a405c06af70d3a5215910dca72991`, passed hosted
+run `31304528858`, job `93222641130`, and merged as
+`6e13b6d84391ea7a2579e169151e3d765ad71583` after a fresh exact-final-head review found no causal
+CRITICAL/HIGH defect and all six threads, including two delayed-sweep P2 findings, were resolved and
+tracked on Lab #29. Its single review fix confined inherited Unix `TMPDIR`; the full local gate
+(154 passed, 3 declared symlink skips) and isolated wheel smoke passed afterward. Remaining PATH-uv,
+bounded-diagnostics, timeout, sdist-to-wheel lineage, and ignored-smoke-tree link-scan observations
+stay P2 hardening on Lab #29.
+
+**Still NOT verified / blocked.** Lane-P candidate-content review is outside this session's
+protected-output boundary. Both owner sign-offs, the joint tag, publication, protected/private
+data, model/data/telemetry activation, and credentials remain untouched and open as applicable.

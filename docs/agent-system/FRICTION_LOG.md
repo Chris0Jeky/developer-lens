@@ -365,3 +365,22 @@ Rules that bind entries:
 - **promotion:** Deliberately NOT promoted after one occurrence. Keep full gates in their own
   command-sized timeout window; if a second independent full gate hits the same boundary, record a
   measured timeout budget in the run-and-prove table rather than relying on caller guesswork.
+
+### FR-014 — implicit PowerShell decoding corrupted patch context
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **severity:** `LOW (bounded tooling interruption)`
+- **symptom:** A `Get-Content` read without an explicit encoding rendered UTF-8 punctuation in the
+  live state artifact as mojibake. Reusing that rendered text as an `apply_patch` context made the
+  patch fail its exact-match check before any file changed.
+- **impact:** A correct state reconciliation can be delayed or aimed at the wrong text when shell
+  rendering is mistaken for repository bytes; the failed patch itself left the worktree unchanged.
+- **workaround:** Re-read the tracked file with `Get-Content -Encoding utf8`, then use bounded,
+  heading-anchored patch contexts and inspect the exact diff immediately.
+- **occurrences:** 1 independent occurrence — 2026-08-09 during PR #228's latest-base state sync.
+- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
+  coordination and factual cross-repository resume artifact.
+- **promotion:** Deliberately NOT promoted after one occurrence. If it recurs, make explicit UTF-8
+  decoding part of the PowerShell tracked-Markdown read wrapper rather than adding another prose
+  reminder.
