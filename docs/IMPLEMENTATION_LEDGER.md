@@ -3900,7 +3900,8 @@ screenshot/video-package sign-off at
 `b5d8f5867283c08e2cf3251f81e825aea2f498af` merged as
 `408a5b8d22be2ab7d54838e3b36aeca807a99792`. The Lab counterpart did not merge: PR #37 was archived
 at `4a044dcec134cda313cffb7087389f64d28fe8c9` after exhausting two fix rounds. Coordinator-owned
-replacement PR #42 opened from current Lab main at `e290d1b94aff9f39de677fd80670f4f9e8f15227`.
+replacement PR #42 started from current Lab main at `e290d1b94aff9f39de677fd80670f4f9e8f15227`
+and merged as `38ac2eb14c8c9ba742b5f269b7022c7e549b7a5d`.
 
 **Verified.** Product Actions run `31298518409`, job `93207390318`, succeeded on the exact final
 head. A fresh exact-final-head review found no causal CRITICAL/HIGH defect, all five connector
@@ -3908,11 +3909,12 @@ threads were resolved, and the delayed post-merge sweep remained clean. Lab run 
 `93206098872`, succeeded on PR #37's exact head, but its fresh final-head review confirmed a HIGH
 ambiguity: the wording can let one owner approval satisfy both distinct gates. That thread remains
 unresolved; its separate P2 worktree-command finding was tracked and resolved without a third fix
-round.
+round. Lab PR #42's hosted run `31299725193`, job `93210447311`, succeeded on its exact one-file
+head; fresh review found no causal CRITICAL/HIGH defect. Its only connector P2 (future bounded
+dependency residual wording) was tracked on Lab #34 and resolved without a fix commit before merge.
 
-**NOT verified / blocked.** Lab PR #42 still needs exact-head hosted proof, fresh review and merge.
-Until it lands, Lab #29 release-deliverable writes and merges are parked; prepared PRs #39/#40 and
-the community-files branch do not advance.
-Product follow-up #226 and Lab friction-only PR #41 remain disjoint. Neither owner sign-off,
+**NOT verified / blocked.** Lab #29 pre-tag deliverables remain unfinished. Prepared PRs #39/#40,
+the community-files branch, Lab friction-only PR #41 and product follow-up #226 retain their own
+exact-base, hosted-check and review gates. Neither owner sign-off,
 the joint tag, publication, protected/private data, model/data/telemetry activation nor credentials
 were touched.
