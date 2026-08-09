@@ -166,7 +166,7 @@ function buildLibrary(
 ): string {
   const bootstrap = options.bootstrap ?? BOOTSTRAP_BLOCK
   const friction = options.friction ?? FRICTION_BLOCK
-  const prompts =
+  const prompts: PromptSpec[] =
     options.prompts ?? [...COMMON_PROMPT_IDS, ...PRODUCT_EXTENSIONS].map((id) => ({ id }))
   const [bootstrapId = 'runtime-bootstrap-v1', frictionId = 'friction-tasking-v1'] =
     options.sharedBlockIds ?? []
@@ -314,7 +314,7 @@ describe('prompt operating system parity', () => {
     )
     expect(duplicated.errors).toEqual(['duplicate prompt id: DL-P01-FLAGSHIP-GOVERNOR'])
 
-    const reordered = [...COMMON_PROMPT_IDS]
+    const reordered: string[] = [...COMMON_PROMPT_IDS]
     ;[reordered[0], reordered[1]] = [reordered[1] as string, reordered[0] as string]
     expect(
       checkLibrary(buildLibrary({ prompts: [...reordered, ...PRODUCT_EXTENSIONS].map((id) => ({ id })) })),

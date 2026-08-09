@@ -240,3 +240,32 @@ Rules that bind entries:
   enforcing is the *undetected* half: a parity check comparing the two continuation-skill bodies
   section by section would have failed loudly instead of letting a one-sided edit pass. A second
   independent occurrence promotes that check into `scripts/projectContextValidation.ts`.
+
+### FR-009 — `CURRENT_STATE.md`'s "machine-readable" YAML block does not parse
+
+- **first-seen:** 2026-08-09
+- **status:** `open`
+- **symptom:** [CURRENT_STATE.md](../analyser-program/CURRENT_STATE.md) opens a fenced ` ```yaml `
+  block described as a "machine-readable summary for agent resume", but the block is not valid
+  YAML. Measured 2026-08-09 with a strict parser against both the working tree and the committed
+  `HEAD` — both fail identically, so this is long-standing, not a regression. The cause is
+  unquoted issue references inside a flow sequence: in `active_horizon`, a space followed by `#`
+  begins a YAML comment, so `PR #206 — delivered, ...]` is swallowed as a comment and the `[`
+  sequence is never closed.
+- **impact:** The file's own framing is a false operational claim — the surface advertised as
+  machine-readable cannot be machine-read. A resuming agent that tries to parse it rather than read
+  it as prose gets a parse error, not the state. `npm run verify:context` does not catch this
+  because it checks required files, markers and links, never the YAML body.
+- **workaround:** None applied. The block is read as prose, which is how every session has in fact
+  been using it. The `control_plane_side_lane` entry added for #214 is single-quoted, so it is
+  YAML-safe and does not deepen the defect; the pre-existing unquoted flow sequences were left
+  untouched because repairing them is a separate bounded slice, not a detour inside this one.
+- **occurrences:** 1 recorded — 2026-08-09.
+- **task:** Needs a durable follow-up issue of its own — *"quote issue refs in CURRENT_STATE.md so
+  the declared YAML block parses, and add a parse check to `verify:context`"*. Not opened from this
+  lane, which is a no-mutation slice; the coordinator opens it. Noted here so the observation is not
+  lost in the meantime.
+- **promotion:** Task debt at one occurrence, but the promotion target is already obvious and cheap:
+  a strict YAML parse of that block inside `scripts/projectContextValidation.ts` would make the
+  claim self-enforcing. That belongs to the follow-up above rather than to this slice, since the
+  check would fail on landing until the existing prose is repaired.

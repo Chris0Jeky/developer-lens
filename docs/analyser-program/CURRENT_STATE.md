@@ -143,6 +143,21 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   not turn any follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # dependency-closed focused wave; opportunity backlog = GitHub issues (governor.yaml queues)
   [P0 governor bootstrap PR #206 — delivered, P0.5 v0.1.0 release programme #200 — active, product-only release preparation]
+control_plane_side_lane: 'Product #214 / lab #33 PROMPT OPERATING SYSTEM — a control-plane SIDE LANE
+  on branch `docs/prompt-system-overhaul`, not a phase advance. It does NOT change the active wave:
+  P0.5 #200 remains the active programme, #174 remains NOT selected, and every gate is unchanged —
+  q-8, q-10(c), the joint H7 tag, and all capability states carry over untouched. Scope: consolidate
+  every executable prompt into docs/agent-system/PROMPT_LIBRARY.md behind stable IDs (12 common
+  DL-P01..DL-P12 shared with the lab, plus product DL-PX extensions), pin the two repo-neutral
+  shared blocks by SHA-256 in .agent-harness/prompt-parity.json, add CONTINUOUS_WORK_PROTOCOL.md and
+  the append-only FRICTION_LOG.md, and enforce all of it from scripts/projectContextValidation.ts.
+  C0 code/docs only: no product behavior, schema, contract, methodology, owner policy, capability
+  state or release/tag state moves. PARKED SUB-ITEM (FR-008): the no-silent-workaround rule for the
+  four .claude/agents/dl-*.md definitions and both continuation-skill copies, including the #208
+  item-3 locked-invariant reviewer lenses — the runtime refused .claude/** writes in a
+  non-interactive session, and routing around that permission boundary was declined. The lab #33
+  counterpart is prepared-and-parked behind Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8, which
+  stays OPEN and is never inferred closed.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
   NEW recorded owner decision — none exists) and remains blocked by q-8 for the lab-side release
