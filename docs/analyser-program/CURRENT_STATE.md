@@ -105,15 +105,16 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   #29 tracks the merge-eligibility hardening. This is not release proof. EXACT NEXT ACTIONS:
   preserve the protected Lane-P candidate-content review
   boundary under Lab #29; bounded tracked package-smoke P2 hardening may proceed without crossing
-  it. Complete STEP 3 Lab release preparation's remaining pre-tag deliverable;
+  it. Complete all remaining STEP 3 Lab release-preparation pre-tag deliverables under Lab #29;
   then STEP 5 = final
   browser/visual QA proof for the `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` five-minute
   product owner sign-off plus
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package aesthetic
   sign-off; then STEP 6 = tag v0.1.0 +
   publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
-  disposition), not the pre-QA batch — the joint tag remains blocked on the Lane-P
-  candidate-content review under Lab #29 plus
+  disposition), not the pre-QA batch — the joint tag remains blocked on all remaining Lab #29
+  pre-tag deliverables (explicitly including the Lane-P candidate-content review, the selected P2
+  test-hardening seam, and any other remaining pre-tag work tracked there) plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, per H7=BOTH; #29 closes only after the tag; step 7
   descriptions/topics is partially done (description, topics,
@@ -140,8 +141,9 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
-  H7 — none exists. The joint tag is blocked by the Lane-P candidate-content review under Lab #29,
-  the
+  H7 — none exists. The joint tag is blocked by all remaining Lab #29 pre-tag deliverables
+  (explicitly including the Lane-P candidate-content review, the selected P2 test-hardening seam,
+  and any other remaining pre-tag work tracked there) plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` product owner aesthetic sign-off, and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 itself closes after the tag.
   Do not
@@ -269,8 +271,10 @@ preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 na
   owns cleanup or reconciliation follow-up.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
-  NEW recorded owner decision — none exists) and remains blocked by the Lane-P candidate-content
-  review under Lab #29, `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
+  NEW recorded owner decision — none exists) and remains blocked by all remaining Lab #29 pre-tag
+  deliverables (explicitly including the Lane-P candidate-content review, the selected P2
+  test-hardening seam, and any other remaining pre-tag work tracked there) plus
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 closes after the tag.
   Lab PRs #51 and #52 had exact-head hosted/review evidence but merged before the binding Lab
   15-minute eligibility floor; Lab FR-028 and #29 retain the repeated process defect and selected
