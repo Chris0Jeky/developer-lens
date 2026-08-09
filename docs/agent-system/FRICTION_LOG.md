@@ -649,3 +649,40 @@ Rules that bind entries:
   immediate diff inspection are already the cheapest fail-closed seam. A second independent
   occurrence should add a focused verifier for duplicate-entry field drift rather than another
   prose reminder.
+
+### FR-025 — occupied PR232 worktree entered a concurrent main merge
+
+- **first-seen:** 2026-08-10
+- **status:** `open`
+- **severity:** `LOW (one-writer coordination evidence)`
+- **symptom:** An occupied PR232 worktree unexpectedly entered a concurrent merge of moved main.
+  Conflict and status evidence then raced, and two read-only 30-second status probes timed out
+  before another writer completed and pushed the correct merge.
+- **impact:** One-writer ownership was ambiguous during the merge/status window, weakening the
+  trustworthiness of intermediate conflict evidence. No work was lost.
+- **workaround:** Preserve the raced evidence, wait for the current writer to complete, and refresh
+  the exact merge and status state from the resulting head. This documentation slice takes no
+  detour into the occupied worktree.
+- **occurrences:** 1 independent occurrence — 2026-08-10 during the Product #200 reconciliation.
+- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
+  coordination and worktree ownership evidence.
+- **promotion:** The cheapest enforcing layer is a coordinator-owned worktree lease or explicit
+  handoff recorded before a moved-main merge. Task debt at one occurrence; no additional repair is
+  selected in this hop.
+
+### FR-026 — PowerShell object expansion obscured a scalar merge message
+
+- **first-seen:** 2026-08-10
+- **status:** `workaround-documented`
+- **severity:** `LOW (CLI evidence formatting)`
+- **symptom:** Embedding `Get-Content` output directly in a PowerShell object expanded verbose
+  FileInfo/provider metadata instead of preserving a scalar merge-message string.
+- **impact:** Evidence serialization became noisy and could obscure the exact merge message needed
+  for a factual state record, without changing repository or GitHub state.
+- **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
+  placing it in the object. The corrected evidence path completed without mutation.
+- **occurrences:** 1 independent occurrence — 2026-08-10 during the Product #200 reconciliation.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the durable
+  Windows-safe structured evidence helpers.
+- **promotion:** Deliberately NOT promoted after one occurrence; retain the scalar conversion at the
+  PowerShell evidence boundary until #222's helper lands.
