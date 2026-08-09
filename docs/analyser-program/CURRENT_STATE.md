@@ -70,27 +70,23 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   unmerged or active work, including unpushed-only branches codex/researchpack-v1-steward-20260807
   and fable/life03-backup-crash-durability — never remove those without pushing first.
   (iii) Lab dependency remediation PR #38 MERGED 2026-08-09 at `f893f57` with pyarrow 23.0.1 and
-  pytest 9.1.1, exact-head hosted proof, and an independent merge-sound review. Lab issue #5 stays
-  open until GitHub post-merge indexing proves its two pyarrow HIGH alerts and one pytest MEDIUM
-  alert closed; the first immediate refresh still showed the three pre-merge alert records open.
+  pytest 9.1.1, exact-head hosted proof, and an independent merge-sound review. GitHub then indexed
+  Lab `main` with zero open Dependabot alerts; issue #5 CLOSED at 05:46Z with the evidence recorded.
   P0.5 step order vs the mandate: step 1 (licence) DONE, step 2 (community scaffolding) DONE,
-  step 4 product half DONE (#211; lab implementation merged in PR #38, alert-clearance evidence
-  pending on #5), step 3 unblocked by the
+  step 4 DONE on both sides (#211 product; Lab PR #38 plus closed #5), step 3 unblocked by the
   2026-08-09 q-8 closure,
   steps 5-7 pending — order deviations are recorded here, never silent. This slice completes the
   pre-QA doc touch-up batch tracked on #200 (README→COMMERCIAL_OPTION link, AGPL visible source-offer
   in the Pages app, Discussions-link warning, cockpit seed-fixture wording, invented-vs-C0
   terminology). EXACT NEXT ACTIONS after it lands, in roadmap order: complete STEP 3 Lab release
-  preparation's pre-tag deliverables (#29) and finish STEP 4's post-merge alert-clearance evidence
-  on Lab #5;
+  preparation's pre-tag deliverables (#29);
   then STEP 5 = final
   browser/visual QA proof for the q-10(c) five-minute product owner sign-off plus
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package aesthetic
   sign-off; then STEP 6 = tag v0.1.0 +
   publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
-  disposition), not the pre-QA batch — the joint tag remains blocked on Lab #5's post-merge alert
-  clearance and
-  #29's pre-tag deliverables plus q-10(c) and
+  disposition), not the pre-QA batch — the joint tag remains blocked on #29's pre-tag deliverables
+  plus q-10(c) and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, per H7=BOTH; #29 closes only after the tag; step 7
   descriptions/topics is partially done (description, topics,
   Discussions live). Tracked from the #209 review (non-blocking LOWs,
@@ -114,14 +110,14 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
-  H7 — none exists. The joint tag is blocked by unfinished Lab #29 pre-tag deliverables, Lab #5's
-  post-merge Dependabot clearance, the q-10(c) product owner aesthetic sign-off, and
+  H7 — none exists. The joint tag is blocked by unfinished Lab #29 pre-tag deliverables, the
+  q-10(c) product owner aesthetic sign-off, and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 itself closes after the tag.
   Do not
   advance task selection beyond P0.5/#200. Downstream (not selected): after the v0.1.0 tag, P1 =
   #174 integrated vertical with #181/#182 contract semantics (H1), folding #135/#76/#80-resolver
   where touched. Data Charter v2 + capability profiles = #201 (next, before any real activation).
-  Lab-side lanes (lab #5/#6/#7/#23, lab release prep, lab governor seeding) may resume under their
+  Lab-side lanes (lab #6/#7/#23, lab release prep, lab governor seeding) may resume under their
   own normal review and worktree gates: q-8 closed on 2026-08-09 after the owner's explicit
   confirmation for lab PR #24 and a confirmed-clean session sweep. Older
   post-WB-C1 debt map retained below as CONTEXT ONLY — its embedded recommendation is SUPERSEDED by
@@ -179,7 +175,7 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
   NEW recorded owner decision — none exists) and remains blocked by unfinished Lab #29 pre-tag
-  deliverables, Lab #5's post-merge Dependabot clearance, q-10(c), and
+  deliverables, q-10(c), and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 closes after the tag.
   The binding review-timing gate
   stated below (`review_timing_defect`) governs any future merge:
