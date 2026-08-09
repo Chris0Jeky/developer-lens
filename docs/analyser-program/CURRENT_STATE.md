@@ -69,24 +69,27 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   merged-branch worktrees and ~35 merged local branches removed; every surviving worktree holds
   unmerged or active work, including unpushed-only branches codex/researchpack-v1-steward-20260807
   and fable/life03-backup-crash-durability — never remove those without pushing first.
-  (iii) Lab dependency-alert triage POSTED on lab issue #5 (read-only: two pyarrow HIGH alerts are
-  one advisory whose vulnerable C++ path is not exposed to Python — batch constraint bump to
-  >=23.0.1,<24; pytest MEDIUM is dev-only — batch pytest-9 bump; the former q-8 gate closed on
-  2026-08-09).
+  (iii) Lab dependency remediation PR #38 MERGED 2026-08-09 at `f893f57` with pyarrow 23.0.1 and
+  pytest 9.1.1, exact-head hosted proof, and an independent merge-sound review. Lab issue #5 stays
+  open until GitHub post-merge indexing proves its two pyarrow HIGH alerts and one pytest MEDIUM
+  alert closed; the first immediate refresh still showed the three pre-merge alert records open.
   P0.5 step order vs the mandate: step 1 (licence) DONE, step 2 (community scaffolding) DONE,
-  step 4 product half DONE (#211; lab half triaged on lab #5, not fixed), step 3 unblocked by the
+  step 4 product half DONE (#211; lab implementation merged in PR #38, alert-clearance evidence
+  pending on #5), step 3 unblocked by the
   2026-08-09 q-8 closure,
   steps 5-7 pending — order deviations are recorded here, never silent. This slice completes the
   pre-QA doc touch-up batch tracked on #200 (README→COMMERCIAL_OPTION link, AGPL visible source-offer
   in the Pages app, Discussions-link warning, cockpit seed-fixture wording, invented-vs-C0
   terminology). EXACT NEXT ACTIONS after it lands, in roadmap order: complete STEP 3 Lab release
-  preparation's pre-tag deliverables (#29) and the Lab half of STEP 4 dependency remediation (#5);
+  preparation's pre-tag deliverables (#29) and finish STEP 4's post-merge alert-clearance evidence
+  on Lab #5;
   then STEP 5 = final
   browser/visual QA proof for the q-10(c) five-minute product owner sign-off plus
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package aesthetic
   sign-off; then STEP 6 = tag v0.1.0 +
   publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
-  disposition), not the pre-QA batch — the joint tag remains blocked on unfinished Lab #5 and
+  disposition), not the pre-QA batch — the joint tag remains blocked on Lab #5's post-merge alert
+  clearance and
   #29's pre-tag deliverables plus q-10(c) and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, per H7=BOTH; #29 closes only after the tag; step 7
   descriptions/topics is partially done (description, topics,
@@ -111,8 +114,8 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
-  H7 — none exists. The joint tag is blocked by unfinished Lab #29 pre-tag deliverables, unfinished
-  dependency work (#5), the q-10(c) product owner aesthetic sign-off, and
+  H7 — none exists. The joint tag is blocked by unfinished Lab #29 pre-tag deliverables, Lab #5's
+  post-merge Dependabot clearance, the q-10(c) product owner aesthetic sign-off, and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 itself closes after the tag.
   Do not
   advance task selection beyond P0.5/#200. Downstream (not selected): after the v0.1.0 tag, P1 =
@@ -168,14 +171,15 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   not resolved. FR-009 is tracked at https://github.com/Chris0Jeky/developer-lens/issues/215. The
   lab #33 counterpart landed as lab PR #35, externally merged at 2026-08-09T04:06:29Z as merge
   commit `bba0c18261c0a2b77332a0408f63b10c774c91f4`; no operator identity is inferred from that
-  GitHub-account event. A bounded DL-P09 follow-up closes the executable early-tag path found in
-  PR #224 review by naming Lab #29's pre-tag deliverables and Lab #5 as joint-release prerequisites
-  without requiring the tag-owning #29 issue to close first. Product PR #224 lands first; the lab
-  counterpart on `docs/release-gate-sync` follows and proves with its own context verifier.'
+  GitHub-account event. Product PR #224 merged as `222d573`, closing its executable early-tag path
+  by naming Lab #29's pre-tag deliverables and Lab #5 as joint-release prerequisites without
+  requiring the tag-owning #29 issue to close first. Lab counterpart PR #37 is open and now names
+  both owner sign-offs; it waits for this product q-11 repair to land first and then for its own
+  exact-final-head gates.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
   NEW recorded owner decision — none exists) and remains blocked by unfinished Lab #29 pre-tag
-  deliverables, unfinished Lab #5, q-10(c), and
+  deliverables, Lab #5's post-merge Dependabot clearance, q-10(c), and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 closes after the tag.
   The binding review-timing gate
   stated below (`review_timing_defect`) governs any future merge:
