@@ -88,25 +88,26 @@ archaeology — the requirement is the proof, not a particular automation shape.
 
 ## Current status
 
-- **Product side: seeded 2026-08-08.** The governor operating system, work classes, prompts,
-  maintenance and idea protocols and this contract exist in `developer-lens`.
-- **Lab side: QUEUED.** Lab-side governor seeding is blocked behind [HUMAN_TODO.md](../../HUMAN_TODO.md)
-  q-8: a concurrent writer was observed in the `developer-lens-lab` checkout, and a competing writer
-  in the same working directory can corrupt a branch mid-slice. **While q-8 stays open, all lab-side
+- **Product side: delivered.** The governor operating system, work classes, prompts, maintenance
+  and idea protocols and this contract landed through product PR
+  [#218](https://github.com/Chris0Jeky/developer-lens/pull/218).
+- **Lab side: delivered.** The lab prompt operating-system counterpart landed through lab PR #35
+  (merge commit `bba0c18261c0a2b77332a0408f63b10c774c91f4`). The q-8 closure is recorded in the
+  current owner-decision slice; it no longer blocks normal lab work. A concurrent writer was
+  previously observed in the `developer-lens-lab` checkout, and a competing writer in the same
+  working directory can corrupt a branch mid-slice. **While q-8 stays open, all lab-side
   write work in that checkout and ALL lab merges are human-gated.** Lab work may be prepared and
   parked as a pull request ONLY from a freshly created, verified isolated worktree — never from the
   affected checkout itself (the hazard is the working directory, and isolation does not make a
   MERGE safe while the competing writer can still race the remote); it may not be merged by an
-  agent. Without a verified isolated worktree, preparation stays a non-writing plan.
+  agent. Without a verified isolated worktree, preparation stays a non-writing plan. That
+  conditional protocol remains preserved; q-8 is now closed.
 - **Shared surfaces today:** the `methodTrialView` contract with C0 fixture parity, and the
   ResearchPack schema (issues #181/#182 — #181's schema slice has shipped). Both live under
   `shared/` on the product side with their generation and drift-check scripts in `scripts/`.
-- **Prompt operating system: product side landed, lab side prepared-and-parked.** The library, the
-  repo-neutral parity manifest and both shared blocks exist in `developer-lens` (product issue
-  [#214](https://github.com/Chris0Jeky/developer-lens/issues/214), lab issue
-  `Chris0Jeky/developer-lens-lab#33`). The lab counterpart is authored for byte-for-byte reuse but
-  merges only after `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` closes; that gate is **open**
-  and is never inferred closed from a merged PR, a quiet session or another agent's message.
+- **Prompt operating system: merged on both sides.** Product PR #218 and lab PR #35 deliver the
+  library, repo-neutral parity manifest, and shared blocks. Non-blocking hardening remains product
+  #216 and lab #34; it does not change the delivered prompt-OS status or any capability boundary.
 - **Next cross-repo programme:** the #174 research-input and presentation-contract pair, which is
   the first surface to exercise this rule end to end
   ([docs/PROGRAMME_ROADMAP.md](../PROGRAMME_ROADMAP.md) P1).

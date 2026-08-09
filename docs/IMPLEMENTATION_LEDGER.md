@@ -3810,3 +3810,32 @@ checks for this follow-up: focused test `npm test -- scripts/projectContextValid
 passed; and full `npm run check` passed (86 files, 1483 passed, 10 skipped; TypeScript/Vite build
 and 17-file no-secrets verification green). The first full-check wrapper attempt timed out before
 reporting output; the longer second attempt completed green.
+
+## 2026-08-09 — Product q-8 owner-decision closeout
+
+**Changed.** Recorded the owner's explicit 2026-08-09 decisions in `HUMAN_TODO.md` and reconciled
+only their active/current consequences in `CURRENT_STATE.md` and the Current status prose of the
+cross-repo contract: q-8 is closed; the v0.1.0 release remains joint; q-10(a) CLA review and every
+other q-6/q-10 decision are deferred; and confidential CoC reports will use a separate inbox once
+the owner supplies or approves its monitored address. Public routes remain primary and
+`CODE_OF_CONDUCT.md` is intentionally untouched pending that q-10/release follow-up. The
+deregistered `value01` directory remains for the owner's manual review/delete, explicitly not a
+blocker to the closed process gate. Current prompt-OS state records product PR #218, lab PR #35's
+external merge at `bba0c18261c0a2b77332a0408f63b10c774c91f4` at 2026-08-09T04:06:29Z, and the
+non-blocking hardening follow-ups product #216/lab #34 without assigning a GitHub operator identity.
+
+**Evidence and decisions.** The owner said `q8 session: CLOSE IT`, confirmed `YES, I MERGED` for
+lab PR #24, chose `SEPARATE INBOX` for confidential CoC reports, reaffirmed a JOINT release, deferred
+the CLA strategy, and deferred every other q-6/q-10 decision. After that answer, `claude agents
+--json --all` showed no active sessions; report-only MCP hygiene showed claude.exe 0, orphan MCP 0,
+and Docker MCP containers 0. Product PRs #218/#220 were already merged; this product worktree began
+from `main` `2cb35ea7f207314cad43a0a4263c45739e2232ee`. No capability, source, data, contract,
+prompt, or release/tag state moved.
+
+**Verified.** `npm run verify:context` and `git diff --check` run for this documentation/state
+sync; the exact diff was inspected for the four owned files only.
+
+**Next slice.** Resume product #200's pre-QA documentation batch, then retain the q-10(c)
+five-minute aesthetic sign-off as the release-tag blocker; independently, advance the lab #5/#29
+release work under its normal gates. The CoC inbox address and `CODE_OF_CONDUCT.md` change remain a
+separate owner/release follow-up.
