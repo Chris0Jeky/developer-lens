@@ -553,3 +553,99 @@ Rules that bind entries:
 - **promotion:** The durable prevention remains #234’s narrow tracked-text check. Until it lands,
   repeat the two-form tracked-only search during public-tip review and keep historical-Git findings
   separate from current-tip proof.
+
+### FR-021 — immediate inode reuse makes replacement fixtures nondeterministic
+
+- **first-seen:** 2026-08-06
+- **status:** `workaround-documented`
+- **symptom:** Exact-head hosted run `31339262700` failed only the `v3Backup` valid-replacement-inode
+  case. Its fixture unlinked the provisional path and immediately wrote a replacement; Linux reused
+  the original inode, so production recovery correctly observed the still-bound identity and
+  resolved. This is a pre-existing nondeterministic, platform-sensitive fixture defect, not a PR
+  #232 range regression and not a generic flaky-test label.
+- **impact:** An unrelated documentation PR can lose its required hosted gate even though production
+  behavior remains fail-closed and the changed range does not touch the fixture. Unbounded reruns
+  would hide the deterministic test-construction defect rather than repair it.
+- **workaround:** One focused local collision case and the full `v3Backup.test.ts` file passed after
+  the hosted failure; adjacent hosted run `31337964825` also passed the same file. That evidence
+  justifies exactly one rerun for PR #232, without treating the rerun as a repair or claiming its
+  result in this documentation hop.
+- **occurrences:** 2 independent occurrences — run `31112768523` exposed immediate inode reuse in
+  the sibling artifact-catalogue fixture on 2026-08-06; run `31339262700` exposed the corresponding
+  `v3Backup` fixture on 2026-08-09.
+- **task:** [#233](https://github.com/Chris0Jeky/developer-lens/issues/233) owns the bounded durable
+  fixture repair.
+- **promotion:** The cheapest enforcing layer is the affected test fixture: reuse commit
+  `1053cf8609108f1e7d0924bb42245185c6fce89e`'s established keep-original-inode-live pattern while
+  allocating the replacement, preserve production identity checks, and prove the focused case,
+  full backup file, and declared gate. #233 tracks that repair; PR #232 takes no production-code
+  detour.
+
+### FR-022 — PowerShell inner-quote stripping blocked a PR232 latest-field query
+
+- **first-seen:** 2026-08-09
+- **status:** `open`
+- **severity:** `LOW (CLI evidence friction)`
+- **symptom:** Three read-only `gh api --jq` projections used from PowerShell stripped inner quoting
+  before the request could be evaluated: the initial PR232 ISO-timestamp filter, the Lab PR59 commit
+  projection with a quoted-newline split, and the externally recorded PR232 exact-final-thread
+  snapshot. Each failed before mutation; no GitHub write occurred.
+- **impact:** A latest-field comparison can be delayed or misread if shell quoting is mistaken for
+  API evidence, weakening exact-head PR proof without changing repository state.
+- **workaround:** Use quote-safe projections and separate direct field reads, preserving the
+  path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
+  parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
+- **occurrences:** 3 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+  ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
+  PR232 exact-final-head review-thread snapshot.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns structured/JSON-input
+  Windows-safe CLI helpers for recurring evidence queries.
+- **promotion:** The cheapest enforcing layer is the Windows-safe structured-query helper already
+  owned by [#222](https://github.com/Chris0Jeky/developer-lens/issues/222): pass GraphQL values as
+  variables or JSON input rather than embedding quoted literals in a PowerShell native-command
+  argument. Keep direct field comparison until that helper lands.
+
+  **2026-08-09 note:** The Lab PR59 commit projection/newline split is the second independently
+  recorded occurrence (see #222 comment 5234236530); the PR232 exact-final-head thread snapshot is
+  the third. Quote-safe projections and direct field reads succeeded without mutation. The three
+  occurrences keep the path-set-order, UTC-switch, and patch-context predicates separate while
+  selecting #222's structured-query helper as the durable enforcing layer.
+
+### FR-023 — Windows PowerShell lacked the requested UTC date switch
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **severity:** `LOW (CLI evidence friction)`
+- **symptom:** The installed Windows PowerShell rejected `Get-Date -AsUTC` while composing an
+  exact-head PR evidence snapshot. The compound read-only command failed before any mutation.
+- **impact:** A version-specific convenience switch can interrupt or omit the timestamp attached
+  to an otherwise reproducible GitHub state snapshot.
+- **workaround:** Use `(Get-Date).ToUniversalTime().ToString('o')`, which succeeded on the same
+  shell without changing repository or GitHub state.
+- **occurrences:** 1 independent occurrence — 2026-08-09 during the PR232 final review-thread
+  snapshot.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
+  Windows-safe evidence helper and its explicit timestamp normalization.
+- **promotion:** Deliberately NOT promoted after one occurrence. Retain the compatible expression
+  until #222 proves the helper; a second independent occurrence should move UTC normalization into
+  that helper's tested contract.
+
+### FR-024 — repeated-schema patch context selected the wrong friction entry
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **severity:** `LOW (caught pre-commit content drift)`
+- **symptom:** An `apply_patch` hunk that changed a common `status` field without carrying its
+  `FR-022` heading matched the earlier `FR-015` entry. The mandatory immediate diff exposed the
+  wrong edit before commit or push.
+- **impact:** Repeated Markdown schemas make a syntactically successful patch unsafe evidence of
+  the intended target; an unchecked hunk could corrupt an unrelated friction record.
+- **workaround:** Restore the unrelated field and reapply the edit with the unique entry heading in
+  the patch context, then inspect the complete file diff.
+- **occurrences:** 1 independent occurrence — 2026-08-09 during PR232's second friction capture.
+- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
+  reconciliation and its factual documentation proof.
+- **promotion:** Deliberately NOT promoted after one occurrence because heading-anchored patches and
+  immediate diff inspection are already the cheapest fail-closed seam. A second independent
+  occurrence should add a focused verifier for duplicate-entry field drift rather than another
+  prose reminder.
