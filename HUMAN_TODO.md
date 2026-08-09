@@ -91,7 +91,7 @@ publication route remains active.
   (`strict=false`) and does not enforce administrator inclusion, so repository law still supplies
   the no-red-CI rule for privileged merges. The stated q-7 action is complete.
 
-- [ ] **q-8 — Check for and terminate any leaked Claude session processes from the pre-handoff
+- [x] **q-8 — Check for and terminate any leaked Claude session processes from the pre-handoff
   session.** On 2026-08-04 the handed-off session kept executing for over an hour after handoff —
   it merged [PR #87](https://github.com/Chris0Jeky/developer-lens/pull/87) itself and collided in a
   worktree on the [PR #89](https://github.com/Chris0Jeky/developer-lens/pull/89) lane before it
@@ -138,6 +138,14 @@ publication route remains active.
   here.** A human must identify and terminate any leaked session before lab merges proceed. q-8 stays
   open.
 
+  Closure (2026-08-09, owner decision + live hygiene evidence): the owner explicitly confirmed
+  **"YES, I MERGED"** for lab PR #24 and **"q8 session: CLOSE IT"**. After that answer,
+  `claude agents --json --all` reported no active sessions, and the report-only MCP-hygiene sweep
+  reported `claude.exe` 0, orphan MCP 0, and Docker MCP containers 0. The confirmed-clean result
+  satisfies q-8; it no longer gates lab checkout write work or lab merges. The deregistered
+  `dl-worktrees/value01` directory remains a manual owner review/delete action, but is not a
+  blocker to this closed process gate.
+
 - [x] **q-9 — Claude subagent model pins: SUPERSEDED by owner decision A5 (mandate v2,
   2026-08-08).** On 2026-08-07 the owner directed Opus 4.8 (high) pins for implementation/review
   and Sonnet 4.6 (high) for mechanical work, deliberately avoiding Opus 5. The owner mandate v2
@@ -160,8 +168,23 @@ publication route remains active.
   (h) approve private hosted URL architecture/provider later (U6). Agents may prepare options for
   each; none may be self-authorised.
 
+  Owner decisions (2026-08-09): defer q-10(a) CLA/legal review until before substantial external
+  code is accepted; all other q-10 decisions remain deferred, except that the joint H7 release is
+  reaffirmed. For confidential CoC reports, the owner selected a **separate inbox** but has not
+  supplied or approved its monitored address. Public routes therefore remain primary until a
+  release follow-up updates `CODE_OF_CONDUCT.md`; this remains an open q-10/release action. The
+  q-10(c) five-minute aesthetic sign-off still blocks each release tag.
+
 ## Changelog
 
+- 2026-08-09 (owner-decision closeout): closed q-8 on the owner's explicit confirmation that they
+  merged lab PR #24 and that the leaked-session action should close, plus the subsequently clean
+  `claude agents --json --all` and report-only MCP-hygiene results (claude.exe/orphan MCP/Docker MCP
+  containers all 0). The separately deregistered `value01` directory remains for the owner's manual
+  review/delete and does not reopen the process gate. The owner chose a separate, as-yet-unsupplied
+  monitored CoC inbox; public routes remain primary pending the q-10/release `CODE_OF_CONDUCT.md`
+  follow-up. CLA review and all other q-6/q-10 decisions are deferred; the joint release remains
+  reaffirmed. No capability changed.
 - 2026-08-08 (P0.5 first-batch session, late evening): expanded q-8 with the lab PR #24 merge
   observation (merged 22:14:27Z by account Chris0Jeky, lab CI green; human-vs-agent authorship
   unverifiable from the session; no approval inferred; gates held binding) and asked the owner to

@@ -7,7 +7,7 @@ the historical record of how past slices were proven, and a fresh agent followin
 file can resume deleted work (PR #127 late review).
 
 ```yaml
-updated: 2026-08-08
+updated: 2026-08-09
 current_slice_override: 'P0 delivered: GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`)
   merged; the owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
   docs/OWNER_CONSTITUTION.md (binding owner policy; layered subject policy supersedes the absolute
@@ -71,17 +71,19 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   and fable/life03-backup-crash-durability — never remove those without pushing first.
   (iii) Lab dependency-alert triage POSTED on lab issue #5 (read-only: two pyarrow HIGH alerts are
   one advisory whose vulnerable C++ path is not exposed to Python — batch constraint bump to
-  >=23.0.1,<24; pytest MEDIUM is dev-only — batch pytest-9 bump; lab writes stay q-8-gated).
+  >=23.0.1,<24; pytest MEDIUM is dev-only — batch pytest-9 bump; the former q-8 gate closed on
+  2026-08-09).
   P0.5 step order vs the mandate: step 1 (licence) DONE, step 2 (community scaffolding) DONE,
-  step 4 product half DONE (#211; lab half triaged on lab #5, not fixed), step 3 q-8-gated,
+  step 4 product half DONE (#211; lab half triaged on lab #5, not fixed), step 3 unblocked by the
+  2026-08-09 q-8 closure,
   steps 5-7 pending — order deviations are recorded here, never silent. EXACT NEXT ACTION for the
   next session, in roadmap order: first the pre-QA doc touch-up batch tracked on #200
   (README→COMMERCIAL_OPTION link, AGPL visible source-offer in the Pages app, Discussions-link
   warning, cockpit seed-fixture wording, invented-vs-C0 terminology) so QA sees final surfaces;
   then STEP 5 = final browser/visual QA proof for the q-10(c) five-minute owner sign-off; then
   STEP 6 = tag v0.1.0 + publish C0 release assets and release notes, and the 0.1.0 version bump
-  rides THAT tag PR (LOW-1 disposition), not the pre-QA batch — blocked on q-8 (lab prep) +
-  q-10(c), joint per H7=BOTH; step 7 descriptions/topics is partially done (description, topics,
+  rides THAT tag PR (LOW-1 disposition), not the pre-QA batch — blocked on q-10(c), joint per
+  H7=BOTH; step 7 descriptions/topics is partially done (description, topics,
   Discussions live). Tracked from the #209 review (non-blocking LOWs,
   noted on #200): version 0.0.0 bump belongs to the release-tag step; README should link
   COMMERCIAL_OPTION.md; the Pages app needs a visible AGPL source-offer check before v0.1.0.
@@ -103,14 +105,13 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
-  H7 — none exists. The joint tag is blocked by q-8 (lab release preparation is lab write work) and
-  by the q-10(c) owner aesthetic sign-off. Do not
+  H7 — none exists. The joint tag is blocked by the q-10(c) owner aesthetic sign-off. Do not
   advance task selection beyond P0.5/#200. Downstream (not selected): after the v0.1.0 tag, P1 =
   #174 integrated vertical with #181/#182 contract semantics (H1), folding #135/#76/#80-resolver
   where touched. Data Charter v2 + capability profiles = #201 (next, before any real activation).
-  Lab-side lanes (lab #5/#6/#7/#23,
-  lab release prep, lab governor seeding) ALL stay human-gated behind q-8 (lab PR #24 was merged
-  2026-08-08 22:14Z by an unverified actor — see open_owner_gates; no gate relaxation is inferred). Older
+  Lab-side lanes (lab #5/#6/#7/#23, lab release prep, lab governor seeding) may resume under their
+  own normal review and worktree gates: q-8 closed on 2026-08-09 after the owner's explicit
+  confirmation for lab PR #24 and a confirmed-clean session sweep. Older
   post-WB-C1 debt map retained below as CONTEXT ONLY — its embedded recommendation is SUPERSEDED by
   the wave above (do not select #189 validator-parity ahead of P0.5/P1; it stays tracked backlog per
   docs/PROGRAMME_ROADMAP.md): the bounded WB-C1 programme is COMPLETE, the
@@ -121,21 +122,17 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   change — the shared `methodTrialView` contract must move in lockstep across both repos, so run it
   from the coordinating session via the `developer-lens-continuation` skill (there is no committed
   cross-repo-contract skill in this repo) and re-generate the committed fixture only through the
-  producer. GATE (q-8): a competing writer was active in the lab checkout (observed 2026-08-07).
-  ANY lab merge stays blocked until a HUMAN terminates the leaked session; an isolated
-  worktree does NOT make a merge safe while the competing writer can still race the remote. (Lab
-  PR #24 was nonetheless merged 2026-08-08 22:14Z by an actor this session cannot verify as human —
-  recorded as an observation, not treated as a relaxation of this gate.) Separately,
-  do NOT begin WRITE work in the affected lab checkout until q-8 is resolved or a verified isolated
-  worktree is used. The validator-parity subset and #182 are cross-repo (lab-touching), so both their
-  lab write-work and their eventual merge fall under these two gates. Other tracked debt, pick by owner priority: product #189''s accessible-rendering follow-ups
+  producer. Former q-8 gate: a competing writer was active in the lab checkout (observed 2026-08-07),
+  but q-8 closed on 2026-08-09 after the owner confirmed lab PR #24 and the clean-session result.
+  Lab writes and merges now follow their normal isolated-worktree, review, and CI gates. The
+  validator-parity subset and #182 remain cross-repo (lab-touching). Other tracked debt, pick by owner priority: product #189''s accessible-rendering follow-ups
   (the timeline text alternative should mark where each missing/marked run ends/resumes — Codex #196
   round 2; and the unavailable-metric page-coherence gap, whose real fix is the validator-parity subset
   above) plus its two DEFERRED bullets (future-v2 wire dedup + closed-copy/source-identity canary);
   #181 SHIPPED (PR #198 `73cb31e`; #181 stays open as the schema-parity parent that #182 defers to)
   and #182 (ResearchPack semantic hardening — cross-repo, one contract slice) remains; lab #6 — 4/6
   reproducer-backed fixes delivered as `developer-lens-lab` PR #24, MERGED 2026-08-08 22:14Z with
-  lab Check green (merger identity unverified — see open_owner_gates; lab follow-ups tracked as
+  lab Check green (the owner confirmed they merged it on 2026-08-09; lab follow-ups tracked as
   lab #31; findings 1 and 3 mapped as digest-moving); lab #7
   (fallback case labels — CROSS-REPO: blocked on relaxing the product method-trial-view schema
   title/summary/scenario_code first, and the fallback path is currently unreachable — see the plan on
@@ -143,10 +140,11 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   not turn any follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # dependency-closed focused wave; opportunity backlog = GitHub issues (governor.yaml queues)
   [P0 governor bootstrap PR #206 — delivered, P0.5 v0.1.0 release programme #200 — active, product-only release preparation]
-control_plane_side_lane: 'Product #214 / lab #33 PROMPT OPERATING SYSTEM — a control-plane SIDE LANE
+control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERATING SYSTEM — a control-plane SIDE LANE
   on branch `docs/prompt-system-overhaul`, not a phase advance. It does NOT change the active wave:
-  P0.5 #200 remains the active programme, #174 remains NOT selected, and every gate is unchanged —
-  q-8, q-10(c), the joint H7 tag, and all capability states carry over untouched. Scope: consolidate
+  P0.5 #200 remains the active programme, #174 remains NOT selected, and q-10(c), the joint H7 tag,
+  and all capability states carry over untouched. q-8 later closed by owner confirmation and a
+  clean-session sweep. Scope: consolidate
   every executable prompt into docs/agent-system/PROMPT_LIBRARY.md behind stable IDs (12 common
   DL-P01..DL-P12 shared with the lab, plus product DL-PX extensions), pin the two repo-neutral
   shared blocks by SHA-256 in .agent-harness/prompt-parity.json, add CONTINUOUS_WORK_PROTOCOL.md and
@@ -158,12 +156,13 @@ control_plane_side_lane: 'Product #214 / lab #33 PROMPT OPERATING SYSTEM — a c
   locked-invariant reviewer lenses. The executable skill-block parity check and the routing rule
   for future .claude definition edits are live; the runtime write limitation remains documented,
   not resolved. FR-009 is tracked at https://github.com/Chris0Jeky/developer-lens/issues/215. The
-  lab #33 counterpart is prepared-and-parked behind Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8,
-  which stays OPEN and is never inferred closed.'
+  lab #33 counterpart landed as lab PR #35, externally merged at 2026-08-09T04:06:29Z as merge
+  commit `bba0c18261c0a2b77332a0408f63b10c774c91f4`; no operator identity is inferred from that
+  GitHub-account event.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
-  NEW recorded owner decision — none exists) and remains blocked by q-8 for the lab-side release
-  preparation plus the q-10(c) owner sign-off. The binding review-timing gate
+  NEW recorded owner decision — none exists) and remains blocked by the q-10(c) owner sign-off.
+  The binding review-timing gate
   stated below (`review_timing_defect`) governs any future merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the
   exact-final-head Codex review triaged or 15 minutes since the last push with a fresh clean sweep —
@@ -172,17 +171,17 @@ blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-s
   migration/connector still requires #168 and a separately reviewed production grant issuer/caller.
   #80/#174 remain outside this demo programme. HUMAN_TODO.md q-10(c) is non-blocking for current
   product release preparation, but its five-minute owner aesthetic sign-off blocks every release tag,
-  even if q-8 resolves or the owner later chooses a product-only tag.'
-open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) unchanged and non-blocking; q-8 (leaked-session/
-  concurrent-writer cleanup — human; gates ALL lab merges and lab-checkout write work) remains
-  open; q-9 SUPERSEDED by owner decision A5 (Opus 5 routing); q-10 (owner/manual action register
-  from mandate v2) added; q-10(c) is non-blocking for current product release preparation, but its five-minute
-  owner aesthetic sign-off blocks every release tag, even if q-8 resolves or the owner later chooses
-  a product-only tag; q-7 verified complete. LIVE OBSERVATION (2026-08-08 22:14:27Z): lab PR #24 —
-  recorded above as parked behind q-8 — was MERGED by the account Chris0Jeky with lab Check green at
-  the merged head (`ef57045`); whether a human performed that merge is not verifiable from this
-  session, no approval is inferred, and every q-8 gate on lab write work and future lab merges is
-  treated as still binding until the owner confirms'
+  regardless of the closed q-8 process gate or a later product-only-tag decision.'
+open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) remains deferred and non-blocking. q-8 is CLOSED
+  (2026-08-09): the owner explicitly confirmed merging lab PR #24 and the closure, followed by
+  `claude agents --json --all` with no active sessions and a report-only MCP-hygiene result of
+  claude.exe/orphan MCP/Docker MCP containers all 0. q-9 is SUPERSEDED by owner decision A5.
+  q-10(a) CLA review is deferred before substantial external code; all other q-10 decisions remain
+  deferred except the reaffirmed joint H7 release and the selected separate CoC inbox. Its address
+  is not yet supplied/approved, so public routes remain primary pending a q-10/release
+  `CODE_OF_CONDUCT.md` follow-up. q-10(c) remains non-blocking for current preparation but its
+  five-minute owner aesthetic sign-off blocks every release tag. The deregistered `value01`
+  directory remains manual owner review/delete and is not a q-8 blocker.'
 frozen_by_reassessment: horizon:frozen label (WB candidates except the owner-directed WB-C1 Method
   Trial demonstration, vector retrieval, GOV/SEC/PORT-02/PROV-01 sources, ATLAS-03 parsers,
   EVQ-09/10, TRACE-03) — 07 §0a
