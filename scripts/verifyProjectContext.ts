@@ -4,9 +4,15 @@ import { resolve } from 'node:path'
 import fg from 'fast-glob'
 import {
   extractMarkdownLinkTargets,
+  parsePromptLibrary,
   parseSkillFrontmatter,
   resolveRepositoryLinkTarget,
+  validateContinuousWorkProtocol,
+  validatePromptLibrary,
+  validatePromptParityManifest,
+  validatePromptSource,
   validateTierDeclaration,
+  type PromptSourceClassification,
 } from './projectContextValidation.js'
 
 const root = process.cwd()
@@ -24,6 +30,7 @@ function requireFile(path: string): void {
 
 const requiredFiles = [
   '.agent-harness/governor.yaml',
+  '.agent-harness/prompt-parity.json',
   '.agent-harness/tier.json',
   '.agents/skills/developer-lens-continuation/SKILL.md',
   '.agents/skills/developer-lens-continuation/agents/openai.yaml',
@@ -41,7 +48,9 @@ const requiredFiles = [
   'docs/IMPLEMENTATION_LEDGER.md',
   'docs/OWNER_CONSTITUTION.md',
   'docs/PROGRAMME_ROADMAP.md',
+  'docs/agent-system/CONTINUOUS_WORK_PROTOCOL.md',
   'docs/agent-system/CROSS_REPO_CONTRACT.md',
+  'docs/agent-system/FRICTION_LOG.md',
   'docs/agent-system/IDEA_PROTOCOL.md',
   'docs/agent-system/MAINTENANCE_PROTOCOL.md',
   'docs/agent-system/PROMPT_LIBRARY.md',
@@ -152,6 +161,68 @@ if (failures.length === 0) {
   if (!skillInterface.includes('$developer-lens-continuation')) {
     failures.push('continuation skill default prompt must mention $developer-lens-continuation')
   }
+
+  // Prompt operating system (#214 / lab #33): manifest, active sources, and the classification of
+  // every prompt-shaped document that is NOT the canonical library.
+  const promptSourceClassification: Record<string, PromptSourceClassification> = {
+    'docs/OVERNIGHT_EXECUTION_PROMPT.md': { kind: 'redirect', target: 'DL-P03-OVERNIGHT-CONTINUOUS' },
+    'docs/SOL_ULTRA_ORCHESTRATOR_PROMPT.md': { kind: 'redirect', target: 'DL-P01-FLAGSHIP-GOVERNOR' },
+    'docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md': {
+      kind: 'historical',
+      target: 'DL-PX01-PRODUCT-DEEP-DISCOVERY',
+    },
+  }
+
+  let manifestForLibrary: ReturnType<typeof validatePromptParityManifest>['manifest']
+  try {
+    const parsedManifest = validatePromptParityManifest(
+      JSON.parse(read('.agent-harness/prompt-parity.json')) as unknown,
+    )
+    for (const error of parsedManifest.errors) {
+      failures.push(`prompt parity manifest: ${error}`)
+    }
+    manifestForLibrary = parsedManifest.manifest
+  } catch (error) {
+    failures.push(`.agent-harness/prompt-parity.json is not valid JSON: ${String(error)}`)
+  }
+
+  const library = parsePromptLibrary(read('docs/agent-system/PROMPT_LIBRARY.md'))
+  const activePromptIds = library.prompts
+    .filter((prompt) => prompt.status === 'active')
+    .map((prompt) => prompt.id)
+
+  if (manifestForLibrary) {
+    const localSlug = String(
+      (
+        (JSON.parse(read('.agent-harness/tier.json')) as Record<string, unknown>)[
+          'public_synthetic_publication'
+        ] as Record<string, unknown> | undefined
+      )?.['repository'] ?? '',
+    )
+    for (const error of validatePromptLibrary(library, manifestForLibrary, localSlug)) {
+      failures.push(`prompt library: ${error}`)
+    }
+  } else {
+    for (const error of library.errors) {
+      failures.push(`prompt library: ${error}`)
+    }
+  }
+
+  for (const error of validateContinuousWorkProtocol(
+    read('docs/agent-system/CONTINUOUS_WORK_PROTOCOL.md'),
+  )) {
+    failures.push(`continuous work protocol: ${error}`)
+  }
+
+  for (const [path, classification] of Object.entries(promptSourceClassification)) {
+    if (!existsSync(resolve(root, path))) {
+      failures.push(`missing classified prompt source: ${path}`)
+      continue
+    }
+    for (const error of validatePromptSource(classification, read(path), activePromptIds)) {
+      failures.push(`${path}: ${error}`)
+    }
+  }
 }
 
 const authorityMarkers: Record<string, readonly string[]> = {
@@ -173,7 +244,9 @@ const authorityMarkers: Record<string, readonly string[]> = {
     'Recorded supersessions and reconciliations',
   ],
   'docs/IMPLEMENTATION_LEDGER.md': ['G1 and G2 are owner-approved', 'G3 standing authorization', 'G4 is owner-approved only for OpenAI'],
-  'docs/OVERNIGHT_EXECUTION_PROMPT.md': ['G1 and G2 are approved', 'G3 standing authorization', 'G4 is approved only for OpenAI'],
+  // docs/OVERNIGHT_EXECUTION_PROMPT.md no longer restates authority: it is a classified redirect to
+  // DL-P03-OVERNIGHT-CONTINUOUS, whose body carries the authority reads. The prompt-parity manifest
+  // and the prompt-source classification above replace its bespoke marker checks.
 }
 
 for (const [path, markers] of Object.entries(authorityMarkers)) {
@@ -205,11 +278,6 @@ const swarmMarkers: Record<string, readonly string[]> = {
     'discover the live collaboration ceiling',
     'replenish slots as results arrive',
   ],
-  'docs/OVERNIGHT_EXECUTION_PROMPT.md': [
-    'Do not impose a fixed one-, two-, or three-agent cap',
-    'immediately replenish the free slot',
-    '$route-codex-work',
-  ],
 }
 
 for (const [path, markers] of Object.entries(swarmMarkers)) {
@@ -230,6 +298,14 @@ const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md', '.cla
 
 for (const path of markdownFiles) {
   const contents = read(path)
+  if (
+    path !== 'docs/agent-system/PROMPT_LIBRARY.md' &&
+    /^<!-- prompt-id: /m.test(contents)
+  ) {
+    failures.push(
+      `${path} declares an executable prompt-id marker; the only executable prompt surface is docs/agent-system/PROMPT_LIBRARY.md`,
+    )
+  }
   for (const rawTarget of extractMarkdownLinkTargets(contents)) {
     const resolution = resolveRepositoryLinkTarget(root, path, rawTarget)
     if (resolution.kind === 'skip') {

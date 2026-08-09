@@ -1,4 +1,6 @@
+import { createHash } from 'node:crypto'
 import { dirname, isAbsolute, relative, resolve, sep, win32 } from 'node:path'
+import { z } from 'zod'
 
 export type LinkResolution =
   | { kind: 'skip' }
@@ -181,4 +183,526 @@ export function validateTierDeclaration(value: unknown): string[] {
       ? []
       : [`${path.join('.')} must be ${JSON.stringify(expected)} (received ${JSON.stringify(actual)})`]
   })
+}
+
+/*
+ * Prompt operating system (issue #214 / lab #33).
+ *
+ * The prompt library is the single executable prompt surface. Everything below exists so that a
+ * silent drift — a deleted common ID, an edited shared block in one prompt only, a stale prompt
+ * document that still reads as runnable, a bare cross-repository `q-N` — fails a check instead of
+ * surviving into a pasted session.
+ *
+ * The common-ID set is pinned HERE as well as in `.agent-harness/prompt-parity.json` on purpose:
+ * deleting an ID from both the prompt library and the manifest must still fail.
+ */
+
+export const COMMON_PROMPT_IDS = [
+  'DL-P01-FLAGSHIP-GOVERNOR',
+  'DL-P02-GOVERNOR-LITE',
+  'DL-P03-OVERNIGHT-CONTINUOUS',
+  'DL-P04-RESUME-RECONCILE',
+  'DL-P05-BOUNDED-IMPLEMENTER',
+  'DL-P06-INDEPENDENT-REVIEWER',
+  'DL-P07-MECHANICAL-SWEEP',
+  'DL-P08-CI-REVIEW-RECOVERY',
+  'DL-P09-RELEASE-CURATOR',
+  'DL-P10-CROSS-REPO-COORDINATOR',
+  'DL-P11-DISCOVERY-IDEA-MINER',
+  'DL-P12-FRICTION-BURNDOWN',
+] as const
+
+export const SHARED_BLOCK_IDS = ['runtime-bootstrap-v1', 'friction-tasking-v1'] as const
+
+/** Exact clauses each shared block must carry, checked independently of its digest. */
+export const SHARED_BLOCK_REQUIRED_CLAUSES: Readonly<Record<string, readonly string[]>> = {
+  'runtime-bootstrap-v1': [
+    'Claude runtimes read CLAUDE.md first',
+    'Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references',
+    'repository continuation skill, and follow Sol/Terra/Luna routing',
+    'Cross-repository human actions are cited as fully qualified refs',
+  ],
+  'friction-tasking-v1': [
+    'docs/agent-system/FRICTION_LOG.md in the SAME hop',
+    'Capture is not permission to detour',
+    'At the second independent occurrence',
+  ],
+}
+
+/** Ordered, each exactly once, in `CONTINUOUS_WORK_PROTOCOL.md`. */
+export const CONTINUOUS_SECTION_MARKERS = [
+  'continuous-execution-begin',
+  'continuous-execution-end',
+  'continuous-stop-begin',
+  'continuous-stop-end',
+] as const
+
+export const RETIRED_PROMPT_SENTINEL =
+  'RETIRED PROMPT - HISTORICAL RECORD ONLY - DO NOT EXECUTE.'
+
+const promptIdPattern = /^DL-(?:P|PX|LX)\d{2}-[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?$/
+const promptMarkerPattern = /^<!-- prompt-id: (\S+) status: (\S+) -->$/
+const sharedBlockMarkerPattern = /^<!-- shared-block: (\S+) -->$/
+const promptSourceMarkerPattern = /^<!-- prompt-source: (\S+) target: (\S+) -->$/
+const qualifiedHumanRefPattern = /[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+::HUMAN_TODO\.md::q-\d+/g
+const anyHumanRefPattern = /q-\d+/g
+
+export type PromptStatus = 'active' | 'redirect' | 'historical'
+
+export interface PromptLibraryEntry {
+  id: string
+  status: PromptStatus
+  body: string
+}
+
+export interface ParsedPromptLibrary {
+  sharedBlockIds: string[]
+  sharedBlocks: Map<string, string>
+  prompts: PromptLibraryEntry[]
+  errors: string[]
+}
+
+export function normalizeSharedText(contents: string): string {
+  return contents.replaceAll('\r\n', '\n').replaceAll('\r', '\n')
+}
+
+export function sharedBlockDigest(body: string): string {
+  return createHash('sha256').update(normalizeSharedText(body), 'utf8').digest('hex')
+}
+
+interface MarkerSection {
+  kind: 'prompt' | 'shared-block'
+  id: string
+  status?: string
+  line: number
+  fences: string[]
+}
+
+function collectMarkerSections(contents: string): { sections: MarkerSection[]; errors: string[] } {
+  const errors: string[] = []
+  const sections: MarkerSection[] = []
+  const lines = normalizeSharedText(contents).split('\n')
+
+  let current: MarkerSection | undefined
+  let fenceBuffer: string[] | undefined
+
+  lines.forEach((line, index) => {
+    if (line.startsWith('```')) {
+      if (fenceBuffer) {
+        current?.fences.push(fenceBuffer.join('\n'))
+        fenceBuffer = undefined
+      } else {
+        fenceBuffer = []
+      }
+      return
+    }
+    if (fenceBuffer) {
+      fenceBuffer.push(line)
+      return
+    }
+
+    const promptMarker = promptMarkerPattern.exec(line)
+    if (promptMarker) {
+      current = {
+        kind: 'prompt',
+        id: promptMarker[1] ?? '',
+        status: promptMarker[2] ?? '',
+        line: index + 1,
+        fences: [],
+      }
+      sections.push(current)
+      return
+    }
+    const sharedMarker = sharedBlockMarkerPattern.exec(line)
+    if (sharedMarker) {
+      current = { kind: 'shared-block', id: sharedMarker[1] ?? '', line: index + 1, fences: [] }
+      sections.push(current)
+    }
+  })
+
+  if (fenceBuffer) {
+    errors.push('prompt library contains an unterminated fenced block')
+  }
+
+  return { sections, errors }
+}
+
+export function parsePromptLibrary(contents: string): ParsedPromptLibrary {
+  const { sections, errors } = collectMarkerSections(contents)
+  const sharedBlocks = new Map<string, string>()
+  const sharedBlockIds: string[] = []
+  const prompts: PromptLibraryEntry[] = []
+  const seenPromptIds = new Set<string>()
+
+  for (const section of sections) {
+    if (section.fences.length !== 1) {
+      errors.push(
+        `${section.kind} ${section.id} (line ${section.line}) must own exactly one fenced text block (found ${section.fences.length})`,
+      )
+      continue
+    }
+    const body = section.fences[0] ?? ''
+
+    if (section.kind === 'shared-block') {
+      if (sharedBlocks.has(section.id)) {
+        errors.push(`duplicate shared block: ${section.id}`)
+        continue
+      }
+      sharedBlockIds.push(section.id)
+      sharedBlocks.set(section.id, body)
+      continue
+    }
+
+    if (!promptIdPattern.test(section.id)) {
+      errors.push(`malformed prompt id: ${section.id} (line ${section.line})`)
+      continue
+    }
+    if (section.status !== 'active' && section.status !== 'redirect' && section.status !== 'historical') {
+      errors.push(`prompt ${section.id} has unsupported status: ${String(section.status)}`)
+      continue
+    }
+    if (seenPromptIds.has(section.id)) {
+      errors.push(`duplicate prompt id: ${section.id}`)
+      continue
+    }
+    seenPromptIds.add(section.id)
+    prompts.push({ id: section.id, status: section.status, body })
+  }
+
+  return { sharedBlockIds, sharedBlocks, prompts, errors }
+}
+
+const PromptParityManifestSchema = z.strictObject({
+  manifest_schema_version: z.literal(1),
+  description: z.string().min(1),
+  shared_block_normalization: z.string().min(1),
+  common_prompt_ids: z.array(z.string().regex(promptIdPattern)).min(1),
+  continuous_prompt_ids: z.array(z.string().regex(promptIdPattern)).min(1),
+  shared_blocks: z
+    .array(
+      z.strictObject({
+        id: z.string().min(1),
+        sha256: z.string().regex(/^[0-9a-f]{64}$/),
+      }),
+    )
+    .min(1),
+  repositories: z
+    .array(
+      z.strictObject({
+        slug: z.string().regex(/^[A-Za-z0-9._-]+\/[A-Za-z0-9._-]+$/),
+        role: z.enum(['product', 'lab']),
+        prompt_library: z.string().min(1),
+        continuous_work_protocol: z.string().min(1),
+        friction_log: z.string().min(1),
+        extension_prompt_ids: z.array(z.string().regex(promptIdPattern)),
+      }),
+    )
+    .length(2),
+})
+
+export type PromptParityManifest = z.infer<typeof PromptParityManifestSchema>
+
+function sameOrderedIds(actual: readonly string[], expected: readonly string[]): boolean {
+  return actual.length === expected.length && actual.every((id, index) => id === expected[index])
+}
+
+function describeSetDrift(
+  label: string,
+  actual: readonly string[],
+  expected: readonly string[],
+): string[] {
+  const missing = expected.filter((id) => !actual.includes(id))
+  const extra = actual.filter((id) => !expected.includes(id))
+  const errors: string[] = []
+  if (missing.length > 0) {
+    errors.push(`${label} is missing: ${missing.join(', ')}`)
+  }
+  if (extra.length > 0) {
+    errors.push(`${label} has unexpected entries: ${extra.join(', ')}`)
+  }
+  if (errors.length === 0 && !sameOrderedIds(actual, expected)) {
+    errors.push(`${label} is out of manifest order: expected ${expected.join(', ')}`)
+  }
+  return errors
+}
+
+export function validatePromptParityManifest(
+  value: unknown,
+): { manifest?: PromptParityManifest; errors: string[] } {
+  const parsed = PromptParityManifestSchema.safeParse(value)
+  if (!parsed.success) {
+    return {
+      errors: parsed.error.issues.map(
+        (issue) => `${issue.path.join('.') || '<root>'}: ${issue.message}`,
+      ),
+    }
+  }
+
+  const manifest = parsed.data
+  const errors: string[] = []
+
+  errors.push(
+    ...describeSetDrift('manifest common_prompt_ids', manifest.common_prompt_ids, COMMON_PROMPT_IDS),
+  )
+  errors.push(
+    ...describeSetDrift(
+      'manifest shared_blocks',
+      manifest.shared_blocks.map((block) => block.id),
+      SHARED_BLOCK_IDS,
+    ),
+  )
+
+  for (const id of manifest.continuous_prompt_ids) {
+    if (!manifest.common_prompt_ids.includes(id)) {
+      errors.push(`manifest continuous prompt id is not a common prompt id: ${id}`)
+    }
+  }
+
+  const roles = manifest.repositories.map((repository) => repository.role)
+  if (!roles.includes('product') || !roles.includes('lab')) {
+    errors.push('manifest repositories must declare exactly one product and one lab entry')
+  }
+  const slugs = manifest.repositories.map((repository) => repository.slug)
+  if (new Set(slugs).size !== slugs.length) {
+    errors.push('manifest repositories must have distinct slugs')
+  }
+
+  const allIds = [
+    ...manifest.common_prompt_ids,
+    ...manifest.repositories.flatMap((repository) => repository.extension_prompt_ids),
+  ]
+  const duplicates = allIds.filter((id, index) => allIds.indexOf(id) !== index)
+  if (duplicates.length > 0) {
+    errors.push(`manifest prompt ids must be unique across common and extension sets: ${[...new Set(duplicates)].join(', ')}`)
+  }
+
+  return errors.length > 0 ? { manifest, errors } : { manifest, errors: [] }
+}
+
+export function findBareHumanRefs(body: string): string[] {
+  const normalized = normalizeSharedText(body)
+  const qualifiedRanges: Array<[number, number]> = []
+  for (const match of normalized.matchAll(qualifiedHumanRefPattern)) {
+    const start = match.index ?? 0
+    qualifiedRanges.push([start, start + match[0].length])
+  }
+
+  const bare: string[] = []
+  for (const match of normalized.matchAll(anyHumanRefPattern)) {
+    const start = match.index ?? 0
+    const covered = qualifiedRanges.some(([from, to]) => start >= from && start + match[0].length <= to)
+    if (!covered) {
+      bare.push(match[0])
+    }
+  }
+  return bare
+}
+
+export function countOccurrences(haystack: string, needle: string): number {
+  if (needle.length === 0) {
+    return 0
+  }
+  let count = 0
+  let index = haystack.indexOf(needle)
+  while (index !== -1) {
+    count += 1
+    index = haystack.indexOf(needle, index + needle.length)
+  }
+  return count
+}
+
+export function validatePromptLibrary(
+  library: ParsedPromptLibrary,
+  manifest: PromptParityManifest,
+  localSlug: string,
+): string[] {
+  const errors = [...library.errors]
+
+  const localRepository = manifest.repositories.find((repository) => repository.slug === localSlug)
+  if (!localRepository) {
+    return [
+      ...errors,
+      `prompt parity manifest declares no entry for this repository slug: ${localSlug}`,
+    ]
+  }
+
+  errors.push(...describeSetDrift('prompt library shared blocks', library.sharedBlockIds, SHARED_BLOCK_IDS))
+
+  for (const declared of manifest.shared_blocks) {
+    const body = library.sharedBlocks.get(declared.id)
+    if (body === undefined) {
+      continue
+    }
+    const digest = sharedBlockDigest(body)
+    if (digest !== declared.sha256) {
+      errors.push(
+        `shared block ${declared.id} digest drift: prompt library is ${digest}, manifest pins ${declared.sha256}`,
+      )
+    }
+    for (const clause of SHARED_BLOCK_REQUIRED_CLAUSES[declared.id] ?? []) {
+      if (!body.includes(clause)) {
+        errors.push(`shared block ${declared.id} is missing required clause: ${clause}`)
+      }
+    }
+  }
+
+  const activePrompts = library.prompts.filter((prompt) => prompt.status === 'active')
+  const expectedActiveIds = [...manifest.common_prompt_ids, ...localRepository.extension_prompt_ids]
+  errors.push(
+    ...describeSetDrift(
+      'prompt library active prompt ids',
+      activePrompts.map((prompt) => prompt.id),
+      expectedActiveIds,
+    ),
+  )
+
+  for (const id of manifest.continuous_prompt_ids) {
+    if (!activePrompts.some((prompt) => prompt.id === id)) {
+      errors.push(`continuous prompt ${id} is not an active prompt in the library`)
+    }
+  }
+
+  for (const prompt of activePrompts) {
+    const body = normalizeSharedText(prompt.body)
+    for (const blockId of SHARED_BLOCK_IDS) {
+      const blockBody = library.sharedBlocks.get(blockId)
+      if (blockBody === undefined) {
+        continue
+      }
+      const occurrences = countOccurrences(body, normalizeSharedText(blockBody))
+      if (occurrences !== 1) {
+        errors.push(
+          `prompt ${prompt.id} must contain exactly one copy of shared block ${blockId} (found ${occurrences})`,
+        )
+      }
+    }
+    for (const bare of new Set(findBareHumanRefs(body))) {
+      errors.push(
+        `prompt ${prompt.id} cites a bare human action "${bare}"; use <owner>/<repo>::HUMAN_TODO.md::${bare}`,
+      )
+    }
+  }
+
+  return errors
+}
+
+export function validateContinuousWorkProtocol(contents: string): string[] {
+  const normalized = normalizeSharedText(contents)
+  const errors: string[] = []
+  const positions: Array<{ marker: string; index: number }> = []
+
+  for (const marker of CONTINUOUS_SECTION_MARKERS) {
+    const token = `<!-- ${marker} -->`
+    const occurrences = countOccurrences(normalized, token)
+    if (occurrences === 0) {
+      errors.push(`continuous work protocol is missing marker: ${marker}`)
+      continue
+    }
+    if (occurrences > 1) {
+      errors.push(`continuous work protocol repeats marker ${marker} ${occurrences} times (expected exactly one)`)
+      continue
+    }
+    positions.push({ marker, index: normalized.indexOf(token) })
+  }
+
+  if (positions.length === CONTINUOUS_SECTION_MARKERS.length) {
+    const ordered = positions.every(
+      (entry, index) => index === 0 || entry.index > (positions[index - 1]?.index ?? -1),
+    )
+    if (!ordered) {
+      errors.push(
+        `continuous work protocol markers are out of order; expected ${CONTINUOUS_SECTION_MARKERS.join(' -> ')}`,
+      )
+    }
+  }
+
+  return errors
+}
+
+export interface PromptSourceClassification {
+  kind: 'redirect' | 'historical'
+  target: string
+}
+
+/**
+ * A prompt-shaped document outside the library must declare itself a redirect or a historical
+ * record, and must name a live prompt ID. A redirect carries no fenced body at all; a historical
+ * record's fenced bodies are sentinel-wrapped so a copy-paste carries its own retirement notice.
+ */
+export function validatePromptSource(
+  expected: PromptSourceClassification,
+  contents: string,
+  activePromptIds: readonly string[],
+): string[] {
+  const errors: string[] = []
+  const normalized = normalizeSharedText(contents)
+  const lines = normalized.split('\n')
+
+  const markers = lines
+    .map((line) => promptSourceMarkerPattern.exec(line))
+    .filter((match): match is RegExpExecArray => match !== null)
+
+  if (markers.length !== 1) {
+    errors.push(
+      `expected exactly one prompt-source marker declaring "${expected.kind}" (found ${markers.length})`,
+    )
+    return errors
+  }
+
+  const [, kind = '', target = ''] = markers[0] as RegExpExecArray
+  if (kind !== expected.kind) {
+    errors.push(`prompt-source marker declares "${kind}" but this document is classified "${expected.kind}"`)
+  }
+  if (target !== expected.target) {
+    errors.push(`prompt-source target is "${target}" but the classification expects "${expected.target}"`)
+  }
+  if (!activePromptIds.includes(target)) {
+    errors.push(`prompt-source redirects to "${target}", which is not an active prompt id`)
+  }
+
+  if (lines.some((line) => promptMarkerPattern.test(line))) {
+    errors.push('a redirect or historical document must not declare an executable prompt-id marker')
+  }
+
+  const fenceBodies: string[] = []
+  let buffer: string[] | undefined
+  for (const line of lines) {
+    if (line.startsWith('```')) {
+      if (buffer) {
+        fenceBodies.push(buffer.join('\n'))
+        buffer = undefined
+      } else {
+        buffer = []
+      }
+      continue
+    }
+    buffer?.push(line)
+  }
+  if (buffer) {
+    errors.push('document contains an unterminated fenced block')
+  }
+
+  if (expected.kind === 'redirect') {
+    if (fenceBodies.length > 0) {
+      errors.push(
+        `a redirect must not keep a competing executable copy: found ${fenceBodies.length} fenced block(s)`,
+      )
+    }
+    return errors
+  }
+
+  if (!normalized.includes(RETIRED_PROMPT_SENTINEL)) {
+    errors.push(`a historical prompt document must carry the sentinel: ${RETIRED_PROMPT_SENTINEL}`)
+  }
+  fenceBodies.forEach((body, index) => {
+    const bodyLines = body.split('\n')
+    if (bodyLines[0] !== RETIRED_PROMPT_SENTINEL) {
+      errors.push(`historical fenced block ${index + 1} must OPEN with the retirement sentinel`)
+    }
+    if (bodyLines[bodyLines.length - 1] !== RETIRED_PROMPT_SENTINEL) {
+      errors.push(`historical fenced block ${index + 1} must CLOSE with the retirement sentinel`)
+    }
+  })
+
+  return errors
 }
