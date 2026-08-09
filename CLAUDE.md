@@ -55,8 +55,8 @@ rollback/deletion behavior, and proving checks. Never track or publish those inp
 
 ## Run and prove
 
-Use one Node major per installation because `better-sqlite3` is ABI-specific. On Windows use
-PowerShell and quote paths; prefer explicit Vitest paths over shell globs.
+Use one Node major per installation because `better-sqlite3` is ABI-specific; in every fresh worktree run `npm ci` before proving because its local `node_modules` is absent by design.
+On Windows use PowerShell and quote paths; prefer explicit Vitest paths over shell globs.
 
 | Seam | Narrow proof |
 |---|---|
