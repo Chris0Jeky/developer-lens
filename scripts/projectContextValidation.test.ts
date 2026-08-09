@@ -1,9 +1,20 @@
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import {
+  COMMON_PROMPT_IDS,
+  CONTINUOUS_SECTION_MARKERS,
+  RETIRED_PROMPT_SENTINEL,
   extractMarkdownLinkTargets,
+  findBareHumanRefs,
+  normalizeSharedText,
+  parsePromptLibrary,
   parseSkillFrontmatter,
   resolveRepositoryLinkTarget,
+  sharedBlockDigest,
+  validateContinuousWorkProtocol,
+  validatePromptLibrary,
+  validatePromptParityManifest,
+  validatePromptSource,
   validateTierDeclaration,
 } from './projectContextValidation.js'
 
@@ -103,5 +114,543 @@ describe('project context validation', () => {
     expect(validateTierDeclaration({ ...tier, flags: { ...tier.flags, sensitive_data: false } })).toEqual([
       'flags.sensitive_data must be true (received false)',
     ])
+  })
+})
+
+/*
+ * Prompt operating system (issue #214 / lab #33).
+ *
+ * Every fixture below is invented. The point of these tests is that each way the prompt surface can
+ * silently diverge — a dropped ID, a block edited in one prompt only, a bare cross-repository q-N,
+ * a retired prompt that still reads as runnable — produces a NAMED failure rather than passing.
+ */
+
+const PRODUCT_SLUG = 'Chris0Jeky/developer-lens'
+const LAB_SLUG = 'Chris0Jeky/developer-lens-lab'
+const PRODUCT_EXTENSIONS = ['DL-PX01-PRODUCT-DEEP-DISCOVERY', 'DL-PX02-PRODUCT-ANALYTICAL-VERTICAL']
+const LAB_EXTENSIONS = ['DL-LX01-LAB-EXPERIMENT-HARNESS', 'DL-LX02-LAB-EVALUATION-REPRODUCIBILITY']
+
+/** Carries every clause `SHARED_BLOCK_REQUIRED_CLAUSES` demands of `runtime-bootstrap-v1`. */
+const BOOTSTRAP_BLOCK = [
+  'RUNTIME BOOTSTRAP (runtime-bootstrap-v1)',
+  'Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents.',
+  'Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the',
+  'repository continuation skill, and follow Sol/Terra/Luna routing.',
+  'Cross-repository human actions are cited as fully qualified refs, never a bare ref.',
+].join('\n')
+
+const FRICTION_BLOCK = [
+  'FRICTION TASKING (friction-tasking-v1)',
+  'Every material workaround is logged in docs/agent-system/FRICTION_LOG.md in the SAME hop, and',
+  'linked to a durable task. Capture is not permission to detour: log it, link it, continue.',
+  'At the second independent occurrence, choose the cheapest layer that enforces the fix.',
+].join('\n')
+
+interface PromptSpec {
+  id: string
+  status?: string
+  body?: string
+}
+
+function fenced(body: string): string {
+  return ['```text', body, '```'].join('\n')
+}
+
+function buildLibrary(
+  options: {
+    bootstrap?: string
+    friction?: string
+    prompts?: PromptSpec[]
+    sharedBlockIds?: string[]
+  } = {},
+): string {
+  const bootstrap = options.bootstrap ?? BOOTSTRAP_BLOCK
+  const friction = options.friction ?? FRICTION_BLOCK
+  const prompts =
+    options.prompts ?? [...COMMON_PROMPT_IDS, ...PRODUCT_EXTENSIONS].map((id) => ({ id }))
+  const [bootstrapId = 'runtime-bootstrap-v1', frictionId = 'friction-tasking-v1'] =
+    options.sharedBlockIds ?? []
+
+  const lines = ['# Prompt library', '']
+  lines.push(`<!-- shared-block: ${bootstrapId} -->`, '', fenced(bootstrap), '')
+  lines.push(`<!-- shared-block: ${frictionId} -->`, '', fenced(friction), '')
+  for (const prompt of prompts) {
+    lines.push(`<!-- prompt-id: ${prompt.id} status: ${prompt.status ?? 'active'} -->`, '')
+    lines.push(
+      fenced(prompt.body ?? [`PROMPT ${prompt.id}`, bootstrap, friction].join('\n')),
+      '',
+    )
+  }
+  return lines.join('\n')
+}
+
+function buildManifest(
+  options: {
+    bootstrap?: string
+    friction?: string
+    commonIds?: readonly string[]
+    continuousIds?: readonly string[]
+    sharedBlocks?: ReadonlyArray<{ id: string; sha256: string }>
+    productExtensions?: readonly string[]
+  } = {},
+): Record<string, unknown> {
+  const bootstrap = options.bootstrap ?? BOOTSTRAP_BLOCK
+  const friction = options.friction ?? FRICTION_BLOCK
+  const repository = (slug: string, role: string, extensions: readonly string[]) => ({
+    slug,
+    role,
+    prompt_library: 'docs/agent-system/PROMPT_LIBRARY.md',
+    continuous_work_protocol: 'docs/agent-system/CONTINUOUS_WORK_PROTOCOL.md',
+    friction_log: 'docs/agent-system/FRICTION_LOG.md',
+    extension_prompt_ids: [...extensions],
+  })
+
+  return {
+    manifest_schema_version: 1,
+    description: 'Invented parity manifest fixture.',
+    shared_block_normalization: 'CRLF normalized to LF, hashed as UTF-8 SHA-256, lowercase hex.',
+    common_prompt_ids: [...(options.commonIds ?? COMMON_PROMPT_IDS)],
+    continuous_prompt_ids: [...(options.continuousIds ?? ['DL-P03-OVERNIGHT-CONTINUOUS'])],
+    shared_blocks: options.sharedBlocks ?? [
+      { id: 'runtime-bootstrap-v1', sha256: sharedBlockDigest(bootstrap) },
+      { id: 'friction-tasking-v1', sha256: sharedBlockDigest(friction) },
+    ],
+    repositories: [
+      repository(PRODUCT_SLUG, 'product', options.productExtensions ?? PRODUCT_EXTENSIONS),
+      repository(LAB_SLUG, 'lab', LAB_EXTENSIONS),
+    ],
+  }
+}
+
+/** Parse + validate in one step, the way `verifyProjectContext` does. */
+function checkLibrary(
+  library: string,
+  manifestInput: Record<string, unknown> = buildManifest(),
+  slug: string = PRODUCT_SLUG,
+): string[] {
+  const { manifest, errors } = validatePromptParityManifest(manifestInput)
+  if (!manifest) {
+    return errors
+  }
+  return validatePromptLibrary(parsePromptLibrary(library), manifest, slug)
+}
+
+function buildContinuousProtocol(markers: readonly string[] = CONTINUOUS_SECTION_MARKERS): string {
+  return markers.map((marker) => `<!-- ${marker} -->\n\nSection body for ${marker}.\n`).join('\n')
+}
+
+describe('prompt operating system parity', () => {
+  it('accepts a well-formed library, manifest and continuous protocol', () => {
+    const manifest = buildManifest()
+    expect(validatePromptParityManifest(manifest).errors).toEqual([])
+
+    const parsed = parsePromptLibrary(buildLibrary())
+    expect(parsed.errors).toEqual([])
+    expect(parsed.prompts).toHaveLength(COMMON_PROMPT_IDS.length + PRODUCT_EXTENSIONS.length)
+    expect(parsed.sharedBlockIds).toEqual(['runtime-bootstrap-v1', 'friction-tasking-v1'])
+    expect(checkLibrary(buildLibrary(), manifest)).toEqual([])
+    expect(validateContinuousWorkProtocol(buildContinuousProtocol())).toEqual([])
+  })
+
+  it('resolves each repository against its own slug and rejects an unlisted one', () => {
+    // The lab's extension IDs are not valid active prompts in the product library.
+    const productLibrary = buildLibrary()
+    expect(checkLibrary(productLibrary, buildManifest(), LAB_SLUG)).toEqual([
+      expect.stringContaining('prompt library active prompt ids is missing: DL-LX01'),
+      expect.stringContaining('has unexpected entries: DL-PX01'),
+    ])
+    expect(checkLibrary(productLibrary, buildManifest(), 'Chris0Jeky/unknown-repo')).toEqual([
+      'prompt parity manifest declares no entry for this repository slug: Chris0Jeky/unknown-repo',
+    ])
+  })
+
+  it('rejects a malformed manifest before any library comparison', () => {
+    expect(validatePromptParityManifest({ manifest_schema_version: 1 }).errors.length).toBeGreaterThan(0)
+    expect(validatePromptParityManifest(buildManifest({ commonIds: [] })).errors).toContain(
+      'common_prompt_ids: Too small: expected array to have >=1 items',
+    )
+
+    const badDigest = validatePromptParityManifest(
+      buildManifest({ sharedBlocks: [{ id: 'runtime-bootstrap-v1', sha256: 'not-a-digest' }] }),
+    ).errors
+    expect(badDigest.some((error) => error.startsWith('shared_blocks.0.sha256'))).toBe(true)
+
+    // A strict object: an unknown key is drift, not a harmless annotation.
+    expect(
+      validatePromptParityManifest({ ...buildManifest(), unexpected_key: true }).errors.length,
+    ).toBeGreaterThan(0)
+    expect(validatePromptParityManifest({ ...buildManifest(), manifest_schema_version: 2 }).errors.length)
+      .toBeGreaterThan(0)
+    expect(validatePromptParityManifest('not an object').errors.length).toBeGreaterThan(0)
+  })
+
+  it('detects missing, extra, duplicate and reordered prompt ids', () => {
+    const missing = checkLibrary(
+      buildLibrary({
+        prompts: [...COMMON_PROMPT_IDS.slice(0, -1), ...PRODUCT_EXTENSIONS].map((id) => ({ id })),
+      }),
+    )
+    expect(missing).toEqual([
+      'prompt library active prompt ids is missing: DL-P12-FRICTION-BURNDOWN',
+    ])
+
+    const extra = checkLibrary(
+      buildLibrary({
+        prompts: [...COMMON_PROMPT_IDS, ...PRODUCT_EXTENSIONS, 'DL-P13-UNDECLARED'].map((id) => ({
+          id,
+        })),
+      }),
+    )
+    expect(extra).toEqual([
+      'prompt library active prompt ids has unexpected entries: DL-P13-UNDECLARED',
+    ])
+
+    const duplicated = parsePromptLibrary(
+      buildLibrary({
+        prompts: [...COMMON_PROMPT_IDS, ...COMMON_PROMPT_IDS.slice(0, 1), ...PRODUCT_EXTENSIONS].map(
+          (id) => ({ id }),
+        ),
+      }),
+    )
+    expect(duplicated.errors).toEqual(['duplicate prompt id: DL-P01-FLAGSHIP-GOVERNOR'])
+
+    const reordered = [...COMMON_PROMPT_IDS]
+    ;[reordered[0], reordered[1]] = [reordered[1] as string, reordered[0] as string]
+    expect(
+      checkLibrary(buildLibrary({ prompts: [...reordered, ...PRODUCT_EXTENSIONS].map((id) => ({ id })) })),
+    ).toEqual([expect.stringContaining('prompt library active prompt ids is out of manifest order')])
+
+    // Deleting an ID from BOTH the library and the manifest must still fail, because
+    // COMMON_PROMPT_IDS is pinned in code as well.
+    expect(
+      validatePromptParityManifest(buildManifest({ commonIds: COMMON_PROMPT_IDS.slice(0, -1) })).errors,
+    ).toEqual(['manifest common_prompt_ids is missing: DL-P12-FRICTION-BURNDOWN'])
+  })
+
+  it('rejects malformed ids, unsupported statuses and prompts without exactly one body', () => {
+    const malformed = parsePromptLibrary(buildLibrary({ prompts: [{ id: 'dl-p01-lowercase' }] }))
+    expect(malformed.errors).toEqual([expect.stringContaining('malformed prompt id: dl-p01-lowercase')])
+
+    const badStatus = parsePromptLibrary(
+      buildLibrary({ prompts: [{ id: 'DL-P01-FLAGSHIP-GOVERNOR', status: 'draft' }] }),
+    )
+    expect(badStatus.errors).toEqual([
+      'prompt DL-P01-FLAGSHIP-GOVERNOR has unsupported status: draft',
+    ])
+
+    const noBody = [
+      '# Prompt library',
+      '',
+      '<!-- prompt-id: DL-P01-FLAGSHIP-GOVERNOR status: active -->',
+      '',
+      'Prose but no fenced block.',
+      '',
+    ].join('\n')
+    expect(parsePromptLibrary(noBody).errors).toEqual([
+      expect.stringContaining('must own exactly one fenced text block (found 0)'),
+    ])
+
+    const unterminated = ['<!-- shared-block: runtime-bootstrap-v1 -->', '', '```text', 'body'].join('\n')
+    expect(parsePromptLibrary(unterminated).errors).toContain(
+      'prompt library contains an unterminated fenced block',
+    )
+  })
+
+  it('detects shared-block digest drift and a block edited in one prompt only', () => {
+    // The manifest still pins the original digest, so an edited library block is caught.
+    const editedBlock = BOOTSTRAP_BLOCK.replace('dl-* agents', 'dl-* agents (locally tweaked)')
+    const drifted = checkLibrary(buildLibrary({ bootstrap: editedBlock }), buildManifest())
+    expect(drifted).toEqual([
+      expect.stringContaining('shared block runtime-bootstrap-v1 digest drift'),
+    ])
+    expect(drifted[0]).toContain(sharedBlockDigest(editedBlock))
+    expect(drifted[0]).toContain(sharedBlockDigest(BOOTSTRAP_BLOCK))
+
+    // One prompt quietly carrying a different copy of the block.
+    const tampered = buildLibrary({
+      prompts: [...COMMON_PROMPT_IDS, ...PRODUCT_EXTENSIONS].map((id, index) => ({
+        id,
+        body:
+          index === 3
+            ? [`PROMPT ${id}`, editedBlock, FRICTION_BLOCK].join('\n')
+            : [`PROMPT ${id}`, BOOTSTRAP_BLOCK, FRICTION_BLOCK].join('\n'),
+      })),
+    })
+    expect(checkLibrary(tampered)).toEqual([
+      'prompt DL-P04-RESUME-RECONCILE must contain exactly one copy of shared block runtime-bootstrap-v1 (found 0)',
+    ])
+
+    // A duplicated block is drift too — two copies can diverge later.
+    const doubled = buildLibrary({
+      prompts: [{ id: 'DL-P01-FLAGSHIP-GOVERNOR', body: [BOOTSTRAP_BLOCK, BOOTSTRAP_BLOCK, FRICTION_BLOCK].join('\n') }],
+    })
+    expect(checkLibrary(doubled)).toContain(
+      'prompt DL-P01-FLAGSHIP-GOVERNOR must contain exactly one copy of shared block runtime-bootstrap-v1 (found 2)',
+    )
+
+    const missingBlock = buildLibrary({ sharedBlockIds: ['runtime-bootstrap-v1', 'renamed-block'] })
+    expect(checkLibrary(missingBlock)).toContain(
+      'prompt library shared blocks is missing: friction-tasking-v1',
+    )
+  })
+
+  it('hashes shared blocks identically across LF, CRLF and CR line endings', () => {
+    const crlf = BOOTSTRAP_BLOCK.replaceAll('\n', '\r\n')
+    const cr = BOOTSTRAP_BLOCK.replaceAll('\n', '\r')
+
+    expect(sharedBlockDigest(crlf)).toBe(sharedBlockDigest(BOOTSTRAP_BLOCK))
+    expect(sharedBlockDigest(cr)).toBe(sharedBlockDigest(BOOTSTRAP_BLOCK))
+    expect(normalizeSharedText(crlf)).toBe(BOOTSTRAP_BLOCK)
+
+    // A whole library checked out with CRLF endings must validate exactly as the LF one does,
+    // otherwise the check would fail on Windows only.
+    const library = buildLibrary()
+    const crlfLibrary = library.replaceAll('\n', '\r\n')
+    expect(parsePromptLibrary(crlfLibrary).prompts).toEqual(parsePromptLibrary(library).prompts)
+    expect(checkLibrary(crlfLibrary)).toEqual([])
+  })
+
+  it('requires the Claude and Codex bootstrap clauses independently of the digest', () => {
+    // Re-pin the manifest to the mutated block so ONLY the missing clause can fail: the clause
+    // check must not be a side effect of digest comparison.
+    const withoutCodex = BOOTSTRAP_BLOCK.split('\n')
+      .filter((line) => !line.startsWith('Codex runtimes read AGENTS.md first'))
+      .join('\n')
+    expect(
+      checkLibrary(
+        buildLibrary({ bootstrap: withoutCodex }),
+        buildManifest({ bootstrap: withoutCodex }),
+      ),
+    ).toEqual([
+      'shared block runtime-bootstrap-v1 is missing required clause: Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references',
+    ])
+
+    const withoutClaude = BOOTSTRAP_BLOCK.replace('Claude runtimes read CLAUDE.md first', 'Claude runtimes improvise')
+    expect(
+      checkLibrary(
+        buildLibrary({ bootstrap: withoutClaude }),
+        buildManifest({ bootstrap: withoutClaude }),
+      ),
+    ).toEqual([
+      'shared block runtime-bootstrap-v1 is missing required clause: Claude runtimes read CLAUDE.md first',
+    ])
+
+    const withoutSameHop = FRICTION_BLOCK.replace(
+      'docs/agent-system/FRICTION_LOG.md in the SAME hop',
+      'the friction log eventually',
+    )
+    expect(
+      checkLibrary(
+        buildLibrary({ friction: withoutSameHop }),
+        buildManifest({ friction: withoutSameHop }),
+      ),
+    ).toEqual([
+      'shared block friction-tasking-v1 is missing required clause: docs/agent-system/FRICTION_LOG.md in the SAME hop',
+    ])
+  })
+
+  it('requires the continuous stop markers exactly once and in order', () => {
+    expect(validateContinuousWorkProtocol(buildContinuousProtocol())).toEqual([])
+
+    expect(
+      validateContinuousWorkProtocol(
+        buildContinuousProtocol(CONTINUOUS_SECTION_MARKERS.slice(0, 3)),
+      ),
+    ).toEqual(['continuous work protocol is missing marker: continuous-stop-end'])
+
+    const reversedStops = [
+      'continuous-execution-begin',
+      'continuous-execution-end',
+      'continuous-stop-end',
+      'continuous-stop-begin',
+    ]
+    expect(validateContinuousWorkProtocol(buildContinuousProtocol(reversedStops))).toEqual([
+      expect.stringContaining('markers are out of order'),
+    ])
+
+    const duplicated = [...CONTINUOUS_SECTION_MARKERS, 'continuous-stop-begin']
+    expect(validateContinuousWorkProtocol(buildContinuousProtocol(duplicated))).toEqual([
+      'continuous work protocol repeats marker continuous-stop-begin 2 times (expected exactly one)',
+    ])
+
+    expect(validateContinuousWorkProtocol('No markers at all.')).toHaveLength(
+      CONTINUOUS_SECTION_MARKERS.length,
+    )
+
+    // CRLF must not hide a marker.
+    expect(validateContinuousWorkProtocol(buildContinuousProtocol().replaceAll('\n', '\r\n'))).toEqual([])
+  })
+
+  it('rejects a bare q-N and accepts a fully qualified cross-repository human ref', () => {
+    expect(findBareHumanRefs('Blocked on q-8 until the owner replies.')).toEqual(['q-8'])
+    expect(findBareHumanRefs(`Blocked on ${PRODUCT_SLUG}::HUMAN_TODO.md::q-8.`)).toEqual([])
+    expect(findBareHumanRefs(`See ${PRODUCT_SLUG}::HUMAN_TODO.md::q-8 and also q-12.`)).toEqual(['q-12'])
+    expect(findBareHumanRefs(`${LAB_SLUG}::HUMAN_TODO.md::q-3 differs from ${PRODUCT_SLUG}::HUMAN_TODO.md::q-3`))
+      .toEqual([])
+
+    const bare = buildLibrary({
+      prompts: [
+        {
+          id: 'DL-P01-FLAGSHIP-GOVERNOR',
+          body: ['PROMPT', 'LAB RULE: blocked while q-8 is open.', BOOTSTRAP_BLOCK, FRICTION_BLOCK].join('\n'),
+        },
+      ],
+    })
+    expect(checkLibrary(bare)).toContain(
+      'prompt DL-P01-FLAGSHIP-GOVERNOR cites a bare human action "q-8"; use <owner>/<repo>::HUMAN_TODO.md::q-8',
+    )
+
+    const qualified = buildLibrary({
+      prompts: [...COMMON_PROMPT_IDS, ...PRODUCT_EXTENSIONS].map((id) => ({
+        id,
+        body: [
+          `PROMPT ${id}`,
+          `LAB RULE: blocked while ${PRODUCT_SLUG}::HUMAN_TODO.md::q-8 is open.`,
+          BOOTSTRAP_BLOCK,
+          FRICTION_BLOCK,
+        ].join('\n'),
+      })),
+    })
+    expect(checkLibrary(qualified)).toEqual([])
+  })
+
+  it('classifies active, redirect and historical prompt documents', () => {
+    const activeIds = [...COMMON_PROMPT_IDS, ...PRODUCT_EXTENSIONS]
+
+    const redirect = [
+      '# Overnight execution prompt',
+      '',
+      '<!-- prompt-source: redirect target: DL-P03-OVERNIGHT-CONTINUOUS -->',
+      '',
+      'This prompt moved into the library. Paste DL-P03-OVERNIGHT-CONTINUOUS instead.',
+      '',
+    ].join('\n')
+    expect(
+      validatePromptSource({ kind: 'redirect', target: 'DL-P03-OVERNIGHT-CONTINUOUS' }, redirect, activeIds),
+    ).toEqual([])
+
+    // A redirect that kept a runnable copy is the exact failure this classification exists to stop.
+    const redirectWithBody = [redirect, fenced('You are the overnight agent...'), ''].join('\n')
+    expect(
+      validatePromptSource(
+        { kind: 'redirect', target: 'DL-P03-OVERNIGHT-CONTINUOUS' },
+        redirectWithBody,
+        activeIds,
+      ),
+    ).toEqual([
+      'a redirect must not keep a competing executable copy: found 1 fenced block(s)',
+    ])
+
+    const historicalBody = [
+      RETIRED_PROMPT_SENTINEL,
+      'You are the deep discovery agent...',
+      RETIRED_PROMPT_SENTINEL,
+    ].join('\n')
+    const historical = [
+      '# Deep discovery prompt (retired)',
+      '',
+      '<!-- prompt-source: historical target: DL-PX01-PRODUCT-DEEP-DISCOVERY -->',
+      '',
+      RETIRED_PROMPT_SENTINEL,
+      '',
+      fenced(historicalBody),
+      '',
+    ].join('\n')
+    expect(
+      validatePromptSource(
+        { kind: 'historical', target: 'DL-PX01-PRODUCT-DEEP-DISCOVERY' },
+        historical,
+        activeIds,
+      ),
+    ).toEqual([])
+
+    // Sentinel must WRAP the body, so a copy-paste carries its own retirement notice.
+    const unwrapped = historical.replace(
+      [RETIRED_PROMPT_SENTINEL, 'You are the deep discovery agent...', RETIRED_PROMPT_SENTINEL].join('\n'),
+      'You are the deep discovery agent...',
+    )
+    expect(
+      validatePromptSource(
+        { kind: 'historical', target: 'DL-PX01-PRODUCT-DEEP-DISCOVERY' },
+        unwrapped,
+        activeIds,
+      ),
+    ).toEqual([
+      'historical fenced block 1 must OPEN with the retirement sentinel',
+      'historical fenced block 1 must CLOSE with the retirement sentinel',
+    ])
+
+    // Wrong kind, unknown target, missing marker, and a smuggled executable marker.
+    expect(
+      validatePromptSource({ kind: 'historical', target: 'DL-P03-OVERNIGHT-CONTINUOUS' }, redirect, activeIds),
+    ).toEqual([
+      'prompt-source marker declares "redirect" but this document is classified "historical"',
+      expect.stringContaining('a historical prompt document must carry the sentinel'),
+    ])
+    // Mismatch against the expected classification. The liveness check reads the DOCUMENT's target,
+    // which is still an active ID here, so only the mismatch is reported.
+    expect(
+      validatePromptSource({ kind: 'redirect', target: 'DL-P99-RETIRED' }, redirect, activeIds),
+    ).toEqual([
+      'prompt-source target is "DL-P03-OVERNIGHT-CONTINUOUS" but the classification expects "DL-P99-RETIRED"',
+    ])
+
+    // A redirect pointing at a prompt that no longer exists — a dangling signpost.
+    const danglingRedirect = redirect.replaceAll('DL-P03-OVERNIGHT-CONTINUOUS', 'DL-P99-RETIRED')
+    expect(
+      validatePromptSource({ kind: 'redirect', target: 'DL-P99-RETIRED' }, danglingRedirect, activeIds),
+    ).toEqual([
+      'prompt-source redirects to "DL-P99-RETIRED", which is not an active prompt id',
+    ])
+    expect(
+      validatePromptSource(
+        { kind: 'redirect', target: 'DL-P03-OVERNIGHT-CONTINUOUS' },
+        '# No marker here',
+        activeIds,
+      ),
+    ).toEqual([
+      'expected exactly one prompt-source marker declaring "redirect" (found 0)',
+    ])
+    const smuggled = redirect.replace(
+      'This prompt moved into the library. Paste DL-P03-OVERNIGHT-CONTINUOUS instead.',
+      '<!-- prompt-id: DL-P03-OVERNIGHT-CONTINUOUS status: active -->',
+    )
+    expect(
+      validatePromptSource(
+        { kind: 'redirect', target: 'DL-P03-OVERNIGHT-CONTINUOUS' },
+        smuggled,
+        activeIds,
+      ),
+    ).toEqual([
+      'a redirect or historical document must not declare an executable prompt-id marker',
+    ])
+  })
+
+  it('keeps the continuous prompt id inside the common set and active in the library', () => {
+    expect(
+      validatePromptParityManifest(buildManifest({ continuousIds: ['DL-PX01-PRODUCT-DEEP-DISCOVERY'] }))
+        .errors,
+    ).toContain('manifest continuous prompt id is not a common prompt id: DL-PX01-PRODUCT-DEEP-DISCOVERY')
+
+    const historicalContinuous = buildLibrary({
+      prompts: [...COMMON_PROMPT_IDS, ...PRODUCT_EXTENSIONS].map((id) => ({
+        id,
+        status: id === 'DL-P03-OVERNIGHT-CONTINUOUS' ? 'historical' : 'active',
+      })),
+    })
+    expect(checkLibrary(historicalContinuous)).toEqual([
+      'prompt library active prompt ids is missing: DL-P03-OVERNIGHT-CONTINUOUS',
+      'continuous prompt DL-P03-OVERNIGHT-CONTINUOUS is not an active prompt in the library',
+    ])
+  })
+
+  it('rejects manifest ids duplicated across the common and extension sets', () => {
+    expect(
+      validatePromptParityManifest(
+        buildManifest({ productExtensions: ['DL-P01-FLAGSHIP-GOVERNOR', 'DL-PX02-PRODUCT-ANALYTICAL-VERTICAL'] }),
+      ).errors,
+    ).toContain(
+      'manifest prompt ids must be unique across common and extension sets: DL-P01-FLAGSHIP-GOVERNOR',
+    )
   })
 })
