@@ -3794,3 +3794,19 @@ form, never that a pasted prompt produces good work.
 block agent merge of the paired lab PR. It is not inferred closed from any merge, quiet session or
 agent message. Explicit isolated preparation on the product side is allowed by the current owner
 commission.
+
+**2026-08-09 follow-up (bounded FR-008 fallback).** The exact files changed were `.claude/agents/dl-
+scout.md`, `.claude/agents/dl-implementer.md`, `.claude/agents/dl-mechanic.md`,
+`.claude/agents/dl-reviewer.md`, `.agents/skills/developer-lens-continuation/SKILL.md`,
+`.claude/skills/developer-lens-continuation/SKILL.md`, `scripts/projectContextValidation.ts`,
+`scripts/projectContextValidation.test.ts`, `scripts/verifyProjectContext.ts`,
+`docs/agent-system/FRICTION_LOG.md`, `docs/analyser-program/CURRENT_STATE.md`, and this ledger.
+FR-008 recurred in two 2026-08-09 non-interactive Claude contexts and was promoted here: the four
+agent definitions and both skills now carry the same-hop friction/task-link rule, #208 item 3 is
+folded into `dl-reviewer`, and the executable validator enforces the identical skill block. FR-008's
+runtime write limitation remains documented, not resolved. FR-009 is now tracked at #215. Real
+checks for this follow-up: focused test `npm test -- scripts/projectContextValidation.test.ts` passed
+22/22; `npm run verify:context` passed (47 Markdown files, 31 required files); `git diff --check`
+passed; and full `npm run check` passed (86 files, 1483 passed, 10 skipped; TypeScript/Vite build
+and 17-file no-secrets verification green). The first full-check wrapper attempt timed out before
+reporting output; the longer second attempt completed green.

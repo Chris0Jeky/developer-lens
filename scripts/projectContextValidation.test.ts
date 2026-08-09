@@ -12,6 +12,7 @@ import {
   resolveRepositoryLinkTarget,
   sharedBlockDigest,
   validateContinuousWorkProtocol,
+  validateContinuationSkillParity,
   validatePromptLibrary,
   validatePromptParityManifest,
   validatePromptSource,
@@ -144,6 +145,15 @@ const FRICTION_BLOCK = [
   'Every material workaround is logged in docs/agent-system/FRICTION_LOG.md in the SAME hop, and',
   'linked to a durable task. Capture is not permission to detour: log it, link it, continue.',
   'At the second independent occurrence, choose the cheapest layer that enforces the fix.',
+].join('\n')
+
+const CONTINUATION_FRICTION_BLOCK = [
+  '<!-- shared:continuation-friction-tasking-v1 start -->',
+  'Every material workaround, tooling hiccup, repeated friction or surprising divergence is logged in',
+  'docs/agent-system/FRICTION_LOG.md in the same hop and linked to an existing issue/card or durable',
+  'task. Capture is not permission to widen scope; never record PID, absolute local path, token, or',
+  'private identifier.',
+  '<!-- shared:continuation-friction-tasking-v1 end -->',
 ].join('\n')
 
 interface PromptSpec {
@@ -652,5 +662,61 @@ describe('prompt operating system parity', () => {
     ).toContain(
       'manifest prompt ids must be unique across common and extension sets: DL-P01-FLAGSHIP-GOVERNOR',
     )
+  })
+})
+
+describe('continuation skill friction parity', () => {
+  const skill = (body: string): string => `runtime-specific preface\n${body}\nruntime-specific ending\n`
+
+  it('accepts one ordered shared block in each skill and normalizes CRLF', () => {
+    const codex = skill(CONTINUATION_FRICTION_BLOCK)
+    const claude = skill(CONTINUATION_FRICTION_BLOCK).replaceAll('\n', '\r\n')
+
+    expect(
+      validateContinuationSkillParity([
+        { path: '.agents/skills/developer-lens-continuation/SKILL.md', contents: codex },
+        { path: '.claude/skills/developer-lens-continuation/SKILL.md', contents: claude },
+      ]),
+    ).toEqual([])
+  })
+
+  it('rejects drift in the enclosed block bytes', () => {
+    const drifted = CONTINUATION_FRICTION_BLOCK.replace('widen scope', 'widen this scope')
+    expect(
+      validateContinuationSkillParity([
+        { path: 'codex-skill.md', contents: skill(CONTINUATION_FRICTION_BLOCK) },
+        { path: 'claude-skill.md', contents: skill(drifted) },
+      ]),
+    ).toEqual(['continuation friction block bytes drift between codex-skill.md and claude-skill.md'])
+  })
+
+  it('rejects a missing marker pair', () => {
+    const missingEnd = CONTINUATION_FRICTION_BLOCK.replace(
+      '\n<!-- shared:continuation-friction-tasking-v1 end -->',
+      '',
+    )
+    expect(
+      validateContinuationSkillParity([
+        { path: 'codex-skill.md', contents: skill(missingEnd) },
+        { path: 'claude-skill.md', contents: skill(CONTINUATION_FRICTION_BLOCK) },
+      ]),
+    ).toEqual([
+      'codex-skill.md must contain exactly one <!-- shared:continuation-friction-tasking-v1 end --> marker (found 0)',
+    ])
+  })
+
+  it('rejects duplicate markers', () => {
+    const duplicateEnd = CONTINUATION_FRICTION_BLOCK.replace(
+      '<!-- shared:continuation-friction-tasking-v1 end -->',
+      '<!-- shared:continuation-friction-tasking-v1 end -->\n<!-- shared:continuation-friction-tasking-v1 end -->',
+    )
+    expect(
+      validateContinuationSkillParity([
+        { path: 'codex-skill.md', contents: skill(duplicateEnd) },
+        { path: 'claude-skill.md', contents: skill(CONTINUATION_FRICTION_BLOCK) },
+      ]),
+    ).toEqual([
+      'codex-skill.md must contain exactly one <!-- shared:continuation-friction-tasking-v1 end --> marker (found 2)',
+    ])
   })
 })

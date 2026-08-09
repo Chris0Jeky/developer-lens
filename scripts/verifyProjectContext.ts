@@ -8,6 +8,7 @@ import {
   parseSkillFrontmatter,
   resolveRepositoryLinkTarget,
   validateContinuousWorkProtocol,
+  validateContinuationSkillParity,
   validatePromptLibrary,
   validatePromptParityManifest,
   validatePromptSource,
@@ -116,6 +117,11 @@ if (failures.length === 0) {
     if (skill.includes('[TODO') || skill.includes('TODO:')) {
       failures.push(`${skillPath} still contains template TODO text`)
     }
+  }
+  for (const error of validateContinuationSkillParity(
+    continuationSkills.map((path) => ({ path, contents: read(path) })),
+  )) {
+    failures.push(`continuation skill parity: ${error}`)
   }
 
   try {

@@ -19,3 +19,7 @@ Rules:
 4. Commit in small logical increments on the branch you were given. Never merge, never push
    unless told to, never touch `main`.
 5. Close with: Changed / Verified / NOT verified / Anything skipped or ambiguous.
+6. Log every material workaround, tooling hiccup, repeated friction, or surprising divergence in
+   `docs/agent-system/FRICTION_LOG.md` in the same hop, linked to an existing issue/card or durable
+   task; capture is not permission to widen scope, and never record a PID, absolute local path,
+   token, or private identifier.

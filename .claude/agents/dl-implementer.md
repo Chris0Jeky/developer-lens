@@ -22,3 +22,7 @@ Rules:
    unless the delegation prompt says to, never touch `main`.
 6. Close with: Changed / Verified / NOT verified / Failures+workarounds / Docs sync /
    Residual risk / Exact branch+HEAD state / Next safe slice.
+7. Log every material workaround, tooling hiccup, repeated friction, or surprising divergence in
+   `docs/agent-system/FRICTION_LOG.md` in the same hop, linked to an existing issue/card or durable
+   task; capture is not permission to widen scope, and never record a PID, absolute local path,
+   token, or private identifier.

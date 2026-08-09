@@ -209,7 +209,7 @@ Rules that bind entries:
 ### FR-008 — the runtime refuses writes to its own `.claude/` definition tree
 
 - **first-seen:** 2026-08-09
-- **status:** `open`
+- **status:** `promoted`
 - **symptom:** During the #214 prompt operating system, edits to `.claude/agents/dl-*.md` and
   `.claude/skills/developer-lens-continuation/SKILL.md` were refused by the runtime permission layer
   with a write-permission error, in a non-interactive session where permission cannot be granted.
@@ -220,26 +220,29 @@ Rules that bind entries:
 - **impact:** Agent and skill *definitions* cannot be revised by a non-interactive agent session,
   even though they are ordinary tracked C0 files the review gate would cover normally. Worse, the
   two continuation-skill copies are split across the writable and non-writable trees, so a partial
-  edit silently breaks their parity — and nothing in `npm run verify:context` compares the two
-  bodies, because it checks required files, frontmatter and markers rather than full text.
+  edit silently breaks their parity — the executable parity check added by this slice now fails
+  loudly if the marker pair or enclosed bytes drift.
 - **workaround:** None that is legitimate. Reaching the same bytes through a shell redirect would
   route around a deliberate permission boundary, which is precisely the silent workaround this slice
   exists to forbid, so it was not attempted. The one-sided `.agents/` edit that had already been
   made was reverted so the two skill copies stay consistent, and the whole agent/skill item was
-  parked as a unit rather than landed half-applied.
-- **occurrences:** 1 recorded — 2026-08-09.
-- **task:** [#214](https://github.com/Chris0Jeky/developer-lens/issues/214) — parked sub-item: add
-  the no-silent-workaround and task-link rule to the four `dl-*` agent definitions and both
-  continuation-skill copies, and fold the
-  [#208](https://github.com/Chris0Jeky/developer-lens/issues/208) item-3 locked-invariant reviewer
-  lenses (deterministic fallback, model-output labelling, secret prohibition, private-output
-  locality, owner-only classes) into `dl-reviewer`. Needs an interactive session, or a session whose
-  runtime permits `.claude/**` writes.
-- **promotion:** Task debt at one occurrence, and the boundary itself is plausibly correct — a
-  runtime that lets agents rewrite their own definitions unprompted is a real hazard. The gap worth
-  enforcing is the *undetected* half: a parity check comparing the two continuation-skill bodies
-  section by section would have failed loudly instead of letting a one-sided edit pass. A second
-  independent occurrence promotes that check into `scripts/projectContextValidation.ts`.
+  parked as a unit rather than landed half-applied. The first non-interactive Claude context
+  stopped after ordinary Edit was refused; the second non-interactive Claude context reproduced the
+  same refusal and stopped with zero edits. This Codex mechanic fallback performed ordinary tracked
+  edits without shell redirect or a hidden route. The runtime write limitation remains documented;
+  it is not resolved here.
+- **occurrences:** 2 recorded — 2026-08-09 non-interactive Claude context A (ordinary Edit denied
+  for `.claude/**`) and context B (same denial reproduced; zero edits).
+- **task:** [#214](https://github.com/Chris0Jeky/developer-lens/issues/214) — bounded fallback
+  implemented; future `.claude` definition edits route through an authorized interactive or
+  otherwise write-permitted session.
+- **promotion:** Promoted and implemented in this bounded fallback: all four `dl-*` definitions
+  carry the same-hop friction/task-link rule, both continuation skills carry an identical
+  marker-delimited block, and `scripts/projectContextValidation.ts` plus
+  `scripts/projectContextValidation.test.ts` enforce exactly one ordered marker pair per skill,
+  CRLF-to-LF normalization, and byte equality of the enclosed block. Future `.claude` definition
+  edits route through an authorized interactive or otherwise write-permitted session; the runtime
+  restriction itself remains open and is not marked resolved.
 
 ### FR-009 — `CURRENT_STATE.md`'s "machine-readable" YAML block does not parse
 
@@ -261,10 +264,7 @@ Rules that bind entries:
   YAML-safe and does not deepen the defect; the pre-existing unquoted flow sequences were left
   untouched because repairing them is a separate bounded slice, not a detour inside this one.
 - **occurrences:** 1 recorded — 2026-08-09.
-- **task:** Needs a durable follow-up issue of its own — *"quote issue refs in CURRENT_STATE.md so
-  the declared YAML block parses, and add a parse check to `verify:context`"*. Not opened from this
-  lane, which is a no-mutation slice; the coordinator opens it. Noted here so the observation is not
-  lost in the meantime.
+- **task:** https://github.com/Chris0Jeky/developer-lens/issues/215
 - **promotion:** Task debt at one occurrence, but the promotion target is already obvious and cheap:
   a strict YAML parse of that block inside `scripts/projectContextValidation.ts` would make the
   claim self-enforcing. That belongs to the follow-up above rather than to this slice, since the

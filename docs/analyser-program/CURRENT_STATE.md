@@ -152,12 +152,14 @@ control_plane_side_lane: 'Product #214 / lab #33 PROMPT OPERATING SYSTEM — a c
   shared blocks by SHA-256 in .agent-harness/prompt-parity.json, add CONTINUOUS_WORK_PROTOCOL.md and
   the append-only FRICTION_LOG.md, and enforce all of it from scripts/projectContextValidation.ts.
   C0 code/docs only: no product behavior, schema, contract, methodology, owner policy, capability
-  state or release/tag state moves. PARKED SUB-ITEM (FR-008): the no-silent-workaround rule for the
-  four .claude/agents/dl-*.md definitions and both continuation-skill copies, including the #208
-  item-3 locked-invariant reviewer lenses — the runtime refused .claude/** writes in a
-  non-interactive session, and routing around that permission boundary was declined. The lab #33
-  counterpart is prepared-and-parked behind Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8, which
-  stays OPEN and is never inferred closed.'
+  state or release/tag state moves. FR-008 is no longer a parked sub-item: this bounded Codex
+  mechanic fallback promoted and implemented the no-silent-workaround rule in the four
+  .claude/agents/dl-*.md definitions and both continuation-skill copies, including the #208 item-3
+  locked-invariant reviewer lenses. The executable skill-block parity check and the routing rule
+  for future .claude definition edits are live; the runtime write limitation remains documented,
+  not resolved. FR-009 is tracked at https://github.com/Chris0Jeky/developer-lens/issues/215. The
+  lab #33 counterpart is prepared-and-parked behind Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8,
+  which stays OPEN and is never inferred closed.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
   NEW recorded owner decision — none exists) and remains blocked by q-8 for the lab-side release

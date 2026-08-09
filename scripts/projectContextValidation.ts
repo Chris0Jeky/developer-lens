@@ -266,6 +266,70 @@ export function normalizeSharedText(contents: string): string {
   return contents.replaceAll('\r\n', '\n').replaceAll('\r', '\n')
 }
 
+export const CONTINUATION_FRICTION_MARKER_ID = 'continuation-friction-tasking-v1'
+const continuationFrictionStart = `<!-- shared:${CONTINUATION_FRICTION_MARKER_ID} start -->`
+const continuationFrictionEnd = `<!-- shared:${CONTINUATION_FRICTION_MARKER_ID} end -->`
+
+interface ContinuationSkillSource {
+  path: string
+  contents: string
+}
+
+/**
+ * The Claude and Codex continuation skills intentionally keep runtime-specific prose around one
+ * shared task-capture block. Compare only the normalized bytes enclosed by its markers so the
+ * surrounding adapters can evolve independently while the safety rule cannot silently drift.
+ */
+export function validateContinuationSkillParity(
+  skills: readonly ContinuationSkillSource[],
+): string[] {
+  const errors: string[] = []
+  const enclosedBlocks: Array<{ path: string; body: string }> = []
+
+  for (const skill of skills) {
+    const normalized = normalizeSharedText(skill.contents)
+    const startCount = countOccurrences(normalized, continuationFrictionStart)
+    const endCount = countOccurrences(normalized, continuationFrictionEnd)
+    if (startCount !== 1) {
+      errors.push(
+        `${skill.path} must contain exactly one ${continuationFrictionStart} marker (found ${startCount})`,
+      )
+    }
+    if (endCount !== 1) {
+      errors.push(
+        `${skill.path} must contain exactly one ${continuationFrictionEnd} marker (found ${endCount})`,
+      )
+    }
+    if (startCount !== 1 || endCount !== 1) {
+      continue
+    }
+
+    const start = normalized.indexOf(continuationFrictionStart)
+    const end = normalized.indexOf(continuationFrictionEnd)
+    if (end <= start) {
+      errors.push(`${skill.path} continuation friction markers are out of order`)
+      continue
+    }
+    enclosedBlocks.push({
+      path: skill.path,
+      body: normalized.slice(start + continuationFrictionStart.length, end),
+    })
+  }
+
+  if (enclosedBlocks.length === skills.length && enclosedBlocks.length > 1) {
+    const expected = enclosedBlocks[0]?.body
+    for (const block of enclosedBlocks.slice(1)) {
+      if (block.body !== expected) {
+        errors.push(
+          `continuation friction block bytes drift between ${enclosedBlocks[0]?.path} and ${block.path}`,
+        )
+      }
+    }
+  }
+
+  return errors
+}
+
 export function sharedBlockDigest(body: string): string {
   return createHash('sha256').update(normalizeSharedText(body), 'utf8').digest('hex')
 }

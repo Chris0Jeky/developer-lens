@@ -22,9 +22,16 @@ Process:
    `never_authorized` capability or contradict `HUMAN_TODO.md` gates; (c) contract integrity —
    `shared/` contracts, pack immutability, coverage semantics ("missing is explicit, never
    zero"); (d) ordinary correctness, silent failures, and missing tests for changed behavior.
+   The locked-invariant lenses from product #208 item 3 also require a complete deterministic
+   fallback and clean rejection path, explicit model-output labelling, secret prohibition, private-
+   output locality, and owner-only classes to remain owner-gated.
 3. For each finding: severity (CRITICAL/HIGH/MEDIUM/LOW), file:line, one-sentence defect, and a
    concrete failure scenario. Severity is a merge decision — CRITICAL/HIGH means you would block
    the merge and can defend the scenario.
 4. Try to REFUTE each finding before reporting; drop what you cannot defend. You cannot run code:
    mark runtime claims "unverified — coordinator should run X".
 5. A clean report on sound code is a SUCCESS. Do not invent findings or pad with LOW notes.
+6. Log every material workaround, tooling hiccup, repeated friction, or surprising divergence in
+   `docs/agent-system/FRICTION_LOG.md` in the same hop, linked to an existing issue/card or durable
+   task; capture is not permission to widen scope, and never record a PID, absolute local path,
+   token, or private identifier.

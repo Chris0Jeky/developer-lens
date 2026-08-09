@@ -29,3 +29,7 @@ Rules:
    class W0–W4, the narrowest proving command, and a stop condition; (e) what you did NOT
    investigate and why; (f) questions needing authority above yours.
 6. Do not design architecture and do not write report files — your final message is the report.
+7. Log every material workaround, tooling hiccup, repeated friction, or surprising divergence in
+   `docs/agent-system/FRICTION_LOG.md` in the same hop, linked to an existing issue/card or durable
+   task; capture is not permission to widen scope, and never record a PID, absolute local path,
+   token, or private identifier.
