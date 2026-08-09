@@ -282,7 +282,8 @@ lab_release_handoff: 'Product PR #231 final head
   joint tag remains blocked by the remaining Lab #29 pre-tag work,
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 closes only after the tag. Product #222
-  remains selected but not implemented. Product q-8 is closed; G1/G2 approval, standing bounded G3
+  remains selected but not implemented. `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is closed;
+  G1/G2 approval, standing bounded G3
   approval, and bounded G4 Luna approval remain approved. Remaining executable activation/default-deny
   gates are unpassed. No protected lane, release, tag, publication, data, model, telemetry, or
   credential action was authorized.'
