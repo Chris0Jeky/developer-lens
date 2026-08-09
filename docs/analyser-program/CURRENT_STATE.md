@@ -113,7 +113,7 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package aesthetic
   sign-off; then STEP 6 = tag v0.1.0 +
   publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
-  disposition), not the pre-QA batch — the joint tag remains blocked on all remaining Lab #29
+  disposition), not the pre-QA batch — the joint tag remains blocked on the remaining Lab #29
   pre-tag deliverables (explicitly including the Lane-P candidate-content review and any other
   remaining pre-tag work tracked there; the selected P2 test-hardening seam is delivered) plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
@@ -142,7 +142,7 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
-  H7 — none exists. The joint tag is blocked by all remaining Lab #29 pre-tag deliverables
+  H7 — none exists. The joint tag is blocked by the remaining Lab #29 pre-tag work
   (explicitly including the Lane-P candidate-content review and any other remaining pre-tag work
   tracked there; Lab PR #57 delivered the selected P2 test-hardening seam) plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` product owner aesthetic sign-off, and
@@ -278,7 +278,7 @@ lab_release_handoff: 'Product PR #231 final head
   `e5a85b20a130518a8307ebdb4cb48c3dbbb85052`, and issue #58 is closed. Lab state replacement PR #60
   is ready for review at head `ddefd0eec5fe74591603d4f69f5a6eb9c705831f` (OPEN; not merged).
   Continue the remaining Lab #29 pre-tag deliverables under their normal gates. The
-  joint tag remains blocked by all remaining Lab #29 pre-tag deliverables,
+  joint tag remains blocked by the remaining Lab #29 pre-tag work,
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 closes only after the tag. Product #222
   remains selected but not implemented. Product q-8 is closed; G1/G2 approval, standing bounded G3
