@@ -269,3 +269,23 @@ Rules that bind entries:
   a strict YAML parse of that block inside `scripts/projectContextValidation.ts` would make the
   claim self-enforcing. That belongs to the follow-up above rather than to this slice, since the
   check would fail on landing until the existing prose is repaired.
+
+### FR-010 — read-only scout capability drift remains in prompt and work-class prose
+
+- **first-seen:** 2026-08-09
+- **status:** `open`
+- **severity:** `MEDIUM (non-blocking residual)`
+- **symptom:** The #219 agent tool-capability tightening removed Bash from the `dl-scout` definition,
+  but `DL-P11` in `PROMPT_LIBRARY.md` and the corresponding `WORK_CLASSES.md` prose still restate
+  Bash, live Git, and GitHub inspection capabilities that the definition no longer grants.
+- **impact:** A coordinator or pasted prompt can request capabilities the read-only scout cannot
+  exercise, creating an instruction-surface mismatch even though the immediate agent behavior is
+  safe when it refuses the unavailable action.
+- **workaround:** Immediate safe behavior is refusal. This is a non-blocking residual for the
+  review round; capture is not permission to fix it in this review round.
+- **occurrences:** 1 recorded — 2026-08-09, during issue #219 capability tightening.
+- **task:** [#216](https://github.com/Chris0Jeky/developer-lens/issues/216) and
+  [#219](https://github.com/Chris0Jeky/developer-lens/issues/219).
+- **promotion:** If this drift recurs, add a `verify:context` rule tying read-only agent frontmatter
+  tools to the documented capabilities in the prompt and work-class surfaces. Do not broaden this
+  entry into a prompt/work-class edit without the bounded follow-up.
