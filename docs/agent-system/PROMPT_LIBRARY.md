@@ -93,6 +93,10 @@ a durable follow-up task. Capture is not permission to detour: log it, link it, 
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
 
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
+
 READ FIRST, in this order:
 - CLAUDE.md and .agent-harness/tier.json (T2 authority, sensitive_data overlay);
 - docs/OWNER_CONSTITUTION.md (binding owner policy, locked invariants, supersessions);
@@ -201,6 +205,10 @@ a durable follow-up task. Capture is not permission to detour: log it, link it, 
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
 
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
+
 Start by reading: CLAUDE.md and AGENTS.md; .agent-harness/tier.json; HUMAN_TODO.md;
 docs/analyser-program/CURRENT_STATE.md; docs/OWNER_CONSTITUTION.md; .agent-harness/governor.yaml;
 docs/agent-system/README.md, WORK_CLASSES.md and FRICTION_LOG.md; the active issue or mission.
@@ -291,6 +299,10 @@ docs/agent-system/FRICTION_LOG.md in the SAME hop, and linked to an existing iss
 a durable follow-up task. Capture is not permission to detour: log it, link it, continue the slice.
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
+
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
 
 COLD START, in this order, before any write:
 1. CLAUDE.md, AGENTS.md, .agent-harness/tier.json (T2 authority, sensitive_data overlay).
@@ -396,6 +408,10 @@ a durable follow-up task. Capture is not permission to detour: log it, link it, 
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
 
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
+
 PROTECTED-DATA RULE (absolute): never inspect .developer-lens/, generated public/data/, dist/,
 credentials, browser profiles, caches, or real/private inputs.
 
@@ -460,6 +476,10 @@ a durable follow-up task. Capture is not permission to detour: log it, link it, 
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
 
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
+
 GIT STATE IS PINNED: branch <branch>, based on <base ref>, HEAD <exact head>. Verify all three
 before your first edit and STOP if any differs. Do not switch branches, do not merge, do not touch
 main, do not push unless this prompt says to.
@@ -514,6 +534,11 @@ docs/agent-system/FRICTION_LOG.md in the SAME hop, and linked to an existing iss
 a durable follow-up task. Capture is not permission to detour: log it, link it, continue the slice.
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
+
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
+
 (You cannot write files: report friction as a finding for the coordinator to log.)
 
 The coordinator MUST hand you the EXACT diff as a pasted unified patch against the stated base. A
@@ -575,6 +600,10 @@ a durable follow-up task. Capture is not permission to detour: log it, link it, 
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
 
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
+
 GIT STATE IS PINNED: branch <branch>, HEAD <exact head>. Verify before the first edit; STOP if it
 differs.
 
@@ -628,6 +657,10 @@ docs/agent-system/FRICTION_LOG.md in the SAME hop, and linked to an existing iss
 a durable follow-up task. Capture is not permission to detour: log it, link it, continue the slice.
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
+
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
 
 SCOPE: <PR numbers, workflow runs, or "everything merged or pushed since <date/head>">
 
@@ -698,6 +731,10 @@ docs/agent-system/FRICTION_LOG.md in the SAME hop, and linked to an existing iss
 a durable follow-up task. Capture is not permission to detour: log it, link it, continue the slice.
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
+
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
 
 MANDATORY AUTHORITY READS, BEFORE the roadmap or any checklist step:
 1. CLAUDE.md - repository canon, run-and-prove table, publication boundary.
@@ -779,6 +816,10 @@ a durable follow-up task. Capture is not permission to detour: log it, link it, 
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
 
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
+
 READ FIRST: docs/agent-system/CROSS_REPO_CONTRACT.md (the handshake), docs/OWNER_CONSTITUTION.md
 §2.2 and §5 (A7 makes compatibility checking mandatory), .agent-harness/prompt-parity.json when the
 change touches the prompt operating system, and both repositories' live Git and CI state.
@@ -840,6 +881,11 @@ docs/agent-system/FRICTION_LOG.md in the SAME hop, and linked to an existing iss
 a durable follow-up task. Capture is not permission to detour: log it, link it, continue the slice.
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
+
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
+
 (You are read-only: report friction as a finding for the coordinator to log.)
 
 MISSION: <one question or inventory target, stated precisely>
@@ -904,6 +950,10 @@ docs/agent-system/FRICTION_LOG.md in the SAME hop, and linked to an existing iss
 a durable follow-up task. Capture is not permission to detour: log it, link it, continue the slice.
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
+
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
 
 READ FIRST: docs/agent-system/FRICTION_LOG.md, then CLAUDE.md, .agent-harness/tier.json,
 docs/OWNER_CONSTITUTION.md, HUMAN_TODO.md and docs/agent-system/WORK_CLASSES.md.
@@ -971,6 +1021,10 @@ docs/agent-system/FRICTION_LOG.md in the SAME hop, and linked to an existing iss
 a durable follow-up task. Capture is not permission to detour: log it, link it, continue the slice.
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
+
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
 
 MISSION: <the signal universe, subsystem or product question to map>
 
@@ -1050,6 +1104,10 @@ docs/agent-system/FRICTION_LOG.md in the SAME hop, and linked to an existing iss
 a durable follow-up task. Capture is not permission to detour: log it, link it, continue the slice.
 At the second independent occurrence, choose or propose the cheapest layer that actually enforces
 the fix, or record why it stays task debt.
+
+CLAUDE ROUTING: read CLAUDE.md; delegate large/discovery reads to Opus 5 low `dl-scout`,
+bounded implementation to Opus 5 high `dl-implementer`, fresh-context review to Opus 5 high
+`dl-reviewer`, and mechanical sweeps to Sonnet 4.6 high `dl-mechanic`.
 
 VERTICAL: <the single user question, and the mode it belongs to: Story / System / Research /
 Team-Leadership / Query>

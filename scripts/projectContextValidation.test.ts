@@ -3,6 +3,8 @@ import { describe, expect, it } from 'vitest'
 import {
   COMMON_PROMPT_IDS,
   CONTINUOUS_SECTION_MARKERS,
+  PRODUCT_CLAUDE_ROUTING_CLAUSE,
+  PRODUCT_CLAUDE_ROUTING_TOKENS,
   RETIRED_PROMPT_SENTINEL,
   extractMarkdownLinkTargets,
   findBareHumanRefs,
@@ -174,6 +176,7 @@ interface PromptSpec {
   id: string
   status?: string
   body?: string
+  claudeRouting?: string | null
 }
 
 function fenced(body: string): string {
@@ -200,8 +203,13 @@ function buildLibrary(
   lines.push(`<!-- shared-block: ${frictionId} -->`, '', fenced(friction), '')
   for (const prompt of prompts) {
     lines.push(`<!-- prompt-id: ${prompt.id} status: ${prompt.status ?? 'active'} -->`, '')
+    const body = prompt.body ?? [`PROMPT ${prompt.id}`, bootstrap, friction].join('\n')
+    const claudeRouting =
+      prompt.claudeRouting === null
+        ? []
+        : [prompt.claudeRouting ?? PRODUCT_CLAUDE_ROUTING_CLAUSE]
     lines.push(
-      fenced(prompt.body ?? [`PROMPT ${prompt.id}`, bootstrap, friction].join('\n')),
+      fenced([body, ...claudeRouting].join('\n')),
       '',
     )
   }
@@ -477,6 +485,47 @@ describe('prompt operating system parity', () => {
     ).toEqual([
       'shared block friction-tasking-v1 is missing required clause: docs/agent-system/FRICTION_LOG.md in the SAME hop',
     ])
+  })
+
+  it('requires one exact Product Claude routing clause in every active prompt', () => {
+    const activeIds = [...COMMON_PROMPT_IDS, ...PRODUCT_EXTENSIONS]
+    const expectedError = (id: string, count: number) =>
+      `prompt ${id} must contain exactly one Product Claude routing clause naming ${PRODUCT_CLAUDE_ROUTING_TOKENS.join(', ')} (found ${count})`
+
+    for (const targetId of activeIds) {
+      const omitted = buildLibrary({
+        prompts: activeIds.map((id) =>
+          id === targetId ? { id, claudeRouting: null } : { id },
+        ),
+      })
+      expect(checkLibrary(omitted)).toContain(expectedError(targetId, 0))
+
+      for (const token of PRODUCT_CLAUDE_ROUTING_TOKENS) {
+        const missingToken = buildLibrary({
+          prompts: activeIds.map((id) =>
+            id === targetId
+              ? { id, claudeRouting: PRODUCT_CLAUDE_ROUTING_CLAUSE.replace(token, '') }
+              : { id },
+          ),
+        })
+        expect(checkLibrary(missingToken)).toContain(expectedError(targetId, 0))
+      }
+    }
+
+    const duplicated = buildLibrary({
+      prompts: activeIds.map((id, index) =>
+        index === 0
+          ? {
+              id,
+              claudeRouting: [
+                PRODUCT_CLAUDE_ROUTING_CLAUSE,
+                PRODUCT_CLAUDE_ROUTING_CLAUSE,
+              ].join('\n'),
+            }
+          : { id },
+      ),
+    })
+    expect(checkLibrary(duplicated)).toContain(expectedError(activeIds[0] as string, 2))
   })
 
   it('requires the continuous stop markers exactly once and in order', () => {
