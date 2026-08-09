@@ -70,7 +70,7 @@ const COVERAGE_SCOPE_ALIASES = ['alias-alpha', 'alias-beta', 'alias-gamma'] as c
 /** Prose, paths, and names a caller might hand the resolver as a claim id. */
 const CANARIES = [
   'why is this number so low',
-  'C:/Users/jekyt/Desktop/Printer Config/secret.txt',
+  'C:/Synthetic/fixture/secret.txt',
   'server/storage/whyResolver.ts',
   'Chris Jeky',
   'jeky.tck@gmail.com',

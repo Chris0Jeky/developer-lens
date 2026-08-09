@@ -57,7 +57,7 @@ const ALPHA_SCOPE = `scope-${'a1'.repeat(32)}`
 const BETA_SCOPE = `scope-${'b2'.repeat(32)}`
 const CANARIES = [
   'the repository was renamed last April',
-  'C:/Users/jekyt/Desktop/Printer Config/secret.txt',
+  'C:/Synthetic/fixture/secret.txt',
   'server/storage/claims.ts',
   'Chris Jeky',
   'jeky.tck@gmail.com',
