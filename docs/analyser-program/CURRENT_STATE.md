@@ -89,17 +89,29 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   merged as `2e6a7c2`. The Lab's detached historical-producer proof then exactly reproduced the
   frozen JSON/Markdown/HTML hashes, and the product's tracked fixture/schema checks passed (26
   focused tests plus `check:method-trial-view`). Package-smoke PR #45 then merged as `6e13b6d`.
-  EXACT NEXT ACTIONS: park the protected Lane-P candidate-content review boundary under Lab #29;
-  bounded tracked package-smoke P2 hardening may proceed without crossing it. Complete STEP 3 Lab
-  release preparation's pre-tag deliverables;
+  Bounded package-smoke hardening followed in exact-base order: Lab PRs #46, #47, #48, #49, and
+  #50 merged as `a1dc7caa`, `c827d6a1`, `0b7a452e`, `ece61e0e`, and
+  `e63086b4ae3b97390969357ebdd9d3e30394814e`, respectively. At the next observed checkpoint,
+  PR #51 was open and its exact-head `Prove the lab` check was green, but the head was not yet
+  merge-eligible under the Lab 15-minute floor. Live refresh supersedes that open state: #51 head
+  `adc43aea21834683eaf2749fe3515f10da204bde` merged from base
+  `e63086b4ae3b97390969357ebdd9d3e30394814e` at 2026-08-09T12:39:59Z as
+  `02a41cac4a461a93d53b481d34c96a48e29291e5`, which is now Lab `main`. The head commit was
+  timestamped 12:31:00Z, so it had aged at most 8m59s at merge. GitHub exposes no formal review
+  object or review thread; the separate independent MERGE-SOUND evidence was posted at 12:41:40Z,
+  after merge. Lab #29 tracks the merge-eligibility hardening. This is a recorded process defect,
+  not release proof. EXACT NEXT ACTIONS: preserve the protected Lane-P candidate-content review
+  boundary under Lab #29; bounded tracked package-smoke P2 hardening may proceed without crossing
+  it. Complete STEP 3 Lab release preparation's remaining pre-tag deliverable;
   then STEP 5 = final
   browser/visual QA proof for the `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` five-minute
   product owner sign-off plus
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package aesthetic
   sign-off; then STEP 6 = tag v0.1.0 +
   publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
-  disposition), not the pre-QA batch — the joint tag remains blocked on #29's pre-tag deliverables
-  plus `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
+  disposition), not the pre-QA batch — the joint tag remains blocked on the Lane-P
+  candidate-content review under Lab #29 plus
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, per H7=BOTH; #29 closes only after the tag; step 7
   descriptions/topics is partially done (description, topics,
   Discussions live). Tracked from the #209 review (non-blocking LOWs,
@@ -123,7 +135,8 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
-  H7 — none exists. The joint tag is blocked by unfinished Lab #29 pre-tag deliverables, the
+  H7 — none exists. The joint tag is blocked by the Lane-P candidate-content review under Lab #29,
+  the
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` product owner aesthetic sign-off, and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 itself closes after the tag.
   Do not
@@ -197,13 +210,27 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   then merged as `d203461` and `56c8891`; changelog PR #44 merged as `2e6a7c2` after exact-head
   hosted proof, fresh review, and a clean delayed sweep. Package-smoke PR #45 reached final head
   `7f07ce2` and merged as `6e13b6d` after exact hosted/fresh-review proof and the bounded TMPDIR
-  confinement fix. The frozen historical-producer hashes and the product fixture/schema seam are
-  green; current-head candidate bytes are rejected and Lane-P content review remains unverified.'
+  confinement fix. Lab PRs #46-#50 then landed bounded timeout, traversal, diagnostics, and context
+  hardening through Lab main `e63086b4ae3b97390969357ebdd9d3e30394814e`. PR #51 later merged
+  as `02a41cac4a461a93d53b481d34c96a48e29291e5`; its exact-head hosted proof was green, but the
+  merge occurred before the 15-minute floor and the separately posted independent review evidence
+  arrived after merge. Lab #29 tracks that process hardening. The frozen historical-producer hashes
+  and the product fixture/schema seam are green; current-head candidate bytes are rejected and
+  Lane-P candidate-content review remains unverified.'
+preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 named product
+  worktrees and branches at their mechanically measured full HEADs. Three had tracked modifications;
+  two no-PR branches were remote-preserved and the other measured no-PR branches were local-only.
+  No preserved-worktree file content, untracked or ignored content, or data lane was inspected or
+  activated. The exact branch/SHA/PR mapping lives in docs/IMPLEMENTATION_LEDGER.md; product #200
+  owns cleanup or reconciliation follow-up.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
-  NEW recorded owner decision — none exists) and remains blocked by unfinished Lab #29 pre-tag
-  deliverables, `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
+  NEW recorded owner decision — none exists) and remains blocked by the Lane-P candidate-content
+  review under Lab #29, `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 closes after the tag.
+  Lab PR #51 merged before the Lab 15-minute eligibility floor and received the separately posted
+  independent review evidence after merge; #29 tracks this process hardening, and the merge does
+  not satisfy any of the three release blockers.
   The binding review-timing gate
   stated below (`review_timing_defect`) governs any future merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the

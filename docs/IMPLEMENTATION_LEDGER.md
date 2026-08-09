@@ -1,6 +1,10 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-08, late evening** (P0.5 first batch — PRs #209/#210/#211/#212. A
+Last updated: **2026-08-09** (Lab release-wave evidence through PR #51 and a read-only product
+worktree preservation reconciliation; exact records appended below).
+
+Prior detailed update: **2026-08-08, late evening** (P0.5 first batch — PRs
+#209/#210/#211/#212. A
 Codex-side session authored #209/#210/#211, went silent at 21:51Z; the Claude-side flagship
 coordinator adopted the lanes via PR-thread claim comments and ran the gate. **#211** nanoid
 3.3.16→3.3.18 lockfile-only, merge `8ec605e` 22:33Z: the connector MISSED the PR entirely (zero
@@ -3949,3 +3953,152 @@ stay P2 hardening on Lab #29.
 **Still NOT verified / blocked.** Lane-P candidate-content review is outside this session's
 protected-output boundary. Both owner sign-offs, the joint tag, publication, protected/private
 data, model/data/telemetry activation, and credentials remain untouched and open as applicable.
+
+## 2026-08-09 — Lab release-wave evidence preservation through PR #51
+
+**Scope.** Read-only reconciliation of the sibling Lab release wave from live GitHub metadata. It
+changes no Lab ref, product capability, contract, data, candidate content, release, tag, asset, or
+publication state. Live GitHub and the exact hosted check rollup outrank the earlier product-side
+resume prose.
+
+**Exact pull-request evidence (`gh pr view`, refreshed 2026-08-09).** Every listed pull request is
+`MERGED`; all timestamps are UTC.
+
+- [Lab PR #40](https://github.com/Chris0Jeky/developer-lens-lab/pull/40), "Declare Lab package
+  license identity", opened `2026-08-09T06:04:04Z`: base
+  `4f355f1e58e1eca1191f899f1fc4354af8a23a00`, head
+  `7d5610d2280e900d9e2c10c6304455830147ffcd`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T07:36:11Z` (run `31301396559`, job `93214649991`); merged at
+  `2026-08-09T07:38:31Z` as `d203461c023e1661140a1fef38a0f4b68e3454b2`.
+- [Lab PR #43](https://github.com/Chris0Jeky/developer-lens-lab/pull/43), "docs: add Lab community
+  scaffolding", opened `2026-08-09T07:43:01Z`: base
+  `d203461c023e1661140a1fef38a0f4b68e3454b2`, head
+  `871e014c73972fd65b8e9cd39e0665b6b2cdb65d`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T07:46:33Z` (run `31301825986`, job `93215733777`); merged at
+  `2026-08-09T07:49:49Z` as `56c889141cd4575d12f80c3e0a16a574277e0ddd`.
+- [Lab PR #45](https://github.com/Chris0Jeky/developer-lens-lab/pull/45), "ci: prove built lab
+  package", opened `2026-08-09T08:26:14Z`: base
+  `2e6a7c2b7ff906cb771bb4e904dd18d2717fa536`, head
+  `7f07ce221b7a405c06af70d3a5215910dca72991`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T08:54:19Z` (run `31304528858`, job `93222641130`); merged at
+  `2026-08-09T08:58:17Z` as `6e13b6d84391ea7a2579e169151e3d765ad71583`.
+- [Lab PR #46](https://github.com/Chris0Jeky/developer-lens-lab/pull/46), "Reconcile package-smoke
+  release evidence", opened `2026-08-09T09:13:52Z`: base
+  `6e13b6d84391ea7a2579e169151e3d765ad71583`, head
+  `4d6327185e207d83d5870aa4c7190a1ba8a03db5`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T09:29:47Z` (run `31305895619`, job `93226118637`); merged at
+  `2026-08-09T09:32:43Z` as `a1dc7caa4015f200a10cf7218d904001c90184cc`.
+- [Lab PR #47](https://github.com/Chris0Jeky/developer-lens-lab/pull/47), "Bound package smoke
+  commands", opened `2026-08-09T09:34:58Z`: base
+  `a1dc7caa4015f200a10cf7218d904001c90184cc`, head
+  `ea9b39d663bc2edf020d9853ddf854d9cd0cefdc`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T09:37:15Z` (run `31306259562`, job `93227022970`); merged at
+  `2026-08-09T09:41:00Z` as `c827d6a18490838ab132fc7dc058c29fc727d68b`.
+- [Lab PR #48](https://github.com/Chris0Jeky/developer-lens-lab/pull/48), "Skip package smoke
+  Markdown scans", opened `2026-08-09T09:43:57Z`: base
+  `c827d6a18490838ab132fc7dc058c29fc727d68b`, head
+  `89cad7d1dff4b00db9459f2739f1db567d266351`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T10:00:49Z` (run `31307153939`, job `93229202173`); merged at
+  `2026-08-09T10:04:07Z` as `0b7a452ee0a6ce4c69e91646400fbb98ad8f3ca1`.
+- [Lab PR #49](https://github.com/Chris0Jeky/developer-lens-lab/pull/49), "Bound package smoke
+  failure diagnostics", opened `2026-08-09T10:17:57Z`: base
+  `0b7a452ee0a6ce4c69e91646400fbb98ad8f3ca1`, head
+  `02d3e504b4fde54bd1e33b01d24b33a4de3305c5`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T10:21:35Z` (run `31307993706`, job `93231285624`); merged at
+  `2026-08-09T10:23:11Z` as `ece61e0e1ca86e1e38732916fc077c4718bf7de6`.
+- [Lab PR #50](https://github.com/Chris0Jeky/developer-lens-lab/pull/50), "Prune skipped Markdown
+  trees before traversal", opened `2026-08-09T10:34:59Z`: base
+  `ece61e0e1ca86e1e38732916fc077c4718bf7de6`, head
+  `086c9809ae2fd27b0a1bc485d4653764aea8ec08`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T10:38:40Z` (run `31308683005`, job `93232990186`); merged at
+  `2026-08-09T10:43:05Z` as `e63086b4ae3b97390969357ebdd9d3e30394814e`.
+- [Lab PR #51](https://github.com/Chris0Jeky/developer-lens-lab/pull/51), "Validate uv before package
+  smoke", opened `2026-08-09T12:33:02Z`: base
+  `e63086b4ae3b97390969357ebdd9d3e30394814e`, head
+  `adc43aea21834683eaf2749fe3515f10da204bde`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T12:35:45Z` (run `31313571499`, job `93245084619`); merged at
+  `2026-08-09T12:39:59Z` as `02a41cac4a461a93d53b481d34c96a48e29291e5`. A live default-branch
+  read returned that merge commit as Lab `main`.
+
+**Review and eligibility reconciliation.** A GraphQL thread read found no unresolved review thread
+for any PR above: #40/#43/#50/#51 had zero threads; #45 had six resolved, #46 two resolved, #47 one
+resolved, #48 two resolved, and #49 two resolved. None carried a closing-issue reference. At the
+pre-merge observation, #51 was open and exact-head green but not yet eligible under the Lab's
+15-minute floor; no exact timestamp for that observation was retained. Its head commit timestamp was
+`2026-08-09T12:31:00Z`, so the merge happened at most 8m59s later (and 6m57s after PR creation).
+GitHub exposes no formal review object or review thread for #51. An owner comment at
+`2026-08-09T12:39:57Z` asserted fresh-context review completion, but the separately posted
+independent MERGE-SOUND evidence arrived at `2026-08-09T12:41:40Z`, after merge. The merge therefore
+violated the 15-minute eligibility floor; [Lab #29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29)
+tracks mechanical eligibility hardening. This defect is preserved rather than recast as a compliant
+gate.
+
+**NOT verified / blockers.** This product-side session did not rerun Lab local tests or inspect
+candidate bytes, protected outputs, build artifacts, private data, or any data lane. The local-test
+and independent-review claims in PR comments were not independently re-executed here; live GitHub
+proves the metadata and hosted check rollup recorded above. The Lane-P candidate-content review,
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` product aesthetic sign-off, and
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` screenshot/video-package sign-off remain three
+distinct blockers. No release, `v0.1.0` tag, release asset, or publication is claimed.
+
+## 2026-08-09 — Read-only product worktree preservation reconciliation
+
+**Method and boundary.** A mechanical audit read only each named worktree's branch, full `HEAD`, and
+tracked-status count using `--untracked-files=no`. It did not enumerate modified paths or inspect any
+file content, untracked or ignored output, protected data, generated output, or data lane. Live
+`gh pr view`, `gh pr list --state all --head`, and exact remote-head reads supplied PR and remote
+classifications. Every worktree and branch was preserved; nothing was switched, cleaned, removed,
+pushed, or activated.
+
+**Historical-PR or tracked-modification classes.**
+
+- `codex/method-trial-view-v1` is preserved at
+  `ed415013e582924fab520b3d44bf8e677630cec6` with two tracked-status entries. Its historical
+  [PR #187](https://github.com/Chris0Jeky/developer-lens/pull/187) merged a different old head,
+  `53f0cfda65392fc2a3763bff9284b6af80aa1e98`, at `2026-08-07T05:35:05Z` as
+  `7b22491b28acbe467e2facb85723a91fd37af52b`; the current worktree state is not represented by that
+  merged head.
+- `codex/researchpack-v1-producer` is preserved at
+  `dd3e4d644cb805761b16d8b939aa94309f487764` with no tracked modification. Its historical
+  [PR #178](https://github.com/Chris0Jeky/developer-lens/pull/178) merged a different old head,
+  `80a0cb90d8e280118a2bc559c82f4cf8ae19b690`, at `2026-08-07T02:36:27Z` as
+  `be9c2451e983e776850c4cd4700cc8c234ea5e14`.
+- `codex/wbc1-method-trial-contract` is preserved clean at
+  `c6949cc70a516a556c5162ab60f1f2e0f2124c50`, exactly the head of
+  [PR #188](https://github.com/Chris0Jeky/developer-lens/pull/188), which closed unmerged at
+  `2026-08-07T04:17:15Z`; it has no merge commit.
+- `fable/life03-backup-crash-durability` is preserved at
+  `100addf254d2d228294b4ffb8a69ce12a367c7c6` with one tracked-status entry. No GitHub PR or remote
+  head exists for the branch at this measurement, so it remains local-only.
+- `codex/phasee-analysis-core` is preserved at
+  `765ac46d4e760bc58c78941d5523ccc2929e5234` with one tracked-status entry. No GitHub PR or remote
+  head exists for the branch at this measurement, so it remains local-only.
+
+**No-PR preserved branches.** Live PR queries returned an empty list for every branch below.
+
+- Local-only: `codex/researchpack-v1-steward-20260807` at
+  `05b7c1d4b499664345016920964173034ec25dd1`; `codex/life03-backup-verifier` at
+  `dd54a3bce8e750759bc7216c3d290467b9dd1470`; `codex/life03-restore-core` at
+  `fefdf81337536a570488042810cf4848560138c3`; `codex/life03-restore-verifier` at
+  `054bc404332fe916252ad9c5b6cd0469fe504887`; `codex/phasee-readiness-schema` at
+  `cc188afd8b0495a097e0ec4f15af4b3859d4df1f`; `codex/phasee-ui-consumer` at
+  `7b791cbdaa18b8cffe7275991aafbaa70dc3cb71`; and `codex/phasee-v3-why-resolver` at
+  `35f4504a45d18d945ac4505a834c5a661406549c`.
+- Remote-preserved at an exact matching remote head, with no PR:
+  `codex/phasee-stored-bridge-rebuild` at
+  `f05dd7d57757be4127e41c5a9ee43d0b328a18e8`, and `codex/life03-backup-dirsync` at
+  `2d3c8909103f7456a76c0c21f1e2d76a0abc574c`.
+
+**NOT verified / exact resume boundary.** No branch's behavior, diff, commit reachability beyond the
+named PR association, tests, ignored output, or suitability for continued implementation was
+verified. The audit authorizes no lane. Preserve all 14 worktrees and their exact states until a
+separate owner/coordinator-led reconciliation under
+[#200](https://github.com/Chris0Jeky/developer-lens/issues/200) explicitly selects, publishes, or
+retires one of them.
+
+**Product documentation-slice proof and failure.** The first `npm run verify:context` invocation
+stopped before the verifier ran because the fresh worktree lacked local `tsx`; FR-012 records this
+third occurrence. Lockfile-pinned `npm ci` then added 358 packages, audited 359 packages with 0
+vulnerabilities, and the rerun passed (47 Markdown files, 31 required files). `git diff --check`
+passed with only Git's existing LF-to-CRLF working-copy warnings. No Lab check or protected-output
+inspection was performed by this product-side documentation slice.

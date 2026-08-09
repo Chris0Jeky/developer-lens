@@ -22,13 +22,15 @@ This log is **append-only**. New entries are added at the end with the next free
 existing entry is never deleted or rewritten; only its `status`, `occurrences`, `task` and
 `promotion` fields may change, and a substantive change adds a dated note under the entry.
 
-Each entry carries exactly these fields:
+Each entry carries the required fields below. `severity` is optional; when present it records the
+bounded consequence of the observed friction without changing the status or promotion rules.
 
 | Field | Meaning |
 |---|---|
 | `id` | `FR-NNN`, assigned in order, never reused. |
 | `first-seen` | ISO date of the first recorded occurrence. |
 | `status` | `open` · `workaround-documented` · `promoted` · `owner-gated` · `resolved`. |
+| `severity` | Optional factual impact classification, including whether the effect is blocking. |
 | `symptom` | What was observed, factually, without inference. |
 | `impact` | What it costs a session when it happens. |
 | `workaround` | What was actually done instead, or `none`. |
@@ -337,14 +339,21 @@ Rules that bind entries:
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 2 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
-  (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite).
+- **occurrences:** 3 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
+  (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite), and
+  2026-08-09 (the release-state/worktree-preservation documentation worktree).
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release
   coordination).
 - **promotion:** Promoted at the second independent occurrence to the `CLAUDE.md` run-and-prove
   preamble: a fresh worktree runs lockfile-pinned `npm ci` before any proof. Installation remains an
   explicit environment action rather than a verifier side effect, so the check cannot silently
   install or mutate dependencies on the caller's behalf.
+
+  **2026-08-09 note:** The release-state preservation worktree reproduced the same missing-`tsx`
+  stop before `verify:context` executed. The lockfile-pinned `npm ci` bootstrap added 358 packages,
+  audited 359 packages with 0 vulnerabilities, and restored the declared proof path. This third
+  occurrence does not require a new layer: the existing `CLAUDE.md` fresh-worktree preamble is the
+  promoted enforcement point.
 
 ### FR-013 — full product gate exceeded a compound shell timeout
 
@@ -369,7 +378,7 @@ Rules that bind entries:
 ### FR-014 — implicit PowerShell decoding corrupted patch context
 
 - **first-seen:** 2026-08-09
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (bounded tooling interruption)`
 - **symptom:** A `Get-Content` read without an explicit encoding rendered UTF-8 punctuation in the
   live state artifact as mojibake. Reusing that rendered text as an `apply_patch` context made the
@@ -378,9 +387,43 @@ Rules that bind entries:
   rendering is mistaken for repository bytes; the failed patch itself left the worktree unchanged.
 - **workaround:** Re-read the tracked file with `Get-Content -Encoding utf8`, then use bounded,
   heading-anchored patch contexts and inspect the exact diff immediately.
-- **occurrences:** 1 independent occurrence — 2026-08-09 during PR #228's latest-base state sync.
+- **occurrences:** 2 independent occurrences — 2026-08-09 during PR #228's latest-base state sync
+  and 2026-08-09 during the later release-state preservation slice.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
   coordination and factual cross-repository resume artifact.
-- **promotion:** Deliberately NOT promoted after one occurrence. If it recurs, make explicit UTF-8
-  decoding part of the PowerShell tracked-Markdown read wrapper rather than adding another prose
-  reminder.
+- **promotion:** Promoted at the second occurrence to the PowerShell tracked-Markdown read path:
+  use `Get-Content -Encoding utf8` for direct reads, or the cheapest existing tracked-Markdown
+  wrapper where one already applies. Do not add a parallel wrapper merely to restate the same
+  encoding rule; [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) carries the live
+  release-state consumer.
+
+  **2026-08-09 note:** A second independent mojibake occurrence during release-state preservation
+  triggered the promotion above. The durable response is explicit UTF-8 PowerShell reads, routed
+  through the cheapest existing tracked-Markdown wrapper where applicable; the failed-context
+  behavior remained fail-closed and no repository file was changed by the failed read-derived
+  patch.
+
+### FR-015 — MCP hygiene cleanup needed a canonical-location retry and bounded second pass
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **symptom:** A first report-only re-measure used a stale remembered checkout location and failed
+  before the hygiene script executed. After the canonical checkout was resolved from the repository
+  registry, the report measured 468 running MCP containers, 440 provably unowned. The first reviewed
+  cleanup wrapper timed out after 64 seconds, leaving 249 running containers, 221 provably unowned.
+- **impact:** The failed location lookup delayed trustworthy measurement, and the bounded wrapper
+  timeout left a large regenerable unowned set consuming memory after the first cleanup pass.
+- **workaround:** Resolve the canonical checkout from the repository registry, run the reviewed
+  report there, then use one bounded retry of the same reviewed cleanup. The retry completed with an
+  immediate post-clean measurement of 36 running containers, 0 provably unowned, 0 orphan MCP
+  processes, and about 1.8 GB free. A later report-only re-measure at about 13:40 BST found 56 running
+  containers, 0 provably unowned, 0 orphan MCP processes, and 5,023 MB free, so no additional cleanup
+  was warranted. The cleanup predicate spared live-owned containers; the unowned containers it
+  removed were regenerable.
+- **occurrences:** 1 recorded sequence — 2026-08-09 canonical-location correction, timed-out first
+  cleanup pass, bounded successful retry, and later live-owned re-measure.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns durable Windows-safe
+  governor maintenance helpers for recurrent proof and cleanup checks.
+- **promotion:** Task debt at one occurrence. The reviewed cleanup predicate and bounded retry were
+  sufficient for this incident; #222 owns a durable helper so future sessions do not depend on a
+  remembered checkout location or an undersized one-shot wrapper timeout.
