@@ -276,8 +276,9 @@ lab_release_handoff: 'Product PR #231 final head
   delivered the zero/multiple-wheel and full-call-sequence P2 seam. Lab issue #58 and its replacement
   PR #59 delivered the tracked/synthetic CURRENT_STATE YAML repair: PR #59 merged as
   `e5a85b20a130518a8307ebdb4cb48c3dbbb85052`, and issue #58 is closed. Lab state replacement PR #60
-  is ready for review at head `ddefd0eec5fe74591603d4f69f5a6eb9c705831f` (OPEN; not merged).
-  Continue the remaining Lab #29 pre-tag deliverables under their normal gates. The
+  is OPEN and ready for review; refresh its live head, check, and thread state from GitHub before
+  action (no current SHA is recorded). Continue the remaining Lab #29 pre-tag deliverables under
+  their normal gates. The
   joint tag remains blocked by the remaining Lab #29 pre-tag work,
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 closes only after the tag. Product #222
@@ -293,10 +294,10 @@ preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 na
   owns cleanup or reconciliation follow-up.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
-  NEW recorded owner decision — none exists) and remains blocked by the remaining Lab #29 pre-tag
-  Lab PR #57 delivered the zero/multiple-wheel and full-call-sequence seam; Lab PR #59 delivered the
-  CURRENT_STATE YAML repair and closed Lab issue #58; Lab PR #60 is ready at head
-  `ddefd0eec5fe74591603d4f69f5a6eb9c705831f` but is not merged. Remaining release blockers are the
+  NEW recorded owner decision — none exists). Lab PR #57 delivered the zero/multiple-wheel and
+  full-call-sequence seam; Lab PR #59 delivered the CURRENT_STATE YAML repair and closed Lab issue
+  #58. Lab state replacement PR #60 is OPEN and ready; refresh its live head, check, and thread
+  state from GitHub before action (no current SHA is recorded). Remaining release blockers are the
   Lane-P candidate-content review plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, followed by the joint tag; the remaining
