@@ -3900,8 +3900,9 @@ screenshot/video-package sign-off at
 `b5d8f5867283c08e2cf3251f81e825aea2f498af` merged as
 `408a5b8d22be2ab7d54838e3b36aeca807a99792`. The Lab counterpart did not merge: PR #37 was archived
 at `4a044dcec134cda313cffb7087389f64d28fe8c9` after exhausting two fix rounds. Coordinator-owned
-replacement PR #42 started from current Lab main at `e290d1b94aff9f39de677fd80670f4f9e8f15227`
-and merged as `38ac2eb14c8c9ba742b5f269b7022c7e549b7a5d`.
+replacement PR #42 started from Lab main `f893f576f71202375fe93e8c7d9c02e54fbaf08a`, reached final
+head `e290d1b94aff9f39de677fd80670f4f9e8f15227`, and merged as
+`38ac2eb14c8c9ba742b5f269b7022c7e549b7a5d`.
 
 **Verified.** Product Actions run `31298518409`, job `93207390318`, succeeded on the exact final
 head. A fresh exact-final-head review found no causal CRITICAL/HIGH defect, all five connector
@@ -3912,9 +3913,18 @@ unresolved; its separate P2 worktree-command finding was tracked and resolved wi
 round. Lab PR #42's hosted run `31299725193`, job `93210447311`, succeeded on its exact one-file
 head; fresh review found no causal CRITICAL/HIGH defect. Its only connector P2 (future bounded
 dependency residual wording) was tracked on Lab #34 and resolved without a fix commit before merge.
+A delayed post-merge sweep beyond the connector window found no new comments and no unresolved
+thread debt.
 
-**NOT verified / blocked.** Lab #29 pre-tag deliverables remain unfinished. Prepared PRs #39/#40,
-the community-files branch, Lab friction-only PR #41 and product follow-up #226 retain their own
-exact-base, hosted-check and review gates. Neither owner sign-off,
-the joint tag, publication, protected/private data, model/data/telemetry activation nor credentials
-were touched.
+**Reconciled live continuation.** Product community/contact PR #226 reached final head
+`c716672c99c03013b65ed4e867bf24a95f0ad883`, passed hosted run `31300080534`, job `93211341394`,
+and merged as `7bbb8ee6f9124424b3d8362170f0f4d738f5cb43`; its delayed sweep was clean. Lab friction PR #41
+merged as `178bd6d695119b74294a8fd6fbe46f54577e49b2`. Its late proof-integrity review debt was repaired
+through state PR #39, which reached final head `b36bbadd0365a8958ba741e27c2e36e9458237be` and merged as
+`4f355f1e58e1eca1191f899f1fc4354af8a23a00` after hosted run `31300971426`, job `93213564502`.
+Licence/package PR #40 then merged as `d203461c023e1661140a1fef38a0f4b68e3454b2`; community PR
+#43 merged as `56c889141cd4575d12f80c3e0a16a574277e0ddd`; changelog PR #44 is the current Lab review lane.
+
+**Still NOT verified / blocked.** Lab #29's remaining package-smoke/release-evidence deliverables,
+both owner sign-offs, the joint tag, publication, protected/private data, model/data/telemetry
+activation, and credentials remain untouched and open as applicable.

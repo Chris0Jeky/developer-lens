@@ -74,26 +74,28 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   Lab `main` with zero open Dependabot alerts; issue #5 CLOSED at 05:46Z with the evidence recorded.
   P0.5 step order vs the mandate: step 1 (licence) DONE, step 2 (community scaffolding) DONE,
   step 4 DONE on both sides (#211 product; Lab PR #38 plus closed #5), step 3 unblocked by the
-  2026-08-09 q-8 closure,
+  2026-08-09 closure of `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8`,
   steps 5-7 pending — order deviations are recorded here, never silent. This slice completes the
   pre-QA doc touch-up batch tracked on #200 (README→COMMERCIAL_OPTION link, AGPL visible source-offer
   in the Pages app, Discussions-link warning, cockpit seed-fixture wording, invented-vs-C0
-  terminology). Product PR #227 landed as `408a5b8`. Lab PR #37 was parked at `4a044dce`:
+  terminology). Product PR #227 landed as `408a5b8`; product community/contact PR #226 landed as
+  `7bbb8ee`. Lab PR #37 was parked at `4a044dce`:
   exact-head hosted proof is green, but its fresh final-head review confirmed a HIGH ambiguity that
   could collapse the product release sign-off and the Lab screenshot/video-package sign-off into
   one approval. Two fix rounds are exhausted; PR #37 is archived without a third fix commit.
   Coordinator-owned replacement PR #42 changed only DL-P09 and merged as `38ac2eb`; the Lab prompt
-  blocker is cleared without a third PR #37 fix commit. EXACT NEXT ACTIONS: integrate current Lab
-  main into friction-only PR #41 and re-prove it; then advance existing Lab #29 slices in base order
-  (state PR #39, package PR #40, prepared community-files branch). Disjoint product follow-up #226
-  may continue. Complete STEP 3 Lab release preparation's pre-tag deliverables (#29);
+  blocker is cleared without a third PR #37 fix commit. Lab PRs #41, #39, #40, and #43 then merged
+  in exact-base order as `178bd6d`, `4f355f1`, `d203461`, and `56c8891`. EXACT NEXT ACTIONS: finish
+  changelog PR #44, then the bounded non-credential package-smoke residual and remaining selected
+  C0 release evidence under Lab #29. Complete STEP 3 Lab release preparation's pre-tag deliverables;
   then STEP 5 = final
-  browser/visual QA proof for the q-10(c) five-minute product owner sign-off plus
+  browser/visual QA proof for the `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` five-minute
+  product owner sign-off plus
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package aesthetic
   sign-off; then STEP 6 = tag v0.1.0 +
   publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
   disposition), not the pre-QA batch — the joint tag remains blocked on #29's pre-tag deliverables
-  plus q-10(c) and
+  plus `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, per H7=BOTH; #29 closes only after the tag; step 7
   descriptions/topics is partially done (description, topics,
   Discussions live). Tracked from the #209 review (non-blocking LOWs,
@@ -139,8 +141,9 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   change — the shared `methodTrialView` contract must move in lockstep across both repos, so run it
   from the coordinating session via the `developer-lens-continuation` skill (there is no committed
   cross-repo-contract skill in this repo) and re-generate the committed fixture only through the
-  producer. Former q-8 gate: a competing writer was active in the lab checkout (observed 2026-08-07),
-  but q-8 closed on 2026-08-09 after the owner confirmed lab PR #24 and the clean-session result.
+  producer. Former `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` gate: a competing writer was
+  active in the lab checkout (observed 2026-08-07), but that product gate closed on 2026-08-09
+  after the owner confirmed lab PR #24 and the clean-session result.
   Lab writes and merges now follow their normal isolated-worktree, review, and CI gates. The
   validator-parity subset and #182 remain cross-repo (lab-touching). Other tracked debt, pick by owner priority: product #189''s accessible-rendering follow-ups
   (the timeline text alternative should mark where each missing/marked run ends/resumes — Codex #196
@@ -182,13 +185,15 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   separating the two sign-off scopes. Lab counterpart PR #37 was archived at `4a044dce` after its
   exact-head hosted check passed but its final fresh-context review confirmed that its wording still
   permits one approval to satisfy both gates. The two-fix-round ceiling is exhausted and its HIGH
-  thread stays as provenance. Coordinator-owned replacement PR #42 started from current Lab main,
-  changed only DL-P09 at final head `e290d1b9`, and merged as `38ac2eb` after exact-head hosted and
-  fresh review proof. Lab PR #41 extracts the disjoint friction ledger.'
+  thread stays as provenance. Coordinator-owned replacement PR #42 started from Lab main
+  `f893f576`, changed only DL-P09 at final head `e290d1b9`, and merged as `38ac2eb` after exact-head
+  hosted and fresh review proof. Lab PR #41 merged the disjoint friction ledger as `178bd6d`; late
+  review debt was repaired through state PR #39 (`4f355f1`). Package PR #40 and community PR #43
+  then merged as `d203461` and `56c8891`; changelog PR #44 is the current Lab review lane.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
   NEW recorded owner decision — none exists) and remains blocked by unfinished Lab #29 pre-tag
-  deliverables, q-10(c), and
+  deliverables, `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 closes after the tag.
   The binding review-timing gate
   stated below (`review_timing_defect`) governs any future merge:
