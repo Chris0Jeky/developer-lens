@@ -4125,8 +4125,8 @@ a partially edited duplicate routing section. All three were tracked on
 [#216](https://github.com/Chris0Jeky/developer-lens/issues/216) and replied to on their review threads;
 the current 14 bodies were correct, so no CRITICAL/HIGH defect or fix-commit cascade was created.
 
-**Friction reconciliation.** FR-016 records the audited per-prompt Product Claude-routing gap as
-resolved by PR #229's exact verifier and tests, without capability activation. FR-015 now records a
+**Friction reconciliation.** FR-018 records the audited per-prompt Product Claude-routing gap as
+resolved by PR #229's exact verifier and tests, without capability activation. FR-017 now records a
 second independent report-only MCP-hygiene measurement at about 20:38 BST: 9,651 MB free and zero
 orphan MCP processes. Docker was unreachable (daemon down or CLI unavailable), so the container
 count was explicitly **unknown**, not zero, and the sweep was skipped. No restart or cleanup was
@@ -4144,10 +4144,11 @@ inspected by this Product-only slice.
 
 ## 2026-08-09 — Final Lab release-state reconciliation through PR #55
 
-**Scope and unchanged Product state.** This was a read-only reconciliation of public, tracked Lab
-Git/GitHub metadata after the preceding Product snapshot. Product `origin/main` remains PR #229 merge
-`7ae4b31861ad5403587adf8fefb90a085598bd57`; its 14-prompt routing/parity facts remain as recorded
-above. Product issue [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) still owns the
+**Scope and Product base.** This was a read-only reconciliation of public, tracked Lab Git/GitHub
+metadata after the preceding Product snapshot. Product base before the PR #231 moved-base refresh is
+PR #230 merge `e530f4c79eda57db0e3eb80a307fe3ffdd57c78f`; PR #229 merge
+`7ae4b31861ad5403587adf8fefb90a085598bd57` remains the 14-prompt routing/parity delivery fact
+recorded above. Product issue [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) still owns the
 selected-but-unimplemented Docker-unavailable/unknown hygiene helper. No Product or Lab capability,
 protected lane, contract, release, tag, publication, telemetry, credential, or owner gate moved.
 
@@ -4193,7 +4194,7 @@ threads/unresolved threads, zero closing issues, and the 15-minute age from 21:0
 at `2026-08-09T21:20:44Z` as `02dcfb261f7216f01aa5696888715ac42f0e3830`, now Lab `main`; its
 branch is retained. Protected and owner-gated lanes stayed closed.
 
-**Friction and task ownership.** Product FR-017 retains a compact Product-side pointer for Lab
+**Friction and task ownership.** Product FR-019 retains a compact Product-side pointer for Lab
 FR-025 through FR-031: #29 owns the 15-minute merge enforcement, stale-state preservation, and
 package-smoke hardening; #34 owns complete snapshots, UTC/optional-path/GraphQL command boundaries,
 and shares the explicit `uv` launcher follow-up. The Lab friction log remains authoritative; this

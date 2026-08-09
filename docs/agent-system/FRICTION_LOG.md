@@ -339,15 +339,17 @@ Rules that bind entries:
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 3 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
-  (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite), and
-  2026-08-09 (the release-state/worktree-preservation documentation worktree).
+- **occurrences:** 4 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
+  (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite),
+  2026-08-09 (the release-state/worktree-preservation documentation worktree), and 2026-08-09
+  (the #200 state-reconciliation worktree).
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release
   coordination).
 - **promotion:** Promoted at the second independent occurrence to the `CLAUDE.md` run-and-prove
   preamble: a fresh worktree runs lockfile-pinned `npm ci` before any proof. Installation remains an
   explicit environment action rather than a verifier side effect, so the check cannot silently
-  install or mutate dependencies on the caller's behalf.
+  install or mutate dependencies on the caller's behalf. The third and fourth occurrences confirm
+  that this preamble remains the cheapest enforcing layer; no new promotion is warranted.
 
   **2026-08-09 note:** The release-state preservation worktree reproduced the same missing-`tsx`
   stop before `verify:context` executed. The lockfile-pinned `npm ci` bootstrap added 358 packages,
@@ -403,7 +405,49 @@ Rules that bind entries:
   behavior remained fail-closed and no repository file was changed by the failed read-derived
   patch.
 
-### FR-015 — MCP hygiene cleanup needed a canonical-location retry and bounded second pass
+### FR-015 — retained merged #200 worktree collided with the new lane name
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **severity:** `LOW (bounded lane-selection friction)`
+- **symptom:** While selecting a fresh exact-main branch for the active #200 documentation lane,
+  the retained worktree/branch `developer-lens-preqa-200/release-preqa-copy-pass` was still
+  registered. Its tracked tree was clean at exact head `d5fb742b6d941e51f2660345654580eeb8a6f528`,
+  the head is the merged PR #224 head, and it is an ancestor of current `origin/main`
+  `7ae4b31861ad5403587adf8fefb90a085598bd57`.
+- **impact:** A semantic task-name collision can make a merged lane look active or invite edits to
+  an already-merged branch, weakening one-writer and exact-head evidence for the new #200 slice.
+- **workaround:** The retained tree was verified clean and no ignored contents were inspected. The
+  collision was resolved by using the new exact-main branch `docs/product-200-preqa-20260809` for
+  the bounded reconciliation; no retained worktree was removed.
+- **occurrences:** 1 independent occurrence — 2026-08-09 during #200 lane selection.
+- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
+  preparation and its exact-head evidence.
+- **promotion:** Deliberately NOT promoted after one occurrence. Keep exact worktree/branch
+  inventory and ancestor checks in the lane-selection step; consider a named-worktree collision
+  check if the same friction recurs.
+
+### FR-016 — Windows working-tree edits produced mixed line-ending warnings
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **severity:** `LOW (review-noise risk)`
+- **symptom:** Git warned that LF would be replaced by CRLF for the four edited Markdown files.
+  `core.autocrlf=true`, no file-specific `text` or `eol` attribute applies, and `git ls-files --eol`
+  reported an LF index with mixed working-tree endings.
+- **impact:** Repeated warnings can obscure a real diff problem or invite an unnecessary bulk
+  normalization. The intended index remains LF and `git diff --check` is clean.
+- **workaround:** Stage only the named files, inspect the cached diff, and run
+  `git diff --cached --check`; do not normalize unrelated lines or files in this slice.
+- **occurrences:** 1 independent occurrence — the four-file #200 documentation reconciliation on
+  2026-08-09 shares one checkout/config cause.
+- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the bounded
+  pre-QA documentation reconciliation.
+- **promotion:** Deliberately NOT promoted after one occurrence. If a later independent slice
+  repeats the warning, select an explicit repository line-ending policy at the cheapest enforcing
+  layer rather than relying on per-session interpretation.
+
+### FR-017 — MCP hygiene cleanup needed a canonical-location retry and bounded second pass
 
 - **first-seen:** 2026-08-09
 - **status:** `workaround-documented`
@@ -443,7 +487,7 @@ Rules that bind entries:
   from the available evidence. Issue #222 still owns the selected helper above; it is not
   implemented by this documentation update.
 
-### FR-016 — active Product prompts did not all carry their named Claude routing
+### FR-018 — active Product prompts did not all carry their named Claude routing
 
 - **first-seen:** 2026-08-09
 - **status:** `resolved`
@@ -464,7 +508,7 @@ Rules that bind entries:
   focused tests, `npm run verify:context`, and the full gate passed. Shared blocks, hashes, prompt
   IDs, and the overnight stop protocol were unchanged. No capability was activated.
 
-### FR-017 — Lab closeout friction could disappear from the Product resume boundary
+### FR-019 — Lab closeout friction could disappear from the Product resume boundary
 
 - **first-seen:** 2026-08-09
 - **status:** `workaround-documented`

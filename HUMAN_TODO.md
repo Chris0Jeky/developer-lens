@@ -108,7 +108,8 @@ publication route remains active.
   manual deletion: git has already deregistered it, and the repository floor guard correctly refuses
   recursive deletion outside the project, so an agent cannot remove it. Its contents are regenerable
   build artifacts plus a partial copy of already-pushed tracked files — nothing unique is at risk.
-  q-8 stays open.
+  At that time, product q-8 stayed open; the 2026-08-09 closure below supersedes this historical
+  update.
 
   Update (2026-08-08, P0.5 first-batch session): lab PR #24 — the exact PR this gate parked — was
   MERGED at 22:14:27Z by the account Chris0Jeky, with the lab `Check` workflow green at the merged
@@ -122,7 +123,8 @@ publication route remains active.
   (PR #212) lists your commit-metadata-public email as the confidential conduct-reporting route;
   an agent cannot commit your inbox, so please confirm you will monitor it for such reports,
   choose a different channel, or direct its removal — until you do, the public routes remain the
-  primary documented path. q-8 stays open.
+  primary documented path. At that time, product q-8 stayed open; the 2026-08-09 closure below
+  supersedes this historical update.
 
   Update (2026-08-07, parallel-lanes session): a THIRD concurrent-writer instance was observed, this
   time in the sibling `developer-lens-lab` checkout. During a delegated lab #6 correctness slice a
@@ -135,8 +137,9 @@ publication route remains active.
   no further lab lanes were spawned. **Until this is resolved — a human terminates any leaked session,
   or a verified isolated worktree is used — agents must NOT run further WRITE work in the affected lab
   checkout: a competing writer in the same working directory can corrupt a branch mid-slice, as it did
-  here.** A human must identify and terminate any leaked session before lab merges proceed. q-8 stays
-  open.
+  here.** A human had to identify and terminate any leaked session before lab merges proceeded; at
+  that time, product q-8 stayed open. The 2026-08-09 closure below supersedes this historical
+  update.
 
   Closure (2026-08-09, owner decision + live hygiene evidence): the owner explicitly confirmed
   **"YES, I MERGED"** for lab PR #24 and **"q8 session: CLOSE IT"**. After that answer,
@@ -193,30 +196,33 @@ publication route remains active.
   confirm the merge authorship and the leaked-session sweep. No other item changed; no approval was
   inferred for any gate. Note for q-10(a)/(c): the AGPL baseline merged (PR #209) and community
   scaffolding (PR #212) deliberately contain no CLA text; the CoC lists the maintainer email
-  already public in commit metadata as the confidential conduct channel — this is question (c)
-  under the q-8 update above and needs explicit owner confirmation, not silence.
+  already public in commit metadata as the confidential conduct channel — this was question (c)
+  under the q-8 update above and then required explicit owner confirmation; the 2026-08-09
+  closeout above supersedes that historical request.
 - 2026-08-08 (governor bootstrap): recorded the owner mandate v2 reception. q-9 marked SUPERSEDED
   by owner decision A5 (Opus 5 routing, runtime-verified before the pin change); q-10 added as the
   consolidated owner/manual action register from the mandate (AGPL/CLA legal review, umbrella
   brand, aesthetic sign-off, Taskdeck ref, telemetry destination, packaging credentials,
   individual-ranking gate, private-URL provider). The binding policy unpacking lives in
-  `docs/OWNER_CONSTITUTION.md`; no capability was activated and q-8 remains open — lab-checkout
-  write work and ALL lab merges stay human-gated.
+  `docs/OWNER_CONSTITUTION.md`; no capability was activated and product q-8 remained open at that
+  time — lab-checkout write work and ALL lab merges stayed human-gated until the closure recorded
+  above.
 - 2026-08-07 (parallel-lanes session): expanded q-8 with a third concurrent-writer instance —
   a separate process writing the sibling `developer-lens-lab` checkout mid-run (foreign
   `checkout main`/`pull` reflog entries, divergent local lab `main`, unexplained refs and an elevated
   process count, none created by this session). Product repo verified unaffected. Lab #6 work parked as
-  a pull request rather than merged; no owner approval inferred and no other item changed. q-8 stays
-  open.
+  a pull request rather than merged; no owner approval inferred and no other item changed. Product
+  q-8 stayed open at that time.
 - 2026-08-05: closed q-7 after the owner configured `main` branch protection and live REST plus
   GraphQL reads confirmed `Prove the pull request` is required. No capability was activated;
-  q-6 and q-8 remain open.
+  q-6 and product q-8 remained open at that time.
 - 2026-08-04 (R1 wave 3 state-sync): expanded q-8 with a second leaked-process instance observed
   this run — a lane worker's `vite` dev server survived its worker and blocked a worktree removal,
   identified by command line and terminated — plus the orphaned partial worktree directory
   `dl-worktrees/value01` left for manual deletion (git-deregistered; the floor guard refuses
   recursive out-of-project deletion; contents are regenerable artifacts + a partial copy of pushed
-  tracked files). q-8 stays open; no approval was inferred and no other item was changed.
+  tracked files). Product q-8 stayed open at that time; no approval was inferred and no other item
+  was changed.
 - 2026-08-04: the R1 wave-2 state-sync closeout recorded q-8 — a human machine-hygiene check to
   terminate any leaked Claude session processes from the pre-handoff session, which kept executing
   for over an hour after handoff. No approval was inferred and no existing item was changed.
