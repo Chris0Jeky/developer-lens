@@ -3898,8 +3898,9 @@ distinct product release sign-off at `Chris0Jeky/developer-lens::HUMAN_TODO.md::
 screenshot/video-package sign-off at
 `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`. Final head
 `b5d8f5867283c08e2cf3251f81e825aea2f498af` merged as
-`408a5b8d22be2ab7d54838e3b36aeca807a99792`. The Lab counterpart did not merge: PR #37 is parked at
-`4a044dcec134cda313cffb7087389f64d28fe8c9` after exhausting two fix rounds.
+`408a5b8d22be2ab7d54838e3b36aeca807a99792`. The Lab counterpart did not merge: PR #37 was archived
+at `4a044dcec134cda313cffb7087389f64d28fe8c9` after exhausting two fix rounds. Coordinator-owned
+replacement PR #42 opened from current Lab main at `e290d1b94aff9f39de677fd80670f4f9e8f15227`.
 
 **Verified.** Product Actions run `31298518409`, job `93207390318`, succeeded on the exact final
 head. A fresh exact-final-head review found no causal CRITICAL/HIGH defect, all five connector
@@ -3909,9 +3910,9 @@ ambiguity: the wording can let one owner approval satisfy both distinct gates. T
 unresolved; its separate P2 worktree-command finding was tracked and resolved without a third fix
 round.
 
-**NOT verified / blocked.** Lab PR #37 is not merge-sound. Unlocking event: an explicit owner
-instruction authorizing a further review round or a new bounded replacement lane. Until then, Lab
-#29 writes and merges are parked; prepared PRs #39/#40 and the community-files branch do not advance.
-Product follow-ups #225/#226 and Lab friction-only PR #41 remain disjoint. Neither owner sign-off,
+**NOT verified / blocked.** Lab PR #42 still needs exact-head hosted proof, fresh review and merge.
+Until it lands, Lab #29 release-deliverable writes and merges are parked; prepared PRs #39/#40 and
+the community-files branch do not advance.
+Product follow-up #226 and Lab friction-only PR #41 remain disjoint. Neither owner sign-off,
 the joint tag, publication, protected/private data, model/data/telemetry activation nor credentials
 were touched.
