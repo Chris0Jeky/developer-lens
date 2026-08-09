@@ -3872,3 +3872,21 @@ were available.
 inbox address, and the q-10(c) owner aesthetic sign-off remain unverified. Advance Lab #29/#5 under
 its normal gates, then run the final browser/visual package and obtain q-10(c) before either
 repository is tagged `v0.1.0`.
+
+## 2026-08-09 — Lab dependency remediation closeout (Lab issue #5)
+
+**Changed.** The sibling Lab repository raised pyarrow to 23.0.1 and pytest to 9.1.1 in PR #38,
+then merged final head `4ebb1049ddb831dc7ff76f5a0050e52bdf37f40c` as
+`f893f576f71202375fe93e8c7d9c02e54fbaf08a`. This product-side ledger entry records the
+cross-repository release prerequisite only; it changes no product dependency or capability.
+
+**Verified.** Lab Actions workflow run `31296773324` and its `Prove the lab` job `93203064984`
+succeeded on that exact final head. A separate read-only fresh-context review was merge-sound (it
+was not a hosted GitHub review object). After merge, the Dependabot API returned zero open alerts,
+the post-merge PR sweep found no reviews or comments, and Lab issue #5 closed at 05:46Z with those
+facts recorded.
+
+**NOT verified / residual.** The release curator still owes a fresh Dependabot read at the eventual
+release head. Lab #29 pre-tag deliverables, both owner aesthetic sign-offs, the joint tag, and every
+publication step remain open. No real/private data, generated operational output, external model,
+telemetry, credential, release, or tag lane was opened by this reconciliation.
