@@ -36,9 +36,9 @@ edit it here, recompute its digest, and update every prompt plus the manifest in
 
 ```text
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -75,9 +75,9 @@ interpretation, orchestration, sequencing, conflict resolution and final merge j
 not write implementation code yourself.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -183,9 +183,9 @@ You are a capable but non-flagship orchestrator. Optimise for reliability, bound
 state and useful completion - not novel architecture.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -274,9 +274,9 @@ You start cold: assume no prior session context. This prompt plus the tracked fi
 everything you need.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -378,9 +378,9 @@ You are resuming Developer Lens (Chris0Jeky/developer-lens, Windows checkout) af
 interruption, a handoff, or an unknown gap. Your first product is TRUTH, not a feature.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -442,9 +442,9 @@ Chris0Jeky/developer-lens. The coordinator owns orchestration, authority interpr
 judgment - you own the diff.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -497,9 +497,9 @@ You are an independent adversarial reviewer for Developer Lens (Chris0Jeky/devel
 have NO shell and NO write access by construction - your entire job is findings.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -557,9 +557,9 @@ You execute exactly one mechanical recipe in Developer Lens (Chris0Jeky/develope
 checkout; PowerShell, quoted paths). No design decisions, no scope growth.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -611,9 +611,9 @@ Two jobs: make red or stale checks green-or-explained, and make sure no review f
 silently dropped.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -681,9 +681,9 @@ You are running repository administration and release curation in Chris0Jeky/dev
 (Windows checkout; PowerShell, quoted paths).
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -757,9 +757,9 @@ compatibility, release, default runtime) and Chris0Jeky/developer-lens-lab (rese
 corpora, evaluation, reproducibility).
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -819,9 +819,9 @@ You are a read-only discovery scout for Developer Lens (Chris0Jeky/developer-len
 checkout. You gather evidence. You do not write files, do not commit, do not push, do not merge.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -883,9 +883,9 @@ debt is the repository's record of what keeps costing sessions time. Your job is
 cheapest, highest-recurrence entries into enforcement - not to relitigate the whole log.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -950,9 +950,9 @@ DEEP DISCOVERY for Developer Lens (Chris0Jeky/developer-lens, Windows checkout).
 and specification only. You produce a staged, evidence-backed design; you do not implement it.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the
@@ -1029,9 +1029,9 @@ You are designing and driving ONE analytical vertical in Developer Lens
 end to end from stored evidence through deterministic analysis to a rendered, honest answer.
 
 RUNTIME BOOTSTRAP (runtime-bootstrap-v1)
-Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents: dl-scout for
-discovery, dl-implementer for bounded implementation, dl-reviewer for fresh-context adversarial
-review, dl-mechanic for deterministic sweeps.
+Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only
+discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The
+prompt's repository-specific routing clause names those agents exactly.
 Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the
 repository continuation skill, and follow Sol/Terra/Luna routing.
 Both runtimes read the tier declaration, the owner constitution, the governor policy, the

@@ -7,6 +7,7 @@ import {
   parsePromptLibrary,
   parseSkillFrontmatter,
   resolveRepositoryLinkTarget,
+  validateAgentFrictionParity,
   validateContinuousWorkProtocol,
   validateContinuationSkillParity,
   validatePromptLibrary,
@@ -122,6 +123,17 @@ if (failures.length === 0) {
     continuationSkills.map((path) => ({ path, contents: read(path) })),
   )) {
     failures.push(`continuation skill parity: ${error}`)
+  }
+  const agentFrictionFiles = [
+    '.claude/agents/dl-implementer.md',
+    '.claude/agents/dl-mechanic.md',
+    '.claude/agents/dl-reviewer.md',
+    '.claude/agents/dl-scout.md',
+  ] as const
+  for (const error of validateAgentFrictionParity(
+    agentFrictionFiles.map((path) => ({ path, contents: read(path) })),
+  )) {
+    failures.push(`agent friction parity: ${error}`)
   }
 
   try {

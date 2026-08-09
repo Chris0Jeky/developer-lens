@@ -11,6 +11,7 @@ import {
   parseSkillFrontmatter,
   resolveRepositoryLinkTarget,
   sharedBlockDigest,
+  validateAgentFrictionParity,
   validateContinuousWorkProtocol,
   validateContinuationSkillParity,
   validatePromptLibrary,
@@ -134,7 +135,9 @@ const LAB_EXTENSIONS = ['DL-LX01-LAB-EXPERIMENT-HARNESS', 'DL-LX02-LAB-EVALUATIO
 /** Carries every clause `SHARED_BLOCK_REQUIRED_CLAUSES` demands of `runtime-bootstrap-v1`. */
 const BOOTSTRAP_BLOCK = [
   'RUNTIME BOOTSTRAP (runtime-bootstrap-v1)',
-  'Claude runtimes read CLAUDE.md first and delegate through the named dl-* agents.',
+  'Claude runtimes read CLAUDE.md and use the repository\'s named Claude agent files for read-only',
+  'discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The',
+  "prompt's repository-specific routing clause names those agents exactly.",
   'Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references, invoke the',
   'repository continuation skill, and follow Sol/Terra/Luna routing.',
   'Cross-repository human actions are cited as fully qualified refs, never a bare ref.',
@@ -154,6 +157,17 @@ const CONTINUATION_FRICTION_BLOCK = [
   'task. Capture is not permission to widen scope; never record PID, absolute local path, token, or',
   'private identifier.',
   '<!-- shared:continuation-friction-tasking-v1 end -->',
+].join('\n')
+
+const AGENT_FRICTION_BLOCK = [
+  '<!-- shared:agent-friction-tasking-v1 start -->',
+  'FRICTION TASKING (agent-friction-tasking-v1)',
+  'Every material workaround, tooling hiccup, repeated friction, or surprising divergence reaches',
+  'docs/agent-system/FRICTION_LOG.md in the same hop and links to an existing issue, card, or durable',
+  'task. A write-capable role appends it; a read-only role reports it as a required coordinator same-hop',
+  'append. Capture never widens scope. Never record a PID, absolute local path, token, or private',
+  'identifier.',
+  '<!-- shared:agent-friction-tasking-v1 end -->',
 ].join('\n')
 
 interface PromptSpec {
@@ -368,7 +382,10 @@ describe('prompt operating system parity', () => {
 
   it('detects shared-block digest drift and a block edited in one prompt only', () => {
     // The manifest still pins the original digest, so an edited library block is caught.
-    const editedBlock = BOOTSTRAP_BLOCK.replace('dl-* agents', 'dl-* agents (locally tweaked)')
+    const editedBlock = BOOTSTRAP_BLOCK.replace(
+      'RUNTIME BOOTSTRAP (runtime-bootstrap-v1)',
+      'RUNTIME BOOTSTRAP (runtime-bootstrap-v1, locally tweaked)',
+    )
     const drifted = checkLibrary(buildLibrary({ bootstrap: editedBlock }), buildManifest())
     expect(drifted).toEqual([
       expect.stringContaining('shared block runtime-bootstrap-v1 digest drift'),
@@ -435,14 +452,17 @@ describe('prompt operating system parity', () => {
       'shared block runtime-bootstrap-v1 is missing required clause: Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references',
     ])
 
-    const withoutClaude = BOOTSTRAP_BLOCK.replace('Claude runtimes read CLAUDE.md first', 'Claude runtimes improvise')
+    const withoutClaude = BOOTSTRAP_BLOCK.replace(
+      "Claude runtimes read CLAUDE.md and use the repository's named Claude agent files for read-only",
+      'Claude runtimes improvise',
+    )
     expect(
       checkLibrary(
         buildLibrary({ bootstrap: withoutClaude }),
         buildManifest({ bootstrap: withoutClaude }),
       ),
     ).toEqual([
-      'shared block runtime-bootstrap-v1 is missing required clause: Claude runtimes read CLAUDE.md first',
+      'shared block runtime-bootstrap-v1 is missing required clause: Claude runtimes read CLAUDE.md and use the repository\'s named Claude agent files for read-only',
     ])
 
     const withoutSameHop = FRICTION_BLOCK.replace(
@@ -718,5 +738,60 @@ describe('continuation skill friction parity', () => {
     ).toEqual([
       'codex-skill.md must contain exactly one <!-- shared:continuation-friction-tasking-v1 end --> marker (found 2)',
     ])
+  })
+})
+
+describe('Claude agent friction parity', () => {
+  const agent = (body: string): string => `---\nname: fixture\n---\nrole-specific text\n${body}\n`
+  const paths = [
+    '.claude/agents/dl-implementer.md',
+    '.claude/agents/dl-mechanic.md',
+    '.claude/agents/dl-reviewer.md',
+    '.claude/agents/dl-scout.md',
+  ]
+  const sources = (body: string = AGENT_FRICTION_BLOCK) =>
+    paths.map((path) => ({ path, contents: agent(body) }))
+
+  it('accepts one ordered identical block in all four agents and normalizes CRLF', () => {
+    const crlfSources = sources().map((source, index) => ({
+      ...source,
+      contents: index === 3 ? source.contents.replaceAll('\n', '\r\n') : source.contents,
+    }))
+    expect(validateAgentFrictionParity(crlfSources)).toEqual([])
+  })
+
+  it('rejects drift in one agent block', () => {
+    const drifted = AGENT_FRICTION_BLOCK.replace('FRICTION TASKING', 'FRICTION HANDLING')
+    expect(validateAgentFrictionParity([...sources().slice(0, 3), { path: paths[3] as string, contents: agent(drifted) }])).toEqual([
+      'agent friction block bytes drift between .claude/agents/dl-implementer.md and .claude/agents/dl-scout.md',
+    ])
+  })
+
+  it('rejects missing and duplicate marker pairs', () => {
+    const missingEnd = AGENT_FRICTION_BLOCK.replace(
+      '\n<!-- shared:agent-friction-tasking-v1 end -->',
+      '',
+    )
+    expect(validateAgentFrictionParity([...sources().slice(0, 3), { path: paths[3] as string, contents: agent(missingEnd) }])).toContain(
+      '.claude/agents/dl-scout.md must contain exactly one <!-- shared:agent-friction-tasking-v1 end --> marker (found 0)',
+    )
+
+    const duplicateEnd = AGENT_FRICTION_BLOCK.replace(
+      '<!-- shared:agent-friction-tasking-v1 end -->',
+      '<!-- shared:agent-friction-tasking-v1 end -->\n<!-- shared:agent-friction-tasking-v1 end -->',
+    )
+    expect(validateAgentFrictionParity([...sources().slice(0, 3), { path: paths[3] as string, contents: agent(duplicateEnd) }])).toContain(
+      '.claude/agents/dl-scout.md must contain exactly one <!-- shared:agent-friction-tasking-v1 end --> marker (found 2)',
+    )
+  })
+
+  it('rejects a block missing a required role-aware clause', () => {
+    const missingRole = AGENT_FRICTION_BLOCK.replace(
+      'a read-only role reports it as a required coordinator same-hop',
+      'a read-only role reports it later',
+    )
+    expect(validateAgentFrictionParity([...sources().slice(0, 3), { path: paths[3] as string, contents: agent(missingRole) }])).toContain(
+      '.claude/agents/dl-scout.md agent friction block is missing required clause: A write-capable role appends it; a read-only role reports it as a required coordinator same-hop',
+    )
   })
 })

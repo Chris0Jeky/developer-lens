@@ -217,7 +217,9 @@ export const SHARED_BLOCK_IDS = ['runtime-bootstrap-v1', 'friction-tasking-v1'] 
 /** Exact clauses each shared block must carry, checked independently of its digest. */
 export const SHARED_BLOCK_REQUIRED_CLAUSES: Readonly<Record<string, readonly string[]>> = {
   'runtime-bootstrap-v1': [
-    'Claude runtimes read CLAUDE.md first',
+    'Claude runtimes read CLAUDE.md and use the repository\'s named Claude agent files for read-only',
+    'discovery, bounded implementation, fresh-context adversarial review, and mechanical sweeps. The',
+    "prompt's repository-specific routing clause names those agents exactly",
     'Codex runtimes read AGENTS.md first, then the shared CLAUDE.md canon it references',
     'repository continuation skill, and follow Sol/Terra/Luna routing',
     'Cross-repository human actions are cited as fully qualified refs',
@@ -322,6 +324,70 @@ export function validateContinuationSkillParity(
       if (block.body !== expected) {
         errors.push(
           `continuation friction block bytes drift between ${enclosedBlocks[0]?.path} and ${block.path}`,
+        )
+      }
+    }
+  }
+
+  return errors
+}
+
+export const AGENT_FRICTION_MARKER_ID = 'agent-friction-tasking-v1'
+const agentFrictionStart = `<!-- shared:${AGENT_FRICTION_MARKER_ID} start -->`
+const agentFrictionEnd = `<!-- shared:${AGENT_FRICTION_MARKER_ID} end -->`
+const AGENT_FRICTION_REQUIRED_CLAUSES = [
+  'docs/agent-system/FRICTION_LOG.md in the same hop and links to an existing issue, card, or durable',
+  'A write-capable role appends it; a read-only role reports it as a required coordinator same-hop',
+  'Capture never widens scope',
+  'Never record a PID, absolute local path, token, or private',
+] as const
+
+/** Require one identical, role-aware friction block across the four product Claude agents. */
+export function validateAgentFrictionParity(
+  agents: readonly ContinuationSkillSource[],
+): string[] {
+  const errors: string[] = []
+  const enclosedBlocks: Array<{ path: string; body: string }> = []
+
+  for (const agent of agents) {
+    const normalized = normalizeSharedText(agent.contents)
+    const startCount = countOccurrences(normalized, agentFrictionStart)
+    const endCount = countOccurrences(normalized, agentFrictionEnd)
+    if (startCount !== 1) {
+      errors.push(
+        `${agent.path} must contain exactly one ${agentFrictionStart} marker (found ${startCount})`,
+      )
+    }
+    if (endCount !== 1) {
+      errors.push(
+        `${agent.path} must contain exactly one ${agentFrictionEnd} marker (found ${endCount})`,
+      )
+    }
+    if (startCount !== 1 || endCount !== 1) {
+      continue
+    }
+
+    const start = normalized.indexOf(agentFrictionStart)
+    const end = normalized.indexOf(agentFrictionEnd)
+    if (end <= start) {
+      errors.push(`${agent.path} agent friction markers are out of order`)
+      continue
+    }
+    const body = normalized.slice(start + agentFrictionStart.length, end)
+    enclosedBlocks.push({ path: agent.path, body })
+    for (const clause of AGENT_FRICTION_REQUIRED_CLAUSES) {
+      if (!body.includes(clause)) {
+        errors.push(`${agent.path} agent friction block is missing required clause: ${clause}`)
+      }
+    }
+  }
+
+  if (enclosedBlocks.length === agents.length && enclosedBlocks.length > 1) {
+    const expected = enclosedBlocks[0]?.body
+    for (const block of enclosedBlocks.slice(1)) {
+      if (block.body !== expected) {
+        errors.push(
+          `agent friction block bytes drift between ${enclosedBlocks[0]?.path} and ${block.path}`,
         )
       }
     }
