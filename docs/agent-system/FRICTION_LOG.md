@@ -407,23 +407,29 @@ Rules that bind entries:
 
 - **first-seen:** 2026-08-09
 - **status:** `workaround-documented`
-- **symptom:** A first report-only re-measure used a stale remembered checkout location and failed
-  before the hygiene script executed. After the canonical checkout was resolved from the repository
-  registry, the report measured 468 running MCP containers, 440 provably unowned. The first reviewed
-  cleanup wrapper timed out after 64 seconds, leaving 249 running containers, 221 provably unowned.
-- **impact:** The failed location lookup delayed trustworthy measurement, and the bounded wrapper
-  timeout left a large regenerable unowned set consuming memory after the first cleanup pass.
-- **workaround:** Resolve the canonical checkout from the repository registry, run the reviewed
-  report there, then use one bounded retry of the same reviewed cleanup. The retry completed with an
-  immediate post-clean measurement of 36 running containers, 0 provably unowned, 0 orphan MCP
-  processes, and about 1.8 GB free. A later report-only re-measure at about 13:40 BST found 56 running
+- **symptom:** The canonical reviewed report first measured 468 running MCP containers, 440
+  provably unowned. The first reviewed cleanup wrapper then timed out after 64 seconds, leaving 249
+  running containers, 221 provably unowned. Only the later report-only re-measure was first launched
+  from a stale remembered checkout location; that attempt failed before the hygiene script executed.
+- **impact:** The bounded cleanup timeout left a large regenerable unowned set consuming memory
+  after the first pass. The later stale-location lookup delayed a trustworthy re-measure but did not
+  invalidate the already completed cleanup.
+- **workaround:** Use one bounded retry of the same reviewed cleanup after the timed-out first pass.
+  It completed with an immediate post-clean measurement of 36 running containers, 0 provably
+  unowned, 0 orphan MCP processes, and about 1.8 GB free. For the later report-only re-measure,
+  resolve the canonical checkout from the repository registry after the stale-location attempt
+  fails, then run the reviewed report there. That re-measure at about 13:40 BST found 56 running
   containers, 0 provably unowned, 0 orphan MCP processes, and 5,023 MB free, so no additional cleanup
   was warranted. The cleanup predicate spared live-owned containers; the unowned containers it
   removed were regenerable.
-- **occurrences:** 1 recorded sequence — 2026-08-09 canonical-location correction, timed-out first
-  cleanup pass, bounded successful retry, and later live-owned re-measure.
+- **occurrences:** 1 recorded sequence — 2026-08-09 canonical 468/440 report, timed-out first cleanup
+  pass, bounded successful retry, later stale-location correction, and live-owned re-measure.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns durable Windows-safe
   governor maintenance helpers for recurrent proof and cleanup checks.
 - **promotion:** Task debt at one occurrence. The reviewed cleanup predicate and bounded retry were
   sufficient for this incident; #222 owns a durable helper so future sessions do not depend on a
   remembered checkout location or an undersized one-shot wrapper timeout.
+
+  **2026-08-09 truth-correction note:** The entry's first draft inverted the initial canonical
+  468/440 report and the stale-location failure, which happened only during the later re-measure.
+  The corrected fields above preserve the measured cleanup sequence and the later 56/0 result.

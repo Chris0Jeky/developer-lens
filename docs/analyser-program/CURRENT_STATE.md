@@ -98,9 +98,12 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   `e63086b4ae3b97390969357ebdd9d3e30394814e` at 2026-08-09T12:39:59Z as
   `02a41cac4a461a93d53b481d34c96a48e29291e5`, which is now Lab `main`. The head commit was
   timestamped 12:31:00Z, so it had aged at most 8m59s at merge. GitHub exposes no formal review
-  object or review thread; the separate independent MERGE-SOUND evidence was posted at 12:41:40Z,
-  after merge. Lab #29 tracks the merge-eligibility hardening. This is a recorded process defect,
-  not release proof. EXACT NEXT ACTIONS: preserve the protected Lane-P candidate-content review
+  object or review thread, but the accepted top-level exact-head fresh-context review comment found
+  no CRITICAL/HIGH defect and was posted at 12:39:57Z, two seconds before merge; it carried the Lab
+  review gate. A second independent MERGE-SOUND result was posted at 12:41:40Z after merge. The
+  confirmed process defect is only the at-most-8m59s head age against the Lab 15-minute floor; Lab
+  #29 tracks the merge-eligibility hardening. This is not release proof. EXACT NEXT ACTIONS:
+  preserve the protected Lane-P candidate-content review
   boundary under Lab #29; bounded tracked package-smoke P2 hardening may proceed without crossing
   it. Complete STEP 3 Lab release preparation's remaining pre-tag deliverable;
   then STEP 5 = final
@@ -212,11 +215,12 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   `7f07ce2` and merged as `6e13b6d` after exact hosted/fresh-review proof and the bounded TMPDIR
   confinement fix. Lab PRs #46-#50 then landed bounded timeout, traversal, diagnostics, and context
   hardening through Lab main `e63086b4ae3b97390969357ebdd9d3e30394814e`. PR #51 later merged
-  as `02a41cac4a461a93d53b481d34c96a48e29291e5`; its exact-head hosted proof was green, but the
-  merge occurred before the 15-minute floor and the separately posted independent review evidence
-  arrived after merge. Lab #29 tracks that process hardening. The frozen historical-producer hashes
-  and the product fixture/schema seam are green; current-head candidate bytes are rejected and
-  Lane-P candidate-content review remains unverified.'
+  as `02a41cac4a461a93d53b481d34c96a48e29291e5`; its exact-head hosted proof was green and the
+  accepted top-level fresh-context review gate comment landed two seconds before merge. A second
+  independent result arrived after merge; the confirmed defect is only the at-most-8m59s head age
+  against the 15-minute floor. Lab #29 tracks that process hardening. The frozen historical-producer
+  hashes and the product fixture/schema seam are green; current-head candidate bytes are rejected
+  and Lane-P candidate-content review remains unverified.'
 preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 named product
   worktrees and branches at their mechanically measured full HEADs. Three had tracked modifications;
   two no-PR branches were remote-preserved and the other measured no-PR branches were local-only.
@@ -228,9 +232,10 @@ blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-s
   NEW recorded owner decision — none exists) and remains blocked by the Lane-P candidate-content
   review under Lab #29, `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 closes after the tag.
-  Lab PR #51 merged before the Lab 15-minute eligibility floor and received the separately posted
-  independent review evidence after merge; #29 tracks this process hardening, and the merge does
-  not satisfy any of the three release blockers.
+  Lab PR #51 had exact-head hosted proof plus its accepted top-level fresh-context review comment
+  before merge, but merged before the Lab 15-minute eligibility floor; a second independent result
+  arrived after merge. The confirmed process defect is only the age-floor violation. #29 tracks this
+  hardening, and the merge does not satisfy any of the three release blockers.
   The binding review-timing gate
   stated below (`review_timing_defect`) governs any future merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the

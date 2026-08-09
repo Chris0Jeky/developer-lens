@@ -4026,12 +4026,14 @@ resolved, #48 two resolved, and #49 two resolved. None carried a closing-issue r
 pre-merge observation, #51 was open and exact-head green but not yet eligible under the Lab's
 15-minute floor; no exact timestamp for that observation was retained. Its head commit timestamp was
 `2026-08-09T12:31:00Z`, so the merge happened at most 8m59s later (and 6m57s after PR creation).
-GitHub exposes no formal review object or review thread for #51. An owner comment at
-`2026-08-09T12:39:57Z` asserted fresh-context review completion, but the separately posted
-independent MERGE-SOUND evidence arrived at `2026-08-09T12:41:40Z`, after merge. The merge therefore
-violated the 15-minute eligibility floor; [Lab #29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29)
-tracks mechanical eligibility hardening. This defect is preserved rather than recast as a compliant
-gate.
+GitHub exposes no formal review object or review thread for #51. The accepted top-level exact-head
+fresh-context review comment found no CRITICAL/HIGH defect and was posted at
+`2026-08-09T12:39:57Z`, two seconds before merge; it represented the Lab review gate. A second
+independent MERGE-SOUND result was posted at `2026-08-09T12:41:40Z`, after merge. The review gate
+therefore existed before merge. The confirmed process defect is only the at-most-8m59s head age
+against the 15-minute eligibility floor.
+[Lab #29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29) tracks mechanical eligibility
+hardening. That age defect is preserved rather than recast as a compliant gate.
 
 **NOT verified / blockers.** This product-side session did not rerun Lab local tests or inspect
 candidate bytes, protected outputs, build artifacts, private data, or any data lane. The local-test
