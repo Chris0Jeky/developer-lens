@@ -54,7 +54,7 @@ Rules that bind entries:
 ### FR-001 — concurrent or leaked agent session writing a live checkout
 
 - **first-seen:** 2026-08-04
-- **status:** `owner-gated`
+- **status:** `promoted`
 - **symptom:** A handed-off session kept executing after handoff and merged a pull request itself,
   then collided in a worktree on another lane. Later, a lane worker's dev server survived its
   worker and blocked a worktree removal. Later still, a separate process ran `checkout main` plus
@@ -66,17 +66,28 @@ Rules that bind entries:
   are treated as human-gated, and lab work is prepared and parked rather than merged. Isolated
   worktrees are used for preparation only — isolation does not make a *merge* safe while a
   competing writer can race the remote.
-- **occurrences:** 3 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
+- **occurrences:** 4 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
   plus an orphaned partial worktree directory left for manual deletion), 2026-08-07 (lab checkout
-  competing writer).
-- **task:** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8`
-- **promotion:** Not promotable to an executable layer by an agent: terminating a leaked local
-  process and deleting an out-of-project orphan directory are physical, owner-only actions (W4), and
-  the repository floor guard correctly refuses recursive deletion outside the project. The
-  enforceable half is already promoted — the gating rule is stated in
+  competing writer), 2026-08-09 (a separate coordinator advanced the active q-8 branch between
+  this session's read and attempted write).
+- **task:** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` (closed owner decision) and
+  [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release coordination).
+- **promotion:** The physical process-cleanup half remains owner-only (W4); the owner confirmed its
+  clean sweep and closed q-8 on 2026-08-09. The collision half is promoted to the one-writer,
+  pinned-head, and refresh-before-mutation rules in the canon and continuous-work protocol. The
+  original Lab gate was also stated in
   [MAINTENANCE_PROTOCOL.md](MAINTENANCE_PROTOCOL.md), [CROSS_REPO_CONTRACT.md](CROSS_REPO_CONTRACT.md)
-  and every active prompt's LAB RULE line. Stays `owner-gated` until the owner confirms a
-  clean sweep.
+  and every active prompt's LAB RULE line while q-8 was open; it no longer binds after the owner's
+  closure.
+
+  **2026-08-09 note:** During the q-8 pull-request fix round, an owner-account review comment appeared
+  that neither read-only delegated reviewer had posted. A separate coordinator then advanced the
+  active q-8 branch between this session's read and attempted patch. The patch failed on its context
+  check before writing, this session relinquished that worktree, and no work was overwritten. This
+  does not reopen q-8 or prove a leaked process; it proves that active PR ownership was not visible
+  across coordinators. The enforced response is to treat an unexpected head/write event as foreign
+  ownership, refresh live state, and never race the writer. Issue #200 carries the live release-wave
+  coordination context.
 
 ### FR-002 — review connector misses or lands late on an exact head
 
