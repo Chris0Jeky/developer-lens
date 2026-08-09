@@ -118,8 +118,9 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   committed fixtures untouched, #198
   regenerated `invented.fixture.json` (only `provenance.contract_sha256` repinned). Lab side: lab #6
   preserved as `developer-lens-lab` PR #24 (historically parked while the product q-8
-  concurrent-writer gate was open; merged after that gate closed), lab #7 dispositioned as tracked
-  cross-repo debt. Prior product-repo slice before this session: PR #194 (`24f55d4`).'
+  concurrent-writer gate was open; merged while that gate remained open, with no actor inferred;
+  the gate closed later on explicit owner confirmation plus a clean sweep), lab #7 dispositioned as
+  tracked cross-repo debt. Prior product-repo slice before this session: PR #194 (`24f55d4`).'
 next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only release preparation:
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
