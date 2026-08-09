@@ -3923,8 +3923,28 @@ merged as `178bd6d695119b74294a8fd6fbe46f54577e49b2`. Its late proof-integrity r
 through state PR #39, which reached final head `b36bbadd0365a8958ba741e27c2e36e9458237be` and merged as
 `4f355f1e58e1eca1191f899f1fc4354af8a23a00` after hosted run `31300971426`, job `93213564502`.
 Licence/package PR #40 then merged as `d203461c023e1661140a1fef38a0f4b68e3454b2`; community PR
-#43 merged as `56c889141cd4575d12f80c3e0a16a574277e0ddd`; changelog PR #44 is the current Lab review lane.
+#43 merged as `56c889141cd4575d12f80c3e0a16a574277e0ddd`. Changelog PR #44 reached exact final head
+`ca8c075d286e7812873b86e12c54868b71519217`, passed hosted run `31302156997`, job `93216571555`,
+and merged as `2e6a7c2b7ff906cb771bb4e904dd18d2717fa536`; fresh review and its delayed sweep found no causal
+CRITICAL/HIGH defect or unresolved thread debt.
 
-**Still NOT verified / blocked.** Lab #29's remaining package-smoke/release-evidence deliverables,
-both owner sign-offs, the joint tag, publication, protected/private data, model/data/telemetry
-activation, and credentials remain untouched and open as applicable.
+The separate Lab C0 evidence lane first proved that current-head replay is deterministic but changes
+the export/report hashes because `lab_commit` is embedded. The binding frozen-exhibit decision was
+then applied in a detached checkout at producer `0ef193070a9b80b81cef5a1710a1d65e0b271c15`:
+automated context/contracts, invented `wbc1_demo`, reproduce, export, report and hygiene checks passed
+without opening candidate bytes, and all three printed hashes exactly matched the tracked frozen
+claims. On the product side, 26 focused MethodTrial/route/App tests and
+`npm run check:method-trial-view` passed against the tracked fixture/schema. Current-head candidate
+bytes remain rejected for this release.
+
+Lab package-smoke PR #45 reached final head `7f07ce221b7a405c06af70d3a5215910dca72991`, passed hosted
+run `31304528858`, job `93222641130`, and merged as
+`6e13b6d84391ea7a2579e169151e3d765ad71583` after a fresh exact-final-head review found no causal
+CRITICAL/HIGH defect and all four threads were resolved. Its single review fix confined inherited
+Unix `TMPDIR`; the full local gate (154 passed, 3 declared symlink skips) and isolated wheel smoke
+passed afterward. Remaining PATH-uv, bounded-diagnostics and timeout observations stay P2 hardening
+on Lab #29.
+
+**Still NOT verified / blocked.** Lane-P candidate-content review is outside this session's
+protected-output boundary. Both owner sign-offs, the joint tag, publication, protected/private
+data, model/data/telemetry activation, and credentials remain untouched and open as applicable.
