@@ -564,7 +564,7 @@ Rules that bind entries:
 ### FR-021 — PowerShell inner-quote stripping blocked a PR232 latest-field query
 
 - **first-seen:** 2026-08-09
-- **status:** `workaround-documented`
+- **status:** `open`
 - **severity:** `LOW (CLI evidence friction)`
 - **symptom:** A `gh api --jq` projection used from PowerShell stripped inner quoting before the
   request could be evaluated. The command failed before mutation; no GitHub write occurred.
@@ -573,9 +573,54 @@ Rules that bind entries:
 - **workaround:** Use a quote-safe latest-field projection and compare the returned values directly.
   This is one factual occurrence only; it does not justify a broader PR232 review or a second
   workaround layer in this slice.
-- **occurrences:** 1 independent command-boundary occurrence — 2026-08-09 during the PR232 P1
-  reconciliation.
+- **occurrences:** 2 independent command-boundary occurrences — 2026-08-09 during the PR232 P1
+  reconciliation and 2026-08-09 during the exact-final-head PR232 review-thread snapshot.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns structured/JSON-input
   Windows-safe CLI helpers for recurring evidence queries.
-- **promotion:** Deliberately NOT promoted after one occurrence. Keep the quote-safe projection and
-  direct comparison in the handoff until #222 provides the durable helper.
+- **promotion:** The cheapest enforcing layer is the Windows-safe structured-query helper already
+  owned by [#222](https://github.com/Chris0Jeky/developer-lens/issues/222): pass GraphQL values as
+  variables or JSON input rather than embedding quoted literals in a PowerShell native-command
+  argument. Keep direct field comparison until that helper lands.
+
+  **2026-08-09 note:** A second independent inner-quote failure occurred while reading PR232's
+  exact-final-head review threads. A variable-bound GraphQL request succeeded without mutation;
+  this recurrence selects #222's structured-query helper as the durable enforcing layer.
+
+### FR-022 — Windows PowerShell lacked the requested UTC date switch
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **severity:** `LOW (CLI evidence friction)`
+- **symptom:** The installed Windows PowerShell rejected `Get-Date -AsUTC` while composing an
+  exact-head PR evidence snapshot. The compound read-only command failed before any mutation.
+- **impact:** A version-specific convenience switch can interrupt or omit the timestamp attached
+  to an otherwise reproducible GitHub state snapshot.
+- **workaround:** Use `(Get-Date).ToUniversalTime().ToString('o')`, which succeeded on the same
+  shell without changing repository or GitHub state.
+- **occurrences:** 1 independent occurrence — 2026-08-09 during the PR232 final review-thread
+  snapshot.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
+  Windows-safe evidence helper and its explicit timestamp normalization.
+- **promotion:** Deliberately NOT promoted after one occurrence. Retain the compatible expression
+  until #222 proves the helper; a second independent occurrence should move UTC normalization into
+  that helper's tested contract.
+
+### FR-023 — repeated-schema patch context selected the wrong friction entry
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **severity:** `LOW (caught pre-commit content drift)`
+- **symptom:** An `apply_patch` hunk that changed a common `status` field without carrying its
+  `FR-021` heading matched the earlier `FR-015` entry. The mandatory immediate diff exposed the
+  wrong edit before commit or push.
+- **impact:** Repeated Markdown schemas make a syntactically successful patch unsafe evidence of
+  the intended target; an unchecked hunk could corrupt an unrelated friction record.
+- **workaround:** Restore the unrelated field and reapply the edit with the unique entry heading in
+  the patch context, then inspect the complete file diff.
+- **occurrences:** 1 independent occurrence — 2026-08-09 during PR232's second friction capture.
+- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
+  reconciliation and its factual documentation proof.
+- **promotion:** Deliberately NOT promoted after one occurrence because heading-anchored patches and
+  immediate diff inspection are already the cheapest fail-closed seam. A second independent
+  occurrence should add a focused verifier for duplicate-entry field drift rather than another
+  prose reminder.
