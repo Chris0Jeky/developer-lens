@@ -160,7 +160,9 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   not resolved. FR-009 is tracked at https://github.com/Chris0Jeky/developer-lens/issues/215. The
   lab #33 counterpart landed as lab PR #35, externally merged at 2026-08-09T04:06:29Z as merge
   commit `bba0c18261c0a2b77332a0408f63b10c774c91f4`; no operator identity is inferred from that
-  GitHub-account event.'
+  GitHub-account event. A bounded DL-P09 follow-up closes the executable early-tag path found in
+  PR #224 review by naming Lab #29/#5 as joint-release prerequisites. Product PR #224 lands first;
+  the lab counterpart on `docs/release-gate-sync` follows and proves with its own context verifier.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
   NEW recorded owner decision — none exists) and remains blocked by unfinished Lab #29/#5 plus the
