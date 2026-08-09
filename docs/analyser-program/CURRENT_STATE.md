@@ -210,9 +210,9 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   MERGE-SOUND. All 14 active Product prompt bodies now name `dl-scout`, `dl-implementer`,
   `dl-reviewer`, and `dl-mechanic`; shared blocks, hashes, IDs, and the overnight stop protocol are
   unchanged. The exact-head connector surfaced three P2 verifier-hardening follow-ups; all three
-  were tracked on #216 and replied to without a fix cascade. This activated no capability. Lab PR
-  #54 is deliberately not frozen in this Product-only state; one final cross-repository
-  reconciliation remains after the Lab settles. Lab counterpart PR #37 was archived at `4a044dce` after its
+  were tracked on #216 and replied to without a fix cascade. This activated no capability. The final
+  Lab release-preparation reconciliation is recorded in `lab_release_handoff` below. Lab counterpart
+  PR #37 was archived at `4a044dce` after its
   exact-head hosted check passed but its final fresh-context review confirmed that its wording still
   permits one approval to satisfy both gates. The two-fix-round ceiling is exhausted and its HIGH
   thread stays as provenance. Coordinator-owned replacement PR #42 started from Lab main
@@ -230,6 +230,32 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   against the 15-minute floor. Lab #29 tracks that process hardening. The frozen historical-producer
   hashes and the product fixture/schema seam are green; current-head candidate bytes are rejected
   and Lane-P candidate-content review remains unverified.'
+lab_release_handoff: 'Final read-only cross-repository reconciliation through Lab PR #55: PR #52
+  head `46961957e09bb976b34beb41fee5e69d89d21076` passed hosted run `31332413187` and had two resolved
+  threads, then merged at 2026-08-09T19:48:10Z as
+  `b966341d293a50d2b51f448fa23d3248d7e575fd`; its binding 15-minute age miss remains recorded by
+  Lab FR-025/FR-028. PR #53 closed unmerged and remains preserved. PR #54 exact head
+  `a4eefd9cc4963f684c0376543600969c45d6d057` over `b966341d293a50d2b51f448fa23d3248d7e575fd`
+  passed hosted run `31333721317` / job `93295965974`, received a fresh MERGE-SOUND review, resolved
+  all 3 threads, carried no closing refs, and passed the conservative exact-head age window from the
+  20:13:50Z push to the 20:33:16Z snapshot. The root coordinator issued the exact-SHA REST merge;
+  GitHub returned merge `7fea25023d0704aea685e243708328264b9bcaad` at
+  2026-08-09T20:33:27Z, followed by a clean 20:35:49Z sweep. Product FR-017 compactly retains Lab
+  FR-025..FR-031 with their #29/#34 workarounds and task ownership; the Lab friction log remains
+  authoritative. Lab PR #55 then delivered the sdist-to-wheel package-smoke seam from base
+  `7fea25023d0704aea685e243708328264b9bcaad`: final head
+  `c122868e976ee7f5acce8c6aac20608873c0fa43`, hosted run `31335915850` / job `93301598278` success,
+  independent no-CRITICAL/HIGH code-range review plus final scoped verification, zero formal/inline
+  reviews, zero review threads, zero closing issues, and the full 15-minute exact-head age from
+  21:05:04Z through the 22:20:37 BST snapshot. It merged at 2026-08-09T21:20:44Z as Lab main
+  `02dcfb261f7216f01aa5696888715ac42f0e3830`; the branch is retained. The transient false FR-033
+  attribution was corrected before merge and remains evidenced only by Lab #34 comments
+  `5233753580` and `5233820338`, not imported as Product fact or friction. Exact next Lab action is
+  issue #29''s tracked P2 test-hardening seam (zero/multiple-wheel or full-call-sequence coverage)
+  plus the remaining pre-tag deliverables, not another state-only sync; the Lab release wave remains
+  active. Product #222 remains selected
+  but not implemented. Lane-P, both aesthetic sign-offs, the joint release/tag gate, and every
+  deferred owner/capability decision remain open; no protected lane was activated.'
 preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 named product
   worktrees and branches at their mechanically measured full HEADs. Three had tracked modifications;
   two no-PR branches were remote-preserved and the other measured no-PR branches were local-only.
@@ -241,10 +267,11 @@ blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-s
   NEW recorded owner decision — none exists) and remains blocked by the Lane-P candidate-content
   review under Lab #29, `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 closes after the tag.
-  Lab PR #51 had exact-head hosted proof plus its accepted top-level fresh-context review comment
-  before merge, but merged before the Lab 15-minute eligibility floor; a second independent result
-  arrived after merge. The confirmed process defect is only the age-floor violation. #29 tracks this
-  hardening, and the merge does not satisfy any of the three release blockers.
+  Lab PRs #51 and #52 had exact-head hosted/review evidence but merged before the binding Lab
+  15-minute eligibility floor; Lab FR-028 and #29 retain the repeated process defect and selected
+  checked enforcement. PR #54 later satisfied its conservative exact-head age window and merged with
+  green hosted/review/thread proof. PR #55 then delivered the sdist-to-wheel smoke seam under its
+  exact-head gate. None of those merges satisfies any of the three release blockers.
   The binding review-timing gate
   stated below (`review_timing_defect`) governs any future merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the

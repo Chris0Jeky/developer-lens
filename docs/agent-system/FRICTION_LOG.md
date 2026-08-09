@@ -463,3 +463,29 @@ Rules that bind entries:
   `7ae4b31861ad5403587adf8fefb90a085598bd57`: all 14 active Product bodies name all four roles;
   focused tests, `npm run verify:context`, and the full gate passed. Shared blocks, hashes, prompt
   IDs, and the overnight stop protocol were unchanged. No capability was activated.
+
+### FR-017 — Lab closeout friction could disappear from the Product resume boundary
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **symptom:** The final cross-repository release reconciliation reached Lab main with seven new Lab
+  friction entries, FR-025 through FR-031. Without a compact Product-side pointer, a Product resume
+  could treat the Lab wave as unconditionally merge-proven or lose the selected workflow hardening.
+- **impact:** Repeating the documented snapshot, age, UTC, optional-path, GraphQL, or interpreter
+  failures would consume another release session; omitting FR-028 would also misstate two completed
+  merges as satisfying the binding Lab 15-minute exact-head gate.
+- **workaround:** Keep the Lab friction log authoritative and retain this compact mapping only:
+  FR-025 adds top-level comments to the final snapshot (#34); FR-026 uses `DateTimeOffset` for UTC
+  thresholds (#34); FR-027 filters optional paths before search (#34); FR-028 selects a checked,
+  event-driven 15-minute all-surface snapshot (#29); FR-029 archives stale PR #53 unmerged and
+  preserved (#29, resolved); FR-030 uses REST only for representable evidence and waits for GraphQL
+  before the final snapshot (#34); FR-031 passes one validated confined `uv` route explicitly
+  (#29/#34). None of the selected helpers is implemented by this Product reconciliation.
+- **occurrences:** 1 cross-repository reconciliation — Lab PRs #52-#54 on 2026-08-09, representing
+  the seven independently counted Lab entries rather than seven new Product occurrences.
+- **task:** [Lab #29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29) owns release/package
+  hardening; [Lab #34](https://github.com/Chris0Jeky/developer-lens-lab/issues/34) owns external
+  GitHub and Windows command-boundary hardening.
+- **promotion:** Do not create a parallel Product helper. The cheapest enforcing layers remain the
+  checked Lab snapshot/launcher tasks on #29/#34, with the current workarounds retained until those
+  tasks land. Product #222 remains a separate selected-but-unimplemented hygiene helper.
