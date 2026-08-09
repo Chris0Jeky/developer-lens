@@ -175,3 +175,33 @@ Rules that bind entries:
 - **promotion:** Task debt at one occurrence. The licence body is now committed and stable, so the
   cheapest future enforcement is a byte-level check of the committed file rather than re-deriving
   the text; that is only worth building if the licence is ever changed.
+
+### FR-007 — delegated implementer hit a runtime timeout before writing a handoff
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **symptom:** A delegated `dl-implementer` lane on this prompt-operating-system slice reached a
+  15-minute runtime execution limit and was cut off mid-slice. It had already written a coherent
+  partial diff — six modified files and three new ones — but produced **no** handoff message, so
+  none of the standard closing headings existed: no changed/verified list, no statement of what was
+  left, no next step. The working tree was the only record of what the lane had done.
+- **impact:** The coordinator inherits an undescribed dirty checkout. The tempting reactions are
+  both wrong and both expensive: discarding the work throws away sound design, and blindly
+  continuing risks building on a half-applied contract. The real cost is the audit needed to tell
+  which of the two applies.
+- **workaround:** Terminate the surviving owned process first so the checkout has exactly one
+  writer, then **audit the dirty checkpoint before touching it** — read the full diff and each new
+  file, run the repository's own verifier against the working tree, and only then decide. Here the
+  checkpoint proved sound and passing, so it was preserved and committed as its own increment
+  before new work continued, which keeps the timed-out lane's contribution separable in history.
+  Resume with exactly one replacement writer on the same branch and HEAD; never reset, rebase or
+  restart the design to reclaim a clean slate.
+- **occurrences:** 1 recorded — 2026-08-09, during the #214 prompt operating system.
+- **task:** [#214](https://github.com/Chris0Jeky/developer-lens/issues/214) — recorded with this
+  prompt operating system; a durable follow-up is opened if it recurs.
+- **promotion:** Task debt at one occurrence, and the enforceable half is small: a runtime limit is
+  external and cannot be lengthened by an agent, so the fix is delegation shape, not tooling. The
+  cheapest layer is prompt prose already present in `DL-P05-BOUNDED-IMPLEMENTER` — bound a delegated
+  slice small enough to close, and commit in increments so a cut-off lane leaves committed work
+  rather than an unexplained working tree. A second independent occurrence promotes it to an
+  explicit checkpoint-audit step in [MAINTENANCE_PROTOCOL.md](MAINTENANCE_PROTOCOL.md).
