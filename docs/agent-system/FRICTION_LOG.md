@@ -22,13 +22,15 @@ This log is **append-only**. New entries are added at the end with the next free
 existing entry is never deleted or rewritten; only its `status`, `occurrences`, `task` and
 `promotion` fields may change, and a substantive change adds a dated note under the entry.
 
-Each entry carries exactly these fields:
+Each entry carries the required fields below. `severity` is optional; when present it records the
+bounded consequence of the observed friction without changing the status or promotion rules.
 
 | Field | Meaning |
 |---|---|
 | `id` | `FR-NNN`, assigned in order, never reused. |
 | `first-seen` | ISO date of the first recorded occurrence. |
 | `status` | `open` · `workaround-documented` · `promoted` · `owner-gated` · `resolved`. |
+| `severity` | Optional factual impact classification, including whether the effect is blocking. |
 | `symptom` | What was observed, factually, without inference. |
 | `impact` | What it costs a session when it happens. |
 | `workaround` | What was actually done instead, or `none`. |
@@ -337,16 +339,23 @@ Rules that bind entries:
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 3 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
+- **occurrences:** 4 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
   (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite),
-  and 2026-08-09 (this #200 state-reconciliation worktree).
+  2026-08-09 (the release-state/worktree-preservation documentation worktree), and 2026-08-09
+  (the #200 state-reconciliation worktree).
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release
   coordination).
 - **promotion:** Promoted at the second independent occurrence to the `CLAUDE.md` run-and-prove
   preamble: a fresh worktree runs lockfile-pinned `npm ci` before any proof. Installation remains an
   explicit environment action rather than a verifier side effect, so the check cannot silently
-  install or mutate dependencies on the caller's behalf. The third occurrence confirms that this
-  preamble remains the cheapest enforcing layer; no new promotion is warranted.
+  install or mutate dependencies on the caller's behalf. The third and fourth occurrences confirm
+  that this preamble remains the cheapest enforcing layer; no new promotion is warranted.
+
+  **2026-08-09 note:** The release-state preservation worktree reproduced the same missing-`tsx`
+  stop before `verify:context` executed. The lockfile-pinned `npm ci` bootstrap added 358 packages,
+  audited 359 packages with 0 vulnerabilities, and restored the declared proof path. This third
+  occurrence does not require a new layer: the existing `CLAUDE.md` fresh-worktree preamble is the
+  promoted enforcement point.
 
 ### FR-013 — full product gate exceeded a compound shell timeout
 
@@ -371,7 +380,7 @@ Rules that bind entries:
 ### FR-014 — implicit PowerShell decoding corrupted patch context
 
 - **first-seen:** 2026-08-09
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (bounded tooling interruption)`
 - **symptom:** A `Get-Content` read without an explicit encoding rendered UTF-8 punctuation in the
   live state artifact as mojibake. Reusing that rendered text as an `apply_patch` context made the
@@ -380,12 +389,21 @@ Rules that bind entries:
   rendering is mistaken for repository bytes; the failed patch itself left the worktree unchanged.
 - **workaround:** Re-read the tracked file with `Get-Content -Encoding utf8`, then use bounded,
   heading-anchored patch contexts and inspect the exact diff immediately.
-- **occurrences:** 1 independent occurrence — 2026-08-09 during PR #228's latest-base state sync.
+- **occurrences:** 2 independent occurrences — 2026-08-09 during PR #228's latest-base state sync
+  and 2026-08-09 during the later release-state preservation slice.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
   coordination and factual cross-repository resume artifact.
-- **promotion:** Deliberately NOT promoted after one occurrence. If it recurs, make explicit UTF-8
-  decoding part of the PowerShell tracked-Markdown read wrapper rather than adding another prose
-  reminder.
+- **promotion:** Promoted at the second occurrence to the PowerShell tracked-Markdown read path:
+  use `Get-Content -Encoding utf8` for direct reads, or the cheapest existing tracked-Markdown
+  wrapper where one already applies. Do not add a parallel wrapper merely to restate the same
+  encoding rule; [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) carries the live
+  release-state consumer.
+
+  **2026-08-09 note:** A second independent mojibake occurrence during release-state preservation
+  triggered the promotion above. The durable response is explicit UTF-8 PowerShell reads, routed
+  through the cheapest existing tracked-Markdown wrapper where applicable; the failed-context
+  behavior remained fail-closed and no repository file was changed by the failed read-derived
+  patch.
 
 ### FR-015 — retained merged #200 worktree collided with the new lane name
 
@@ -428,3 +446,90 @@ Rules that bind entries:
 - **promotion:** Deliberately NOT promoted after one occurrence. If a later independent slice
   repeats the warning, select an explicit repository line-ending policy at the cheapest enforcing
   layer rather than relying on per-session interpretation.
+
+### FR-017 — MCP hygiene cleanup needed a canonical-location retry and bounded second pass
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **symptom:** The canonical reviewed report first measured 468 running MCP containers, 440
+  provably unowned. The first reviewed cleanup wrapper then timed out after 64 seconds, leaving 249
+  running containers, 221 provably unowned. Only the later report-only re-measure was first launched
+  from a stale remembered checkout location; that attempt failed before the hygiene script executed.
+- **impact:** The bounded cleanup timeout left a large regenerable unowned set consuming memory
+  after the first pass. The later stale-location lookup delayed a trustworthy re-measure but did not
+  invalidate the already completed cleanup.
+- **workaround:** Use one bounded retry of the same reviewed cleanup after the timed-out first pass.
+  It completed with an immediate post-clean measurement of 36 running containers, 0 provably
+  unowned, 0 orphan MCP processes, and about 1.8 GB free. For the later report-only re-measure,
+  resolve the canonical checkout from the repository registry after the stale-location attempt
+  fails, then run the reviewed report there. That re-measure at about 13:40 BST found 56 running
+  containers, 0 provably unowned, 0 orphan MCP processes, and 5,023 MB free, so no additional cleanup
+  was warranted. The cleanup predicate spared live-owned containers; the unowned containers it
+  removed were regenerable.
+- **occurrences:** 2 independent occurrences — 2026-08-09 canonical 468/440 report, timed-out first
+  cleanup pass, bounded successful retry, later stale-location correction and live-owned re-measure;
+  then the 2026-08-09 approximately 20:38 BST report-only measurement with Docker unavailable.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns durable Windows-safe
+  governor maintenance helpers for recurrent proof and cleanup checks.
+- **promotion:** Promotion selected at the second independent occurrence, but not yet implemented:
+  #222 owns the cheapest durable layer, a Windows-safe executable helper that distinguishes
+  Docker-unavailable or unknown from a measured zero-container result and retains fail-closed,
+  report-only semantics. It must not infer a safe sweep from missing Docker evidence.
+
+  **2026-08-09 truth-correction note:** The entry's first draft inverted the initial canonical
+  468/440 report and the stale-location failure, which happened only during the later re-measure.
+  The corrected fields above preserve the measured cleanup sequence and the later 56/0 result.
+
+  **2026-08-09 second-measurement note (approximately 20:38 BST):** The reviewed report-only MCP
+  hygiene path measured 9,651 MB free and 0 orphan MCP processes. Docker was unreachable because
+  either the daemon was down or the CLI was unavailable, so the container count was explicitly
+  **unknown**, not measured zero, and the sweep was skipped. No restart or cleanup was warranted
+  from the available evidence. Issue #222 still owns the selected helper above; it is not
+  implemented by this documentation update.
+
+### FR-018 — active Product prompts did not all carry their named Claude routing
+
+- **first-seen:** 2026-08-09
+- **status:** `resolved`
+- **symptom:** A prompt-parity closeout audit found that 11 of the 14 active Product prompt bodies
+  left the literal `dl-scout`, `dl-implementer`, `dl-reviewer`, and `dl-mechanic` routing implicit in
+  shared or general prose instead of carrying the named Product routing in each copy-ready body.
+- **impact:** A pasted Product prompt could omit the repository's concrete Claude role mapping even
+  though the agent definitions and surrounding canon named it, leaving the Product prompt surface
+  weaker than the already-explicit Lab counterpart.
+- **workaround:** No temporary workaround. The bounded #216 slice added one canonical Product-only
+  routing clause to every active Product body and extended the existing context validator with
+  omission, duplication, and required-role-token tests.
+- **occurrences:** 1 audited repository-wide gap — 2026-08-09 prompt-parity closeout.
+- **task:** [#216](https://github.com/Chris0Jeky/developer-lens/issues/216), fixed and enforced by
+  [PR #229](https://github.com/Chris0Jeky/developer-lens/pull/229).
+- **promotion:** Resolved by the existing executable context-verifier layer at exact merge head
+  `7ae4b31861ad5403587adf8fefb90a085598bd57`: all 14 active Product bodies name all four roles;
+  focused tests, `npm run verify:context`, and the full gate passed. Shared blocks, hashes, prompt
+  IDs, and the overnight stop protocol were unchanged. No capability was activated.
+
+### FR-019 — Lab closeout friction could disappear from the Product resume boundary
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **symptom:** The final cross-repository release reconciliation reached Lab main with seven new Lab
+  friction entries, FR-025 through FR-031. Without a compact Product-side pointer, a Product resume
+  could treat the Lab wave as unconditionally merge-proven or lose the selected workflow hardening.
+- **impact:** Repeating the documented snapshot, age, UTC, optional-path, GraphQL, or interpreter
+  failures would consume another release session; omitting FR-028 would also misstate two completed
+  merges as satisfying the binding Lab 15-minute exact-head gate.
+- **workaround:** Keep the Lab friction log authoritative and retain this compact mapping only:
+  FR-025 adds top-level comments to the final snapshot (#34); FR-026 uses `DateTimeOffset` for UTC
+  thresholds (#34); FR-027 filters optional paths before search (#34); FR-028 selects a checked,
+  event-driven 15-minute all-surface snapshot (#29); FR-029 archives stale PR #53 unmerged and
+  preserved (#29, resolved); FR-030 uses REST only for representable evidence and waits for GraphQL
+  before the final snapshot (#34); FR-031 passes one validated confined `uv` route explicitly
+  (#29/#34). None of the selected helpers is implemented by this Product reconciliation.
+- **occurrences:** 1 cross-repository reconciliation — Lab PRs #52-#54 on 2026-08-09, representing
+  the seven independently counted Lab entries rather than seven new Product occurrences.
+- **task:** [Lab #29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29) owns release/package
+  hardening; [Lab #34](https://github.com/Chris0Jeky/developer-lens-lab/issues/34) owns external
+  GitHub and Windows command-boundary hardening.
+- **promotion:** Do not create a parallel Product helper. The cheapest enforcing layers remain the
+  checked Lab snapshot/launcher tasks on #29/#34, with the current workarounds retained until those
+  tasks land. Product #222 remains a separate selected-but-unimplemented hygiene helper.

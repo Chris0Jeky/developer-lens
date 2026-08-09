@@ -1,6 +1,10 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-08, late evening** (P0.5 first batch — PRs #209/#210/#211/#212. A
+Last updated: **2026-08-09** (Product prompt-routing evidence through PR #229 and final read-only Lab
+release reconciliation through PR #55; exact preservation records appended below).
+
+Prior detailed update: **2026-08-08, late evening** (P0.5 first batch — PRs
+#209/#210/#211/#212. A
 Codex-side session authored #209/#210/#211, went silent at 21:51Z; the Claude-side flagship
 coordinator adopted the lanes via PR-thread claim comments and ran the gate. **#211** nanoid
 3.3.16→3.3.18 lockfile-only, merge `8ec605e` 22:33Z: the connector MISSED the PR entirely (zero
@@ -3949,3 +3953,261 @@ stay P2 hardening on Lab #29.
 **Still NOT verified / blocked.** Lane-P candidate-content review is outside this session's
 protected-output boundary. Both owner sign-offs, the joint tag, publication, protected/private
 data, model/data/telemetry activation, and credentials remain untouched and open as applicable.
+
+## 2026-08-09 — Lab release-wave evidence preservation through PR #51
+
+**Scope.** Read-only reconciliation of the sibling Lab release wave from live GitHub metadata. It
+changes no Lab ref, product capability, contract, data, candidate content, release, tag, asset, or
+publication state. Live GitHub and the exact hosted check rollup outrank the earlier product-side
+resume prose.
+
+**Exact pull-request evidence (`gh pr view`, refreshed 2026-08-09).** Every listed pull request is
+`MERGED`; all timestamps are UTC.
+
+- [Lab PR #40](https://github.com/Chris0Jeky/developer-lens-lab/pull/40), "Declare Lab package
+  license identity", opened `2026-08-09T06:04:04Z`: base
+  `4f355f1e58e1eca1191f899f1fc4354af8a23a00`, head
+  `7d5610d2280e900d9e2c10c6304455830147ffcd`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T07:36:11Z` (run `31301396559`, job `93214649991`); merged at
+  `2026-08-09T07:38:31Z` as `d203461c023e1661140a1fef38a0f4b68e3454b2`.
+- [Lab PR #43](https://github.com/Chris0Jeky/developer-lens-lab/pull/43), "docs: add Lab community
+  scaffolding", opened `2026-08-09T07:43:01Z`: base
+  `d203461c023e1661140a1fef38a0f4b68e3454b2`, head
+  `871e014c73972fd65b8e9cd39e0665b6b2cdb65d`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T07:46:33Z` (run `31301825986`, job `93215733777`); merged at
+  `2026-08-09T07:49:49Z` as `56c889141cd4575d12f80c3e0a16a574277e0ddd`.
+- [Lab PR #45](https://github.com/Chris0Jeky/developer-lens-lab/pull/45), "ci: prove built lab
+  package", opened `2026-08-09T08:26:14Z`: base
+  `2e6a7c2b7ff906cb771bb4e904dd18d2717fa536`, head
+  `7f07ce221b7a405c06af70d3a5215910dca72991`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T08:54:19Z` (run `31304528858`, job `93222641130`); merged at
+  `2026-08-09T08:58:17Z` as `6e13b6d84391ea7a2579e169151e3d765ad71583`.
+- [Lab PR #46](https://github.com/Chris0Jeky/developer-lens-lab/pull/46), "Reconcile package-smoke
+  release evidence", opened `2026-08-09T09:13:52Z`: base
+  `6e13b6d84391ea7a2579e169151e3d765ad71583`, head
+  `4d6327185e207d83d5870aa4c7190a1ba8a03db5`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T09:29:47Z` (run `31305895619`, job `93226118637`); merged at
+  `2026-08-09T09:32:43Z` as `a1dc7caa4015f200a10cf7218d904001c90184cc`.
+- [Lab PR #47](https://github.com/Chris0Jeky/developer-lens-lab/pull/47), "Bound package smoke
+  commands", opened `2026-08-09T09:34:58Z`: base
+  `a1dc7caa4015f200a10cf7218d904001c90184cc`, head
+  `ea9b39d663bc2edf020d9853ddf854d9cd0cefdc`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T09:37:15Z` (run `31306259562`, job `93227022970`); merged at
+  `2026-08-09T09:41:00Z` as `c827d6a18490838ab132fc7dc058c29fc727d68b`.
+- [Lab PR #48](https://github.com/Chris0Jeky/developer-lens-lab/pull/48), "Skip package smoke
+  Markdown scans", opened `2026-08-09T09:43:57Z`: base
+  `c827d6a18490838ab132fc7dc058c29fc727d68b`, head
+  `89cad7d1dff4b00db9459f2739f1db567d266351`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T10:00:49Z` (run `31307153939`, job `93229202173`); merged at
+  `2026-08-09T10:04:07Z` as `0b7a452ee0a6ce4c69e91646400fbb98ad8f3ca1`.
+- [Lab PR #49](https://github.com/Chris0Jeky/developer-lens-lab/pull/49), "Bound package smoke
+  failure diagnostics", opened `2026-08-09T10:17:57Z`: base
+  `0b7a452ee0a6ce4c69e91646400fbb98ad8f3ca1`, head
+  `02d3e504b4fde54bd1e33b01d24b33a4de3305c5`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T10:21:35Z` (run `31307993706`, job `93231285624`); merged at
+  `2026-08-09T10:23:11Z` as `ece61e0e1ca86e1e38732916fc077c4718bf7de6`.
+- [Lab PR #50](https://github.com/Chris0Jeky/developer-lens-lab/pull/50), "Prune skipped Markdown
+  trees before traversal", opened `2026-08-09T10:34:59Z`: base
+  `ece61e0e1ca86e1e38732916fc077c4718bf7de6`, head
+  `086c9809ae2fd27b0a1bc485d4653764aea8ec08`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T10:38:40Z` (run `31308683005`, job `93232990186`); merged at
+  `2026-08-09T10:43:05Z` as `e63086b4ae3b97390969357ebdd9d3e30394814e`.
+- [Lab PR #51](https://github.com/Chris0Jeky/developer-lens-lab/pull/51), "Validate uv before package
+  smoke", opened `2026-08-09T12:33:02Z`: base
+  `e63086b4ae3b97390969357ebdd9d3e30394814e`, head
+  `adc43aea21834683eaf2749fe3515f10da204bde`; `Prove the lab` **SUCCESS** at
+  `2026-08-09T12:35:45Z` (run `31313571499`, job `93245084619`); merged at
+  `2026-08-09T12:39:59Z` as `02a41cac4a461a93d53b481d34c96a48e29291e5`. A live default-branch
+  read returned that merge commit as Lab `main`.
+
+**Review and eligibility reconciliation.** A GraphQL thread read found no unresolved review thread
+for any PR above: #40/#43/#50/#51 had zero threads; #45 had six resolved, #46 two resolved, #47 one
+resolved, #48 two resolved, and #49 two resolved. None carried a closing-issue reference. At the
+pre-merge observation, #51 was open and exact-head green but not yet eligible under the Lab's
+15-minute floor; no exact timestamp for that observation was retained. Its head commit timestamp was
+`2026-08-09T12:31:00Z`, so the merge happened at most 8m59s later (and 6m57s after PR creation).
+GitHub exposes no formal review object or review thread for #51. The accepted top-level exact-head
+fresh-context review comment found no CRITICAL/HIGH defect and was posted at
+`2026-08-09T12:39:57Z`, two seconds before merge; it represented the Lab review gate. A second
+independent MERGE-SOUND result was posted at `2026-08-09T12:41:40Z`, after merge. The review gate
+therefore existed before merge. The confirmed process defect is only the at-most-8m59s head age
+against the 15-minute eligibility floor.
+[Lab #29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29) tracks mechanical eligibility
+hardening. That age defect is preserved rather than recast as a compliant gate.
+
+**NOT verified / blockers.** This product-side session did not rerun Lab local tests or inspect
+candidate bytes, protected outputs, build artifacts, private data, or any data lane. The local-test
+and independent-review claims in PR comments were not independently re-executed here; live GitHub
+proves the metadata and hosted check rollup recorded above. The Lane-P candidate-content review,
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` product aesthetic sign-off, and
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` screenshot/video-package sign-off remain three
+distinct blockers. No release, `v0.1.0` tag, release asset, or publication is claimed.
+
+## 2026-08-09 — Read-only product worktree preservation reconciliation
+
+**Method and boundary.** A mechanical audit read only each named worktree's branch, full `HEAD`, and
+tracked-status count using `--untracked-files=no`. It did not enumerate modified paths or inspect any
+file content, untracked or ignored output, protected data, generated output, or data lane. Live
+`gh pr view`, `gh pr list --state all --head`, and exact remote-head reads supplied PR and remote
+classifications. Every worktree and branch was preserved; nothing was switched, cleaned, removed,
+pushed, or activated.
+
+**Historical-PR or tracked-modification classes.**
+
+- `codex/method-trial-view-v1` is preserved at
+  `ed415013e582924fab520b3d44bf8e677630cec6` with two tracked-status entries. Its historical
+  [PR #187](https://github.com/Chris0Jeky/developer-lens/pull/187) merged a different old head,
+  `53f0cfda65392fc2a3763bff9284b6af80aa1e98`, at `2026-08-07T05:35:05Z` as
+  `7b22491b28acbe467e2facb85723a91fd37af52b`; the current worktree state is not represented by that
+  merged head.
+- `codex/researchpack-v1-producer` is preserved at
+  `dd3e4d644cb805761b16d8b939aa94309f487764` with no tracked modification. Its historical
+  [PR #178](https://github.com/Chris0Jeky/developer-lens/pull/178) merged a different old head,
+  `80a0cb90d8e280118a2bc559c82f4cf8ae19b690`, at `2026-08-07T02:36:27Z` as
+  `be9c2451e983e776850c4cd4700cc8c234ea5e14`.
+- `codex/wbc1-method-trial-contract` is preserved clean at
+  `c6949cc70a516a556c5162ab60f1f2e0f2124c50`, exactly the head of
+  [PR #188](https://github.com/Chris0Jeky/developer-lens/pull/188), which closed unmerged at
+  `2026-08-07T04:17:15Z`; it has no merge commit.
+- `fable/life03-backup-crash-durability` is preserved at
+  `100addf254d2d228294b4ffb8a69ce12a367c7c6` with one tracked-status entry. No GitHub PR or remote
+  head exists for the branch at this measurement, so it remains local-only.
+- `codex/phasee-analysis-core` is preserved at
+  `765ac46d4e760bc58c78941d5523ccc2929e5234` with one tracked-status entry. No GitHub PR or remote
+  head exists for the branch at this measurement, so it remains local-only.
+
+**No-PR preserved branches.** Live PR queries returned an empty list for every branch below.
+
+- Local-only: `codex/researchpack-v1-steward-20260807` at
+  `05b7c1d4b499664345016920964173034ec25dd1`; `codex/life03-backup-verifier` at
+  `dd54a3bce8e750759bc7216c3d290467b9dd1470`; `codex/life03-restore-core` at
+  `fefdf81337536a570488042810cf4848560138c3`; `codex/life03-restore-verifier` at
+  `054bc404332fe916252ad9c5b6cd0469fe504887`; `codex/phasee-readiness-schema` at
+  `cc188afd8b0495a097e0ec4f15af4b3859d4df1f`; `codex/phasee-ui-consumer` at
+  `7b791cbdaa18b8cffe7275991aafbaa70dc3cb71`; and `codex/phasee-v3-why-resolver` at
+  `35f4504a45d18d945ac4505a834c5a661406549c`.
+- Remote-preserved at an exact matching remote head, with no PR:
+  `codex/phasee-stored-bridge-rebuild` at
+  `f05dd7d57757be4127e41c5a9ee43d0b328a18e8`, and `codex/life03-backup-dirsync` at
+  `2d3c8909103f7456a76c0c21f1e2d76a0abc574c`.
+
+**NOT verified / exact resume boundary.** No branch's behavior, diff, commit reachability beyond the
+named PR association, tests, ignored output, or suitability for continued implementation was
+verified. The audit authorizes no lane. Preserve all 14 worktrees and their exact states until a
+separate owner/coordinator-led reconciliation under
+[#200](https://github.com/Chris0Jeky/developer-lens/issues/200) explicitly selects, publishes, or
+retires one of them.
+
+**Product documentation-slice proof and failure.** The first `npm run verify:context` invocation
+stopped before the verifier ran because the fresh worktree lacked local `tsx`; FR-012 records this
+third occurrence. Lockfile-pinned `npm ci` then added 358 packages, audited 359 packages with 0
+vulnerabilities, and the rerun passed (47 Markdown files, 31 required files). `git diff --check`
+passed with only Git's existing LF-to-CRLF working-copy warnings. No Lab check or protected-output
+inspection was performed by this product-side documentation slice.
+
+## 2026-08-09 — Product per-prompt Claude routing landing and preservation sync
+
+**Changed and merged.** [Product PR #229](https://github.com/Chris0Jeky/developer-lens/pull/229),
+"Enforce per-prompt Claude routing", merged from exact head
+`8fefd84ee4b0a7b069c010e494aa23af7f8d754d` as merge commit
+`7ae4b31861ad5403587adf8fefb90a085598bd57`. All 14 active Product prompt bodies now name
+`dl-scout`, `dl-implementer`, `dl-reviewer`, and `dl-mechanic`. The shared blocks and their hashes,
+prompt IDs, and overnight stop protocol are unchanged. This was prompt/verifier hardening only: it
+activated no capability and moved no protected-data, release, tag, publication, telemetry,
+credential, contract, or human-gate state.
+
+**Verified evidence.** Exact hosted PR-gate run `31332909748` completed successfully at the PR head.
+The recorded local full gate passed across 86 files with **1,488 passed / 10 skipped**, with build
+and credential scan green. A fresh-context exact-head review returned **MERGE-SOUND**. The exact-head
+connector then reported three P2 verifier-hardening findings: keep Product routing outside shared
+blocks, bind Product enforcement to the authoritative Product slug, and reject a valid clause plus
+a partially edited duplicate routing section. All three were tracked on
+[#216](https://github.com/Chris0Jeky/developer-lens/issues/216) and replied to on their review threads;
+the current 14 bodies were correct, so no CRITICAL/HIGH defect or fix-commit cascade was created.
+
+**Friction reconciliation.** FR-018 records the audited per-prompt Product Claude-routing gap as
+resolved by PR #229's exact verifier and tests, without capability activation. FR-017 now records a
+second independent report-only MCP-hygiene measurement at about 20:38 BST: 9,651 MB free and zero
+orphan MCP processes. Docker was unreachable (daemon down or CLI unavailable), so the container
+count was explicitly **unknown**, not zero, and the sweep was skipped. No restart or cleanup was
+warranted. Issue [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) still owns the
+unimplemented durable helper; its selected cheapest promotion must distinguish Docker-unavailable
+or unknown from measured zero while retaining fail-closed, report-only semantics.
+
+**NOT verified / exact resume boundary.** Lab PR #54 is deliberately not frozen into this Product
+snapshot. Perform one final cross-repository reconciliation only after that Lab pull request settles.
+Until then, preserve the protected Lane-P candidate-content review,
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`,
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`, the joint release/tag gate, and every deferred
+human or capability gate. No Lab ref, protected output, ignored content, or activated lane was
+inspected by this Product-only slice.
+
+## 2026-08-09 — Final Lab release-state reconciliation through PR #55
+
+**Scope and Product base.** This was a read-only reconciliation of public, tracked Lab Git/GitHub
+metadata after the preceding Product snapshot. Product base before the PR #231 moved-base refresh is
+PR #230 merge `e530f4c79eda57db0e3eb80a307fe3ffdd57c78f`; PR #229 merge
+`7ae4b31861ad5403587adf8fefb90a085598bd57` remains the 14-prompt routing/parity delivery fact
+recorded above. Product issue [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) still owns the
+selected-but-unimplemented Docker-unavailable/unknown hygiene helper. No Product or Lab capability,
+protected lane, contract, release, tag, publication, telemetry, credential, or owner gate moved.
+
+**Lab PR #52.** [PR #52](https://github.com/Chris0Jeky/developer-lens-lab/pull/52) final head
+`46961957e09bb976b34beb41fee5e69d89d21076` passed hosted run `31332413187`; both review threads are
+resolved. It merged at `2026-08-09T19:48:10Z` as
+`b966341d293a50d2b51f448fa23d3248d7e575fd`. The completed merge did **not** satisfy the binding
+15-minute exact-head age: Lab FR-025 records the final snapshot omission and Lab FR-028 records the
+repeated constitutional age miss. Issues [Lab #29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29)
+and [Lab #34](https://github.com/Chris0Jeky/developer-lens-lab/issues/34) retain the checked
+merge-snapshot and command-boundary hardening; no ref rewrite or retroactive compliance is claimed.
+
+**Lab PR #53.** [PR #53](https://github.com/Chris0Jeky/developer-lens-lab/pull/53) closed unmerged at
+preserved head `fdb8426209792c807408ebf598b3cc7dc2d1d25f`. Its stale-base state was not rebased, rewritten,
+or merged; Lab FR-029 records the archival workaround and resolved thread state.
+
+**Lab PR #54.** [PR #54](https://github.com/Chris0Jeky/developer-lens-lab/pull/54) final head
+`a4eefd9cc4963f684c0376543600969c45d6d057` was based on
+`b966341d293a50d2b51f448fa23d3248d7e575fd`. Hosted run `31333721317`, job `93295965974` (`Prove the
+lab`), completed successfully; the final fresh-context review was **MERGE-SOUND**, all 3 review
+threads were resolved, and no closing issue reference existed. The exact-head push at
+`2026-08-09T20:13:50Z` aged through the conservative `2026-08-09T20:33:16Z` snapshot before merge at
+`2026-08-09T20:33:27Z`. The root coordinator explicitly issued the exact-head REST merge with
+`sha=a4eefd9cc4963f684c0376543600969c45d6d057`; GitHub returned `merged: true` and merge commit
+`7fea25023d0704aea685e243708328264b9bcaad`. A post-merge all-surface sweep at 20:35:49Z was clean.
+Lab #34 comments
+[`5233753580`](https://github.com/Chris0Jeky/developer-lens-lab/issues/34#issuecomment-5233753580)
+and [`5233820338`](https://github.com/Chris0Jeky/developer-lens-lab/issues/34#issuecomment-5233820338)
+preserve the later attribution correction and review boundary; the transient false FR-033 claim is
+not imported into Product state.
+
+**Lab PR #55.** [PR #55](https://github.com/Chris0Jeky/developer-lens-lab/pull/55) delivered the
+sdist-to-wheel package-smoke seam from base `7fea25023d0704aea685e243708328264b9bcaad` at final head
+`c122868e976ee7f5acce8c6aac20608873c0fa43`. Exact hosted run `31335915850`, job `93301598278`
+(`Prove the lab`), succeeded. The full code range through `d302eb70d861026439591c159a3a210991439fed`
+received independent no-CRITICAL/HIGH review after 28 focused tests; the later `6493fb6` FR-038-only
+addition and `c122868` append-only FR-036 path-presence correction each passed scoped diff review,
+and exact-head comment
+[`5233849764`](https://github.com/Chris0Jeky/developer-lens-lab/pull/55#issuecomment-5233849764)
+records the second/final scoped verification. The final 22:20:37 BST all-surface snapshot confirmed
+the exact head/base, clean mergeability, hosted success, zero formal or inline reviews, zero review
+threads/unresolved threads, zero closing issues, and the 15-minute age from 21:05:04Z. PR #55 merged
+at `2026-08-09T21:20:44Z` as `02dcfb261f7216f01aa5696888715ac42f0e3830`, now Lab `main`; its
+branch is retained. Protected and owner-gated lanes stayed closed.
+
+**Friction and task ownership.** Product FR-019 retains a compact Product-side pointer for Lab
+FR-025 through FR-031: #29 owns the 15-minute merge enforcement, stale-state preservation, and
+package-smoke hardening; #34 owns complete snapshots, UTC/optional-path/GraphQL command boundaries,
+and shares the explicit `uv` launcher follow-up. The Lab friction log remains authoritative; this
+ledger does not duplicate its full entries or claim the selected helpers are implemented.
+
+**Exact Lab resume / NOT VERIFIED.** PR #55 implementation and its declared gate are delivered. The
+next Lab action is issue #29's tracked P2 test-hardening seam: choose one bounded zero/multiple-wheel
+or full-call-sequence coverage increment, then continue the remaining pre-tag deliverables rather
+than opening another state-only synchronization; the Lab release wave remains active. This
+Product-side session did not independently
+rerun the Lab full suite, package smoke, or inspect generated artifacts; it verified the public
+exact-head GitHub/check/review evidence only. The remaining P2 test increment, Lane-P review, visual
+sign-offs, release assets, publication, and joint tag are **NOT VERIFIED** and stay pending. Preserve
+Lane-P, `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`,
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`, the joint release/tag gate, and all deferred
+owner/capability decisions; this Product documentation slice activated no protected lane.
