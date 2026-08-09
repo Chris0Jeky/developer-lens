@@ -205,3 +205,38 @@ Rules that bind entries:
   slice small enough to close, and commit in increments so a cut-off lane leaves committed work
   rather than an unexplained working tree. A second independent occurrence promotes it to an
   explicit checkpoint-audit step in [MAINTENANCE_PROTOCOL.md](MAINTENANCE_PROTOCOL.md).
+
+### FR-008 — the runtime refuses writes to its own `.claude/` definition tree
+
+- **first-seen:** 2026-08-09
+- **status:** `open`
+- **symptom:** During the #214 prompt operating system, edits to `.claude/agents/dl-*.md` and
+  `.claude/skills/developer-lens-continuation/SKILL.md` were refused by the runtime permission layer
+  with a write-permission error, in a non-interactive session where permission cannot be granted.
+  Sibling paths outside that tree — including `.agents/skills/developer-lens-continuation/SKILL.md`,
+  the Codex-side copy of the same skill — were writable in the same session. The repository's own
+  `.claude/settings.json` denies only three read paths and nothing under `.claude/`, so the refusal
+  comes from the runtime, not from repository configuration.
+- **impact:** Agent and skill *definitions* cannot be revised by a non-interactive agent session,
+  even though they are ordinary tracked C0 files the review gate would cover normally. Worse, the
+  two continuation-skill copies are split across the writable and non-writable trees, so a partial
+  edit silently breaks their parity — and nothing in `npm run verify:context` compares the two
+  bodies, because it checks required files, frontmatter and markers rather than full text.
+- **workaround:** None that is legitimate. Reaching the same bytes through a shell redirect would
+  route around a deliberate permission boundary, which is precisely the silent workaround this slice
+  exists to forbid, so it was not attempted. The one-sided `.agents/` edit that had already been
+  made was reverted so the two skill copies stay consistent, and the whole agent/skill item was
+  parked as a unit rather than landed half-applied.
+- **occurrences:** 1 recorded — 2026-08-09.
+- **task:** [#214](https://github.com/Chris0Jeky/developer-lens/issues/214) — parked sub-item: add
+  the no-silent-workaround and task-link rule to the four `dl-*` agent definitions and both
+  continuation-skill copies, and fold the
+  [#208](https://github.com/Chris0Jeky/developer-lens/issues/208) item-3 locked-invariant reviewer
+  lenses (deterministic fallback, model-output labelling, secret prohibition, private-output
+  locality, owner-only classes) into `dl-reviewer`. Needs an interactive session, or a session whose
+  runtime permits `.claude/**` writes.
+- **promotion:** Task debt at one occurrence, and the boundary itself is plausibly correct — a
+  runtime that lets agents rewrite their own definitions unprompted is a real hazard. The gap worth
+  enforcing is the *undetected* half: a parity check comparing the two continuation-skill bodies
+  section by section would have failed loudly instead of letting a one-sided edit pass. A second
+  independent occurrence promotes that check into `scripts/projectContextValidation.ts`.
