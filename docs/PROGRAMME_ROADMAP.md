@@ -22,7 +22,8 @@ Order (mandate release sequence):
 2. Community scaffolding: `CONTRIBUTING.md`, Code of Conduct, issue/PR templates, Discussions,
    compact public roadmap.
 3. Lab-side release prep (harness deny/parity fixes lab #12/#13 equivalents; one maintenance PR
-   before the next lab experiment per H2) — **gated on q-8** (lab concurrent-writer, human).
+   before the next lab experiment per H2) — product q-8 closed 2026-08-09; proceed under the Lab's
+   normal worktree, review, and CI gates.
 4. Dependency-alert triage (H6) both repos.
 5. Final browser/visual QA (agent proof + five-minute owner sign-off, H7).
 6. Tag `v0.1.0` both repos with synchronized changelogs; publish selected C0 JSON/HTML release
@@ -90,4 +91,4 @@ an option with a provider interface + evaluation card, not planned work (D12).
 | #66/#69 | Parked until Query Lab/retrieval activates. |
 | #55 | Fold into the redesign/visual QA wave. |
 | #41 | Opportunistic; before claiming full historical date support. |
-| lab #5/#6/#7/#23/#24 | Lab lane; merges human-gated on q-8. |
+| lab #5/#6/#7/#23/#24 | Lab lane; product q-8 closed 2026-08-09, so normal cross-repo review and CI gates apply; separate Lab owner gates remain item-specific. |

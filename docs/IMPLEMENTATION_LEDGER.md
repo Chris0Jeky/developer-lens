@@ -3814,11 +3814,12 @@ reporting output; the longer second attempt completed green.
 ## 2026-08-09 — Product q-8 owner-decision closeout
 
 **Changed.** Recorded the owner's explicit 2026-08-09 decisions in `HUMAN_TODO.md` and reconciled
-only their active/current consequences in `CURRENT_STATE.md` and the Current status prose of the
-cross-repo contract: q-8 is closed; the v0.1.0 release remains joint; q-10(a) CLA review and every
-other q-6/q-10 decision are deferred; and confidential CoC reports will use a separate inbox once
-the owner supplies or approves its monitored address. Public routes remain primary and
-`CODE_OF_CONDUCT.md` is intentionally untouched pending that q-10/release follow-up. The
+their active/current consequences in `CURRENT_STATE.md`, `CODE_OF_CONDUCT.md`, and the Current
+status prose of the cross-repo contract: q-8 is closed; the v0.1.0 release remains joint; q-10(a)
+CLA review and every other q-6/q-10 decision are deferred; and confidential CoC reports will use a
+separate inbox once the owner supplies or approves its monitored address. The old personal address
+was removed from `CODE_OF_CONDUCT.md`; until the dedicated inbox is approved, the document forbids
+public sensitive details and supplies only a content-free route for arranging private contact. The
 deregistered `value01` directory remains for the owner's manual review/delete, explicitly not a
 blocker to the closed process gate. Current prompt-OS state records product PR #218, lab PR #35's
 external merge at `bba0c18261c0a2b77332a0408f63b10c774c91f4` at 2026-08-09T04:06:29Z, and the
@@ -3835,7 +3836,39 @@ prompt, or release/tag state moved.
 **Verified.** `npm run verify:context` and `git diff --check` run for this documentation/state
 sync; the exact diff was inspected for the four owned files only.
 
-**Next slice.** Resume product #200's pre-QA documentation batch, then retain the q-10(c)
-five-minute aesthetic sign-off as the release-tag blocker; independently, advance the lab #5/#29
-release work under its normal gates. The CoC inbox address and `CODE_OF_CONDUCT.md` change remain a
-separate owner/release follow-up.
+**Next slice.** Resume product #200's pre-QA documentation batch, then advance Lab #29/#5 under
+their normal gates before the joint tag; retain the q-10(c) five-minute aesthetic sign-off as the
+other release-tag blocker. Publishing the owner-approved dedicated CoC inbox address remains a
+separate owner/release follow-up; the interim Code of Conduct rewrite is complete.
+
+## 2026-08-09 — P0.5 pre-QA release copy and q-8 late-review reconciliation
+
+**Changed.** Completed issue #200's product pre-QA copy batch: the README links the intent-only
+commercial option, the public footer names the AGPL-3.0-only source, the Discussions contact warns
+that examples must be invented, the public roadmap names the cockpit's invented seed-fixture
+requirement, and the contributing guide separates the invented-fixture rule from C0/C1 test labels.
+The post-merge review of q-8 PR #223 was reconciled in the same bounded follow-up: the Code of
+Conduct supplies a content-free request path without claiming the pending inbox is monitored, the
+owner register and prior ledger entry match that interim rewrite, the programme roadmap removes the
+closed product q-8 gate, and `CURRENT_STATE.md` keeps unfinished Lab #29/#5 ahead of the joint tag.
+No source capability, data contract, fixture, generated artifact, version, tag, or release moved.
+
+**Verified.** Starting from merged `origin/main` `877f1ca07ccee014c0adf50925f989815e6bc7f1`,
+`npm test -- src/App.test.tsx` passed 9/9; `npm run verify:context` passed (47 Markdown files, 31
+required files); `npm run check` passed (86 test files, 1,487 passed, 10 skipped, TypeScript/Vite
+build and 19-file no-secrets verification green); `npm run build:showcase` regenerated and verified
+the synthetic public boundary; and `git diff --check` passed. The build retained the existing
+browser-externalized `node:crypto` and large-chunk warnings without failing.
+
+**Failures and workarounds.** A separate coordinator advanced PR #223's checkout and branch between
+this session's read and attempted fix. The patch failed its context check before writing, no work was
+overwritten, and this session relinquished that checkout. PR #223 then merged externally as
+`877f1ca` before its exact-head Codex review arrived; the later P2 findings are fixed by this
+follow-up. FR-001 records the fourth occurrence and the refresh-and-relinquish response; issue #200
+carries the live coordination note. The fresh worktree needed `npm ci` before its local Node tools
+were available.
+
+**NOT verified / next slice.** Browser visual QA, hosted CI/review for this branch, the dedicated CoC
+inbox address, and the q-10(c) owner aesthetic sign-off remain unverified. Advance Lab #29/#5 under
+its normal gates, then run the final browser/visual package and obtain q-10(c) before either
+repository is tagged `v0.1.0`.

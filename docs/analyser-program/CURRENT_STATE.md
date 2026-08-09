@@ -76,14 +76,15 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   P0.5 step order vs the mandate: step 1 (licence) DONE, step 2 (community scaffolding) DONE,
   step 4 product half DONE (#211; lab half triaged on lab #5, not fixed), step 3 unblocked by the
   2026-08-09 q-8 closure,
-  steps 5-7 pending — order deviations are recorded here, never silent. EXACT NEXT ACTION for the
-  next session, in roadmap order: first the pre-QA doc touch-up batch tracked on #200
-  (README→COMMERCIAL_OPTION link, AGPL visible source-offer in the Pages app, Discussions-link
-  warning, cockpit seed-fixture wording, invented-vs-C0 terminology) so QA sees final surfaces;
-  then STEP 5 = final browser/visual QA proof for the q-10(c) five-minute owner sign-off; then
-  STEP 6 = tag v0.1.0 + publish C0 release assets and release notes, and the 0.1.0 version bump
-  rides THAT tag PR (LOW-1 disposition), not the pre-QA batch — blocked on q-10(c), joint per
-  H7=BOTH; step 7 descriptions/topics is partially done (description, topics,
+  steps 5-7 pending — order deviations are recorded here, never silent. This slice completes the
+  pre-QA doc touch-up batch tracked on #200 (README→COMMERCIAL_OPTION link, AGPL visible source-offer
+  in the Pages app, Discussions-link warning, cockpit seed-fixture wording, invented-vs-C0
+  terminology). EXACT NEXT ACTIONS after it lands, in roadmap order: complete STEP 3 Lab release
+  preparation (#29) and the Lab half of STEP 4 dependency remediation (#5); then STEP 5 = final
+  browser/visual QA proof for the q-10(c) five-minute owner sign-off; then STEP 6 = tag v0.1.0 +
+  publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
+  disposition), not the pre-QA batch — the joint tag remains blocked on unfinished Lab #5/#29 and
+  q-10(c), per H7=BOTH; step 7 descriptions/topics is partially done (description, topics,
   Discussions live). Tracked from the #209 review (non-blocking LOWs,
   noted on #200): version 0.0.0 bump belongs to the release-tag step; README should link
   COMMERCIAL_OPTION.md; the Pages app needs a visible AGPL source-offer check before v0.1.0.
@@ -105,7 +106,8 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
-  H7 — none exists. The joint tag is blocked by the q-10(c) owner aesthetic sign-off. Do not
+  H7 — none exists. The joint tag is blocked by unfinished Lab release/dependency work (#29/#5)
+  and the q-10(c) owner aesthetic sign-off. Do not
   advance task selection beyond P0.5/#200. Downstream (not selected): after the v0.1.0 tag, P1 =
   #174 integrated vertical with #181/#182 contract semantics (H1), folding #135/#76/#80-resolver
   where touched. Data Charter v2 + capability profiles = #201 (next, before any real activation).
@@ -161,7 +163,8 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   GitHub-account event.'
 blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
   preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
-  NEW recorded owner decision — none exists) and remains blocked by the q-10(c) owner sign-off.
+  NEW recorded owner decision — none exists) and remains blocked by unfinished Lab #29/#5 plus the
+  q-10(c) owner sign-off.
   The binding review-timing gate
   stated below (`review_timing_defect`) governs any future merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the
@@ -178,9 +181,11 @@ open_owner_gates: 'HUMAN_TODO.md q-6 (a-h) remains deferred and non-blocking. q-
   claude.exe/orphan MCP/Docker MCP containers all 0. q-9 is SUPERSEDED by owner decision A5.
   q-10(a) CLA review is deferred before substantial external code; all other q-10 decisions remain
   deferred except the reaffirmed joint H7 release and the selected separate CoC inbox. Its address
-  is not yet supplied/approved, so public routes remain primary pending a q-10/release
-  `CODE_OF_CONDUCT.md` follow-up. q-10(c) remains non-blocking for current preparation but its
-  five-minute owner aesthetic sign-off blocks every release tag. The deregistered `value01`
+  is not yet supplied/approved; `CODE_OF_CONDUCT.md` removes the old personal address, forbids
+  public sensitive details, and provides a content-free route for arranging private contact.
+  Publishing the dedicated address remains a q-10/release action. q-10(c) remains non-blocking for
+  current preparation but its five-minute owner aesthetic sign-off blocks every release tag. The
+  deregistered `value01`
   directory remains manual owner review/delete and is not a q-8 blocker.'
 frozen_by_reassessment: horizon:frozen label (WB candidates except the owner-directed WB-C1 Method
   Trial demonstration, vector retrieval, GOV/SEC/PORT-02/PROV-01 sources, ATLAS-03 parsers,

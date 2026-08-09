@@ -171,9 +171,10 @@ publication route remains active.
   Owner decisions (2026-08-09): defer q-10(a) CLA/legal review until before substantial external
   code is accepted; all other q-10 decisions remain deferred, except that the joint H7 release is
   reaffirmed. For confidential CoC reports, the owner selected a **separate inbox** but has not
-  supplied or approved its monitored address. Public routes therefore remain primary until a
-  release follow-up updates `CODE_OF_CONDUCT.md`; this remains an open q-10/release action. The
-  q-10(c) five-minute aesthetic sign-off still blocks each release tag.
+  supplied or approved its monitored address. `CODE_OF_CONDUCT.md` now removes the old personal
+  address, warns against posting sensitive details publicly, and provides a content-free request
+  route for arranging private contact. Publishing the dedicated monitored address remains an open
+  q-10/release action. The q-10(c) five-minute aesthetic sign-off still blocks each release tag.
 
 ## Changelog
 
@@ -182,9 +183,10 @@ publication route remains active.
   `claude agents --json --all` and report-only MCP-hygiene results (claude.exe/orphan MCP/Docker MCP
   containers all 0). The separately deregistered `value01` directory remains for the owner's manual
   review/delete and does not reopen the process gate. The owner chose a separate, as-yet-unsupplied
-  monitored CoC inbox; public routes remain primary pending the q-10/release `CODE_OF_CONDUCT.md`
-  follow-up. CLA review and all other q-6/q-10 decisions are deferred; the joint release remains
-  reaffirmed. No capability changed.
+  monitored CoC inbox. The old personal address was removed from `CODE_OF_CONDUCT.md`, which now
+  warns against public sensitive details and provides only a content-free route for arranging
+  private contact until the dedicated address is approved. CLA review and all other q-6/q-10
+  decisions are deferred; the joint release remains reaffirmed. No capability changed.
 - 2026-08-08 (P0.5 first-batch session, late evening): expanded q-8 with the lab PR #24 merge
   observation (merged 22:14:27Z by account Chris0Jeky, lab CI green; human-vs-agent authorship
   unverifiable from the session; no approval inferred; gates held binding) and asked the owner to
