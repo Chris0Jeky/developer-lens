@@ -533,3 +533,23 @@ Rules that bind entries:
 - **promotion:** Do not create a parallel Product helper. The cheapest enforcing layers remain the
   checked Lab snapshot/launcher tasks on #29/#34, with the current workarounds retained until those
   tasks land. Product #222 remains a separate selected-but-unimplemented hygiene helper.
+
+### FR-020 — public-tip audit found machine-specific local-path literals
+
+- **first-seen:** 2026-08-09
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (public-path privacy risk)`
+- **symptom:** A tracked-tip audit found one machine-specific local path in the owner-action history
+  and the same machine-specific prefix in two synthetic storage-test canaries. The audit did not
+  inspect the referenced worktree or any ignored, generated, private, or protected content.
+- **impact:** Publishing those literals would disclose a workstation layout and weaken the public
+  synthetic-only boundary, even though the test canaries are intentionally redaction probes.
+- **workaround:** Redacted the current tip to a content-free `value01` owner-review/delete reference
+  and clearly invented generic Windows fixture paths, then searched tracked current-tip files for both
+  slash forms. Historical Git still contains the prior string; no history rewrite is authorized.
+- **occurrences:** 1 bounded public-tip audit and repair — 2026-08-09.
+- **task:** [#234](https://github.com/Chris0Jeky/developer-lens/issues/234) owns the durable tracked-text
+  lint/check follow-up; this repair does not implement that broader check.
+- **promotion:** The durable prevention remains #234’s narrow tracked-text check. Until it lands,
+  repeat the two-form tracked-only search during public-tip review and keep historical-Git findings
+  separate from current-tip proof.

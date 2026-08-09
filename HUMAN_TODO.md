@@ -104,8 +104,8 @@ publication route remains active.
   Update (2026-08-04, R1 wave 3 state-sync): a second leaked-process instance occurred this run — a
   lane worker's `vite` dev server survived its worker and blocked a worktree removal; the process
   was identified by its command line and terminated. Separately, the orphaned partial worktree
-  directory `C:/Users/jekyt/Desktop/Printer Config/Others/Git/dl-worktrees/value01` remains for
-  manual deletion: git has already deregistered it, and the repository floor guard correctly refuses
+  orphaned partial worktree directory for `value01` remains for the owner's manual review and
+  deletion: git has already deregistered it, and the repository floor guard correctly refuses
   recursive deletion outside the project, so an agent cannot remove it. Its contents are regenerable
   build artifacts plus a partial copy of already-pushed tracked files — nothing unique is at risk.
   At that time, product q-8 stayed open; the 2026-08-09 closure below supersedes this historical
