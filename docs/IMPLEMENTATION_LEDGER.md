@@ -3890,3 +3890,28 @@ facts recorded.
 release head. Lab #29 pre-tag deliverables, both owner aesthetic sign-offs, the joint tag, and every
 publication step remain open. No real/private data, generated operational output, external model,
 telemetry, credential, release, or tag lane was opened by this reconciliation.
+
+## 2026-08-09 — Joint release-prompt product landing and Lab park
+
+**Changed.** Product PR #227 repaired DL-P09 and the live resume order so the joint tag requires the
+distinct product release sign-off at `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and Lab
+screenshot/video-package sign-off at
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`. Final head
+`b5d8f5867283c08e2cf3251f81e825aea2f498af` merged as
+`408a5b8d22be2ab7d54838e3b36aeca807a99792`. The Lab counterpart did not merge: PR #37 is parked at
+`4a044dcec134cda313cffb7087389f64d28fe8c9` after exhausting two fix rounds.
+
+**Verified.** Product Actions run `31298518409`, job `93207390318`, succeeded on the exact final
+head. A fresh exact-final-head review found no causal CRITICAL/HIGH defect, all five connector
+threads were resolved, and the delayed post-merge sweep remained clean. Lab run `31297994488`, job
+`93206098872`, succeeded on PR #37's exact head, but its fresh final-head review confirmed a HIGH
+ambiguity: the wording can let one owner approval satisfy both distinct gates. That thread remains
+unresolved; its separate P2 worktree-command finding was tracked and resolved without a third fix
+round.
+
+**NOT verified / blocked.** Lab PR #37 is not merge-sound. Unlocking event: an explicit owner
+instruction authorizing a further review round or a new bounded replacement lane. Until then, Lab
+#29 writes and merges are parked; prepared PRs #39/#40 and the community-files branch do not advance.
+Product follow-ups #225/#226 and Lab friction-only PR #41 remain disjoint. Neither owner sign-off,
+the joint tag, publication, protected/private data, model/data/telemetry activation nor credentials
+were touched.
