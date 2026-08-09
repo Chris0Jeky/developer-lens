@@ -16,9 +16,11 @@ from invented synthetic data only.
 
 Everything you contribute must follow the same split:
 
-- **All fixtures are invented.** Test data, demo data, and showcase data are class `C0` in the data
-  charter: made-up repositories, made-up subjects, made-up events. Do not derive a fixture from a
-  real repository, even your own, and even if it looks harmless.
+- **All fixtures are invented.** Test, demo, showcase, contract, and privacy fixtures use made-up
+  repositories, subjects, and events. Demo and showcase data are class `C0`; a contract or privacy
+  fixture may carry a `C1` label when its test needs to exercise that class. The binding property is
+  that the fixture is invented: do not derive one from a real repository, even your own, and even if
+  it looks harmless.
 - **Never include real or private data.** No `.developer-lens/` content, no generated
   `public/data/` output, no real repository or organisation names, no pull-request titles, issue
   bodies, commit subjects, file paths, or usernames taken from an actual history.

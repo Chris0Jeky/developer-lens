@@ -496,7 +496,7 @@ function DashboardApp() {
             >
               <CodeXml size={15} aria-hidden="true" />{' '}
               {publicShowcase
-                ? 'View the source and generate your private lens'
+                ? 'View the AGPL-3.0-only source and generate your private lens'
                 : 'Data sourced through your authenticated GitHub CLI'}
             </a>
           </footer>

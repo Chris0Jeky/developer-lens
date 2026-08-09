@@ -24,7 +24,8 @@ These hold across every phase.
 The first tagged release is cut from what already exists, rather than waiting for the next vertical.
 
 - The frozen Method Trial v1 exhibit as the canonical worked example of a rejected candidate.
-- The offline synthetic demo and the V2 coverage cockpit, both runnable with no account and no data.
+- The offline synthetic demo and the V2 coverage cockpit, both runnable with no account or real
+  data; the cockpit uses invented seed fixtures.
 - The GitHub Pages synthetic showcase.
 - Licensing, community scaffolding, and release assets around that baseline.
 
