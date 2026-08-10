@@ -4310,3 +4310,41 @@ release, tag, publication, data, model, telemetry, or credential work. The next 
 lane is the already-tracked Lab FR-028/#29 merge-eligibility helper, but it must collect or verify
 live state, avoid protected `.dllab`, reject non-empty closing references, and make its age clock
 non-bypassable before review or merge.
+
+## 2026-08-10 — Product flagship overnight delivery governor
+
+**Milestone.** The stable `DL-P03-OVERNIGHT-CONTINUOUS` launcher now carries the flagship
+coordinator's architecture, authority, sequencing, conflict-resolution and merge-judgment role,
+while keeping implementation delegated. It requires a per-slice impact contract and uses a
+six-step delivery-first queue: truth/red state, active delivery wave, unblockers, mission delivery,
+maintenance/hardening, then critic-approved idea or polish. The matching protocol makes docs and
+governance supporting outputs, preserves Product-bound approved synthetic evaluation/reproduction,
+and retains the no-self-activation boundaries for data, models, telemetry and credentials.
+
+**Enforcement and scope.** Context validation now requires exactly one ordered impact-marker pair
+in the continuous protocol and the Product P03-only delivery clauses, with focused positive and
+negative tests. Shared prompt blocks and `.agent-harness/prompt-parity.json` remain unchanged.
+FR-028 and FR-029 separately record the bundled thread-helper and UTF-8 decoding workarounds under
+Product #222; neither is FR-026's object-expansion mechanism. This milestone changes no current
+state, product runtime, protected data, capability, owner gate, release, or Lab methodology.
+
+**Canonical parity correction.** The earlier working-copy SHA comparison was a line-ending artifact,
+not a cross-repository manifest defect. Canonical Git blob identity proves Product base and this
+head plus Lab PR #63 base and head all use
+`2d4e274f55ee2438230eda0b621c761dd554757e` for `.agent-harness/prompt-parity.json`; the manifest
+remains untouched.
+
+## 2026-08-10 — Product PR #240 final delivery-governor review-fix batch
+
+**Fixed exact-head review findings.** The machine-readable governor now carries the six-step
+delivery-first queue and truthful common-ID/shared-block/manifest parity wording. Context
+verification fail-closes if that queue or wording drifts. P03 now has one ordered Product delivery
+contract outside shared blocks; mutation coverage rejects removal or duplication of every clause and
+an adjacent-clause reversal, while preserving the impact-marker checks.
+
+**Reconciled operating contradictions.** After a bounded truth/red repair, the governor resenses and
+runs the full deterministic queue from step 1 rather than bypassing remaining red state. It forbids
+an open-ended audit, permits eligible already-tracked maintenance/hardening only below mission
+delivery, and retains no-fixed-fleet review-capacity backpressure. FR-029 now cites the exact
+UTF-8 helper proof; FR-028, FR-029, and FR-030 remain distinct mechanisms. No capability, owner
+gate, manifest, current state, protected data, or Lab methodology changed.

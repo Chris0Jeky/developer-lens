@@ -249,9 +249,50 @@ export const PRODUCT_CLAUDE_ROUTING_TOKENS = [
 /** Ordered, each exactly once, in `CONTINUOUS_WORK_PROTOCOL.md`. */
 export const CONTINUOUS_SECTION_MARKERS = [
   'continuous-execution-begin',
+  'continuous-impact-begin',
+  'continuous-impact-end',
   'continuous-execution-end',
   'continuous-stop-begin',
   'continuous-stop-end',
+] as const
+
+/** Exact non-shared Product P03 contract clauses, ordered and checked outside shared blocks. */
+export const FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT = [
+  {
+    label: 'FLAGSHIP OWNERSHIP',
+    clause:
+      'FLAGSHIP OWNERSHIP: You own authority, architecture, orchestration, sequencing, conflict resolution and final merge judgment. You do not write implementation code yourself.',
+  },
+  {
+    label: 'SLICE IMPACT',
+    clause:
+      'SLICE IMPACT: Before selecting each slice, record consumer/question; tangible artifact/behaviour/decision; owned paths and non-goals; acceptance behaviour plus focused proof; risk/data/owner gate; evidence/docs update; and rollback/stop condition.',
+  },
+  {
+    label: 'MISSION DELIVERY BEFORE MAINTENANCE',
+    clause:
+      'MISSION DELIVERY BEFORE MAINTENANCE: Deliver tangible product/research value through bounded implementation, behaviour tests, approved synthetic evaluation/reproduction, UX/story work, integration, packaging/distribution/release preparation, hardening, and documentation of evidence; select dependency-safe MISSION DELIVERY before maintenance/hardening.',
+  },
+  {
+    label: 'SUPPORTING-WORK ELIGIBILITY',
+    clause:
+      'SUPPORTING-WORK ELIGIBILITY: Docs/governance are supporting outputs, not the default queue. Pure docs/admin work is eligible only when it corrects a safety-relevant false operational claim, satisfies an explicit request, directly unblocks delivery, or is an already-tracked maintenance/hardening item that passes provenance, consumer, and focused-proof legitimacy.',
+  },
+  {
+    label: 'FINISH-BEFORE-EXPAND',
+    clause:
+      'FINISH-BEFORE-EXPAND: Drive existing writable lanes and PRs to merge/archive/park before accumulating new write lanes. During aging, start another writer only when work is genuinely disjoint and review/merge capacity exists; otherwise use read-only discovery or existing-lane work. This is not a fixed numeric cap.',
+  },
+  {
+    label: 'REVIEW EVENTS ONLY',
+    clause:
+      'REVIEW EVENTS ONLY: Check review arrival at workflow boundaries (PR opened/ready, review completed, fixes pushed, milestone completed, PR merged, next work scan), never on a short timer.',
+  },
+  {
+    label: 'PROTECTED BOUNDARY CLOSURE',
+    clause:
+      'PROTECTED BOUNDARY CLOSURE: Never open data-activation, model-activation, telemetry, or credential lanes in this mode; never self-activate data/model/telemetry/credentials. Those are W3/W4 and need the coordinator or the owner.',
+  },
 ] as const
 
 export const RETIRED_PROMPT_SENTINEL =
@@ -715,6 +756,33 @@ export function validatePromptLibrary(
         errors.push(
           `prompt ${prompt.id} must contain exactly one Product Claude routing clause naming ${PRODUCT_CLAUDE_ROUTING_TOKENS.join(', ')} (found ${routingOccurrences})`,
         )
+      }
+      if (prompt.id === 'DL-P03-OVERNIGHT-CONTINUOUS') {
+        const bodyOutsideSharedBlocks = SHARED_BLOCK_IDS.reduce((outside, blockId) => {
+          const block = library.sharedBlocks.get(blockId)
+          return block === undefined ? outside : outside.replaceAll(normalizeSharedText(block), '')
+        }, body)
+        const contractPositions: number[] = []
+        for (const contract of FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT) {
+          const occurrences = countOccurrences(bodyOutsideSharedBlocks, contract.clause)
+          if (occurrences !== 1) {
+            errors.push(
+              `flagship overnight prompt must contain exactly one Product P03 delivery clause "${contract.label}" (found ${occurrences})`,
+            )
+            continue
+          }
+          contractPositions.push(bodyOutsideSharedBlocks.indexOf(contract.clause))
+        }
+        if (contractPositions.length === FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT.length) {
+          const ordered = contractPositions.every(
+            (position, index) => index === 0 || position > (contractPositions[index - 1] ?? -1),
+          )
+          if (!ordered) {
+            errors.push(
+              `flagship overnight Product P03 delivery clauses are out of order; expected ${FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT.map((contract) => contract.label).join(' -> ')}`,
+            )
+          }
+        }
       }
     }
     for (const blockId of SHARED_BLOCK_IDS) {

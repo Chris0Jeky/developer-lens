@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   COMMON_PROMPT_IDS,
   CONTINUOUS_SECTION_MARKERS,
+  FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT,
   PRODUCT_CLAUDE_ROUTING_CLAUSE,
   PRODUCT_CLAUDE_ROUTING_TOKENS,
   RETIRED_PROMPT_SENTINEL,
@@ -203,7 +204,12 @@ function buildLibrary(
   lines.push(`<!-- shared-block: ${frictionId} -->`, '', fenced(friction), '')
   for (const prompt of prompts) {
     lines.push(`<!-- prompt-id: ${prompt.id} status: ${prompt.status ?? 'active'} -->`, '')
-    const body = prompt.body ?? [`PROMPT ${prompt.id}`, bootstrap, friction].join('\n')
+    const baseBody = prompt.body ?? [`PROMPT ${prompt.id}`, bootstrap, friction].join('\n')
+    const flagshipDelivery =
+      prompt.id === 'DL-P03-OVERNIGHT-CONTINUOUS'
+        ? FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT.map((contract) => contract.clause).join('\n')
+        : ''
+    const body = [baseBody, flagshipDelivery].filter(Boolean).join('\n')
     const claudeRouting =
       prompt.claudeRouting === null
         ? []
@@ -533,12 +539,16 @@ describe('prompt operating system parity', () => {
 
     expect(
       validateContinuousWorkProtocol(
-        buildContinuousProtocol(CONTINUOUS_SECTION_MARKERS.slice(0, 3)),
+        buildContinuousProtocol(
+          CONTINUOUS_SECTION_MARKERS.filter((marker) => marker !== 'continuous-stop-end'),
+        ),
       ),
     ).toEqual(['continuous work protocol is missing marker: continuous-stop-end'])
 
     const reversedStops = [
       'continuous-execution-begin',
+      'continuous-impact-begin',
+      'continuous-impact-end',
       'continuous-execution-end',
       'continuous-stop-end',
       'continuous-stop-begin',
@@ -558,6 +568,50 @@ describe('prompt operating system parity', () => {
 
     // CRLF must not hide a marker.
     expect(validateContinuousWorkProtocol(buildContinuousProtocol().replaceAll('\n', '\r\n'))).toEqual([])
+  })
+
+  it('requires the continuous impact contract markers exactly once and in order', () => {
+    const withoutImpactEnd = CONTINUOUS_SECTION_MARKERS.filter(
+      (marker) => marker !== 'continuous-impact-end',
+    )
+    expect(validateContinuousWorkProtocol(buildContinuousProtocol(withoutImpactEnd))).toEqual([
+      'continuous work protocol is missing marker: continuous-impact-end',
+    ])
+
+    const duplicatedImpact = [...CONTINUOUS_SECTION_MARKERS, 'continuous-impact-begin']
+    expect(validateContinuousWorkProtocol(buildContinuousProtocol(duplicatedImpact))).toEqual([
+      'continuous work protocol repeats marker continuous-impact-begin 2 times (expected exactly one)',
+    ])
+  })
+
+  it('requires every ordered delivery contract clause exactly once only in the Product overnight launcher', () => {
+    const complete = buildLibrary()
+    expect(checkLibrary(complete)).toEqual([])
+
+    for (const contract of FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT) {
+      const expected = `flagship overnight prompt must contain exactly one Product P03 delivery clause "${contract.label}"`
+      expect(checkLibrary(complete.replace(contract.clause, ''))).toContain(`${expected} (found 0)`)
+      expect(
+        checkLibrary(complete.replace(contract.clause, `${contract.clause}\n${contract.clause}`)),
+      ).toContain(`${expected} (found 2)`)
+    }
+
+    const [first, second] = FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT
+    const reversedAdjacent = complete.replace(
+      `${first?.clause}\n${second?.clause}`,
+      `${second?.clause}\n${first?.clause}`,
+    )
+    expect(checkLibrary(reversedAdjacent)).toContain(
+      `flagship overnight Product P03 delivery clauses are out of order; expected ${FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT.map((contract) => contract.label).join(' -> ')}`,
+    )
+
+    const p02Only = buildLibrary({
+      prompts: [{ id: 'DL-P02-GOVERNOR-LITE' }],
+      sharedBlockIds: ['runtime-bootstrap-v1', 'friction-tasking-v1'],
+    })
+    expect(
+      checkLibrary(p02Only).some((error) => error.includes('Product P03 delivery clause')),
+    ).toBe(false)
   })
 
   it('rejects a bare q-N and accepts a fully qualified cross-repository human ref', () => {
