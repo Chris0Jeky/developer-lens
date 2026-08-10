@@ -40,8 +40,8 @@ Codex Sol/Luna/Terra specialisation maps onto the same work classes.
 `docs/agent-system/PROMPT_LIBRARY.md` is the **only** executable prompt surface. Every other
 prompt-shaped document in the repository is classified `redirect` or `historical` and must not be
 pasted into a session; `npm run verify:context` enforces the classification. The twelve common
-`DL-P01`…`DL-P12` IDs are shared byte-for-byte with `Chris0Jeky/developer-lens-lab`, and the two
-shared blocks (`runtime-bootstrap-v1`, `friction-tasking-v1`) are hash-pinned in
+`DL-P01`…`DL-P12` IDs are shared with `Chris0Jeky/developer-lens-lab`, but their full prompt bodies
+are not all byte-identical. The two shared blocks (`runtime-bootstrap-v1`, `friction-tasking-v1`) are hash-pinned in
 `.agent-harness/prompt-parity.json` — edit a block once in the library, recompute its digest, and
 update every prompt plus the manifest in the same commit.
 

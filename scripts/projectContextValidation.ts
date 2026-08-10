@@ -249,9 +249,25 @@ export const PRODUCT_CLAUDE_ROUTING_TOKENS = [
 /** Ordered, each exactly once, in `CONTINUOUS_WORK_PROTOCOL.md`. */
 export const CONTINUOUS_SECTION_MARKERS = [
   'continuous-execution-begin',
+  'continuous-impact-begin',
+  'continuous-impact-end',
   'continuous-execution-end',
   'continuous-stop-begin',
   'continuous-stop-end',
+] as const
+
+/** Non-shared Product-only clauses that keep the overnight launcher delivery-led. */
+export const FLAGSHIP_OVERNIGHT_DELIVERY_REQUIRED_CLAUSES = [
+  'FLAGSHIP OVERNIGHT DELIVERY GOVERNOR',
+  'tangible product/research value',
+  'IMPACT CONTRACT',
+  'MISSION DELIVERY',
+  'Pure docs/admin work is eligible only when it corrects a safety-relevant false operational claim, satisfies an explicit request, or directly unblocks delivery.',
+  'You own authority, architecture, orchestration, sequencing,',
+  'conflict resolution and final merge judgment.',
+  'You do not write implementation code yourself.',
+  'experiment and evaluation work within Product authority and existing tracked/pre-approved',
+  'bounds; Lab owns novel methodology.',
 ] as const
 
 export const RETIRED_PROMPT_SENTINEL =
@@ -715,6 +731,13 @@ export function validatePromptLibrary(
         errors.push(
           `prompt ${prompt.id} must contain exactly one Product Claude routing clause naming ${PRODUCT_CLAUDE_ROUTING_TOKENS.join(', ')} (found ${routingOccurrences})`,
         )
+      }
+      if (prompt.id === 'DL-P03-OVERNIGHT-CONTINUOUS') {
+        for (const clause of FLAGSHIP_OVERNIGHT_DELIVERY_REQUIRED_CLAUSES) {
+          if (!body.includes(clause)) {
+            errors.push(`flagship overnight prompt is missing required delivery clause: ${clause}`)
+          }
+        }
       }
     }
     for (const blockId of SHARED_BLOCK_IDS) {

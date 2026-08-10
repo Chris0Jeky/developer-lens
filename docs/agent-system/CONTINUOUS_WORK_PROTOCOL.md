@@ -34,6 +34,32 @@ mean; this file adds only what changes when the loop repeats:
   with its unlocking event, and record what was learned in the ledger and, when it was friction, in
   [FRICTION_LOG.md](FRICTION_LOG.md).
 
+<!-- continuous-impact-begin -->
+
+## Impact and delivery contract
+
+Each selected slice records an **IMPACT CONTRACT** before work starts:
+
+1. **Consumer/question** — who needs the answer or behaviour, and the concrete question it resolves.
+2. **Tangible result** — the artifact, observable behaviour, or decision that delivers value.
+3. **Scope** — owned paths and explicit non-goals.
+4. **Acceptance and proof** — the expected behaviour and one focused proving command that exercises it.
+5. **Risk and authority** — work class, data boundary, and any owner gate; no gate is self-approved.
+6. **Evidence and rollback** — ledger/docs update, safe rollback, and the condition that parks or stops the slice.
+
+The governor repeatedly delivers tangible product/research value: bounded implementation, behaviour
+tests, approved synthetic evaluation or reproduction, UX/story work, integration, packaging or
+distribution/release preparation, hardening, and documentation of the resulting evidence. Docs and
+governance support delivery; they are not the default queue. Pure docs/admin work is eligible only
+when it corrects a safety-relevant false operational claim, satisfies an explicit request, or
+directly unblocks delivery.
+
+Keep experiment and evaluation work inside Product authority and existing tracked/pre-approved
+bounds; Lab owns novel methodology. An unattended run never activates data, model, telemetry, or
+credential work merely because it would improve a delivery contract.
+
+<!-- continuous-impact-end -->
+
 ## Deterministic queue hopping
 
 When the session needs work — at session start, after a merge, after a park, or while a review or
@@ -43,16 +69,20 @@ order is fixed so that two different sessions reach the same next action from th
 | # | Step | Contents |
 |---|---|---|
 | 1 | **Truth and red state** | A false operational claim in a tracked file; a red, stale or missing required CI check; unresolved or untriaged review debt. |
-| 2 | **Active wave** | The next step of the wave already in flight, per `CURRENT_STATE.md`. |
+| 2 | **Active delivery wave** | The next delivery step already in flight, per `CURRENT_STATE.md`. |
 | 3 | **Unblockers** | Work that unblocks something already recorded as blocked. |
-| 4 | **Tracked maintenance and hardening** | Items already in the backlog or [MAINTENANCE_PROTOCOL.md](MAINTENANCE_PROTOCOL.md): drift repair, dependency triage, label/branch hygiene, friction burn-down. |
-| 5 | **Legitimate idea or polish** | An `idea`-labelled item that has passed [IDEA_PROTOCOL.md](IDEA_PROTOCOL.md) critic review, or a polish item that satisfies the legitimacy test below. |
+| 4 | **MISSION DELIVERY** | Dependency-safe tracked feature, code, test, evaluation, integration, UX, packaging, or release cards/issues, ranked by user/research value and unlock ratio. |
+| 5 | **Maintenance and hardening** | Items already in the backlog or [MAINTENANCE_PROTOCOL.md](MAINTENANCE_PROTOCOL.md): drift repair, dependency triage, label/branch hygiene, friction burn-down. |
+| 6 | **Critic-approved idea or polish** | An `idea`-labelled item that has passed [IDEA_PROTOCOL.md](IDEA_PROTOCOL.md) critic review, or a polish item that satisfies the legitimacy test below. |
 
 A false claim in a tracked file outranks new feature work — step 1 is first for that reason, not as
 ceremony.
 
 **If every step is empty, the session terminates at a factual checkpoint.** It does not invent
 work, widen a finished slice, or manufacture polish to stay busy. An idle slot is a valid outcome.
+
+Bounded state repair must not monopolise a night: after a truth or red-state seam is repaired and
+proven, return to the first non-empty delivery-oriented queue step.
 
 ## Anti-manufacture legitimacy test
 

@@ -4310,3 +4310,20 @@ release, tag, publication, data, model, telemetry, or credential work. The next 
 lane is the already-tracked Lab FR-028/#29 merge-eligibility helper, but it must collect or verify
 live state, avoid protected `.dllab`, reject non-empty closing references, and make its age clock
 non-bypassable before review or merge.
+
+## 2026-08-10 — Product flagship overnight delivery governor
+
+**Milestone.** The stable `DL-P03-OVERNIGHT-CONTINUOUS` launcher now carries the flagship
+coordinator's architecture, authority, sequencing, conflict-resolution and merge-judgment role,
+while keeping implementation delegated. It requires a per-slice impact contract and uses a
+six-step delivery-first queue: truth/red state, active delivery wave, unblockers, mission delivery,
+maintenance/hardening, then critic-approved idea or polish. The matching protocol makes docs and
+governance supporting outputs, preserves Product-bound approved synthetic evaluation/reproduction,
+and retains the no-self-activation boundaries for data, models, telemetry and credentials.
+
+**Enforcement and scope.** Context validation now requires exactly one ordered impact-marker pair
+in the continuous protocol and the Product P03-only delivery clauses, with focused positive and
+negative tests. Shared prompt blocks and `.agent-harness/prompt-parity.json` remain unchanged.
+FR-028 and FR-029 separately record the bundled thread-helper and UTF-8 decoding workarounds under
+Product #222; neither is FR-026's object-expansion mechanism. This milestone changes no current
+state, product runtime, protected data, capability, owner gate, release, or Lab methodology.

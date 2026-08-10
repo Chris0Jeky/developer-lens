@@ -740,3 +740,42 @@ _Note 2026-08-10 (main-line consolidation):_ Parked PR #237 recorded its first t
 unmerged FR-028. This main-line entry preserves those observed facts under the next available ID
 without importing the blocked helper or reopening its exhausted review pipeline. The fourth failed
 patch changed no file and the one-section retry succeeded.
+
+### FR-028 — bundled thread helper treats `--help` as a live current-branch lookup
+
+- **first-seen:** 2026-08-10
+- **status:** `workaround-documented`
+- **severity:** `LOW (CLI helper contract friction)`
+- **symptom:** Invoking the bundled PR-thread helper with `--help` did not expose a conventional
+  help path. It instead performed a live lookup for the current branch and failed when that branch
+  had no pull request.
+- **impact:** A supposed read-only usage check can create misleading branch-dependent failure
+  evidence and cannot safely establish the helper's invocation contract from an arbitrary checkout.
+- **workaround:** Run the helper only from the exact PR worktree after pinning branch and HEAD; use
+  the recorded command-boundary evidence rather than treating `--help` as a side-effect-free probe.
+- **occurrences:** 1 independent occurrence — 2026-08-10 during Product issue #222 evidence review.
+- **task:** [Product #222 comment 5235237268](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5235237268)
+  records this helper-hardening input under [#222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **promotion:** Do not borrow FR-026's object-expansion remedy. The bounded #222 successor must
+  give this helper an explicit non-live help contract and prove it against the no-PR current-branch
+  seam before this entry can close.
+
+### FR-029 — default Windows decoding corrupts UTF-8 review content
+
+- **first-seen:** 2026-08-10
+- **status:** `workaround-documented`
+- **severity:** `LOW (review-evidence decoding friction)`
+- **symptom:** Default Windows text decoding failed on UTF-8 review content, making review evidence
+  unreadable or incorrectly rendered before it could be classified.
+- **impact:** Review findings can be misread or omitted, weakening exact-head thread triage even
+  though no repository or GitHub mutation occurs.
+- **workaround:** Read the saved review content explicitly as UTF-8 (for example, `Get-Content -Raw
+  -Encoding utf8`) before extracting or quoting it; retain the original source response as the
+  authority for review classification.
+- **occurrences:** 1 independent occurrence — 2026-08-10 during Product issue #222 review evidence
+  handling.
+- **task:** [Product #222 comment 5235240474](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5235240474)
+  keeps the distinct UTF-8 observation under [#222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **promotion:** Do not conflate this with FR-026's PowerShell object-expansion mechanism. The
+  bounded #222 successor must define and prove an explicit UTF-8 decoding path for review content
+  before this entry can close.
