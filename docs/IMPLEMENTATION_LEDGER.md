@@ -4358,5 +4358,13 @@ resume-critical scalar/active-horizon types. Added synthetic regression coverage
 scripts/projectContextValidation.test.ts` (30 passed); `npm run verify:context` (47 Markdown files,
 31 required files); `git diff --check`; `npm audit --audit-level=high` (0 vulnerabilities); and
 `npm run check` (86 files, 1491 passed, 10 skipped, TypeScript/Vite/secret verification green).
-Hosted CI, review, and merge are pending; no release, capability, owner gate, protected data, or
-historical state was advanced.
+Product PR #241 final head `45e43d8aab1e5c1058cc778f60e1d9f6677d24fb` over base
+`c268c840b302bc7f93f4f01d3e81ba99292bf06b`; required hosted Prove run `31407981493` succeeded;
+focused 30 tests, verify:context 47 Markdown/31 required, audit 0, full check 86 files / 1491
+passed / 10 skipped, and build/credential scan green; fresh independent exact-final-head review
+MERGE-SOUND. Connector review existed only on predecessor `39eee4b`; its two P2 threads were
+dispositioned once and resolved. Fixes: Gregorian date false negative and active_horizon two-entry
+preservation. Non-blocking follow-ups: Product #242 alias-limit diagnostic normalization and
+Product #243 broader root-level Markdown fence forms. The final head used the 15-minute fallback
+after push at 16:15:14Z; clean all-surface snapshot at 16:30:39Z; merged with merge commit
+`8f2bf584d1a91ca7fe126607d34599ff46771ee0` at 16:30:59Z; issue #215 closed.
