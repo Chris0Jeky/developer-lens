@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { existsSync, linkSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
+import { existsSync, linkSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, statSync, symlinkSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
@@ -1098,10 +1098,21 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
   })
 
   it.each([
-    ['valid same-schema replacement inode', (_fx: Awaited<ReturnType<typeof fixture>>, tempPath: string, sourcePath: string) => {
+    ['valid same-schema replacement inode', (fx: Awaited<ReturnType<typeof fixture>>, tempPath: string, sourcePath: string) => {
       const source = readFileSync(sourcePath)
+      const replacementPath = `${tempPath}.replacement`
+      const beforeAttempt = fx.db.prepare(
+        'SELECT sqlite_dev, sqlite_ino FROM migration_backup_attempt',
+      ).get() as { sqlite_dev: string; sqlite_ino: string }
+      // Allocate the replacement while the recorded provisional inode is still
+      // live. Removing the provisional first can let Linux immediately reuse
+      // that inode, turning this collision fixture into an accidental replay.
+      writeFileSync(replacementPath, source, { mode: 0o600 })
+      const replacement = lstatSync(replacementPath, { bigint: true })
+      expect([replacement.dev.toString(10), replacement.ino.toString(10)])
+        .not.toEqual([beforeAttempt.sqlite_dev, beforeAttempt.sqlite_ino])
       unlinkSync(tempPath)
-      writeFileSync(tempPath, source, { mode: 0o600 })
+      renameSync(replacementPath, tempPath)
       return { bytes: source, inode: statSync(tempPath).ino }
     }],
     ['hardlink collision', (_fx: Awaited<ReturnType<typeof fixture>>, tempPath: string) => {
