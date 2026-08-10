@@ -97,6 +97,23 @@ if (failures.length === 0) {
       '.agent-harness/governor.yaml must stay low-volatility; it must not embed a commit SHA',
     )
   }
+  const expectedGovernorQueue = [
+    'queue_hop_order: [truth-and-red-state, active-delivery-wave, unblockers, mission-delivery,',
+    '                    maintenance-and-hardening, critic-approved-idea-or-polish]',
+  ].join('\n')
+  if (!governorPolicy.includes(expectedGovernorQueue)) {
+    failures.push(
+      '.agent-harness/governor.yaml queue_hop_order must match the six-step delivery-first continuous queue',
+    )
+  }
+  if (
+    !governorPolicy.includes('stable Product/Lab IDs, not full-body parity') ||
+    !governorPolicy.includes('only shared blocks and the repo-neutral manifest are byte-identical')
+  ) {
+    failures.push(
+      '.agent-harness/governor.yaml must distinguish stable common IDs from shared-block and manifest byte identity',
+    )
+  }
 
   for (const coldStartFile of ['AGENTS.md', 'CLAUDE.md'] as const) {
     const lines = read(coldStartFile).split('\n').length

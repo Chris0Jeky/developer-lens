@@ -52,7 +52,8 @@ tests, approved synthetic evaluation or reproduction, UX/story work, integration
 distribution/release preparation, hardening, and documentation of the resulting evidence. Docs and
 governance support delivery; they are not the default queue. Pure docs/admin work is eligible only
 when it corrects a safety-relevant false operational claim, satisfies an explicit request, or
-directly unblocks delivery.
+directly unblocks delivery, or when it is an already-tracked maintenance/hardening item that passes
+the provenance, consumer, and focused-proof legitimacy test. It remains below mission delivery.
 
 Keep experiment and evaluation work inside Product authority and existing tracked/pre-approved
 bounds; Lab owns novel methodology. An unattended run never activates data, model, telemetry, or
@@ -89,8 +90,9 @@ ceremony.
 **If every step is empty, the session terminates at a factual checkpoint.** It does not invent
 work, widen a finished slice, or manufacture polish to stay busy. An idle slot is a valid outcome.
 
-Bounded state repair must not monopolise a night: after a truth or red-state seam is repaired and
-proven, return to the first non-empty delivery-oriented queue step.
+After one bounded truth/red repair, re-run the FULL deterministic queue from step 1; do not bypass
+remaining truth/red state. Forbid an open-ended audit: fix only the observed bounded seam, then
+resense/requeue. Bounded state repair must not monopolise a night.
 
 ## Anti-manufacture legitimacy test
 

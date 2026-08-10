@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import {
   COMMON_PROMPT_IDS,
   CONTINUOUS_SECTION_MARKERS,
-  FLAGSHIP_OVERNIGHT_DELIVERY_REQUIRED_CLAUSES,
+  FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT,
   PRODUCT_CLAUDE_ROUTING_CLAUSE,
   PRODUCT_CLAUDE_ROUTING_TOKENS,
   RETIRED_PROMPT_SENTINEL,
@@ -207,7 +207,7 @@ function buildLibrary(
     const baseBody = prompt.body ?? [`PROMPT ${prompt.id}`, bootstrap, friction].join('\n')
     const flagshipDelivery =
       prompt.id === 'DL-P03-OVERNIGHT-CONTINUOUS'
-        ? FLAGSHIP_OVERNIGHT_DELIVERY_REQUIRED_CLAUSES.join('\n')
+        ? FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT.map((contract) => contract.clause).join('\n')
         : ''
     const body = [baseBody, flagshipDelivery].filter(Boolean).join('\n')
     const claudeRouting =
@@ -584,27 +584,34 @@ describe('prompt operating system parity', () => {
     ])
   })
 
-  it('requires delivery-led flagship clauses only in the Product overnight launcher', () => {
+  it('requires every ordered delivery contract clause exactly once only in the Product overnight launcher', () => {
     const complete = buildLibrary()
     expect(checkLibrary(complete)).toEqual([])
 
-    const missingMissionDelivery = complete.replace('MISSION DELIVERY', 'MISSION QUEUE')
-    expect(checkLibrary(missingMissionDelivery)).toContain(
-      'flagship overnight prompt is missing required delivery clause: MISSION DELIVERY',
-    )
+    for (const contract of FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT) {
+      const expected = `flagship overnight prompt must contain exactly one Product P03 delivery clause "${contract.label}"`
+      expect(checkLibrary(complete.replace(contract.clause, ''))).toContain(`${expected} (found 0)`)
+      expect(
+        checkLibrary(complete.replace(contract.clause, `${contract.clause}\n${contract.clause}`)),
+      ).toContain(`${expected} (found 2)`)
+    }
 
-    const missingFinishBeforeExpand = complete.replace('FINISH-BEFORE-EXPAND', 'EXPAND FIRST')
-    expect(checkLibrary(missingFinishBeforeExpand)).toContain(
-      'flagship overnight prompt is missing required delivery clause: FINISH-BEFORE-EXPAND',
+    const [first, second] = FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT
+    const reversedAdjacent = complete.replace(
+      `${first?.clause}\n${second?.clause}`,
+      `${second?.clause}\n${first?.clause}`,
+    )
+    expect(checkLibrary(reversedAdjacent)).toContain(
+      `flagship overnight Product P03 delivery clauses are out of order; expected ${FLAGSHIP_OVERNIGHT_DELIVERY_CONTRACT.map((contract) => contract.label).join(' -> ')}`,
     )
 
     const p02Only = buildLibrary({
       prompts: [{ id: 'DL-P02-GOVERNOR-LITE' }],
       sharedBlockIds: ['runtime-bootstrap-v1', 'friction-tasking-v1'],
     })
-    expect(checkLibrary(p02Only)).not.toContain(
-      expect.stringContaining('flagship overnight prompt is missing required delivery clause'),
-    )
+    expect(
+      checkLibrary(p02Only).some((error) => error.includes('Product P03 delivery clause')),
+    ).toBe(false)
   })
 
   it('rejects a bare q-N and accepts a fully qualified cross-repository human ref', () => {

@@ -31,14 +31,14 @@ prompt_system:
   # The library is the ONLY executable prompt surface; every other prompt-shaped document is
   # classified redirect or historical and enforced by `npm run verify:context`.
   executable_surface: docs/agent-system/PROMPT_LIBRARY.md
-  common_prompt_ids: 12                  # DL-P01..DL-P12, shared byte-for-byte with the lab
-  shared_blocks: [runtime-bootstrap-v1, friction-tasking-v1]   # sha256-pinned in prompt_parity
+  common_prompt_ids: 12                  # stable Product/Lab IDs, not full-body parity
+  shared_blocks: [runtime-bootstrap-v1, friction-tasking-v1]   # only shared blocks and the repo-neutral manifest are byte-identical
   human_ref_form: '<owner>/<repo>::HUMAN_TODO.md::q-N'         # bare q-N is rejected in a prompt
   non_library_prompt_status: [redirect, historical]
 continuous_work:
   protocol: docs/agent-system/CONTINUOUS_WORK_PROTOCOL.md
-  queue_hop_order: [truth-and-red-state, active-wave, unblockers, tracked-maintenance,
-                    legitimate-idea-or-polish]
+  queue_hop_order: [truth-and-red-state, active-delivery-wave, unblockers, mission-delivery,
+                    maintenance-and-hardening, critic-approved-idea-or-polish]
   legitimacy_test: [provenance, consumer, proving-seam]   # all three, or capture as an issue only
   stop_conditions: [policy, budget, tooling, queue]
   never_activates: [real-data-collection, external-model, telemetry, credentials]

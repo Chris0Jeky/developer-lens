@@ -4333,3 +4333,18 @@ not a cross-repository manifest defect. Canonical Git blob identity proves Produ
 head plus Lab PR #63 base and head all use
 `2d4e274f55ee2438230eda0b621c761dd554757e` for `.agent-harness/prompt-parity.json`; the manifest
 remains untouched.
+
+## 2026-08-10 — Product PR #240 final delivery-governor review-fix batch
+
+**Fixed exact-head review findings.** The machine-readable governor now carries the six-step
+delivery-first queue and truthful common-ID/shared-block/manifest parity wording. Context
+verification fail-closes if that queue or wording drifts. P03 now has one ordered Product delivery
+contract outside shared blocks; mutation coverage rejects removal or duplication of every clause and
+an adjacent-clause reversal, while preserving the impact-marker checks.
+
+**Reconciled operating contradictions.** After a bounded truth/red repair, the governor resenses and
+runs the full deterministic queue from step 1 rather than bypassing remaining red state. It forbids
+an open-ended audit, permits eligible already-tracked maintenance/hardening only below mission
+delivery, and retains no-fixed-fleet review-capacity backpressure. FR-029 now cites the exact
+UTF-8 helper proof; FR-028, FR-029, and FR-030 remain distinct mechanisms. No capability, owner
+gate, manifest, current state, protected data, or Lab methodology changed.

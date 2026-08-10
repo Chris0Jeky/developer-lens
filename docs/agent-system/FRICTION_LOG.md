@@ -773,10 +773,13 @@ patch changed no file and the one-section retry succeeded.
   safe route that exercises the helper's decoding path. `Get-Content -Encoding utf8` does not
   exercise this helper failure. Retain the original source response as the authority for review
   classification.
+- **evidence:** The exact helper failed on GitHub review JSON through the Windows default code page,
+  then `py -3 -X utf8 ...` returned complete PR/review/thread JSON without a repository or GitHub
+  mutation.
 - **occurrences:** 1 independent occurrence — 2026-08-10 during Product issue #222 review evidence
   handling.
-- **task:** [Product #222 comment 5235240474](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5235240474)
-  keeps the distinct UTF-8 observation under [#222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **task:** [Product #222 comment 5235389219](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5235389219)
+  proves this distinct UTF-8 helper route under [#222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 - **promotion:** Do not conflate this with FR-026's PowerShell object-expansion mechanism. The
   bounded #222 successor must define and prove an explicit UTF-8 decoding path for review content
   before this entry can close.
