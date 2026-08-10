@@ -321,6 +321,12 @@ function latestComment(
   )
 }
 
+function checkSucceeded(check: PullRequestSnapshot['checks']['nodes'][number]): boolean {
+  return check.kind === 'check-run'
+    ? check.status === 'COMPLETED' && check.conclusion === 'SUCCESS'
+    : check.state === 'SUCCESS'
+}
+
 function enforceRequirements(
   snapshot: PullRequestSnapshot,
   requirements: SnapshotRequirements,
@@ -341,8 +347,16 @@ function enforceRequirements(
   ) {
     throw new Error(`Required check was not observed: ${requirements.requiredCheck}.`)
   }
+  if (
+    requirements.requiredCheck &&
+    !snapshot.checks.nodes.some(
+      (check) => check.name === requirements.requiredCheck && checkSucceeded(check),
+    )
+  ) {
+    throw new Error(`Required check did not succeed: ${requirements.requiredCheck}.`)
+  }
   if (requirements.requiredCheck && !snapshot.checks.completeAndGreen) {
-    throw new Error('Observed checks are incomplete or not green.')
+    throw new Error('GitHub check rollup is incomplete or not green.')
   }
   if (requirements.requireNoUnresolved && snapshot.reviewThreads.unresolvedCount !== 0) {
     throw new Error(
@@ -430,12 +444,7 @@ export async function getPullRequestSnapshot(
           },
     ) ?? []
   const completeAndGreen =
-    checks.length > 0 &&
-    checks.every((check) =>
-      check.kind === 'check-run'
-        ? check.status === 'COMPLETED' && check.conclusion === 'SUCCESS'
-        : check.state === 'SUCCESS',
-    )
+    checks.length > 0 && commit.statusCheckRollup?.state === 'SUCCESS'
 
   const snapshot: PullRequestSnapshot = {
     schemaVersion: 1,

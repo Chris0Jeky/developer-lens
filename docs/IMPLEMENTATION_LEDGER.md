@@ -4279,7 +4279,8 @@ credential behavior.
 launcher and GraphQL JSON-stdin path. Its default `snapshot` operation validates a typed bounded
 response, refuses paginated check/top-level-comment/review/thread/closing-ref evidence, emits a
 portable UTC `observedAt`, and can directly require exact head/base, the exact named hosted check,
-all observed checks green, zero unresolved threads and zero closing refs. The helper is strictly
+that named check successful, GitHub's aggregate check rollup green, zero unresolved threads and
+zero closing refs. The helper is strictly
 report-only. Fresh review demonstrated that GitHub's review-thread reply mutation has no
 expected-head/base operand, so a separately preflighted write has an unavoidable exact-revision
 TOCTOU window; the attempted mutation path was removed. `npm run governor:github` is the executable
@@ -4287,9 +4288,10 @@ entry point.
 
 **Proof.** `scripts/githubGovernorEvidence.test.ts` uses invented responses and hostile multiline
 text to cover structured variable binding, exact typed comparisons, incomplete pagination,
-malformed repositories, missing/mismatched heads, a missing exact required check, and rejection of
-write-shaped operations/options before GitHub is called. The final focused run passed 1 file / 10
-tests; server TypeScript compilation and focused Oxlint passed. A read-only Windows smoke against
+malformed repositories, missing/mismatched heads, a missing exact required check, duplicate skipped
+plus successful required runs, rollup disagreement, and rejection of write-shaped operations/options
+before GitHub is called. The final focused run passed 1 file / 10 tests; server TypeScript
+compilation and focused Oxlint passed. A read-only Windows smoke against
 public Product PR #236 at head `c4c0cfb5ffcfce708176c4b689222b87e4b44768` and base
 `51471e9a407fe05f24ed07687e72398fd7e11814` returned the successful hosted check, seven reviews,
 five resolved threads and zero closing refs while satisfying every exact requirement. No GitHub

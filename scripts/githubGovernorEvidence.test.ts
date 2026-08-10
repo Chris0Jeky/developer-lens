@@ -20,6 +20,7 @@ function snapshotResponse(
     commentPage?: boolean
     unresolved?: boolean
     closingIssues?: Array<{ number: number; url: string }>
+    rollupState?: string
   } = {},
 ): unknown {
   const checks =
@@ -71,7 +72,7 @@ function snapshotResponse(
               commit: {
                 oid: overrides.head ?? HEAD,
                 statusCheckRollup: {
-                  state: 'SUCCESS',
+                  state: overrides.rollupState ?? 'SUCCESS',
                   contexts: {
                     pageInfo: { hasNextPage: overrides.checkPage ?? false },
                     nodes: checks,
@@ -256,6 +257,7 @@ describe('GitHub governor evidence snapshot', () => {
 
     const fourth = executorReturning(
       snapshotResponse({
+        rollupState: 'PENDING',
         checks: [
           {
             __typename: 'CheckRun',
@@ -285,7 +287,50 @@ describe('GitHub governor evidence snapshot', () => {
         { requiredCheck: 'Prove the pull request' },
         fourth.execute,
       ),
-    ).rejects.toThrow('Observed checks are incomplete or not green.')
+    ).rejects.toThrow('GitHub check rollup is incomplete or not green.')
+
+    const duplicate = executorReturning(
+      snapshotResponse({
+        checks: [
+          {
+            __typename: 'CheckRun',
+            name: 'Prove the pull request',
+            status: 'COMPLETED',
+            conclusion: 'SKIPPED',
+            detailsUrl: 'https://example.test/check/skipped',
+            startedAt: '2026-08-10T00:00:00Z',
+            completedAt: '2026-08-10T00:00:01Z',
+          },
+          {
+            __typename: 'CheckRun',
+            name: 'Prove the pull request',
+            status: 'COMPLETED',
+            conclusion: 'SUCCESS',
+            detailsUrl: 'https://example.test/check/success',
+            startedAt: '2026-08-10T00:00:02Z',
+            completedAt: '2026-08-10T00:01:00Z',
+          },
+        ],
+      }),
+    )
+    await expect(
+      getPullRequestSnapshot(
+        'Chris0Jeky/developer-lens',
+        236,
+        { requiredCheck: 'Prove the pull request' },
+        duplicate.execute,
+      ),
+    ).resolves.toMatchObject({ checks: { rollupState: 'SUCCESS', completeAndGreen: true } })
+
+    const failedRollup = executorReturning(snapshotResponse({ rollupState: 'FAILURE' }))
+    await expect(
+      getPullRequestSnapshot(
+        'Chris0Jeky/developer-lens',
+        236,
+        { requiredCheck: 'Prove the pull request' },
+        failedRollup.execute,
+      ),
+    ).rejects.toThrow('GitHub check rollup is incomplete or not green.')
   })
 
   it('rejects malformed repositories before making a request', async () => {

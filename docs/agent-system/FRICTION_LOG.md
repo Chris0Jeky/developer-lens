@@ -812,6 +812,11 @@ Rules that bind entries:
   exact required-check name plus all-observed-green condition and added top-level comments to the
   bounded snapshot. No GitHub write path remains in the helper.
 
+  **2026-08-10 check-semantics correction:** Live PR #238 exposed one successful required run plus a
+  duplicate same-named skipped run while GitHub's aggregate rollup and merge state were green. The
+  raw all-observed condition was therefore a false-negative contract. The final requirement is one
+  successful exact-named check plus GitHub's green aggregate rollup; FR-032 records the bounded fix.
+
 ### FR-030 — inferred full head SHA failed the exact snapshot guard
 
 - **first-seen:** 2026-08-10
@@ -851,3 +856,28 @@ Rules that bind entries:
 - **promotion:** Deliberately NOT promoted after one occurrence because the package script and
   existing run table already name Vitest. A second independent runner-flag mismatch should add an
   exact focused-test example to the Product run table rather than another prose-only workaround.
+
+### FR-032 — a duplicate skipped run made a green GitHub rollup fail closed
+
+- **first-seen:** 2026-08-10
+- **status:** `resolved`
+- **severity:** `HIGH (core evidence helper false negative)`
+- **symptom:** Public PR #238 exposed two `Prove the pull request` check-run nodes on the same exact
+  head: one `SKIPPED` and one `SUCCESS`. GitHub's aggregate rollup was `SUCCESS` and merge state was
+  clean, but the helper's raw all-node-success predicate returned false and rejected the otherwise
+  valid exact required-check snapshot.
+- **impact:** The new governor evidence seam could not prove a normal green PR shape, blocking its
+  primary consumer even though it remained fail-closed and performed no write.
+- **workaround:** Require at least one successful exact-named check and require GitHub's aggregate
+  `statusCheckRollup.state` to be `SUCCESS`; retain all raw nodes in the report for inspection.
+- **occurrences:** 1 independent occurrence — Product PR #238 exact head
+  `b08a4022550396b4da0aab877d942a433291253c`.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded helper and
+  its exact check semantics.
+- **promotion:** Enforced at the executable contract and covered with invented duplicate-check and
+  disagreeing-rollup cases plus a public read-only PR #238 smoke. Focused tests, server TypeScript,
+  focused Oxlint, and the full 87-file Product gate passed after the repair.
+
+  **2026-08-10 resolution note:** The final contract still fails closed when the exact named check
+  is absent or unsuccessful, or when GitHub's aggregate rollup is pending/failing. It ignores no
+  raw evidence: every check node remains in the emitted snapshot for review.
