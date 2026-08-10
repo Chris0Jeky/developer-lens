@@ -34,6 +34,9 @@ here executes on its own. Loop context: [README.md](README.md). Routing:
   GitHub's review-thread reply mutation has no expected-head/base operand, so a preflight snapshot
   cannot make that later write exact-revision safe. Perform legitimate review replies through the
   normal reviewed GitHub workflow; this helper never writes.
+- **PowerShell native-command scalars.** Before passing file content, object properties, or
+  collection elements to a native command, materialize each value into an explicit typed scalar;
+  do not embed property access such as `$item.id` directly in the native argument list.
 
 ## PR lifecycle and aging
 

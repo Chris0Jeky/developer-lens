@@ -707,7 +707,7 @@ Rules that bind entries:
 ### FR-026 — PowerShell object expansion obscured a scalar merge message
 
 - **first-seen:** 2026-08-10
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (CLI evidence formatting)`
 - **symptom:** Embedding `Get-Content` output directly in a PowerShell object expanded verbose
   FileInfo/provider metadata instead of preserving a scalar merge-message string.
@@ -715,17 +715,25 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 1 independent occurrence — 2026-08-10 during the Product #200 reconciliation.
+- **occurrences:** 2 independent occurrences — 2026-08-10 during the Product #200 reconciliation,
+  then during PR #237 review triage when `$item.id` reached `gh` as the hashtable string rather than
+  the intended thread ID; GitHub rejected the unknown node before mutation.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the durable
   Windows-safe structured evidence helpers; the scalar tracked-file input remains a separate
   follow-up from the GitHub snapshot helper.
-- **promotion:** Deliberately NOT promoted after one occurrence; retain `Get-Content -Raw` or an
-  explicit scalar join at this boundary. The issue #222 GitHub helper does not consume merge-message
-  files, so its delivery is not evidence that this distinct predicate is resolved.
+- **promotion:** Promoted at the second occurrence to the Product maintenance protocol: materialize
+  file content, object properties and collection elements into explicit typed scalar variables
+  before passing them as native-command arguments. This covers both observed expansion forms while
+  leaving the report-only helper's deliberately narrower input contract unchanged.
 
   **2026-08-10 scope note:** The implemented issue #222 slice is intentionally allowlisted to
   report-only pull-request snapshots. FR-026 remains one-occurrence task debt rather than being
   silently closed by an unrelated structured-output path.
+
+  **2026-08-10 promotion note:** The second occurrence failed before any review reply was created.
+  The coordinator assigned the hashtable property to a string variable before retrying; the normal
+  GitHub workflow, not the report-only helper, remains responsible for the legitimate write. This
+  promotion supersedes the earlier one-occurrence task-debt scope note.
 
 ### FR-027 — worktree guard compared equivalent roots with different slash styles
 

@@ -4301,8 +4301,8 @@ Exact-final hosted and review evidence is refreshed after the repair commit.
 **Friction and state boundary.** FR-017 now keeps Docker-unavailable evidence distinct from the MCP
 cleanup-timeout predicate; this slice does not claim a false second occurrence or cleanup repair.
 FR-022 records the implemented structured GitHub layer, FR-023 records portable UTC emission, and
-FR-026 stays separate one-occurrence scalar-input debt. FR-027 records the caught Windows/Git slash-
-style guard mismatch; FR-028 records two fail-closed stale multi-entry patch-context failures and
-the bounded-patch correction; FR-029 records the review-caught exact-revision write hazard and its
-report-only resolution. Product q-8 stays closed on its retained owner evidence. No owner action or
-capability boundary moved.
+FR-026 promotes typed-scalar native arguments after its second object-expansion occurrence. FR-027
+records the caught Windows/Git slash-style guard mismatch; FR-028 records two fail-closed stale
+multi-entry patch-context failures and the bounded-patch correction; FR-029 records the review-
+caught exact-revision write hazard and its report-only resolution. Product q-8 stays closed on its
+retained owner evidence. No owner action or capability boundary moved.

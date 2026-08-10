@@ -290,9 +290,9 @@ lab_release_handoff: 'Product PR #231 final head
   bounded PR/check/comment/review-thread/closing-ref evidence through JSON-bound GraphQL variables
   and can require the exact named hosted check. GitHub writes remain outside the helper because the
   review-thread reply mutation cannot bind expected head/base. Refresh live GitHub for its
-  PR/head/check state. The issue remains open for distinct safe-write, MCP cleanup, scalar tracked-
-  file, parity-hash, and dependency-preflight predicates that this bounded slice does not claim to
-  solve.
+  PR/head/check state. FR-026 separately promotes typed-scalar PowerShell native arguments after
+  its second occurrence. The issue remains open for distinct safe-write, MCP cleanup, parity-hash,
+  and dependency-preflight predicates that this bounded slice does not claim to solve.
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is closed;
   G1/G2 approval, standing bounded G3
   approval, and bounded G4 Luna approval remain approved. Remaining executable activation/default-deny
