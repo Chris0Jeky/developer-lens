@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { parseDocument } from 'yaml'
@@ -147,6 +148,13 @@ describe('project context validation', () => {
 
     expect(validateCurrentStateDocument(state(validYaml))).toEqual([])
     expect(validateCurrentStateDocument(state(validYaml).replaceAll('\n', '\r\n'))).toEqual([])
+    const currentState = readFileSync(resolve('docs/analyser-program/CURRENT_STATE.md'), 'utf8')
+    const currentStateYaml = currentState.match(/^```yaml\r?\n([\s\S]*?)^```\r?$/m)?.[1] ?? ''
+    expect(validateCurrentStateDocument(currentState)).toEqual([])
+    expect(parseDocument(currentStateYaml, { version: '1.2', schema: 'core' }).toJS().active_horizon).toEqual([
+      'P0 governor bootstrap PR #206 — delivered',
+      'P0.5 v0.1.0 release programme #200 — active, product-only release preparation',
+    ])
     expect(
       validateCurrentStateDocument(state(semanticYaml.replace("updated: '2026-08-10'", "updated: '2024-02-29'"))),
     ).toEqual([])

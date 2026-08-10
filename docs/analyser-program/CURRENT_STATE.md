@@ -185,7 +185,8 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   lab #7). The separate #174/#80 Phase E stored-observation bridge is out of this demo programme. Do
   not turn any follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # dependency-closed focused wave; opportunity backlog = GitHub issues (governor.yaml queues)
-  - 'P0 governor bootstrap PR #206 — delivered, P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
+  - 'P0 governor bootstrap PR #206 — delivered'
+  - 'P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
 control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERATING SYSTEM — a control-plane SIDE LANE
   on branch `docs/prompt-system-overhaul`, not a phase advance. It does NOT change the active wave:
   P0.5 #200 remains the active programme, #174 remains NOT selected, and
