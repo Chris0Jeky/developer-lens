@@ -694,7 +694,7 @@ Rules that bind entries:
 ### FR-026 — PowerShell object expansion obscured a scalar merge message
 
 - **first-seen:** 2026-08-10
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (CLI evidence formatting)`
 - **symptom:** Embedding `Get-Content` output directly in a PowerShell object expanded verbose
   FileInfo/provider metadata instead of preserving a scalar merge-message string.
@@ -702,11 +702,18 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 1 independent occurrence — 2026-08-10 during the Product #200 reconciliation.
+- **occurrences:** 2 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+  and during PR #239's multiline review-triage comment.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the durable
   Windows-safe structured evidence helpers.
-- **promotion:** Deliberately NOT promoted after one occurrence; retain the scalar conversion at the
-  PowerShell evidence boundary until #222's helper lands.
+- **promotion:** Promoted at the second occurrence to structured JSON stdin for multiline native
+  payloads and explicit scalar conversion for single-value arguments. Product #222's successor
+  owns that command boundary; ad hoc PowerShell must not pass multiline bodies positionally.
+
+  **2026-08-10 promotion note:** `gh pr comment --body` split one multiline PowerShell scalar into
+  three native arguments and failed before any GitHub write. Serialising `{body: <text>}` with
+  `ConvertTo-Json` and sending it through `gh api --input -` created the intended public PR comment
+  without exposing a path or private value.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
