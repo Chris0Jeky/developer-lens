@@ -7,7 +7,7 @@ the historical record of how past slices were proven, and a fresh agent followin
 file can resume deleted work (PR #127 late review).
 
 ```yaml
-updated: 2026-08-10
+updated: '2026-08-10'
 current_slice_override: 'P0 delivered: GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`)
   merged; the owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
   docs/OWNER_CONSTITUTION.md (binding owner policy; layered subject policy supersedes the absolute
@@ -86,8 +86,8 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   Coordinator-owned replacement PR #42 changed only DL-P09 and merged as `38ac2eb`; the Lab prompt
   blocker is cleared without a third PR #37 fix commit. Lab PRs #41, #39, #40, and #43 then merged
   in exact-base order as `178bd6d`, `4f355f1`, `d203461`, and `56c8891`; changelog PR #44 then
-  merged as `2e6a7c2`. The Lab's detached historical-producer proof then exactly reproduced the
-  frozen JSON/Markdown/HTML hashes, and the product's tracked fixture/schema checks passed (26
+  merged as `2e6a7c2`. The Lab''s detached historical-producer proof then exactly reproduced the
+  frozen JSON/Markdown/HTML hashes, and the product''s tracked fixture/schema checks passed (26
   focused tests plus `check:method-trial-view`). Package-smoke PR #45 then merged as `6e13b6d`.
   Bounded package-smoke hardening followed in exact-base order: Lab PRs #46, #47, #48, #49, and
   #50 merged as `a1dc7caa`, `c827d6a1`, `0b7a452e`, `ece61e0e`, and
@@ -154,7 +154,7 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   where touched. Data Charter v2 + capability profiles = #201 (next, before any real activation).
   Lab-side nonrelease lanes (lab #6/#7/#23 and lab governor maintenance) may resume under their own
   normal review and worktree gates: `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` closed on
-  2026-08-09 after the owner's explicit
+  2026-08-09 after the owner''s explicit
   confirmation for lab PR #24 and a confirmed-clean session sweep. Lab release preparation #29 may
   resume under the exact-base/review order recorded above now that replacement PR #42 has landed. Older
   post-WB-C1 debt map retained below as CONTEXT ONLY — its embedded recommendation is SUPERSEDED by
@@ -185,7 +185,7 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   lab #7). The separate #174/#80 Phase E stored-observation bridge is out of this demo programme. Do
   not turn any follow-up into a generic research dashboard or EvaluationBundle parser.'
 active_horizon: # dependency-closed focused wave; opportunity backlog = GitHub issues (governor.yaml queues)
-  [P0 governor bootstrap PR #206 — delivered, P0.5 v0.1.0 release programme #200 — active, product-only release preparation]
+  - 'P0 governor bootstrap PR #206 — delivered, P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
 control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERATING SYSTEM — a control-plane SIDE LANE
   on branch `docs/prompt-system-overhaul`, not a phase advance. It does NOT change the active wave:
   P0.5 #200 remains the active programme, #174 remains NOT selected, and
@@ -208,7 +208,7 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   lab #33 counterpart landed as lab PR #35, externally merged at 2026-08-09T04:06:29Z as merge
   commit `bba0c18261c0a2b77332a0408f63b10c774c91f4`; no operator identity is inferred from that
   GitHub-account event. Product PR #224 merged as `222d573`, closing its executable early-tag path
-  by naming Lab #29's pre-tag deliverables and Lab #5 as joint-release prerequisites without
+  by naming Lab #29''s pre-tag deliverables and Lab #5 as joint-release prerequisites without
   requiring the tag-owning #29 issue to close first. Product PR #227 merged as `408a5b8`, explicitly
   separating the two sign-off scopes. Product PR #229 then merged from exact head
   `8fefd84ee4b0a7b069c010e494aa23af7f8d754d` as
@@ -290,7 +290,7 @@ lab_release_handoff: 'Product PR #231 final head
   joint tag remains blocked by the remaining Lab #29 pre-tag work,
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 closes only after the tag. Product PR
-  #238 repaired only FR-021/#233's invented backup fixture, merged as
+  #238 repaired only FR-021/#233''s invented backup fixture, merged as
   `e3ce2f879eee00f49e398116be428a6a7c7c8d2b`, and issue #233 is closed. Product PR #237 is CLOSED
   and unmerged at preserved head `81414ec8d7a32d28c58bac3a6cfe8382e29551e4` after two fix rounds:
   late exact-head review confirmed base-unbound check evidence and unrestricted private-repository
@@ -383,7 +383,8 @@ review_timing_defect: 'Measured 2026-08-05: the Codex connector consistently pos
   ceiling: later findings are still triaged, but post-ceiling defects are tracked/rejected and the
   sound slice ships; only a NEW CRITICAL introduced by the fixes reopens once. After merge, sweep
   again beyond the measured delay before calling the review clean.'
-capabilities: registry and API definitions remain never_authorized; cap.external.model is uncalled.
+capabilities: >-
+  registry and API definitions remain never_authorized; cap.external.model is uncalled.
   The github.core runner is grant-gated: assertGithubCoreActivationGrant is now assert-only /
   default-deny. The production grant module exports NO issuer; every grant object is
   refused until a separately reviewed issuer is added. Test success paths inject a test-owned

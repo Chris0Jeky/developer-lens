@@ -283,7 +283,7 @@ Rules that bind entries:
 ### FR-009 — `CURRENT_STATE.md`'s "machine-readable" YAML block does not parse
 
 - **first-seen:** 2026-08-09
-- **status:** `open`
+- **status:** `resolved`
 - **symptom:** [CURRENT_STATE.md](../analyser-program/CURRENT_STATE.md) opens a fenced ` ```yaml `
   block described as a "machine-readable summary for agent resume", but the block is not valid
   YAML. Measured 2026-08-09 with a strict parser against both the working tree and the committed
@@ -295,16 +295,15 @@ Rules that bind entries:
   machine-readable cannot be machine-read. A resuming agent that tries to parse it rather than read
   it as prose gets a parse error, not the state. `npm run verify:context` does not catch this
   because it checks required files, markers and links, never the YAML body.
-- **workaround:** None applied. The block is read as prose, which is how every session has in fact
-  been using it. The `control_plane_side_lane` entry added for #214 is single-quoted, so it is
-  YAML-safe and does not deepen the defect; the pre-existing unquoted flow sequences were left
-  untouched because repairing them is a separate bounded slice, not a detour inside this one.
+- **workaround:** None. The state block is now parsed under YAML 1.2 Core semantics and given a
+  narrow resume-field schema by the enforced `npm run verify:context` seam.
 - **occurrences:** 1 recorded — 2026-08-09.
 - **task:** https://github.com/Chris0Jeky/developer-lens/issues/215
-- **promotion:** Task debt at one occurrence, but the promotion target is already obvious and cheap:
-  a strict YAML parse of that block inside `scripts/projectContextValidation.ts` would make the
-  claim self-enforcing. That belongs to the follow-up above rather than to this slice, since the
-  check would fail on landing until the existing prose is repaired.
+- **promotion:** Resolved by Product #215: `scripts/projectContextValidation.ts` validates the one
+  root-level YAML fence, strict parser result, mapping root, and resume-critical field types; the
+  `verify:context` entrypoint prefixes every diagnostic as current-state evidence.
+- **2026-08-10 note:** Repaired only tracked YAML scalar/sequence syntax, added synthetic parser
+  coverage, and promoted the former prose workaround into fail-closed context verification.
 
 ### FR-010 — read-only scout capability drift remains in prompt and work-class prose
 
