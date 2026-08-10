@@ -68,10 +68,12 @@ Rules that bind entries:
   are treated as human-gated, and lab work is prepared and parked rather than merged. Isolated
   worktrees are used for preparation only — isolation does not make a *merge* safe while a
   competing writer can race the remote.
-- **occurrences:** 4 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
+- **occurrences:** 6 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
   plus an orphaned partial worktree directory left for manual deletion), 2026-08-07 (lab checkout
   competing writer), 2026-08-09 (a separate coordinator advanced the active q-8 branch between
-  this session's read and attempted write).
+  this session's read and attempted write), 2026-08-10 (a concurrent post-merge comment assigned
+  the PR #238 merge to an external context after this coordinator had issued it), 2026-08-10 (two
+  later PR #237 P2 threads were replied to and resolved after this coordinator parked the PR).
 - **task:** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` (closed owner decision) and
   [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release coordination).
 - **promotion:** The physical process-cleanup half remains owner-only (W4); the owner confirmed its
@@ -98,6 +100,19 @@ Rules that bind entries:
   because this log is append-only. Its all-Lab-parking instruction applied only while
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` was open and is superseded by the current
   `promotion` guidance after that gate's confirmed closure.
+
+  **2026-08-10 note (PR #238 operation context):** This coordinator issued the exact-head REST
+  merge for `b08a4022550396b4da0aab877d942a433291253c` and GitHub returned merge commit
+  `e3ce2f879eee00f49e398116be428a6a7c7c8d2b`. A later owner-account comment called the merge
+  external; comment `5235026214` corrects that claim without inferring which process wrote the
+  earlier comment. Its independently measured T+10m22 clean sweep remains valid. The selected
+  ownership/context enforcement stays on #200; no duplicate taxonomy or ref rewrite is needed.
+
+  **2026-08-10 note (parked PR #237 thread triage):** Two late connector P2s appeared after PR #237
+  was closed; the next live read found owner-account replies and both threads resolved even though
+  this coordinator had not issued those replies. Their classifications are sound and do not reopen
+  the parked PR. The process identity remains unobservable, so the record preserves only the
+  operation divergence and the same #200 ownership/context enforcement.
 
 ### FR-002 — review connector misses or lands late on an exact head
 
@@ -339,16 +354,17 @@ Rules that bind entries:
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 4 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
+- **occurrences:** 5 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
   (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite),
   2026-08-09 (the release-state/worktree-preservation documentation worktree), and 2026-08-09
-  (the #200 state-reconciliation worktree).
+  (the #200 state-reconciliation worktree), plus 2026-08-10 (the PR #238/#237/Lab #62 factual
+  reconciliation worktree).
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release
   coordination).
 - **promotion:** Promoted at the second independent occurrence to the `CLAUDE.md` run-and-prove
   preamble: a fresh worktree runs lockfile-pinned `npm ci` before any proof. Installation remains an
   explicit environment action rather than a verifier side effect, so the check cannot silently
-  install or mutate dependencies on the caller's behalf. The third and fourth occurrences confirm
+  install or mutate dependencies on the caller's behalf. The third through fifth occurrences confirm
   that this preamble remains the cheapest enforcing layer; no new promotion is warranted.
 
   **2026-08-09 note:** The release-state preservation worktree reproduced the same missing-`tsx`
@@ -356,6 +372,11 @@ Rules that bind entries:
   audited 359 packages with 0 vulnerabilities, and restored the declared proof path. This third
   occurrence does not require a new layer: the existing `CLAUDE.md` fresh-worktree preamble is the
   promoted enforcement point.
+
+  **2026-08-10 note:** The fifth worktree again stopped before `tsx` could launch. A trailing
+  read-only status command initially masked that subcommand's nonzero exit, so the retry uses an
+  explicit fail-fast boundary, performs the already-selected `npm ci` bootstrap, and runs the
+  verifier alone. No generated dependency content is inspected.
 
 ### FR-013 — full product gate exceeded a compound shell timeout
 
@@ -686,3 +707,29 @@ Rules that bind entries:
   Windows-safe structured evidence helpers.
 - **promotion:** Deliberately NOT promoted after one occurrence; retain the scalar conversion at the
   PowerShell evidence boundary until #222's helper lands.
+
+### FR-027 — stale multi-entry patch context failed closed
+
+- **first-seen:** 2026-08-10
+- **status:** `promoted`
+- **severity:** `LOW (fail-closed documentation tooling)`
+- **symptom:** Combined Markdown patches copied from an earlier read no longer matched one target
+  section after nearby state moved. `apply_patch` rejected each whole patch before any file changed.
+- **impact:** Same-hop factual reconciliation pauses for an exact re-read; retrying the broad patch
+  without narrowing it could aim a repeated field at the wrong historical entry.
+- **workaround:** Re-read the exact section, apply one file and one unique heading at a time, then
+  inspect the complete diff before staging.
+- **occurrences:** 4 independent occurrences on 2026-08-10 — the #222 friction burn-down, its
+  review-fix state reconciliation, the merged PR #238 fixture-evidence reconciliation on parked PR
+  #237, and this current Product/Lab state correction.
+- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns live release-state
+  reconciliation; [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains the parked
+  helper branch and its earlier unmerged occurrence evidence.
+- **promotion:** The enforcing layer is the existing atomic patch verification plus immediate
+  heading-bounded re-read and diff inspection. A new Markdown parser would not prevent stale copied
+  context and is disproportionate task debt; do not retry multi-entry patches in the same hop.
+
+_Note 2026-08-10 (main-line consolidation):_ Parked PR #237 recorded its first three occurrences as
+unmerged FR-028. This main-line entry preserves those observed facts under the next available ID
+without importing the blocked helper or reopening its exhausted review pipeline. The fourth failed
+patch changed no file and the one-section retry succeeded.

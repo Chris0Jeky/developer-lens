@@ -4264,3 +4264,49 @@ two-document range at that failing head. [Issue #233](https://github.com/Chris0J
 owns the bounded fixture repair. The focused local case, full backup file, and adjacent hosted
 success justify one rerun only; this ledger claims no rerun result and this documentation PR takes
 no production-code detour.
+
+## 2026-08-10 — Product PR #238 delivery, PR #237 park, and Lab PR #62 correction
+
+**Product fixture repair.** [PR #238](https://github.com/Chris0Jeky/developer-lens/pull/238)
+changed only the invented `server/storage/v3Backup.test.ts` replacement-inode fixture. Final head
+`b08a4022550396b4da0aab877d942a433291253c` over base
+`2af78a93205939f96c9f54f16a92c4758eeea478` passed the focused case, the full file with 71 tests
+and 2 declared skips, lint, TypeScript build, diff hygiene, hosted run `31345932617`, and a clean
+fresh-context review. It aged more than 27 minutes and merged as
+`e3ce2f879eee00f49e398116be428a6a7c7c8d2b`; issue
+[#233](https://github.com/Chris0Jeky/developer-lens/issues/233) is closed. The delayed T+10m22
+all-surface result was clean. A concurrent owner-account comment incorrectly called the merge
+external even though this coordinator issued the exact-head REST request; PR comment `5235026214`
+corrects the operation record without inferring which process wrote the earlier comment.
+
+**Product evidence helper parked.** [PR #237](https://github.com/Chris0Jeky/developer-lens/pull/237)
+ended at head `81414ec8d7a32d28c58bac3a6cfe8382e29551e4` over landed base
+`e3ce2f879eee00f49e398116be428a6a7c7c8d2b`. Its post-base-merge local `npm run check` passed 87
+files / 1,498 tests with 10 declared skips, build and secret scan; exact-head hosted run
+`31347515318` succeeded while the duplicate same-name run `31347545550` was skipped. Review then
+confirmed two HIGH blockers: required-check evidence was not bound to the base revision actually
+tested, and the authenticated CLI allowed private repositories outside the public Product/Lab
+boundary. Four initial and two later P2s were also retained. The two-round ceiling was exhausted,
+so every thread was triaged once and resolved, the PR was closed unmerged, and the clean branch and
+worktree remain preserved. Issue [#222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+comment `5234998779` owns a bounded successor; no blocked helper claim reached `main`.
+
+**Lab merge-history correction.** Lab PR #60 merged after 11m33s rather than the binding 15-minute
+age; its later clean sweep cannot retroactively repair that miss. Lab PR #61 reconciled the history
+and merged as `25567559c649b676f18a7809151d6095a80b271e`. Lab
+[PR #62](https://github.com/Chris0Jeky/developer-lens-lab/pull/62) then recorded the PR #61
+concurrent-operation context: final head `e833c68314f874d89523e4c97f5a3293548465cd` over base
+`25567559c649b676f18a7809151d6095a80b271e` passed hosted run `31346126369`, a clean exact-head
+fresh-context review, context/focused tests, zero review threads, zero closing refs, and 29m27s
+age. This coordinator merged it as `73a5b9653cccbb470c6bf9f0f5a4a7cd8d3cac45`; the
+2026-08-10T01:44:57Z all-surface sweep was clean. Lab FR-028 and issue #29 still own executable
+15-minute enforcement; this ledger does not claim the prepared helper is sound or merged.
+
+**Friction, boundary and next action.** FR-001 now records the PR #238 operation-attribution
+correction and the later concurrent PR #237 thread triage. FR-027 consolidates four fail-closed
+stale-patch-context occurrences whose first three were recorded only on parked PR #237. This slice
+read public tracked/GitHub evidence only; it did not inspect protected/generated output or activate
+release, tag, publication, data, model, telemetry, or credential work. The next safe implementation
+lane is the already-tracked Lab FR-028/#29 merge-eligibility helper, but it must collect or verify
+live state, avoid protected `.dllab`, reject non-empty closing references, and make its age clock
+non-bypassable before review or merge.
