@@ -4277,29 +4277,32 @@ credential behavior.
 
 **Implementation.** `scripts/githubGovernorEvidence.ts` reuses `server/gh.ts`'s `shell: false`
 launcher and GraphQL JSON-stdin path. Its default `snapshot` operation validates a typed bounded
-response, refuses paginated check/review/thread/comment/closing-ref evidence, emits a portable UTC
-`observedAt`, and can directly require exact head/base, green checks, zero unresolved threads and
-zero closing refs. The only write operation is an allowlisted review-thread reply. It requires the
-repository and PR, proves the thread belongs to that bounded snapshot, accepts a UTF-8 body only
-from stdin behind explicit `--apply`, passes the body as a GraphQL variable, and validates the
-returned comment ID and URL. `npm run governor:github` is the executable entry point.
+response, refuses paginated check/top-level-comment/review/thread/closing-ref evidence, emits a
+portable UTC `observedAt`, and can directly require exact head/base, the exact named hosted check,
+all observed checks green, zero unresolved threads and zero closing refs. The helper is strictly
+report-only. Fresh review demonstrated that GitHub's review-thread reply mutation has no
+expected-head/base operand, so a separately preflighted write has an unavoidable exact-revision
+TOCTOU window; the attempted mutation path was removed. `npm run governor:github` is the executable
+entry point.
 
 **Proof.** `scripts/githubGovernorEvidence.test.ts` uses invented responses and hostile multiline
 text to cover structured variable binding, exact typed comparisons, incomplete pagination,
-malformed repositories, missing/mismatched heads and checks, explicit apply gating, thread
-membership, stdin-only bodies and malformed mutation results. The focused run passed 1 file / 13
-tests. TypeScript server compilation and focused Oxlint passed. A read-only Windows smoke against
+malformed repositories, missing/mismatched heads, a missing exact required check, and rejection of
+write-shaped operations/options before GitHub is called. The final focused run passed 1 file / 10
+tests; server TypeScript compilation and focused Oxlint passed. A read-only Windows smoke against
 public Product PR #236 at head `c4c0cfb5ffcfce708176c4b689222b87e4b44768` and base
 `51471e9a407fe05f24ed07687e72398fd7e11814` returned the successful hosted check, seven reviews,
 five resolved threads and zero closing refs while satisfying every exact requirement. No GitHub
-comment was manufactured. The full local `npm run check` gate then passed: context and generated-
-contract checks were clean, all 87 test files passed with 1,501 tests / 10 skips, TypeScript and the
+comment was manufactured. The full local `npm run check` gate passed: context and generated-
+contract checks were clean, all 87 test files passed with 1,498 tests / 10 skips, TypeScript and the
 production build passed, and the secret-pattern verifier passed across its generated build output.
-Exact-head hosted/review evidence remains pending until this branch is published.
+Exact-final hosted and review evidence is refreshed after the repair commit.
 
 **Friction and state boundary.** FR-017 now keeps Docker-unavailable evidence distinct from the MCP
 cleanup-timeout predicate; this slice does not claim a false second occurrence or cleanup repair.
 FR-022 records the implemented structured GitHub layer, FR-023 records portable UTC emission, and
 FR-026 stays separate one-occurrence scalar-input debt. FR-027 records the caught Windows/Git slash-
-style guard mismatch; FR-028 records one stale multi-entry patch-context failure. Product q-8 stays
-closed on its retained owner evidence. No owner action or capability boundary moved.
+style guard mismatch; FR-028 records two fail-closed stale multi-entry patch-context failures and
+the bounded-patch correction; FR-029 records the review-caught exact-revision write hazard and its
+report-only resolution. Product q-8 stays closed on its retained owner evidence. No owner action or
+capability boundary moved.

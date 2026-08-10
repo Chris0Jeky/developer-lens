@@ -50,6 +50,9 @@ Rules that bind entries:
    independent occurrence, using the cheapest layer that actually enforces the fix: session memory
    → canon prose → agent/skill definition → executable check → CI → structural change. Prune the
    superseded copy in the same commit.
+5. **Patch mutable entry fields with their identity.** Change one existing entry per patch and keep
+   its unique `### FR-NNN` heading in the same hunk as every `status`, `occurrences`, `task`, or
+   `promotion` edit. Inspect that heading-bounded diff immediately before the next patch.
 
 ## Entries
 
@@ -541,7 +544,7 @@ Rules that bind entries:
 - **promotion:** Do not create a Product copy of the Lab-specific release/package helper. The
   cheapest enforcing layers remain the checked Lab snapshot/launcher tasks on #29/#34, with the
   current workarounds retained until those tasks land. Product #222 separately implements the
-  governor's generic PR snapshot/reply command boundary; it does not satisfy or replace those Lab
+  governor's generic report-only PR snapshot boundary; it does not satisfy or replace those Lab
   checks.
 
   **2026-08-10 scope note:** The Product #222 helper accepts either public repository as an explicit
@@ -616,10 +619,10 @@ Rules that bind entries:
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns structured/JSON-input
   Windows-safe CLI helpers for recurring evidence queries; the checked implementation is
   `scripts/githubGovernorEvidence.ts` with `npm run governor:github`.
-- **promotion:** Implemented at the selected command layer: the allowlisted helper launches `gh`
+- **promotion:** Implemented at the selected command layer: the report-only helper launches `gh`
   without a shell, passes GraphQL values as JSON variables through stdin, performs direct typed
-  gate comparisons, fails closed on incomplete thread/check evidence, and accepts review-reply
-  bodies only through stdin behind explicit `--apply` with returned ID/URL validation.
+  gate comparisons, and fails closed on incomplete comment/review/thread/check evidence. GitHub
+  writes remain outside this layer because its reply mutation cannot bind an expected revision.
 
   **2026-08-09 note:** The Lab PR59 commit projection/newline split is the second independently
   recorded occurrence (see #222 comment 5234236530); the PR232 exact-final-head thread snapshot is
@@ -627,11 +630,11 @@ Rules that bind entries:
   occurrences keep the path-set-order, UTC-switch, and patch-context predicates separate while
   selecting #222's structured-query helper as the durable enforcing layer.
 
-  **2026-08-10 implementation note:** The focused synthetic suite proves hostile quotes/newlines
-  remain GraphQL variable values rather than shell text, pagination is refused, exact head/base and
-  green/thread/closing-ref requirements use typed comparisons, replies preflight thread membership,
-  and malformed mutation responses fail closed. A read-only Windows smoke against public Product
-  PR #236 passed every exact-head requirement; no comment was manufactured for proof.
+  **2026-08-10 implementation note:** The focused synthetic suite proves hostile values remain
+  GraphQL variables rather than shell text, pagination is refused, exact head/base plus exact named
+  check/thread/closing-ref requirements use typed comparisons, and mutation-shaped commands fail
+  before GitHub is called. A read-only Windows smoke against public Product PR #236 passed every
+  exact-head requirement; no comment was manufactured for proof.
 
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
@@ -659,7 +662,7 @@ Rules that bind entries:
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
 - **first-seen:** 2026-08-09
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (caught pre-commit content drift)`
 - **symptom:** An `apply_patch` hunk that changed a common `status` field without carrying its
   `FR-022` heading matched the earlier `FR-015` entry. The mandatory immediate diff exposed the
@@ -668,13 +671,18 @@ Rules that bind entries:
   the intended target; an unchecked hunk could corrupt an unrelated friction record.
 - **workaround:** Restore the unrelated field and reapply the edit with the unique entry heading in
   the patch context, then inspect the complete file diff.
-- **occurrences:** 1 independent occurrence — 2026-08-09 during PR232's second friction capture.
-- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
-  reconciliation and its factual documentation proof.
-- **promotion:** Deliberately NOT promoted after one occurrence because heading-anchored patches and
-  immediate diff inspection are already the cheapest fail-closed seam. A second independent
-  occurrence should add a focused verifier for duplicate-entry field drift rather than another
-  prose reminder.
+- **occurrences:** 2 independent occurrences — 2026-08-09 during PR232's second friction capture and
+  2026-08-10 when a status-only issue #222 repair hunk selected FR-027 instead of FR-029.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the active helper
+  repair and its factual friction reconciliation.
+- **promotion:** Promoted at the second occurrence to this log's binding rule 5: every mutable-entry
+  edit carries its unique `### FR-NNN` heading in the same hunk, changes one entry per patch, and is
+  inspected before the next patch. This is the cheapest enforcing layer because `apply_patch` then
+  fails on a missing identity instead of silently selecting another repeated field.
+
+  **2026-08-10 promotion note:** Immediate diff inspection caught and restored FR-027 before commit
+  or push, then the heading-bound patch correctly marked FR-029 resolved. No historical symptom,
+  impact, or workaround text was rewritten.
 
 ### FR-025 — occupied PR232 worktree entered a concurrent main merge
 
@@ -710,14 +718,14 @@ Rules that bind entries:
 - **occurrences:** 1 independent occurrence — 2026-08-10 during the Product #200 reconciliation.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the durable
   Windows-safe structured evidence helpers; the scalar tracked-file input remains a separate
-  follow-up from the GitHub snapshot/reply helper.
+  follow-up from the GitHub snapshot helper.
 - **promotion:** Deliberately NOT promoted after one occurrence; retain `Get-Content -Raw` or an
   explicit scalar join at this boundary. The issue #222 GitHub helper does not consume merge-message
   files, so its delivery is not evidence that this distinct predicate is resolved.
 
   **2026-08-10 scope note:** The implemented issue #222 slice is intentionally allowlisted to
-  pull-request snapshots and review-thread replies. FR-026 remains one-occurrence task debt rather
-  than being silently closed by an unrelated structured-output path.
+  report-only pull-request snapshots. FR-026 remains one-occurrence task debt rather than being
+  silently closed by an unrelated structured-output path.
 
 ### FR-027 — worktree guard compared equivalent roots with different slash styles
 
@@ -750,9 +758,42 @@ Rules that bind entries:
   each intended field change is legitimate.
 - **workaround:** Re-read the exact heading-bounded entries, split the update into small patches with
   unique headings and current field values, then inspect the complete diff.
-- **occurrences:** 1 independent occurrence — 2026-08-10 during the issue #222 friction burn-down.
+- **occurrences:** 2 independent occurrences — 2026-08-10 during the issue #222 friction burn-down,
+  then during its review-fix documentation reconciliation when one copied CURRENT_STATE hunk did
+  not match and the multi-file patch was rejected atomically.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns this bounded helper and
   its factual friction reconciliation.
-- **promotion:** Deliberately NOT promoted after one occurrence because heading-bounded fail-closed
-  patches are the cheapest correction. A second matching stale-context failure should add a focused
-  field-aware updater or verifier rather than another larger Markdown patch.
+- **promotion:** Retained as task debt after the second occurrence. `apply_patch` already enforces
+  the safety property by rejecting the whole change before mutation; a field-aware Markdown updater
+  would add a new parser without preventing copied-context mismatch. The cheapest proportional
+  layer is one-file, heading-bounded patches from an immediate re-read plus the existing diff check.
+
+  **2026-08-10 second-occurrence note:** The failed repair patch changed no file. The coordinator
+  re-read the exact numbered lines, split subsequent changes by file and unique heading, and kept
+  this as bounded workflow debt under #222 rather than detouring into speculative tooling.
+
+### FR-029 — preflighted review reply could not stay bound to the expected revision
+
+- **first-seen:** 2026-08-10
+- **status:** `resolved`
+- **severity:** `HIGH (review-caught exact-revision write hazard)`
+- **symptom:** Fresh-context review of the first issue #222 helper head found that it queried the
+  expected PR head/base and thread membership, then issued a separate review-thread reply mutation.
+  That mutation accepts only thread ID and body; a push or base move between calls could still write
+  after the proved revision was no longer current. No live reply was used for proof.
+- **impact:** The helper's operational exact-revision claim was false at the write boundary and
+  could attach a coordinator response after the reviewed PR state changed.
+- **workaround:** Remove the mutation, stdin-body and apply surfaces; keep the command strictly
+  report-only and use the normal reviewed GitHub workflow for legitimate replies.
+- **occurrences:** 1 independent occurrence — fresh-context review of Product PR #237 initial head
+  `3af8c23e5122762f96116d170f8187d3934fcda2`.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains any future safe-
+  write design and the remaining distinct command-boundary predicates.
+- **promotion:** Enforced at the narrower executable contract: mutation-shaped operations are
+  rejected before GitHub is called and the helper exposes only one bounded snapshot query. The
+  focused 10-test run, server TypeScript compile, focused Oxlint, public read-only smoke, and full
+  87-file `npm run check` gate passed after removal.
+
+  **2026-08-10 resolution note:** The repair also replaced generic green-check acceptance with an
+  exact required-check name plus all-observed-green condition and added top-level comments to the
+  bounded snapshot. No GitHub write path remains in the helper.

@@ -277,18 +277,22 @@ lab_release_handoff: 'Product PR #231 final head
   PR #59 delivered the tracked/synthetic CURRENT_STATE YAML repair: PR #59 merged as
   `e5a85b20a130518a8307ebdb4cb48c3dbbb85052`, and issue #58 is closed. Lab state replacement PR #60
   final head `925b8ba12c8257a111adb7ec1c7747d3d7da72e4` passed hosted run `31342280107`, exact-final review,
-  thread triage, and its age gate, then merged at 2026-08-09T23:47:08Z as Lab main
-  `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7`; the 2026-08-09T23:50:27Z delayed sweep was clean.
+  and thread triage, then merged at 2026-08-09T23:47:08Z as Lab main
+  `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7` after only 11m33s demonstrated age, below the binding
+  15-minute floor. The clean replacement sweep at 2026-08-10T00:06:40Z repairs post-merge review
+  evidence but cannot retroactively satisfy the pre-merge gate; Lab FR-028/#29 own enforcement.
   Continue the remaining Lab #29 pre-tag deliverables under their normal gates. The
   joint tag remains blocked by the remaining Lab #29 pre-tag work,
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 closes only after the tag. Product #222's
   selected GitHub command-boundary seam is implemented on branch
-  `fix/windows-safe-github-evidence-20260810`: a report-only default produces typed PR/check/review-
-  thread/closing-ref evidence through JSON-bound GraphQL variables, while the allowlisted reply path
-  requires explicit apply plus a stdin body and validates the returned ID/URL. Refresh live GitHub
-  for its PR/head/check state. The issue remains open for distinct MCP cleanup, scalar tracked-file,
-  parity-hash, and dependency-preflight predicates that this bounded slice does not claim to solve.
+  `fix/windows-safe-github-evidence-20260810`: its strictly report-only operation produces typed,
+  bounded PR/check/comment/review-thread/closing-ref evidence through JSON-bound GraphQL variables
+  and can require the exact named hosted check. GitHub writes remain outside the helper because the
+  review-thread reply mutation cannot bind expected head/base. Refresh live GitHub for its
+  PR/head/check state. The issue remains open for distinct safe-write, MCP cleanup, scalar tracked-
+  file, parity-hash, and dependency-preflight predicates that this bounded slice does not claim to
+  solve.
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is closed;
   G1/G2 approval, standing bounded G3
   approval, and bounded G4 Luna approval remain approved. Remaining executable activation/default-deny
@@ -305,8 +309,9 @@ blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-s
   NEW recorded owner decision — none exists). Lab PR #57 delivered the zero/multiple-wheel and
   full-call-sequence seam; Lab PR #59 delivered the CURRENT_STATE YAML repair and closed Lab issue
   #58. Lab state replacement PR #60 merged as
-  `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7` after exact-head proof, review, thread triage, and
-  aging; its delayed sweep was clean. Remaining release blockers are the
+  `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7` with exact-head proof, review, and thread triage but
+  only 11m33s demonstrated age, below the binding 15-minute floor. Its 00:06:40Z replacement sweep
+  was clean but cannot retroactively satisfy that pre-merge gate. Remaining release blockers are the
   Lane-P candidate-content review plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, followed by the joint tag; the remaining

@@ -4,8 +4,6 @@ import { graphql } from '../server/gh.js'
 
 const REPOSITORY_PATTERN = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/
 const SHA_PATTERN = /^[0-9a-f]{40}$/i
-const THREAD_ID_PATTERN = /^[A-Za-z0-9_=-]+$/
-const MAX_COMMENT_BYTES = 65_536
 
 const SNAPSHOT_QUERY = /* GraphQL */ `
   query GovernorPullRequestSnapshot($owner: String!, $name: String!, $number: Int!) {
@@ -20,6 +18,16 @@ const SNAPSHOT_QUERY = /* GraphQL */ `
         mergeable
         mergeStateStatus
         updatedAt
+        comments(first: 100) {
+          totalCount
+          pageInfo { hasNextPage }
+          nodes {
+            id
+            url
+            createdAt
+            author { login }
+          }
+        }
         closingIssuesReferences(first: 100) {
           totalCount
           pageInfo { hasNextPage }
@@ -89,16 +97,6 @@ const SNAPSHOT_QUERY = /* GraphQL */ `
   }
 `
 
-const REPLY_MUTATION = /* GraphQL */ `
-  mutation GovernorReviewThreadReply($threadId: ID!, $body: String!) {
-    addPullRequestReviewThreadReply(
-      input: { pullRequestReviewThreadId: $threadId, body: $body }
-    ) {
-      comment { id url }
-    }
-  }
-`
-
 const pageInfoSchema = z.object({ hasNextPage: z.boolean() })
 const actorSchema = z.object({ login: z.string().min(1) }).nullable()
 const checkRunSchema = z.object({
@@ -139,6 +137,18 @@ const snapshotDataSchema = z.object({
         mergeable: z.string().min(1),
         mergeStateStatus: z.string().min(1),
         updatedAt: z.string(),
+        comments: z.object({
+          totalCount: z.number().int().nonnegative(),
+          pageInfo: pageInfoSchema,
+          nodes: z.array(
+            z.object({
+              id: z.string().min(1),
+              url: z.string().url(),
+              createdAt: z.string(),
+              author: actorSchema,
+            }),
+          ),
+        }),
         closingIssuesReferences: z.object({
           totalCount: z.number().int().nonnegative(),
           pageInfo: pageInfoSchema,
@@ -195,12 +205,6 @@ const snapshotDataSchema = z.object({
       .nullable(),
   }),
 })
-const replyDataSchema = z.object({
-  addPullRequestReviewThreadReply: z.object({
-    comment: z.object({ id: z.string().min(1), url: z.string().url() }),
-  }),
-})
-
 export type GraphqlExecutor = (
   query: string,
   variables: Record<string, unknown>,
@@ -209,7 +213,7 @@ export type GraphqlExecutor = (
 export interface SnapshotRequirements {
   expectHead?: string
   expectBase?: string
-  requireGreen?: boolean
+  requiredCheck?: string
   requireNoUnresolved?: boolean
   requireNoClosingIssues?: boolean
 }
@@ -255,6 +259,15 @@ export interface PullRequestSnapshot {
       state: string
       submittedAt: string | null
       commitOid: string | null
+    }>
+  }
+  topLevelComments: {
+    totalCount: number
+    nodes: Array<{
+      id: string
+      url: string
+      createdAt: string
+      author: string | null
     }>
   }
   reviewThreads: {
@@ -322,8 +335,14 @@ function enforceRequirements(
       `Base mismatch: expected ${requirements.expectBase}, observed ${snapshot.pullRequest.baseRefOid}.`,
     )
   }
-  if (requirements.requireGreen && !snapshot.checks.completeAndGreen) {
-    throw new Error('Required checks are missing, incomplete, or not green.')
+  if (
+    requirements.requiredCheck &&
+    !snapshot.checks.nodes.some((check) => check.name === requirements.requiredCheck)
+  ) {
+    throw new Error(`Required check was not observed: ${requirements.requiredCheck}.`)
+  }
+  if (requirements.requiredCheck && !snapshot.checks.completeAndGreen) {
+    throw new Error('Observed checks are incomplete or not green.')
   }
   if (requirements.requireNoUnresolved && snapshot.reviewThreads.unresolvedCount !== 0) {
     throw new Error(
@@ -355,6 +374,9 @@ export async function getPullRequestSnapshot(
       throw new Error(`${label} must be a full 40-character commit SHA.`)
     }
   }
+  if (requirements.requiredCheck !== undefined && requirements.requiredCheck.trim().length === 0) {
+    throw new Error('Required check name must be non-empty.')
+  }
 
   const { owner, name } = splitRepository(repository)
   const parsed = snapshotDataSchema.parse(
@@ -369,10 +391,14 @@ export async function getPullRequestSnapshot(
     'Closing issue references',
     pullRequest.closingIssuesReferences.pageInfo.hasNextPage,
   )
+  requireCompleteConnection('Top-level comments', pullRequest.comments.pageInfo.hasNextPage)
   requireCompleteConnection('Reviews', pullRequest.reviews.pageInfo.hasNextPage)
   requireCompleteConnection('Review threads', pullRequest.reviewThreads.pageInfo.hasNextPage)
   for (const thread of pullRequest.reviewThreads.nodes) {
-    requireCompleteConnection(`Comments for review thread ${thread.id}`, thread.comments.pageInfo.hasNextPage)
+    requireCompleteConnection(
+      `Comments for review thread ${thread.id}`,
+      thread.comments.pageInfo.hasNextPage,
+    )
   }
 
   const commit = pullRequest.commits.nodes[0]?.commit
@@ -440,6 +466,15 @@ export async function getPullRequestSnapshot(
         commitOid: review.commit?.oid ?? null,
       })),
     },
+    topLevelComments: {
+      totalCount: pullRequest.comments.totalCount,
+      nodes: pullRequest.comments.nodes.map((comment) => ({
+        id: comment.id,
+        url: comment.url,
+        createdAt: comment.createdAt,
+        author: comment.author?.login ?? null,
+      })),
+    },
     reviewThreads: {
       totalCount: pullRequest.reviewThreads.totalCount,
       unresolvedCount: pullRequest.reviewThreads.nodes.filter((thread) => !thread.isResolved).length,
@@ -463,72 +498,12 @@ export async function getPullRequestSnapshot(
   return snapshot
 }
 
-export async function replyToReviewThread(
-  input: {
-    repository: string
-    pullRequestNumber: number
-    threadId: string
-    body: string
-    apply: boolean
-    expectHead: string
-    expectBase: string
-  },
-  execute: GraphqlExecutor = defaultExecutor,
-): Promise<{
+type ParsedCommand = {
+  kind: 'snapshot'
   repository: string
   pullRequestNumber: number
-  threadId: string
-  comment: { id: string; url: string }
-}> {
-  if (!input.apply) {
-    throw new Error('Review-thread replies require the explicit --apply flag.')
-  }
-  if (!THREAD_ID_PATTERN.test(input.threadId)) {
-    throw new Error('Review thread ID contains unsupported characters.')
-  }
-  const bodyBytes = Buffer.byteLength(input.body, 'utf8')
-  if (input.body.trim().length === 0 || bodyBytes > MAX_COMMENT_BYTES || input.body.includes('\0')) {
-    throw new Error('Reply body must be non-empty UTF-8 text of at most 65536 bytes without NUL.')
-  }
-
-  const snapshot = await getPullRequestSnapshot(
-    input.repository,
-    input.pullRequestNumber,
-    { expectHead: input.expectHead, expectBase: input.expectBase },
-    execute,
-  )
-  if (!snapshot.reviewThreads.nodes.some((thread) => thread.id === input.threadId)) {
-    throw new Error('Review thread does not belong to the specified pull request snapshot.')
-  }
-
-  const parsed = replyDataSchema.parse(
-    await execute(REPLY_MUTATION, { threadId: input.threadId, body: input.body }),
-  )
-  return {
-    repository: input.repository,
-    pullRequestNumber: input.pullRequestNumber,
-    threadId: input.threadId,
-    comment: parsed.addPullRequestReviewThreadReply.comment,
-  }
+  requirements: SnapshotRequirements
 }
-
-type ParsedCommand =
-  | {
-      kind: 'snapshot'
-      repository: string
-      pullRequestNumber: number
-      requirements: SnapshotRequirements
-    }
-  | {
-      kind: 'reply'
-      repository: string
-      pullRequestNumber: number
-      threadId: string
-      apply: boolean
-      bodyFromStdin: boolean
-      expectHead: string
-      expectBase: string
-    }
 
 function parsePositiveInteger(value: string | undefined, label: string): number {
   if (!value || !/^\d+$/.test(value)) {
@@ -544,20 +519,23 @@ function parsePositiveInteger(value: string | undefined, label: string): number 
 export function parseCommand(argv: string[]): ParsedCommand {
   const tokens = [...argv]
   const kind = tokens[0] && !tokens[0].startsWith('--') ? tokens.shift() : 'snapshot'
-  if (kind !== 'snapshot' && kind !== 'reply') {
+  if (kind !== 'snapshot') {
     throw new Error(`Unsupported operation: ${kind ?? ''}.`)
   }
 
   const values = new Map<string, string>()
   const booleans = new Set<string>()
   const booleanNames = new Set([
-    '--apply',
-    '--body-stdin',
-    '--require-green',
     '--require-no-unresolved',
     '--require-no-closing-issues',
   ])
-  const valueNames = new Set(['--repo', '--pr', '--thread', '--expect-head', '--expect-base'])
+  const valueNames = new Set([
+    '--repo',
+    '--pr',
+    '--expect-head',
+    '--expect-base',
+    '--require-check',
+  ])
   while (tokens.length > 0) {
     const name = tokens.shift()
     if (!name || (!booleanNames.has(name) && !valueNames.has(name))) {
@@ -580,47 +558,6 @@ export function parseCommand(argv: string[]): ParsedCommand {
   const repository = values.get('--repo') ?? ''
   splitRepository(repository)
   const pullRequestNumber = parsePositiveInteger(values.get('--pr'), '--pr')
-  if (kind === 'reply') {
-    for (const unsupported of [
-      '--require-green',
-      '--require-no-unresolved',
-      '--require-no-closing-issues',
-    ]) {
-      if (values.has(unsupported) || booleans.has(unsupported)) {
-        throw new Error(`${unsupported} is only valid for snapshot.`)
-      }
-    }
-    const threadId = values.get('--thread') ?? ''
-    if (!THREAD_ID_PATTERN.test(threadId)) {
-      throw new Error('Review thread ID contains unsupported characters.')
-    }
-    const expectHead = values.get('--expect-head') ?? ''
-    const expectBase = values.get('--expect-base') ?? ''
-    for (const [label, sha] of [
-      ['--expect-head', expectHead],
-      ['--expect-base', expectBase],
-    ] as const) {
-      if (!SHA_PATTERN.test(sha)) {
-        throw new Error(`${label} is required and must be a full 40-character commit SHA.`)
-      }
-    }
-    return {
-      kind,
-      repository,
-      pullRequestNumber,
-      threadId,
-      apply: booleans.has('--apply'),
-      bodyFromStdin: booleans.has('--body-stdin'),
-      expectHead,
-      expectBase,
-    }
-  }
-
-  for (const unsupported of ['--thread', '--apply', '--body-stdin']) {
-    if (values.has(unsupported) || booleans.has(unsupported)) {
-      throw new Error(`${unsupported} is only valid for reply.`)
-    }
-  }
   return {
     kind,
     repository,
@@ -628,52 +565,22 @@ export function parseCommand(argv: string[]): ParsedCommand {
     requirements: {
       expectHead: values.get('--expect-head'),
       expectBase: values.get('--expect-base'),
-      requireGreen: booleans.has('--require-green'),
+      requiredCheck: values.get('--require-check'),
       requireNoUnresolved: booleans.has('--require-no-unresolved'),
       requireNoClosingIssues: booleans.has('--require-no-closing-issues'),
     },
   }
 }
 
-async function readStandardInput(): Promise<string> {
-  process.stdin.setEncoding('utf8')
-  let value = ''
-  for await (const chunk of process.stdin) {
-    value += chunk
-  }
-  return value
-}
-
 export async function runCli(
   argv: string[],
   execute: GraphqlExecutor = defaultExecutor,
-  readInput: () => Promise<string> = readStandardInput,
 ): Promise<unknown> {
   const command = parseCommand(argv)
-  if (command.kind === 'snapshot') {
-    return await getPullRequestSnapshot(
-      command.repository,
-      command.pullRequestNumber,
-      command.requirements,
-      execute,
-    )
-  }
-  if (!command.bodyFromStdin) {
-    throw new Error('Review-thread replies require --body-stdin; inline bodies are not accepted.')
-  }
-  if (!command.apply) {
-    throw new Error('Review-thread replies require the explicit --apply flag.')
-  }
-  return await replyToReviewThread(
-    {
-      repository: command.repository,
-      pullRequestNumber: command.pullRequestNumber,
-      threadId: command.threadId,
-      body: await readInput(),
-      apply: command.apply,
-      expectHead: command.expectHead,
-      expectBase: command.expectBase,
-    },
+  return await getPullRequestSnapshot(
+    command.repository,
+    command.pullRequestNumber,
+    command.requirements,
     execute,
   )
 }
