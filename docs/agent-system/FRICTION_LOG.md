@@ -587,9 +587,9 @@ Rules that bind entries:
   the hosted failure; adjacent hosted run `31337964825` also passed the same file. That evidence
   justifies exactly one rerun for PR #232, without treating the rerun as a repair or claiming its
   result in this documentation hop.
-- **occurrences:** 2 independent occurrences — run `31112768523` exposed immediate inode reuse in
-  the sibling artifact-catalogue fixture on 2026-08-06; run `31339262700` exposed the corresponding
-  `v3Backup` fixture on 2026-08-09.
+- **occurrences:** 3 independent occurrences — run `31112768523` exposed immediate inode reuse in
+  the sibling artifact-catalogue fixture on 2026-08-06; runs `31339262700` and `31345468111`
+  independently exposed the corresponding `v3Backup` fixture on 2026-08-09 and 2026-08-10.
 - **task:** [#233](https://github.com/Chris0Jeky/developer-lens/issues/233) owns the bounded durable
   fixture repair.
 - **promotion:** The cheapest enforcing layer is the affected test fixture: reuse commit
@@ -597,6 +597,12 @@ Rules that bind entries:
   allocating the replacement, preserve production identity checks, and prove the focused case,
   full backup file, and declared gate. #233 tracks that repair; PR #232 takes no production-code
   detour.
+
+  **2026-08-10 third-occurrence note:** Product PR #237 exact head
+  `b5ea92c05aa0d61225f0e7d05c6b3913a110f0eb` passed hosted context, generated-artifact and lint
+  steps, then run `31345468111` failed only the same valid-replacement-inode fixture while all other
+  1,505 tests passed with 2 declared skips. The PR range does not touch backup code or its fixture;
+  #233 is now the active priority-one durable repair rather than another unbounded rerun.
 
 ### FR-022 — PowerShell inner-quote stripping blocked a PR232 latest-field query
 
@@ -805,3 +811,24 @@ Rules that bind entries:
   **2026-08-10 resolution note:** The repair also replaced generic green-check acceptance with an
   exact required-check name plus all-observed-green condition and added top-level comments to the
   bounded snapshot. No GitHub write path remains in the helper.
+
+### FR-030 — inferred full head SHA failed the exact snapshot guard
+
+- **first-seen:** 2026-08-10
+- **status:** `workaround-documented`
+- **severity:** `LOW (fail-closed evidence input)`
+- **symptom:** After the PR #237 documentation follow-up push, the coordinator expanded the visible
+  short commit prefix into an unmeasured 40-character value instead of reading the full local head.
+  The report-only helper observed the real remote head and rejected the mismatch before returning a
+  gate snapshot or changing GitHub state.
+- **impact:** An inferred identity wastes one evidence pass and can confuse final-head reporting if
+  a fail-closed comparison is absent.
+- **workaround:** Read the full local and remote SHAs with `git rev-parse`, compare them, assign the
+  measured value to a typed scalar, and pass that value to `--expect-head`.
+- **occurrences:** 1 independent occurrence — Product PR #237 final-head snapshot refresh after the
+  scalar-boundary documentation push.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the checked exact-head
+  evidence helper and this bounded input-use debt.
+- **promotion:** Deliberately NOT promoted after one occurrence because the helper already enforces
+  the safety property by failing closed. A second independent transcription occurrence should move
+  local/remote SHA acquisition into a checked wrapper rather than add another prose reminder.
