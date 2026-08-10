@@ -433,7 +433,7 @@ Rules that bind entries:
 ### FR-016 — Windows working-tree edits produced mixed line-ending warnings
 
 - **first-seen:** 2026-08-09
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (review-noise risk)`
 - **symptom:** Git warned that LF would be replaced by CRLF for the four edited Markdown files.
   `core.autocrlf=true`, no file-specific `text` or `eol` attribute applies, and `git ls-files --eol`
@@ -442,13 +442,19 @@ Rules that bind entries:
   normalization. The intended index remains LF and `git diff --check` is clean.
 - **workaround:** Stage only the named files, inspect the cached diff, and run
   `git diff --cached --check`; do not normalize unrelated lines or files in this slice.
-- **occurrences:** 1 independent occurrence — the four-file #200 documentation reconciliation on
-  2026-08-09 shares one checkout/config cause.
+- **occurrences:** 2 independent occurrences — the four-file #200 documentation reconciliation on
+  2026-08-09 and the three-file #222/#233 state reconciliation on 2026-08-10.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the bounded
   pre-QA documentation reconciliation.
-- **promotion:** Deliberately NOT promoted after one occurrence. If a later independent slice
-  repeats the warning, select an explicit repository line-ending policy at the cheapest enforcing
-  layer rather than relying on per-session interpretation.
+- **promotion:** Promoted at the second occurrence to a scoped repository `.gitattributes` policy,
+  proved against representative Markdown and source files without a bulk normalization commit.
+  #200 owns that bounded hardening; this #222 branch keeps the cached-diff workaround and does not
+  detour into line-ending policy.
+
+  **2026-08-10 promotion note:** The second slice again kept an LF index and passed
+  `git diff --check`; only the Windows working-tree warning recurred. A repository attribute plus a
+  focused index/checkout test is the cheapest layer that can make the intended normalization
+  executable without rewriting unrelated files.
 
 ### FR-017 — MCP hygiene cleanup needed a canonical-location retry and bounded second pass
 
@@ -574,7 +580,7 @@ Rules that bind entries:
 ### FR-021 — immediate inode reuse makes replacement fixtures nondeterministic
 
 - **first-seen:** 2026-08-06
-- **status:** `workaround-documented`
+- **status:** `resolved`
 - **symptom:** Exact-head hosted run `31339262700` failed only the `v3Backup` valid-replacement-inode
   case. Its fixture unlinked the provisional path and immediately wrote a replacement; Linux reused
   the original inode, so production recovery correctly observed the still-bound identity and
@@ -592,17 +598,23 @@ Rules that bind entries:
   independently exposed the corresponding `v3Backup` fixture on 2026-08-09 and 2026-08-10.
 - **task:** [#233](https://github.com/Chris0Jeky/developer-lens/issues/233) owns the bounded durable
   fixture repair.
-- **promotion:** The cheapest enforcing layer is the affected test fixture: reuse commit
+- **promotion:** The cheapest enforcing layer is the affected test fixture. PR #238 reused commit
   `1053cf8609108f1e7d0924bb42245185c6fce89e`'s established keep-original-inode-live pattern while
-  allocating the replacement, preserve production identity checks, and prove the focused case,
-  full backup file, and declared gate. #233 tracks that repair; PR #232 takes no production-code
-  detour.
+  allocating the replacement, preserved production identity checks, and proved the focused case,
+  full backup file, and declared hosted gate. PR #232 took no production-code detour.
 
   **2026-08-10 third-occurrence note:** Product PR #237 exact head
   `b5ea92c05aa0d61225f0e7d05c6b3913a110f0eb` passed hosted context, generated-artifact and lint
   steps, then run `31345468111` failed only the same valid-replacement-inode fixture while all other
   1,505 tests passed with 2 declared skips. The PR range does not touch backup code or its fixture;
   #233 is now the active priority-one durable repair rather than another unbounded rerun.
+
+  **2026-08-10 resolution note:** PR #238 final head
+  `b08a4022550396b4da0aab877d942a433291253c` passed the focused collision case, the full backup
+  file with 71 tests and 2 declared skips, lint, TypeScript build, diff hygiene, hosted run
+  `31345932617`, and a clean fresh-context review. It merged without production changes as
+  `e3ce2f879eee00f49e398116be428a6a7c7c8d2b`; the fixture now keeps the provisional inode live
+  until a distinct replacement has been allocated.
 
 ### FR-022 — PowerShell inner-quote stripping blocked a PR232 latest-field query
 
@@ -653,8 +665,9 @@ Rules that bind entries:
   to an otherwise reproducible GitHub state snapshot.
 - **workaround:** Use `(Get-Date).ToUniversalTime().ToString('o')`, which succeeded on the same
   shell without changing repository or GitHub state.
-- **occurrences:** 2 independent occurrences — 2026-08-09 during the PR232 final review-thread
-  snapshot and 2026-08-10 during the Lab PR60 delayed-sweep timestamp probe.
+- **occurrences:** 3 independent occurrences — 2026-08-09 during the PR232 final review-thread
+  snapshot, 2026-08-10 during the Lab PR60 delayed-sweep timestamp probe, and 2026-08-10 during the
+  PR238/PR62 merge-boundary timestamp probe.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   Windows-safe evidence helper and its explicit timestamp normalization.
 - **promotion:** Implemented at the selected command layer after the second occurrence:
@@ -664,6 +677,12 @@ Rules that bind entries:
   **2026-08-10 implementation note:** The Lab recurrence failed before any GitHub query or mutation
   and was corrected with `[DateTime]::UtcNow.ToString('o')`. The issue #222 helper's deterministic
   UTC field is covered by a synthetic clock test and the public PR #236 read-only smoke.
+
+  **2026-08-10 recurrence note:** A coordinator-side compound snapshot again used the unsupported
+  switch and failed before the parallel read-only results were returned. Re-running with
+  `(Get-Date).ToUniversalTime().ToString('o')` succeeded. The selected enforcement remains the
+  repository helper for operational evidence; ad hoc shell timestamps retain this documented
+  compatibility debt rather than widening the current slice into a machine-level wrapper.
 
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
@@ -772,9 +791,10 @@ Rules that bind entries:
   each intended field change is legitimate.
 - **workaround:** Re-read the exact heading-bounded entries, split the update into small patches with
   unique headings and current field values, then inspect the complete diff.
-- **occurrences:** 2 independent occurrences — 2026-08-10 during the issue #222 friction burn-down,
-  then during its review-fix documentation reconciliation when one copied CURRENT_STATE hunk did
-  not match and the multi-file patch was rejected atomically.
+- **occurrences:** 3 independent occurrences — 2026-08-10 during the issue #222 friction burn-down,
+  then during its review-fix documentation reconciliation, and again while reconciling the merged
+  PR #238 fixture repair when one copied multi-file hunk did not match. Every patch was rejected
+  atomically before mutation.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns this bounded helper and
   its factual friction reconciliation.
 - **promotion:** Retained as task debt after the second occurrence. `apply_patch` already enforces
@@ -785,6 +805,10 @@ Rules that bind entries:
   **2026-08-10 second-occurrence note:** The failed repair patch changed no file. The coordinator
   re-read the exact numbered lines, split subsequent changes by file and unique heading, and kept
   this as bounded workflow debt under #222 rather than detouring into speculative tooling.
+
+  **2026-08-10 third-occurrence note:** The selected one-file, heading-bounded workaround succeeded
+  after the failed combined patch. `apply_patch` continues to supply the correct fail-closed
+  enforcement, so the proportional decision remains task debt rather than a new Markdown parser.
 
 ### FR-029 — preflighted review reply could not stay bound to the expected revision
 

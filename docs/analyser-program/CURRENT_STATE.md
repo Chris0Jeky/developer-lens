@@ -290,8 +290,10 @@ lab_release_handoff: 'Product PR #231 final head
   bounded PR/check/comment/review-thread/closing-ref evidence through JSON-bound GraphQL variables
   and can require the exact named hosted check. GitHub writes remain outside the helper because the
   review-thread reply mutation cannot bind expected head/base. Refresh live GitHub for its
-  PR/head/check state. FR-026 separately promotes typed-scalar PowerShell native arguments after
-  its second occurrence. The issue remains open for distinct safe-write, MCP cleanup, parity-hash,
+  PR/head/check state. PR #238 separately resolved FR-021/#233's deterministic invented backup
+  fixture and merged as `e3ce2f879eee00f49e398116be428a6a7c7c8d2b`; it changed no production code.
+  FR-026 separately promotes typed-scalar PowerShell native arguments after its second occurrence.
+  The issue remains open for distinct safe-write, MCP cleanup, parity-hash,
   and dependency-preflight predicates that this bounded slice does not claim to solve.
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is closed;
   G1/G2 approval, standing bounded G3

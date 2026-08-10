@@ -4300,8 +4300,12 @@ contract checks were clean, all 87 test files passed with 1,498 tests / 10 skips
 production build passed, and the secret-pattern verifier passed across its generated build output.
 Hosted run `31345468111` on head `b5ea92c05aa0d61225f0e7d05c6b3913a110f0eb` passed context,
 generated-artifact and lint steps, then failed only the pre-existing FR-021 replacement-inode
-fixture while 1,505 tests passed with 2 declared skips; issue #233 owns the active durable repair.
-Exact-final hosted and review evidence remains pending, and no merge eligibility is claimed.
+fixture while 1,505 tests passed with 2 declared skips. PR #238 then repaired only that invented
+fixture: final head `b08a4022550396b4da0aab877d942a433291253c` passed the focused case, the full
+backup file with 71 tests and 2 declared skips, lint, TypeScript build, diff hygiene, hosted run
+`31345932617`, and a clean fresh-context review, then merged as
+`e3ce2f879eee00f49e398116be428a6a7c7c8d2b`. Exact-final hosted and review evidence for this #222
+branch remains pending, and no merge eligibility is claimed.
 
 **Friction and state boundary.** FR-017 now keeps Docker-unavailable evidence distinct from the MCP
 cleanup-timeout predicate; this slice does not claim a false second occurrence or cleanup repair.
