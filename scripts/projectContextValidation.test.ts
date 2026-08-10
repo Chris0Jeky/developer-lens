@@ -147,6 +147,9 @@ describe('project context validation', () => {
 
     expect(validateCurrentStateDocument(state(validYaml))).toEqual([])
     expect(validateCurrentStateDocument(state(validYaml).replaceAll('\n', '\r\n'))).toEqual([])
+    expect(
+      validateCurrentStateDocument(state(semanticYaml.replace("updated: '2026-08-10'", "updated: '2024-02-29'"))),
+    ).toEqual([])
     expect(validateCurrentStateDocument('# Current state\n')).toContain(
       'line 1: expected exactly one root-level ```yaml fenced block',
     )
@@ -170,6 +173,8 @@ describe('project context validation', () => {
     ])
     for (const [key, replacement, expected] of [
       ['updated', 'updated: 2026-8-10', 'updated must be a YYYY-MM-DD string'],
+      ['updated', "updated: '2026-02-30'", 'updated must be a YYYY-MM-DD string'],
+      ['updated', "updated: '2023-02-29'", 'updated must be a YYYY-MM-DD string'],
       ['active_slice', "active_slice: ' '", 'active_slice must be a nonblank string'],
       ['next_value_slice', 'next_value_slice: [wrong]', 'next_value_slice must be a nonblank string'],
       ['blockers', 'blockers: false', 'blockers must be a nonblank string'],
