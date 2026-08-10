@@ -832,3 +832,22 @@ Rules that bind entries:
 - **promotion:** Deliberately NOT promoted after one occurrence because the helper already enforces
   the safety property by failing closed. A second independent transcription occurrence should move
   local/remote SHA acquisition into a checked wrapper rather than add another prose reminder.
+
+### FR-031 — a Jest-only flag made the focused Vitest review run no tests
+
+- **first-seen:** 2026-08-10
+- **status:** `workaround-documented`
+- **severity:** `LOW (review proof command mismatch)`
+- **symptom:** Fresh review of PR #238 first invoked the focused Vitest seam with unsupported
+  `--runInBand`; the command rejected the option and executed no tests. The corrected repository-
+  native invocation then passed the focused case and full backup test file.
+- **impact:** Treating a familiar runner flag as portable can leave a review without the intended
+  local proof until the command result is read and corrected.
+- **workaround:** Use the repository's Vitest command shape (`npx vitest run <path> -t <name>`) and
+  confirm the reported executed-test count before accepting the result.
+- **occurrences:** 1 independent occurrence — Product PR #238 fresh-context review.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns recurring Windows-safe
+  proof-command boundaries; PR #238 itself remains scoped to issue #233's fixture repair.
+- **promotion:** Deliberately NOT promoted after one occurrence because the package script and
+  existing run table already name Vitest. A second independent runner-flag mismatch should add an
+  exact focused-test example to the Product run table rather than another prose-only workaround.
