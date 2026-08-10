@@ -102,22 +102,23 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   no CRITICAL/HIGH defect and was posted at 12:39:57Z, two seconds before merge; it carried the Lab
   review gate. A second independent MERGE-SOUND result was posted at 12:41:40Z after merge. The
   confirmed process defect is only the at-most-8m59s head age against the Lab 15-minute floor; Lab
-  #29 tracks the merge-eligibility hardening. This is not release proof. EXACT NEXT ACTIONS:
-  preserve the protected Lane-P candidate-content review
-  boundary under Lab #29; Lab PR #57 delivered the zero/multiple-wheel and full-call-sequence P2
-  hardening seam. Complete all remaining STEP 3 Lab release-preparation pre-tag deliverables under
-  Lab #29;
-  then STEP 5 = final
+  #29 tracks the merge-eligibility hardening. This is not release proof. EXACT NEXT ACTION: deliver
+  the prepared Lab FR-028/#29 public-only, report-only merge-eligibility helper so a live coherent
+  snapshot refuses heads younger than 15 minutes, moved head/base state, failed or incomplete
+  checks, pagination, unresolved threads, and closing references. Preserve the protected Lane-P
+  candidate-content boundary; this unattended session does not open that lane. Lab PR #57 already
+  delivered the zero/multiple-wheel and full-call-sequence P2 hardening seam. After the helper
+  merges, continue only other explicitly tracked C0 pre-tag slices under Lab #29; then STEP 5 = final
   browser/visual QA proof for the `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` five-minute
   product owner sign-off plus
-  Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 Lab screenshot/video-package aesthetic
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` Lab screenshot/video-package aesthetic
   sign-off; then STEP 6 = tag v0.1.0 +
   publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
   disposition), not the pre-QA batch — the joint tag remains blocked on the remaining Lab #29
   pre-tag deliverables (explicitly including the Lane-P candidate-content review and any other
   remaining pre-tag work tracked there; the selected P2 test-hardening seam is delivered) plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
-  Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11, per H7=BOTH; #29 closes only after the tag; step 7
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`, per H7=BOTH; #29 closes only after the tag; step 7
   descriptions/topics is partially done (description, topics,
   Discussions live). Tracked from the #209 review (non-blocking LOWs,
   noted on #200): version 0.0.0 bump belongs to the release-tag step; README should link
