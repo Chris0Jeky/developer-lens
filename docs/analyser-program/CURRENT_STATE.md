@@ -28,6 +28,18 @@ phase: 'P0 control-plane reconciliation (governor bootstrap) delivered by merged
   source activation, private output, external model call, or model promotion is part of this
   programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
+latest_truth_repair: >-
+  Product PR #241 final head `45e43d8aab1e5c1058cc778f60e1d9f6677d24fb` over base
+  `c268c840b302bc7f93f4f01d3e81ba99292bf06b`; required hosted Prove run `31407981493`
+  succeeded; focused 30 tests, verify:context 47 Markdown/31 required, audit 0, full check 86
+  files / 1491 passed / 10 skipped, and build/credential scan green; fresh independent
+  exact-final-head review MERGE-SOUND. Connector review existed only on predecessor `39eee4b`;
+  its two P2 threads were dispositioned once and resolved. Fixes: Gregorian date false negative
+  and active_horizon two-entry preservation. Non-blocking follow-ups: Product #242 alias-limit
+  diagnostic normalization and Product #243 broader root-level Markdown fence forms. The final
+  head used the 15-minute fallback after push at 16:15:14Z; clean all-surface snapshot at
+  16:30:39Z; merged with merge commit `8f2bf584d1a91ca7fe126607d34599ff46771ee0` at
+  16:30:59Z; issue #215 closed. Active P0.5/#200 remains unchanged.
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
   DL-COMPARE-01 #89, DL-VALIDATE-01 #92, DL-VALUE-01 #94, DL-LIFE-01 #100, DL-EVQ-03 #99',
