@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto'
 import { dirname, isAbsolute, relative, resolve, sep, win32 } from 'node:path'
+import { isMap, parseDocument } from 'yaml'
 import { z } from 'zod'
 
 export type LinkResolution =
@@ -183,6 +184,108 @@ export function validateTierDeclaration(value: unknown): string[] {
       ? []
       : [`${path.join('.')} must be ${JSON.stringify(expected)} (received ${JSON.stringify(actual)})`]
   })
+}
+
+export function validateCurrentStateDocument(contents: string): string[] {
+  const normalized = contents.replaceAll('\r\n', '\n').replaceAll('\r', '\n')
+  const lines = normalized.split('\n')
+  const rootFences = lines
+    .map((line, index) => ({ line, number: index + 1 }))
+    .filter(({ line }) => line.startsWith('```'))
+  const errors: string[] = []
+
+  if (rootFences.length === 0) {
+    return ['line 1: expected exactly one root-level ```yaml fenced block']
+  }
+
+  const opener = rootFences.find(({ line }) => /^```yaml[\t ]*$/.test(line))
+  for (const fence of rootFences) {
+    if (fence.line === '```' || /^```yaml[\t ]*$/.test(fence.line)) {
+      continue
+    }
+    errors.push(
+      `line ${fence.number}: root-level fenced block opener must be exactly \`\`\`yaml (received ${fence.line})`,
+    )
+  }
+  if (!opener) {
+    errors.push('line 1: expected a root-level ```yaml fenced block opener')
+    return errors
+  }
+
+  const closer = rootFences.find(
+    ({ line, number }) => number > opener.number && line === '```',
+  )
+  if (!closer) {
+    errors.push(`line ${opener.number}: YAML fenced block is unterminated`)
+    return errors
+  }
+  if (rootFences.length !== 2) {
+    errors.push(
+      `line ${rootFences[2]?.number ?? opener.number}: expected exactly one root-level fenced block; found ${rootFences.length} fence lines`,
+    )
+  }
+  if (errors.length > 0) {
+    return errors
+  }
+
+  const document = parseDocument(lines.slice(opener.number, closer.number - 1).join('\n'), {
+    version: '1.2',
+    schema: 'core',
+    uniqueKeys: true,
+  })
+  for (const error of document.errors) {
+    const location = (error as { linePos?: Array<{ line: number; col: number }> }).linePos?.[0]
+    const prefix = location ? `line ${opener.number + location.line}, column ${location.col}` : 'YAML parse error'
+    errors.push(`${prefix}: ${error.message}`)
+  }
+  if (errors.length > 0) {
+    return errors
+  }
+  if (!isMap(document.contents)) {
+    return ['YAML root must be a mapping']
+  }
+
+  const state = document.toJS() as Record<string, unknown>
+  const requiredStrings = [
+    'active_slice',
+    'next_value_slice',
+    'blockers',
+    'last_verified_checks',
+  ] as const
+  const updated = state.updated
+  if (typeof updated !== 'string' || !isGregorianCalendarDate(updated)) {
+    errors.push('updated must be a YYYY-MM-DD string')
+  }
+  for (const key of requiredStrings) {
+    const value = state[key]
+    if (typeof value !== 'string' || value.trim() === '') {
+      errors.push(`${key} must be a nonblank string`)
+    }
+  }
+  const activeHorizon = state.active_horizon
+  if (
+    !Array.isArray(activeHorizon) ||
+    activeHorizon.length === 0 ||
+    activeHorizon.some((value) => typeof value !== 'string' || value.trim() === '')
+  ) {
+    errors.push('active_horizon must be a nonempty array of nonblank strings')
+  }
+  return errors
+}
+
+function isGregorianCalendarDate(value: string): boolean {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value)
+  if (!match) {
+    return false
+  }
+  const [, yearText, monthText, dayText] = match
+  const year = Number(yearText)
+  const month = Number(monthText)
+  const day = Number(dayText)
+  const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+  const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+
+  return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth[month - 1]
 }
 
 /*

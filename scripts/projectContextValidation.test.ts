@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import { parseDocument } from 'yaml'
 import {
   COMMON_PROMPT_IDS,
   CONTINUOUS_SECTION_MARKERS,
@@ -17,6 +19,7 @@ import {
   validateAgentFrictionParity,
   validateContinuousWorkProtocol,
   validateContinuationSkillParity,
+  validateCurrentStateDocument,
   validatePromptLibrary,
   validatePromptParityManifest,
   validatePromptSource,
@@ -119,6 +122,92 @@ describe('project context validation', () => {
     expect(validateTierDeclaration({ ...tier, flags: { ...tier.flags, sensitive_data: false } })).toEqual([
       'flags.sensitive_data must be true (received false)',
     ])
+  })
+
+  it('validates the single machine-readable current state YAML block', () => {
+    const state = (yaml: string): string => `# Current state\n\n\`\`\`yaml\n${yaml}\n\`\`\`\n`
+    const validYaml = [
+      "updated: '2026-08-10'",
+      "active_slice: 'current: # safe'",
+      "next_value_slice: 'next: it''s safe'",
+      'blockers: >-',
+      '  none: # quoted prose is not a mapping',
+      "last_verified_checks: 'focused test'",
+      'active_horizon:',
+      "  - 'first: # item'",
+      "  - 'second''s item'",
+    ].join('\n')
+    const semanticYaml = [
+      "updated: '2026-08-10'",
+      "active_slice: 'current'",
+      "next_value_slice: 'next'",
+      "blockers: 'none'",
+      "last_verified_checks: 'focused test'",
+      "active_horizon: ['first: # item', 'second''s item']",
+    ].join('\n')
+
+    expect(validateCurrentStateDocument(state(validYaml))).toEqual([])
+    expect(validateCurrentStateDocument(state(validYaml).replaceAll('\n', '\r\n'))).toEqual([])
+    const currentState = readFileSync(resolve('docs/analyser-program/CURRENT_STATE.md'), 'utf8')
+    const currentStateYaml = currentState.match(/^```yaml\r?\n([\s\S]*?)^```\r?$/m)?.[1] ?? ''
+    expect(validateCurrentStateDocument(currentState)).toEqual([])
+    expect(parseDocument(currentStateYaml, { version: '1.2', schema: 'core' }).toJS().active_horizon).toEqual([
+      'P0 governor bootstrap PR #206 — delivered',
+      'P0.5 v0.1.0 release programme #200 — active, product-only release preparation',
+    ])
+    expect(
+      validateCurrentStateDocument(state(semanticYaml.replace("updated: '2026-08-10'", "updated: '2024-02-29'"))),
+    ).toEqual([])
+    expect(validateCurrentStateDocument('# Current state\n')).toContain(
+      'line 1: expected exactly one root-level ```yaml fenced block',
+    )
+    expect(validateCurrentStateDocument(`${state(validYaml)}\n\`\`\`yaml\nextra: true\n\`\`\``)).toEqual(
+      expect.arrayContaining([expect.stringContaining('expected exactly one root-level fenced block')]),
+    )
+    expect(validateCurrentStateDocument('# Current state\n\n```json\n{}\n```\n')).toEqual(
+      expect.arrayContaining([expect.stringContaining('must be exactly ```yaml')]),
+    )
+    expect(validateCurrentStateDocument('# Current state\n\n```yaml\nupdated: nope\n')).toEqual(
+      expect.arrayContaining([expect.stringContaining('unterminated')]),
+    )
+    expect(validateCurrentStateDocument(state(`${validYaml}\nnot: [closed`))).toEqual(
+      expect.arrayContaining([expect.stringContaining('line')]),
+    )
+    expect(validateCurrentStateDocument(state(`${validYaml}\nupdated: '2026-08-11'`))).toEqual(
+      expect.arrayContaining([expect.stringContaining('line'), expect.stringContaining('unique')]),
+    )
+    expect(validateCurrentStateDocument('# Current state\n\n```yaml\n- item\n```\n')).toEqual([
+      'YAML root must be a mapping',
+    ])
+    for (const [key, replacement, expected] of [
+      ['updated', 'updated: 2026-8-10', 'updated must be a YYYY-MM-DD string'],
+      ['updated', "updated: '2026-02-30'", 'updated must be a YYYY-MM-DD string'],
+      ['updated', "updated: '2023-02-29'", 'updated must be a YYYY-MM-DD string'],
+      ['active_slice', "active_slice: ' '", 'active_slice must be a nonblank string'],
+      ['next_value_slice', 'next_value_slice: [wrong]', 'next_value_slice must be a nonblank string'],
+      ['blockers', 'blockers: false', 'blockers must be a nonblank string'],
+      ['last_verified_checks', 'last_verified_checks: 42', 'last_verified_checks must be a nonblank string'],
+    ] as const) {
+      expect(
+        validateCurrentStateDocument(state(semanticYaml.replace(new RegExp(`^${key}:.*$`, 'm'), replacement))),
+      ).toEqual(expect.arrayContaining([expected]))
+    }
+    expect(
+      validateCurrentStateDocument(
+        state(
+          semanticYaml.replace(
+            "active_horizon: ['first: # item', 'second''s item']",
+            'active_horizon: []',
+          ),
+        ),
+      ),
+    ).toEqual(expect.arrayContaining(['active_horizon must be a nonempty array of nonblank strings']))
+
+    const flow = state(validYaml.replace("active_horizon:\n  - 'first: # item'\n  - 'second''s item'", "active_horizon: ['first: # item', 'second''s item']"))
+    expect(validateCurrentStateDocument(flow)).toEqual([])
+    expect(
+      parseDocument(validYaml, { version: '1.2', schema: 'core' }).toJS().active_horizon,
+    ).toEqual(parseDocument(flow.match(/```yaml\n([\s\S]*?)\n```/)?.[1] ?? '', { version: '1.2', schema: 'core' }).toJS().active_horizon)
   })
 })
 

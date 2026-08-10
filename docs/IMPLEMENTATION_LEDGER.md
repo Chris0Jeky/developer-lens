@@ -4348,3 +4348,15 @@ an open-ended audit, permits eligible already-tracked maintenance/hardening only
 delivery, and retains no-fixed-fleet review-capacity backpressure. FR-029 now cites the exact
 UTF-8 helper proof; FR-028, FR-029, and FR-030 remain distinct mechanisms. No capability, owner
 gate, manifest, current state, protected data, or Lab methodology changed.
+
+## 2026-08-10 — Product #215 CURRENT_STATE YAML validation
+
+**Changed and verified.** `CURRENT_STATE.md` now has a parseable YAML 1.2 Core state block, and
+`verify:context` fails closed on its single root fence, parser diagnostics, mapping root, and
+resume-critical scalar/active-horizon types. Added synthetic regression coverage and direct
+`yaml@2.9.0` development dependency. Local results: `npm test --
+scripts/projectContextValidation.test.ts` (30 passed); `npm run verify:context` (47 Markdown files,
+31 required files); `git diff --check`; `npm audit --audit-level=high` (0 vulnerabilities); and
+`npm run check` (86 files, 1491 passed, 10 skipped, TypeScript/Vite/secret verification green).
+Hosted CI, review, and merge are pending; no release, capability, owner gate, protected data, or
+historical state was advanced.

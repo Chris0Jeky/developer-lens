@@ -13,6 +13,7 @@ import {
   validatePromptLibrary,
   validatePromptParityManifest,
   validatePromptSource,
+  validateCurrentStateDocument,
   validateTierDeclaration,
   type PromptSourceClassification,
 } from './projectContextValidation.js'
@@ -67,6 +68,10 @@ const requiredFiles = [
 requiredFiles.forEach(requireFile)
 
 if (failures.length === 0) {
+  for (const error of validateCurrentStateDocument(read('docs/analyser-program/CURRENT_STATE.md'))) {
+    failures.push(`current state: ${error}`)
+  }
+
   try {
     const tier = JSON.parse(read('.agent-harness/tier.json')) as unknown
     for (const error of validateTierDeclaration(tier)) {
