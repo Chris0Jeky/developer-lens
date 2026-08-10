@@ -18,6 +18,7 @@
     "check:research-pack": "tsx scripts/generateResearchPack.ts --check",
     "generate:method-trial-view": "tsx scripts/generateMethodTrialView.ts",
     "check:method-trial-view": "tsx scripts/generateMethodTrialView.ts --check",
+    "governor:github": "tsx scripts/githubGovernorEvidence.ts",
     "build": "tsc -b && vite build && npm run verify:no-secrets",
     "build:showcase": "npm run export:demo && npm run render:social && tsc -b && vite build --base=/developer-lens/ --mode showcase && npm run verify:showcase",
     "start": "tsx server/index.ts --production",

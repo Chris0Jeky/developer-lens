@@ -24,6 +24,17 @@ here executes on its own. Loop context: [README.md](README.md). Routing:
   writer in the same working directory can corrupt a branch mid-slice.
 - **Repository settings.** Verify branch protection still requires `Prove the pull request` on
   `main`; verify squash-merge stays disabled. Record what was read; never infer a setting.
+- **Structured pull-request evidence.** Use the report-only default
+  `npm run governor:github -- snapshot --repo <owner/repo> --pr <N>` instead of embedding GraphQL or
+  `jq` string literals in a PowerShell native-command argument. Add `--expect-head <full-sha>`,
+  `--expect-base <full-sha>`, `--require-green`, `--require-no-unresolved`, and
+  `--require-no-closing-issues` when those are actual gates. The helper passes GraphQL variables as
+  JSON through stdin, launches `gh` without a shell, validates typed response fields, and fails
+  closed if any bounded review/check connection is paginated. Its only write operation is an
+  allowlisted review-thread reply: specify the repository, PR, thread, expected head/base, explicit
+  `--apply`, and `--body-stdin`. Inline/file body arguments are not accepted, thread membership is
+  proved before mutation, and the returned comment ID/URL is validated. Never manufacture a reply
+  for proof; use the first legitimate review response.
 
 ## PR lifecycle and aging
 

@@ -466,15 +466,17 @@ Rules that bind entries:
   containers, 0 provably unowned, 0 orphan MCP processes, and 5,023 MB free, so no additional cleanup
   was warranted. The cleanup predicate spared live-owned containers; the unowned containers it
   removed were regenerable.
-- **occurrences:** 2 independent occurrences — 2026-08-09 canonical 468/440 report, timed-out first
-  cleanup pass, bounded successful retry, later stale-location correction and live-owned re-measure;
-  then the 2026-08-09 approximately 20:38 BST report-only measurement with Docker unavailable.
+- **occurrences:** 1 cleanup-predicate occurrence — the 2026-08-09 canonical 468/440 report,
+  timed-out first cleanup pass, bounded successful retry, and later stale-location correction. The
+  approximately 20:38 BST Docker-unavailable report is a distinct evidence-availability predicate
+  and is not counted as a second cleanup occurrence.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns durable Windows-safe
-  governor maintenance helpers for recurrent proof and cleanup checks.
-- **promotion:** Promotion selected at the second independent occurrence, but not yet implemented:
-  #222 owns the cheapest durable layer, a Windows-safe executable helper that distinguishes
-  Docker-unavailable or unknown from a measured zero-container result and retains fail-closed,
-  report-only semantics. It must not infer a safe sweep from missing Docker evidence.
+  governor maintenance helpers; its bounded GitHub-evidence helper does not implement an MCP
+  cleanup wrapper.
+- **promotion:** Deliberately NOT promoted because the Docker-unavailable measurement is not a
+  second occurrence of the cleanup-timeout predicate. Retain the reviewed bounded retry and
+  report-only fail-closed behavior; a second matching cleanup occurrence must select a separate
+  checked MCP-hygiene layer rather than widening the GitHub-evidence helper.
 
   **2026-08-09 truth-correction note:** The entry's first draft inverted the initial canonical
   468/440 report and the stale-location failure, which happened only during the later re-measure.
@@ -486,6 +488,12 @@ Rules that bind entries:
   **unknown**, not measured zero, and the sweep was skipped. No restart or cleanup was warranted
   from the available evidence. Issue #222 still owns the selected helper above; it is not
   implemented by this documentation update.
+
+  **2026-08-10 recurrence correction:** Product issue #222 comment `5234075441` establishes that the
+  Docker-unavailable/unknown report ran no cleanup and needed no retry, so it cannot satisfy the
+  second-occurrence threshold for the earlier cleanup-timeout predicate. The allowed occurrence,
+  task and promotion fields now preserve those distinct failure classes. The issue #222 slice
+  implements only the independently recurring GitHub command-boundary helper.
 
 ### FR-018 — active Product prompts did not all carry their named Claude routing
 
@@ -530,9 +538,15 @@ Rules that bind entries:
 - **task:** [Lab #29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29) owns release/package
   hardening; [Lab #34](https://github.com/Chris0Jeky/developer-lens-lab/issues/34) owns external
   GitHub and Windows command-boundary hardening.
-- **promotion:** Do not create a parallel Product helper. The cheapest enforcing layers remain the
-  checked Lab snapshot/launcher tasks on #29/#34, with the current workarounds retained until those
-  tasks land. Product #222 remains a separate selected-but-unimplemented hygiene helper.
+- **promotion:** Do not create a Product copy of the Lab-specific release/package helper. The
+  cheapest enforcing layers remain the checked Lab snapshot/launcher tasks on #29/#34, with the
+  current workarounds retained until those tasks land. Product #222 separately implements the
+  governor's generic PR snapshot/reply command boundary; it does not satisfy or replace those Lab
+  checks.
+
+  **2026-08-10 scope note:** The Product #222 helper accepts either public repository as an explicit
+  read-only snapshot target, but no Lab wrapper, release rule or package-smoke behavior moved. Lab
+  #29/#34 remain authoritative for their repository-specific checked snapshot and launcher tasks.
 
 ### FR-020 — public-tip audit found machine-specific local-path literals
 
@@ -584,7 +598,7 @@ Rules that bind entries:
 ### FR-022 — PowerShell inner-quote stripping blocked a PR232 latest-field query
 
 - **first-seen:** 2026-08-09
-- **status:** `open`
+- **status:** `resolved`
 - **severity:** `LOW (CLI evidence friction)`
 - **symptom:** Three read-only `gh api --jq` projections used from PowerShell stripped inner quoting
   before the request could be evaluated: the initial PR232 ISO-timestamp filter, the Lab PR59 commit
@@ -595,15 +609,17 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 3 independent command-boundary occurrences — 2026-08-09 during the initial PR232
-  ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
-  PR232 exact-final-head review-thread snapshot.
+- **occurrences:** 4 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+  ISO-timestamp filter, the Lab PR59 commit projection/newline split, the PR232 exact-final-head
+  review-thread snapshot, and the later Lab PR56 timestamp-filter projection recorded by issue #222
+  comment `5234369568`.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns structured/JSON-input
-  Windows-safe CLI helpers for recurring evidence queries.
-- **promotion:** The cheapest enforcing layer is the Windows-safe structured-query helper already
-  owned by [#222](https://github.com/Chris0Jeky/developer-lens/issues/222): pass GraphQL values as
-  variables or JSON input rather than embedding quoted literals in a PowerShell native-command
-  argument. Keep direct field comparison until that helper lands.
+  Windows-safe CLI helpers for recurring evidence queries; the checked implementation is
+  `scripts/githubGovernorEvidence.ts` with `npm run governor:github`.
+- **promotion:** Implemented at the selected command layer: the allowlisted helper launches `gh`
+  without a shell, passes GraphQL values as JSON variables through stdin, performs direct typed
+  gate comparisons, fails closed on incomplete thread/check evidence, and accepts review-reply
+  bodies only through stdin behind explicit `--apply` with returned ID/URL validation.
 
   **2026-08-09 note:** The Lab PR59 commit projection/newline split is the second independently
   recorded occurrence (see #222 comment 5234236530); the PR232 exact-final-head thread snapshot is
@@ -611,10 +627,16 @@ Rules that bind entries:
   occurrences keep the path-set-order, UTC-switch, and patch-context predicates separate while
   selecting #222's structured-query helper as the durable enforcing layer.
 
+  **2026-08-10 implementation note:** The focused synthetic suite proves hostile quotes/newlines
+  remain GraphQL variable values rather than shell text, pagination is refused, exact head/base and
+  green/thread/closing-ref requirements use typed comparisons, replies preflight thread membership,
+  and malformed mutation responses fail closed. A read-only Windows smoke against public Product
+  PR #236 passed every exact-head requirement; no comment was manufactured for proof.
+
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
 - **first-seen:** 2026-08-09
-- **status:** `workaround-documented`
+- **status:** `resolved`
 - **severity:** `LOW (CLI evidence friction)`
 - **symptom:** The installed Windows PowerShell rejected `Get-Date -AsUTC` while composing an
   exact-head PR evidence snapshot. The compound read-only command failed before any mutation.
@@ -622,13 +644,17 @@ Rules that bind entries:
   to an otherwise reproducible GitHub state snapshot.
 - **workaround:** Use `(Get-Date).ToUniversalTime().ToString('o')`, which succeeded on the same
   shell without changing repository or GitHub state.
-- **occurrences:** 1 independent occurrence — 2026-08-09 during the PR232 final review-thread
-  snapshot.
+- **occurrences:** 2 independent occurrences — 2026-08-09 during the PR232 final review-thread
+  snapshot and 2026-08-10 during the Lab PR60 delayed-sweep timestamp probe.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   Windows-safe evidence helper and its explicit timestamp normalization.
-- **promotion:** Deliberately NOT promoted after one occurrence. Retain the compatible expression
-  until #222 proves the helper; a second independent occurrence should move UTC normalization into
-  that helper's tested contract.
+- **promotion:** Implemented at the selected command layer after the second occurrence:
+  `npm run governor:github` emits `observedAt` with JavaScript's UTC ISO serializer, removing the
+  host-PowerShell date-switch dependency from PR evidence snapshots.
+
+  **2026-08-10 implementation note:** The Lab recurrence failed before any GitHub query or mutation
+  and was corrected with `[DateTime]::UtcNow.ToString('o')`. The issue #222 helper's deterministic
+  UTC field is covered by a synthetic clock test and the public PR #236 read-only smoke.
 
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
@@ -683,6 +709,50 @@ Rules that bind entries:
   placing it in the object. The corrected evidence path completed without mutation.
 - **occurrences:** 1 independent occurrence — 2026-08-10 during the Product #200 reconciliation.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the durable
-  Windows-safe structured evidence helpers.
-- **promotion:** Deliberately NOT promoted after one occurrence; retain the scalar conversion at the
-  PowerShell evidence boundary until #222's helper lands.
+  Windows-safe structured evidence helpers; the scalar tracked-file input remains a separate
+  follow-up from the GitHub snapshot/reply helper.
+- **promotion:** Deliberately NOT promoted after one occurrence; retain `Get-Content -Raw` or an
+  explicit scalar join at this boundary. The issue #222 GitHub helper does not consume merge-message
+  files, so its delivery is not evidence that this distinct predicate is resolved.
+
+  **2026-08-10 scope note:** The implemented issue #222 slice is intentionally allowlisted to
+  pull-request snapshots and review-thread replies. FR-026 remains one-occurrence task debt rather
+  than being silently closed by an unrelated structured-output path.
+
+### FR-027 — worktree guard compared equivalent roots with different slash styles
+
+- **first-seen:** 2026-08-10
+- **status:** `workaround-documented`
+- **severity:** `LOW (caught before worktree mutation)`
+- **symptom:** The issue #222 worktree guard compared PowerShell's backslash `Resolve-Path` rendering
+  with Git's forward-slash `rev-parse --show-toplevel` rendering and rejected the same repository as
+  an unexpected root. The guard stopped before creating a directory, worktree or ref.
+- **impact:** A correct safety preamble can block an otherwise valid isolated slice when equality is
+  tested on display strings instead of canonical path values.
+- **workaround:** Normalize both absolute roots to one slash style, trim only trailing separators,
+  compare them, then repeat the complete guard before worktree creation.
+- **occurrences:** 1 independent occurrence — 2026-08-10 while opening the issue #222 worktree.
+- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns coordinator/worktree
+  hardening and the existing worktree-lease debt.
+- **promotion:** Deliberately NOT promoted after one occurrence because normalization in the guard
+  is the cheapest safe workaround. A second independent occurrence should add a shared canonical
+  path comparator to the coordinator preamble rather than another prose reminder.
+
+### FR-028 — stale multi-entry patch context blocked the friction update
+
+- **first-seen:** 2026-08-10
+- **status:** `workaround-documented`
+- **severity:** `LOW (fail-closed documentation tooling)`
+- **symptom:** One combined `apply_patch` expected FR-022 to have status `promoted`, while live main
+  still recorded `open`; patch verification rejected the whole multi-entry update before any file
+  changed.
+- **impact:** A broad patch built from a stale handoff can delay same-hop friction capture even when
+  each intended field change is legitimate.
+- **workaround:** Re-read the exact heading-bounded entries, split the update into small patches with
+  unique headings and current field values, then inspect the complete diff.
+- **occurrences:** 1 independent occurrence — 2026-08-10 during the issue #222 friction burn-down.
+- **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns this bounded helper and
+  its factual friction reconciliation.
+- **promotion:** Deliberately NOT promoted after one occurrence because heading-bounded fail-closed
+  patches are the cheapest correction. A second matching stale-context failure should add a focused
+  field-aware updater or verifier rather than another larger Markdown patch.

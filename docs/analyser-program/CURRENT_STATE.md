@@ -282,8 +282,14 @@ lab_release_handoff: 'Product PR #231 final head
   Continue the remaining Lab #29 pre-tag deliverables under their normal gates. The
   joint tag remains blocked by the remaining Lab #29 pre-tag work,
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 closes only after the tag. Product #222
-  remains selected but not implemented. `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is closed;
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 closes only after the tag. Product #222's
+  selected GitHub command-boundary seam is implemented on branch
+  `fix/windows-safe-github-evidence-20260810`: a report-only default produces typed PR/check/review-
+  thread/closing-ref evidence through JSON-bound GraphQL variables, while the allowlisted reply path
+  requires explicit apply plus a stdin body and validates the returned ID/URL. Refresh live GitHub
+  for its PR/head/check state. The issue remains open for distinct MCP cleanup, scalar tracked-file,
+  parity-hash, and dependency-preflight predicates that this bounded slice does not claim to solve.
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is closed;
   G1/G2 approval, standing bounded G3
   approval, and bounded G4 Luna approval remain approved. Remaining executable activation/default-deny
   gates are unpassed. No protected lane, release, tag, publication, data, model, telemetry, or

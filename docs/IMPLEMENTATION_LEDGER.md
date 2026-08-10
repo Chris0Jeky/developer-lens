@@ -1,7 +1,7 @@
 # Developer Lens implementation ledger
 
-Last updated: **2026-08-09** (Product prompt-routing evidence through PR #229 and final read-only Lab
-release reconciliation through PR #55; exact preservation records appended below).
+Last updated: **2026-08-10** (Product #222 Windows-safe GitHub evidence implementation; exact
+preservation and earlier release-reconciliation records remain below).
 
 Prior detailed update: **2026-08-08, late evening** (P0.5 first batch — PRs
 #209/#210/#211/#212. A
@@ -4264,3 +4264,42 @@ two-document range at that failing head. [Issue #233](https://github.com/Chris0J
 owns the bounded fixture repair. The focused local case, full backup file, and adjacent hosted
 success justify one rerun only; this ledger claims no rerun result and this documentation PR takes
 no production-code detour.
+
+## 2026-08-10 — Product #222 Windows-safe GitHub evidence seam
+
+**Scope and consumer.** Product issue [#222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+selected one repeated command-boundary predicate: governor sessions need exact PR head/base, checks,
+reviews, review threads and closing-issue evidence without embedding GraphQL or `jq` string literals
+in PowerShell native-command arguments. Branch `fix/windows-safe-github-evidence-20260810` starts
+from Product main `2af78a93205939f96c9f54f16a92c4758eeea478`. It does not implement MCP cleanup,
+tracked-file decoding, parity hashing, dependency bootstrap, release, tag, data, model, telemetry or
+credential behavior.
+
+**Implementation.** `scripts/githubGovernorEvidence.ts` reuses `server/gh.ts`'s `shell: false`
+launcher and GraphQL JSON-stdin path. Its default `snapshot` operation validates a typed bounded
+response, refuses paginated check/review/thread/comment/closing-ref evidence, emits a portable UTC
+`observedAt`, and can directly require exact head/base, green checks, zero unresolved threads and
+zero closing refs. The only write operation is an allowlisted review-thread reply. It requires the
+repository and PR, proves the thread belongs to that bounded snapshot, accepts a UTF-8 body only
+from stdin behind explicit `--apply`, passes the body as a GraphQL variable, and validates the
+returned comment ID and URL. `npm run governor:github` is the executable entry point.
+
+**Proof.** `scripts/githubGovernorEvidence.test.ts` uses invented responses and hostile multiline
+text to cover structured variable binding, exact typed comparisons, incomplete pagination,
+malformed repositories, missing/mismatched heads and checks, explicit apply gating, thread
+membership, stdin-only bodies and malformed mutation results. The focused run passed 1 file / 13
+tests. TypeScript server compilation and focused Oxlint passed. A read-only Windows smoke against
+public Product PR #236 at head `c4c0cfb5ffcfce708176c4b689222b87e4b44768` and base
+`51471e9a407fe05f24ed07687e72398fd7e11814` returned the successful hosted check, seven reviews,
+five resolved threads and zero closing refs while satisfying every exact requirement. No GitHub
+comment was manufactured. The full local `npm run check` gate then passed: context and generated-
+contract checks were clean, all 87 test files passed with 1,501 tests / 10 skips, TypeScript and the
+production build passed, and the secret-pattern verifier passed across its generated build output.
+Exact-head hosted/review evidence remains pending until this branch is published.
+
+**Friction and state boundary.** FR-017 now keeps Docker-unavailable evidence distinct from the MCP
+cleanup-timeout predicate; this slice does not claim a false second occurrence or cleanup repair.
+FR-022 records the implemented structured GitHub layer, FR-023 records portable UTC emission, and
+FR-026 stays separate one-occurrence scalar-input debt. FR-027 records the caught Windows/Git slash-
+style guard mismatch; FR-028 records one stale multi-entry patch-context failure. Product q-8 stays
+closed on its retained owner evidence. No owner action or capability boundary moved.
