@@ -4327,3 +4327,9 @@ negative tests. Shared prompt blocks and `.agent-harness/prompt-parity.json` rem
 FR-028 and FR-029 separately record the bundled thread-helper and UTF-8 decoding workarounds under
 Product #222; neither is FR-026's object-expansion mechanism. This milestone changes no current
 state, product runtime, protected data, capability, owner gate, release, or Lab methodology.
+
+**Canonical parity correction.** The earlier working-copy SHA comparison was a line-ending artifact,
+not a cross-repository manifest defect. Canonical Git blob identity proves Product base and this
+head plus Lab PR #63 base and head all use
+`2d4e274f55ee2438230eda0b621c761dd554757e` for `.agent-harness/prompt-parity.json`; the manifest
+remains untouched.

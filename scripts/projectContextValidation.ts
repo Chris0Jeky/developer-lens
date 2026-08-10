@@ -262,6 +262,7 @@ export const FLAGSHIP_OVERNIGHT_DELIVERY_REQUIRED_CLAUSES = [
   'tangible product/research value',
   'IMPACT CONTRACT',
   'MISSION DELIVERY',
+  'FINISH-BEFORE-EXPAND',
   'Pure docs/admin work is eligible only when it corrects a safety-relevant false operational claim, satisfies an explicit request, or directly unblocks delivery.',
   'You own authority, architecture, orchestration, sequencing,',
   'conflict resolution and final merge judgment.',

@@ -769,13 +769,33 @@ patch changed no file and the one-section retry succeeded.
   unreadable or incorrectly rendered before it could be classified.
 - **impact:** Review findings can be misread or omitted, weakening exact-head thread triage even
   though no repository or GitHub mutation occurs.
-- **workaround:** Read the saved review content explicitly as UTF-8 (for example, `Get-Content -Raw
-  -Encoding utf8`) before extracting or quoting it; retain the original source response as the
-  authority for review classification.
+- **workaround:** Invoke the affected Python helper with `py -3 -X utf8 ...`; this is the observed
+  safe route that exercises the helper's decoding path. `Get-Content -Encoding utf8` does not
+  exercise this helper failure. Retain the original source response as the authority for review
+  classification.
 - **occurrences:** 1 independent occurrence — 2026-08-10 during Product issue #222 review evidence
   handling.
 - **task:** [Product #222 comment 5235240474](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5235240474)
   keeps the distinct UTF-8 observation under [#222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 - **promotion:** Do not conflate this with FR-026's PowerShell object-expansion mechanism. The
   bounded #222 successor must define and prove an explicit UTF-8 decoding path for review content
+  before this entry can close.
+
+### FR-030 — delayed review sweep cast a null `submittedAt` timestamp
+
+- **first-seen:** 2026-08-10
+- **status:** `workaround-documented`
+- **severity:** `LOW (review-sweep evidence friction)`
+- **symptom:** A delayed review sweep attempted to cast a null `submittedAt` value to
+  `DateTimeOffset` before distinguishing a pending or incomplete review record.
+- **impact:** The sweep can stop before completing its time comparison, delaying factual late-review
+  evidence without changing repository or GitHub state.
+- **workaround:** Guard for a non-null `submittedAt` value before `DateTimeOffset` conversion; treat
+  a null value as an explicit incomplete-record branch rather than as a timestamp.
+- **occurrences:** 1 independent occurrence — 2026-08-10 during Product issue #222 delayed-sweep
+  evidence handling.
+- **task:** [Product #222 comment 5235299373](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5235299373)
+  records this separate review-sweep hardening input under [#222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **promotion:** This is distinct from FR-026 object expansion and FR-029 UTF-8 decoding. The
+  bounded #222 successor must prove the non-null guard against pending and completed review records
   before this entry can close.

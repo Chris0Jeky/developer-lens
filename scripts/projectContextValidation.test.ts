@@ -593,6 +593,11 @@ describe('prompt operating system parity', () => {
       'flagship overnight prompt is missing required delivery clause: MISSION DELIVERY',
     )
 
+    const missingFinishBeforeExpand = complete.replace('FINISH-BEFORE-EXPAND', 'EXPAND FIRST')
+    expect(checkLibrary(missingFinishBeforeExpand)).toContain(
+      'flagship overnight prompt is missing required delivery clause: FINISH-BEFORE-EXPAND',
+    )
+
     const p02Only = buildLibrary({
       prompts: [{ id: 'DL-P02-GOVERNOR-LITE' }],
       sharedBlockIds: ['runtime-bootstrap-v1', 'friction-tasking-v1'],

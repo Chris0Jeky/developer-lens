@@ -58,6 +58,14 @@ Keep experiment and evaluation work inside Product authority and existing tracke
 bounds; Lab owns novel methodology. An unattended run never activates data, model, telemetry, or
 credential work merely because it would improve a delivery contract.
 
+**FINISH-BEFORE-EXPAND / review-capacity backpressure.** Drive existing writable lanes and pull
+requests to merge, archive, or park before accumulating new write lanes. During CI or review aging,
+start another writer only when the work is genuinely disjoint **and** review/merge capacity exists;
+otherwise do read-only discovery or advance an existing lane. This is not a fixed numeric cap: the
+owner's no-fixed-fleet policy still binds. A plan, report, or docs-only item is not MISSION DELIVERY
+by itself and must not monopolise the queue; it remains eligible only under the delivery exceptions
+above.
+
 <!-- continuous-impact-end -->
 
 ## Deterministic queue hopping

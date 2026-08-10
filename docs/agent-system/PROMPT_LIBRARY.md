@@ -337,6 +337,12 @@ artifact/behaviour/decision; (3) owned paths and non-goals; (4) acceptance behav
 proof; (5) risk/data/owner gate; (6) evidence/docs update; and (7) rollback/stop condition. Keep
 experiment and evaluation work within Product authority and existing tracked/pre-approved bounds; Lab owns novel methodology.
 
+FINISH-BEFORE-EXPAND: drive existing writable lanes and PRs to merge/archive/park before
+accumulating new write lanes. During aging, start another writer only when work is genuinely disjoint
+and review/merge capacity exists; otherwise use read-only discovery or existing-lane work. This is
+not a fixed numeric cap. A plan-only/docs-only item is not MISSION DELIVERY by itself and must not
+monopolise the queue.
+
 DETERMINISTIC QUEUE HOP - take the first non-empty step, every time you need work:
 1. a false operational claim in a tracked file, a red CI run, or unresolved review debt;
 2. the active delivery wave's own next step;
