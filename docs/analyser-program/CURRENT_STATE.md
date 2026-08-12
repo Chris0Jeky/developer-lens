@@ -319,7 +319,22 @@ lab_release_handoff: 'Product PR #231 final head
   G1/G2 approval, standing bounded G3
   approval, and bounded G4 Luna approval remain approved. Remaining executable activation/default-deny
   gates are unpassed. No protected lane, release, tag, publication, data, model, telemetry, or
-  credential action was authorized.'
+  credential action was authorized.
+  The 2026-08-12 governor session then delivered the Lab FR-028 enforcement end to end: Lab PR #68
+  (merge `07929a41fa8c80f05794db9a58fa0bf014b4f961`, 16:14:34Z, 17m51s exact-head age) landed the
+  report-only merge-eligibility helper with an accepted-review attestation, closing-reference
+  refusal, collected_at-bound aging with a stale_snapshot window, and a round-2 head-citation
+  anchor, under one independent fresh-context review (initial NOT MERGE-SOUND, HIGH verified
+  closed, then a CLEAN micro-verification of the final round), three triaged connector rounds at
+  the two-round fix ceiling, and a twice-clean delayed sweep. A second coordinator adopted that
+  lane on a stale read, ran a duplicate round whose push was rejected non-fast-forward, and
+  formally stood down; its salvage record merged as Lab PR #69
+  (`c978783efe028aeb8c545f05fbe8cbc1862c5fa3`) by the agreed order, and the state sync Lab PR #70
+  (merge `d54653587cf1b6785505be60a903732b1797cb7a`, 17:30:03Z) renumbered the floor-block
+  friction entry to FR-062, repaired the recorded PR #56 / PR #64 / replay-anchor state defects,
+  and repointed the Lab resume at the Lane-P release review of the already-selected frozen
+  exhibit. The floor-blocked GraphQL thread-state route is recorded as Lab FR-062 with the Lab #34
+  read-route dependency named before any Lane-P merge.'
 preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 named product
   worktrees and branches at their mechanically measured full HEADs. Three had tracked modifications;
   two no-PR branches were remote-preserved and the other measured no-PR branches were local-only.

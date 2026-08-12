@@ -4368,3 +4368,38 @@ preservation. Non-blocking follow-ups: Product #242 alias-limit diagnostic norma
 Product #243 broader root-level Markdown fence forms. The final head used the 15-minute fallback
 after push at 16:15:14Z; clean all-surface snapshot at 16:30:39Z; merged with merge commit
 `8f2bf584d1a91ca7fe126607d34599ff46771ee0` at 16:30:59Z; issue #215 closed.
+
+## 2026-08-12 — Lab FR-028 merge-eligibility enforcement delivered (governor session)
+
+**Changed and verified.** This product-side governor session delivered the Lab FR-028 selected
+enforcement layer end to end in the sibling repository. Lab PR #68 landed the report-only
+`tools/merge_eligibility.py` (+36 invented-fixture tests + the protocol's Lab merge decision seam)
+from the overnight-prepared branch this artifact named as the exact next action: final head
+`8facd3fe79777bd524ea201714b519d24f8a159d`, hosted `Prove the lab` run `31615108943` success, one
+independent fresh-context review (initial NOT MERGE-SOUND; its HIGH — a state-less formal review
+silently passing the CHANGES_REQUESTED gate — verified closed) plus a CLEAN micro-verification of
+the round-2 head-citation anchor, three triaged Codex rounds at the two-round fix ceiling, merged
+as `07929a41fa8c80f05794db9a58fa0bf014b4f961` at 2026-08-12T16:14:34Z after 17m51s exact-head age,
+with a twice-clean delayed sweep (T+9m49s and T+14m09s). Coordinator audit corrections before
+delivery: the prepared formal-`APPROVED` predicate was unsatisfiable (single-account repository;
+GitHub forbids self-approval) and was replaced by an explicit `accepted_review` attestation;
+closing references became a refusal per this artifact's recorded contract; aging was rebound from
+evaluation time to a required `collected_at` with a symmetric `stale_snapshot` window; `/.dllab/`
+is now ignored wholesale, verified against the hygiene script's `--exclude-standard` semantics.
+Post-ceiling findings (PR-identity binding, dismissed-review state allowlist, identifier
+validation) are tracked on Lab #29. A second coordinator adopted the lane on a stale read, ran a
+duplicate round whose push was rejected non-fast-forward, and formally stood down; its salvage
+record merged as Lab PR #69 (`c978783efe028aeb8c545f05fbe8cbc1862c5fa3`). The lab state sync Lab
+PR #70 merged as `d54653587cf1b6785505be60a903732b1797cb7a` at 2026-08-12T17:30:03Z after its own
+two-round pipeline, renumbering the floor-block friction entry to Lab FR-062, repairing the
+recorded PR #56 / PR #64 / replay-anchor defects, and repointing the Lab resume at the Lane-P
+release review of the already-selected frozen Method Trial v1 exhibit (owner decision U3=FREEZE).
+
+**Not verified / residual.** The helper is exercised only against invented fixtures; no real
+snapshot has been evaluated, and its binding is procedural through the protocol, so Lab FR-028 is
+`promoted`, not `resolved`. The agent floor blocks `gh api graphql` in this repository class (Lab
+FR-062), so review-thread resolution flags were neither read nor set this session; a collectible
+thread-state read route is Lab #34 debt and is a named dependency before any Lane-P merge. An
+unregistered leftover directory from an interrupted worktree removal awaits manual owner deletion
+(regenerable content only, value01 class). MCP hygiene report-only sweep: 0 orphans, 0 provably
+unowned containers; no cleanup warranted.
