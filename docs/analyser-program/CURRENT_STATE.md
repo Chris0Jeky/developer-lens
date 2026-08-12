@@ -121,7 +121,9 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   unresolved threads, closing references, unattested or unanchored review evidence, and stale
   snapshots. The Lane-P boundary was not opened by that delivery, and the Lab ledger already records
   the frozen Method Trial v1 exhibit as SELECTED (owner decision U3=FREEZE), so the EXACT NEXT
-  ACTION is the Lane-P release review of that already-selected exhibit under DL-P09-RELEASE-CURATOR:
+  ACTION is the Lane-P release review of that already-selected exhibit under the LAB library
+  DL-P09-RELEASE-CURATOR prompt (`developer-lens-lab` docs/agent-system/PROMPT_LIBRARY.md — not
+  this repository Product prompt of the same ID):
   stage the C0 asset set with provenance checksums, record the review result, and hand the
   publication decision back — do not select a producer again, publish, or tag from that prompt.
   Lab PR #57 already
@@ -347,8 +349,10 @@ blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-s
   full-call-sequence seam; Lab PR #59 delivered the CURRENT_STATE YAML repair and closed Lab issue
   #58. Lab state replacement PR #60 merged as
   `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7` after exact-head proof, review and thread triage but
-  before its binding 15-minute age; Lab PR #62 preserves the correction on current Lab main
-  `73a5b9653cccbb470c6bf9f0f5a4a7cd8d3cac45`. Lab FR-028 is promoted: its selected enforcement layer, the
+  before its binding 15-minute age; Lab PR #62 preserved the correction at the then-current Lab
+  main `73a5b9653cccbb470c6bf9f0f5a4a7cd8d3cac45`; current Lab main is now the PR #70 state-sync
+  merge `d54653587cf1b6785505be60a903732b1797cb7a` (2026-08-12T17:30:03Z), on top of the PR #69
+  salvage merge and the PR #68 delivery. Lab FR-028 is promoted: its selected enforcement layer, the
   report-only merge-eligibility helper, was delivered by Lab PR #68 on 2026-08-12.
   Remaining release blockers are the
   Lane-P release review of the already-selected frozen exhibit plus

@@ -4391,9 +4391,13 @@ validation) are tracked on Lab #29. A second coordinator adopted the lane on a s
 duplicate round whose push was rejected non-fast-forward, and formally stood down; its salvage
 record merged as Lab PR #69 (`c978783efe028aeb8c545f05fbe8cbc1862c5fa3`). The lab state sync Lab
 PR #70 merged as `d54653587cf1b6785505be60a903732b1797cb7a` at 2026-08-12T17:30:03Z after its own
-two-round pipeline, renumbering the floor-block friction entry to Lab FR-062, repairing the
-recorded PR #56 / PR #64 / replay-anchor defects, and repointing the Lab resume at the Lane-P
-release review of the already-selected frozen Method Trial v1 exhibit (owner decision U3=FREEZE).
+two-round pipeline — final head `a97114745404704bb968275739e10d94073a09ef` pushed 17:14:02Z
+(16m01s exact-head age at merge), hosted `Prove the lab` run `31621608685` success at that exact
+head, two Codex rounds (16:37:34Z, 17:03:45Z) fully triaged with dispositions on the thread, the
+round-2 connector window elapsing silent, and a clean T+13m19s delayed sweep — renumbering the
+floor-block friction entry to Lab FR-062, repairing the recorded PR #56 / PR #64 / replay-anchor
+defects, and repointing the Lab resume at the Lane-P release review of the already-selected frozen
+Method Trial v1 exhibit (owner decision U3=FREEZE).
 
 **Not verified / residual.** The helper is exercised only against invented fixtures; no real
 snapshot has been evaluated, and its binding is procedural through the protocol, so Lab FR-028 is
