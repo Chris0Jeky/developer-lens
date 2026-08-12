@@ -7,7 +7,7 @@ the historical record of how past slices were proven, and a fresh agent followin
 file can resume deleted work (PR #127 late review).
 
 ```yaml
-updated: '2026-08-10'
+updated: '2026-08-12'
 current_slice_override: 'P0 delivered: GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`)
   merged; the owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
   docs/OWNER_CONSTITUTION.md (binding owner policy; layered subject policy supersedes the absolute
@@ -114,13 +114,19 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   no CRITICAL/HIGH defect and was posted at 12:39:57Z, two seconds before merge; it carried the Lab
   review gate. A second independent MERGE-SOUND result was posted at 12:41:40Z after merge. The
   confirmed process defect is only the at-most-8m59s head age against the Lab 15-minute floor; Lab
-  #29 tracks the merge-eligibility hardening. This is not release proof. EXACT NEXT ACTION: deliver
-  the prepared Lab FR-028/#29 public-only, report-only merge-eligibility helper so a live coherent
-  snapshot refuses heads younger than 15 minutes, moved head/base state, failed or incomplete
-  checks, pagination, unresolved threads, and closing references. Preserve the protected Lane-P
-  candidate-content boundary; this unattended session does not open that lane. Lab PR #57 already
-  delivered the zero/multiple-wheel and full-call-sequence P2 hardening seam. After the helper
-  merges, continue only other explicitly tracked C0 pre-tag slices under Lab #29; then STEP 5 = final
+  #29 tracks the merge-eligibility hardening. This is not release proof. DELIVERED 2026-08-12: the prepared Lab FR-028/#29 merge-eligibility
+  helper landed as Lab PR #68 (merge `07929a41fa8c80f05794db9a58fa0bf014b4f961`, 17m51s exact-head
+  age, floor held) after a two-round review pipeline; it evaluates one coherent head-bound snapshot
+  and refuses young heads, moved head/base state, non-green or duplicated checks, pagination,
+  unresolved threads, closing references, unattested or unanchored review evidence, and stale
+  snapshots. The Lane-P boundary was not opened by that delivery, and the Lab ledger already records
+  the frozen Method Trial v1 exhibit as SELECTED (owner decision U3=FREEZE), so the EXACT NEXT
+  ACTION is the Lane-P release review of that already-selected exhibit under DL-P09-RELEASE-CURATOR:
+  stage the C0 asset set with provenance checksums, record the review result, and hand the
+  publication decision back — do not select a producer again, publish, or tag from that prompt.
+  Lab PR #57 already
+  delivered the zero/multiple-wheel and full-call-sequence P2 hardening seam.
+  Continue only explicitly tracked C0 pre-tag slices under Lab #29; then STEP 5 = final
   browser/visual QA proof for the `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` five-minute
   product owner sign-off plus
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` Lab screenshot/video-package aesthetic
@@ -156,8 +162,9 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
   H7 — none exists. The joint tag is blocked by the remaining Lab #29 pre-tag work
-  (explicitly including the Lane-P candidate-content review and any other remaining pre-tag work
-  tracked there; Lab PR #57 delivered the selected P2 test-hardening seam) plus
+  (explicitly including the Lane-P release review of the already-selected frozen exhibit and any
+  other remaining pre-tag work tracked there; Lab PR #57 delivered the selected P2 test-hardening
+  seam and Lab PR #68 delivered the FR-028 merge-eligibility enforcement) plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` product owner aesthetic sign-off, and
   Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 itself closes after the tag.
   Do not
@@ -326,15 +333,16 @@ blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-s
   #58. Lab state replacement PR #60 merged as
   `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7` after exact-head proof, review and thread triage but
   before its binding 15-minute age; Lab PR #62 preserves the correction on current Lab main
-  `73a5b9653cccbb470c6bf9f0f5a4a7cd8d3cac45`. Lab FR-028/#29 still own executable prevention.
+  `73a5b9653cccbb470c6bf9f0f5a4a7cd8d3cac45`. Lab FR-028 is promoted: its selected enforcement layer, the
+  report-only merge-eligibility helper, was delivered by Lab PR #68 on 2026-08-12.
   Remaining release blockers are the
-  Lane-P candidate-content review plus
+  Lane-P release review of the already-selected frozen exhibit plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`, followed by the joint tag; the remaining
   Lab #29 pre-tag work must continue under its normal gates. #29 closes after the tag.
   Lab PRs #51 and #52 had exact-head hosted/review evidence but merged before the binding Lab
-  15-minute eligibility floor; Lab FR-028 and #29 retain the repeated process defect and selected
-  checked enforcement. PR #54 later satisfied its conservative exact-head age window and merged with
+  15-minute eligibility floor; Lab FR-028 retains the repeated process-defect record; its selected
+  checked enforcement was delivered by Lab PR #68 (2026-08-12). PR #54 later satisfied its conservative exact-head age window and merged with
   green hosted/review/thread proof. PR #55 then delivered the sdist-to-wheel smoke seam under its
   exact-head gate. None of those merges satisfies any of the three release blockers.
   The binding review-timing gate
