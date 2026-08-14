@@ -215,12 +215,14 @@ active_horizon: # dependency-closed focused wave; opportunity backlog = GitHub i
   - 'P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
 control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERATING SYSTEM — a control-plane SIDE LANE
   on branch `docs/prompt-system-overhaul`, not a phase advance. It does NOT change the active wave:
-  P0.5 #200 remains the active programme, #174 remains NOT selected, and
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` plus
-  Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 and the joint H7 tag carry over untouched.
+  P0.5 #200 remains the active programme and #174 remains NOT selected. That side-lane scope is
+  historical; current gate truth is that `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` is
+  the sole joint-tag blocker. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed for
+  the package only and authorizes no tag or publication.
   G1/G2 approval, standing bounded G3 approval, and bounded G4 Luna approval remain in force;
-  executable activation/default-deny gates remain unpassed. q-8 later closed by owner confirmation and a
-  clean-session sweep. Scope: consolidate
+  executable activation/default-deny gates remain unpassed.
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is closed and distinct from the open
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` real-study-publication gate. Scope: consolidate
   every executable prompt into docs/agent-system/PROMPT_LIBRARY.md behind stable IDs (12 common
   DL-P01..DL-P12 shared with the lab, plus product DL-PX extensions), pin the two repo-neutral
   shared blocks by SHA-256 in .agent-harness/prompt-parity.json, add CONTINUOUS_WORK_PROTOCOL.md and
@@ -316,10 +318,11 @@ lab_release_handoff: 'Product PR #231 final head
   merged after exact hosted proof, a clean fresh-context review, zero threads/closing refs, and
   29m27s age as `73a5b9653cccbb470c6bf9f0f5a4a7cd8d3cac45`. Its 2026-08-10T01:44:57Z
   all-surface sweep was clean. Lab FR-028/#29 retain the still-unimplemented checked age gate.
-  Continue the remaining Lab #29 pre-tag deliverables under their normal gates. The
-  joint tag remains blocked by the remaining Lab #29 pre-tag work,
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, and
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 closes only after the tag. Product PR
+  This old checkpoint is superseded by the later live continuation in this field: the sole current
+  joint-tag blocker is `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`.
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed for the package only and
+  authorizes no tag or publication; PR #85 remains subject to live evidence. #29 closes only after
+  the tag. Product PR
   #238 repaired only FR-021/#233''s invented backup fixture, merged as
   `e3ce2f879eee00f49e398116be428a6a7c7c8d2b`, and issue #233 is closed. Product PR #237 is CLOSED
   and unmerged at preserved head `81414ec8d7a32d28c58bac3a6cfe8382e29551e4` after two fix rounds:
