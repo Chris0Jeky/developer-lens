@@ -829,17 +829,19 @@ patch changed no file and the one-section retry succeeded.
 - **status:** `workaround-documented`
 - **severity:** `LOW (local proof evidence friction)`
 - **symptom:** Windows PowerShell refused `npm.ps1` under execution policy, requiring `npm.cmd`; the
-  installed shell also rejected `Get-Date -AsUTC` while composing UTC evidence.
+  installed PowerShell 5.1 also rejected `Get-Date -AsUTC` during a later UTC-evidence repeat and
+  rejected `||` syntax before a read-only command could run.
 - **impact:** Standard proof or timestamp commands can fail before reading the intended seam, delaying
   factual evidence without changing repository or GitHub state.
-- **workaround:** Use `npm.cmd` for repository scripts and `(Get-Date).ToUniversalTime().ToString('o')`
-  for UTC timestamps. Lab FR-069 records the corresponding Lab-side observation; this entry does
-  not duplicate its Lab details.
-- **occurrences:** 1 Product-session occurrence — 2026-08-13.
+- **workaround:** Use `npm.cmd` for repository scripts, `(Get-Date).ToUniversalTime().ToString('o')`
+  for UTC timestamps, and PowerShell-compatible conditional flow rather than `||`. Lab FR-069
+  records the corresponding Lab-side observation; this entry does not duplicate its Lab details.
+- **occurrences:** 2 Product-session command-boundary occurrences — initial evidence on 2026-08-13
+  and the PowerShell 5.1 UTC/`||` repeat during the 2026-08-14 Lab review reconciliation.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe
   command-boundary helpers.
-- **promotion:** Retain the compatible commands at one Product occurrence; #222 is already the
-  selected enforcing layer for recurring Windows evidence boundaries.
+- **promotion:** The repeated compatibility evidence retains Product #222 as the selected shared
+  enforcement layer; do not create a second framework for the same PowerShell boundary.
 
 ### FR-033 — GitHub label mutation returned a timeout after succeeding remotely
 
@@ -949,3 +951,58 @@ patch changed no file and the one-section retry succeeded.
   release-state reconciliation.
 - **promotion:** One authoring occurrence; retain the existing parser gate and focused verifier as
   the proportional enforcement layer.
+
+### FR-039 — malformed PowerShell GraphQL field forms failed before read-only review evidence
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only GitHub evidence friction)`
+- **symptom:** Two malformed PowerShell `gh api graphql` field forms failed before the review query
+  could execute.
+- **impact:** Exact-head review evidence was delayed, but neither attempt mutated GitHub or repository
+  state.
+- **workaround:** Serialize GraphQL variables as JSON through stdin; the equivalent read succeeded
+  without mutation.
+- **occurrences:** 1 episode comprising two malformed field forms — 2026-08-14.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe structured GitHub command boundary.
+- **promotion:** Reuse Product #222's JSON-stdin enforcement direction; no new helper/framework is
+  selected for this single read-only episode.
+
+### FR-040 — concurrent duplicate Lane-P merge invalidated old-base eligibility evidence
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (cross-repository concurrent-lane evidence)`
+- **symptom:** A duplicate Lane-P PR #75 merged while PR #74 was under exact review, advancing the
+  base and invalidating the older PR #74 eligibility snapshot.
+- **impact:** The obsolete PR could not be safely merged from its old base. This is a recurrence of
+  Lab FR-070, not a Product defect.
+- **workaround:** Stop the obsolete merge decision, re-sense live state, mechanically blob-compare
+  the C0 artifacts, preserve the unique docs/friction branch history, and close the duplicate as
+  superseded. The concurrent record is preserved by
+  [Chris0Jeky/developer-lens-lab#73 comment 5290683157](https://github.com/Chris0Jeky/developer-lens-lab/issues/73#issuecomment-5290683157).
+- **occurrences:** 1 recurrence observed during the 2026-08-14 Lane-P final review.
+- **task:** Lab #73 owns the recurrence record; Product #222 retains shared command-boundary debt.
+- **promotion:** A per-worktree lease is insufficient against repository-wide duplicate lanes.
+  Select/propose a repository-wide issue-and-owned-path lane claim before future concurrent
+  cross-repository release slices.
+
+### FR-041 — Windows long-path failure interrupted clean Lab Lane-P worktree removal
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `LOW (safe cleanup boundary)`
+- **symptom:** Plain removal of the clean coordinator-owned Lab Lane-P worktree failed partway with
+  Windows `Filename too long`.
+- **impact:** Git removed the worktree registration, but the directory remains with a stale `.git`
+  marker pointing to missing metadata; some ignored regenerable content may have been deleted.
+- **workaround:** The pre-removal audit showed zero nonignored changes and preserved remote branch
+  `37f1974a`. Only top-level regenerable ignored runtime/build/test/cache outputs and an ignored
+  generated view were listed; their contents were not inspected. No force removal, manual recursive
+  deletion, cache inspection, or branch deletion occurred.
+- **occurrences:** 1 independent occurrence — 2026-08-14.
+- **task:** [Chris0Jeky/developer-lens-lab#77](https://github.com/Chris0Jeky/developer-lens-lab/issues/77)
+  owns durable safe-cleanup follow-up.
+- **promotion:** Exact resume is a human or next bounded cleanup using a verified Windows
+  long-path-aware native route. Do not retry broad cleanup from this Product reconciliation.

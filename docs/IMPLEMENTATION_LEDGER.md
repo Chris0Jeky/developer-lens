@@ -4408,22 +4408,27 @@ unregistered leftover directory from an interrupted worktree removal awaits manu
 (regenerable content only, value01 class). MCP hygiene report-only sweep: 0 orphans, 0 provably
 unowned containers; no cleanup warranted.
 
-## 2026-08-14 — Product governor truth reconciliation; Lab Lane-P gate checkpoint
+## 2026-08-14 — Product governor truth reconciliation; Lab Lane-P landed
 
 **Live Product truth.** Product `main` remains `448a861c8feaf9bb3c43df52538a7f561c99b8cf` from
 PR #245, with no open Product PRs. Product #234 remains OPEN with the corrected `later` and
 `product` labels. No product feature, capability, data, model, telemetry, credential, release, or
 publication path changed.
 
-**Cross-repository state.** Lab PR #72 merged as `db104ca1`. Lab PR #74 is OPEN/ready/mergeable at
-`d9275c93fe49c1e38af072eaf9d2dcdabdb7b511` over `db104ca1`; hosted `Prove the lab` run
-`31718088287` succeeded, and the fresh exact-final-head review was MERGE-SOUND with no
-CRITICAL/HIGH finding. Codex reviewed predecessor `a4fb736`, not final head; its provenance P2 is
-tracked as [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76),
-replied once, and its only thread resolved at 2026-08-14T07:07:59Z. It is not exact-final-head
-Codex proof, and needs no further triage unless new evidence appears. PR #74 remains open at its
-normal gate checkpoint. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` separately governs
-final public transformation of real-data studies; it is not a release prerequisite. The joint tag still separately requires
+**Cross-repository state.** Lab PR #75 merged exact head
+`7e17e15f828cfc302d27bbbce0feeef115a11e64` over
+`db104ca1f2bae2de214024e69fddff8cf9822373` as ordinary two-parent merge
+`8ac0cb431130a5004d3f8a8e8adcf0dcc37615ca` at 2026-08-14T07:18:53Z; Lab main is now `8ac0cb`.
+Hosted `Prove the lab` run `31778336215` succeeded, exact-head independent MERGE-SOUND attestation
+comment `5290527650` landed, and Codex reviewed exact head `7e17`; its provenance P2 was replied
+and resolved, retaining debt as [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76)
+and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. PR #74 head `37f1974a` was closed
+unmerged as superseded after base movement; comment `5290663270` preserves unique docs/friction
+branch history. Mechanical blob comparison proved JSON/HTML/provenance/test bytes identical across
+PR #74, PR #75, and main; only docs differed. Lane-P is LANDED as staging/review only: no
+publication, release, or tag occurred. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8`
+separately governs final public transformation of real-data studies; it is not a release prerequisite.
+The joint tag still separately requires
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
 `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`;
 `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-7` and
@@ -4434,8 +4439,9 @@ final public transformation of real-data studies; it is not a release prerequisi
 `2d9c047` to repair the canonical estate rows.
 [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133) remains
 for deployed MACHINE/REPOS routing drift; [Chris0Jeky/claude-config#135](https://github.com/Chris0Jeky/claude-config/issues/135)
-remains for permission-blocked stale-worktree metadata. Resume by refreshing PR #74
-head/base/checks/reviews/threads, confirming no new evidence, then applying normal
-proof/review/15-minute/merge gates. If a fix push occurs, rerun affected exact-head proof, review,
-and the 15-minute clock. Do not merge or tag without their respective gates. Otherwise, Product
-work remains issue-backed.
+remains for permission-blocked stale-worktree metadata. **Failures/workarounds.** The external-temp
+cleanup hiccup remains durable on the preserved PR #74 branch; it is not duplicated as a Product
+friction entry. **Exact resume.** Start from live Lab main and Lab #29 for final changelog/release-
+note sync, then screenshot/video package; reconcile late PR #75 review only if new defect evidence
+appears. Do not reopen Lane-P. Do not merge or tag without their respective gates. Otherwise,
+Product work remains issue-backed.
