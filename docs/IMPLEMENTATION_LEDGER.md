@@ -4418,17 +4418,24 @@ publication path changed.
 **Cross-repository state.** Lab PR #72 merged as `db104ca1`. Lab PR #74 is OPEN/ready/mergeable at
 `d9275c93fe49c1e38af072eaf9d2dcdabdb7b511` over `db104ca1`; hosted `Prove the lab` run
 `31718088287` succeeded, and the fresh exact-final-head review was MERGE-SOUND with no
-CRITICAL/HIGH finding. Codex reviewed predecessor `a4fb736`, not final head, and left one
-unresolved P2: its provenance says “current main” rather than pinning the source commit. This is
-valid non-blocking debt, not exact-final-head Codex proof. PR #74 remains open at its normal gate
-checkpoint. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` separately governs final public
-transformation of real-data studies; it is not a release prerequisite. The joint tag still separately requires
+CRITICAL/HIGH finding. Codex reviewed predecessor `a4fb736`, not final head; its provenance P2 is
+tracked as [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76),
+replied once, and its only thread resolved at 2026-08-14T07:07:59Z. It is not exact-final-head
+Codex proof, and needs no further triage unless new evidence appears. PR #74 remains open at its
+normal gate checkpoint. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` separately governs
+final public transformation of real-data studies; it is not a release prerequisite. The joint tag still separately requires
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
-`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; Lab q-7 and q-8 remain separate.
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`;
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-7` and
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remain separate.
 
-**Canonical-routing state and exact resume.** claude-config PR #134 merged `2d9c047` to repair
-the canonical estate rows. claude-config #133 remains for deployed MACHINE/REPOS routing drift;
-#135 remains for permission-blocked stale-worktree metadata. Resume by refreshing PR #74
-head/base/checks/reviews/threads, addressing, tracking, or rejecting the P2 once, and, if a fix
-push occurs, rerunning affected exact-head proof, review, and the 15-minute clock. Do not merge or
-tag without their respective gates. Otherwise, Product work remains issue-backed.
+**Canonical-routing state and exact resume.**
+[Chris0Jeky/claude-config#134](https://github.com/Chris0Jeky/claude-config/pull/134) merged
+`2d9c047` to repair the canonical estate rows.
+[Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133) remains
+for deployed MACHINE/REPOS routing drift; [Chris0Jeky/claude-config#135](https://github.com/Chris0Jeky/claude-config/issues/135)
+remains for permission-blocked stale-worktree metadata. Resume by refreshing PR #74
+head/base/checks/reviews/threads, confirming no new evidence, then applying normal
+proof/review/15-minute/merge gates. If a fix push occurs, rerun affected exact-head proof, review,
+and the 15-minute clock. Do not merge or tag without their respective gates. Otherwise, Product
+work remains issue-backed.

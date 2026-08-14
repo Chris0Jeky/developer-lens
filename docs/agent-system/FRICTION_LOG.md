@@ -811,13 +811,17 @@ patch changed no file and the one-section retry succeeded.
   and omitted the sibling Lab row, despite live Product/Lab work continuing under the paired policy.
 - **impact:** A new coordinator could route from stale canonical metadata rather than the live
   repository canon and tier declarations.
-- **workaround:** Reconciled the canonical rows through claude-config PR #134 (`2d9c047`); refreshed
-  the active Product state from live Git/GitHub rather than trusting the earlier registry claim.
+- **workaround:** Reconciled the canonical rows through
+  [Chris0Jeky/claude-config#134](https://github.com/Chris0Jeky/claude-config/pull/134) (`2d9c047`);
+  refreshed the active Product state from live Git/GitHub rather than trusting the earlier registry claim.
 - **occurrences:** 1 independent occurrence — 2026-08-13 governor sense/reconcile.
-- **task:** claude-config #133 owns remaining deployed MACHINE/REPOS routing drift; #135 separately
+- **task:** [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
+  owns remaining deployed MACHINE/REPOS routing drift;
+  [Chris0Jeky/claude-config#135](https://github.com/Chris0Jeky/claude-config/issues/135) separately
   owns permission-blocked stale-worktree metadata.
 - **promotion:** The canonical-row repair is complete. Deployment/routing drift stays durable tracked
-  debt until #133 proves the deployed map; do not duplicate its implementation in this repository.
+  debt until [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
+  proves the deployed map; do not duplicate its implementation in this repository.
 
 ### FR-032 — Windows command boundaries rejected common npm and UTC conveniences
 
@@ -884,9 +888,9 @@ patch changed no file and the one-section retry succeeded.
 - **impact:** The misread paused the Lab merge decision and created unpushed false Product state.
   No Lab rollback, merge, tag, data/model/telemetry action, protected-input inspection, or private
   action resulted from the misread.
-- **workaround:** Re-read the exact `<owner>/<repo>::HUMAN_TODO.md::q-N` reference, verify Product
-  q-8 is CLOSED, correct the unpushed Product state, and resume normal Lab proof/review/aging/merge
-  gates.
+- **workaround:** Re-read the exact `<owner>/<repo>::HUMAN_TODO.md::q-N` reference, verify
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is CLOSED, correct the unpushed Product state,
+  and resume normal Lab proof/review/aging/merge gates.
 - **occurrences:** 1 independent occurrence — 2026-08-13.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   structured exact-reference write preflight; Lab #29 retains the release slice.
