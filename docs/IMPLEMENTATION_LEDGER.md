@@ -4407,3 +4407,52 @@ thread-state read route is Lab #34 debt and is a named dependency before any Lan
 unregistered leftover directory from an interrupted worktree removal awaits manual owner deletion
 (regenerable content only, value01 class). MCP hygiene report-only sweep: 0 orphans, 0 provably
 unowned containers; no cleanup warranted.
+
+## 2026-08-14 — Product governor truth reconciliation; Lab Lane-P landed
+
+**Live Product truth.** Product `main` remains `448a861c8feaf9bb3c43df52538a7f561c99b8cf` from
+PR #245, with no open Product PRs. Product #234 remains OPEN with the corrected `later` and
+`product` labels. No product feature, capability, data, model, telemetry, credential, release, or
+publication path changed.
+
+**Cross-repository state.** Lab PR #75 merged exact head
+`7e17e15f828cfc302d27bbbce0feeef115a11e64` over
+`db104ca1f2bae2de214024e69fddff8cf9822373` as ordinary two-parent merge
+`8ac0cb431130a5004d3f8a8e8adcf0dcc37615ca` at 2026-08-14T07:18:53Z; Lab main is now `8ac0cb`.
+Hosted `Prove the lab` run `31778336215` succeeded, exact-head independent MERGE-SOUND attestation
+comment `5290527650` landed, and Codex reviewed exact head `7e17`; its provenance P2 was replied
+and resolved, retaining debt as [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76)
+and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. The exact head was published no
+later than the 2026-08-14T07:01:08Z PR creation, and the PR timeline records no later head
+movement and no force pushes, so at least 17m45s of demonstrated public head age elapsed before
+the 2026-08-14T07:18:53Z merge — the Lab 15-minute floor held; the merge itself was executed by
+the concurrent Lab lane (FR-040), and the Lab-side record remains authoritative for its gate
+evidence. PR #74 head `37f1974a` was closed
+unmerged as superseded after base movement; comment `5290663270` preserves unique docs/friction
+branch history. Mechanical blob comparison proved JSON/HTML/provenance/test bytes identical across
+PR #74, PR #75, and main; only docs differed. Lane-P is LANDED as staging/review only: no
+publication, release, or tag occurred. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8`
+separately governs final public transformation of real-data studies; it is not a release
+prerequisite for this C0-invented exhibit (the H7 joint-tag prerequisites are
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`).
+The joint tag still separately requires
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`;
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-7` and
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remain separate.
+
+**Proof.** `npm.cmd run verify:context` passed (47 Markdown files, 31 required) and
+`git diff --check` was clean on this branch, rerun at the final head after each fix round.
+
+**Canonical-routing state and exact resume.**
+[Chris0Jeky/claude-config#134](https://github.com/Chris0Jeky/claude-config/pull/134) merged
+`2d9c047` to repair the canonical estate rows.
+[Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133) remains
+for deployed MACHINE/REPOS routing drift; [Chris0Jeky/claude-config#135](https://github.com/Chris0Jeky/claude-config/issues/135)
+remains for permission-blocked stale-worktree metadata. **Failures/workarounds.** The external-temp
+cleanup hiccup remains durable on the preserved PR #74 branch; it is not duplicated as a Product
+friction entry. **Exact resume.** Start from live Lab main and Lab #29 for final changelog/release-
+note sync, then screenshot/video package; reconcile late PR #75 review only if new defect evidence
+appears. Do not reopen Lane-P. Do not merge or tag without their respective gates. Otherwise,
+Product work remains issue-backed.

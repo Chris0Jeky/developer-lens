@@ -7,7 +7,7 @@ the historical record of how past slices were proven, and a fresh agent followin
 file can resume deleted work (PR #127 late review).
 
 ```yaml
-updated: '2026-08-12'
+updated: '2026-08-14'
 current_slice_override: 'P0 delivered: GOVERNOR BOOTSTRAP (PR #206, branch `claude/governor-bootstrap`)
   merged; the owner mandate v2 + governor spec v1 (received 2026-08-08) were unpacked into
   docs/OWNER_CONSTITUTION.md (binding owner policy; layered subject policy supersedes the absolute
@@ -29,17 +29,31 @@ phase: 'P0 control-plane reconciliation (governor bootstrap) delivered by merged
   programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 latest_truth_repair: >-
-  Product PR #241 final head `45e43d8aab1e5c1058cc778f60e1d9f6677d24fb` over base
-  `c268c840b302bc7f93f4f01d3e81ba99292bf06b`; required hosted Prove run `31407981493`
-  succeeded; focused 30 tests, verify:context 47 Markdown/31 required, audit 0, full check 86
-  files / 1491 passed / 10 skipped, and build/credential scan green; fresh independent
-  exact-final-head review MERGE-SOUND. Connector review existed only on predecessor `39eee4b`;
-  its two P2 threads were dispositioned once and resolved. Fixes: Gregorian date false negative
-  and active_horizon two-entry preservation. Non-blocking follow-ups: Product #242 alias-limit
-  diagnostic normalization and Product #243 broader root-level Markdown fence forms. The final
-  head used the 15-minute fallback after push at 16:15:14Z; clean all-surface snapshot at
-  16:30:39Z; merged with merge commit `8f2bf584d1a91ca7fe126607d34599ff46771ee0` at
-  16:30:59Z; issue #215 closed. Active P0.5/#200 remains unchanged.
+  Live Product main remains `448a861c8feaf9bb3c43df52538a7f561c99b8cf` from merged PR #245,
+  with no open Product PRs. Product #234 remains open and is correctly labelled `later` and
+  `product`. Lab PR #75 merged exact head `7e17e15f828cfc302d27bbbce0feeef115a11e64` over
+  `db104ca1f2bae2de214024e69fddff8cf9822373` as ordinary two-parent merge
+  `8ac0cb431130a5004d3f8a8e8adcf0dcc37615ca` at 2026-08-14T07:18:53Z; Lab main is `8ac0cb`.
+  Hosted `Prove the lab` run `31778336215` succeeded, independent MERGE-SOUND attestation comment
+  `5290527650` covered the exact head, and Codex reviewed exact head `7e17`; its provenance P2 was
+  replied and resolved, with debt retained as
+  [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76)
+  and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. The exact head was published
+  no later than the 2026-08-14T07:01:08Z PR creation, and the PR timeline records no later head
+  movement and no force pushes, so at least 17m45s of demonstrated public head age elapsed before
+  the 07:18:53Z merge — the Lab 15-minute floor held; the merge itself was executed by the
+  concurrent Lab lane (FR-040), and the Lab-side record remains authoritative for its gate
+  evidence. PR #74 head `37f1974a` was
+  closed unmerged as superseded after the base moved; comment `5290663270` preserves its unique
+  docs/friction branch history. Mechanical blob comparison proved JSON/HTML/provenance/test bytes
+  identical across PR #74, PR #75, and Lab main; only docs differed. Lane-P is LANDED as staging/
+  review only: no publication, release, or tag is claimed. [Chris0Jeky/claude-config#134](https://github.com/Chris0Jeky/claude-config/pull/134)
+  merged `2d9c047` to repair canonical estate rows;
+  [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133) retains
+  deployed MACHINE/REPOS routing drift and
+  [Chris0Jeky/claude-config#135](https://github.com/Chris0Jeky/claude-config/issues/135) retains
+  permission-blocked stale-worktree metadata. Active P0.5/#200 remains
+  unchanged.
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
   DL-COMPARE-01 #89, DL-VALIDATE-01 #92, DL-VALUE-01 #94, DL-LIFE-01 #100, DL-EVQ-03 #99',
@@ -119,14 +133,10 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   age, floor held) after a two-round review pipeline; it evaluates one coherent head-bound snapshot
   and refuses young heads, moved head/base state, non-green or duplicated checks, pagination,
   unresolved threads, closing references, unattested or unanchored review evidence, and stale
-  snapshots. The Lane-P boundary was not opened by that delivery, and the Lab ledger already records
-  the frozen Method Trial v1 exhibit as SELECTED (owner decision U3=FREEZE), so the EXACT NEXT
-  ACTION is the Lane-P release review of that already-selected exhibit under the LAB library
-  DL-P09-RELEASE-CURATOR prompt (`developer-lens-lab` docs/agent-system/PROMPT_LIBRARY.md — not
-  this repository Product prompt of the same ID):
-  stage the C0 asset set with provenance checksums, record the review result, and hand the
-  publication decision back — do not select a producer again, publish, or tag from that prompt.
-  Lab PR #57 already
+  snapshots. The Lab ledger recorded the frozen Method Trial v1 exhibit as SELECTED (owner decision
+  U3=FREEZE), and Lane-P has now landed through Lab PR #75 as C0 staging/review only. Do not reopen
+  Lane-P, publish, release, or tag from that evidence. The exact next Lab seam is final changelog/
+  release-note sync, then the screenshot/video package. Lab PR #57 already
   delivered the zero/multiple-wheel and full-call-sequence P2 hardening seam.
   Continue only explicitly tracked C0 pre-tag slices under Lab #29; then STEP 5 = final
   browser/visual QA proof for the `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` five-minute
@@ -135,8 +145,9 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   sign-off; then STEP 6 = tag v0.1.0 +
   publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
   disposition), not the pre-QA batch — the joint tag remains blocked on the remaining Lab #29
-  pre-tag deliverables (explicitly including the Lane-P candidate-content review and any other
-  remaining pre-tag work tracked there; the selected P2 test-hardening seam is delivered) plus
+  pre-tag deliverables (the final changelog/release-note and screenshot/video package, plus any
+  other remaining pre-tag work tracked there; Lane-P and the selected P2 test-hardening seam are
+  delivered) plus
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`, per H7=BOTH; #29 closes only after the tag; step 7
   descriptions/topics is partially done (description, topics,
@@ -163,21 +174,23 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
-  H7 — none exists. The joint tag is blocked by the remaining Lab #29 pre-tag work
-  (explicitly including the Lane-P release review of the already-selected frozen exhibit and any
-  other remaining pre-tag work tracked there; Lab PR #57 delivered the selected P2 test-hardening
-  seam and Lab PR #68 delivered the FR-028 merge-eligibility enforcement) plus
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` product owner aesthetic sign-off, and
-  Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11; #29 itself closes after the tag.
+  H7 — none exists. The joint tag is blocked by remaining Lab #29 pre-tag work: final changelog/
+  release-note sync, then the screenshot/video package, plus any other explicitly tracked work.
+  Lane-P is LANDED through Lab PR #75 as staging/review only; do not reopen it, publish, release,
+  or tag from that evidence. Exact resume: start from live Lab main `8ac0cb` and Lab #29; reconcile
+  late PR #75 review only if new defect evidence appears, then follow normal proof/review/15-minute/
+  merge gates for the next selected seam. Otherwise the next Product work remains issue-backed.
+  The joint tag separately needs `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 itself closes after the tag.
   Do not
   advance task selection beyond P0.5/#200. Downstream (not selected): after the v0.1.0 tag, P1 =
   #174 integrated vertical with #181/#182 contract semantics (H1), folding #135/#76/#80-resolver
   where touched. Data Charter v2 + capability profiles = #201 (next, before any real activation).
-  Lab-side nonrelease lanes (lab #6/#7/#23 and lab governor maintenance) may resume under their own
-  normal review and worktree gates: `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` closed on
-  2026-08-09 after the owner''s explicit
-  confirmation for lab PR #24 and a confirmed-clean session sweep. Lab release preparation #29 may
-  resume under the exact-base/review order recorded above now that replacement PR #42 has landed. Older
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is CLOSED after the owner''s explicit
+  confirmation for Lab PR #24 and a confirmed-clean session sweep; that closure is distinct from
+  the sibling `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` real-study publication gate.
+  The later Lab release continuation follows the exact-base/review order
+  recorded above. Older
   post-WB-C1 debt map retained below as CONTEXT ONLY — its embedded recommendation is SUPERSEDED by
   the wave above (do not select #189 validator-parity ahead of P0.5/P1; it stays tracked backlog per
   docs/PROGRAMME_ROADMAP.md): the bounded WB-C1 programme is COMPLETE, the
@@ -257,8 +270,11 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   accepted top-level fresh-context review gate comment landed two seconds before merge. A second
   independent result arrived after merge; the confirmed defect is only the at-most-8m59s head age
   against the 15-minute floor. Lab #29 tracks that process hardening. The frozen historical-producer
-  hashes and the product fixture/schema seam are green; current-head candidate bytes are rejected
-  and Lane-P candidate-content review remains unverified.'
+  hashes and the product fixture/schema seam are green; Lab PR #75 mechanically compared the
+  JSON/HTML/provenance/test blobs with PR #74 and main and landed the unchanged C0 exhibit as
+  staging/review only. Current-head candidate bytes remain rejected: the staged exhibit is the
+  frozen historical-producer output and no current-head reproducibility is claimed. No publication,
+  release, or tag occurred.'
 lab_release_handoff: 'Product PR #231 final head
   `450a3279f6f030e3970abd55d5a258994c5d1015` over base
   `e530f4c79eda57db0e3eb80a307fe3ffdd57c78f` passed hosted run `31337964825` / job
@@ -336,26 +352,58 @@ lab_release_handoff: 'Product PR #231 final head
   friction entry to FR-062, repaired the recorded PR #56 / PR #64 / replay-anchor state defects,
   and repointed the Lab resume at the Lane-P release review of the already-selected frozen
   exhibit. The floor-blocked GraphQL thread-state route is recorded as Lab FR-062 with the Lab #34
-  read-route dependency named before any Lane-P merge.'
+  read-route dependency named before any Lane-P merge. Live continuation: Lab PR #75 merged exact
+  head `7e17e15f828cfc302d27bbbce0feeef115a11e64` over
+  `db104ca1f2bae2de214024e69fddff8cf9822373` as ordinary two-parent merge
+  `8ac0cb431130a5004d3f8a8e8adcf0dcc37615ca` at 2026-08-14T07:18:53Z; Lab main is `8ac0cb`.
+  Hosted run `31778336215` succeeded, exact-head independent MERGE-SOUND attestation comment
+  `5290527650` arrived, and Codex reviewed exact head `7e17`; its provenance P2 was replied and
+  resolved, retaining debt at [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76)
+  and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. PR #74 head `37f1974a` closed
+  unmerged as superseded after base movement; comment `5290663270` preserves its unique docs/
+  friction history. Mechanical blob comparison proved JSON/HTML/provenance/test bytes identical
+  across PR #74, PR #75, and Lab main; only docs differed. Lane-P is LANDED as staging/review only;
+  no publication, release, or tag is claimed. The next Lab seam is final changelog/release-note
+  sync, then the screenshot/video package. The separate
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` concerns final public transformation of
+  real-data studies; it is not a release prerequisite for this C0-invented exhibit (the H7
+  joint-tag prerequisites are `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`). Resume from live Lab main and Lab #29, and
+  reconcile late PR #75 review only if new defect evidence appears.'
 preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 named product
   worktrees and branches at their mechanically measured full HEADs. Three had tracked modifications;
   two no-PR branches were remote-preserved and the other measured no-PR branches were local-only.
   No preserved-worktree file content, untracked or ignored content, or data lane was inspected or
   activated. The exact branch/SHA/PR mapping lives in docs/IMPLEMENTATION_LEDGER.md; product #200
   owns cleanup or reconciliation follow-up.'
-blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-side P0.5 #200 release
-  preparation is active. The v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a
-  NEW recorded owner decision — none exists). Lab PR #57 delivered the zero/multiple-wheel and
+blockers: 'No owner blocker prevents Product invented-fixture, CI/gate, or documentation work.
+  Product-side P0.5 #200 release preparation is active. Lane-P landed through Lab PR #75 as C0
+  staging/review only; no publication, release, or tag occurred. The exact next Lab seam is final
+  changelog/release-note sync, then the screenshot/video package. The separate
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` covers final public transformation of
+  real-data studies and is not a release prerequisite for this C0-invented exhibit (the H7
+  joint-tag prerequisites are `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`). The
+  v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a new recorded owner decision;
+  none exists). The binding review-timing gate requires exact-head hosted proof, fresh review, and
+  either exact-final-head Codex review triage or a fresh clean sweep after 15 minutes since the
+  last push; a fix push restarts that clock. Lab PR #57 delivered the zero/multiple-wheel and
   full-call-sequence seam; Lab PR #59 delivered the CURRENT_STATE YAML repair and closed Lab issue
   #58. Lab state replacement PR #60 merged as
   `ebc8626d6ebd808ecec0a665bf8be5d69fdb67d7` after exact-head proof, review and thread triage but
   before its binding 15-minute age; Lab PR #62 preserved the correction at the then-current Lab
-  main `73a5b9653cccbb470c6bf9f0f5a4a7cd8d3cac45`; current Lab main is now the PR #70 state-sync
-  merge `d54653587cf1b6785505be60a903732b1797cb7a` (2026-08-12T17:30:03Z), on top of the PR #69
-  salvage merge and the PR #68 delivery. Lab FR-028 is promoted: its selected enforcement layer, the
+  main `73a5b9653cccbb470c6bf9f0f5a4a7cd8d3cac45`; Lab PR #75 then merged exact head
+  `7e17e15f828cfc302d27bbbce0feeef115a11e64` as two-parent merge
+  `8ac0cb431130a5004d3f8a8e8adcf0dcc37615ca`, now Lab main. Hosted `Prove the lab` run
+  `31778336215` succeeded; exact-head independent MERGE-SOUND attestation comment `5290527650`
+  and exact-head Codex review found no CRITICAL/HIGH defect. The provenance P2 was replied/resolved
+  and stays tracked at [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76)
+  and the Lab #29 metadata seam. Lab FR-028 is promoted: its selected enforcement layer, the
   report-only merge-eligibility helper, was delivered by Lab PR #68 on 2026-08-12.
-  Remaining release blockers are the
-  Lane-P release review of the already-selected frozen exhibit plus
+  Lane-P is LANDED and must not be reopened. PR #74 was closed unmerged as superseded after base
+  movement; its unique docs/friction history is preserved by comment `5290663270`. Resume from live
+  Lab main and Lab #29; reconcile late PR #75 review only for new defect evidence.
+  The separately remaining joint-release blockers are
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`, followed by the joint tag; the remaining
   Lab #29 pre-tag work must continue under its normal gates. #29 closes after the tag.
@@ -363,7 +411,7 @@ blockers: 'No owner blocker for invented-fixture or CI/gate/docs work. Product-s
   15-minute eligibility floor; Lab FR-028 retains the repeated process-defect record; its selected
   checked enforcement was delivered by Lab PR #68 (2026-08-12). PR #54 later satisfied its conservative exact-head age window and merged with
   green hosted/review/thread proof. PR #55 then delivered the sdist-to-wheel smoke seam under its
-  exact-head gate. None of those merges satisfies any of the three release blockers.
+  exact-head gate. None of those merges satisfies the remaining joint-release blockers.
   The binding review-timing gate
   stated below (`review_timing_defect`) governs any future merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the
@@ -385,7 +433,8 @@ open_owner_gates: '`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6(a-h)` remains 
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-9` is SUPERSEDED by owner decision A5.
   The sibling `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remains a separate open
   real-study publication gate; it does not re-open
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` or its merge gate.
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` or make
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` a normal Lab release prerequisite.
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(a)` CLA review is deferred before substantial
   external code; all other `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10` decisions remain
   deferred except the reaffirmed joint H7 release and the selected separate CoC inbox. Its address

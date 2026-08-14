@@ -801,3 +801,240 @@ patch changed no file and the one-section retry succeeded.
 - **promotion:** This is distinct from FR-026 object expansion and FR-029 UTF-8 decoding. The
   bounded #222 successor must prove the non-null guard against pending and completed review records
   before this entry can close.
+
+### FR-031 — canonical estate registry diverged from the active Developer Lens pair
+
+- **first-seen:** 2026-08-13
+- **status:** `workaround-documented`
+- **severity:** `LOW (routing and authority discoverability)`
+- **symptom:** The canonical estate registry retained stale Developer Lens routing/authority detail
+  and omitted the sibling Lab row, despite live Product/Lab work continuing under the paired policy.
+- **impact:** A new coordinator could route from stale canonical metadata rather than the live
+  repository canon and tier declarations.
+- **workaround:** Reconciled the canonical rows through
+  [Chris0Jeky/claude-config#134](https://github.com/Chris0Jeky/claude-config/pull/134) (`2d9c047`);
+  refreshed the active Product state from live Git/GitHub rather than trusting the earlier registry claim.
+- **occurrences:** 1 independent occurrence — 2026-08-13 governor sense/reconcile.
+- **task:** [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
+  owns remaining deployed MACHINE/REPOS routing drift;
+  [Chris0Jeky/claude-config#135](https://github.com/Chris0Jeky/claude-config/issues/135) separately
+  owns permission-blocked stale-worktree metadata.
+- **promotion:** The canonical-row repair is complete. Deployment/routing drift stays durable tracked
+  debt until [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
+  proves the deployed map; do not duplicate its implementation in this repository.
+
+### FR-032 — Windows command boundaries rejected common npm and UTC conveniences
+
+- **first-seen:** 2026-08-13
+- **status:** `workaround-documented`
+- **severity:** `LOW (local proof evidence friction)`
+- **symptom:** Windows PowerShell refused `npm.ps1` under execution policy, requiring `npm.cmd`; the
+  installed PowerShell 5.1 also rejected `Get-Date -AsUTC` during a later UTC-evidence repeat and
+  rejected `||` syntax before a read-only command could run.
+- **impact:** Standard proof or timestamp commands can fail before reading the intended seam, delaying
+  factual evidence without changing repository or GitHub state.
+- **workaround:** Use `npm.cmd` for repository scripts, `(Get-Date).ToUniversalTime().ToString('o')`
+  for UTC timestamps, and PowerShell-compatible conditional flow rather than `||`. Lab FR-069
+  records the corresponding Lab-side observation; this entry does not duplicate its Lab details.
+- **occurrences:** 2 Product-session command-boundary occurrences — initial evidence on 2026-08-13
+  and the PowerShell 5.1 UTC/`||` repeat during the 2026-08-14 Lab review reconciliation.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe
+  command-boundary helpers.
+- **promotion:** The repeated compatibility evidence retains Product #222 as the selected shared
+  enforcement layer; do not create a second framework for the same PowerShell boundary.
+
+### FR-033 — GitHub label mutation returned a timeout after succeeding remotely
+
+- **first-seen:** 2026-08-13
+- **status:** `workaround-documented`
+- **severity:** `LOW (unknown mutation result)`
+- **symptom:** A Product #234 label update timed out at the connector, but an immediate live reread
+  showed that the intended `later` and `product` labels had been applied.
+- **impact:** Treating a timeout as a definitive failure could cause duplicate mutation attempts or
+  an incorrect issue-state claim.
+- **workaround:** For an unknown mutation result, stop and reread the exact remote state before any
+  retry; record the reread rather than assuming failure or success from the transport result alone.
+- **occurrences:** 1 independent occurrence — 2026-08-13.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns durable
+  evidence/mutation-boundary hardening.
+- **promotion:** One occurrence; retain mandatory reread as the lightweight guard until #222 can
+  provide a tested helper contract.
+
+### FR-034 — outbound human-action references were abbreviated before correction
+
+- **first-seen:** 2026-08-13
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (owner-gate reference ambiguity)`
+- **symptom:** Outbound GitHub writing abbreviated human-action references twice, including a
+  claude-config PR #134 review comment, before correction to the exact
+  `<owner>/<repo>::HUMAN_TODO.md::q-N` form.
+- **impact:** An abbreviated q-N can bind the wrong repository's owner gate in a cross-repository
+  programme record.
+- **workaround:** Correct the affected public text and preserve the fully qualified form in current
+  state/ledger evidence.
+- **occurrences:** 2 independent occurrences — 2026-08-13.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  structured GitHub write-boundary preflight.
+- **promotion:** At the second occurrence, the selected enforcement layer is a structured GitHub
+  write preflight that rejects any human-action reference not exactly
+  `<owner>/<repo>::HUMAN_TODO.md::q-N` before submission. That layer is selected but not yet
+  implemented — Product #222 owns it — so this entry stays `workaround-documented` per the FR-017
+  precedent until the preflight exists.
+
+### FR-035 — coordinator temporarily misbound the fully qualified Lab Rule reference
+
+- **first-seen:** 2026-08-13
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (owner-gate interpretation risk)`
+- **symptom:** The coordinator temporarily read the explicit Lab Rule key
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` as the open sibling
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8`, and drafted a false Lab write/merge
+  interlock before Product publication.
+- **impact:** The misread paused the Lab merge decision and created unpushed false Product state.
+  No Lab rollback, merge, tag, data/model/telemetry action, protected-input inspection, or private
+  action resulted from the misread.
+- **workaround:** Re-read the exact `<owner>/<repo>::HUMAN_TODO.md::q-N` reference, verify
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is CLOSED, correct the unpushed Product state,
+  and resume normal Lab proof/review/aging/merge gates.
+- **occurrences:** 1 independent occurrence — 2026-08-13.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  structured exact-reference write preflight;
+  [Chris0Jeky/developer-lens-lab#29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29)
+  retains the release slice.
+- **promotion:** This is another manifestation of FR-034. Use its selected structured exact-ref
+  preflight under Product #222; do not claim unauthorized prior Lab writes or introduce a second
+  enforcement layer.
+
+### FR-036 — Windows default decoding obscured a state-patch target
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `LOW (documentation reconciliation tooling)`
+- **symptom:** Reading UTF-8 state text through the default Windows PowerShell decoding produced
+  mojibake in an em-dash-containing patch target, causing several fail-closed patch mismatches.
+- **impact:** A narrow reconciliation can pause while exact source text is recovered; no incorrect
+  file change was applied by the rejected patches.
+- **workaround:** Re-read the target with `Get-Content -Encoding utf8`, then use the exact
+  heading-bounded patch and inspect the resulting diff.
+- **occurrences:** 1 independent occurrence — 2026-08-14. Prior related mechanisms: promoted
+  FR-014 (implicit PowerShell decoding corrupting patch context), FR-029 (review-content
+  decoding), and FR-027 (stale patch context). This recurrence of Windows default-decoding patch
+  corruption is evidence the FR-014 promoted rule was not applied in this hop, not a new
+  mechanism.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe
+  text/evidence helper hardening;
+  [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) owns the
+  occurrence-consolidation sweep for this recurrence cluster.
+- **promotion:** Reuse #222's selected explicit UTF-8 decoding contract rather than create a second
+  Markdown tool; exact UTF-8 reads are required for future Windows reconciliation patches.
+
+### FR-037 — fresh reconciliation worktree lacked installed Node dependencies
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `LOW (local proving bootstrap)`
+- **symptom:** `npm.cmd run verify:context` failed before reading repository context because the
+  isolated worktree had no `fast-glob` installation.
+- **impact:** The required documentation proof cannot start in a fresh worktree until its declared
+  local dependency bootstrap completes; no repository or GitHub state changed.
+- **workaround:** Run the canon-required `npm ci` in the isolated worktree, then rerun the exact
+  verifier and diff checks. `npm.cmd` remains required by FR-032's execution-policy workaround.
+- **occurrences:** 1 independent occurrence — 2026-08-14.
+- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) retains this
+  release-governor worktree proof context.
+- **promotion:** The canon already declares `npm ci` before proving in a fresh worktree; no new
+  enforcement is selected after one setup omission.
+
+### FR-038 — folded YAML state text required single-quote escaping
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `LOW (state-artifact syntax)`
+- **symptom:** A reconciliation edit inserted apostrophes into a single-quoted folded YAML scalar,
+  so `verify:context` correctly rejected the state artifact before accepting the update.
+- **impact:** The live-state verifier failed closed; no invalid state was committed or published.
+- **workaround:** Double apostrophes inside single-quoted YAML scalars and rerun the exact context
+  verifier before staging.
+- **occurrences:** 1 independent occurrence — 2026-08-14.
+- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns current
+  release-state reconciliation.
+- **promotion:** One authoring occurrence; retain the existing parser gate and focused verifier as
+  the proportional enforcement layer.
+
+### FR-039 — malformed PowerShell GraphQL field forms failed before read-only review evidence
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only GitHub evidence friction)`
+- **symptom:** Two malformed PowerShell `gh api graphql` field forms failed before the review query
+  could execute.
+- **impact:** Exact-head review evidence was delayed, but neither attempt mutated GitHub or repository
+  state.
+- **workaround:** Serialize GraphQL variables as JSON through stdin; the equivalent read succeeded
+  without mutation.
+- **occurrences:** 1 episode comprising two malformed field forms — 2026-08-14.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe structured GitHub command boundary.
+- **promotion:** Reuse Product #222's JSON-stdin enforcement direction; no new helper/framework is
+  selected for this single read-only episode.
+
+### FR-040 — concurrent duplicate Lane-P merge invalidated old-base eligibility evidence
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (cross-repository concurrent-lane evidence)`
+- **symptom:** A duplicate Lane-P PR #75 merged while PR #74 was under exact review, advancing the
+  base and invalidating the older PR #74 eligibility snapshot.
+- **impact:** The obsolete PR could not be safely merged from its old base. This is a recurrence of
+  Lab FR-070, not a Product defect.
+- **workaround:** Stop the obsolete merge decision, re-sense live state, mechanically blob-compare
+  the C0 artifacts, preserve the unique docs/friction branch history, and close the duplicate as
+  superseded. The concurrent record is preserved by
+  [Chris0Jeky/developer-lens-lab#73 comment 5290683157](https://github.com/Chris0Jeky/developer-lens-lab/issues/73#issuecomment-5290683157).
+- **occurrences:** 1 recurrence observed during the 2026-08-14 Lane-P final review.
+- **task:** [Chris0Jeky/developer-lens-lab#73](https://github.com/Chris0Jeky/developer-lens-lab/issues/73)
+  owns the recurrence record; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+  retains shared command-boundary debt.
+- **promotion:** A per-worktree lease is insufficient against repository-wide duplicate lanes.
+  Select/propose a repository-wide issue-and-owned-path lane claim before future concurrent
+  cross-repository release slices.
+
+### FR-041 — Windows long-path failure interrupted clean Lab Lane-P worktree removal
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `LOW (safe cleanup boundary)`
+- **symptom:** Plain removal of the clean coordinator-owned Lab Lane-P worktree failed partway with
+  Windows `Filename too long`.
+- **impact:** Git removed the worktree registration, but the directory remains with a stale `.git`
+  marker pointing to missing metadata; some ignored regenerable content may have been deleted.
+- **workaround:** The pre-removal audit showed zero nonignored changes and preserved remote branch
+  `37f1974a`. Only top-level regenerable ignored runtime/build/test/cache outputs and an ignored
+  generated view were listed; their contents were not inspected. No force removal, manual recursive
+  deletion, cache inspection, or branch deletion occurred.
+- **occurrences:** 1 independent occurrence — 2026-08-14.
+- **task:** [Chris0Jeky/developer-lens-lab#77](https://github.com/Chris0Jeky/developer-lens-lab/issues/77)
+  owns durable safe-cleanup follow-up.
+- **promotion:** Exact resume is a human or next bounded cleanup using a verified Windows
+  long-path-aware native route. Do not retry broad cleanup from this Product reconciliation.
+
+### FR-042 — exact-head adversarial review was commissioned without an inline diff patch
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `LOW (review evidence cost and scope assurance)`
+- **symptom:** A fresh-context adversarial review was tasked with only a worktree path, a base SHA,
+  and a changed-file list; the read-only reviewer runs no Git commands, so it had to reconstruct
+  the diff by comparing base-checkout and branch-worktree file copies.
+- **impact:** Review cost rises and the diff scope is asserted rather than mechanically proven
+  inside the review context, so an out-of-scope hunk could in principle pass unseen; the reviewer
+  also cannot confirm the worktree HEAD it was reading.
+- **workaround:** The reviewer compared base and branch copies file by file and verified the
+  ledger/friction changes were pure appends; the coordinator separately proved the three-file diff
+  scope and the exact HEAD mechanically before and after the review.
+- **occurrences:** 1 independent occurrence — 2026-08-14.
+- **task:** [Product #216](https://github.com/Chris0Jeky/developer-lens/issues/216) owns
+  review-prompt hardening: review-commissioning prompts should carry the unified diff or a
+  mechanically generated patch artifact inline.
+- **promotion:** One occurrence; at a second occurrence fold the inline-patch requirement into the
+  DL-P review prompt bodies rather than adding a new mechanism.
