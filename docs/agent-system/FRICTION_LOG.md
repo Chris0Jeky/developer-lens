@@ -872,24 +872,27 @@ patch changed no file and the one-section retry succeeded.
 - **promotion:** At the second occurrence, promote a structured GitHub write preflight that rejects
   any human-action reference not exactly `<owner>/<repo>::HUMAN_TODO.md::q-N` before submission.
 
-### FR-035 — session-level Lab q-8 interlock was applied after Lab mutations began
+### FR-035 — coordinator temporarily misbound the fully qualified Lab Rule reference
 
 - **first-seen:** 2026-08-13
 - **status:** `workaround-documented`
-- **severity:** `MEDIUM (session-order authorization risk)`
-- **symptom:** The session-level instruction that treated open
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` as a Lab write/merge interlock was noticed
-  only after Lab branch, issue, and pull-request writes had occurred.
-- **impact:** This created unauthorized-by-session-order mutation risk. No merge, tag, data/model/
-  telemetry action, protected input inspection, or private-output action occurred; Lab PR #74 and
-  durable issue comments remain recoverably parked.
-- **workaround:** Stop all further Lab mutation and require explicit human authorization to resume
-  Lab writes under the interlock; retain PR #74 unchanged until then.
+- **severity:** `MEDIUM (owner-gate interpretation risk)`
+- **symptom:** The coordinator temporarily read the explicit Lab Rule key
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` as the open sibling
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8`, and drafted a false Lab write/merge
+  interlock before Product publication.
+- **impact:** The misread paused the Lab merge decision and created unpushed false Product state.
+  No Lab rollback, merge, tag, data/model/telemetry action, protected-input inspection, or private
+  action resulted from the misread.
+- **workaround:** Re-read the exact `<owner>/<repo>::HUMAN_TODO.md::q-N` reference, verify Product
+  q-8 is CLOSED, correct the unpushed Product state, and resume normal Lab proof/review/aging/merge
+  gates.
 - **occurrences:** 1 independent occurrence — 2026-08-13.
-- **task:** [Lab #29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29) retains the parked
-  release slice; Product #222 retains the cross-repository command-boundary process debt.
-- **promotion:** One occurrence only. Do not invent recurrence: select a cheaper enforcement layer
-  only if this authorization-order failure occurs independently again.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  structured exact-reference write preflight; Lab #29 retains the release slice.
+- **promotion:** This is another manifestation of FR-034. Use its selected structured exact-ref
+  preflight under Product #222; do not claim unauthorized prior Lab writes or introduce a second
+  enforcement layer.
 
 ### FR-036 — Windows default decoding obscured a state-patch target
 

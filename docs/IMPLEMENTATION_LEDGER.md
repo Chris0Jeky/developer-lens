@@ -4408,7 +4408,7 @@ unregistered leftover directory from an interrupted worktree removal awaits manu
 (regenerable content only, value01 class). MCP hygiene report-only sweep: 0 orphans, 0 provably
 unowned containers; no cleanup warranted.
 
-## 2026-08-14 — Product governor truth reconciliation; Lab Lane-P parked
+## 2026-08-14 — Product governor truth reconciliation; Lab Lane-P gate checkpoint
 
 **Live Product truth.** Product `main` remains `448a861c8feaf9bb3c43df52538a7f561c99b8cf` from
 PR #245, with no open Product PRs. Product #234 remains OPEN with the corrected `later` and
@@ -4420,18 +4420,15 @@ publication path changed.
 `31718088287` succeeded, and the fresh exact-final-head review was MERGE-SOUND with no
 CRITICAL/HIGH finding. Codex reviewed predecessor `a4fb736`, not final head, and left one
 unresolved P2: its provenance says “current main” rather than pinning the source commit. This is
-valid non-blocking debt, not exact-final-head Codex proof. PR #74 is recoverably parked: this
-session-level operational interlock prohibits Lab writes and merges while
-`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` is open, but does not rewrite the Lab q-8
-repository text, whose semantic scope is final public transformation of real-data studies. It does
-not make q-8 a release prerequisite. The joint tag still separately requires
+valid non-blocking debt, not exact-final-head Codex proof. PR #74 remains open at its normal gate
+checkpoint. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` separately governs final public
+transformation of real-data studies; it is not a release prerequisite. The joint tag still separately requires
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
 `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; Lab q-7 and q-8 remain separate.
 
 **Canonical-routing state and exact resume.** claude-config PR #134 merged `2d9c047` to repair
 the canonical estate rows. claude-config #133 remains for deployed MACHINE/REPOS routing drift;
-#135 remains for permission-blocked stale-worktree metadata. Resume only after the human explicitly
-authorizes Lab writes under this session interlock: refresh PR #74 head/base/checks/reviews/threads,
-address, track, or reject the P2 once, and if a fix push occurs, rerun affected exact-head proof,
-review, and the 15-minute clock. Do not merge or tag without their respective gates. Otherwise,
-Product work remains issue-backed.
+#135 remains for permission-blocked stale-worktree metadata. Resume by refreshing PR #74
+head/base/checks/reviews/threads, addressing, tracking, or rejecting the P2 once, and, if a fix
+push occurs, rerunning affected exact-head proof, review, and the 15-minute clock. Do not merge or
+tag without their respective gates. Otherwise, Product work remains issue-backed.
