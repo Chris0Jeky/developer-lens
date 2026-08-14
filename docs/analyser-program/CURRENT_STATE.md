@@ -130,21 +130,14 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   unresolved threads, closing references, unattested or unanchored review evidence, and stale
   snapshots. The Lab ledger recorded the frozen Method Trial v1 exhibit as SELECTED (owner decision
   U3=FREEZE), and Lane-P has now landed through Lab PR #75 as C0 staging/review only. Do not reopen
-  Lane-P, publish, release, or tag from that evidence. The exact next Lab seam is final changelog/
-  release-note sync, then the screenshot/video package. Lab PR #57 already
-  delivered the zero/multiple-wheel and full-call-sequence P2 hardening seam.
-  Continue only explicitly tracked C0 pre-tag slices under Lab #29; then STEP 5 = final
-  browser/visual QA proof for the `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` five-minute
-  product owner sign-off plus
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` Lab screenshot/video-package aesthetic
-  sign-off; then STEP 6 = tag v0.1.0 +
-  publish C0 release assets and release notes. The 0.1.0 version bump rides THAT tag PR (LOW-1
-  disposition), not the pre-QA batch — the joint tag remains blocked on the remaining Lab #29
-  pre-tag deliverables (the final changelog/release-note and screenshot/video package, plus any
-  other remaining pre-tag work tracked there; Lane-P and the selected P2 test-hardening seam are
-  delivered) plus
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`, per H7=BOTH; #29 closes only after the tag; step 7
+  Lane-P, publish, release, or tag from that evidence. The Lab changelog/release-note and
+  screenshot/video package are delivered; PR #84 is the state reconciliation.
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed for that package only and
+  authorizes no tag or publication. The agent-executable Lab PR #85 / issue #81 lane must be
+  re-read live before acting; it is not a joint-tag owner gate. The sole remaining joint-tag
+  blocker is `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`. STEP 5 is that five-minute owner
+  visual sign-off; STEP 6 remains the owner-executed joint tag and C0 publication. #29 closes after
+  the tag; step 7
   descriptions/topics is partially done (description, topics,
   Discussions live). Tracked from the #209 review (non-blocking LOWs,
   noted on #200): version 0.0.0 bump belongs to the release-tag step; README should link
