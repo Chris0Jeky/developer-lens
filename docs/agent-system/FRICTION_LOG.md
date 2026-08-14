@@ -1038,3 +1038,20 @@ patch changed no file and the one-section retry succeeded.
   mechanically generated patch artifact inline.
 - **promotion:** One occurrence; at a second occurrence fold the inline-patch requirement into the
   DL-P review prompt bodies rather than adding a new mechanism.
+
+### FR-043 — bounded Product queue scout overran and was interrupted
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (queue-observation cost)`
+- **symptom:** A bounded Product #200 queue scout exceeded its intended observation window and was
+  interrupted before producing a complete, directly usable snapshot.
+- **impact:** The release-truth repair needed a fresh structured reread instead of relying on the
+  incomplete scout output; no repository or GitHub mutation occurred.
+- **workaround:** Use a direct structured snapshot of the named Product/Lab refs, checks, review
+  state, and issue state before making a release-truth claim.
+- **occurrences:** 1 independent occurrence — Product #200 comment `5298981016` on 2026-08-15.
+- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the bounded
+  release-governor queue.
+- **promotion:** Not promoted after one occurrence. If it recurs, select the cheapest bounded checked
+  scout or timeout enforcement that preserves a complete structured snapshot.

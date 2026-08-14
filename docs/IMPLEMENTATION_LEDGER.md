@@ -4456,3 +4456,37 @@ friction entry. **Exact resume.** Start from live Lab main and Lab #29 for final
 note sync, then screenshot/video package; reconcile late PR #75 review only if new defect evidence
 appears. Do not reopen Lane-P. Do not merge or tag without their respective gates. Otherwise,
 Product work remains issue-backed.
+
+## 2026-08-15 — P0.5 release-truth repair
+
+**Scope.** Correct the P0.5/#200 release resume record only. Changed `CURRENT_STATE.md`, this
+append-only ledger, and the friction log; no Product/Lab code, contract, data, model, telemetry,
+credential, release, tag, publication, browser capture, or `HUMAN_TODO.md` surface changed.
+
+**Live release evidence.** Product main is `ba9ef321af48a00ab4e59a910a64390944fca7f5`. Product PR
+#248 was archived CLOSED at 2026-08-14T23:49:01Z with final head `8d0b7e9a247c2950ebc321d0b285f972aaad366a` over unchanged base
+`ba9ef321af48a00ab4e59a910a64390944fca7f5`; check `31847917868` is green and all
+four review threads are dispositioned/resolved, but the PR remains NOT MERGE-SOUND at its two-round
+ceiling and its branch is retained. Lab PR #84 final `bd8dd028a30fc2534f8fa1188e059de170c2978a` merged as
+`7b92cd5684297aaa22d95d751c73bb4b18e03552`; exact-head check `31844937775` and merge run
+`31846234819` are green, with delayed sweep comment `5298844069` clean at T+16m17s. Lab PR #85
+final `1f5dfda9545d05df83982eabffd799aa0ae143e5` merged as
+`89358200b428aac53d1c8b47a3d544e7a981efac`; exact-head check `31846406666` and merge run
+`31847458392` are green, with delayed sweep comment `5299142189` clean at T+46m7s. Lab PR #86
+final `2e970b82d3cd2e87db3c1b68aa4a6003f9776a2f` merged as
+`2806574915e80118e43dee577bf0c53ea0d1fc83`; exact-head check `31849606661` and merge run
+`31850603185` are green, Lab issue #76 is closed, and delayed sweep comment `5299230783` is clean
+at T+10m55s. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed. No known Lab #29 pre-tag deliverable remains;
+Lab #29 stays open until the joint tag.
+
+**Exact resume and authority.** Product agent browser/visual QA is NOT VERIFIED and is the next
+mission slice. After it, `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` is the final owner
+aesthetic sign-off. The v0.1.0 tag remains joint under O2/H7=BOTH; no product-only tag is
+authorized. After the owner sign-off, OWNER_CONSTITUTION A1=FULL authorizes agents to execute the
+synchronized version/tag/package/C0-publication sequence. Do not infer that sign-off or describe
+the tag/publication as owner-executed.
+
+**Proof and residual risk.** Live Git/GitHub rereads established the stated Product/Lab commits,
+checks, issue state, and PR #248 disposition. `npm.cmd run verify:context` and `git diff --check`
+are the required local documentation proofs. Browser/visual QA, the Product owner sign-off, and all
+release/tag/publication activity remain NOT VERIFIED and unperformed.
