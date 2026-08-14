@@ -38,9 +38,10 @@ latest_truth_repair: >-
   `5290527650` covered the exact head, and Codex reviewed exact head `7e17`; its provenance P2 was
   replied and resolved, with debt retained as
   [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76)
-  and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. The PR timeline records no
-  head movement after the 2026-08-13T16:01:46Z head commit and no force pushes, so the exact head
-  aged far beyond the Lab 15-minute floor before merge; the merge itself was executed by the
+  and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. The exact head was published
+  no later than the 2026-08-14T07:01:08Z PR creation, and the PR timeline records no later head
+  movement and no force pushes, so at least 17m45s of demonstrated public head age elapsed before
+  the 07:18:53Z merge — the Lab 15-minute floor held; the merge itself was executed by the
   concurrent Lab lane (FR-040), and the Lab-side record remains authoritative for its gate
   evidence. PR #74 head `37f1974a` was
   closed unmerged as superseded after the base moved; comment `5290663270` preserves its unique
@@ -366,7 +367,8 @@ lab_release_handoff: 'Product PR #231 final head
   sync, then the screenshot/video package. The separate
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` concerns final public transformation of
   real-data studies; it is not a release prerequisite for this C0-invented exhibit (the H7
-  joint-tag prerequisites are q-10(c) and q-11). Resume from live Lab main and Lab #29, and
+  joint-tag prerequisites are `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`). Resume from live Lab main and Lab #29, and
   reconcile late PR #75 review only if new defect evidence appears.'
 preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 named product
   worktrees and branches at their mechanically measured full HEADs. Three had tracked modifications;
@@ -380,7 +382,8 @@ blockers: 'No owner blocker prevents Product invented-fixture, CI/gate, or docum
   changelog/release-note sync, then the screenshot/video package. The separate
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` covers final public transformation of
   real-data studies and is not a release prerequisite for this C0-invented exhibit (the H7
-  joint-tag prerequisites are q-10(c) and q-11). The
+  joint-tag prerequisites are `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`). The
   v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a new recorded owner decision;
   none exists). The binding review-timing gate requires exact-head hosted proof, fresh review, and
   either exact-final-head Codex review triage or a fresh clean sweep after 15 minutes since the
@@ -430,7 +433,8 @@ open_owner_gates: '`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6(a-h)` remains 
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-9` is SUPERSEDED by owner decision A5.
   The sibling `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remains a separate open
   real-study publication gate; it does not re-open
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` or make q-8 a normal Lab release prerequisite.
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` or make
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` a normal Lab release prerequisite.
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(a)` CLA review is deferred before substantial
   external code; all other `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10` decisions remain
   deferred except the reaffirmed joint H7 release and the selected separate CoC inbox. Its address

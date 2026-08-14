@@ -922,7 +922,9 @@ patch changed no file and the one-section retry succeeded.
   corruption is evidence the FR-014 promoted rule was not applied in this hop, not a new
   mechanism.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe
-  text/evidence helper hardening.
+  text/evidence helper hardening;
+  [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) owns the
+  occurrence-consolidation sweep for this recurrence cluster.
 - **promotion:** Reuse #222's selected explicit UTF-8 decoding contract rather than create a second
   Markdown tool; exact UTF-8 reads are required for future Windows reconciliation patches.
 
