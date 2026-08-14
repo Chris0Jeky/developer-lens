@@ -814,7 +814,8 @@ patch changed no file and the one-section retry succeeded.
 - **workaround:** Reconciled the canonical rows through
   [Chris0Jeky/claude-config#134](https://github.com/Chris0Jeky/claude-config/pull/134) (`2d9c047`);
   refreshed the active Product state from live Git/GitHub rather than trusting the earlier registry claim.
-- **occurrences:** 1 independent occurrence — 2026-08-13 governor sense/reconcile.
+- **occurrences:** 2 independent occurrences — 2026-08-13 governor sense/reconcile and
+  2026-08-14 Product/Lab truth reconciliation.
 - **task:** [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
   owns remaining deployed MACHINE/REPOS routing drift;
   [Chris0Jeky/claude-config#135](https://github.com/Chris0Jeky/claude-config/issues/135) separately
@@ -822,6 +823,13 @@ patch changed no file and the one-section retry succeeded.
 - **promotion:** The canonical-row repair is complete. Deployment/routing drift stays durable tracked
   debt until [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
   proves the deployed map; do not duplicate its implementation in this repository.
+- **2026-08-14 continuation:** This Product reconciliation again found the expected user-scope
+  `~/.claude/ESTATE.md` missing and `~/.codex/REPOS.md` stale enough to omit both Product and Lab.
+  The repository canon, tier declaration, and live Git/GitHub reads supplied the safe routing
+  workaround. This stays external deployed-registry debt under
+  [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133): a Product
+  document cannot restore or prove the deployed machine registry, and duplicating that fix here
+  would create a competing authority surface.
 
 ### FR-032 — Windows command boundaries rejected common npm and UTC conveniences
 

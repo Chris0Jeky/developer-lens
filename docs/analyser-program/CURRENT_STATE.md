@@ -29,31 +29,22 @@ phase: 'P0 control-plane reconciliation (governor bootstrap) delivered by merged
   programme.'
 head: see `git log -1 origin/main` — live Git outranks anything recorded here
 latest_truth_repair: >-
-  Live Product main remains `448a861c8feaf9bb3c43df52538a7f561c99b8cf` from merged PR #245,
-  with no open Product PRs. Product #234 remains open and is correctly labelled `later` and
-  `product`. Lab PR #75 merged exact head `7e17e15f828cfc302d27bbbce0feeef115a11e64` over
-  `db104ca1f2bae2de214024e69fddff8cf9822373` as ordinary two-parent merge
-  `8ac0cb431130a5004d3f8a8e8adcf0dcc37615ca` at 2026-08-14T07:18:53Z; Lab main is `8ac0cb`.
-  Hosted `Prove the lab` run `31778336215` succeeded, independent MERGE-SOUND attestation comment
-  `5290527650` covered the exact head, and Codex reviewed exact head `7e17`; its provenance P2 was
-  replied and resolved, with debt retained as
-  [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76)
-  and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. The exact head was published
-  no later than the 2026-08-14T07:01:08Z PR creation, and the PR timeline records no later head
-  movement and no force pushes, so at least 17m45s of demonstrated public head age elapsed before
-  the 07:18:53Z merge — the Lab 15-minute floor held; the merge itself was executed by the
-  concurrent Lab lane (FR-040), and the Lab-side record remains authoritative for its gate
-  evidence. PR #74 head `37f1974a` was
-  closed unmerged as superseded after the base moved; comment `5290663270` preserves its unique
-  docs/friction branch history. Mechanical blob comparison proved JSON/HTML/provenance/test bytes
-  identical across PR #74, PR #75, and Lab main; only docs differed. Lane-P is LANDED as staging/
-  review only: no publication, release, or tag is claimed. [Chris0Jeky/claude-config#134](https://github.com/Chris0Jeky/claude-config/pull/134)
-  merged `2d9c047` to repair canonical estate rows;
-  [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133) retains
-  deployed MACHINE/REPOS routing drift and
-  [Chris0Jeky/claude-config#135](https://github.com/Chris0Jeky/claude-config/issues/135) retains
-  permission-blocked stale-worktree metadata. Active P0.5/#200 remains
-  unchanged.
+  Live Product main is `ba9ef321af48a00ab4e59a910a64390944fca7f5`, merged from Product PR #247
+  at 2026-08-14T08:52:17Z. Lab PR #84 merged exact head
+  `bd8dd028a30fc2534f8fa1188e059de170c2978a` as merge commit
+  `7b92cd5684297aaa22d95d751c73bb4b18e03552` at 2026-08-14T22:20:30Z; its merge-commit `Check`
+  run `31846234819` succeeded and the T+4m52 post-merge sweep was clean.
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed on
+  explicit owner approval of the screenshot/video package only; it authorizes no tag, publication,
+  release-asset attachment, or other owner-gated action. At the 2026-08-14T22:27:45Z observation,
+  Lab PR #85 remained open at exact head `1f5dfda9545d05df83982eabffd799aa0ae143e5` over
+  `7b92cd5684297aaa22d95d751c73bb4b18e03552`: required run `31846406666` was successful, the
+  fresh exact-head review and two Codex-thread replies/resolutions were recorded, and the lane was
+  awaiting the unconditional Lab 15-minute merge-eligibility gate. This is an in-flight,
+  timestamped observation, not delivery evidence; refresh it before acting. The sole remaining
+  joint-tag blocker is `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`, which remains
+  owner-executed; `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remains a separate open
+  real-study-publication gate.
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
   DL-COMPARE-01 #89, DL-VALIDATE-01 #92, DL-VALUE-01 #94, DL-LIFE-01 #100, DL-EVQ-03 #99',
@@ -101,7 +92,11 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   P0.5 step order vs the mandate: step 1 (licence) DONE, step 2 (community scaffolding) DONE,
   step 4 DONE on both sides (#211 product; Lab PR #38 plus closed #5), step 3 unblocked by the
   2026-08-09 closure of `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8`,
-  steps 5-7 pending — order deviations are recorded here, never silent. This slice completes the
+  steps 5-7 were then pending — order deviations are recorded here, never silent. Live release
+  state is now Lab PR #84 merged and `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` closed
+  for the screenshot/video package only; the
+  sole remaining joint-tag blocker is Product `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`.
+  This slice completes the
   pre-QA doc touch-up batch tracked on #200 (README→COMMERCIAL_OPTION link, AGPL visible source-offer
   in the Pages app, Discussions-link warning, cockpit seed-fixture wording, invented-vs-C0
   terminology). Product PR #227 landed as `408a5b8`; product community/contact PR #226 landed as
@@ -174,14 +169,18 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
   owner sign-off; labels release/now). The v0.1.0 tag is JOINT across product and lab (owner
   decisions O2/H7=BOTH); a product-only tag would require a NEW recorded owner decision superseding
-  H7 — none exists. The joint tag is blocked by remaining Lab #29 pre-tag work: final changelog/
-  release-note sync, then the screenshot/video package, plus any other explicitly tracked work.
-  Lane-P is LANDED through Lab PR #75 as staging/review only; do not reopen it, publish, release,
-  or tag from that evidence. Exact resume: start from live Lab main `8ac0cb` and Lab #29; reconcile
-  late PR #75 review only if new defect evidence appears, then follow normal proof/review/15-minute/
-  merge gates for the next selected seam. Otherwise the next Product work remains issue-backed.
-  The joint tag separately needs `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`; #29 itself closes after the tag.
+  H7 — none exists. Lab PR #84 delivered the screenshot/video package and
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed for
+  that package only; it authorizes no tag or publication. Exact resume: refresh in-flight Lab PR
+  #85 before acting. At 2026-08-14T22:27:45Z it was open at
+  `1f5dfda9545d05df83982eabffd799aa0ae143e5` over `7b92cd5684297aaa22d95d751c73bb4b18e03552`,
+  with successful required run `31846406666`, fresh exact-head review, and two Codex threads
+  replied/resolved; it still awaited the unconditional 15-minute Lab eligibility gate and may move.
+  Do not call it delivered unless its merge is live-reverified. Product
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` is the sole remaining joint-tag blocker and
+  remains owner-executed; `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remains a separate
+  open real-study-publication gate. #29 closes
+  after the joint tag. Otherwise the next Product work remains issue-backed.
   Do not
   advance task selection beyond P0.5/#200. Downstream (not selected): after the v0.1.0 tag, P1 =
   #174 integrated vertical with #181/#182 contract semantics (H1), folding #135/#76/#80-resolver
@@ -352,24 +351,22 @@ lab_release_handoff: 'Product PR #231 final head
   friction entry to FR-062, repaired the recorded PR #56 / PR #64 / replay-anchor state defects,
   and repointed the Lab resume at the Lane-P release review of the already-selected frozen
   exhibit. The floor-blocked GraphQL thread-state route is recorded as Lab FR-062 with the Lab #34
-  read-route dependency named before any Lane-P merge. Live continuation: Lab PR #75 merged exact
-  head `7e17e15f828cfc302d27bbbce0feeef115a11e64` over
-  `db104ca1f2bae2de214024e69fddff8cf9822373` as ordinary two-parent merge
-  `8ac0cb431130a5004d3f8a8e8adcf0dcc37615ca` at 2026-08-14T07:18:53Z; Lab main is `8ac0cb`.
-  Hosted run `31778336215` succeeded, exact-head independent MERGE-SOUND attestation comment
-  `5290527650` arrived, and Codex reviewed exact head `7e17`; its provenance P2 was replied and
-  resolved, retaining debt at [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76)
-  and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. PR #74 head `37f1974a` closed
-  unmerged as superseded after base movement; comment `5290663270` preserves its unique docs/
-  friction history. Mechanical blob comparison proved JSON/HTML/provenance/test bytes identical
-  across PR #74, PR #75, and Lab main; only docs differed. Lane-P is LANDED as staging/review only;
-  no publication, release, or tag is claimed. The next Lab seam is final changelog/release-note
-  sync, then the screenshot/video package. The separate
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` concerns final public transformation of
-  real-data studies; it is not a release prerequisite for this C0-invented exhibit (the H7
-  joint-tag prerequisites are `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`). Resume from live Lab main and Lab #29, and
-  reconcile late PR #75 review only if new defect evidence appears.'
+  read-route dependency named before any Lane-P merge. Live continuation: Lab PR #84 merged exact
+  head `bd8dd028a30fc2534f8fa1188e059de170c2978a` as merge commit
+  `7b92cd5684297aaa22d95d751c73bb4b18e03552` at 2026-08-14T22:20:30Z. Merge-commit `Check` run
+  `31846234819` succeeded and the T+4m52 post-merge sweep was clean.
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed on explicit
+  owner approval of the delivered screenshot/video package only; it authorizes no tag, publication,
+  release-asset attachment, or other owner-gated action. At 2026-08-14T22:27:45Z, Lab PR #85 was
+  open at exact head `1f5dfda9545d05df83982eabffd799aa0ae143e5` over the #84 merge; required run
+  `31846406666` was successful, fresh exact-head review was recorded, and two Codex threads were
+  replied/resolved. It remained an in-flight lane awaiting the unconditional 15-minute Lab
+  merge-eligibility gate and may move; refresh live state before acting or calling it delivered.
+  The sole remaining joint-tag blocker is owner-executed
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`. The separate open
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` concerns real-study publication and is not
+  a C0 release prerequisite. Exact resume: re-read PR #85; if it merged, capture exact merge
+  evidence before selecting the next release action. Do not tag or publish.'
 preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 named product
   worktrees and branches at their mechanically measured full HEADs. Three had tracked modifications;
   two no-PR branches were remote-preserved and the other measured no-PR branches were local-only.
@@ -377,13 +374,16 @@ preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 na
   activated. The exact branch/SHA/PR mapping lives in docs/IMPLEMENTATION_LEDGER.md; product #200
   owns cleanup or reconciliation follow-up.'
 blockers: 'No owner blocker prevents Product invented-fixture, CI/gate, or documentation work.
-  Product-side P0.5 #200 release preparation is active. Lane-P landed through Lab PR #75 as C0
-  staging/review only; no publication, release, or tag occurred. The exact next Lab seam is final
-  changelog/release-note sync, then the screenshot/video package. The separate
+  Product-side P0.5 #200 release preparation is active. Lab PR #84 merged the screenshot/video
+  package; `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed for that package only
+  and authorizes no tag, publication, or
+  release-asset attachment. At 2026-08-14T22:27:45Z, Lab PR #85 was open at exact head
+  `1f5dfda9545d05df83982eabffd799aa0ae143e5`, with successful required run `31846406666`, fresh
+  exact-head review, and two Codex threads replied/resolved; it remained in flight pending the
+  unconditional 15-minute Lab merge-eligibility gate. Re-read before acting. The separate
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` covers final public transformation of
-  real-data studies and is not a release prerequisite for this C0-invented exhibit (the H7
-  joint-tag prerequisites are `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`). The
+  real-data studies and is not a release prerequisite for this C0-invented exhibit. The H7
+  joint-tag prerequisite is `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`. The
   v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a new recorded owner decision;
   none exists). The binding review-timing gate requires exact-head hosted proof, fresh review, and
   either exact-final-head Codex review triage or a fresh clean sweep after 15 minutes since the
@@ -401,12 +401,14 @@ blockers: 'No owner blocker prevents Product invented-fixture, CI/gate, or docum
   and the Lab #29 metadata seam. Lab FR-028 is promoted: its selected enforcement layer, the
   report-only merge-eligibility helper, was delivered by Lab PR #68 on 2026-08-12.
   Lane-P is LANDED and must not be reopened. PR #74 was closed unmerged as superseded after base
-  movement; its unique docs/friction history is preserved by comment `5290663270`. Resume from live
-  Lab main and Lab #29; reconcile late PR #75 review only for new defect evidence.
-  The separately remaining joint-release blockers are
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`, followed by the joint tag; the remaining
-  Lab #29 pre-tag work must continue under its normal gates. #29 closes after the tag.
+  movement; its unique docs/friction history is preserved by comment `5290663270`. Resume by
+  refreshing Lab PR #85: the timestamped in-flight record above is not delivery evidence, and a
+  live merge requires exact merge evidence before any next action. Product
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` is the sole remaining joint-tag blocker;
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed and
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remains a separate real-study-publication
+  gate. #29 closes after
+  the joint tag.
   Lab PRs #51 and #52 had exact-head hosted/review evidence but merged before the binding Lab
   15-minute eligibility floor; Lab FR-028 retains the repeated process-defect record; its selected
   checked enforcement was delivered by Lab PR #68 (2026-08-12). PR #54 later satisfied its conservative exact-head age window and merged with
@@ -421,9 +423,8 @@ blockers: 'No owner blocker prevents Product invented-fixture, CI/gate, or docum
   migration/connector still requires #168 and a separately reviewed production grant issuer/caller.
   #80/#174 remain outside this demo programme.
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` is non-blocking for current
-  product release preparation, but its five-minute owner aesthetic sign-off and
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` Lab screenshot/video-package sign-off blocks
-  the joint v0.1.0 tag under H7=BOTH. No product-only tag is authorized by current policy; a future
+  product release preparation but is the sole remaining joint v0.1.0 tag blocker under H7=BOTH.
+  It is owner-executed. No product-only tag is authorized by current policy; a future
   superseding owner decision would govern its own prerequisites.'
 open_owner_gates: '`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6(a-h)` remains deferred and
   non-blocking. `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` is CLOSED
@@ -442,9 +443,12 @@ open_owner_gates: '`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6(a-h)` remains 
   public sensitive details, and provides a content-free route for arranging private contact.
   Publishing the dedicated address remains a `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10`
   release action. `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains non-blocking for
-  current preparation, but its five-minute owner aesthetic sign-off and
-  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` Lab screenshot/video-package sign-off blocks
-  the joint v0.1.0 tag under H7=BOTH. No product-only tag is currently authorized. The
+  current preparation, but its five-minute owner aesthetic sign-off is the sole remaining joint
+  v0.1.0 tag blocker under H7=BOTH.
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed for the screenshot/video package
+  only and does not authorize a tag, publication, or other owner-gated action;
+  `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remains separate.
+  No product-only tag is currently authorized. The
   deregistered `value01`
   directory remains manual owner review/delete and is not a
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` blocker.'

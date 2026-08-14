@@ -4456,3 +4456,36 @@ friction entry. **Exact resume.** Start from live Lab main and Lab #29 for final
 note sync, then screenshot/video package; reconcile late PR #75 review only if new defect evidence
 appears. Do not reopen Lane-P. Do not merge or tag without their respective gates. Otherwise,
 Product work remains issue-backed.
+
+## 2026-08-14 — Product truth reconciliation after Lab PR #84
+
+**Changed.** Reconciled only the Product resume/state surfaces after live Product and Lab reads.
+Product PR #247 merged as `ba9ef321af48a00ab4e59a910a64390944fca7f5` at
+2026-08-14T08:52:17Z. Lab PR #84 merged exact head
+`bd8dd028a30fc2534f8fa1188e059de170c2978a` as merge commit
+`7b92cd5684297aaa22d95d751c73bb4b18e03552` at 2026-08-14T22:20:30Z; merge-commit `Check` run
+`31846234819` succeeded and the recorded T+4m52 post-merge sweep was clean. Lab
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed on explicit owner approval of the
+screenshot/video package only; it authorizes no tag, publication, release-asset attachment, or
+other owner-gated action.
+
+**Live in-flight state and exact resume.** At 2026-08-14T22:27:45Z, Lab PR #85 was OPEN at exact
+head `1f5dfda9545d05df83982eabffd799aa0ae143e5` over
+`7b92cd5684297aaa22d95d751c73bb4b18e03552`. Required run `31846406666` was SUCCESS; fresh
+exact-head review was recorded and two Codex threads were replied/resolved. The lane still awaited
+the unconditional 15-minute Lab merge-eligibility gate and may move, so this is not delivery
+evidence. Re-read PR #85 before acting; if it has merged, record the exact merge evidence before
+choosing the next release action. The sole remaining joint-tag blocker is owner-executed
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`.
+`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remains a separate open
+real-study-publication gate.
+
+**Verified.** `npm.cmd run verify:context` passed (47 Markdown files, 31 required files) and
+`git diff --check` was clean after the state and friction updates. No code, configuration,
+capability, data, model, telemetry, credential, tag, release, or owner-gate action changed.
+
+**Failures/workarounds and residual risk.** FR-031 recurred: the user-scope
+`~/.claude/ESTATE.md` was missing and `~/.codex/REPOS.md` omitted Product/Lab. The repository
+canon/tier plus live GitHub reads supplied routing; the repair stays external deployed-registry debt
+under [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133), because
+this repository cannot restore or prove the deployed map without creating a competing authority.
