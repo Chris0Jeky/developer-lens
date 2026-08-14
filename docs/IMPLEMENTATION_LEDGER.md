@@ -4422,17 +4422,25 @@ publication path changed.
 Hosted `Prove the lab` run `31778336215` succeeded, exact-head independent MERGE-SOUND attestation
 comment `5290527650` landed, and Codex reviewed exact head `7e17`; its provenance P2 was replied
 and resolved, retaining debt as [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76)
-and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. PR #74 head `37f1974a` was closed
+and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. The PR timeline records no head
+movement after the 2026-08-13T16:01:46Z head commit and no force pushes, so the exact head aged
+far beyond the Lab 15-minute floor before the 2026-08-14T07:18:53Z merge; the merge itself was
+executed by the concurrent Lab lane (FR-040), and the Lab-side record remains authoritative for
+its gate evidence. PR #74 head `37f1974a` was closed
 unmerged as superseded after base movement; comment `5290663270` preserves unique docs/friction
 branch history. Mechanical blob comparison proved JSON/HTML/provenance/test bytes identical across
 PR #74, PR #75, and main; only docs differed. Lane-P is LANDED as staging/review only: no
 publication, release, or tag occurred. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8`
-separately governs final public transformation of real-data studies; it is not a release prerequisite.
+separately governs final public transformation of real-data studies; it is not a release
+prerequisite for this C0-invented exhibit (the H7 joint-tag prerequisites are q-10(c) and q-11).
 The joint tag still separately requires
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and
 `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11`;
 `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-7` and
 `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` remain separate.
+
+**Proof.** `npm.cmd run verify:context` passed (47 Markdown files, 31 required) and
+`git diff --check` was clean on this branch, rerun at the final head after each fix round.
 
 **Canonical-routing state and exact resume.**
 [Chris0Jeky/claude-config#134](https://github.com/Chris0Jeky/claude-config/pull/134) merged

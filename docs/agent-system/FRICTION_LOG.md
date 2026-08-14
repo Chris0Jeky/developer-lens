@@ -863,7 +863,7 @@ patch changed no file and the one-section retry succeeded.
 ### FR-034 — outbound human-action references were abbreviated before correction
 
 - **first-seen:** 2026-08-13
-- **status:** `promoted`
+- **status:** `workaround-documented`
 - **severity:** `MEDIUM (owner-gate reference ambiguity)`
 - **symptom:** Outbound GitHub writing abbreviated human-action references twice, including a
   claude-config PR #134 review comment, before correction to the exact
@@ -875,8 +875,11 @@ patch changed no file and the one-section retry succeeded.
 - **occurrences:** 2 independent occurrences — 2026-08-13.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   structured GitHub write-boundary preflight.
-- **promotion:** At the second occurrence, promote a structured GitHub write preflight that rejects
-  any human-action reference not exactly `<owner>/<repo>::HUMAN_TODO.md::q-N` before submission.
+- **promotion:** At the second occurrence, the selected enforcement layer is a structured GitHub
+  write preflight that rejects any human-action reference not exactly
+  `<owner>/<repo>::HUMAN_TODO.md::q-N` before submission. That layer is selected but not yet
+  implemented — Product #222 owns it — so this entry stays `workaround-documented` per the FR-017
+  precedent until the preflight exists.
 
 ### FR-035 — coordinator temporarily misbound the fully qualified Lab Rule reference
 
@@ -895,7 +898,9 @@ patch changed no file and the one-section retry succeeded.
   and resume normal Lab proof/review/aging/merge gates.
 - **occurrences:** 1 independent occurrence — 2026-08-13.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
-  structured exact-reference write preflight; Lab #29 retains the release slice.
+  structured exact-reference write preflight;
+  [Chris0Jeky/developer-lens-lab#29](https://github.com/Chris0Jeky/developer-lens-lab/issues/29)
+  retains the release slice.
 - **promotion:** This is another manifestation of FR-034. Use its selected structured exact-ref
   preflight under Product #222; do not claim unauthorized prior Lab writes or introduce a second
   enforcement layer.
@@ -911,9 +916,11 @@ patch changed no file and the one-section retry succeeded.
   file change was applied by the rejected patches.
 - **workaround:** Re-read the target with `Get-Content -Encoding utf8`, then use the exact
   heading-bounded patch and inspect the resulting diff.
-- **occurrences:** This is the second independent documentation-decoding/patch-target mechanism:
-  FR-029 covers review-content decoding and FR-027 covers stale patch context; neither prevented
-  this combined Windows default-decoding case.
+- **occurrences:** 1 independent occurrence — 2026-08-14. Prior related mechanisms: promoted
+  FR-014 (implicit PowerShell decoding corrupting patch context), FR-029 (review-content
+  decoding), and FR-027 (stale patch context). This recurrence of Windows default-decoding patch
+  corruption is evidence the FR-014 promoted rule was not applied in this hop, not a new
+  mechanism.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe
   text/evidence helper hardening.
 - **promotion:** Reuse #222's selected explicit UTF-8 decoding contract rather than create a second
@@ -983,7 +990,9 @@ patch changed no file and the one-section retry succeeded.
   superseded. The concurrent record is preserved by
   [Chris0Jeky/developer-lens-lab#73 comment 5290683157](https://github.com/Chris0Jeky/developer-lens-lab/issues/73#issuecomment-5290683157).
 - **occurrences:** 1 recurrence observed during the 2026-08-14 Lane-P final review.
-- **task:** Lab #73 owns the recurrence record; Product #222 retains shared command-boundary debt.
+- **task:** [Chris0Jeky/developer-lens-lab#73](https://github.com/Chris0Jeky/developer-lens-lab/issues/73)
+  owns the recurrence record; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+  retains shared command-boundary debt.
 - **promotion:** A per-worktree lease is insufficient against repository-wide duplicate lanes.
   Select/propose a repository-wide issue-and-owned-path lane claim before future concurrent
   cross-repository release slices.
@@ -1006,3 +1015,24 @@ patch changed no file and the one-section retry succeeded.
   owns durable safe-cleanup follow-up.
 - **promotion:** Exact resume is a human or next bounded cleanup using a verified Windows
   long-path-aware native route. Do not retry broad cleanup from this Product reconciliation.
+
+### FR-042 — exact-head adversarial review was commissioned without an inline diff patch
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `LOW (review evidence cost and scope assurance)`
+- **symptom:** A fresh-context adversarial review was tasked with only a worktree path, a base SHA,
+  and a changed-file list; the read-only reviewer runs no Git commands, so it had to reconstruct
+  the diff by comparing base-checkout and branch-worktree file copies.
+- **impact:** Review cost rises and the diff scope is asserted rather than mechanically proven
+  inside the review context, so an out-of-scope hunk could in principle pass unseen; the reviewer
+  also cannot confirm the worktree HEAD it was reading.
+- **workaround:** The reviewer compared base and branch copies file by file and verified the
+  ledger/friction changes were pure appends; the coordinator separately proved the three-file diff
+  scope and the exact HEAD mechanically before and after the review.
+- **occurrences:** 1 independent occurrence — 2026-08-14.
+- **task:** [Product #216](https://github.com/Chris0Jeky/developer-lens/issues/216) owns
+  review-prompt hardening: review-commissioning prompts should carry the unified diff or a
+  mechanically generated patch artifact inline.
+- **promotion:** One occurrence; at a second occurrence fold the inline-patch requirement into the
+  DL-P review prompt bodies rather than adding a new mechanism.

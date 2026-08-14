@@ -38,7 +38,11 @@ latest_truth_repair: >-
   `5290527650` covered the exact head, and Codex reviewed exact head `7e17`; its provenance P2 was
   replied and resolved, with debt retained as
   [Chris0Jeky/developer-lens-lab#76](https://github.com/Chris0Jeky/developer-lens-lab/issues/76)
-  and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. PR #74 head `37f1974a` was
+  and the Lab #29 metadata seam. No CRITICAL/HIGH defect was found. The PR timeline records no
+  head movement after the 2026-08-13T16:01:46Z head commit and no force pushes, so the exact head
+  aged far beyond the Lab 15-minute floor before merge; the merge itself was executed by the
+  concurrent Lab lane (FR-040), and the Lab-side record remains authoritative for its gate
+  evidence. PR #74 head `37f1974a` was
   closed unmerged as superseded after the base moved; comment `5290663270` preserves its unique
   docs/friction branch history. Mechanical blob comparison proved JSON/HTML/provenance/test bytes
   identical across PR #74, PR #75, and Lab main; only docs differed. Lane-P is LANDED as staging/
@@ -267,7 +271,9 @@ control_plane_side_lane: 'Product #214 / PR #218 / lab #33 / PR #35 PROMPT OPERA
   against the 15-minute floor. Lab #29 tracks that process hardening. The frozen historical-producer
   hashes and the product fixture/schema seam are green; Lab PR #75 mechanically compared the
   JSON/HTML/provenance/test blobs with PR #74 and main and landed the unchanged C0 exhibit as
-  staging/review only. No publication, release, or tag occurred.'
+  staging/review only. Current-head candidate bytes remain rejected: the staged exhibit is the
+  frozen historical-producer output and no current-head reproducibility is claimed. No publication,
+  release, or tag occurred.'
 lab_release_handoff: 'Product PR #231 final head
   `450a3279f6f030e3970abd55d5a258994c5d1015` over base
   `e530f4c79eda57db0e3eb80a307fe3ffdd57c78f` passed hosted run `31337964825` / job
@@ -359,7 +365,8 @@ lab_release_handoff: 'Product PR #231 final head
   no publication, release, or tag is claimed. The next Lab seam is final changelog/release-note
   sync, then the screenshot/video package. The separate
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` concerns final public transformation of
-  real-data studies; it is not a release prerequisite. Resume from live Lab main and Lab #29, and
+  real-data studies; it is not a release prerequisite for this C0-invented exhibit (the H7
+  joint-tag prerequisites are q-10(c) and q-11). Resume from live Lab main and Lab #29, and
   reconcile late PR #75 review only if new defect evidence appears.'
 preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 named product
   worktrees and branches at their mechanically measured full HEADs. Three had tracked modifications;
@@ -372,7 +379,8 @@ blockers: 'No owner blocker prevents Product invented-fixture, CI/gate, or docum
   staging/review only; no publication, release, or tag occurred. The exact next Lab seam is final
   changelog/release-note sync, then the screenshot/video package. The separate
   `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` covers final public transformation of
-  real-data studies and is not a release prerequisite. The
+  real-data studies and is not a release prerequisite for this C0-invented exhibit (the H7
+  joint-tag prerequisites are q-10(c) and q-11). The
   v0.1.0 tag is joint per O2/H7=BOTH (a product-only tag would need a new recorded owner decision;
   none exists). The binding review-timing gate requires exact-head hosted proof, fresh review, and
   either exact-final-head Codex review triage or a fresh clean sweep after 15 minutes since the
@@ -400,7 +408,7 @@ blockers: 'No owner blocker prevents Product invented-fixture, CI/gate, or docum
   15-minute eligibility floor; Lab FR-028 retains the repeated process-defect record; its selected
   checked enforcement was delivered by Lab PR #68 (2026-08-12). PR #54 later satisfied its conservative exact-head age window and merged with
   green hosted/review/thread proof. PR #55 then delivered the sdist-to-wheel smoke seam under its
-  exact-head gate. None of those merges satisfies any of the three release blockers.
+  exact-head gate. None of those merges satisfies the remaining joint-release blockers.
   The binding review-timing gate
   stated below (`review_timing_defect`) governs any future merge:
   exact-head hosted Prove green, one fresh-context review, the 3-minute aging floor, AND either the
