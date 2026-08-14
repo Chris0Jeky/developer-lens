@@ -805,7 +805,7 @@ patch changed no file and the one-section retry succeeded.
 ### FR-031 — canonical estate registry diverged from the active Developer Lens pair
 
 - **first-seen:** 2026-08-13
-- **status:** `partially-resolved`
+- **status:** `workaround-documented`
 - **severity:** `LOW (routing and authority discoverability)`
 - **symptom:** The canonical estate registry retained stale Developer Lens routing/authority detail
   and omitted the sibling Lab row, despite live Product/Lab work continuing under the paired policy.
