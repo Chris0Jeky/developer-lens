@@ -1734,3 +1734,23 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   records this bounded review classification.
 - **promotion:** One incomplete-external-routing-coverage occurrence. Do not promote until an
   independent recurrence establishes that a checked coverage safeguard is warranted.
+
+### FR-067 — delegated SHA payload diverged from live branch evidence
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (coordination-range evidence interruption)`
+- **symptom:** A delivered task SHA literal had 41 characters, while the coordinator's recorded
+  request and the live branch showed the corresponding 40-character head. The first bounded range
+  failed before reading; fetching and live-branch inspection supplied the actual head, and the
+  corrected bounded range succeeded.
+- **impact:** Delivery and source payload divergence remains unresolved, but no mutation or evidence
+  gap occurred after the live head supplied the corrected range.
+- **workaround:** Validate delegated SHA length and existence against live Git before issuing range
+  commands; report any source-payload divergence without attributing its origin as settled fact.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product PR #262 coordination review.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) and
+  [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) own shared command and
+  review-evidence hardening.
+- **promotion:** One delegated-SHA divergence occurrence. Do not promote until an independent
+  recurrence establishes that a checked payload-validation safeguard is warranted.
