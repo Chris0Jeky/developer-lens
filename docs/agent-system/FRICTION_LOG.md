@@ -139,8 +139,9 @@ Rules that bind entries:
   minutes have passed since the last push with a fresh clean sweep; any fix push restarts that
   clock. One fresh-context independent review carries the gate when the connector is silent. Sweep
   each merged thread again past the measured delay.
-- **occurrences:** 2 recorded classes — the 2026-08-05 measurement (which produced 20 late comments
-  across earlier pull requests) and the 2026-08-08 total miss on PR #211.
+- **occurrences:** 3 recorded classes — the 2026-08-05 measurement (which produced 20 late comments
+  across earlier pull requests), the 2026-08-08 total miss on PR #211, and the 2026-08-15 late
+  review on PR #266.
 - **task:** [#208](https://github.com/Chris0Jeky/developer-lens/issues/208) (review-surface
   follow-ups) and [#214](https://github.com/Chris0Jeky/developer-lens/issues/214) (this prompt
   operating system).
@@ -151,6 +152,13 @@ Rules that bind entries:
   [CURRENT_STATE.md](../analyser-program/CURRENT_STATE.md), and the merge clauses of
   `DL-P01`/`DL-P03`/`DL-P08`. Not `resolved`: the connector behaviour itself is external and
   unchanged.
+
+  **2026-08-15 late-review note:** Product PR #266 merged at
+  `2026-08-15T17:47:37Z`; its exact-head Codex review for
+  `3d1ff0b0af5929ef2af51759dcc99d9349f492ecc` arrived at `2026-08-15T17:48:49Z` with a P2 split
+  finding. The thread was replied to and left open for the bounded successor. This records a third
+  late-review occurrence only; no runtime, data, or release harm is claimed. Product issue #222
+  owns the connector follow-up.
 
 ### FR-003 — pull-request keywords auto-closed a live programme issue
 
@@ -945,13 +953,18 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **evidence:** The exact helper failed on GitHub review JSON through the Windows default code page,
   then `py -3 -X utf8 ...` returned complete PR/review/thread JSON without a repository or GitHub
   mutation.
-- **occurrences:** 1 independent occurrence — 2026-08-10 during Product issue #222 review evidence
+- **occurrences:** 2 independent occurrences — 2026-08-10 during Product issue #222 review evidence
   handling.
 - **task:** [Product #222 comment 5235389219](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5235389219)
   proves this distinct UTF-8 helper route under [#222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 - **promotion:** Do not conflate this with FR-026's PowerShell object-expansion mechanism. The
   bounded #222 successor must define and prove an explicit UTF-8 decoding path for review content
   before this entry can close.
+
+  **2026-08-15 recurrence note:** A second Windows Python default-`cp1252`/UTF-8 review-helper
+  occurrence was recorded by [Product issue #222 comment 5303418489](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303418489).
+  At recurrence two, the selected contract is an explicit `py -3 -X utf8 ...` helper invocation;
+  Product #222 owns it, and it is NOT implemented. No broader decoding framework is warranted.
 
 ### FR-030 — delayed review sweep cast a null `submittedAt` timestamp
 
@@ -1006,19 +1019,26 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Use `npm.cmd` for repository scripts, `(Get-Date).ToUniversalTime().ToString('o')`
   for UTC timestamps, and PowerShell-compatible conditional flow rather than `||`. Lab FR-069
   records the corresponding Lab-side observation; this entry does not duplicate its Lab details.
-- **occurrences:** 2 immutable Product-session command-boundary events — initial evidence on
+- **occurrences:** 4 immutable Product-session command-boundary events — initial evidence on
   2026-08-13 and the PowerShell 5.1 UTC/`||` repeat during the 2026-08-14 Lab review
-  reconciliation. Consolidated pointer: their rejected `Get-Date -AsUTC` predicate is counted in
-  canonical FR-023; the historical `npm.cmd` and `||` context remains here without a second UTC
-  mechanism.
+  reconciliation, plus the two later PowerShell 5.1 `&&`/`||` parse stops recorded by Product
+  issue #222 comment 5303367870. Consolidated pointer: rejected `Get-Date -AsUTC` predicates are
+  counted in canonical FR-023; the historical `npm.cmd` and conditional-flow context remains here
+  without a second UTC mechanism.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe
   command-boundary helpers; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
   records this consolidation.
-- **promotion:** Consolidated pointer to FR-023's typed UTC-normalization contract under Product
-  #222. Do not create a second PowerShell UTC framework.
+- **promotion:** Selected, without implementation, as Product #222's PowerShell-compatible
+  conditional-flow contract. FR-023 remains the separate typed UTC-normalization contract; do not
+  create a second PowerShell UTC framework.
 
   **2026-08-15 consolidation note:** This immutable ID preserves the two observed sessions. Its
   duplicate UTC mechanism is accounted for by FR-023, whose occurrence total now includes both.
+
+  **2026-08-15 conditional-flow correction:** The two later `&&`/`||` parse stops from Product
+  issue #222 comment 5303367870 are included in this canonical FR-032 total. The selected
+  PowerShell-compatible conditional-flow contract is a #222 task only; no helper implementation is
+  claimed, and FR-023's separate UTC arithmetic is unchanged.
 
 ### FR-033 — GitHub label mutation returned a timeout after succeeding remotely
 
@@ -1494,10 +1514,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   changing GitHub or repository state.
 - **workaround:** Reissue the query with supported fields, then confirm the exact run through
   `gh run view`; the corrected read supplied the required evidence.
-- **occurrences:** 3 independent occurrences — 2026-08-15 PR #251 merge snapshot, recorded by
+- **occurrences:** 4 independent occurrences — 2026-08-15 PR #251 merge snapshot, recorded by
   [Product issue #222 comment 5300251294](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300251294),
   plus the exact-final PR #254 `closingIssues` field rejection and unsupported `gh pr diff` path
-  arguments.
+  arguments, plus the `gh api --slurp` and `--jq` command-shape incompatibility.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns typed
   Windows-safe query-shape helpers; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
   records this bounded classification.
@@ -1510,6 +1530,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `closingIssuesReferences` completed the bounded read. Separately, `gh pr diff` rejected path
   arguments, and the bounded local Git diff completed the required inspection. Both are the same
   CLI command-shape mechanism and select the existing #222 checked contract.
+
+  **2026-08-15 split correction:** The installed `gh api` rejected the combined `--slurp` and
+  `--jq` shape during comment collection, recorded by [Product issue #222 comment 5303418489](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303418489).
+  This is the fourth CLI command-shape occurrence under FR-051 and remains covered by the selected
+  #222 checked contract. The separate Python module-interface mismatch remains canonical under
+  FR-071 and is not counted here.
 
 ### FR-052 — mechanical review-thread summary disagreed with its complete source
 
@@ -1861,7 +1887,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-069 — Windows PowerShell parse stops interrupted two command boundaries
 
 - **first-seen:** 2026-08-15
-- **status:** `promoted`
+- **status:** `workaround-documented`
 - **severity:** `LOW (pre-execution command-authoring interruption)`
 - **symptom:** Windows PowerShell 5.1 stopped parsing a coordinator command containing `&&`, and
   an independent read-only scout command containing `||`, before either native command executed.
@@ -1873,9 +1899,13 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   scout `||` parse stop, both recorded by [Product issue #222 comment 5303367870](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303367870).
 - **task:** [Product issue #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   cheapest checked Windows-safe command-boundary layer.
-- **promotion:** Promoted at the second independent occurrence to the existing #222 checked
-  command-boundary layer. These entries record the friction only; they do not claim that the
-  future helper is implemented.
+- **promotion:** Consolidated pointer to canonical FR-032's Product #222 conditional-flow contract;
+  this ID is not an independently promoted mechanism and does not claim helper implementation.
+
+  **2026-08-15 consolidation correction:** The two events in this immutable FR-069 pointer are
+  included in FR-032's canonical four-event arithmetic. The prior promotion wording is retained by
+  this dated correction only; FR-032 owns the selected PowerShell-compatible conditional-flow
+  contract, while FR-069 remains a historical/consolidated pointer.
 
 ### FR-070 — Product resume state retained a merged Lab delivery as parked
 
@@ -1900,7 +1930,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-071 — collector interface and capability boundaries interrupted comment collection
 
 - **first-seen:** 2026-08-15
-- **status:** `promoted`
+- **status:** `workaround-documented`
 - **severity:** `LOW (read-only collection interface friction)`
 - **symptom:** The installed `gh` rejected `--slurp` combined with `--jq`, and the bundled
   `fetch_comments.py` rejected a positional pull-request argument, inferred `main`, and stopped
@@ -1909,10 +1939,50 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   changing repository or GitHub state.
 - **workaround:** Parse raw JSON locally, and call the module's explicit
   `fetch_all(owner, repo, number)` entry point with the intended pull-request number.
-- **occurrences:** 2 independent interface/capability events, recorded by [Product issue #222
+- **occurrences:** 1 independent module-interface event, recorded by [Product issue #222
   comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   checked command-shape and capability contract.
-- **promotion:** Promoted at the second occurrence to the #222 checked command-shape/capability
-  contract. This is separate from FR-051's unsupported-field query taxonomy; the helper is NOT
-  implemented and this entry does not authorize a new collector mechanism.
+- **promotion:** One module-interface occurrence remains task debt under Product #222. This is
+  separate from FR-051's CLI command-shape taxonomy; the helper is NOT implemented and this entry
+  does not authorize a new collector mechanism.
+
+  **2026-08-15 split correction:** The prior combined classification grouped the `gh api
+  --slurp`/`--jq` CLI shape with the Python `fetch_comments.py` positional-argument mismatch. The
+  CLI event is now canonical under FR-051; this FR-071 record remains one Python module-interface
+  occurrence and is not promoted. The earlier combined wording is preserved above as historical
+  evidence rather than silently rewritten.
+
+### FR-072 — review helper result-shape assumption raised a `KeyError`
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only review-evidence shape friction)`
+- **symptom:** A review helper assumed a returned field shape and raised `KeyError` while reading
+  comment evidence before the bounded classification completed.
+- **impact:** The helper can stop a read-only evidence pass before the returned fields are inspected;
+  no repository or GitHub mutation occurred.
+- **workaround:** Use only documented returned fields from the project helper and preserve the raw
+  response as the read authority.
+- **occurrences:** 1 independent occurrence, recorded by [Product issue #222 comment 5303418489](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303418489).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
+  review-evidence helper contract.
+- **promotion:** One helper result-shape occurrence. Keep distinct from FR-052 count integrity and
+  FR-071's positional-argument input interface; do not promote until an independent recurrence.
+
+### FR-073 — `rg test*` was parsed as an invalid Windows positional path
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only path-selection friction)`
+- **symptom:** A bounded Windows `rg test*` invocation treated the glob text as an invalid
+  positional path before the intended test-file search ran.
+- **impact:** A read-only search can stop before reading the intended files, without changing
+  repository or GitHub state.
+- **workaround:** Use explicit test paths for the bounded search; the explicit-path invocation
+  succeeded.
+- **occurrences:** 1 independent occurrence, recorded by [Product issue #222 comment 5303422698](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303422698).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
+  Windows-safe evidence command contract.
+- **promotion:** One path-selection occurrence. Keep distinct from FR-051's CLI query-shape events;
+  do not create a glob framework or promote until an independent recurrence.
