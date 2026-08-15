@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { existsSync, lstatSync, readFileSync, readlinkSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fg from 'fast-glob'
 import {
@@ -337,17 +337,27 @@ const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md', '.cla
   ignore: ['**/node_modules/**', '.claude/worktrees/**'],
 })
 
-try {
-  const trackedPaths = execFileSync('git', ['ls-files', '-z'], {
-    cwd: root,
-    encoding: 'utf8',
-  })
-    .split('\0')
-    .filter((path) => path.length > 0)
-  for (const error of validateTrackedTextForWindowsUserHomePaths(trackedPaths, read)) {
+if (existsSync(resolve(root, '.git'))) {
+  for (const error of validateTrackedTextForWindowsUserHomePaths({
+    listPaths: () => execFileSync('git', ['ls-files', '-z'], {
+      cwd: root,
+      encoding: 'utf8',
+    })
+      .split('\0')
+      .filter((path) => path.length > 0),
+    lstat: (path) => {
+      const entry = lstatSync(resolve(root, path))
+      if (entry.isSymbolicLink()) {
+        return 'symlink'
+      }
+      return entry.isFile() ? 'regular' : 'other'
+    },
+    readText: read,
+    readLink: (path) => readlinkSync(resolve(root, path)),
+  })) {
     failures.push(`tracked text: ${error}`)
   }
-} catch {
+} else {
   // Not a git checkout (e.g. exported archive): the tracked-text guard cannot apply.
 }
 

@@ -75,42 +75,119 @@ describe('project context validation', () => {
   it('rejects Windows user-home paths in tracked text without exposing the matched literal', () => {
     const forwardHome = ['C:', 'Users', 'FixtureUser', 'workspace'].join('/')
     const backwardHome = ['c:', 'USERS', 'FixtureUser', 'workspace'].join('\\')
+    const serializedBackwardHome = ['C:', 'Users', 'FixtureUser', 'workspace'].join('\\\\')
     expect(containsWindowsUserHomePath(`source: ${forwardHome}`)).toBe(true)
     expect(containsWindowsUserHomePath(`source: ${backwardHome}`)).toBe(true)
+    expect(containsWindowsUserHomePath(`source: ${serializedBackwardHome}`)).toBe(true)
     expect(containsWindowsUserHomePath('source: C:/Synthetic/FixtureUser/workspace')).toBe(false)
 
     const errors = validateTrackedTextForWindowsUserHomePaths(
-      ['docs/guide.md'],
-      () => `source: ${forwardHome}`,
+      {
+        listPaths: () => ['docs/guide.md'],
+        lstat: () => 'regular',
+        readText: () => `source: ${forwardHome}`,
+        readLink: () => '',
+      },
     )
     expect(errors).toEqual(['docs/guide.md: contains a Windows user-home path'])
     expect(errors.join('\n')).not.toContain('FixtureUser')
   })
 
   it('excludes protected and generated tracked paths before a text read', () => {
+    const metadata: string[] = []
     const reads: string[] = []
+    const links: string[] = []
     const errors = validateTrackedTextForWindowsUserHomePaths(
-      [
-        '.developer-lens/private.md',
-        '.developer-lens-synthetic/fixture.md',
-        '.agent-harness/runtime/cache.md',
-        '.claude/worktrees/temporary.md',
-        'coverage/report.md',
-        'dist/index.html',
-        'dist-ssr/index.js',
-        'node_modules/package/readme.md',
-        'public/data/dashboard-fixture.json',
-        'docs/guide.md',
-      ],
-      (path) => {
-        reads.push(path)
-        return 'C:/Synthetic/FixtureUser/workspace'
+      {
+        listPaths: () => [
+          '.developer-lens/private.md',
+          '.developer-lens-synthetic/fixture.md',
+          '.agent-harness/runtime/cache.md',
+          '.claude/worktrees/temporary.md',
+          'coverage/report.md',
+          'dist/index.html',
+          'dist-ssr/index.js',
+          'node_modules/package/readme.md',
+          'public/data/dashboard-fixture.json',
+          'docs/guide.md',
+        ],
+        lstat: (path) => {
+          metadata.push(path)
+          return 'regular'
+        },
+        readText: (path) => {
+          reads.push(path)
+          return 'C:/Synthetic/FixtureUser/workspace'
+        },
+        readLink: (path) => {
+          links.push(path)
+          return ''
+        },
       },
     )
 
     expect(errors).toEqual([])
+    expect(metadata).toEqual(['docs/guide.md'])
     expect(reads).toEqual(['docs/guide.md'])
+    expect(links).toEqual([])
     expect(isTrackedTextPathEligible('PUBLIC\\DATA\\dashboard.json')).toBe(false)
+  })
+
+  it('fails closed for Git enumeration and eligible entry access errors', () => {
+    const inaccessible = validateTrackedTextForWindowsUserHomePaths({
+      listPaths: () => {
+        throw new Error('fixture enumeration failure')
+      },
+      lstat: () => 'regular',
+      readText: () => '',
+      readLink: () => '',
+    })
+    expect(inaccessible).toEqual(['unable to enumerate Git-tracked text'])
+
+    const metadataFailure = validateTrackedTextForWindowsUserHomePaths({
+      listPaths: () => ['docs/guide.md'],
+      lstat: () => {
+        throw new Error('fixture metadata failure')
+      },
+      readText: () => '',
+      readLink: () => '',
+    })
+    expect(metadataFailure).toEqual(['docs/guide.md: unable to inspect tracked entry'])
+
+    const readFailure = validateTrackedTextForWindowsUserHomePaths({
+      listPaths: () => ['docs/guide.md'],
+      lstat: () => 'regular',
+      readText: () => {
+        throw new Error('fixture read failure')
+      },
+      readLink: () => '',
+    })
+    expect(readFailure).toEqual(['docs/guide.md: unable to read tracked text'])
+  })
+
+  it('inspects a tracked symlink payload without following its target', () => {
+    const serializedHome = ['C:', 'Users', 'FixtureUser', 'workspace'].join('/')
+    const reads: string[] = []
+    const links: string[] = []
+    const errors = validateTrackedTextForWindowsUserHomePaths({
+      listPaths: () => ['docs/link.md', 'docs/directory'],
+      lstat: (path) => (path === 'docs/link.md' ? 'symlink' : 'other'),
+      readText: (path) => {
+        reads.push(path)
+        throw new Error('must not follow a symlink')
+      },
+      readLink: (path) => {
+        links.push(path)
+        return serializedHome
+      },
+    })
+
+    expect(errors).toEqual([
+      'docs/link.md: contains a Windows user-home path',
+      'docs/directory: tracked entry is not a regular file',
+    ])
+    expect(reads).toEqual([])
+    expect(links).toEqual(['docs/link.md'])
   })
 
   it('requires complete, closed skill frontmatter with only supported keys', () => {

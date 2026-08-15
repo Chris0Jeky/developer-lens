@@ -691,9 +691,9 @@ Rules that bind entries:
   to an otherwise reproducible GitHub state snapshot.
 - **workaround:** Use `(Get-Date).ToUniversalTime().ToString('o')`, which succeeded on the same
   shell without changing repository or GitHub state.
-- **occurrences:** 3 independent occurrences — 2026-08-09 during the PR232 final review-thread
-  snapshot, plus 2026-08-13 and 2026-08-14 (the immutable FR-032 Windows PowerShell UTC-switch
-  recurrences).
+- **occurrences:** 4 independent occurrences — 2026-08-09 during the PR232 final review-thread
+  snapshot, 2026-08-13 and 2026-08-14 (the immutable FR-032 Windows PowerShell UTC-switch
+  recurrences), and the #252 delayed-sweep collector.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   Windows-safe evidence helper and its explicit timestamp normalization.
 - **promotion:** Deliberately NOT promoted after one occurrence. Retain the compatible expression
@@ -704,6 +704,11 @@ Rules that bind entries:
   **2026-08-15 consolidation note:** FR-032's immutable Product events contain the same rejected
   `Get-Date -AsUTC` predicate and compatible expression. Its ID remains a consolidated pointer;
   the canonical total is three.
+
+  **2026-08-15 recurrence note:** The #252 collector again received the same unsupported UTC switch
+  before any mutation. The canonical total is now four genuine events; the #246 arithmetic dispute
+  is not counted as a fifth event. [Product issue #222 comment 5300423892](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300423892)
+  records this recurrence.
 
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
@@ -1171,7 +1176,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only GitHub helper reliability)`
 - **symptom:** A PR #249 review helper declared a parameter named `$Args`, shadowing PowerShell's
   automatic `$args` variable. `gh` therefore ran without the intended arguments and emitted help
@@ -1180,13 +1185,15 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   be repeated; no repository or GitHub mutation occurred.
 - **workaround:** Rename the parameter to `$GhArguments`, capture the command output as one scalar
   string through `Out-String`, and pass that scalar to `ConvertFrom-Json`.
-- **occurrences:** 1 independent occurrence — Product PR #249 exact-head review, recorded by Product
-  issue #222 comment `5299611271` on 2026-08-15.
+- **occurrences:** 2 independent occurrences — Product PR #249 exact-head review and the #252
+  delayed-sweep collector, recorded by [Product issue #222 comment 5300423892](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300423892).
 - **task:** [Product issue #222 comment 5299611271](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299611271)
   owns the Windows-safe governor-helper debt.
-- **promotion:** One occurrence; no new enforcement layer is justified yet. On recurrence, Product
-  #222 is the selected task-debt layer for the cheapest checked Windows-safe helper rather than
-  another ad hoc workaround.
+- **promotion:** Second occurrence: Product #222 owns the cheapest checked Windows-safe helper
+  contract for explicit native argument arrays; do not create another ad hoc wrapper.
+
+  **2026-08-15 recurrence note:** The #252 collector used the same reserved parameter name, so
+  `gh api` received no endpoint. The final one-shot sweep was clean; no GitHub mutation occurred.
 
 ### FR-046 — GitHub database IDs overflowed Int32 while PowerShell errors left exit zero
 
@@ -1373,7 +1380,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-054 — unspecified PowerShell parse failure interrupted a read-only audit
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only command authoring interruption)`
 - **symptom:** A read-only PowerShell audit command stopped with a parser error and was reissued
   successfully; the available evidence does not establish FR-048's specific invalid-loop form.
@@ -1381,13 +1388,16 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository or GitHub state.
 - **workaround:** Reissue the bounded read-only command after correcting its syntax; preserve the
   parse failure as distinct coverage rather than guessing a loop-specific cause.
-- **occurrences:** 1 independent occurrence — 2026-08-15 PR #251 review hop, recorded by
-  [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735).
+- **occurrences:** 2 independent occurrences — 2026-08-15 PR #251 review hop and the #252
+  delayed-sweep collector, recorded by [Product issue #222 comment 5300423892](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300423892).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe command-boundary helper debt; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
   records this bounded classification.
-- **promotion:** One parser-error predicate. Do not merge it into FR-048 without the exact loop-form
-  evidence; a recurrence should select #222's cheapest checked parse-safe command contract.
+- **promotion:** Second occurrence: Product #222 owns the cheapest checked parse-safe command
+  construction contract. Do not merge it into FR-048 without that entry's exact loop-form evidence.
+
+  **2026-08-15 recurrence note:** The #252 collector omitted a closing parenthesis and stopped with
+  `ParserError` before any read or mutation. The corrected bounded read completed.
 
 ### FR-055 — PowerShell variable interpolation made a field-count scan unparsable
 
@@ -1427,3 +1437,41 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One GraphQL-closing-syntax predicate. Do not merge it into FR-039's malformed
   PowerShell field-form predicate or FR-054/FR-055's PowerShell parser predicates; a recurrence
   should select #222's checked query-construction contract.
+
+### FR-057 — PowerShell result shaping rejected generic collection projections
+
+- **first-seen:** 2026-08-15
+- **status:** `promoted`
+- **severity:** `LOW (read-only evidence shaping interruption)`
+- **symptom:** The #252 delayed-sweep collector hit `ArgumentException: Argument types do not match`
+  twice: once while returning a generic-list wrapper and once while projecting grouped events.
+- **impact:** The affected intermediate result could not be shaped into evidence, but no repository
+  or GitHub mutation occurred.
+- **workaround:** Treat each failed shape as unproven, retain the final clean one-shot sweep, and do
+  not force the values through FR-026's FileInfo/object-expansion remedy.
+- **occurrences:** 2 independent result-shaping failures — the generic-list return and
+  event-grouping projection in the #252 delayed-sweep collector, recorded by
+  [Product issue #222 comment 5300423892](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300423892).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe evidence-helper boundary; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
+  records the distinct predicate.
+- **promotion:** The second event selects a small checked typed-result-shaping contract under #222.
+  Do not increment FR-026 unless its explicit FileInfo/object-expansion predicate occurs.
+
+### FR-058 — broad reviewer reads exceeded the response transport budget
+
+- **first-seen:** 2026-08-15
+- **status:** `promoted`
+- **severity:** `LOW (review-evidence completeness)`
+- **symptom:** Two broad PR #253 review reads were transport-truncated before their full response
+  could be inspected.
+- **impact:** A reviewer cannot claim complete coverage from either broad response.
+- **workaround:** Retain truncation as explicit coverage and use the already-completed bounded
+  relevant reads; do not start another broad audit or recollection.
+- **occurrences:** 2 independent broad-read truncations — PR #253 fresh review, recorded by
+  [Product issue #222 comment 5300433400](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300433400).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded
+  completeness-aware retrieval; [Product #234](https://github.com/Chris0Jeky/developer-lens/issues/234)
+  owns this verifier slice.
+- **promotion:** The second event selects the existing #222 bounded-review retrieval contract. This
+  differs from FR-049's failed-CI-log predicate and must not inflate that entry.

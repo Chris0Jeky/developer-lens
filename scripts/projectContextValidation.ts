@@ -73,7 +73,7 @@ const trackedTextExcludedPrefixes = [
   'public/data/',
 ] as const
 
-const windowsUserHomePathPattern = /[a-z]:[\\/]users[\\/][^\\/\r\n]+/i
+const windowsUserHomePathPattern = /[a-z]:[\\/]+users[\\/]+[^\\/\r\n]+/i
 
 /** Keep protected and generated paths out of a tracked-text read before it is attempted. */
 export function isTrackedTextPathEligible(path: string): boolean {
@@ -86,21 +86,63 @@ export function containsWindowsUserHomePath(contents: string): boolean {
   return windowsUserHomePathPattern.test(contents)
 }
 
+export type TrackedTextEntryKind = 'regular' | 'symlink' | 'other'
+
+export interface TrackedTextValidationAccess {
+  listPaths: () => readonly string[]
+  lstat: (path: string) => TrackedTextEntryKind
+  readText: (path: string) => string
+  readLink: (path: string) => string
+}
+
 /**
- * Validate only eligible Git-tracked repository paths. The injected reader makes the exclusion
- * boundary directly testable and guarantees excluded paths are skipped before any file read.
+ * Validate eligible Git-tracked repository paths without following symlinks. The injected access
+ * boundary proves exclusions happen before metadata or content access and makes failures fail closed.
  */
 export function validateTrackedTextForWindowsUserHomePaths(
-  paths: readonly string[],
-  readText: (path: string) => string,
+  access: TrackedTextValidationAccess,
 ): string[] {
   const errors: string[] = []
+  let paths: readonly string[]
+  try {
+    paths = access.listPaths()
+  } catch {
+    return ['unable to enumerate Git-tracked text']
+  }
   for (const path of paths) {
     if (!isTrackedTextPathEligible(path)) {
       continue
     }
-    if (containsWindowsUserHomePath(readText(path))) {
-      errors.push(`${path}: contains a Windows user-home path`)
+
+    let kind: TrackedTextEntryKind
+    try {
+      kind = access.lstat(path)
+    } catch {
+      errors.push(`${path}: unable to inspect tracked entry`)
+      continue
+    }
+
+    if (kind === 'symlink') {
+      try {
+        if (containsWindowsUserHomePath(access.readLink(path))) {
+          errors.push(`${path}: contains a Windows user-home path`)
+        }
+      } catch {
+        errors.push(`${path}: unable to inspect tracked link`)
+      }
+      continue
+    }
+    if (kind !== 'regular') {
+      errors.push(`${path}: tracked entry is not a regular file`)
+      continue
+    }
+
+    try {
+      if (containsWindowsUserHomePath(access.readText(path))) {
+        errors.push(`${path}: contains a Windows user-home path`)
+      }
+    } catch {
+      errors.push(`${path}: unable to read tracked text`)
     }
   }
   return errors
