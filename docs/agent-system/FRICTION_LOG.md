@@ -1561,7 +1561,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository state.
 - **workaround:** Correct the query syntax and use the pagination-complete read; the corrected
   query returned zero threads.
-- **occurrences:** 4 independent occurrences — PR #252 fresh review at
+- **occurrences:** 5 independent occurrences — PR #252 fresh review at
   `3fd004fec41ff96a03ef63e7a7802fa429841c00`, recorded by
   [Product issue #222 comment 5300314833](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300314833),
   and the 2026-08-15 exact-final PR #254 review.
@@ -1586,6 +1586,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   closing brace. The corrected query returned zero threads, with no GitHub mutation or evidence gap.
   This fourth occurrence retains FR-056's promoted query-construction mechanism and Product #222
   ownership.
+
+  **2026-08-15 Product PR #263 triage note:** A bounded review-thread GraphQL query had one extra
+  closing brace and failed at GraphQL syntax before collection or mutation. The corrected checked
+  multiline query succeeded. This fifth occurrence retains FR-056's promoted query-construction
+  mechanism and Product #222 ownership.
 
 ### FR-057 — `rg` discovery named a nonexistent `tests/` directory
 
