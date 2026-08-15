@@ -187,6 +187,85 @@ export function parseGitIndexEntries(raw: Uint8Array): GitIndexEntry[] {
   return entries
 }
 
+interface ReconciledGitIndexEntry {
+  entry: GitIndexEntry
+  path: string
+}
+
+function reconcileGitIndexEntriesByPath(
+  expectedPaths: readonly string[],
+  entries: readonly GitIndexEntry[],
+): ReconciledGitIndexEntry[] | undefined {
+  if (expectedPaths.length !== entries.length) {
+    return undefined
+  }
+  const expected = new Set(expectedPaths)
+  if (expected.size !== expectedPaths.length) {
+    return undefined
+  }
+  const seen = new Set<string>()
+  const reconciled: ReconciledGitIndexEntry[] = []
+  for (const entry of entries) {
+    const path = entry.path
+    if (!expected.has(path) || seen.has(path)) {
+      return undefined
+    }
+    seen.add(path)
+    reconciled.push({ entry, path })
+  }
+  return reconciled
+}
+
+function materializeReconciledGitIndexEntries(
+  reconciled: readonly ReconciledGitIndexEntry[],
+): GitIndexEntry[] {
+  return reconciled.map(({ entry, path }) => ({
+    path,
+    mode: entry.mode,
+    objectId: entry.objectId,
+    stage: entry.stage,
+  }))
+}
+
+function pathsMatchExactly(first: readonly string[], second: readonly string[]): boolean {
+  if (first.length !== second.length) {
+    return false
+  }
+  const firstPaths = new Set(first)
+  if (firstPaths.size !== first.length || new Set(second).size !== second.length) {
+    return false
+  }
+  return second.every((path) => firstPaths.has(path))
+}
+
+function metadataSnapshotsMatch(
+  first: readonly GitIndexEntry[],
+  second: readonly GitIndexEntry[],
+): boolean {
+  if (first.length !== second.length) {
+    return false
+  }
+  const firstByPath = new Map<string, GitIndexEntry>()
+  for (const entry of first) {
+    if (firstByPath.has(entry.path)) {
+      return false
+    }
+    firstByPath.set(entry.path, entry)
+  }
+  for (const entry of second) {
+    const original = firstByPath.get(entry.path)
+    if (
+      !original ||
+      original.mode !== entry.mode ||
+      original.objectId !== entry.objectId ||
+      original.stage !== entry.stage
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
 /**
  * Validate Git-index blobs without reading working-tree content or following symlinks. Protected
  * paths fail before stage, mode, object-ID, or blob access so they cannot reach any content read.
@@ -219,7 +298,67 @@ export function validateTrackedTextForWindowsUserHomePaths(
     errors.push('unable to enumerate eligible Git-tracked metadata')
     return errors
   }
-  for (const entry of entries) {
+  let reconciled: ReconciledGitIndexEntry[] | undefined
+  try {
+    reconciled = reconcileGitIndexEntriesByPath(eligiblePaths, entries)
+  } catch {
+    reconciled = undefined
+  }
+  if (!reconciled) {
+    errors.push('eligible Git-tracked metadata does not match enumerated paths')
+    return errors
+  }
+  let initialSnapshot: GitIndexEntry[]
+  try {
+    initialSnapshot = materializeReconciledGitIndexEntries(reconciled)
+  } catch {
+    errors.push('eligible Git-tracked metadata snapshot changed during validation')
+    return errors
+  }
+  let finalPaths: readonly string[]
+  try {
+    finalPaths = access.listPaths()
+  } catch {
+    errors.push('unable to re-enumerate Git-tracked paths')
+    return errors
+  }
+  const finalEligiblePaths = finalPaths.filter((path) => !isProtectedTrackedPath(path))
+  if (
+    !pathsMatchExactly(paths, finalPaths) ||
+    !pathsMatchExactly(eligiblePaths, finalEligiblePaths)
+  ) {
+    errors.push('Git-tracked path snapshot changed during validation')
+    return errors
+  }
+  let finalEntries: readonly GitIndexEntry[]
+  try {
+    finalEntries = access.listEntries(finalEligiblePaths)
+  } catch {
+    errors.push('unable to re-enumerate eligible Git-tracked metadata')
+    return errors
+  }
+  let finalReconciled: ReconciledGitIndexEntry[] | undefined
+  try {
+    finalReconciled = reconcileGitIndexEntriesByPath(finalEligiblePaths, finalEntries)
+  } catch {
+    finalReconciled = undefined
+  }
+  if (!finalReconciled) {
+    errors.push('eligible Git-tracked metadata does not match enumerated paths')
+    return errors
+  }
+  let finalSnapshot: GitIndexEntry[]
+  try {
+    finalSnapshot = materializeReconciledGitIndexEntries(finalReconciled)
+    if (!metadataSnapshotsMatch(initialSnapshot, finalSnapshot)) {
+      errors.push('eligible Git-tracked metadata snapshot changed during validation')
+      return errors
+    }
+  } catch {
+    errors.push('eligible Git-tracked metadata snapshot changed during validation')
+    return errors
+  }
+  for (const entry of finalSnapshot) {
     if (entry.stage !== '0') {
       errors.push(`${entry.path}: unmerged Git index entry`)
       continue

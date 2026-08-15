@@ -45,6 +45,21 @@ const indexEntry = (
   stage: '0',
   ...overrides,
 })
+const pathOnlyIndexEntry = (path: string): GitIndexEntry =>
+  ({
+    get path(): string {
+      return path
+    },
+    get mode(): string {
+      throw new Error('metadata mode was accessed before path reconciliation')
+    },
+    get objectId(): string {
+      throw new Error('metadata object ID was accessed before path reconciliation')
+    },
+    get stage(): string {
+      throw new Error('metadata stage was accessed before path reconciliation')
+    },
+  }) as GitIndexEntry
 const accessForEntries = (
   entries: readonly GitIndexEntry[],
   readBlob: (objectId: string) => Uint8Array,
@@ -221,6 +236,8 @@ describe('project context validation', () => {
     expect(calls).toEqual([
       ['ls-files', '-z'],
       ['--literal-pathspecs', 'ls-files', '--stage', '-z', '--', safePath],
+      ['ls-files', '-z'],
+      ['--literal-pathspecs', 'ls-files', '--stage', '-z', '--', safePath],
       ['cat-file', 'blob', safeObjectId],
     ])
     expect(calls.slice(1).flat()).not.toContain(protectedPath)
@@ -248,8 +265,163 @@ describe('project context validation', () => {
     expect(calls).toEqual([
       ['ls-files', '-z'],
       ['--literal-pathspecs', 'ls-files', '--stage', '-z', '--', safePath],
+      ['ls-files', '-z'],
+      ['--literal-pathspecs', 'ls-files', '--stage', '-z', '--', safePath],
       ['cat-file', 'blob', safeObjectId],
     ])
+  })
+
+  it('fails closed before metadata fields for unexpected, missing, or duplicate paths', () => {
+    const scenarios: readonly { paths: readonly string[]; entries: readonly GitIndexEntry[] }[] = [
+      {
+        paths: ['docs/one.md'],
+        entries: [pathOnlyIndexEntry('public/data/invented-metadata.json')],
+      },
+      {
+        paths: ['docs/one.md', 'docs/two.md'],
+        entries: [pathOnlyIndexEntry('docs/one.md')],
+      },
+      {
+        paths: ['docs/one.md', 'docs/two.md'],
+        entries: [pathOnlyIndexEntry('docs/one.md'), pathOnlyIndexEntry('docs/one.md')],
+      },
+    ]
+
+    for (const scenario of scenarios) {
+      let blobReads = 0
+      const errors = validateTrackedTextForWindowsUserHomePaths({
+        listPaths: () => scenario.paths,
+        listEntries: () => scenario.entries,
+        readBlob: () => {
+          blobReads += 1
+          return blob('source: C:/Synthetic/FixtureUser/workspace')
+        },
+      })
+
+      expect(errors).toEqual(['eligible Git-tracked metadata does not match enumerated paths'])
+      expect(blobReads).toBe(0)
+      expect(errors.join('\n')).not.toContain('docs/')
+      expect(errors.join('\n')).not.toContain('invented-metadata')
+    }
+  })
+
+  it('fails closed for changed names before a second metadata request', () => {
+    const initialPath = 'docs/steady.md'
+    const finalSnapshots: readonly (readonly string[])[] = [
+      [initialPath, 'docs/added.md'],
+      [],
+      ['docs/renamed.md'],
+      [initialPath, 'public/data/invented-new.json'],
+    ]
+
+    for (const finalPaths of finalSnapshots) {
+      let namesRead = 0
+      let metadataCalls = 0
+      let blobReads = 0
+      const errors = validateTrackedTextForWindowsUserHomePaths({
+        listPaths: () => {
+          namesRead += 1
+          return namesRead === 1 ? [initialPath] : finalPaths
+        },
+        listEntries: (paths) => {
+          metadataCalls += 1
+          expect(paths).toEqual([initialPath])
+          return [
+            indexEntry(initialPath, { objectId: 'c'.repeat(40) }),
+          ]
+        },
+        readBlob: () => {
+          blobReads += 1
+          return blob('source: C:/Synthetic/FixtureUser/workspace')
+        },
+      })
+
+      expect(errors).toEqual(['Git-tracked path snapshot changed during validation'])
+      expect(metadataCalls).toBe(1)
+      expect(blobReads).toBe(0)
+      expect(errors.join('\n')).not.toContain('docs/')
+    }
+  })
+
+  it('fails closed when a safe metadata tuple changes between snapshots', () => {
+    const safePath = 'docs/steady.md'
+    const original = indexEntry(safePath, { objectId: 'd'.repeat(40) })
+    for (const changed of [
+      indexEntry(safePath, { objectId: 'e'.repeat(40) }),
+      indexEntry(safePath, { mode: '100755', objectId: 'd'.repeat(40) }),
+      indexEntry(safePath, { stage: '1', objectId: 'd'.repeat(40) }),
+    ]) {
+      let metadataCalls = 0
+      let blobReads = 0
+      const errors = validateTrackedTextForWindowsUserHomePaths({
+        listPaths: () => [safePath],
+        listEntries: (paths) => {
+          metadataCalls += 1
+          expect(paths).toEqual([safePath])
+          return [metadataCalls === 1 ? original : changed]
+        },
+        readBlob: () => {
+          blobReads += 1
+          return blob('source: C:/Synthetic/FixtureUser/workspace')
+        },
+      })
+
+      expect(errors).toEqual(['eligible Git-tracked metadata snapshot changed during validation'])
+      expect(metadataCalls).toBe(2)
+      expect(blobReads).toBe(0)
+    }
+  })
+
+  it('fails closed before final metadata fields when its path is substituted', () => {
+    const safePath = 'docs/steady.md'
+    let metadataCalls = 0
+    let blobReads = 0
+    const errors = validateTrackedTextForWindowsUserHomePaths({
+      listPaths: () => [safePath],
+      listEntries: () => {
+        metadataCalls += 1
+        return metadataCalls === 1
+          ? [indexEntry(safePath, { objectId: 'd'.repeat(40) })]
+          : [pathOnlyIndexEntry('public/data/invented-final-metadata.json')]
+      },
+      readBlob: () => {
+        blobReads += 1
+        return blob('source: C:/Synthetic/FixtureUser/workspace')
+      },
+    })
+
+    expect(errors).toEqual(['eligible Git-tracked metadata does not match enumerated paths'])
+    expect(metadataCalls).toBe(2)
+    expect(blobReads).toBe(0)
+    expect(errors.join('\n')).not.toContain('invented-final-metadata')
+  })
+
+  it('scans a steady eligible path after both reconciliations', () => {
+    const safePath = 'docs/steady.md'
+    const safeObjectId = 'd'.repeat(40)
+    let namesRead = 0
+    let metadataCalls = 0
+    const blobReads: string[] = []
+    const errors = validateTrackedTextForWindowsUserHomePaths({
+      listPaths: () => {
+        namesRead += 1
+        return [safePath]
+      },
+      listEntries: (paths) => {
+        metadataCalls += 1
+        expect(paths).toEqual([safePath])
+        return [indexEntry(safePath, { objectId: safeObjectId })]
+      },
+      readBlob: (objectId) => {
+        blobReads.push(objectId)
+        return blob('source: C:/Synthetic/FixtureUser/workspace')
+      },
+    })
+
+    expect(errors).toEqual([])
+    expect(namesRead).toBe(2)
+    expect(metadataCalls).toBe(2)
+    expect(blobReads).toEqual([safeObjectId])
   })
 
   it('does not request metadata when Git names contain only protected paths', () => {

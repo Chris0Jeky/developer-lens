@@ -1286,11 +1286,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
   as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
   the focused test plus the hosted rerun.
-- **occurrences:** 4 independent occurrences — Product issue #222 comment `5300160711`, the
+- **occurrences:** 5 independent occurrences — Product issue #222 comment `5300160711`, the
   2026-08-15 PR #251 post-merge discussion-timeline transport truncation recorded by
   [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636),
   the 2026-08-15 combined memory/skill read transport truncation, and the 2026-08-15 PR #256
-  combined-source review read transport truncation.
+  combined-source review read transport truncation, plus the 2026-08-15 PR #256 bounded reread
+  after a transport truncation.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded
   retrieval that retains completeness status; [Product #252](https://github.com/Chris0Jeky/developer-lens/issues/252)
   records this mandatory evidence fix.
@@ -1312,6 +1313,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 recurrence note:** A PR #256 combined-source review read transport-truncated. The
   response was not treated as complete; only bounded relevant sections were reissued, with no total
   or inference asserted from the truncated response. This is the fourth canonical occurrence.
+
+  **2026-08-15 recurrence note:** A PR #256 final-fix combined source response transport-truncated.
+  It was not treated as complete; only bounded relevant sections were reread for the snapshot
+  reconciliation, with no total or completeness claim. This is the fifth canonical occurrence.
 
 ### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
 
@@ -1509,7 +1514,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-058 — continuation-skill discovery assumed an absent path
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only skill-discovery interruption)`
 - **symptom:** A superseder scout first named an absent continuation-skill path before locating the
   repository-local `.agents/skills/developer-lens-continuation/SKILL.md`.
@@ -1517,13 +1522,14 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository mutation or missing final skill evidence.
 - **workaround:** Check the named repository-local skill path before reading it; the corrected
   bounded read supplied the applicable continuation instructions.
-- **occurrences:** 1 independent occurrence — 2026-08-15 PR #254 superseder-scout hop.
+- **occurrences:** 2 independent occurrences — 2026-08-15 PR #254 superseder-scout hop and the
+  2026-08-15 Product PR #256 final-fix orientation hop.
 - **task:** [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) records this
   bounded classification; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
   retains the shared command/discovery hardening debt.
-- **promotion:** One direct skill-path predicate. Do not change FR-057's reviewed `rg` exit-status
-  scalar or merge this into its command-specific mechanism. At a second independent occurrence,
-  Product #222 should select a checked repository-local skill-path preflight.
+- **promotion:** Promoted at the second direct skill-path occurrence: Product #222 owns a checked
+  repository-local continuation-skill-path preflight before planned skill reads. Do not change
+  FR-057's reviewed `rg` exit-status scalar or merge this into its command-specific mechanism.
 
 ### FR-059 — guessed review-thread node ID failed before resolution
 

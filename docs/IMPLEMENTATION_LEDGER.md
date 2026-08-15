@@ -4615,3 +4615,33 @@ status-aware separate querying or expected-pending handling under Product #222.
 `fix/reject-protected-tracked-paths-20260815`. After its local-only commit, do not push, open or
 comment on a PR, merge, or rerun the local full gate. Obtain hosted CI for the commit's exact head,
 then refresh review and merge evidence before a separate publication decision.
+
+## 2026-08-15 — Product PR #256 final tracked-index snapshot reconciliation
+
+**Changed.** Added a path-only reconciliation step before any stage, mode, object-ID, or blob
+access: eligible metadata must be complete, expected, and unique. The validator now takes a final
+names snapshot, classifies it before a second eligible-only metadata request, and requires the
+final safe (path, mode, stage, object-ID) tuples to match the initial snapshot before it scans
+Git blobs. A missing, substituted, duplicate, renamed, added, removed, or changed safe entry fails
+closed with a generic literal-free diagnostic; a newly observed protected name never reaches
+metadata or blob access.
+
+**Verified.** `npm.cmd test -- scripts/projectContextValidation.test.ts` passed 44 focused tests,
+including path-only throwing-getter reconciliation, final snapshot name drift, newly observed
+invented protected paths, tuple OID/mode/stage drift, stable scans, literal pathspecs, and BOM/
+invalid UTF-8 handling. `npm.cmd run verify:context` passed (47 Markdown files, 31 required
+files); cached and working `git diff --check` were clean.
+
+**NOT verified / residual risk.** `npm.cmd run check` was intentionally not retried; the
+known local FR-050 storage-v3 result remains RED/NOT VERIFIED and is not evidence for this exact
+head. Exact-head hosted CI is mandatory. No build, publication, push, pull request, comment,
+merge, protected/private-content access, or P2 policy expansion was attempted.
+
+**Failures and workarounds.** FR-049 records its fifth bounded transport-truncation recurrence;
+only the needed sections were reread without a completeness claim. FR-058 is promoted on its
+second wrong continuation-skill-path occurrence; Product #222 now owns a checked path preflight.
+
+**Exact resume.** This final fix starts from `d74450f5f3e9f7c35da8865f9075e6de68fc4d7f` on
+`fix/reject-protected-tracked-paths-20260815`. After its local-only commit, do not push,
+comment, merge, or rerun the local full gate. Obtain hosted CI for the exact new head, then refresh
+the review and merge evidence before any separate publication decision.
