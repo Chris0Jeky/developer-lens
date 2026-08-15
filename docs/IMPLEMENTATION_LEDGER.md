@@ -4834,3 +4834,47 @@ staged-diff review, recheck Product #257 and `origin/main`, then make one local 
 only if the issue remains OPEN and the remote base remains
 `440894e9b527088e659efd644d75cb5b073b5b7e`. Do not push, open a PR, comment, merge, or rerun the
 full gate from this hop.
+
+## 2026-08-15 — Product #200 operational truth after Lab PR #87/#90/#91 delivery
+
+**Changed.** Reconciled the compact Product resume artifact with the completed Lab delivery: Lab
+PR #87 merged at `3838d8f`, PR #90 at `0fd8a50`, and PR #91 at `2d6f857`. The former instruction to
+keep Lab PR #87 open/parked and its merge-helper-eligibility blocker are explicitly superseded. The
+next selection is now a connected in-app browser availability preflight, followed only when available
+by the already-specified bounded Product visual QA. No code, release, data, capability, experiment,
+or failure-archive surface changed.
+
+**Verified.** At `2026-08-15T17:09:59Z`, read-only remote/API observations found Product main at
+`bde3d7e34acf1584247eec7824d6665ef7bd57f9`, Lab main at
+`2d6f857a6c49748c4554fc6af7b9762c6e7375e7`, and zero open pull requests in each repository. Lab
+PR #87 merged at `2026-08-15T10:48:39Z` as
+`3838d8f68f1a30cb5126a8bc04d242de66260399`; PR #90 merged at `2026-08-15T10:50:11Z` as
+`0fd8a50a39bb6632e21982c33c6a5c409a6fcf6f`; PR #91 merged at `2026-08-15T13:46:55Z` as
+`2d6f857a6c49748c4554fc6af7b9762c6e7375e7`. Lab workflow `Check` run `31888133609` completed
+SUCCESS on that Lab main SHA. Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities;
+`npm.cmd run verify:context` passed (47 Markdown files, 31 required files); `git diff --check` was
+clean before this ledger append.
+
+**NOT verified / residual risk.** Browser/visual QA remains NOT VERIFIED: this docs-only slice did
+not run a browser or availability preflight, and no substitute browser is authorized. The release
+tag remains blocked after browser proof by
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`; A1=FULL makes agents the post-sign-off release
+actor only under normal exact-head gates. The recorded remote observations can move and must be
+refreshed before later action. No protected/generated/private data, credential, telemetry,
+external-model, server, tag, release, publication, push, pull request, comment, or merge action was
+attempted.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` now names the timestamped merged-PR
+observation, removes the obsolete helper-eligibility blocker, preserves the no-substitute-browser
+rule and all release/data/model/telemetry/credential prohibitions, and gives the next release
+coordinator one connected-browser preflight seam. This entry is the implementation-ledger milestone;
+no experiment or failure ledger entry is warranted.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is not
+inferred or changed.
+
+**Exact resume.** Refresh Product/Lab refs, PR/check/review state, and the owner gate. Run the
+connected in-app browser availability preflight; only if it succeeds, run the already-specified
+bounded Product visual QA. Do not substitute another browser. After that proof, request only
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`; after owner sign-off, agents perform the
+synchronized release mechanics under A1=FULL and normal exact-head gates.
