@@ -2037,19 +2037,35 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **impact:** A bounded read-only proof can stop before its later checks, without changing the
   repository or GitHub state.
 - **workaround:** Capture native output in a scalar first, then apply `-split` in PowerShell.
-- **occurrences:** 2 independent occurrences — the `git show`/`-split` proof stop recorded by
-  [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285)
-  and the independent `Sort-Object`/`-Join` reviewer count event recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953).
+- **occurrences:** 1 independent occurrence — the `git show`/`-split` proof stop recorded by
+  [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe command-boundary helper.
-- **promotion:** Promoted at the second independent occurrence: Product #222 owns the checked
-  operator-placement contract, which captures or parenthesizes command output before applying
-  PowerShell operators. It is not implemented. Keep distinct from FR-054's parser errors, FR-026's
-  object expansion, and FR-022's quoting.
+- **promotion:** One occurrence remains task debt under Product #222; do not create or promote an
+  operator framework. Keep distinct from FR-054's parser errors, FR-026's object expansion, and
+  FR-022's quoting.
 
-  **2026-08-15 recurrence/promotion note:** An independent `Sort-Object`/`-Join` reviewer count
-  event was stopped before mutation; the bounded retry used the selected capture/parenthesize
-  contract, as recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953).
+  **2026-08-15 classification-correction note:** The exact-head connector review thread [PR #270
+  `PRRT_kwDOTrfxUM6ZiQes`](https://github.com/Chris0Jeky/developer-lens/pull/270) showed that the
+  `Sort-Object`/`-Join` reviewer count event does not match FR-074's native symptom/workaround.
+  It is not counted here and is canonical under FR-078.
+
+### FR-078 — PowerShell cmdlet pipeline placed `-Join` as a `Sort-Object` parameter
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (cmdlet-pipeline evidence friction)`
+- **symptom:** The final reviewer placed PowerShell `-Join` as if it were a `Sort-Object`
+  parameter, so the read-only unique-ID count stopped.
+- **impact:** Review proof was delayed, without changing the repository or GitHub state.
+- **workaround:** Capture or parenthesize sorted pipeline output before applying `-join`; the
+  bounded retry passed.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953)
+  and [PR #270 review thread `PRRT_kwDOTrfxUM6ZiQes`](https://github.com/Chris0Jeky/developer-lens/pull/270).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded cmdlet-pipeline evidence contract.
+- **promotion:** One occurrence remains task debt. Keep distinct from FR-074's native arguments
+  and FR-054's parser failures; no helper is implemented.
 
 ### FR-075 — Markdown backticks terminated a JavaScript command template
 
