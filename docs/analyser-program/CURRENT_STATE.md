@@ -16,7 +16,7 @@ observation_semantics: >-
 product_main: 'd55dc2aedb7af694317bb40e6e37e56c2ede971c'
 lab_main: '80f421cd9a9701abf0ab767e9c480d378d907528'
 active_slice: 'P0.5 issue #200 required in-app-browser availability preflight: VERIFIED unavailable; Product visual QA is parked with no fallback, release, or data lane selected.'
-next_value_slice: 'Connect the required in-app browser, then rerun its availability preflight; only if it is available, run the already-specified bounded Product browser/visual proof before requesting Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).'
+next_value_slice: 'The lane is parked until an external event makes a connected in-app browser available; only then rerun its availability preflight and, if it passes, run the already-specified bounded Product browser/visual proof before requesting Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).'
 blockers: >-
   Product browser/visual QA is NOT VERIFIED because the required in-app-browser selector returned
   exactly `Browser is not available: iab` before any tab, navigation, screenshot, server, or
@@ -42,7 +42,7 @@ operational_resume:
   question: 'What is landed, parked, unproved, owner-gated, and agent-executable?'
   product_state: 'Product main above is a last-observed remote-ref snapshot, not a perpetual current baseline.'
   lab_state: 'Lab main above is a last-observed remote-ref snapshot, not a perpetual current baseline.'
-  next_selection: 'Connect and rerun the required in-app browser availability preflight; if available, complete the already-specified bounded Product visual QA. Do not select P1 issue #174 before the P0.5 baseline is complete.'
+  next_selection: 'The lane is parked until an external event makes a connected in-app browser available; only then rerun its availability preflight and, if it passes, complete the already-specified bounded Product visual QA. Do not select P1 issue #174 before the P0.5 baseline is complete.'
 
 lab_delivery:
   repository: 'Chris0Jeky/developer-lens-lab'
@@ -58,7 +58,7 @@ lab_delivery:
 release_readiness:
   lab_q11: 'CLOSED: Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 is recorded signed off.'
   browser_visual_qa: 'NOT VERIFIED: the required in-app-browser selector returned exactly `Browser is not available: iab` before tab, navigation, screenshot, server, or protected-data access; no fallback browser surface is authorized.'
-  browser_qa_unlock: 'Connect the required in-app browser, then rerun its availability preflight; if available, an agent records the already-specified bounded Product visual-QA proof.'
+  browser_qa_unlock: 'The lane is parked until an external event makes a connected in-app browser available; only then rerun its availability preflight and, if it passes, an agent records the already-specified bounded Product visual-QA proof.'
   remaining_owner_gate_after_browser_proof: 'Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) — five-minute product aesthetic sign-off.'
   release_actor_after_owner_gate: 'OWNER_CONSTITUTION.md A1=FULL: agents execute the synchronized tag, version, package, and C0-publication mechanics after Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c), under their normal exact-head gates.'
   prohibited_until_then: 'No tag, release, package publication, C0 publication, or owner decision is inferred from this state.'
@@ -72,8 +72,9 @@ authority_and_boundary:
 exact_resume_point: >-
   The required in-app-browser preflight is VERIFIED unavailable: its selector returned exactly
   `Browser is not available: iab`. Do not substitute missing browser proof with another browser
-  tool. Connect the required in-app browser and rerun its availability preflight; only when it is
-  available, perform the already-specified bounded Product visual-QA proof.
+  tool. The lane is parked until an external event makes a connected in-app browser available;
+  only then rerun its availability preflight and, if it passes, perform the already-specified
+  bounded Product visual-QA proof.
   Once that proof is recorded, request only Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)
   aesthetic sign-off; after it,
   agents perform the synchronized release mechanics under A1=FULL. Re-refresh every live ref,
