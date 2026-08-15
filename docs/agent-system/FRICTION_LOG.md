@@ -2069,23 +2069,6 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Sort-Object`/`-Join` reviewer count event does not match FR-074's native symptom/workaround.
   It is not counted here and is canonical under FR-078.
 
-### FR-078 — PowerShell cmdlet pipeline placed `-Join` as a `Sort-Object` parameter
-
-- **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
-- **severity:** `LOW (cmdlet-pipeline evidence friction)`
-- **symptom:** The final reviewer placed PowerShell `-Join` as if it were a `Sort-Object`
-  parameter, so the read-only unique-ID count stopped.
-- **impact:** Review proof was delayed, without changing the repository or GitHub state.
-- **workaround:** Capture or parenthesize sorted pipeline output before applying `-join`; the
-  bounded retry passed.
-- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953)
-  and [PR #270 review thread `PRRT_kwDOTrfxUM6ZiQes`](https://github.com/Chris0Jeky/developer-lens/pull/270).
-- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
-  bounded cmdlet-pipeline evidence contract.
-- **promotion:** One occurrence remains task debt. Keep distinct from FR-074's native arguments
-  and FR-054's parser failures; no helper is implemented.
-
 ### FR-075 — Markdown backticks terminated a JavaScript command template
 
 - **first-seen:** 2026-08-15
@@ -2136,6 +2119,23 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   exact-reference evidence boundary.
 - **promotion:** One occurrence remains task debt. Keep distinct from moved-HEAD ownership, path
   normalization, and unsupported fields; do not create a reference-validation framework.
+
+### FR-078 — PowerShell cmdlet pipeline placed `-Join` as a `Sort-Object` parameter
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (cmdlet-pipeline evidence friction)`
+- **symptom:** The final reviewer placed PowerShell `-Join` as if it were a `Sort-Object`
+  parameter, so the read-only unique-ID count stopped.
+- **impact:** Review proof was delayed, without changing the repository or GitHub state.
+- **workaround:** Capture or parenthesize sorted pipeline output before applying `-join`; the
+  bounded retry passed.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953)
+  and [PR #270 review thread `PRRT_kwDOTrfxUM6ZiQes`](https://github.com/Chris0Jeky/developer-lens/pull/270).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded cmdlet-pipeline evidence contract.
+- **promotion:** One occurrence remains task debt. Keep distinct from FR-074's native arguments
+  and FR-054's parser failures; no helper is implemented.
 
 ### FR-079 — report wrapper stopped on empty detached-branch output
 
