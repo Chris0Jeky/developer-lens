@@ -1041,7 +1041,7 @@ patch changed no file and the one-section retry succeeded.
 
 ### FR-043 — bounded Product queue scout overran and was interrupted
 
-- **first-seen:** 2026-08-15
+- **first-seen:** 2026-08-14
 - **status:** `workaround-documented`
 - **severity:** `LOW (queue-observation cost)`
 - **symptom:** A bounded Product #200 queue scout exceeded its intended observation window and was
@@ -1050,8 +1050,25 @@ patch changed no file and the one-section retry succeeded.
   incomplete scout output; no repository or GitHub mutation occurred.
 - **workaround:** Use a direct structured snapshot of the named Product/Lab refs, checks, review
   state, and issue state before making a release-truth claim.
-- **occurrences:** 1 independent occurrence — Product #200 comment `5298981016` on 2026-08-15.
+- **occurrences:** 1 independent occurrence — Product #200 comment `5298981016` on 2026-08-14.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the bounded
   release-governor queue.
 - **promotion:** Not promoted after one occurrence. If it recurs, select the cheapest bounded checked
   scout or timeout enforcement that preserves a complete structured snapshot.
+
+### FR-044 — mandated browser-client discovery found no available browser
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (visual-QA tooling availability)`
+- **symptom:** The Product #200 visual-QA executor initialized the mandated browser-client surface
+  and followed bootstrap troubleshooting, but browser discovery returned no available browsers.
+- **impact:** Agent browser/visual QA could not produce the required proof, so the owner handoff at
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
+- **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
+  the required browser skill already enforces that stop.
+- **occurrences:** 1 independent occurrence — Product #200 comment `5299321093` on 2026-08-15.
+- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
+  preparation and the parked QA lane.
+- **promotion:** Not promoted after one occurrence. If it recurs, select the cheapest
+  environment-availability preflight or connector repair rather than a repository fallback.

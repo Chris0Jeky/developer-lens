@@ -161,9 +161,12 @@ active_slice: 'P0.5 v0.1.0 release programme #200 (product-only release preparat
   tracked cross-repo debt. Prior product-repo slice before this session: PR #194 (`24f55d4`).'
 next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only release preparation:
   AGPL-3.0-only + community scaffolding + dependency triage + C0 release assets + visual QA with
-  owner sign-off; labels release/now). Product agent browser/visual QA is NOT VERIFIED and is the
-  next mission slice. After that proof, `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` is the
-  final owner aesthetic sign-off. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed and no known Lab #29 pre-tag
+  owner sign-off; labels release/now). Product agent browser/visual QA is NOT VERIFIED and PARKED:
+  the mandated browser-client surface found no available browser after required bootstrap
+  troubleshooting, and its rules prohibit a standalone Playwright or alternate-browser fallback.
+  Exact unlock: an in-app or connected browser becomes available through that mandated surface.
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open but is not the next owner handoff
+  until agent browser/visual proof exists. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed and no known Lab #29 pre-tag
   deliverable remains; Lab #29 stays open until the joint tag. The v0.1.0 tag is JOINT across
   Product and Lab (O2/H7=BOTH); no product-only tag is authorized. Under OWNER_CONSTITUTION A1=FULL,
   agents execute the synchronized version/tag/package/C0-publication sequence only after the owner
@@ -363,9 +366,11 @@ preserved_worktree_reconciliation: 'A read-only 2026-08-09 audit preserved 14 na
   No preserved-worktree file content, untracked or ignored content, or data lane was inspected or
   activated. The exact branch/SHA/PR mapping lives in docs/IMPLEMENTATION_LEDGER.md; product #200
   owns cleanup or reconciliation follow-up.'
-blockers: 'P0.5 #200 remains active. Product agent browser/visual QA is NOT VERIFIED and is the
-  next mission slice. The final release blocker after QA is the owner aesthetic sign-off at
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed and no
+blockers: 'P0.5 #200 remains active. Product agent browser/visual QA is NOT VERIFIED and PARKED:
+  mandated browser-client discovery found no available browser, and its rules prohibit standalone
+  Playwright or alternate-browser fallback. Exact unlock: an in-app or connected browser becomes
+  available through the mandated surface. `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains
+  open but is not the next owner handoff until agent browser/visual proof exists. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed and no
   known Lab #29 pre-tag deliverable remains; Lab #29 stays open until the joint tag. The v0.1.0 tag
   remains joint under O2/H7=BOTH, so no product-only tag, release, or publication is authorized.
   Following owner sign-off, OWNER_CONSTITUTION A1=FULL authorizes agents to execute the synchronized
@@ -388,8 +393,8 @@ open_owner_gates: '`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6(a-h)` remains 
   public sensitive details, and provides a content-free route for arranging private contact.
   Publishing the dedicated address remains a `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10`
   release action. `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains non-blocking for
-  current preparation, but is the final owner aesthetic sign-off after Product browser/visual QA and
-  blocks the joint v0.1.0 tag under H7=BOTH. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed. No product-only tag
+  current preparation, but cannot become the next owner handoff until Product agent browser/visual
+  proof exists; it then blocks the joint v0.1.0 tag under H7=BOTH. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed. No product-only tag
   is currently authorized. The
   deregistered `value01`
   directory remains manual owner review/delete and is not a

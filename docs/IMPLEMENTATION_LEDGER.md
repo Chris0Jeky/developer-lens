@@ -4490,3 +4490,21 @@ the tag/publication as owner-executed.
 checks, issue state, and PR #248 disposition. `npm.cmd run verify:context` and `git diff --check`
 are the required local documentation proofs. Browser/visual QA, the Product owner sign-off, and all
 release/tag/publication activity remain NOT VERIFIED and unperformed.
+
+## 2026-08-15 — Product browser/visual QA tooling stop
+
+**Tooling stop.** The executor read the required browser skill, initialized its mandated
+browser-client surface, and followed its bootstrap troubleshooting. Browser discovery returned no
+available browsers. The skill prohibits standalone Playwright and alternate-browser fallback, so
+the lane stopped safely. No npm command, server, browser navigation, screenshot/evidence directory,
+repository edit, or prior GitHub mutation occurred in the attempted QA lane; no protected path or
+data was read.
+
+**State and unlock.** Product agent browser/visual QA remains NOT VERIFIED and PARKED. Exact unlock:
+an in-app or connected browser becomes available through the mandated browser-client surface.
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open but is not the next owner handoff
+until the agent proof exists. No release mechanics are authorized.
+
+**Friction and continuation.** FR-044 records this one occurrence against Product #200 comment
+`5299321093`; the browser skill's safe stop is the applied workaround. If it recurs, choose the
+cheapest environment-availability preflight or connector repair rather than a repository fallback.
