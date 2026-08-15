@@ -4913,3 +4913,41 @@ inferred or changed.
 diff, commit `fix: require current-state observation timestamp`, and hand the exact local head to
 the coordinator. Do not push, open/comment on PRs/issues, merge, or modify worktrees from this
 lane.
+
+## 2026-08-15 — Product #200 browser-evidence reconciliation onto PR #271
+
+**Changed.** Reconciled the independent browser/preflight evidence from unpushed source
+`b5f9b5e9c484315ce102d10c8b55180bcee9ac99` onto the PR #271 base
+`d45887280a808f7a7f847cd3e38d63e419be68fb`. The exact two-path scope is
+`docs/agent-system/FRICTION_LOG.md` and `docs/IMPLEMENTATION_LEDGER.md`. The base's FR-001,
+FR-044 selector-failure fourth note, and FR-079 detached-branch wrapper are preserved. Canonical
+FR-016, FR-022, and FR-024 retain their independent recurrences; FR-044 now records the separate
+empty-inventory fifth occurrence; and the distinct no-match batch event is FR-080. The superseded
+CURRENT_STATE edit from the source branch is not claimed as landed.
+
+**Verified.** The reconciliation began from PR #271 base
+`d45887280a808f7a7f847cd3e38d63e419be68fb` with a clean tracked tree; the source branch was read
+only. Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. The required context,
+whitespace, committed-range, uniqueness, count, URL, scope, and physical-EOF assertions are
+recorded after this append.
+
+**NOT verified / residual risk.** This is historical evidence reconciliation only: no browser,
+navigation, alternate-browser fallback, server, protected-data access, visual proof, release,
+owner gate, data, credential, telemetry, GitHub mutation, or current-state update occurred.
+Browser/visual QA evidence remains governed by PR #271's newer state snapshot and its existing
+release boundaries.
+
+**Failures and workarounds.** FR-016 retains the selected-but-unimplemented Product #222
+line-ending policy/verification debt. FR-022 retains the selected-but-unimplemented structured
+query contract. FR-024 retains the heading-bounded edit/diff rule. FR-044 retains the promoted
+browser-preflight rule. FR-080 remains one unpromoted task-debt occurrence, distinct from FR-060
+and the base's FR-079 wrapper event.
+
+**Docs-state sync.** This ledger records the reconciliation without modifying
+`CURRENT_STATE.md` or `HUMAN_TODO.md`; PR #271 owns the newer current-state snapshot.
+
+**Human actions.** None. No owner gate was inferred or changed.
+
+**Exact resume.** Future Product #200 governor/friction maintainers should refresh live refs and
+PR/review state before any action, preserve FR-044's independent observations and FR-079/FR-080
+separation, and treat browser proof, release, and owner gates as outside this reconciliation.
