@@ -2203,3 +2203,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **task:** [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) owns the
   bounded proof-predicate contract.
 - **promotion:** One occurrence remains task debt; do not promote or add a framework.
+
+### FR-083 — inline PowerShell replacement was parsed as a second method argument
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (PowerShell expression/method-argument boundary proof reliability)`
+- **symptom:** Inline `[Text.Encoding]::UTF8.GetBytes((Boundary $s) -replace "\r\n","\n")`
+  raised `Cannot find an overload for "GetBytes" and the argument count: "2"` because
+  PowerShell parsed the comma-separated `-replace` operands as separate method arguments.
+- **impact:** The bounded read-only proof stopped and was delayed, without changing the repository
+  or GitHub state.
+- **workaround:** Assign the replacement output to a scalar before calling `GetBytes`; the
+  corrected proof succeeded.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304533668](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304533668).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe expression/method-argument evidence boundary.
+- **promotion:** One occurrence remains task debt; do not promote or add a framework. Keep distinct
+  from FR-081's native Git range, FR-080's missing API, and other PowerShell formatting entries.
