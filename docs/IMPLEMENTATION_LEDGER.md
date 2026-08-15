@@ -4878,3 +4878,38 @@ connected in-app browser availability preflight; only if it succeeds, run the al
 bounded Product visual QA. Do not substitute another browser. After that proof, request only
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`; after owner sign-off, agents perform the
 synchronized release mechanics under A1=FULL and normal exact-head gates.
+
+## 2026-08-15 — Product #200 current-state observation timestamp contract
+
+**Changed.** `validateCurrentStateDocument()` now requires `remote_refs_last_observed_at` and
+accepts only strict `YYYY-MM-DDTHH:mm:ssZ` UTC-seconds values with valid Gregorian dates and
+clock ranges. Invented inline fixtures cover missing, non-string, malformed, date-only, offset,
+fractional, and impossible-calendar values; the tracked current state remains accepted. Only
+`scripts/projectContextValidation.ts`, `scripts/projectContextValidation.test.ts`, and this ledger
+were changed. No taskdeck/card, owner, data, release, capability, or browser action was taken.
+
+**Verified.** Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. Focused
+`npm.cmd test -- scripts/projectContextValidation.test.ts` passed (1 file, 45 tests),
+`npm.cmd run verify:context` passed (47 Markdown files, 31 required files), and full
+`npm.cmd run check` passed: lint, context/generated-view checks, 86 test files (1,506 passed,
+10 skipped), TypeScript/Vite build, and no-secret verification. `git diff --check` is the final
+post-ledger proof. No protected/generated/private data was inspected.
+
+**NOT verified / residual risk.** Connected-browser visual QA remains unavailable and is not
+substituted. Product release sign-off remains blocked by
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`. Hosted PR review, push, merge, release, and
+remote-head verification are intentionally outside this local implementation slice.
+
+**Failures and workarounds.** No check failed and no workaround was needed. The full check emitted
+the repository's existing intentional control-regex and Vite chunk-size warnings only.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` is unchanged; this validator now
+enforces the timestamp field already present in that tracked artifact.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is not
+inferred or changed.
+
+**Exact resume.** On `fix/current-state-observation-timestamp-20260815`, review the three-file
+diff, commit `fix: require current-state observation timestamp`, and hand the exact local head to
+the coordinator. Do not push, open/comment on PRs/issues, merge, or modify worktrees from this
+lane.
