@@ -563,7 +563,12 @@ export function validateCurrentStateDocument(contents: string): string[] {
     return ['YAML root must be a mapping']
   }
 
-  const state = document.toJS() as Record<string, unknown>
+  let state: Record<string, unknown>
+  try {
+    state = document.toJS() as Record<string, unknown>
+  } catch {
+    return ['current state: YAML materialization failed']
+  }
   const requiredStrings = [
     'active_slice',
     'next_value_slice',

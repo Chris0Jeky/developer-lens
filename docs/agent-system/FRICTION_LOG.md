@@ -405,7 +405,7 @@ Rules that bind entries:
   `npm run check` with a 300-second boundary. It passed in 114.7 seconds (86 files, 1,487 passed, 10
   skipped, build and 17-file credential scan green); the narrow docs checks were then rerun after
   this log entry.
-- **occurrences:** 2 independent occurrences — 2026-08-09 during PR #226's latest-base proof and
+- **occurrences:** 3 independent occurrences — 2026-08-09 during PR #226's latest-base proof and
   2026-08-15 during Product PR #251 fix-round proof.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
   preparation and its exact-head evidence.
@@ -417,6 +417,13 @@ Rules that bind entries:
   at its 120-second shell boundary before `npm.cmd run check` returned. The full check is rerun
   alone with the selected 300-second boundary; Product issue #222 comment `5300160711` retains the
   command-transport context.
+
+  **2026-08-15 Product #242 recurrence note:** The local standalone `npm.cmd run check` exceeded
+  its 124-second execution window before returning a result. It is the third instance of this
+  timeout predicate, not an FR-050 storage-v3 result. The selected 300-second command-sized
+  boundary remains the correct future proving boundary; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+  retains the command-boundary debt and [Product #242](https://github.com/Chris0Jeky/developer-lens/issues/242)
+  records the validator slice.
 
 ### FR-014 — implicit PowerShell decoding corrupted patch context
 
@@ -651,7 +658,7 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 6 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 8 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
   inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
@@ -679,6 +686,16 @@ Rules that bind entries:
   inline-query failure match this quoted/native-argument mechanism and use the same JSON-stdin
   remedy. They raise the canonical total from four to six. FR-026 remains a related explicit-scalar
   serialization boundary, but its object-expansion predicate did not occur in these two events.
+
+  **2026-08-15 PR #258 recurrence note:** An optional inline production reproduction used `npx`
+  through PowerShell, which stripped native-command quoting before the command could evaluate;
+  static code composition supplied the decisive review evidence instead. Separately, the
+  coordinator's first multiline single-quoted `gh issue create --body` command contained the
+  apostrophe in `#242's`, so PowerShell terminated parsing before the later bullets and before any
+  GitHub mutation. Neither failed attempt was retried. These are two distinct command-boundary
+  occurrences, raising the canonical total to eight while preserving Product
+  [#222](https://github.com/Chris0Jeky/developer-lens/issues/222)'s existing structured-query helper
+  promotion and task ownership.
 
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
@@ -767,7 +784,7 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 4 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+- **occurrences:** 5 independent occurrences — 2026-08-10 during the Product #200 reconciliation
   and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
   resolution, recorded by
   [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
@@ -792,6 +809,12 @@ Rules that bind entries:
   `git diff` printed usage before reading evidence. Passing the intended range as one explicit
   scalar variable completed the bounded diff. This is the promoted single-value native-argument
   boundary; Product #222 remains the selected enforcement rather than adding a range-specific rule.
+
+  **2026-08-15 Product PR #258 coordinator note:** The first review-thread mutation passed
+  `-F thread=$item.Thread`, which PowerShell expanded as `System.Collections.Hashtable.Thread`.
+  GraphQL refused the malformed node ID with `NOT_FOUND` before any mutation. Retrying with the
+  explicit scalar `$threadId` completed all three replies and resolutions. This fifth occurrence
+  retains FR-026's promoted explicit-scalar native-boundary mechanism and Product #222 ownership.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
@@ -1259,19 +1282,24 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-048 — PowerShell loop syntax typo stopped a read-only state inventory
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only authoring interruption)`
 - **symptom:** A PowerShell inventory used an invalid loop form and stopped with an unexpected-token
   parser error before it read or changed repository state.
 - **impact:** The state-structure inventory had to be reissued, delaying a bounded documentation
   repair without weakening any evidence.
 - **workaround:** Use PowerShell's `foreach (...)` form and rerun the same read-only command.
-- **occurrences:** 1 independent occurrence — 2026-08-15 during Product #200 resume repair.
+- **occurrences:** 2 independent occurrences — 2026-08-15 during Product #200 resume repair and
+  the Product PR #258 final review.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe helper and command-boundary debt.
-- **promotion:** One authoring occurrence; no new enforcement layer is justified. Keep the command
-  bounded and parse-fail-closed; reconsider a checked helper only if the same loop construction
-  recurs independently.
+- **promotion:** Promoted at the second independent occurrence: Product #222 owns the checked
+  inventory-helper pattern that collects `foreach` output into an intermediate array before piping.
+  Keep the read bounded and fail closed on parse or inventory errors; do not add a generic retry.
+
+  **2026-08-15 Product PR #258 final-review note:** A read-only file-metadata helper piped directly
+  after `foreach` and stopped with `An empty pipe element is not allowed`. Collecting the loop output
+  into an intermediate array completed the bounded inventory, with no mutation or evidence gap.
 
 ### FR-049 — failed CI log transport truncated before complete retrieval
 
@@ -1477,7 +1505,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository state.
 - **workaround:** Correct the query syntax and use the pagination-complete read; the corrected
   query returned zero threads.
-- **occurrences:** 2 independent occurrences — PR #252 fresh review at
+- **occurrences:** 3 independent occurrences — PR #252 fresh review at
   `3fd004fec41ff96a03ef63e7a7802fa429841c00`, recorded by
   [Product issue #222 comment 5300314833](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300314833),
   and the 2026-08-15 exact-final PR #254 review.
@@ -1492,6 +1520,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 promotion note:** A hand-built GraphQL query again omitted its closing brace and
   failed before it returned evidence; the formatted complete query succeeded. This second event
   selects #222's existing query-construction contract without introducing another GraphQL mechanism.
+
+  **2026-08-15 Product PR #258 review note:** The first direct-node GraphQL review-thread query
+  had a closing-brace syntax error. The corrected bounded query succeeded, so no GitHub mutation or
+  evidence gap resulted. This third occurrence retains Product #222's promoted query-construction
+  mechanism and ownership.
 
 ### FR-057 — `rg` discovery named a nonexistent `tests/` directory
 
