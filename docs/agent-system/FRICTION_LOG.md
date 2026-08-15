@@ -1342,7 +1342,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-053 — estate-registry absence left no Developer Lens fallback route
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (cold-start routing coverage)`
 - **symptom:** A review-hop lookup found the canonical estate registry absent and its fallback REPOS
   map missing the Developer Lens row.
@@ -1350,13 +1350,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository's local canon rather than treating the absent external surface as current authority.
 - **workaround:** Re-read the local `AGENTS.md`, `CLAUDE.md`, tier declaration, and live Git state;
   retain the missing external registry/fallback result as explicit coverage, not a safe default.
-- **occurrences:** 1 independent occurrence — 2026-08-15 PR #251 review hop, recorded by
-  [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735).
+- **occurrences:** 2 independent occurrences — 2026-08-15 PR #251 review hop, recorded by
+  [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735),
+  and the 2026-08-15 exact-final PR #254 review hop.
 - **task:** [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
   owns deployed registry/fallback routing; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
   records this bounded classification.
-- **promotion:** One absence/fallback predicate. Do not conflate it with FR-031's stale deployed-row
-  predicate; if it recurs, #133 must select a checked fallback-presence contract.
+- **promotion:** Promoted at the second independent occurrence: [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
+  owns the cheapest checked fallback-presence contract for the canonical estate registry and its
+  Developer Lens fallback row. Do not conflate it with FR-031's stale deployed-row predicate.
+
+  **2026-08-15 promotion note:** The exact-final PR #254 review again found the canonical estate
+  registry absent and the fallback REPOS map without a Developer Lens row. Bounded local canon and
+  live-Git inspection completed successfully, so the absence remains explicit coverage rather than
+  an evidence gap. This second independent event selects the existing #133 fallback-presence
+  contract; no duplicate Product helper or retry mechanism is introduced.
 
 ### FR-054 — unspecified PowerShell parse failure interrupted a read-only audit
 
