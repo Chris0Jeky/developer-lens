@@ -4770,6 +4770,23 @@ rollbackable commit only if the issue remains OPEN and the remote base remains
 `df18b1b4c2b7321e81250069bbb198c3c2e3df14`. Do not push, open a PR, comment, merge, or rerun the
 full gate from this hop.
 
+## 2026-08-15 — Product #257 fatal UTF-8 staged metadata decoding
+
+**Changed.** `parseGitIndexEntries` now uses fatal UTF-8 decoding with BOM preservation. An injected
+otherwise-valid metadata record containing an invalid byte now fails closed through the public
+validator with only the generic eligible-metadata diagnostic, before blob reads or a final snapshot.
+Valid UTF-8, BOM, OID, whitespace, and tab coverage remains in the existing validator suite.
+
+**Verified.** Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. The validator suite
+passed (1 file, 45 tests), including the injected adapter-level invalid-metadata assertion with zero
+blob reads and no replacement-character, path, invalid-byte, or object-ID leakage.
+
+**NOT verified / residual risk.** Context verification, diff checks, and the standalone full gate
+remain to run for this exact head. No protected-data access, filesystem fixture, push, pull request,
+comment, merge, release, or Product #257 closure was attempted.
+
+**Docs-state sync.** `CURRENT_STATE.md` is unchanged. **Human actions.** None.
+
 ## 2026-08-15 — Product #257 tracked-path diagnostic escaping
 
 **Changed.** Added one private metadata-derived diagnostic-path escape helper. It preserves ordinary
