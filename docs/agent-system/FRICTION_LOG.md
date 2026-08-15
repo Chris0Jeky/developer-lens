@@ -1651,8 +1651,8 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Preserve the one full-gate result and its exact signatures; do not change the
   unrelated storage or activation seams in this slice. A later exact-head gate must classify its own
   outcome before any publication decision.
-- **occurrences:** 2 independent occurrences — 2026-08-15 Product #259 and Product #257
-  fresh-worktree proofs.
+- **occurrences:** 3 independent occurrences — 2026-08-15 Product #259 and Product #257
+  fresh-worktree proofs, plus Product #257 diagnostic-path escaping.
 - **task:** [Product #259](https://github.com/Chris0Jeky/developer-lens/issues/259) records this
   bounded validator delivery; [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200)
   retains the release-proof boundary.
@@ -1664,6 +1664,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 Product #257 recurrence note:** The standalone 300-second full gate again passed
   lint, context, and generated-view checks before failing in the same untouched storage-v3 and
   activation seams. The result is not flaky and was not retried.
+
+  **2026-08-15 Product #257 diagnostic-path note:** The standalone gate again reached the same
+  untouched storage-v3 and activation failures after lint, context, and generated-view checks. The
+  build did not run; the result is not flaky and was not retried. No new mechanism is selected.
 
 ### FR-064 — tracked-text guard self-triggered on ledger evidence
 
