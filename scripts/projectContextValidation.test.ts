@@ -174,6 +174,7 @@ describe('project context validation', () => {
       `${escapedPath}: unable to read Git index blob`,
     ])
     for (const message of messages) {
+      // oxlint-disable-next-line no-control-regex -- control ranges are intentionally asserted
       expect(message).not.toMatch(/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/)
     }
   })
