@@ -13,15 +13,15 @@ active_slice: 'P0.5 issue #200 operational resume repair; no code, release, or d
 next_value_slice: 'Keep Lab PR #87 parked; when the required connected in-app browser is available, run the bounded Product browser/visual proof before requesting Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).'
 blockers: >-
   Product browser/visual QA is BLOCKED and NOT VERIFIED because the required connected in-app browser
-  client is unavailable. Lab PR #87 is independently parked: the commissioned session rule and open
-  Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8 forbid every Lab merge.
+  client is unavailable. Lab PR #87 is independently parked because merge-helper eligibility is
+  NOT VERIFIED.
 last_verified_checks: >-
   2026-08-15 live refresh: Product main 331dd628f34609896374de3b7f800f5ef971caa8; Lab main
   41b4f23358b570d6c20740cb7f27dcffe246c688; Lab PR #87 required run 31858427099 SUCCESS;
   8 of 8 review threads resolved. Run npm.cmd run verify:context and git diff --check for this docs slice.
 active_horizon:
-  - 'P0.5 issue #200 — active operational resume and release-readiness truth.'
-  - 'Product browser/visual proof — blocked until the required connected in-app browser is available.'
+  - 'P0 governor bootstrap PR #206 — delivered'
+  - 'P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
 
 operational_resume:
   consumer: 'The next Product/Lab release coordinator.'
@@ -41,8 +41,8 @@ parked_lab_pr:
   review_threads: '8 of 8 resolved'
   technical_review: 'Fresh exact-head review is MERGE-SOUND; no new CRITICAL/HIGH defect.'
   helper_eligibility: 'NOT VERIFIED: the one-shot unfiltered thread collection was truncated at 20,000 characters, so the helper was not run.'
-  merge_blocker: 'The commissioned session rule and open Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8 forbid every Lab merge.'
-  unlock: 'Owner closes Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8, then refresh the exact head/base/check/review/helper snapshot.'
+  merge_blocker: 'Merge-helper eligibility is NOT VERIFIED; no Lab merge decision follows from the available evidence.'
+  unlock: 'Obtain a fresh coherent exact head/base/check/review snapshot and a successful helper evaluation.'
 
 release_readiness:
   lab_q11: 'CLOSED: Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 is recorded signed off.'

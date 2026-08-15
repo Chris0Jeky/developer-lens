@@ -4467,8 +4467,8 @@ Product `main` `331dd628f34609896374de3b7f800f5ef971caa8`, Lab `main`
 `Prove the lab` run `31858427099`, eight resolved review threads, and the fresh exact-head
 MERGE-SOUND review, while explicitly keeping helper eligibility **NOT VERIFIED** because the
 one-shot unfiltered thread collection truncated at 20,000 characters before the helper could run.
-The commissioned session rule and open
-`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` forbid a Lab merge.
+Lab PR #87 remains parked until a fresh coherent exact-head/base/check/review snapshot and a
+successful helper evaluation are available.
 
 **Release state.** Lab `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed. Product
 browser/visual QA remains BLOCKED and NOT VERIFIED because the required connected in-app browser
@@ -4482,8 +4482,7 @@ P1 #174 remains unselected until the P0.5 baseline is complete.
 (47 Markdown files, 31 required files); `git diff --check` passed. The context verifier parsed the
 current-state YAML and enforced all required resume fields. Live Git/GitHub reads verified the
 named refs, PR status, required check, review-thread resolution,
-`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-8` text, and issue #200
-comment `5300081760` before the edit.
+and issue #200 comment `5300081760` before the edit.
 
 **NOT verified / residual risk.** No browser/visual proof, tag, release, package publication,
 C0 publication, Lab merge, helper eligibility, owner sign-off, or hosted CI/review for this local

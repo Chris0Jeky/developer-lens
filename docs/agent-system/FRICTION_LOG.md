@@ -390,12 +390,18 @@ Rules that bind entries:
   `npm run check` with a 300-second boundary. It passed in 114.7 seconds (86 files, 1,487 passed, 10
   skipped, build and 17-file credential scan green); the narrow docs checks were then rerun after
   this log entry.
-- **occurrences:** 1 independent occurrence — 2026-08-09 during PR #226's latest-base proof.
+- **occurrences:** 2 independent occurrences — 2026-08-09 during PR #226's latest-base proof and
+  2026-08-15 during Product PR #251 fix-round proof.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
   preparation and its exact-head evidence.
-- **promotion:** Deliberately NOT promoted after one occurrence. Keep full gates in their own
-  command-sized timeout window; if a second independent full gate hits the same boundary, record a
-  measured timeout budget in the run-and-prove table rather than relying on caller guesswork.
+- **promotion:** The second occurrence selects a 300-second command-sized timeout boundary for the
+  full gate. Record the measured result in the same-hop evidence before deciding whether a future
+  run-and-prove-table revision is justified; do not rely on a compound caller timeout.
+
+  **2026-08-15 recurrence note:** The combined focused/context/full-check invocation was terminated
+  at its 120-second shell boundary before `npm.cmd run check` returned. The full check is rerun
+  alone with the selected 300-second boundary; Product issue #222 comment `5300160711` retains the
+  command-transport context.
 
 ### FR-014 — implicit PowerShell decoding corrupted patch context
 
@@ -1185,3 +1191,45 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One authoring occurrence; no new enforcement layer is justified. Keep the command
   bounded and parse-fail-closed; reconsider a checked helper only if the same loop construction
   recurs independently.
+
+### FR-049 — failed CI log transport truncated before complete retrieval
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (hosted-failure evidence coverage)`
+- **symptom:** `gh run view --log-failed` returned enough of the failed Product PR #251 run to
+  identify the single current-state assertion, but the 405-line response exceeded the transport's
+  10,024-token output limit and was truncated.
+- **impact:** A session cannot claim a complete failed-log inspection from that response, even
+  though the run metadata and the decisive assertion are available.
+- **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
+  as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
+  the focused test plus the hosted rerun.
+- **occurrences:** 1 independent occurrence — Product issue #222 comment `5300160711` on 2026-08-15.
+- **task:** [Product issue #222 comment 5300160711](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300160711)
+  owns bounded failed-step retrieval without losing decisive evidence.
+- **promotion:** One transport occurrence; no new helper is selected. On recurrence, #222 should
+  choose the cheapest bounded failed-step retrieval that preserves completeness status rather than
+  retrying or filtering a truncated response.
+
+### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (local full-gate limitation)`
+- **symptom:** On a documentation-only Product PR #251 fix round, `npm.cmd run check` reached its
+  full Vitest stage but failed broadly in unrelated storage/activation suites with
+  `StorageV3ArtifactError: STORAGE_V3_ARTIFACT_INVALID`. The representative first-failing suite,
+  `npm.cmd test -- server/storage/v3ShadowSweepIntegration.test.ts`, reproduced all four failures
+  at `createStorageV3ArtifactRoot` before the changed documentation seam.
+- **impact:** The local full gate is NOT VERIFIED for this head. Its red result cannot disprove the
+  focused current-state correction or be represented as a regression from the docs-only range.
+- **workaround:** Do not change code or tests in this documentation fix round. Retain the passing
+  focused state contract and context proofs, record the exact local signature, and rely on the
+  required hosted rerun for the corrected head.
+- **occurrences:** 1 diagnosed local-gate episode — 2026-08-15 during Product PR #251 fix round.
+- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the release
+  proof boundary; Product PR #251 is the bounded documentation correction.
+- **promotion:** One environment-specific episode. If it recurs on an unchanged docs-only range,
+  open a bounded Windows storage-test compatibility task with a reproducer; do not weaken the full
+  gate or label it flaky.
