@@ -784,7 +784,7 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 4 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+- **occurrences:** 5 independent occurrences — 2026-08-10 during the Product #200 reconciliation
   and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
   resolution, recorded by
   [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
@@ -809,6 +809,12 @@ Rules that bind entries:
   `git diff` printed usage before reading evidence. Passing the intended range as one explicit
   scalar variable completed the bounded diff. This is the promoted single-value native-argument
   boundary; Product #222 remains the selected enforcement rather than adding a range-specific rule.
+
+  **2026-08-15 Product PR #258 coordinator note:** The first review-thread mutation passed
+  `-F thread=$item.Thread`, which PowerShell expanded as `System.Collections.Hashtable.Thread`.
+  GraphQL refused the malformed node ID with `NOT_FOUND` before any mutation. Retrying with the
+  explicit scalar `$threadId` completed all three replies and resolutions. This fifth occurrence
+  retains FR-026's promoted explicit-scalar native-boundary mechanism and Product #222 ownership.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
