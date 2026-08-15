@@ -2145,7 +2145,8 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **symptom:** Fresh worktree creation succeeded at detached `origin/main`, then report-only
   `.Trim()` on empty `git branch --show-current` output stopped the wrapper.
 - **impact:** The wrapper stopped before reporting the intended checkout; re-sense proved the exact
-  intended checkout and no repository or GitHub mutation occurred.
+  intended checkout; after successful creation, the report-only failure caused no further
+  repository or GitHub mutation.
 - **workaround:** Handle null or whitespace branch output explicitly before trimming, then re-sense
   the exact intended checkout.
 - **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304293054](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304293054).
