@@ -2247,3 +2247,22 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   worktree-guard/path-normalization command boundary.
 - **promotion:** One occurrence remains task debt; do not promote or add a helper. Keep distinct
   from FR-047's Git path rendering mismatch.
+
+### FR-085 — local commit boundary was initially non-independent
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (local commit-boundary/review friction)`
+- **symptom:** Both intended same-file edits existed, but FR-084 was initially staged in the
+  FR-081 consolidation commit; pre-push scope review caught it and local history was corrected
+  into the requested commits.
+- **impact:** Commit independence was temporarily wrong, but no content, work, remote history, or
+  GitHub state was lost.
+- **workaround:** Complete, stage, inspect, and commit the first logical change before applying or
+  staging the next; verify each commit's path and hunk scope before push.
+- **occurrences:** 1 independent occurrence, recorded by [Product #246 comment 5304609565](https://github.com/Chris0Jeky/developer-lens/issues/246#issuecomment-5304609565).
+- **task:** [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) owns the
+  commit-boundary review contract.
+- **promotion:** One occurrence remains task debt; do not promote or add a hook or helper. Keep
+  distinct from FR-024's wrong repeated-field target: all content here was intended; only the
+  commit boundary was wrong.
