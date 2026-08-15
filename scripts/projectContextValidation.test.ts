@@ -644,6 +644,25 @@ describe('project context validation', () => {
     expect(validateCurrentStateDocument('# Current state\n\n```yaml\n- item\n```\n')).toEqual([
       'YAML root must be a mapping',
     ])
+    const nestedAliases = [
+      "updated: '2026-08-10'",
+      "active_slice: 'current'",
+      "next_value_slice: 'next'",
+      "blockers: 'none'",
+      "last_verified_checks: 'focused test'",
+      "seed: &alias0 ['first']",
+      ...Array.from({ length: 8 }, (_, index) => {
+        const current = index + 1
+        const previous = current - 1
+        return `alias${current}: &alias${current} [*alias${previous}, *alias${previous}]`
+      }),
+      'active_horizon: *alias8',
+    ].join('\n')
+    let materializationErrors: string[] = []
+    expect(() => {
+      materializationErrors = validateCurrentStateDocument(state(nestedAliases))
+    }).not.toThrow()
+    expect(materializationErrors).toEqual(['current state: YAML materialization failed'])
     for (const [key, replacement, expected] of [
       ['updated', 'updated: 2026-8-10', 'updated must be a YYYY-MM-DD string'],
       ['updated', "updated: '2026-02-30'", 'updated must be a YYYY-MM-DD string'],

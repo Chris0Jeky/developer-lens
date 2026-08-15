@@ -4645,3 +4645,42 @@ second wrong continuation-skill-path occurrence; Product #222 now owns a checked
 `fix/reject-protected-tracked-paths-20260815`. After its local-only commit, do not push,
 comment, merge, or rerun the local full gate. Obtain hosted CI for the exact new head, then refresh
 the review and merge evidence before any separate publication decision.
+
+## 2026-08-15 — Product #242 current-state YAML materialization diagnostic
+
+**Changed.** Wrapped only `validateCurrentStateDocument`'s YAML `document.toJS()` materialization
+step. Any materialization failure now fails closed with the stable, literal-free diagnostic
+`current state: YAML materialization failed`; parsing, alias limits, parser configuration, schema,
+and authority/state/release surfaces are unchanged. Added an invented nested-alias fixture that
+exceeds the parser's protection, proves the validator does not throw, and asserts that exact
+diagnostic.
+
+**Verified.** `npm.cmd ci` completed with 0 vulnerabilities. `npm.cmd test --
+scripts/projectContextValidation.test.ts` passed (1 file, 44 tests), including the nested alias
+regression. `npm.cmd run verify:context` passed (47 Markdown files, 31 required files) before this
+ledger entry. The public issue read found Product #242 OPEN, and `git ls-remote origin refs/heads/main`
+matched the assigned base `50acd44648637853d9f45aee1bdb344542a2cc11` before the fix.
+
+**NOT verified / residual risk.** The single required `npm.cmd run check` attempt exceeded the
+bounded local execution window without a pass/fail result, so the full suite, build, and the
+existing FR-050 storage-v3 signature are NOT VERIFIED for this exact head. It was not retried and
+is not classified as a flaky or FR-050 result. Hosted exact-head CI remains required before any
+publication decision. No protected/generated/private input, credential, browser profile, cache,
+real-data, external-model, telemetry, public build, push, pull request, comment, merge, or release
+action was attempted.
+
+**Failures and workarounds.** FR-061 records the distinct same-hop local full-check timeout and
+the no-retry, exact-head-hosted-gate fallback; it is linked to Product #242 and the existing
+Product #222 command-boundary debt.
+
+**Docs-state sync.** `CURRENT_STATE.md` is unchanged: this is a narrow consumer-context validator
+repair with no selected release, owner gate, data, capability, or current-state-content change.
+
+**Human actions.** None. `Chris0Jeky/developer-lens::HUMAN_TODO.md` is unchanged.
+
+**Exact resume.** On `fix/current-state-materialization-20260815`, rerun
+`npm.cmd run verify:context` and `git diff --check` after this append, stage the four owned files,
+perform an exact staged-diff review, recheck Product #242 and `origin/main`, then make one local
+rollbackable code/test/ledger commit only if the issue remains OPEN and the remote base remains
+`50acd44648637853d9f45aee1bdb344542a2cc11`. Do not push, open a PR, comment, merge, or retry the
+local full check from this hop.

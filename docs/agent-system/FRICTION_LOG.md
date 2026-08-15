@@ -1569,3 +1569,23 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One check-state/command-batch occurrence. Do not conflate it with FR-013’s
   timeout or FR-051’s unsupported query-shape predicate. A second independent occurrence promotes
   a checked status-aware command helper under Product #222.
+
+### FR-061 — local full check exceeded the bounded execution window
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (local proving interruption)`
+- **symptom:** The single required local `npm.cmd run check` attempt for Product #242 exceeded the
+  bounded execution window before returning a pass/fail result.
+- **impact:** Full-suite evidence is NOT VERIFIED for this exact local head; the focused validator
+  proof and context verification completed independently.
+- **workaround:** Do not retry this slice's full check. Retain the timeout as distinct from the
+  existing FR-050 storage-v3 failure signature and require an exact-head hosted gate before any
+  later publication decision.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product #242 local-only fix hop.
+- **task:** [Product #242](https://github.com/Chris0Jeky/developer-lens/issues/242) records this
+  exact proving gap; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains
+  the broader Windows-safe command-boundary debt.
+- **promotion:** One bounded full-check timeout. Do not classify it as FR-050 without the exact
+  storage-v3 signature; an independent recurrence should select the cheapest checked timeout-aware
+  proving boundary under Product #222.
