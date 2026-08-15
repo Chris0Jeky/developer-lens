@@ -1282,19 +1282,24 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-048 — PowerShell loop syntax typo stopped a read-only state inventory
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only authoring interruption)`
 - **symptom:** A PowerShell inventory used an invalid loop form and stopped with an unexpected-token
   parser error before it read or changed repository state.
 - **impact:** The state-structure inventory had to be reissued, delaying a bounded documentation
   repair without weakening any evidence.
 - **workaround:** Use PowerShell's `foreach (...)` form and rerun the same read-only command.
-- **occurrences:** 1 independent occurrence — 2026-08-15 during Product #200 resume repair.
+- **occurrences:** 2 independent occurrences — 2026-08-15 during Product #200 resume repair and
+  the Product PR #258 final review.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe helper and command-boundary debt.
-- **promotion:** One authoring occurrence; no new enforcement layer is justified. Keep the command
-  bounded and parse-fail-closed; reconsider a checked helper only if the same loop construction
-  recurs independently.
+- **promotion:** Promoted at the second independent occurrence: Product #222 owns the checked
+  inventory-helper pattern that collects `foreach` output into an intermediate array before piping.
+  Keep the read bounded and fail closed on parse or inventory errors; do not add a generic retry.
+
+  **2026-08-15 Product PR #258 final-review note:** A read-only file-metadata helper piped directly
+  after `foreach` and stopped with `An empty pipe element is not allowed`. Collecting the loop output
+  into an intermediate array completed the bounded inventory, with no mutation or evidence gap.
 
 ### FR-049 — failed CI log transport truncated before complete retrieval
 
