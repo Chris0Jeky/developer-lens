@@ -2231,3 +2231,19 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   Windows-safe expression/method-argument evidence boundary.
 - **promotion:** One occurrence remains task debt; do not promote or add a framework. Keep distinct
   from FR-081's native Git range, FR-080's missing API, and other PowerShell formatting entries.
+
+### FR-084 — PowerShell path normalization regex stopped the worktree cleanup guard
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (worktree-guard/path-normalization command-boundary)`
+- **symptom:** The cleanup guard used PowerShell `-replace '\','/'`; the lone backslash was an
+  invalid regex, so the wrapper stopped before `git worktree remove`.
+- **impact:** The cleanup guard was delayed without file, worktree, Git, or GitHub mutation.
+- **workaround:** Use the literal string `.Replace('\','/')` or equivalent non-regex
+  normalization, then revalidate the exact target; the retry succeeded.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304582104](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304582104).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  worktree-guard/path-normalization command boundary.
+- **promotion:** One occurrence remains task debt; do not promote or add a helper. Keep distinct
+  from FR-047's Git path rendering mismatch.
