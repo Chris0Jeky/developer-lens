@@ -1486,10 +1486,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **impact:** A reviewer cannot claim complete coverage from either broad response.
 - **workaround:** Retain truncation as explicit coverage and use the already-completed bounded
   relevant reads; do not start another broad audit or recollection.
-- **occurrences:** 7 independent broad-read truncations — two PR #253 fresh-review reads and
+- **occurrences:** 9 independent broad-read truncations — two PR #253 fresh-review reads,
   five PR #253 second-round review-tooling reads, recorded by
   [Product issue #222 comment 5300433400](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300433400)
-  and [Product issue #222 comment 5300482010](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300482010).
+  and [Product issue #222 comment 5300482010](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300482010),
+  plus two fresh Sol exact-head review reads.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded
   completeness-aware retrieval; [Product #234](https://github.com/Chris0Jeky/developer-lens/issues/234)
   owns this verifier slice.
@@ -1499,6 +1500,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 second-round note:** Five broad reads (binding docs, policy docs, full code/tests,
   unified diff, and combined issue/PR state) transport-truncated. Decisive scopes were already
   reissued as bounded reads; no further broad audit or recollection is authorized.
+
+  **2026-08-15 Sol-review note:** Two broad tracked-doc/code reads transport-truncated during fresh
+  exact-head review. Only the decisive bounded sections were reissued, with no evidence gap. This
+  remains FR-058's broad-review predicate, not FR-049's failed-CI-log predicate.
 
 ### FR-059 — quote loss turned a `gh search` term into a CLI flag
 
@@ -1536,3 +1541,20 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   records this distinct timestamp-kind predicate.
 - **promotion:** Distinct from FR-030's null-timestamp predicate. One exact type-mixing occurrence
   remains documented until it recurs.
+
+### FR-061 — queue scout selected the wrong repository-local continuation-skill path
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only queue-routing interruption)`
+- **symptom:** A read-only queue scout first selected a non-existent repository-local continuation
+  skill path and failed closed before reading task guidance.
+- **impact:** Queue discovery paused until the repository's actual continuation skill path was used;
+  no repository or GitHub state changed.
+- **workaround:** Resolve the continuation skill from the repository's tracked `AGENTS.md` route,
+  then read the actual local skill before continuing.
+- **occurrences:** 1 independent occurrence — PR #253 post-review queue scout.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe routing/helper boundary.
+- **promotion:** One exact path-selection occurrence. Keep the tracked route authoritative; promote
+  only if the same repository-local skill resolution fails independently again.
