@@ -593,6 +593,15 @@ export function validateCurrentStateDocument(contents: string): string[] {
   if (typeof updated !== 'string' || !isGregorianCalendarDate(updated)) {
     errors.push('updated must be a YYYY-MM-DD string')
   }
+  const remoteRefsLastObservedAt = state.remote_refs_last_observed_at
+  if (
+    typeof remoteRefsLastObservedAt !== 'string' ||
+    !isStrictUtcSecondsTimestamp(remoteRefsLastObservedAt)
+  ) {
+    errors.push(
+      'remote_refs_last_observed_at must be a YYYY-MM-DDTHH:mm:ssZ UTC timestamp',
+    )
+  }
   for (const key of requiredStrings) {
     const value = state[key]
     if (typeof value !== 'string' || value.trim() === '') {
@@ -623,6 +632,17 @@ function isGregorianCalendarDate(value: string): boolean {
   const daysInMonth = [31, leapYear ? 29 : 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
 
   return month >= 1 && month <= 12 && day >= 1 && day <= daysInMonth[month - 1]
+}
+
+function isStrictUtcSecondsTimestamp(value: string): boolean {
+  const match = /^(\d{4}-\d{2}-\d{2})T(\d{2}):(\d{2}):(\d{2})Z$/.exec(value)
+  if (!match || !isGregorianCalendarDate(match[1] ?? '')) {
+    return false
+  }
+  const hour = Number(match[2])
+  const minute = Number(match[3])
+  const second = Number(match[4])
+  return hour <= 23 && minute <= 59 && second <= 59
 }
 
 /*

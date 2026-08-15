@@ -659,6 +659,7 @@ describe('project context validation', () => {
     const state = (yaml: string): string => `# Current state\n\n\`\`\`yaml\n${yaml}\n\`\`\`\n`
     const validYaml = [
       "updated: '2026-08-10'",
+      "remote_refs_last_observed_at: '2026-08-10T12:34:56Z'",
       "active_slice: 'current: # safe'",
       "next_value_slice: 'next: it''s safe'",
       'blockers: >-',
@@ -670,6 +671,7 @@ describe('project context validation', () => {
     ].join('\n')
     const semanticYaml = [
       "updated: '2026-08-10'",
+      "remote_refs_last_observed_at: '2026-08-10T12:34:56Z'",
       "active_slice: 'current'",
       "next_value_slice: 'next'",
       "blockers: 'none'",
@@ -689,6 +691,26 @@ describe('project context validation', () => {
     expect(
       validateCurrentStateDocument(state(semanticYaml.replace("updated: '2026-08-10'", "updated: '2024-02-29'"))),
     ).toEqual([])
+    const invalidObservationTimestamps: readonly (string | undefined)[] = [
+      undefined,
+      'remote_refs_last_observed_at: 42',
+      "remote_refs_last_observed_at: 'not-a-timestamp'",
+      "remote_refs_last_observed_at: '2026-08-10'",
+      "remote_refs_last_observed_at: '2026-08-10T12:34:56+00:00'",
+      "remote_refs_last_observed_at: '2026-08-10T12:34:56.000Z'",
+      "remote_refs_last_observed_at: '2026-02-30T12:34:56Z'",
+    ]
+    for (const replacement of invalidObservationTimestamps) {
+      const invalidYaml =
+        replacement === undefined
+          ? semanticYaml.replace("remote_refs_last_observed_at: '2026-08-10T12:34:56Z'\n", '')
+          : semanticYaml.replace(/^remote_refs_last_observed_at:.*$/m, replacement)
+      expect(validateCurrentStateDocument(state(invalidYaml))).toEqual(
+        expect.arrayContaining([
+          'remote_refs_last_observed_at must be a YYYY-MM-DDTHH:mm:ssZ UTC timestamp',
+        ]),
+      )
+    }
     expect(validateCurrentStateDocument('# Current state\n')).toContain(
       'line 1: expected exactly one root-level ```yaml fenced block',
     )
