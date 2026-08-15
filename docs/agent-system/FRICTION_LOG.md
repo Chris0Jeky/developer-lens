@@ -1345,7 +1345,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
   as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
   the focused test plus the hosted rerun.
-- **occurrences:** 6 independent occurrences — Product issue #222 comment `5300160711`, the
+- **occurrences:** 7 independent occurrences — Product issue #222 comment `5300160711`, the
   2026-08-15 PR #251 post-merge discussion-timeline transport truncation recorded by
   [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636),
   the 2026-08-15 combined memory/skill read transport truncation, and the 2026-08-15 PR #256
@@ -1363,6 +1363,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   merge SHA, 8/8 resolved threads, zero late Codex findings, and zero closing refs, but its merged
   discussion timeline was transport-truncated. The collector correctly refused to assert a total
   comment count and did not retry, filter, or recollect; the truncation changes no PR #251 verdict.
+
+  **2026-08-15 Product #257 UTF-8 review note:** The combined exact base-to-head code and
+  documentation diff was transport-truncated before review was complete. Bounded per-file diffs
+  were required for the textual review; this recurrence preserves FR-049's completeness-aware
+  promotion and Product #222 ownership.
 
   **2026-08-15 recurrence note:** A combined memory/skill read transport-truncated. The combined
   response was not treated as complete; bounded individual reads recovered only the exact policy
