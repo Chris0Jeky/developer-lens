@@ -1599,8 +1599,9 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository or GitHub state.
 - **workaround:** Reissue the bounded read-only command after correcting its syntax; preserve the
   parse failure as distinct coverage rather than guessing a loop-specific cause.
-- **occurrences:** 2 independent occurrences — 2026-08-15 PR #251 review hop and the later
-  branch/target preflight recurrence, recorded by
+- **occurrences:** 3 independent occurrences — 2026-08-15 PR #251 review hop, the later
+  branch/target preflight recurrence, and the inline object-literal branch/target preflight parser
+  stop, recorded by
   [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe command-boundary helper debt; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
@@ -1613,6 +1614,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   error. Explicit intermediate variables completed the bounded read. This recurrence selects the
   #222 parse-safe contract but does not claim that its helper is implemented, as recorded by
   [Product issue #222 comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568).
+
+  **2026-08-15 third-occurrence note:** An inline object-literal branch/target preflight produced
+  a third parser stop. Explicit intermediate variables completed the bounded retry; no repository
+  or GitHub mutation occurred. The existing Product #222 parse-safe contract remains selected but
+  is NOT implemented, as recorded by [Product issue #222 comment 5303591137](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303591137).
 
 ### FR-055 — PowerShell variable interpolation made a field-count scan unparsable
 
