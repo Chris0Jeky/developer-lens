@@ -1263,12 +1263,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
   as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
   the focused test plus the hosted rerun.
-- **occurrences:** 1 independent occurrence — Product issue #222 comment `5300160711` on 2026-08-15.
-- **task:** [Product issue #222 comment 5300160711](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300160711)
-  owns bounded failed-step retrieval without losing decisive evidence.
-- **promotion:** One transport occurrence; no new helper is selected. On recurrence, #222 should
-  choose the cheapest bounded failed-step retrieval that preserves completeness status rather than
-  retrying or filtering a truncated response.
+- **occurrences:** 2 independent occurrences — Product issue #222 comment `5300160711` and the
+  2026-08-15 PR #251 post-merge discussion-timeline transport truncation recorded by
+  [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded
+  retrieval that retains completeness status; [Product #252](https://github.com/Chris0Jeky/developer-lens/issues/252)
+  records this mandatory evidence fix.
+- **promotion:** At the second occurrence, #222 owns a completeness-aware bounded retrieval
+  contract: record a surface as complete or transport-truncated, preserve only decisive observed
+  facts, and refuse totals not completely collected. Do not retry, filter, or recollect merely to
+  fill a truncated response.
+
+  **2026-08-15 recurrence note:** The required PR #251 delayed sweep at T+10m07 proved the exact
+  merge SHA, 8/8 resolved threads, zero late Codex findings, and zero closing refs, but its merged
+  discussion timeline was transport-truncated. The collector correctly refused to assert a total
+  comment count and did not retry, filter, or recollect; the truncation changes no PR #251 verdict.
 
 ### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
 
@@ -1385,3 +1394,24 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   retains the broader Windows-safe helper debt.
 - **promotion:** One exact interpolation predicate. Do not merge it into FR-048 or FR-054; a
   recurrence would make #222's checked command-construction helper the cheapest enforcement layer.
+
+### FR-056 — hand-built GraphQL closing syntax failed before a thread snapshot
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only query authoring interruption)`
+- **symptom:** A fresh reviewer hand-built a GraphQL query with malformed closing syntax; it failed
+  before returning review-thread evidence.
+- **impact:** The exact-head thread snapshot had to be reissued, without changing GitHub or
+  repository state.
+- **workaround:** Correct the query syntax and use the pagination-complete read; the corrected
+  query returned zero threads.
+- **occurrences:** 1 independent occurrence — PR #252 fresh review at
+  `3fd004fec41ff96a03ef63e7a7802fa429841c00`, recorded by
+  [Product issue #222 comment 5300314833](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300314833).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns typed
+  query-shape helpers; [Product #252](https://github.com/Chris0Jeky/developer-lens/issues/252)
+  records this mandatory evidence classification.
+- **promotion:** One GraphQL-closing-syntax predicate. Do not merge it into FR-039's malformed
+  PowerShell field-form predicate or FR-054/FR-055's PowerShell parser predicates; a recurrence
+  should select #222's checked query-construction contract.
