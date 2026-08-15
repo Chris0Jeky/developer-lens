@@ -869,7 +869,7 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 10 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+- **occurrences:** 11 independent occurrences — 2026-08-10 during the Product #200 reconciliation
   and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
   resolution, recorded by
   [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
@@ -924,6 +924,13 @@ Rules that bind entries:
   PowerShell scalar into seven native arguments (`accepts 1 arg(s), received 7`) and was rejected
   before a GitHub write. Sending JSON through `gh api --input -` succeeded. This separate occurrence
   is recorded by [Product issue #222 comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568).
+
+  **2026-08-15 PR #274 range note:** An unbraced `$base..HEAD` in native `git diff` arguments
+  lost the intended revision boundary and Git printed usage before reading evidence. Building
+  one explicit scalar range completed the bounded read without mutation. This recurrence is
+  recorded by [Product #222 comment 5304526664](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304526664)
+  and [PR #274 review comment 3790412576](https://github.com/Chris0Jeky/developer-lens/pull/274#discussion_r3790412576).
+  The canonical promoted explicit-scalar boundary now counts this as FR-026's eleventh occurrence.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
@@ -2185,8 +2192,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Build one scalar range as `"${base}..HEAD"` before passing it to native Git.
 - **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304526664](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304526664).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
-  Windows-safe revision/evidence-command boundary.
-- **promotion:** One occurrence remains task debt; do not promote or add a framework.
+  Windows-safe revision/evidence-command boundary; the consolidation is recorded by [Product
+  #246 comment 5304563265](https://github.com/Chris0Jeky/developer-lens/issues/246#issuecomment-5304563265).
+- **promotion:** Consolidated append-only into FR-026's promoted explicit-scalar boundary, as
+  recorded by Product #246 comment 5304563265. This creates no second mechanism or helper; the
+  original FR-081 event remains immutable and its single occurrence is now counted by FR-026.
 
 ### FR-082 — terminal block comparator counted its trailing separator as content
 
@@ -2221,3 +2231,38 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   Windows-safe expression/method-argument evidence boundary.
 - **promotion:** One occurrence remains task debt; do not promote or add a framework. Keep distinct
   from FR-081's native Git range, FR-080's missing API, and other PowerShell formatting entries.
+
+### FR-084 — PowerShell path normalization regex stopped the worktree cleanup guard
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (worktree-guard/path-normalization command-boundary)`
+- **symptom:** The cleanup guard used PowerShell `-replace '\','/'`; the lone backslash was an
+  invalid regex, so the wrapper stopped before `git worktree remove`.
+- **impact:** The cleanup guard was delayed without file, worktree, Git, or GitHub mutation.
+- **workaround:** Use the literal string `.Replace('\','/')` or equivalent non-regex
+  normalization, then revalidate the exact target; the retry succeeded.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304582104](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304582104).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  worktree-guard/path-normalization command boundary.
+- **promotion:** One occurrence remains task debt; do not promote or add a helper. Keep distinct
+  from FR-047's Git path rendering mismatch.
+
+### FR-085 — local commit boundary was initially non-independent
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (local commit-boundary/review friction)`
+- **symptom:** Both intended same-file edits existed, but FR-084 was initially staged in the
+  FR-081 consolidation commit; pre-push scope review caught it and local history was corrected
+  into the requested commits.
+- **impact:** Commit independence was temporarily wrong, but no content, work, remote history, or
+  GitHub state was lost.
+- **workaround:** Complete, stage, inspect, and commit the first logical change before applying or
+  staging the next; verify each commit's path and hunk scope before push.
+- **occurrences:** 1 independent occurrence, recorded by [Product #246 comment 5304609565](https://github.com/Chris0Jeky/developer-lens/issues/246#issuecomment-5304609565).
+- **task:** [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) owns the
+  commit-boundary review contract.
+- **promotion:** One occurrence remains task debt; do not promote or add a hook or helper. Keep
+  distinct from FR-024's wrong repeated-field target: all content here was intended; only the
+  commit boundary was wrong.
