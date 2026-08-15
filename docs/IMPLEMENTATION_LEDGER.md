@@ -4727,3 +4727,45 @@ and `git diff --check` after this append, stage the five owned files, perform an
 review, recheck Product #259 and `origin/main`, then make one local rollbackable commit only if the
 issue remains OPEN and the remote base remains `bb5c418d8c6c0f408a4e215095e75b005e285c7d`. Do not
 push, open a PR, comment, merge, or rerun the full gate from this hop.
+
+## 2026-08-15 — Product #257 Windows user-home drive-token boundary
+
+**Changed.** Added only an ASCII token boundary before the Windows drive prefix in the tracked-text
+Windows user-home detector. Direct case-insensitive drive-rooted user-home forms, backslash forms,
+and repeated serialized separators remain detected. Invented URI-suffix and word-embedded
+drive-form lookalikes now remain eligible text rather than false positives. The existing generic
+literal-free violation remains the result for a genuine invented Windows-home blob. No URI parser,
+root/index logic, diagnostics, or other Product #257 residual changed.
+
+**Verified.** Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. Before the edit, an
+invented inline probe returned `true` for both false-positive candidates and a genuine invented
+Windows-home value. The focused named validator test passed (1 passed, 43 skipped), then
+`npm.cmd test -- scripts/projectContextValidation.test.ts` passed (1 file, 44 tests). The injected
+eligible invented blob produced no error; the genuine invented home blob retained the generic
+violation. `npm.cmd run verify:context` passed (47 Markdown files, 31 required files) and
+`git diff --check` was clean before this ledger entry. The public issue read found Product #257 OPEN,
+and `origin/main` matched pinned base `df18b1b4c2b7321e81250069bbb198c3c2e3df14` before the edit.
+
+**NOT verified / residual risk.** The standalone `npm.cmd run check` ran inside the 300-second
+boundary and was RED at 123.7 seconds. Lint, context verification, and generated-view checks
+passed; full Vitest then failed before build in untouched storage-v3 and activation seams with the
+same `INVALID_TASK_INSTALLATION_KEY` and `INVALID_GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD` signatures.
+This is not called flaky and does not establish a regression in the token-boundary seam. No retry,
+build, protected/generated/private-data access, credential handling, external-model call,
+telemetry, push, pull request, comment, merge, release, or Product #257 closure was attempted.
+
+**Failures and workarounds.** FR-062 is promoted at its second independent fresh-worktree full-gate
+occurrence. Product #200 owns the selected prerequisite-contract follow-up; this slice made no
+storage or activation detour.
+
+**Docs-state sync.** `CURRENT_STATE.md` is unchanged: this consumer-context regex repair does not
+change the current state, release, owner gates, data, capability, browser, Lab, or authority.
+
+**Human actions.** None. `Chris0Jeky/developer-lens::HUMAN_TODO.md` is unchanged.
+
+**Exact resume.** On `fix/windows-user-path-token-boundary-20260815`, rerun
+`npm.cmd run verify:context` and `git diff --check` after this append, stage the four owned files,
+perform an exact staged-diff review, recheck Product #257 and `origin/main`, then make one local
+rollbackable commit only if the issue remains OPEN and the remote base remains
+`df18b1b4c2b7321e81250069bbb198c3c2e3df14`. Do not push, open a PR, comment, merge, or rerun the
+full gate from this hop.

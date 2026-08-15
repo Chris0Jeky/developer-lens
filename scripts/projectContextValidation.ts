@@ -73,7 +73,7 @@ const protectedTrackedPathRoots = [
   'public/data',
 ] as const
 
-const windowsUserHomePathPattern = /[a-z]:[\\/]+users[\\/]+[^\\/\r\n]+/i
+const windowsUserHomePathPattern = /(?:^|[^a-z0-9_])[a-z]:[\\/]+users[\\/]+[^\\/\r\n]+/i
 
 /**
  * Normalize a Git-index pathname only for protected-root classification. Git stores path bytes;
