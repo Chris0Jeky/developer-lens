@@ -283,11 +283,11 @@ export const CARDS = [
 
 { id: 'DL-CONTEXT-01', title: 'Compact machine-readable current state and active horizon', epic: 'analytics-core', type: 'process', status: 'DONE', risk: 'low', effort: 'S', milestone: 'M1', privacy: 'C0', gate: 'gate:G2',
   question: 'Can a fresh agent find the next task and all blocking authority without reading the full history?',
-  outcome: 'docs/analyser-program/CURRENT_STATE.md holds: current phase, exact head, active slice, blockers, open gates, last verified checks, next task, residual risks; historical ledger material is archived by phase/date instead of growing standing context. Completed by the reconciliation PR.',
+  outcome: 'docs/analyser-program/CURRENT_STATE.md holds: current phase, timestamped last-observed remote refs (live Git/GitHub outrank them and must be refreshed before action), active slice, blockers, open gates, last verified checks, next task, residual risks; historical ledger material is archived by phase/date instead of growing standing context. Completed by the reconciliation PR.',
   deps: 'none', unlock: '',
   paths: 'docs/analyser-program/CURRENT_STATE.md; docs/IMPLEMENTATION_LEDGER.md restructure',
   authority: AUTH_CONTRACT, prohibited: 'No memory content, credentials, or local paths in the artifact; no duplication of full card contracts',
-  behavior: 'Updated at every phase boundary and merge; ADRs keep durable decisions; the artifact stays under one screen.',
+  behavior: 'Updated at phase boundaries and when the operational resume state materially changes; remote refs are timestamped observations, not perpetual current assertions; ADRs keep durable decisions; the artifact stays under one screen.',
   accept: 'A fresh agent identifies the next task and all blocking authority from the artifact alone within the standing-context budget.',
   prove: PROVE_CTX,
   fixtures: 'n/a (process artifact).',
