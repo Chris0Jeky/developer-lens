@@ -722,13 +722,19 @@ Rules that bind entries:
   the intended target; an unchecked hunk could corrupt an unrelated friction record.
 - **workaround:** Restore the unrelated field and reapply the edit with the unique entry heading in
   the patch context, then inspect the complete file diff.
-- **occurrences:** 1 independent occurrence — 2026-08-09 during PR232's second friction capture.
-- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
-  reconciliation and its factual documentation proof.
-- **promotion:** Deliberately NOT promoted after one occurrence because heading-anchored patches and
-  immediate diff inspection are already the cheapest fail-closed seam. A second independent
-  occurrence should add a focused verifier for duplicate-entry field drift rather than another
-  prose reminder.
+- **occurrences:** 2 independent occurrences — 2026-08-09 during PR232's second friction capture,
+  and 2026-08-15 during Product #234 FR-050 promotion.
+- **task:** [#234](https://github.com/Chris0Jeky/developer-lens/issues/234) owns the current
+  remediation; [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) retains the historical
+  release-reconciliation context.
+- **promotion:** At the second independent occurrence, the selected guard is a mandatory
+  heading-bounded field edit followed by immediate `git diff --cached` review before commit. A
+  general verifier cannot infer which historical entry an agent intended to patch and would not
+  prevent target selection, so no structural checker is chosen in this code slice.
+
+  **2026-08-15 recurrence note:** A broad FR-050 status hunk matched FR-004 because the field is
+  repeated. Immediate staged-diff review caught the wrong field before commit; a unique-heading
+  patch restored FR-004 and updated FR-050. No source behavior or unrelated committed record changed.
 
 ### FR-025 — occupied PR232 worktree entered a concurrent main merge
 
@@ -1280,10 +1286,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
   as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
   the focused test plus the hosted rerun.
-- **occurrences:** 3 independent occurrences — Product issue #222 comment `5300160711`, the
+- **occurrences:** 5 independent occurrences — Product issue #222 comment `5300160711`, the
   2026-08-15 PR #251 post-merge discussion-timeline transport truncation recorded by
   [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636),
-  and the 2026-08-15 combined memory/skill read transport truncation.
+  the 2026-08-15 combined memory/skill read transport truncation, and the 2026-08-15 PR #256
+  combined-source review read transport truncation, plus the 2026-08-15 PR #256 bounded reread
+  after a transport truncation.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded
   retrieval that retains completeness status; [Product #252](https://github.com/Chris0Jeky/developer-lens/issues/252)
   records this mandatory evidence fix.
@@ -1302,10 +1310,18 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   facts needed for the review. This remains current canonical transport-truncation coverage and does
   not settle whether a future broader-source class should be separate.
 
+  **2026-08-15 recurrence note:** A PR #256 combined-source review read transport-truncated. The
+  response was not treated as complete; only bounded relevant sections were reissued, with no total
+  or inference asserted from the truncated response. This is the fourth canonical occurrence.
+
+  **2026-08-15 recurrence note:** A PR #256 final-fix combined source response transport-truncated.
+  It was not treated as complete; only bounded relevant sections were reread for the snapshot
+  reconciliation, with no total or completeness claim. This is the fifth canonical occurrence.
+
 ### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `MEDIUM (local full-gate limitation)`
 - **symptom:** On a documentation-only Product PR #251 fix round, `npm.cmd run check` reached its
   full Vitest stage but failed broadly in unrelated storage/activation suites with
@@ -1317,12 +1333,22 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Do not change code or tests in this documentation fix round. Retain the passing
   focused state contract and context proofs, record the exact local signature, and rely on the
   required hosted rerun for the corrected head.
-- **occurrences:** 1 diagnosed local-gate episode — 2026-08-15 during Product PR #251 fix round.
-- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the release
-  proof boundary; Product PR #251 is the bounded documentation correction.
-- **promotion:** One environment-specific episode. If it recurs on an unchanged docs-only range,
-  open a bounded Windows storage-test compatibility task with a reproducer; do not weaken the full
-  gate or label it flaky.
+- **occurrences:** 2 diagnosed local-gate episodes — 2026-08-15 during Product PR #251 fix round,
+  and 2026-08-15 during the independent Product #234 tracked-path guard worktree.
+- **task:** [Product #234](https://github.com/Chris0Jeky/developer-lens/issues/234) owns the current
+  exact-head proof; [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) retains
+  the release proof boundary.
+- **promotion:** Promoted at the second independent occurrence to an exact-head hosted-CI requirement
+  whenever this local full gate reaches the same `STORAGE_V3_ARTIFACT_INVALID` root. The local
+  gate remains mandatory and is attempted once; do not weaken it or label it flaky. A bounded Windows
+  storage-test compatibility task still needs a reproduction independent of the delivery range before
+  selecting a local remediation.
+
+  **2026-08-15 promotion note:** In the fresh Product #234 tracked-path guard worktree, `npm.cmd ci`,
+  the focused 36-test validator suite, and context verification passed. The one declared `npm.cmd run
+  check` attempt passed lint, context, and generated-view checks, then failed broadly in storage
+  and activation tests at the exact storage-v3 root; the build stage did not run. No retry was made.
+  Hosted CI for the eventual exact #234 head is mandatory.
 
 ### FR-051 — `gh pr checks` rejected an unsupported JSON field before a snapshot read
 
@@ -1488,7 +1514,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-058 — continuation-skill discovery assumed an absent path
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only skill-discovery interruption)`
 - **symptom:** A superseder scout first named an absent continuation-skill path before locating the
   repository-local `.agents/skills/developer-lens-continuation/SKILL.md`.
@@ -1496,13 +1522,14 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository mutation or missing final skill evidence.
 - **workaround:** Check the named repository-local skill path before reading it; the corrected
   bounded read supplied the applicable continuation instructions.
-- **occurrences:** 1 independent occurrence — 2026-08-15 PR #254 superseder-scout hop.
+- **occurrences:** 2 independent occurrences — 2026-08-15 PR #254 superseder-scout hop and the
+  2026-08-15 Product PR #256 final-fix orientation hop.
 - **task:** [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) records this
   bounded classification; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
   retains the shared command/discovery hardening debt.
-- **promotion:** One direct skill-path predicate. Do not change FR-057's reviewed `rg` exit-status
-  scalar or merge this into its command-specific mechanism. At a second independent occurrence,
-  Product #222 should select a checked repository-local skill-path preflight.
+- **promotion:** Promoted at the second direct skill-path occurrence: Product #222 owns a checked
+  repository-local continuation-skill-path preflight before planned skill reads. Do not change
+  FR-057's reviewed `rg` exit-status scalar or merge this into its command-specific mechanism.
 
 ### FR-059 — guessed review-thread node ID failed before resolution
 
@@ -1522,3 +1549,23 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One review-thread identity predicate. If it recurs independently, Product #222
   should add a checked exact-PR thread-ID binding before a resolution mutation; do not conflate it
   with FR-026 scalar serialization, FR-052 count integrity, or FR-056 query syntax.
+
+### FR-060 — pending check status aborted a combined read batch
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only check-state collection)`
+- **symptom:** A read-only `gh pr checks` invocation returned exit 1 while checks were pending. Because
+  it ran in a fail-fast combined batch, later unrelated reads did not run; no GitHub or repository
+  mutation occurred.
+- **impact:** An expected pending check state can be mistaken for a command failure and leave a
+  bounded evidence batch incomplete.
+- **workaround:** Query structured PR/check status separately, or treat pending as an expected
+  state without allowing it to abort unrelated reads.
+- **occurrences:** 1 independent occurrence — 2026-08-15 during the Product PR #256 review/fix
+  hop.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns
+  Windows-safe, status-aware read helpers.
+- **promotion:** One check-state/command-batch occurrence. Do not conflate it with FR-013’s
+  timeout or FR-051’s unsupported query-shape predicate. A second independent occurrence promotes
+  a checked status-aware command helper under Product #222.

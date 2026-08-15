@@ -4551,3 +4551,97 @@ live Git/GitHub before any selection, proof, merge, or release action. Keep Lab 
 the required connected in-app browser is available, perform the bounded Product visual-QA proof,
 then request only `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` before synchronized release
 mechanics under their normal exact-head gates.
+
+## 2026-08-15 — Product #234 protected tracked-index path guard
+
+**Changed.** Added a Git-index-only tracked-text guard in `scripts/projectContextValidation.ts` and
+wired it into `scripts/verifyProjectContext.ts`. It parses NUL-safe stage records, scans only
+regular-file blobs and symlink payload blobs, fails closed for enumeration, stage, mode, and blob-access
+failures, and never reads working-tree content. The guard detects case-insensitive Windows user-home
+text with forward, backslash, and repeated serialized separators. It now rejects each named protected
+or generated root (including its exact root form) before stage, mode, object-ID, or blob access, using
+case-insensitive separator and leading-prefix normalization and a generic literal-free diagnostic.
+
+**Verified.** `npm.cmd ci` completed with 0 vulnerabilities. `npm.cmd test --
+scripts/projectContextValidation.test.ts` passed 36 tests, including staged-index blobs, symlink
+payloads, NUL-safe parsing, doubled separators, protected-root variants, zero protected reads, eligible
+root-boundary lookalikes, and literal/OID redaction. `npm.cmd run verify:context` passed after
+the changed guard was staged into the Git index; `git diff --check` and the cached diff check were
+clean.
+
+**NOT verified / residual risk.** The one declared `npm.cmd run check` attempt is RED at
+the existing storage-v3 root `StorageV3ArtifactError: STORAGE_V3_ARTIFACT_INVALID` after lint,
+context, and generated-view checks; the full Vitest stage failed broadly and the build stage did not run.
+This does not establish a regression in this isolated guard. Hosted CI on this commit's exact head is
+mandatory; no build, publication, push, pull request, comment, merge, or protected/private-content
+access was attempted. Deliberate non-goals remain UTF-16 decoding, left-drive boundaries, arbitrary
+eligible-path home literals, the 1 MiB buffer limit, and binary policy.
+
+**Failures and workarounds.** The same storage-gate signature was the second independent FR-050
+occurrence, so FR-050 is promoted to the exact-head hosted-CI requirement without weakening or retrying
+the local full gate.
+
+**Exact resume.** This local branch `fix/reject-protected-tracked-paths-20260815` began from
+base `9dbd2960cdc24e036053608b67e408e34387751b`. After its local commit, do not push, open a PR,
+comment, or merge from this hop; obtain hosted CI for that exact head before any publication decision.
+
+## 2026-08-15 — Product PR #256 names-first tracked-path metadata guard
+
+**Changed.** Split tracked-path validation into NUL-safe names-first enumeration and eligible-only
+staged metadata enumeration. The production adapter now calls `git ls-files -z`, rejects protected
+names before stage/mode/object-ID/blob access, and invokes `git --literal-pathspecs ls-files --stage -z --`
+only with the eligible path list. An all-protected list skips the metadata command entirely; eligible
+regular-file and symlink blobs remain Git-object reads, not working-tree reads. The injected command
+test records the exact command order and proves a protected name never reaches metadata or blob access.
+
+**Verified.** `npm.cmd test -- scripts/projectContextValidation.test.ts` passed 39 focused tests,
+including names-first command ordering, literal pathspec arguments, protected-only metadata skipping,
+leading-BOM preservation, invalid UTF-8 failure closure, staged blobs, symlink payloads, and NUL-safe parsing. `npm.cmd
+run verify:context` passed (47 Markdown files, 31 required files) after the staged changes; `git
+diff --check` and the cached diff check were clean.
+
+**NOT verified / residual risk.** `npm.cmd run check` was deliberately not rerun for this fix
+round. The established local Windows FR-050 storage-v3 result remains RED/NOT VERIFIED rather than
+evidence for this new exact head; exact-head hosted CI is mandatory before any publication decision.
+No build, publication, push, pull request, comment, merge, protected/private-content access, or
+non-goal expansion was attempted.
+
+**Failures and workarounds.** FR-049 records the fourth independent combined-source transport
+truncation; bounded relevant sections were reissued without treating the truncation as complete. New
+FR-060 records the first pending `gh pr checks` exit-1 failure in a fail-fast read batch and selects
+status-aware separate querying or expected-pending handling under Product #222.
+
+**Exact resume.** This fix starts from local head `7b4d9fcf193c7aaeeb823da9bd6d10169a77fa85` on
+`fix/reject-protected-tracked-paths-20260815`. After its local-only commit, do not push, open or
+comment on a PR, merge, or rerun the local full gate. Obtain hosted CI for the commit's exact head,
+then refresh review and merge evidence before a separate publication decision.
+
+## 2026-08-15 — Product PR #256 final tracked-index snapshot reconciliation
+
+**Changed.** Added a path-only reconciliation step before any stage, mode, object-ID, or blob
+access: eligible metadata must be complete, expected, and unique. The validator now takes a final
+names snapshot, classifies it before a second eligible-only metadata request, and requires the
+final safe (path, mode, stage, object-ID) tuples to match the initial snapshot before it scans
+Git blobs. A missing, substituted, duplicate, renamed, added, removed, or changed safe entry fails
+closed with a generic literal-free diagnostic; a newly observed protected name never reaches
+metadata or blob access.
+
+**Verified.** `npm.cmd test -- scripts/projectContextValidation.test.ts` passed 44 focused tests,
+including path-only throwing-getter reconciliation, final snapshot name drift, newly observed
+invented protected paths, tuple OID/mode/stage drift, stable scans, literal pathspecs, and BOM/
+invalid UTF-8 handling. `npm.cmd run verify:context` passed (47 Markdown files, 31 required
+files); cached and working `git diff --check` were clean.
+
+**NOT verified / residual risk.** `npm.cmd run check` was intentionally not retried; the
+known local FR-050 storage-v3 result remains RED/NOT VERIFIED and is not evidence for this exact
+head. Exact-head hosted CI is mandatory. No build, publication, push, pull request, comment,
+merge, protected/private-content access, or P2 policy expansion was attempted.
+
+**Failures and workarounds.** FR-049 records its fifth bounded transport-truncation recurrence;
+only the needed sections were reread without a completeness claim. FR-058 is promoted on its
+second wrong continuation-skill-path occurrence; Product #222 now owns a checked path preflight.
+
+**Exact resume.** This final fix starts from `d74450f5f3e9f7c35da8865f9075e6de68fc4d7f` on
+`fix/reject-protected-tracked-paths-20260815`. After its local-only commit, do not push,
+comment, merge, or rerun the local full gate. Obtain hosted CI for the exact new head, then refresh
+the review and merge evidence before any separate publication decision.

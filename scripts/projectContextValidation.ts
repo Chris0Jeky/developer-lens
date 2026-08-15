@@ -61,6 +61,324 @@ export function resolveRepositoryLinkTarget(
   return { kind: 'local', target }
 }
 
+const protectedTrackedPathRoots = [
+  '.developer-lens',
+  '.developer-lens-synthetic',
+  '.agent-harness/runtime',
+  '.claude/worktrees',
+  'coverage',
+  'dist',
+  'dist-ssr',
+  'node_modules',
+  'public/data',
+] as const
+
+const windowsUserHomePathPattern = /[a-z]:[\\/]+users[\\/]+[^\\/\r\n]+/i
+
+/**
+ * Normalize a Git-index pathname only for protected-root classification. Git stores path bytes;
+ * this deliberately does not resolve dot segments or access the working tree.
+ */
+export function normalizeTrackedPathForRootClassification(path: string): string {
+  let normalized = path.replaceAll('\\', '/').replace(/\/+/g, '/').toLowerCase()
+  while (normalized.startsWith('./') || normalized.startsWith('/')) {
+    normalized = normalized.startsWith('./') ? normalized.slice(2) : normalized.slice(1)
+  }
+  return normalized
+}
+
+/** True when a tracked pathname names a protected/generated root or one of its descendants. */
+export function isProtectedTrackedPath(path: string): boolean {
+  const normalized = normalizeTrackedPathForRootClassification(path)
+  return protectedTrackedPathRoots.some(
+    (root) => normalized === root || normalized.startsWith(`${root}/`),
+  )
+}
+
+/** Keep the prior eligibility predicate for callers that only need root classification. */
+export function isTrackedTextPathEligible(path: string): boolean {
+  return !isProtectedTrackedPath(path)
+}
+
+/** Detect a Windows user-home prefix without retaining or reporting its private segment. */
+export function containsWindowsUserHomePath(contents: string): boolean {
+  return windowsUserHomePathPattern.test(contents)
+}
+
+export interface GitIndexEntry {
+  mode: string
+  objectId: string
+  stage: string
+  path: string
+}
+
+export interface TrackedTextValidationAccess {
+  listPaths: () => readonly string[]
+  listEntries: (paths: readonly string[]) => readonly GitIndexEntry[]
+  readBlob: (objectId: string) => Uint8Array
+}
+
+export type GitIndexCommandExecutor = (args: readonly string[]) => Uint8Array
+
+/** Parse NUL-delimited Git pathnames without treating a path as shell text. */
+export function parseGitTrackedPaths(raw: Uint8Array): string[] {
+  const paths: string[] = []
+  const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true })
+  let start = 0
+  for (let index = 0; index < raw.length; index += 1) {
+    if (raw[index] !== 0) {
+      continue
+    }
+    const path = decoder.decode(raw.slice(start, index))
+    if (!path) {
+      throw new Error('invalid Git tracked path')
+    }
+    paths.push(path)
+    start = index + 1
+  }
+  if (start !== raw.length) {
+    throw new Error('unterminated Git tracked path')
+  }
+  return paths
+}
+
+/** Build literal Git pathspec arguments so Git metadata cannot expand an eligible path. */
+export function buildGitIndexMetadataArgs(paths: readonly string[]): string[] {
+  return ['--literal-pathspecs', 'ls-files', '--stage', '-z', '--', ...paths]
+}
+
+/** Build an injected Git-index adapter whose metadata reads occur only after name classification. */
+export function createGitIndexTrackedTextValidationAccess(
+  execute: GitIndexCommandExecutor,
+): TrackedTextValidationAccess {
+  return {
+    listPaths: () => parseGitTrackedPaths(execute(['ls-files', '-z'])),
+    listEntries: (paths) => {
+      if (paths.length === 0) {
+        return []
+      }
+      return parseGitIndexEntries(execute(buildGitIndexMetadataArgs(paths)))
+    },
+    readBlob: (objectId) => execute(['cat-file', 'blob', objectId]),
+  }
+}
+
+/** Parse NUL-delimited Git index records without treating a path as shell text. */
+export function parseGitIndexEntries(raw: Uint8Array): GitIndexEntry[] {
+  const entries: GitIndexEntry[] = []
+  const decoder = new TextDecoder()
+  let start = 0
+  for (let index = 0; index < raw.length; index += 1) {
+    if (raw[index] !== 0) {
+      continue
+    }
+    const record = decoder.decode(raw.slice(start, index))
+    start = index + 1
+    const match = /^([0-7]{6}) ([0-9a-f]{40}|[0-9a-f]{64}) ([0-3])\t([\s\S]+)$/i.exec(record)
+    if (!match) {
+      throw new Error('invalid Git index record')
+    }
+    const [, mode = '', objectId = '', stage = '', path = ''] = match
+    entries.push({ mode, objectId, stage, path })
+  }
+  if (start !== raw.length) {
+    throw new Error('unterminated Git index record')
+  }
+  return entries
+}
+
+interface ReconciledGitIndexEntry {
+  entry: GitIndexEntry
+  path: string
+}
+
+function reconcileGitIndexEntriesByPath(
+  expectedPaths: readonly string[],
+  entries: readonly GitIndexEntry[],
+): ReconciledGitIndexEntry[] | undefined {
+  if (expectedPaths.length !== entries.length) {
+    return undefined
+  }
+  const expected = new Set(expectedPaths)
+  if (expected.size !== expectedPaths.length) {
+    return undefined
+  }
+  const seen = new Set<string>()
+  const reconciled: ReconciledGitIndexEntry[] = []
+  for (const entry of entries) {
+    const path = entry.path
+    if (!expected.has(path) || seen.has(path)) {
+      return undefined
+    }
+    seen.add(path)
+    reconciled.push({ entry, path })
+  }
+  return reconciled
+}
+
+function materializeReconciledGitIndexEntries(
+  reconciled: readonly ReconciledGitIndexEntry[],
+): GitIndexEntry[] {
+  return reconciled.map(({ entry, path }) => ({
+    path,
+    mode: entry.mode,
+    objectId: entry.objectId,
+    stage: entry.stage,
+  }))
+}
+
+function pathsMatchExactly(first: readonly string[], second: readonly string[]): boolean {
+  if (first.length !== second.length) {
+    return false
+  }
+  const firstPaths = new Set(first)
+  if (firstPaths.size !== first.length || new Set(second).size !== second.length) {
+    return false
+  }
+  return second.every((path) => firstPaths.has(path))
+}
+
+function metadataSnapshotsMatch(
+  first: readonly GitIndexEntry[],
+  second: readonly GitIndexEntry[],
+): boolean {
+  if (first.length !== second.length) {
+    return false
+  }
+  const firstByPath = new Map<string, GitIndexEntry>()
+  for (const entry of first) {
+    if (firstByPath.has(entry.path)) {
+      return false
+    }
+    firstByPath.set(entry.path, entry)
+  }
+  for (const entry of second) {
+    const original = firstByPath.get(entry.path)
+    if (
+      !original ||
+      original.mode !== entry.mode ||
+      original.objectId !== entry.objectId ||
+      original.stage !== entry.stage
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+/**
+ * Validate Git-index blobs without reading working-tree content or following symlinks. Protected
+ * paths fail before stage, mode, object-ID, or blob access so they cannot reach any content read.
+ */
+export function validateTrackedTextForWindowsUserHomePaths(
+  access: TrackedTextValidationAccess,
+): string[] {
+  const errors: string[] = []
+  let paths: readonly string[]
+  try {
+    paths = access.listPaths()
+  } catch {
+    return ['unable to enumerate Git-tracked paths']
+  }
+  const eligiblePaths: string[] = []
+  for (const path of paths) {
+    if (isProtectedTrackedPath(path)) {
+      errors.push('protected Git-tracked path is not allowed')
+      continue
+    }
+    eligiblePaths.push(path)
+  }
+  if (eligiblePaths.length === 0) {
+    return errors
+  }
+  let entries: readonly GitIndexEntry[]
+  try {
+    entries = access.listEntries(eligiblePaths)
+  } catch {
+    errors.push('unable to enumerate eligible Git-tracked metadata')
+    return errors
+  }
+  let reconciled: ReconciledGitIndexEntry[] | undefined
+  try {
+    reconciled = reconcileGitIndexEntriesByPath(eligiblePaths, entries)
+  } catch {
+    reconciled = undefined
+  }
+  if (!reconciled) {
+    errors.push('eligible Git-tracked metadata does not match enumerated paths')
+    return errors
+  }
+  let initialSnapshot: GitIndexEntry[]
+  try {
+    initialSnapshot = materializeReconciledGitIndexEntries(reconciled)
+  } catch {
+    errors.push('eligible Git-tracked metadata snapshot changed during validation')
+    return errors
+  }
+  let finalPaths: readonly string[]
+  try {
+    finalPaths = access.listPaths()
+  } catch {
+    errors.push('unable to re-enumerate Git-tracked paths')
+    return errors
+  }
+  const finalEligiblePaths = finalPaths.filter((path) => !isProtectedTrackedPath(path))
+  if (
+    !pathsMatchExactly(paths, finalPaths) ||
+    !pathsMatchExactly(eligiblePaths, finalEligiblePaths)
+  ) {
+    errors.push('Git-tracked path snapshot changed during validation')
+    return errors
+  }
+  let finalEntries: readonly GitIndexEntry[]
+  try {
+    finalEntries = access.listEntries(finalEligiblePaths)
+  } catch {
+    errors.push('unable to re-enumerate eligible Git-tracked metadata')
+    return errors
+  }
+  let finalReconciled: ReconciledGitIndexEntry[] | undefined
+  try {
+    finalReconciled = reconcileGitIndexEntriesByPath(finalEligiblePaths, finalEntries)
+  } catch {
+    finalReconciled = undefined
+  }
+  if (!finalReconciled) {
+    errors.push('eligible Git-tracked metadata does not match enumerated paths')
+    return errors
+  }
+  let finalSnapshot: GitIndexEntry[]
+  try {
+    finalSnapshot = materializeReconciledGitIndexEntries(finalReconciled)
+    if (!metadataSnapshotsMatch(initialSnapshot, finalSnapshot)) {
+      errors.push('eligible Git-tracked metadata snapshot changed during validation')
+      return errors
+    }
+  } catch {
+    errors.push('eligible Git-tracked metadata snapshot changed during validation')
+    return errors
+  }
+  for (const entry of finalSnapshot) {
+    if (entry.stage !== '0') {
+      errors.push(`${entry.path}: unmerged Git index entry`)
+      continue
+    }
+    if (entry.mode !== '100644' && entry.mode !== '100755' && entry.mode !== '120000') {
+      errors.push(`${entry.path}: unsupported Git index mode`)
+      continue
+    }
+    try {
+      const contents = new TextDecoder().decode(access.readBlob(entry.objectId))
+      if (containsWindowsUserHomePath(contents)) {
+        errors.push(`${entry.path}: contains a Windows user-home path`)
+      }
+    } catch {
+      errors.push(`${entry.path}: unable to read Git index blob`)
+    }
+  }
+  return errors
+}
+
 function parseScalar(value: string): { value?: string; error?: string } {
   if (value.startsWith('"')) {
     if (!value.endsWith('"')) {

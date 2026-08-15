@@ -3,10 +3,12 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fg from 'fast-glob'
 import {
+  createGitIndexTrackedTextValidationAccess,
   extractMarkdownLinkTargets,
   parsePromptLibrary,
   parseSkillFrontmatter,
   resolveRepositoryLinkTarget,
+  validateTrackedTextForWindowsUserHomePaths,
   validateAgentFrictionParity,
   validateContinuousWorkProtocol,
   validateContinuationSkillParity,
@@ -335,6 +337,17 @@ const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md', '.cla
   onlyFiles: true,
   ignore: ['**/node_modules/**', '.claude/worktrees/**'],
 })
+
+if (existsSync(resolve(root, '.git'))) {
+  const trackedTextAccess = createGitIndexTrackedTextValidationAccess((args) =>
+    execFileSync('git', args, { cwd: root, encoding: 'buffer' }),
+  )
+  for (const error of validateTrackedTextForWindowsUserHomePaths(trackedTextAccess)) {
+    failures.push(`tracked text: ${error}`)
+  }
+} else {
+  // Not a Git checkout (for example, an exported archive): the tracked-text guard cannot apply.
+}
 
 for (const path of markdownFiles) {
   const contents = read(path)
