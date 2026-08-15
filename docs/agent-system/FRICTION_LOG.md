@@ -849,9 +849,10 @@ Rules that bind entries:
   heading-bounded edit and immediate diff review.
 
   **2026-08-15 browser-preflight state-sync recurrence note:** A repeated-schema patch context
-  again required a unique-heading edit and exact diff review. This fourth occurrence retains the
-  existing heading-bounded/diff rule; no structural checker was added, as recorded by [Product #222
-  comment 5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
+  first selected FR-057's `status` field. Immediate diff inspection restored it, and the
+  heading-scoped patch then completed the intended update. This fourth actual wrong-target
+  recurrence retains the existing heading-bounded/diff rule; no structural checker was added, as
+  recorded by [Product #222 comment 5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
 
 ### FR-025 — occupied PR232 worktree entered a concurrent main merge
 
@@ -1815,25 +1816,33 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   should add a checked exact-PR thread-ID binding before a resolution mutation; do not conflate it
   with FR-026 scalar serialization, FR-052 count integrity, or FR-056 query syntax.
 
-### FR-060 — pending check status aborted a combined read batch
+### FR-060 — expected non-success read state aborted a combined read batch
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only check-state collection)`
-- **symptom:** A read-only `gh pr checks` invocation returned exit 1 while checks were pending. Because
-  it ran in a fail-fast combined batch, later unrelated reads did not run; no GitHub or repository
-  mutation occurred.
-- **impact:** An expected pending check state can be mistaken for a command failure and leave a
-  bounded evidence batch incomplete.
-- **workaround:** Query structured PR/check status separately, or treat pending as an expected
-  state without allowing it to abort unrelated reads.
-- **occurrences:** 1 independent occurrence — 2026-08-15 during the Product PR #256 review/fix
-  hop.
+- **symptom:** A read-only `gh pr checks` invocation returned exit 1 while checks were pending, and
+  a later combined inventory batch contained an unhandled no-match search. Each expected
+  non-success read state ran in a fail-fast batch and stopped later unrelated reads; no GitHub or
+  repository mutation occurred.
+- **impact:** An expected pending or no-match state can be mistaken for a command failure and leave
+  a bounded evidence batch incomplete.
+- **workaround:** Query structured PR/check and inventory status separately, or explicitly handle
+  pending and no-match states without allowing them to abort unrelated reads.
+- **occurrences:** 2 independent occurrences — 2026-08-15 during the Product PR #256 review/fix
+  hop, and the later no-match inventory batch recorded below.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns
   Windows-safe, status-aware read helpers.
-- **promotion:** One check-state/command-batch occurrence. Do not conflate it with FR-013’s
-  timeout or FR-051’s unsupported query-shape predicate. A second independent occurrence promotes
-  a checked status-aware command helper under Product #222.
+- **promotion:** At the second independent occurrence, Product #222 selects the cheapest checked
+  status-aware read helper that explicitly handles pending and no-match states without aborting
+  unrelated reads. Keep distinct from FR-013's timeout, FR-051's unsupported query-shape predicate,
+  and FR-079's detached-branch report wrapper.
+
+  **2026-08-15 no-match recurrence note:** A combined read-only inventory batch contained an
+  unhandled no-match search and stopped before emitting lane results. Separated retries handled
+  no-match explicitly and completed; no repository or GitHub mutation occurred. This second
+  occurrence is recorded by [Product #222 comment
+  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
 
 ### FR-062 — fresh-worktree full gate fails untouched storage and activation seams
 
@@ -2175,21 +2184,3 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   reporting/command boundary.
 - **promotion:** One occurrence remains task debt; do not promote. This is distinct from FR-030's
   timestamp nulls and FR-026's object expansion.
-
-### FR-080 — unhandled no-match search aborted a combined read-only inventory batch
-
-- **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
-- **severity:** `LOW (read-only inventory completeness)`
-- **symptom:** A combined read-only inventory batch contained an unhandled no-match search and
-  aborted before emitting lane results.
-- **impact:** A no-match result can leave a bounded inventory incomplete even though no repository
-  or GitHub mutation occurred.
-- **workaround:** Run the inventory reads separately and handle no-match explicitly; the separated
-  retries completed and emitted their lane results.
-- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment
-  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
-- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
-  bounded read-only evidence contract.
-- **promotion:** One occurrence remains task debt; no new helper is selected. This is distinct from
-  FR-060's pending-check state and FR-079's detached-branch report wrapper.

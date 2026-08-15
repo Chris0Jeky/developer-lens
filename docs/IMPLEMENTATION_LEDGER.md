@@ -4922,13 +4922,14 @@ lane.
 `docs/agent-system/FRICTION_LOG.md` and `docs/IMPLEMENTATION_LEDGER.md`. The base's FR-001,
 FR-044 selector-failure fourth note, and FR-079 detached-branch wrapper are preserved. Canonical
 FR-016, FR-022, and FR-024 retain their independent recurrences; FR-044 now records the separate
-empty-inventory fifth occurrence; and the distinct no-match batch event is FR-080. The superseded
+empty-inventory fifth occurrence; and the no-match batch event consolidates into FR-060's second,
+promoted occurrence. The superseded
 CURRENT_STATE edit from the source branch is not claimed as landed.
 
 **Verified.** The reconciliation began from PR #271 base
 `d45887280a808f7a7f847cd3e38d63e419be68fb` with a clean tracked tree; the source branch was read
 only. Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. The required context,
-whitespace, committed-range, uniqueness, count, URL, scope, and physical-EOF assertions are
+whitespace, committed-range, uniqueness, count, URL, scope, and FR-079 physical-EOF assertions are
 recorded after this append.
 
 **NOT verified / residual risk.** This is historical evidence reconciliation only: no browser,
@@ -4940,8 +4941,8 @@ release boundaries.
 **Failures and workarounds.** FR-016 retains the selected-but-unimplemented Product #222
 line-ending policy/verification debt. FR-022 retains the selected-but-unimplemented structured
 query contract. FR-024 retains the heading-bounded edit/diff rule. FR-044 retains the promoted
-browser-preflight rule. FR-080 remains one unpromoted task-debt occurrence, distinct from FR-060
-and the base's FR-079 wrapper event.
+browser-preflight rule. FR-060 now records the no-match batch as its second, promoted occurrence;
+it remains distinct from the base's FR-079 wrapper event.
 
 **Docs-state sync.** This ledger records the reconciliation without modifying
 `CURRENT_STATE.md` or `HUMAN_TODO.md`; PR #271 owns the newer current-state snapshot.
@@ -4949,5 +4950,6 @@ and the base's FR-079 wrapper event.
 **Human actions.** None. No owner gate was inferred or changed.
 
 **Exact resume.** Future Product #200 governor/friction maintainers should refresh live refs and
-PR/review state before any action, preserve FR-044's independent observations and FR-079/FR-080
-separation, and treat browser proof, release, and owner gates as outside this reconciliation.
+PR/review state before any action, preserve FR-044's independent observations, FR-060's no-match
+consolidation, and the base's FR-079 wrapper separation, and treat browser proof, release, and
+owner gates as outside this reconciliation.
