@@ -1800,3 +1800,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   review-evidence hardening.
 - **promotion:** One delegated-SHA divergence occurrence. Do not promote until an independent
   recurrence establishes that a checked payload-validation safeguard is warranted.
+
+### FR-068 — UTC/local timestamp-kind mismatch produced a false age
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only evidence-timing calculation)`
+- **symptom:** A PR #264 reviewer mixed a UTC timestamp with local `DateTime` semantics in an age
+  calculation and obtained an impossible negative age. One bounded `DateTimeOffset` remeasure
+  produced valid pull-request and head ages.
+- **impact:** An uncorrected timestamp-kind mismatch can make an age-floor judgment wrong, without
+  changing repository or GitHub state.
+- **workaround:** Use `DateTimeOffset` for both operands in the age calculation, then retain the
+  bounded remeasure as evidence.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product PR #264 review.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe evidence helper boundary.
+- **promotion:** One timestamp-kind occurrence. A second independent occurrence selects a checked
+  `DateTimeOffset`-only age helper under Product #222.
