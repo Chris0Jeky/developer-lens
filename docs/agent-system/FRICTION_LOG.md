@@ -2083,3 +2083,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   bounded comment-lookup contract.
 - **promotion:** One occurrence remains task debt. Keep distinct from FR-051's unsupported-field
   and query-shape events; do not promote until an independent recurrence.
+
+### FR-077 — a trailing digit corrupted an exact review reference
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (exact-ref evidence friction)`
+- **symptom:** The final scoped review added a trailing `3` to parent SHA
+  `1bbb280ef53edec44accc63a601102bee0fd290f`, so Git returned `fatal: bad revision` before reading
+  the diff.
+- **impact:** Exact-head review paused before the bounded diff could be read, without changing the
+  repository or GitHub state.
+- **workaround:** Copy and reverify exact refs, then rerun the bounded range; the corrected range
+  succeeded.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303753398](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303753398).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  exact-reference evidence boundary.
+- **promotion:** One occurrence remains task debt. Keep distinct from moved-HEAD ownership, path
+  normalization, and unsupported fields; do not create a reference-validation framework.
