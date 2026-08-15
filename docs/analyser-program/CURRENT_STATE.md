@@ -7,7 +7,7 @@ This is the single operational resume artifact. Live Git and GitHub outrank it;
 updated: '2026-08-15'
 work_class: 'W1 operational-truth repair'
 active_wave: 'P0.5 v0.1.0 release programme — Product issue #200'
-product_main: '331dd628f34609896374de3b7f800f5ef971caa8'
+product_main: '501347528931d60845bda376e0b75ee916eebc14'
 lab_main: '41b4f23358b570d6c20740cb7f27dcffe246c688'
 active_slice: 'P0.5 issue #200 operational resume repair; no code, release, or data lane is selected.'
 next_value_slice: 'Keep Lab PR #87 parked; when the required connected in-app browser is available, run the bounded Product browser/visual proof before requesting Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).'
@@ -16,7 +16,8 @@ blockers: >-
   client is unavailable. Lab PR #87 is independently parked because merge-helper eligibility is
   NOT VERIFIED.
 last_verified_checks: >-
-  2026-08-15 live refresh: Product main 331dd628f34609896374de3b7f800f5ef971caa8; Lab main
+  2026-08-15 live refresh: Product main 501347528931d60845bda376e0b75ee916eebc14 (PR #252 merge;
+  build/deploy run 31862460503 SUCCESS); Lab main
   41b4f23358b570d6c20740cb7f27dcffe246c688; Lab PR #87 required run 31858427099 SUCCESS;
   8 of 8 review threads resolved. Run npm.cmd run verify:context and git diff --check for this docs slice.
 active_horizon:
