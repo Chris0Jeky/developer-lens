@@ -86,63 +86,75 @@ export function containsWindowsUserHomePath(contents: string): boolean {
   return windowsUserHomePathPattern.test(contents)
 }
 
-export type TrackedTextEntryKind = 'regular' | 'symlink' | 'other'
+export interface GitIndexEntry {
+  mode: string
+  objectId: string
+  stage: string
+  path: string
+}
 
 export interface TrackedTextValidationAccess {
-  listPaths: () => readonly string[]
-  lstat: (path: string) => TrackedTextEntryKind
-  readText: (path: string) => string
-  readLink: (path: string) => string
+  listEntries: () => readonly GitIndexEntry[]
+  readBlob: (objectId: string) => Uint8Array
+}
+
+/** Parse NUL-delimited `git ls-files --stage` records without treating a path as shell text. */
+export function parseGitIndexEntries(raw: Uint8Array): GitIndexEntry[] {
+  const entries: GitIndexEntry[] = []
+  const decoder = new TextDecoder()
+  let start = 0
+  for (let index = 0; index < raw.length; index += 1) {
+    if (raw[index] !== 0) {
+      continue
+    }
+    const record = decoder.decode(raw.slice(start, index))
+    start = index + 1
+    const match = /^([0-7]{6}) ([0-9a-f]{40}|[0-9a-f]{64}) ([0-3])\t([\s\S]+)$/i.exec(record)
+    if (!match) {
+      throw new Error('invalid Git index record')
+    }
+    const [, mode = '', objectId = '', stage = '', path = ''] = match
+    entries.push({ mode, objectId, stage, path })
+  }
+  if (start !== raw.length) {
+    throw new Error('unterminated Git index record')
+  }
+  return entries
 }
 
 /**
- * Validate eligible Git-tracked repository paths without following symlinks. The injected access
- * boundary proves exclusions happen before metadata or content access and makes failures fail closed.
+ * Validate eligible Git-index blobs. The injected access boundary proves exclusions happen before
+ * blob access and prevents working-tree reads or symlink traversal.
  */
 export function validateTrackedTextForWindowsUserHomePaths(
   access: TrackedTextValidationAccess,
 ): string[] {
   const errors: string[] = []
-  let paths: readonly string[]
+  let entries: readonly GitIndexEntry[]
   try {
-    paths = access.listPaths()
+    entries = access.listEntries()
   } catch {
     return ['unable to enumerate Git-tracked text']
   }
-  for (const path of paths) {
-    if (!isTrackedTextPathEligible(path)) {
+  for (const entry of entries) {
+    if (!isTrackedTextPathEligible(entry.path)) {
       continue
     }
-
-    let kind: TrackedTextEntryKind
+    if (entry.stage !== '0') {
+      errors.push(`${entry.path}: unmerged Git index entry`)
+      continue
+    }
+    if (entry.mode !== '100644' && entry.mode !== '100755' && entry.mode !== '120000') {
+      errors.push(`${entry.path}: unsupported Git index mode`)
+      continue
+    }
     try {
-      kind = access.lstat(path)
-    } catch {
-      errors.push(`${path}: unable to inspect tracked entry`)
-      continue
-    }
-
-    if (kind === 'symlink') {
-      try {
-        if (containsWindowsUserHomePath(access.readLink(path))) {
-          errors.push(`${path}: contains a Windows user-home path`)
-        }
-      } catch {
-        errors.push(`${path}: unable to inspect tracked link`)
-      }
-      continue
-    }
-    if (kind !== 'regular') {
-      errors.push(`${path}: tracked entry is not a regular file`)
-      continue
-    }
-
-    try {
-      if (containsWindowsUserHomePath(access.readText(path))) {
-        errors.push(`${path}: contains a Windows user-home path`)
+      const contents = new TextDecoder().decode(access.readBlob(entry.objectId))
+      if (containsWindowsUserHomePath(contents)) {
+        errors.push(`${entry.path}: contains a Windows user-home path`)
       }
     } catch {
-      errors.push(`${path}: unable to read tracked text`)
+      errors.push(`${entry.path}: unable to read Git index blob`)
     }
   }
   return errors

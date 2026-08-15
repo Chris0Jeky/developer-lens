@@ -651,11 +651,11 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 6 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 8 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
-  inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
-  argument events).
+  inspection attempt; 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL argument
+  events); and two 2026-08-15 PR #253 `tsx -e` import-quote failures.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns structured/JSON-input
   Windows-safe CLI helpers for recurring evidence queries.
 - **promotion:** The cheapest enforcing layer is the Windows-safe structured-query helper already
@@ -679,6 +679,11 @@ Rules that bind entries:
   inline-query failure match this quoted/native-argument mechanism and use the same JSON-stdin
   remedy. They raise the canonical total from four to six. FR-026 remains a related explicit-scalar
   serialization boundary, but its object-expansion predicate did not occur in these two events.
+
+  **2026-08-15 recurrence note:** Two PR #253 `tsx -e` probes lost embedded import quotes at the
+  Windows native boundary. Stdin-fed invented source succeeded; these matching quote-loss events
+  raise the canonical total to eight. [Product issue #222 comment 5300482010](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300482010)
+  records the bounded recovery.
 
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
@@ -1363,9 +1368,9 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository's local canon rather than treating the absent external surface as current authority.
 - **workaround:** Re-read the local `AGENTS.md`, `CLAUDE.md`, tier declaration, and live Git state;
   retain the missing external registry/fallback result as explicit coverage, not a safe default.
-- **occurrences:** 2 independent occurrences — 2026-08-15 PR #251 review hop, recorded by
+- **occurrences:** 3 independent occurrences — 2026-08-15 PR #251 review hop, recorded by
   [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735),
-  and the Product #234 tracked-text guard cold start.
+  the Product #234 tracked-text guard cold start, and PR #253 second-round review tooling.
 - **task:** [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
   owns deployed registry/fallback routing; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
   records this bounded classification.
@@ -1376,6 +1381,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 recurrence note:** The Product #234 implementation cold start again found the
   canonical registry unavailable, so the local canon and pinned Git state supplied the bounded
   fallback. No registry change is in this repository's scope.
+
+  **2026-08-15 second-round note:** The canonical registry and fallback map were again absent during
+  PR #253 review tooling. The local canon remained the bounded fallback; this is the third exact
+  absence predicate, not FR-031's stale deployed-row predicate.
 
 ### FR-054 — unspecified PowerShell parse failure interrupted a read-only audit
 
@@ -1468,10 +1477,53 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **impact:** A reviewer cannot claim complete coverage from either broad response.
 - **workaround:** Retain truncation as explicit coverage and use the already-completed bounded
   relevant reads; do not start another broad audit or recollection.
-- **occurrences:** 2 independent broad-read truncations — PR #253 fresh review, recorded by
-  [Product issue #222 comment 5300433400](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300433400).
+- **occurrences:** 7 independent broad-read truncations — two PR #253 fresh-review reads and
+  five PR #253 second-round review-tooling reads, recorded by
+  [Product issue #222 comment 5300433400](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300433400)
+  and [Product issue #222 comment 5300482010](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300482010).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded
   completeness-aware retrieval; [Product #234](https://github.com/Chris0Jeky/developer-lens/issues/234)
   owns this verifier slice.
 - **promotion:** The second event selects the existing #222 bounded-review retrieval contract. This
   differs from FR-049's failed-CI-log predicate and must not inflate that entry.
+
+  **2026-08-15 second-round note:** Five broad reads (binding docs, policy docs, full code/tests,
+  unified diff, and combined issue/PR state) transport-truncated. Decisive scopes were already
+  reissued as bounded reads; no further broad audit or recollection is authorized.
+
+### FR-059 — quote loss turned a `gh search` term into a CLI flag
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only search invocation interruption)`
+- **symptom:** A PowerShell-quoted `gh search issues` query lost its quoting and exposed
+  `-AsUTC` as a CLI flag before the search ran.
+- **impact:** The bounded search stopped before returning evidence, without changing GitHub or the
+  repository.
+- **workaround:** Use the native `--` option delimiter; the bounded retry succeeded.
+- **occurrences:** 1 independent occurrence — PR #253 second-round review tooling, recorded by
+  [Product issue #222 comment 5300482010](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300482010).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe
+  command construction; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
+  records the bounded evidence taxonomy.
+- **promotion:** Distinct from FR-022's embedded-query projection predicate: retain the checked
+  delimiter workaround until this exact search-argument form recurs.
+
+### FR-060 — mixed timestamp types inverted a bounded head-age calculation
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (exact-head age evidence interruption)`
+- **symptom:** A head-age calculation mixed local `[datetime]` with an offset timestamp and
+  produced an impossible negative age.
+- **impact:** The age claim was untrustworthy until remeasured; no repository or GitHub state
+  changed.
+- **workaround:** Re-measure once with `[DateTimeOffset]`; the bounded remeasure established
+  7.52 minutes.
+- **occurrences:** 1 independent occurrence — PR #253 second-round review tooling, recorded by
+  [Product issue #222 comment 5300482010](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300482010).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns typed
+  evidence-time helpers; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
+  records this distinct timestamp-kind predicate.
+- **promotion:** Distinct from FR-030's null-timestamp predicate. One exact type-mixing occurrence
+  remains documented until it recurs.

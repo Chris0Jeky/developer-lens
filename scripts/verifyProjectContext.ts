@@ -1,11 +1,12 @@
 import { execFileSync } from 'node:child_process'
-import { existsSync, lstatSync, readFileSync, readlinkSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fg from 'fast-glob'
 import {
   extractMarkdownLinkTargets,
   parsePromptLibrary,
   parseSkillFrontmatter,
+  parseGitIndexEntries,
   resolveRepositoryLinkTarget,
   validateTrackedTextForWindowsUserHomePaths,
   validateAgentFrictionParity,
@@ -339,21 +340,11 @@ const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md', '.cla
 
 if (existsSync(resolve(root, '.git'))) {
   for (const error of validateTrackedTextForWindowsUserHomePaths({
-    listPaths: () => execFileSync('git', ['ls-files', '-z'], {
+    listEntries: () => parseGitIndexEntries(execFileSync('git', ['ls-files', '--stage', '-z'], {
       cwd: root,
-      encoding: 'utf8',
-    })
-      .split('\0')
-      .filter((path) => path.length > 0),
-    lstat: (path) => {
-      const entry = lstatSync(resolve(root, path))
-      if (entry.isSymbolicLink()) {
-        return 'symlink'
-      }
-      return entry.isFile() ? 'regular' : 'other'
-    },
-    readText: read,
-    readLink: (path) => readlinkSync(resolve(root, path)),
+      encoding: 'buffer',
+    })),
+    readBlob: (objectId) => execFileSync('git', ['cat-file', 'blob', objectId], { cwd: root }),
   })) {
     failures.push(`tracked text: ${error}`)
   }
