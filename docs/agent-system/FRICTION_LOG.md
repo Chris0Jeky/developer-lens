@@ -405,7 +405,7 @@ Rules that bind entries:
   `npm run check` with a 300-second boundary. It passed in 114.7 seconds (86 files, 1,487 passed, 10
   skipped, build and 17-file credential scan green); the narrow docs checks were then rerun after
   this log entry.
-- **occurrences:** 2 independent occurrences — 2026-08-09 during PR #226's latest-base proof and
+- **occurrences:** 3 independent occurrences — 2026-08-09 during PR #226's latest-base proof and
   2026-08-15 during Product PR #251 fix-round proof.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
   preparation and its exact-head evidence.
@@ -417,6 +417,13 @@ Rules that bind entries:
   at its 120-second shell boundary before `npm.cmd run check` returned. The full check is rerun
   alone with the selected 300-second boundary; Product issue #222 comment `5300160711` retains the
   command-transport context.
+
+  **2026-08-15 Product #242 recurrence note:** The local standalone `npm.cmd run check` exceeded
+  its 124-second execution window before returning a result. It is the third instance of this
+  timeout predicate, not an FR-050 storage-v3 result. The selected 300-second command-sized
+  boundary remains the correct future proving boundary; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+  retains the command-boundary debt and [Product #242](https://github.com/Chris0Jeky/developer-lens/issues/242)
+  records the validator slice.
 
 ### FR-014 — implicit PowerShell decoding corrupted patch context
 
@@ -1579,23 +1586,3 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One check-state/command-batch occurrence. Do not conflate it with FR-013’s
   timeout or FR-051’s unsupported query-shape predicate. A second independent occurrence promotes
   a checked status-aware command helper under Product #222.
-
-### FR-061 — local full check exceeded the bounded execution window
-
-- **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
-- **severity:** `LOW (local proving interruption)`
-- **symptom:** The single required local `npm.cmd run check` attempt for Product #242 exceeded the
-  bounded execution window before returning a pass/fail result.
-- **impact:** Full-suite evidence is NOT VERIFIED for this exact local head; the focused validator
-  proof and context verification completed independently.
-- **workaround:** Do not retry this slice's full check. Retain the timeout as distinct from the
-  existing FR-050 storage-v3 failure signature and require an exact-head hosted gate before any
-  later publication decision.
-- **occurrences:** 1 independent occurrence — 2026-08-15 Product #242 local-only fix hop.
-- **task:** [Product #242](https://github.com/Chris0Jeky/developer-lens/issues/242) records this
-  exact proving gap; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains
-  the broader Windows-safe command-boundary debt.
-- **promotion:** One bounded full-check timeout. Do not classify it as FR-050 without the exact
-  storage-v3 signature; an independent recurrence should select the cheapest checked timeout-aware
-  proving boundary under Product #222.

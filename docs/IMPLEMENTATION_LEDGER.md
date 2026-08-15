@@ -4663,14 +4663,14 @@ matched the assigned base `50acd44648637853d9f45aee1bdb344542a2cc11` before the 
 
 **NOT verified / residual risk.** The single required `npm.cmd run check` attempt exceeded the
 bounded local execution window without a pass/fail result, so the full suite, build, and the
-existing FR-050 storage-v3 signature are NOT VERIFIED for this exact head. It was not retried and
-is not classified as a flaky or FR-050 result. Hosted exact-head CI remains required before any
+existing FR-050 storage-v3 signature are NOT VERIFIED for this exact head. It is not classified as
+a flaky or FR-050 result. Hosted exact-head CI remains required before any
 publication decision. No protected/generated/private input, credential, browser profile, cache,
 real-data, external-model, telemetry, public build, push, pull request, comment, merge, or release
 action was attempted.
 
-**Failures and workarounds.** FR-061 records the distinct same-hop local full-check timeout and
-the no-retry, exact-head-hosted-gate fallback; it is linked to Product #242 and the existing
+**Failures and workarounds.** Promoted FR-013 records the same-hop local full-check timeout and
+its selected 300-second standalone proving boundary; it is linked to Product #242 and the existing
 Product #222 command-boundary debt.
 
 **Docs-state sync.** `CURRENT_STATE.md` is unchanged: this is a narrow consumer-context validator
@@ -4682,5 +4682,5 @@ repair with no selected release, owner gate, data, capability, or current-state-
 `npm.cmd run verify:context` and `git diff --check` after this append, stage the four owned files,
 perform an exact staged-diff review, recheck Product #242 and `origin/main`, then make one local
 rollbackable code/test/ledger commit only if the issue remains OPEN and the remote base remains
-`50acd44648637853d9f45aee1bdb344542a2cc11`. Do not push, open a PR, comment, merge, or retry the
-local full check from this hop.
+`50acd44648637853d9f45aee1bdb344542a2cc11`. Do not push, open a PR, comment, or merge from this
+hop.
