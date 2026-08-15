@@ -409,8 +409,9 @@ Rules that bind entries:
   rendering is mistaken for repository bytes; the failed patch itself left the worktree unchanged.
 - **workaround:** Re-read the tracked file with `Get-Content -Encoding utf8`, then use bounded,
   heading-anchored patch contexts and inspect the exact diff immediately.
-- **occurrences:** 2 independent occurrences — 2026-08-09 during PR #228's latest-base state sync
-  and 2026-08-09 during the later release-state preservation slice.
+- **occurrences:** 3 independent occurrences — 2026-08-09 during PR #228's latest-base state sync
+  and 2026-08-09 during the later release-state preservation slice; 2026-08-15 during this
+  issue #200 resume-artifact repair.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
   coordination and factual cross-repository resume artifact.
 - **promotion:** Promoted at the second occurrence to the PowerShell tracked-Markdown read path:
@@ -424,6 +425,11 @@ Rules that bind entries:
   through the cheapest existing tracked-Markdown wrapper where applicable; the failed-context
   behavior remained fail-closed and no repository file was changed by the failed read-derived
   patch.
+
+  **2026-08-15 recurrence note:** A default-decoded state read again rendered UTF-8 punctuation
+  incorrectly; copying that rendered context caused an atomic patch mismatch before any change.
+  An explicit UTF-8 reread supplied the successful bounded patch. This reuses the promoted rule;
+  Product #222 remains the durable command-boundary task.
 
 ### FR-015 — retained merged #200 worktree collided with the new lane name
 
@@ -615,9 +621,10 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 3 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 4 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
-  PR232 exact-final-head review-thread snapshot.
+  PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
+  inspection attempt.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns structured/JSON-input
   Windows-safe CLI helpers for recurring evidence queries.
 - **promotion:** The cheapest enforcing layer is the Windows-safe structured-query helper already
@@ -628,6 +635,12 @@ Rules that bind entries:
   **2026-08-09 note:** The Lab PR59 commit projection/newline split is the second independently
   recorded occurrence (see #222 comment 5234236530); the PR232 exact-final-head thread snapshot is
   the third. Quote-safe projections and direct field reads succeeded without mutation. The three
+
+  **2026-08-15 recurrence note:** PowerShell stripped Markdown fence backticks from a double-quoted
+  `node -e` YAML-inspection argument, so the read-only inspection reported a missing fence. The
+  enforced context verifier had already parsed the same state successfully. Use a single-quoted or
+  file-backed Node argument for an optional direct inspection; Product #222 remains the selected
+  structured-command-boundary debt.
   occurrences keep the path-set-order, UTC-switch, and patch-context predicates separate while
   selecting #222's structured-query helper as the durable enforcing layer.
 
@@ -1137,3 +1150,38 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One occurrence; keep this `workaround-documented`. Product #222 owns the cheapest
   future enforcement: retain GitHub database IDs as strings or Int64 and make a helper fail when
   PowerShell emits error records, not only when a native process returns a nonzero exit code.
+
+### FR-047 — Git path rendering caused a false guard mismatch
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (worktree guard evidence)`
+- **symptom:** The guard compared Git's forward-slash top-level path rendering with a Windows
+  backslash path literal and reported a mismatch although the worktree, branch, exact HEAD, and
+  clean status matched.
+- **impact:** A safe pinned-worktree task can pause before orientation despite no actual state
+  mismatch.
+- **workaround:** Normalize both resolved paths before comparing them, then separately prove branch,
+  HEAD, and porcelain status.
+- **occurrences:** 1 independent occurrence — 2026-08-15 during Product #200 resume repair.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe evidence-helper boundary.
+- **promotion:** One occurrence; retain explicit normalization in the guard preamble. A second
+  independent recurrence should move this comparison into #222's checked helper.
+
+### FR-048 — PowerShell loop syntax typo stopped a read-only state inventory
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only authoring interruption)`
+- **symptom:** A PowerShell inventory used an invalid loop form and stopped with an unexpected-token
+  parser error before it read or changed repository state.
+- **impact:** The state-structure inventory had to be reissued, delaying a bounded documentation
+  repair without weakening any evidence.
+- **workaround:** Use PowerShell's `foreach (...)` form and rerun the same read-only command.
+- **occurrences:** 1 independent occurrence — 2026-08-15 during Product #200 resume repair.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe helper and command-boundary debt.
+- **promotion:** One authoring occurrence; no new enforcement layer is justified. Keep the command
+  bounded and parse-fail-closed; reconsider a checked helper only if the same loop construction
+  recurs independently.
