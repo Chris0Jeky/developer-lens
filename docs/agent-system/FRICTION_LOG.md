@@ -2154,3 +2154,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   reporting/command boundary.
 - **promotion:** One occurrence remains task debt; do not promote. This is distinct from FR-030's
   timestamp nulls and FR-026's object expansion.
+
+### FR-080 — PowerShell/.NET runtime lacked `[Convert]::ToHexString` for SHA-256 proof
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only hash-proof compatibility/command-boundary)`
+- **symptom:** `[Convert]::ToHexString(...)` was unavailable in the active PowerShell/.NET
+  runtime during the read-only per-block SHA-256 proof. The exact error was:
+  `Method invocation failed because [System.Convert] does not contain a method named
+  'ToHexString'.`
+- **impact:** The bounded hash proof was delayed, without changing the repository or GitHub state.
+- **workaround:** Use a compatible per-byte `ToString('x2')` plus join formatter; the proof
+  succeeded.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304506947](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304506947).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe evidence-command contract.
+- **promotion:** One occurrence remains task debt; do not promote or add a helper. Keep distinct
+  from other formatting and PowerShell entries.
