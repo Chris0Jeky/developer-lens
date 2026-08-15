@@ -651,11 +651,12 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 8 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 9 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
   inspection attempt; 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL argument
-  events); and two 2026-08-15 PR #253 `tsx -e` import-quote failures.
+  events); two 2026-08-15 PR #253 `tsx -e` import-quote failures; and the post-push
+  PR #253 repository-literal query.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns structured/JSON-input
   Windows-safe CLI helpers for recurring evidence queries.
 - **promotion:** The cheapest enforcing layer is the Windows-safe structured-query helper already
@@ -684,6 +685,11 @@ Rules that bind entries:
   Windows native boundary. Stdin-fed invented source succeeded; these matching quote-loss events
   raise the canonical total to eight. [Product issue #222 comment 5300482010](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300482010)
   records the bounded recovery.
+
+  **2026-08-15 post-push recurrence note:** A bounded PR #253 GraphQL query lost its quoted
+  repository literal across the same PowerShell/native boundary and failed closed before collection
+  or mutation. Typed GraphQL variables are the selected #222 remedy; this ninth event adds no
+  separate quote-loss taxonomy.
 
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
@@ -1429,7 +1435,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-056 — hand-built GraphQL closing syntax failed before a thread snapshot
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only query authoring interruption)`
 - **symptom:** A fresh reviewer hand-built a GraphQL query with malformed closing syntax; it failed
   before returning review-thread evidence.
@@ -1437,15 +1443,18 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository state.
 - **workaround:** Correct the query syntax and use the pagination-complete read; the corrected
   query returned zero threads.
-- **occurrences:** 1 independent occurrence — PR #252 fresh review at
-  `3fd004fec41ff96a03ef63e7a7802fa429841c00`, recorded by
+- **occurrences:** 2 independent occurrences — PR #252 fresh review and the post-push PR #253
+  typed-variable retry, the first recorded by
   [Product issue #222 comment 5300314833](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300314833).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns typed
   query-shape helpers; [Product #252](https://github.com/Chris0Jeky/developer-lens/issues/252)
   records this mandatory evidence classification.
-- **promotion:** One GraphQL-closing-syntax predicate. Do not merge it into FR-039's malformed
-  PowerShell field-form predicate or FR-054/FR-055's PowerShell parser predicates; a recurrence
-  should select #222's checked query-construction contract.
+- **promotion:** Second occurrence: Product #222 owns the checked query-construction contract. Do
+  not merge it into FR-039's malformed PowerShell field form or FR-054/FR-055's parser predicates.
+
+  **2026-08-15 post-push recurrence note:** The first typed-variable retry carried one extra closing
+  brace and GitHub rejected the GraphQL schema at parse time before collection or mutation. The
+  coordinator is issuing one corrected bounded query.
 
 ### FR-057 — PowerShell result shaping rejected generic collection projections
 
