@@ -73,7 +73,7 @@ Rules that bind entries:
   are treated as human-gated, and lab work is prepared and parked rather than merged. Isolated
   worktrees are used for preparation only — isolation does not make a *merge* safe while a
   competing writer can race the remote.
-- **occurrences:** 6 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
+- **occurrences:** 7 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
   plus an orphaned partial worktree directory left for manual deletion), 2026-08-07 (lab checkout
   competing writer), 2026-08-09 (a separate coordinator advanced the active q-8 branch between
   this session's read and attempted write), 2026-08-10 (a concurrent post-merge comment assigned
@@ -118,6 +118,12 @@ Rules that bind entries:
   this coordinator had not issued those replies. Their classifications are sound and do not reopen
   the parked PR. The process identity remains unobservable, so the record preserves only the
   operation divergence and the same #200 ownership/context enforcement.
+
+  **2026-08-15 note (overlapping friction worktree):** The initial clean fast-forward was read-only
+  cold-start context only. The countable event was the later primary Product advance while an
+  overlapping friction worktree was present after PR #265 merged. The coordinator relinquished the
+  primary and overlap role; no tracked work was lost. It is recorded by
+  [Product issue #222 comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568).
 
 ### FR-002 — review connector misses or lands late on an exact head
 
@@ -364,7 +370,7 @@ Rules that bind entries:
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 8 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
+- **occurrences:** 9 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
   (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite),
   2026-08-09 (the release-state/worktree-preservation documentation worktree), and 2026-08-09
   (the #200 state-reconciliation worktree), plus 2026-08-10 (the PR #238/#237/Lab #62 factual
@@ -401,6 +407,12 @@ Rules that bind entries:
   **2026-08-15 browser-preflight note:** The fresh docs-only worktree lacked `fast-glob`, so
   `verify:context` stopped before its first test. The promoted lockfile-pinned `npm ci` bootstrap
   was then authorized and selected before rerunning the verifier.
+
+  **2026-08-15 friction-worktree note:** This fresh worktree lacked `node_modules` and `tsx`, so
+  `npm.cmd run verify:context` stopped before the verifier ran. The lockfile-pinned `npm.cmd ci`
+  bootstrap restored dependencies, after which the unchanged verifier passed. This ninth occurrence
+  retains FR-012's existing preamble and is recorded by
+  [Product #200 comment 5303393508](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5303393508).
 
 ### FR-013 — full product gate exceeded a compound shell timeout
 
@@ -718,7 +730,7 @@ Rules that bind entries:
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
 - **first-seen:** 2026-08-09
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (CLI evidence friction)`
 - **symptom:** The installed Windows PowerShell rejected `Get-Date -AsUTC` while composing an
   exact-head PR evidence snapshot. The compound read-only command failed before any mutation.
@@ -726,15 +738,14 @@ Rules that bind entries:
   to an otherwise reproducible GitHub state snapshot.
 - **workaround:** Use `(Get-Date).ToUniversalTime().ToString('o')`, which succeeded on the same
   shell without changing repository or GitHub state.
-- **occurrences:** 4 independent occurrences — 2026-08-09 during the PR232 final review-thread
+- **occurrences:** 5 independent occurrences — 2026-08-09 during the PR232 final review-thread
   snapshot, plus 2026-08-13 and 2026-08-14 (the immutable FR-032 Windows PowerShell UTC-switch
   recurrences).
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   Windows-safe evidence helper and its explicit timestamp normalization.
-- **promotion:** Deliberately NOT promoted after one occurrence. Retain the compatible expression
-  until #222 proves the helper. The two FR-032 recurrences select that same typed timestamp
-  normalization as Product #222's checked helper contract; no parallel PowerShell framework is
-  warranted.
+- **promotion:** Promoted to Product #222's typed UTC-normalization contract; retain the compatible
+  expression until that helper is implemented. The fifth recurrence confirms the selected contract,
+  but the helper is NOT implemented and no parallel PowerShell framework is warranted.
 
   **2026-08-15 consolidation note:** FR-032's immutable Product events contain the same rejected
   `Get-Date -AsUTC` predicate and compatible expression. Its ID remains a consolidated pointer;
@@ -744,6 +755,11 @@ Rules that bind entries:
   `DateTime` UTC expression completed the read-only timestamp step. This raises this canonical
   mechanism's total to four. FR-032 remains its immutable historical pointer, so no disputed
   duplicate arithmetic or second UTC framework is revived; Product #222 retains the selected helper.
+
+  **2026-08-15 fifth-occurrence note:** PowerShell 5.1 again rejected `Get-Date -AsUTC`; the
+  compatible `[DateTime]::UtcNow.ToString('o')` expression completed the read-only timestamp step.
+  This fifth event is recorded by [Product issue #222 comment 5303376604](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303376604).
+  Product #222's typed UTC-normalization contract remains selected, but its helper is NOT implemented.
 
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
@@ -807,7 +823,7 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 8 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+- **occurrences:** 10 independent occurrences — 2026-08-10 during the Product #200 reconciliation
   and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
   resolution, recorded by
   [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
@@ -852,6 +868,16 @@ Rules that bind entries:
   **2026-08-15 Product PR #263 review note:** An unquoted revision-range composition produced Git
   usage before the range was read. Explicit scalar revisions completed the bounded diff. This eighth
   occurrence retains FR-026's promoted explicit-scalar boundary and Product #222 ownership.
+
+  **2026-08-15 Product friction-worktree note:** A literal single-quoted `$target` was rejected by
+  `git worktree remove`; passing the already-resolved and validated target as an expanded scalar
+  succeeded. This independent occurrence is recorded by
+  [Product issue #222 comment 5303376604](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303376604).
+
+  **2026-08-15 Product collector note:** `gh issue comment --body $body` split one multiline
+  PowerShell scalar into seven native arguments (`accepts 1 arg(s), received 7`) and was rejected
+  before a GitHub write. Sending JSON through `gh api --input -` succeeded. This separate occurrence
+  is recorded by [Product issue #222 comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568).
 
 ### FR-027 — stale multi-entry patch context failed closed
 
@@ -1245,7 +1271,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 2 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 3 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1258,6 +1284,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 Product #200 recurrence note:** The mandated browser client was loaded for public
   showcase QA, `getForUrl` found no browser, bootstrap troubleshooting was read, and the one permitted
   browser list was empty. No navigation, proof, mutation, or protected-data access occurred.
+
+  **2026-08-15 third-preflight note:** The mandated browser preflight again found no available
+  browser after troubleshooting and an empty permitted inventory (`[]`). No navigation, server,
+  npm, screenshot, alternate-browser fallback, mutation, or protected-data access occurred. This
+  third occurrence is recorded by [Product issue #222 comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568)
+  and remains owned by [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200).
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
@@ -1533,7 +1565,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-054 — unspecified PowerShell parse failure interrupted a read-only audit
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only command authoring interruption)`
 - **symptom:** A read-only PowerShell audit command stopped with a parser error and was reissued
   successfully; the available evidence does not establish FR-048's specific invalid-loop form.
@@ -1541,13 +1573,20 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository or GitHub state.
 - **workaround:** Reissue the bounded read-only command after correcting its syntax; preserve the
   parse failure as distinct coverage rather than guessing a loop-specific cause.
-- **occurrences:** 1 independent occurrence — 2026-08-15 PR #251 review hop, recorded by
+- **occurrences:** 2 independent occurrences — 2026-08-15 PR #251 review hop and the later
+  branch/target preflight recurrence, recorded by
   [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe command-boundary helper debt; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
   records this bounded classification.
-- **promotion:** One parser-error predicate. Do not merge it into FR-048 without the exact loop-form
-  evidence; a recurrence should select #222's cheapest checked parse-safe command contract.
+- **promotion:** Promoted at the second independent occurrence to Product #222's checked parse-safe
+  command contract. Do not merge it into FR-048 without the exact loop-form evidence; the #222 helper
+  is not implemented.
+
+  **2026-08-15 recurrence note:** The read-only branch/target preflight produced a second parser
+  error. Explicit intermediate variables completed the bounded read. This recurrence selects the
+  #222 parse-safe contract but does not claim that its helper is implemented, as recorded by
+  [Product issue #222 comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568).
 
 ### FR-055 — PowerShell variable interpolation made a field-count scan unparsable
 
@@ -1818,3 +1857,62 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   Windows-safe evidence helper boundary.
 - **promotion:** One timestamp-kind occurrence. A second independent occurrence selects a checked
   `DateTimeOffset`-only age helper under Product #222.
+
+### FR-069 — Windows PowerShell parse stops interrupted two command boundaries
+
+- **first-seen:** 2026-08-15
+- **status:** `promoted`
+- **severity:** `LOW (pre-execution command-authoring interruption)`
+- **symptom:** Windows PowerShell 5.1 stopped parsing a coordinator command containing `&&`, and
+  an independent read-only scout command containing `||`, before either native command executed.
+- **impact:** Both bounded observations stopped before execution; no repository, Git, or GitHub
+  mutation occurred.
+- **workaround:** Use PowerShell-compatible statement sequencing and explicit conditional forms at
+  the command boundary rather than relying on unsupported `&&` or `||` syntax.
+- **occurrences:** 2 independent occurrences — the coordinator `&&` parse stop and the read-only
+  scout `||` parse stop, both recorded by [Product issue #222 comment 5303367870](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303367870).
+- **task:** [Product issue #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  cheapest checked Windows-safe command-boundary layer.
+- **promotion:** Promoted at the second independent occurrence to the existing #222 checked
+  command-boundary layer. These entries record the friction only; they do not claim that the
+  future helper is implemented.
+
+### FR-070 — Product resume state retained a merged Lab delivery as parked
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (cross-repository resume-state drift)`
+- **symptom:** Product `CURRENT_STATE.md` still described merged Lab PR #87 as parked until the
+  Product reconciliation PR #265 corrected the state against live Git and GitHub evidence.
+- **impact:** A stale cross-repository resume claim could misroute the active delivery queue or
+  preserve an obsolete blocker, even though the Lab merge was already complete.
+- **workaround:** Reconcile cross-repository resume state from live Git, CI, and pull-request
+  evidence before selecting work; treat recorded state as a lead rather than proof.
+- **occurrences:** 1 independent occurrence — merged Lab PR #87 remained parked in Product
+  `CURRENT_STATE.md` until PR #265 reconciled it, recorded by [Product #200 truth-repair contract
+  comment 5303317321](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5303317321).
+- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the
+  release-proof resume boundary.
+- **promotion:** One-occurrence task debt; retain mandatory live SENSE and reconciliation as the
+  workaround before queue selection, but do not promote this distinct event. FR-019 remains the
+  separate historical predicate, and this entry does not claim a new automated reconciliation helper.
+
+### FR-071 — collector interface and capability boundaries interrupted comment collection
+
+- **first-seen:** 2026-08-15
+- **status:** `promoted`
+- **severity:** `LOW (read-only collection interface friction)`
+- **symptom:** The installed `gh` rejected `--slurp` combined with `--jq`, and the bundled
+  `fetch_comments.py` rejected a positional pull-request argument, inferred `main`, and stopped
+  before the delayed read-only sweep completed.
+- **impact:** The first comment-collection interface attempts returned no usable collection, without
+  changing repository or GitHub state.
+- **workaround:** Parse raw JSON locally, and call the module's explicit
+  `fetch_all(owner, repo, number)` entry point with the intended pull-request number.
+- **occurrences:** 2 independent interface/capability events, recorded by [Product issue #222
+  comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  checked command-shape and capability contract.
+- **promotion:** Promoted at the second occurrence to the #222 checked command-shape/capability
+  contract. This is separate from FR-051's unsupported-field query taxonomy; the helper is NOT
+  implemented and this entry does not authorize a new collector mechanism.
