@@ -333,7 +333,7 @@ Rules that bind entries:
 ### FR-011 — branch cleanup bypassed a protected deletion rule after merge
 
 - **first-seen:** 2026-08-09
-- **status:** `open`
+- **status:** `promoted`
 - **symptom:** After merged PR #218, an exact clean-worktree audit and local branch deletion,
   `git push origin --delete docs/prompt-system-overhaul` succeeded while GitHub reported a privileged
   bypass of the `Cannot delete this branch` rule.
@@ -342,11 +342,17 @@ Rules that bind entries:
   deleted branch remains recoverable.
 - **workaround:** Do not recreate the branch in this slice. Future cleanup must inspect applicable
   rules first and avoid any silent administrative bypass.
-- **occurrences:** 1 recorded — 2026-08-09, after PR #218 merge cleanup.
+- **occurrences:** 2 recorded — 2026-08-09, after PR #218 merge cleanup, and 2026-08-15 after
+  Product PR #258 cleanup.
 - **task:** [#221](https://github.com/Chris0Jeky/developer-lens/issues/221)
-- **promotion:** Task debt pending #221. A future cleanup path should prove the deletion rule and
-  explicit authority before acting, and report any privileged bypass in the same hop; this slice
-  changes no rules and does not recreate the branch.
+- **promotion:** Promoted at the second occurrence: Product #221 owns a checked cleanup helper or
+  contract that queries applicable branch rules before deletion and refuses any required privileged
+  bypass. Until it exists, leave a merged remote branch rather than delete it. This slice changes no
+  rules and does not recreate a branch.
+
+  **2026-08-15 Product PR #258 cleanup recurrence note:** After a clean merged-branch audit found
+  no open child pull request, remote deletion succeeded but GitHub reported a privileged bypass of
+  `Cannot delete this branch`. The branch remains merged; no replacement branch or retry is selected.
 
 ### FR-012 — fresh product worktree lacks the Node tool bootstrap
 
@@ -1602,3 +1608,24 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One check-state/command-batch occurrence. Do not conflate it with FR-013’s
   timeout or FR-051’s unsupported query-shape predicate. A second independent occurrence promotes
   a checked status-aware command helper under Product #222.
+
+### FR-062 — fresh-worktree full gate fails untouched storage and activation seams
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (local full-gate limitation)`
+- **symptom:** Product #259's standalone 300-second `npm.cmd run check` passed lint, context, and
+  generated-view checks, then failed broadly in untouched storage-v3 and activation suites with
+  `INVALID_TASK_INSTALLATION_KEY` and `INVALID_GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD` errors.
+- **impact:** The full suite and build are NOT VERIFIED for this exact head, while the focused
+  current-state validator proof remains separate evidence.
+- **workaround:** Preserve the one full-gate result and its exact signatures; do not change the
+  unrelated storage or activation seams in this slice. A later exact-head gate must classify its own
+  outcome before any publication decision.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product #259 fresh-worktree proof.
+- **task:** [Product #259](https://github.com/Chris0Jeky/developer-lens/issues/259) records this
+  bounded validator delivery; [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200)
+  retains the release-proof boundary.
+- **promotion:** One exact signature family. Do not conflate it with FR-050's
+  `STORAGE_V3_ARTIFACT_INVALID` predicate or select a remediation without an independent bounded
+  reproduction outside this delivery range.

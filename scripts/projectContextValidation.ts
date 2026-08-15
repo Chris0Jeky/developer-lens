@@ -504,6 +504,10 @@ export function validateTierDeclaration(value: unknown): string[] {
   })
 }
 
+export function formatCurrentStateValidationErrors(errors: readonly string[]): string[] {
+  return errors.map((error) => `current state: ${error}`)
+}
+
 export function validateCurrentStateDocument(contents: string): string[] {
   const normalized = contents.replaceAll('\r\n', '\n').replaceAll('\r', '\n')
   const lines = normalized.split('\n')
@@ -567,7 +571,7 @@ export function validateCurrentStateDocument(contents: string): string[] {
   try {
     state = document.toJS() as Record<string, unknown>
   } catch {
-    return ['current state: YAML materialization failed']
+    return ['YAML materialization failed']
   }
   const requiredStrings = [
     'active_slice',

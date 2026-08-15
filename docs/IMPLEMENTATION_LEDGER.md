@@ -4684,3 +4684,46 @@ perform an exact staged-diff review, recheck Product #242 and `origin/main`, the
 rollbackable code/test/ledger commit only if the issue remains OPEN and the remote base remains
 `50acd44648637853d9f45aee1bdb344542a2cc11`. Do not push, open a PR, comment, or merge from this
 hop.
+
+## 2026-08-15 — Product #259 exact current-state diagnostic prefix
+
+**Changed.** Kept `validateCurrentStateDocument` as the raw consumer validator and made its
+materialization failure literal-free: `YAML materialization failed`. Added the small exported
+`formatCurrentStateValidationErrors` production composition function, which applies the single
+`current state:` prefix, and routed `verifyProjectContext.ts` through it instead of applying an
+inline prefix. The invented nested-alias regression now proves both the raw fail-closed validator
+error and the exact single production diagnostic; alias protection and parser configuration remain
+unchanged. The same hop also records FR-011's Product PR #258 cleanup recurrence and its selected
+Product #221 branch-rule-before-deletion contract.
+
+**Verified.** Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. `npm.cmd test --
+scripts/projectContextValidation.test.ts` passed (1 file, 44 tests), including the invented nested
+alias materialization case and exact single-prefix composition. `npm.cmd run verify:context` passed
+(47 Markdown files, 31 required files) before this ledger entry; `git diff --check` was clean. The
+public issue read found Product #259 OPEN, and `origin/main` matched pinned base
+`bb5c418d8c6c0f408a4e215095e75b005e285c7d` before the change.
+
+**NOT verified / residual risk.** The declared standalone `npm.cmd run check` ran inside the
+promoted FR-013 300-second boundary but was RED at 123.7 seconds. Lint, context verification, and
+both generated-view checks passed; full Vitest then failed in untouched storage-v3 and activation
+seams (including `v3Backup` 71/73 and `v3ArtifactCatalogue` 26/29 failures) before build, with
+`INVALID_TASK_INSTALLATION_KEY` and `INVALID_GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD` signatures.
+This is not called flaky and does not establish a regression in the isolated diagnostic seam. No
+full-gate retry, build, protected/generated/private-data access, credential handling, external-model
+call, telemetry, push, pull request, comment, merge, or release action was attempted.
+
+**Failures and workarounds.** FR-062 records the distinct full-gate signature without conflating it
+with FR-050; the focused proof remains the direct evidence for this slice. FR-011 is promoted from
+the independently observed Product PR #258 cleanup bypass, with Product #221 owning the checked
+branch-rule contract.
+
+**Docs-state sync.** `CURRENT_STATE.md` is unchanged: no current-state content, release, owner
+gate, data, capability, browser, Lab, or authority change is selected.
+
+**Human actions.** None. `Chris0Jeky/developer-lens::HUMAN_TODO.md` is unchanged.
+
+**Exact resume.** On `fix/exact-current-state-prefix-20260815`, rerun `npm.cmd run verify:context`
+and `git diff --check` after this append, stage the five owned files, perform an exact staged-diff
+review, recheck Product #259 and `origin/main`, then make one local rollbackable commit only if the
+issue remains OPEN and the remote base remains `bb5c418d8c6c0f408a4e215095e75b005e285c7d`. Do not
+push, open a PR, comment, merge, or rerun the full gate from this hop.
