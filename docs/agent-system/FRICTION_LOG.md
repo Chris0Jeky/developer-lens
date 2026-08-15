@@ -73,7 +73,7 @@ Rules that bind entries:
   are treated as human-gated, and lab work is prepared and parked rather than merged. Isolated
   worktrees are used for preparation only — isolation does not make a *merge* safe while a
   competing writer can race the remote.
-- **occurrences:** 8 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
+- **occurrences:** 9 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
   plus an orphaned partial worktree directory left for manual deletion), 2026-08-07 (lab checkout
   competing writer), 2026-08-09 (a separate coordinator advanced the active q-8 branch between
   this session's read and attempted write), 2026-08-10 (a concurrent post-merge comment assigned
@@ -137,6 +137,12 @@ Rules that bind entries:
   and [Product #200 comment 5304325128](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304325128).
   It does not prove a leaked process: `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` remains
   closed and normal Lab gates remain in force.
+
+  **2026-08-15 moved-base integration note:** A guarded fetch observed PR #274 main movement
+  before any push, pull-request body, or reply mutation. No work was lost, ownership is not
+  inferred, and q-8 does not reopen; explicit main integration and reproof followed. This ninth
+  occurrence is recorded by [Product #200 comment
+  5304579614](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304579614).
 
 ### FR-002 — review connector misses or lands late on an exact head
 
@@ -1464,24 +1470,6 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   command bounded and parse-fail-closed; reconsider a checked helper only if this exact invalid-loop
   form recurs independently.
 
-### FR-063 — PowerShell direct-after-foreach pipeline rejected a metadata inventory
-
-- **first-seen:** 2026-08-15
-- **status:** `promoted`
-- **severity:** `LOW (read-only inventory authoring interruption)`
-- **symptom:** A read-only file-metadata helper piped directly after a valid `foreach` form and
-  stopped with `An empty pipe element is not allowed` before the inventory completed.
-- **impact:** The bounded inventory had to be reissued, without a mutation or evidence gap.
-- **workaround:** Collect `foreach` output into an intermediate array before piping it to the
-  metadata helper; the corrected bounded inventory completes without mutation.
-- **occurrences:** 2 independent occurrences — 2026-08-15 Product PR #258 final review and Product
-  PR #260 review.
-- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
-  Windows-safe inventory-helper boundary.
-- **promotion:** Promoted at the second occurrence: Product #222 owns a checked inventory helper
-  that captures loop output before piping while preserving bounded fail-closed behavior. Do not
-  conflate this valid-foreach pipeline predicate with FR-048's invalid-loop-form predicate.
-
 ### FR-049 — failed CI log transport truncated before complete retrieval
 
 - **first-seen:** 2026-08-15
@@ -1879,6 +1867,24 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   untouched storage-v3 and activation failures after lint, context, and generated-view checks; build
   did not run. The result is not flaky and was not retried.
 
+### FR-063 — PowerShell direct-after-foreach pipeline rejected a metadata inventory
+
+- **first-seen:** 2026-08-15
+- **status:** `promoted`
+- **severity:** `LOW (read-only inventory authoring interruption)`
+- **symptom:** A read-only file-metadata helper piped directly after a valid `foreach` form and
+  stopped with `An empty pipe element is not allowed` before the inventory completed.
+- **impact:** The bounded inventory had to be reissued, without a mutation or evidence gap.
+- **workaround:** Collect `foreach` output into an intermediate array before piping it to the
+  metadata helper; the corrected bounded inventory completes without mutation.
+- **occurrences:** 2 independent occurrences — 2026-08-15 Product PR #258 final review and Product
+  PR #260 review.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe inventory-helper boundary.
+- **promotion:** Promoted at the second occurrence: Product #222 owns a checked inventory helper
+  that captures loop output before piping while preserving bounded fail-closed behavior. Do not
+  conflate this valid-foreach pipeline predicate with FR-048's invalid-loop-form predicate.
+
 ### FR-064 — tracked-text guard self-triggered on ledger evidence
 
 - **first-seen:** 2026-08-15
@@ -2099,23 +2105,6 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Sort-Object`/`-Join` reviewer count event does not match FR-074's native symptom/workaround.
   It is not counted here and is canonical under FR-078.
 
-### FR-078 — PowerShell cmdlet pipeline placed `-Join` as a `Sort-Object` parameter
-
-- **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
-- **severity:** `LOW (cmdlet-pipeline evidence friction)`
-- **symptom:** The final reviewer placed PowerShell `-Join` as if it were a `Sort-Object`
-  parameter, so the read-only unique-ID count stopped.
-- **impact:** Review proof was delayed, without changing the repository or GitHub state.
-- **workaround:** Capture or parenthesize sorted pipeline output before applying `-join`; the
-  bounded retry passed.
-- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953)
-  and [PR #270 review thread `PRRT_kwDOTrfxUM6ZiQes`](https://github.com/Chris0Jeky/developer-lens/pull/270).
-- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
-  bounded cmdlet-pipeline evidence contract.
-- **promotion:** One occurrence remains task debt. Keep distinct from FR-074's native arguments
-  and FR-054's parser failures; no helper is implemented.
-
 ### FR-075 — Markdown backticks terminated a JavaScript command template
 
 - **first-seen:** 2026-08-15
@@ -2167,6 +2156,23 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One occurrence remains task debt. Keep distinct from moved-HEAD ownership, path
   normalization, and unsupported fields; do not create a reference-validation framework.
 
+### FR-078 — PowerShell cmdlet pipeline placed `-Join` as a `Sort-Object` parameter
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (cmdlet-pipeline evidence friction)`
+- **symptom:** The final reviewer placed PowerShell `-Join` as if it were a `Sort-Object`
+  parameter, so the read-only unique-ID count stopped.
+- **impact:** Review proof was delayed, without changing the repository or GitHub state.
+- **workaround:** Capture or parenthesize sorted pipeline output before applying `-join`; the
+  bounded retry passed.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953)
+  and [PR #270 review thread `PRRT_kwDOTrfxUM6ZiQes`](https://github.com/Chris0Jeky/developer-lens/pull/270).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded cmdlet-pipeline evidence contract.
+- **promotion:** One occurrence remains task debt. Keep distinct from FR-074's native arguments
+  and FR-054's parser failures; no helper is implemented.
+
 ### FR-079 — report wrapper stopped on empty detached-branch output
 
 - **first-seen:** 2026-08-15
@@ -2184,3 +2190,70 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   reporting/command boundary.
 - **promotion:** One occurrence remains task debt; do not promote. This is distinct from FR-030's
   timestamp nulls and FR-026's object expansion.
+
+### FR-080 — PowerShell/.NET runtime lacked `[Convert]::ToHexString` for SHA-256 proof
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only hash-proof compatibility/command-boundary)`
+- **symptom:** `[Convert]::ToHexString(...)` was unavailable in the active PowerShell/.NET
+  runtime during the read-only per-block SHA-256 proof. The exact error was:
+  `Method invocation failed because [System.Convert] does not contain a method named
+  'ToHexString'.`
+- **impact:** The bounded hash proof was delayed, without changing the repository or GitHub state.
+- **workaround:** Use a compatible per-byte `ToString('x2')` plus join formatter; the proof
+  succeeded.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304506947](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304506947).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe evidence-command contract.
+- **promotion:** One occurrence remains task debt; do not promote or add a helper. Keep distinct
+  from other formatting and PowerShell entries.
+
+### FR-081 — unbraced native Git diff range lost the intended revision boundary
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only revision/command-boundary friction)`
+- **symptom:** An unbraced `$base..HEAD` in native `git diff` arguments did not form the
+  intended revision range, and Git printed usage.
+- **impact:** The bounded read-only diff proof was delayed, without changing the repository or
+  GitHub state.
+- **workaround:** Build one scalar range as `"${base}..HEAD"` before passing it to native Git.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304526664](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304526664).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe revision/evidence-command boundary.
+- **promotion:** One occurrence remains task debt; do not promote or add a framework.
+
+### FR-082 — terminal block comparator counted its trailing separator as content
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only proof-predicate friction)`
+- **symptom:** A block comparator treated a terminal entry's trailing separator CR/LF as content,
+  so appending FR-080 falsely reported FR-079 changed.
+- **impact:** The bounded raw-block comparison proof was delayed, without changing the repository
+  or GitHub state.
+- **workaround:** Normalize only the boundary trailing CR/LF after extraction before comparing
+  block content; preserve all internal content and separators.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304526664](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304526664).
+- **task:** [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) owns the
+  bounded proof-predicate contract.
+- **promotion:** One occurrence remains task debt; do not promote or add a framework.
+
+### FR-083 — inline PowerShell replacement was parsed as a second method argument
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (PowerShell expression/method-argument boundary proof reliability)`
+- **symptom:** Inline `[Text.Encoding]::UTF8.GetBytes((Boundary $s) -replace "\r\n","\n")`
+  raised `Cannot find an overload for "GetBytes" and the argument count: "2"` because
+  PowerShell parsed the comma-separated `-replace` operands as separate method arguments.
+- **impact:** The bounded read-only proof stopped and was delayed, without changing the repository
+  or GitHub state.
+- **workaround:** Assign the replacement output to a scalar before calling `GetBytes`; the
+  corrected proof succeeded.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304533668](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304533668).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe expression/method-argument evidence boundary.
+- **promotion:** One occurrence remains task debt; do not promote or add a framework. Keep distinct
+  from FR-081's native Git range, FR-080's missing API, and other PowerShell formatting entries.

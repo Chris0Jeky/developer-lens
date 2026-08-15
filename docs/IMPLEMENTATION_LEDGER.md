@@ -4918,19 +4918,24 @@ lane.
 
 **Changed.** Reconciled the independent browser/preflight evidence from unpushed source
 `b5f9b5e9c484315ce102d10c8b55180bcee9ac99` onto the PR #271 base
-`d45887280a808f7a7f847cd3e38d63e419be68fb`. The exact two-path scope is
+`d45887280a808f7a7f847cd3e38d63e419be68fb`, then integrated the PR #274 merge base
+`7ba94134626ca0264e3f605b67dff9e75464e37a`. The exact two-path scope is
 `docs/agent-system/FRICTION_LOG.md` and `docs/IMPLEMENTATION_LEDGER.md`. The base's FR-001,
-FR-044 selector-failure fourth note, and FR-079 detached-branch wrapper are preserved. Canonical
-FR-016, FR-022, and FR-024 retain their independent recurrences; FR-044 now records the separate
-empty-inventory fifth occurrence; and the no-match batch event consolidates into FR-060's second,
-promoted occurrence. The superseded
+FR-044 selector-failure fourth note, FR-079 detached-branch wrapper, and unrelated upstream
+FR-080 through FR-083 entries are preserved. FR-001 now records the ninth guarded base-movement
+event. Canonical FR-016, FR-022, and FR-024 retain their independent recurrences; FR-044 now
+records the separate empty-inventory fifth occurrence; and the no-match batch event consolidates
+into FR-060's second, promoted occurrence. The obsolete duplicate no-match FR-080 claim is not
+carried forward; upstream FR-080 is the distinct hash-compatibility event. The superseded
 CURRENT_STATE edit from the source branch is not claimed as landed.
 
 **Verified.** The reconciliation began from PR #271 base
 `d45887280a808f7a7f847cd3e38d63e419be68fb` with a clean tracked tree; the source branch was read
-only. Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. The required context,
-whitespace, committed-range, uniqueness, count, URL, scope, and FR-079 physical-EOF assertions are
-recorded after this append.
+only. Guarded fetch observed PR #274 main movement before external mutation; explicit integration
+reached final base `7ba94134626ca0264e3f605b67dff9e75464e37a`. Fresh-worktree `npm.cmd ci`
+completed with 0 vulnerabilities. The required context, whitespace, committed-range, uniqueness,
+count, URL, scope, upstream-content, and FR-083 physical-EOF assertions are recorded after this
+append.
 
 **NOT verified / residual risk.** This is historical evidence reconciliation only: no browser,
 navigation, alternate-browser fallback, server, protected-data access, visual proof, release,
@@ -4942,7 +4947,9 @@ release boundaries.
 line-ending policy/verification debt. FR-022 retains the selected-but-unimplemented structured
 query contract. FR-024 retains the heading-bounded edit/diff rule. FR-044 retains the promoted
 browser-preflight rule. FR-060 now records the no-match batch as its second, promoted occurrence;
-it remains distinct from the base's FR-079 wrapper event.
+it remains distinct from the base's FR-079 wrapper event. FR-001=9 records the guarded moved-base
+stop and required integration/reproof without work loss, ownership inference, or q-8 reopening.
+The unrelated upstream FR-080 through FR-083 entries remain intact.
 
 **Docs-state sync.** This ledger records the reconciliation without modifying
 `CURRENT_STATE.md` or `HUMAN_TODO.md`; PR #271 owns the newer current-state snapshot.
@@ -4951,5 +4958,6 @@ it remains distinct from the base's FR-079 wrapper event.
 
 **Exact resume.** Future Product #200 governor/friction maintainers should refresh live refs and
 PR/review state before any action, preserve FR-044's independent observations, FR-060's no-match
-consolidation, and the base's FR-079 wrapper separation, and treat browser proof, release, and
-owner gates as outside this reconciliation.
+consolidation, the base's FR-079 wrapper separation, and upstream FR-080 through FR-083 with
+FR-083 at physical EOF, and treat browser proof, release, and owner gates as outside this
+reconciliation.
