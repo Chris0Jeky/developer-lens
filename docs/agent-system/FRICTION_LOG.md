@@ -166,7 +166,7 @@ Rules that bind entries:
 ### FR-004 — pushes from inside a worktree are refused by the floor guard
 
 - **first-seen:** 2026-08-08
-- **status:** `promoted`
+- **status:** `workaround-documented`
 - **symptom:** A `git push` issued from inside a registered worktree is denied by the repository
   floor guard, even for an ordinary scoped feature branch.
 - **impact:** A worktree lane that is otherwise finished cannot publish its own branch, which can
@@ -1228,7 +1228,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-044 — mandated browser-client discovery found no available browser
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (visual-QA tooling availability)`
 - **symptom:** The Product #200 visual-QA executor initialized the mandated browser-client surface
   and followed bootstrap troubleshooting, but browser discovery returned no available browsers.
