@@ -664,7 +664,7 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 8 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 11 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
   inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
@@ -704,6 +704,12 @@ Rules that bind entries:
   environment attempt both lost native-command quoting before execution, then stopped. Production
   test and static-diff composition supplied decisive evidence without mutation. The two stopped
   attempts are one review occurrence, raising the canonical total to eight.
+
+  **2026-08-15 Product PR #263 review notes:** Three independent pre-collection nested-quote losses
+  occurred without mutation: a Lab final-state thread query and two GraphQL query-document attempts,
+  including quoting the whole form field, each produced malformed `-lens`. Typed owner, name, and
+  number variables supplied with `-F` completed the bounded query. These ninth through eleventh
+  occurrences retain FR-022's promotion and Product #222 ownership.
 
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
@@ -792,7 +798,7 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 7 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+- **occurrences:** 8 independent occurrences — 2026-08-10 during the Product #200 reconciliation
   and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
   resolution, recorded by
   [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
@@ -833,6 +839,10 @@ Rules that bind entries:
   as a hash literal before Git executed. Passing the revision through a quoted explicit scalar
   completed the bounded read. This seventh occurrence retains FR-026's promoted explicit-scalar
   native-boundary mechanism and Product #222 ownership.
+
+  **2026-08-15 Product PR #263 review note:** An unquoted revision-range composition produced Git
+  usage before the range was read. Explicit scalar revisions completed the bounded diff. This eighth
+  occurrence retains FR-026's promoted explicit-scalar boundary and Product #222 ownership.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
@@ -1345,7 +1355,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
   as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
   the focused test plus the hosted rerun.
-- **occurrences:** 7 independent occurrences — Product issue #222 comment `5300160711`, the
+- **occurrences:** 8 independent occurrences — Product issue #222 comment `5300160711`, the
   2026-08-15 PR #251 post-merge discussion-timeline transport truncation recorded by
   [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636),
   the 2026-08-15 combined memory/skill read transport truncation, and the 2026-08-15 PR #256
@@ -1368,6 +1378,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   documentation diff was transport-truncated before review was complete. Bounded per-file diffs
   were required for the textual review; this recurrence preserves FR-049's completeness-aware
   promotion and Product #222 ownership.
+
+  **2026-08-15 Product PR #263 review note:** A fresh reviewer tool call transport-truncated the
+  same combined four-file diff before review was complete. Bounded per-file reads completed the
+  review; this independent call retains FR-049's completeness-aware promotion and Product #222
+  ownership.
 
   **2026-08-15 recurrence note:** A combined memory/skill read transport-truncated. The combined
   response was not treated as complete; bounded individual reads recovered only the exact policy
