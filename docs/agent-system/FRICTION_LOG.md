@@ -1282,7 +1282,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `MEDIUM (local full-gate limitation)`
 - **symptom:** On a documentation-only Product PR #251 fix round, `npm.cmd run check` reached its
   full Vitest stage but failed broadly in unrelated storage/activation suites with
@@ -1294,12 +1294,18 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Do not change code or tests in this documentation fix round. Retain the passing
   focused state contract and context proofs, record the exact local signature, and rely on the
   required hosted rerun for the corrected head.
-- **occurrences:** 1 diagnosed local-gate episode — 2026-08-15 during Product PR #251 fix round.
+- **occurrences:** 2 diagnosed local-gate episodes — 2026-08-15 during Product PR #251 fix round
+  and the Product #234 tracked-text guard implementation.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the release
-  proof boundary; Product PR #251 is the bounded documentation correction.
-- **promotion:** One environment-specific episode. If it recurs on an unchanged docs-only range,
-  open a bounded Windows storage-test compatibility task with a reproducer; do not weaken the full
-  gate or label it flaky.
+  proof boundary; [Product #234](https://github.com/Chris0Jeky/developer-lens/issues/234) supplies
+  the second recurrence evidence.
+- **promotion:** Second occurrence: Product #200 needs a bounded Windows storage-test compatibility
+  follow-up with a reproducer. Do not weaken the full gate or label it flaky.
+
+  **2026-08-15 recurrence note:** After a fresh locked dependency install, the Product #234 full
+  gate again failed in unrelated storage-v3 artifact-root and dependent activation suites before
+  build. The focused context validator and context verification both passed; this slice does not
+  alter storage or activation behavior.
 
 ### FR-051 — `gh pr checks` rejected an unsupported JSON field before a snapshot read
 
@@ -1342,7 +1348,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-053 — estate-registry absence left no Developer Lens fallback route
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (cold-start routing coverage)`
 - **symptom:** A review-hop lookup found the canonical estate registry absent and its fallback REPOS
   map missing the Developer Lens row.
@@ -1350,13 +1356,19 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository's local canon rather than treating the absent external surface as current authority.
 - **workaround:** Re-read the local `AGENTS.md`, `CLAUDE.md`, tier declaration, and live Git state;
   retain the missing external registry/fallback result as explicit coverage, not a safe default.
-- **occurrences:** 1 independent occurrence — 2026-08-15 PR #251 review hop, recorded by
-  [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735).
+- **occurrences:** 2 independent occurrences — 2026-08-15 PR #251 review hop, recorded by
+  [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735),
+  and the Product #234 tracked-text guard cold start.
 - **task:** [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
   owns deployed registry/fallback routing; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
   records this bounded classification.
-- **promotion:** One absence/fallback predicate. Do not conflate it with FR-031's stale deployed-row
-  predicate; if it recurs, #133 must select a checked fallback-presence contract.
+- **promotion:** Second occurrence: [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
+  must select a checked fallback-presence contract. Do not conflate this absence predicate with
+  FR-031's stale deployed-row predicate.
+
+  **2026-08-15 recurrence note:** The Product #234 implementation cold start again found the
+  canonical registry unavailable, so the local canon and pinned Git state supplied the bounded
+  fallback. No registry change is in this repository's scope.
 
 ### FR-054 — unspecified PowerShell parse failure interrupted a read-only audit
 

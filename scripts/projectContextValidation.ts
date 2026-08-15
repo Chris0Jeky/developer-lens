@@ -61,6 +61,51 @@ export function resolveRepositoryLinkTarget(
   return { kind: 'local', target }
 }
 
+const trackedTextExcludedPrefixes = [
+  '.developer-lens/',
+  '.developer-lens-synthetic/',
+  '.agent-harness/runtime/',
+  '.claude/worktrees/',
+  'coverage/',
+  'dist/',
+  'dist-ssr/',
+  'node_modules/',
+  'public/data/',
+] as const
+
+const windowsUserHomePathPattern = /[a-z]:[\\/]users[\\/][^\\/\r\n]+/i
+
+/** Keep protected and generated paths out of a tracked-text read before it is attempted. */
+export function isTrackedTextPathEligible(path: string): boolean {
+  const normalized = path.replaceAll('\\', '/')
+  return !trackedTextExcludedPrefixes.some((prefix) => normalized.toLowerCase().startsWith(prefix))
+}
+
+/** Detect a Windows user-home prefix without retaining or reporting its private segment. */
+export function containsWindowsUserHomePath(contents: string): boolean {
+  return windowsUserHomePathPattern.test(contents)
+}
+
+/**
+ * Validate only eligible Git-tracked repository paths. The injected reader makes the exclusion
+ * boundary directly testable and guarantees excluded paths are skipped before any file read.
+ */
+export function validateTrackedTextForWindowsUserHomePaths(
+  paths: readonly string[],
+  readText: (path: string) => string,
+): string[] {
+  const errors: string[] = []
+  for (const path of paths) {
+    if (!isTrackedTextPathEligible(path)) {
+      continue
+    }
+    if (containsWindowsUserHomePath(readText(path))) {
+      errors.push(`${path}: contains a Windows user-home path`)
+    }
+  }
+  return errors
+}
+
 function parseScalar(value: string): { value?: string; error?: string } {
   if (value.startsWith('"')) {
     if (!value.endsWith('"')) {

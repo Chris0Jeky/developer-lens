@@ -7,6 +7,7 @@ import {
   parsePromptLibrary,
   parseSkillFrontmatter,
   resolveRepositoryLinkTarget,
+  validateTrackedTextForWindowsUserHomePaths,
   validateAgentFrictionParity,
   validateContinuousWorkProtocol,
   validateContinuationSkillParity,
@@ -335,6 +336,20 @@ const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md', '.cla
   onlyFiles: true,
   ignore: ['**/node_modules/**', '.claude/worktrees/**'],
 })
+
+try {
+  const trackedPaths = execFileSync('git', ['ls-files', '-z'], {
+    cwd: root,
+    encoding: 'utf8',
+  })
+    .split('\0')
+    .filter((path) => path.length > 0)
+  for (const error of validateTrackedTextForWindowsUserHomePaths(trackedPaths, read)) {
+    failures.push(`tracked text: ${error}`)
+  }
+} catch {
+  // Not a git checkout (e.g. exported archive): the tracked-text guard cannot apply.
+}
 
 for (const path of markdownFiles) {
   const contents = read(path)

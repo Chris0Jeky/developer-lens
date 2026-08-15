@@ -10,7 +10,9 @@ import {
   PRODUCT_CLAUDE_ROUTING_TOKENS,
   RETIRED_PROMPT_SENTINEL,
   extractMarkdownLinkTargets,
+  containsWindowsUserHomePath,
   findBareHumanRefs,
+  isTrackedTextPathEligible,
   normalizeSharedText,
   parsePromptLibrary,
   parseSkillFrontmatter,
@@ -24,6 +26,7 @@ import {
   validatePromptParityManifest,
   validatePromptSource,
   validateTierDeclaration,
+  validateTrackedTextForWindowsUserHomePaths,
 } from './projectContextValidation.js'
 
 describe('project context validation', () => {
@@ -67,6 +70,47 @@ describe('project context validation', () => {
       kind: 'local',
       target: resolve(root, 'docs', 'part#1.md'),
     })
+  })
+
+  it('rejects Windows user-home paths in tracked text without exposing the matched literal', () => {
+    const forwardHome = ['C:', 'Users', 'FixtureUser', 'workspace'].join('/')
+    const backwardHome = ['c:', 'USERS', 'FixtureUser', 'workspace'].join('\\')
+    expect(containsWindowsUserHomePath(`source: ${forwardHome}`)).toBe(true)
+    expect(containsWindowsUserHomePath(`source: ${backwardHome}`)).toBe(true)
+    expect(containsWindowsUserHomePath('source: C:/Synthetic/FixtureUser/workspace')).toBe(false)
+
+    const errors = validateTrackedTextForWindowsUserHomePaths(
+      ['docs/guide.md'],
+      () => `source: ${forwardHome}`,
+    )
+    expect(errors).toEqual(['docs/guide.md: contains a Windows user-home path'])
+    expect(errors.join('\n')).not.toContain('FixtureUser')
+  })
+
+  it('excludes protected and generated tracked paths before a text read', () => {
+    const reads: string[] = []
+    const errors = validateTrackedTextForWindowsUserHomePaths(
+      [
+        '.developer-lens/private.md',
+        '.developer-lens-synthetic/fixture.md',
+        '.agent-harness/runtime/cache.md',
+        '.claude/worktrees/temporary.md',
+        'coverage/report.md',
+        'dist/index.html',
+        'dist-ssr/index.js',
+        'node_modules/package/readme.md',
+        'public/data/dashboard-fixture.json',
+        'docs/guide.md',
+      ],
+      (path) => {
+        reads.push(path)
+        return 'C:/Synthetic/FixtureUser/workspace'
+      },
+    )
+
+    expect(errors).toEqual([])
+    expect(reads).toEqual(['docs/guide.md'])
+    expect(isTrackedTextPathEligible('PUBLIC\\DATA\\dashboard.json')).toBe(false)
   })
 
   it('requires complete, closed skill frontmatter with only supported keys', () => {
