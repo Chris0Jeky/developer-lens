@@ -50,6 +50,11 @@ Rules that bind entries:
    independent occurrence, using the cheapest layer that actually enforces the fix: session memory
    → canon prose → agent/skill definition → executable check → CI → structural change. Prune the
    superseded copy in the same commit.
+5. **A recurrence updates its canonical mechanism.** When an observed event matches an existing
+   entry's symptom and workaround, update that entry's permitted `occurrences`, `task`, or
+   `promotion` fields and add a dated note. Preserve any superseded entry as an explicit
+   consolidated pointer with its immutable event/ID; do not create a fresh single-occurrence
+   mechanism that hides a promotion trigger.
 
 ## Entries
 
@@ -353,11 +358,12 @@ Rules that bind entries:
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 5 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
+- **occurrences:** 7 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
   (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite),
   2026-08-09 (the release-state/worktree-preservation documentation worktree), and 2026-08-09
   (the #200 state-reconciliation worktree), plus 2026-08-10 (the PR #238/#237/Lab #62 factual
-  reconciliation worktree).
+  reconciliation worktree), plus 2026-08-14 (the immutable FR-037 fresh-reconciliation-worktree
+  event), plus 2026-08-15 (the Product #246 verification worktree missing `fast-glob`).
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release
   coordination).
 - **promotion:** Promoted at the second independent occurrence to the `CLAUDE.md` run-and-prove
@@ -376,6 +382,15 @@ Rules that bind entries:
   read-only status command initially masked that subcommand's nonzero exit, so the retry uses an
   explicit fail-fast boundary, performs the already-selected `npm ci` bootstrap, and runs the
   verifier alone. No generated dependency content is inspected.
+
+  **2026-08-15 consolidation note:** FR-037's 2026-08-14 event matches this already-promoted
+  fresh-worktree bootstrap predicate, raising the canonical total from five to six. FR-037 remains
+  as an immutable-ID consolidated pointer; no second bootstrap mechanism or enforcement layer is
+  created.
+
+  **2026-08-15 recurrence note:** Product #246's required context verifier again stopped before its
+  first check because the fresh worktree lacked `fast-glob`. The canonical lockfile-pinned `npm ci`
+  bootstrap is rerun before proof; no new mechanism or enforcement layer is warranted.
 
 ### FR-013 — full product gate exceeded a compound shell timeout
 
@@ -415,9 +430,9 @@ Rules that bind entries:
   rendering is mistaken for repository bytes; the failed patch itself left the worktree unchanged.
 - **workaround:** Re-read the tracked file with `Get-Content -Encoding utf8`, then use bounded,
   heading-anchored patch contexts and inspect the exact diff immediately.
-- **occurrences:** 3 independent occurrences — 2026-08-09 during PR #228's latest-base state sync
-  and 2026-08-09 during the later release-state preservation slice; 2026-08-15 during this
-  issue #200 resume-artifact repair.
+- **occurrences:** 4 independent occurrences — 2026-08-09 during PR #228's latest-base state sync
+  and 2026-08-09 during the later release-state preservation slice; 2026-08-14 (the immutable
+  FR-036 recurrence); 2026-08-15 during this issue #200 resume-artifact repair.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
   coordination and factual cross-repository resume artifact.
 - **promotion:** Promoted at the second occurrence to the PowerShell tracked-Markdown read path:
@@ -436,6 +451,11 @@ Rules that bind entries:
   incorrectly; copying that rendered context caused an atomic patch mismatch before any change.
   An explicit UTF-8 reread supplied the successful bounded patch. This reuses the promoted rule;
   Product #222 remains the durable command-boundary task.
+
+  **2026-08-15 consolidation note:** FR-036's 2026-08-14 immutable event is this same
+  default-decoding/patch-context mechanism. The canonical total is four: the two 2026-08-09 events,
+  the FR-036 recurrence, and the 2026-08-15 event. The promoted explicit-UTF-8 rule remains the
+  selected layer; the duplicate ID is retained only as a consolidated pointer.
 
 ### FR-015 — retained merged #200 worktree collided with the new lane name
 
@@ -471,13 +491,17 @@ Rules that bind entries:
   normalization. The intended index remains LF and `git diff --check` is clean.
 - **workaround:** Stage only the named files, inspect the cached diff, and run
   `git diff --cached --check`; do not normalize unrelated lines or files in this slice.
-- **occurrences:** 1 independent occurrence — the four-file #200 documentation reconciliation on
-  2026-08-09 shares one checkout/config cause.
+- **occurrences:** 2 independent occurrences — the four-file #200 documentation reconciliation on
+  2026-08-09 shares one checkout/config cause; the Product #246 one-file consolidation emitted the
+  same warning on 2026-08-15.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the bounded
   pre-QA documentation reconciliation.
-- **promotion:** Deliberately NOT promoted after one occurrence. If a later independent slice
-  repeats the warning, select an explicit repository line-ending policy at the cheapest enforcing
-  layer rather than relying on per-session interpretation.
+- **promotion:** At the second independent occurrence, Product #222 owns the cheapest checked
+  repository line-ending policy/verification decision. Until it exists, stage only the named file,
+  inspect the cached diff, and run `git diff --cached --check`; do not normalize unrelated content.
+
+  **2026-08-15 recurrence note:** The one-file #246 scan emitted the same LF/CRLF warning. This
+  selects the existing #222 enforcement debt without a bulk line-ending rewrite in this slice.
 
 ### FR-017 — MCP hygiene cleanup needed a canonical-location retry and bounded second pass
 
@@ -627,10 +651,11 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 4 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 6 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
-  inspection attempt.
+  inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
+  argument events).
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns structured/JSON-input
   Windows-safe CLI helpers for recurring evidence queries.
 - **promotion:** The cheapest enforcing layer is the Windows-safe structured-query helper already
@@ -650,6 +675,11 @@ Rules that bind entries:
   occurrences keep the path-set-order, UTC-switch, and patch-context predicates separate while
   selecting #222's structured-query helper as the durable enforcing layer.
 
+  **2026-08-15 consolidation note:** FR-039's 2026-08-14 malformed-field episode and 2026-08-15
+  inline-query failure match this quoted/native-argument mechanism and use the same JSON-stdin
+  remedy. They raise the canonical total from four to six. FR-026 remains a related explicit-scalar
+  serialization boundary, but its object-expansion predicate did not occur in these two events.
+
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
 - **first-seen:** 2026-08-09
@@ -661,13 +691,19 @@ Rules that bind entries:
   to an otherwise reproducible GitHub state snapshot.
 - **workaround:** Use `(Get-Date).ToUniversalTime().ToString('o')`, which succeeded on the same
   shell without changing repository or GitHub state.
-- **occurrences:** 1 independent occurrence — 2026-08-09 during the PR232 final review-thread
-  snapshot.
+- **occurrences:** 3 independent occurrences — 2026-08-09 during the PR232 final review-thread
+  snapshot, plus 2026-08-13 and 2026-08-14 (the immutable FR-032 Windows PowerShell UTC-switch
+  recurrences).
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   Windows-safe evidence helper and its explicit timestamp normalization.
 - **promotion:** Deliberately NOT promoted after one occurrence. Retain the compatible expression
-  until #222 proves the helper; a second independent occurrence should move UTC normalization into
-  that helper's tested contract.
+  until #222 proves the helper. The two FR-032 recurrences select that same typed timestamp
+  normalization as Product #222's checked helper contract; no parallel PowerShell framework is
+  warranted.
+
+  **2026-08-15 consolidation note:** FR-032's immutable Product events contain the same rejected
+  `Get-Date -AsUTC` predicate and compatible expression. Its ID remains a consolidated pointer;
+  the canonical total is three.
 
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
@@ -868,12 +904,19 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Use `npm.cmd` for repository scripts, `(Get-Date).ToUniversalTime().ToString('o')`
   for UTC timestamps, and PowerShell-compatible conditional flow rather than `||`. Lab FR-069
   records the corresponding Lab-side observation; this entry does not duplicate its Lab details.
-- **occurrences:** 2 Product-session command-boundary occurrences — initial evidence on 2026-08-13
-  and the PowerShell 5.1 UTC/`||` repeat during the 2026-08-14 Lab review reconciliation.
+- **occurrences:** 2 immutable Product-session command-boundary events — initial evidence on
+  2026-08-13 and the PowerShell 5.1 UTC/`||` repeat during the 2026-08-14 Lab review
+  reconciliation. Consolidated pointer: their rejected `Get-Date -AsUTC` predicate is counted in
+  canonical FR-023; the historical `npm.cmd` and `||` context remains here without a second UTC
+  mechanism.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe
-  command-boundary helpers.
-- **promotion:** The repeated compatibility evidence retains Product #222 as the selected shared
-  enforcement layer; do not create a second framework for the same PowerShell boundary.
+  command-boundary helpers; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
+  records this consolidation.
+- **promotion:** Consolidated pointer to FR-023's typed UTC-normalization contract under Product
+  #222. Do not create a second PowerShell UTC framework.
+
+  **2026-08-15 consolidation note:** This immutable ID preserves the two observed sessions. Its
+  duplicate UTC mechanism is accounted for by FR-023, whose occurrence total now includes both.
 
 ### FR-033 — GitHub label mutation returned a timeout after succeeding remotely
 
@@ -948,17 +991,18 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   file change was applied by the rejected patches.
 - **workaround:** Re-read the target with `Get-Content -Encoding utf8`, then use the exact
   heading-bounded patch and inspect the resulting diff.
-- **occurrences:** 1 independent occurrence — 2026-08-14. Prior related mechanisms: promoted
-  FR-014 (implicit PowerShell decoding corrupting patch context), FR-029 (review-content
-  decoding), and FR-027 (stale patch context). This recurrence of Windows default-decoding patch
-  corruption is evidence the FR-014 promoted rule was not applied in this hop, not a new
-  mechanism.
+- **occurrences:** 1 immutable occurrence — 2026-08-14. Consolidated pointer: this
+  default-decoding patch-context mechanism is counted in promoted FR-014; FR-029 (review-content
+  decoding) and FR-027 (stale patch context) remain related but distinct.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe
   text/evidence helper hardening;
   [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) owns the
   occurrence-consolidation sweep for this recurrence cluster.
-- **promotion:** Reuse #222's selected explicit UTF-8 decoding contract rather than create a second
-  Markdown tool; exact UTF-8 reads are required for future Windows reconciliation patches.
+- **promotion:** Consolidated pointer to FR-014's promoted explicit UTF-8 decoding rule and Product
+  #222's selected command-boundary hardening. Do not create a second Markdown tool.
+
+  **2026-08-15 consolidation note:** The event and ID remain immutable. FR-014 now counts this
+  recurrence, so this entry no longer carries a separate mechanism total.
 
 ### FR-037 — fresh reconciliation worktree lacked installed Node dependencies
 
@@ -971,11 +1015,16 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   local dependency bootstrap completes; no repository or GitHub state changed.
 - **workaround:** Run the canon-required `npm ci` in the isolated worktree, then rerun the exact
   verifier and diff checks. `npm.cmd` remains required by FR-032's execution-policy workaround.
-- **occurrences:** 1 independent occurrence — 2026-08-14.
+- **occurrences:** 1 immutable occurrence — 2026-08-14. Consolidated pointer: this fresh-worktree
+  dependency-bootstrap predicate is counted in promoted FR-012.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) retains this
-  release-governor worktree proof context.
-- **promotion:** The canon already declares `npm ci` before proving in a fresh worktree; no new
-  enforcement is selected after one setup omission.
+  release-governor worktree proof context; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
+  records this consolidation.
+- **promotion:** Consolidated pointer to FR-012's canon-required `npm ci` preamble. No new
+  enforcement is selected.
+
+  **2026-08-15 consolidation note:** The event and ID remain immutable; FR-012 now counts this
+  sixth occurrence.
 
 ### FR-038 — folded YAML state text required single-quote escaping
 
@@ -996,7 +1045,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-039 — malformed PowerShell GraphQL field forms failed before read-only review evidence
 
 - **first-seen:** 2026-08-14
-- **status:** `promoted`
+- **status:** `workaround-documented`
 - **severity:** `LOW (read-only GitHub evidence friction)`
 - **symptom:** Two malformed PowerShell `gh api graphql` field forms failed before the review query
   could execute.
@@ -1004,15 +1053,15 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   state.
 - **workaround:** Serialize GraphQL variables as JSON through stdin; the equivalent read succeeded
   without mutation.
-- **occurrences:** 2 independent occurrences — one episode comprising two malformed field forms on
-  2026-08-14; one inline-query argument failure on 2026-08-15, recorded by
+- **occurrences:** 2 immutable independent occurrences — one episode comprising two malformed field
+  forms on 2026-08-14; one inline-query argument failure on 2026-08-15, recorded by
   [Product issue #222 comment 5299863958](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299863958).
+  Consolidated pointer: both are counted in canonical FR-022's quoted/native-argument mechanism.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe structured GitHub command boundary.
-- **promotion:** Promoted at the second independent occurrence to Product #222's structured
-  GraphQL-variable/JSON-stdin checked boundary. Future governor GraphQL calls keep repository names
-  and numeric IDs in typed variables rather than interpolated query text; no new structure is
-  selected.
+- **promotion:** Consolidated pointer to FR-022's Product #222 structured-query/JSON-stdin boundary.
+  FR-026 remains related only where its explicit-scalar object-expansion predicate is present; no
+  new GraphQL mechanism or structure is selected.
 
   **2026-08-15 recurrence note:** An inline GraphQL query with escaped repository strings was
   distorted at the PowerShell/native argument boundary; GraphQL received `developer-lens` as an
@@ -1020,6 +1069,9 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   name, and integer PR number into structured GraphQL variables and passed the query as one scalar,
   returning an empty, complete review-thread list. The failed call mutated neither GitHub nor the
   repository.
+
+  **2026-08-15 consolidation note:** This immutable ID preserves the two observed GraphQL events.
+  FR-022's total now includes both; this pointer avoids hiding the existing canonical promotion.
 
 ### FR-040 — concurrent duplicate Lane-P merge invalidated old-base eligibility evidence
 
@@ -1169,11 +1221,17 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   mismatch.
 - **workaround:** Normalize both resolved paths before comparing them, then separately prove branch,
   HEAD, and porcelain status.
-- **occurrences:** 1 independent occurrence — 2026-08-15 during Product #200 resume repair.
+- **occurrences:** 2 independent occurrences — 2026-08-15 during Product #200 resume repair and
+  during Product #246's pinned-worktree guard.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe evidence-helper boundary.
-- **promotion:** One occurrence; retain explicit normalization in the guard preamble. A second
-  independent recurrence should move this comparison into #222's checked helper.
+- **promotion:** At the second occurrence, Product #222 owns the cheapest checked normalized-path
+  guard helper. Until it exists, retain explicit normalization before comparing top-level paths and
+  separately prove branch, HEAD, and porcelain status.
+
+  **2026-08-15 recurrence note:** Git again rendered the same top-level path with forward slashes,
+  while the guard's literal used Windows separators. No state mismatch existed; a normalized
+  comparison is required before treating the guard as failed.
 
 ### FR-048 — PowerShell loop syntax typo stopped a read-only state inventory
 
@@ -1205,12 +1263,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
   as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
   the focused test plus the hosted rerun.
-- **occurrences:** 1 independent occurrence — Product issue #222 comment `5300160711` on 2026-08-15.
-- **task:** [Product issue #222 comment 5300160711](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300160711)
-  owns bounded failed-step retrieval without losing decisive evidence.
-- **promotion:** One transport occurrence; no new helper is selected. On recurrence, #222 should
-  choose the cheapest bounded failed-step retrieval that preserves completeness status rather than
-  retrying or filtering a truncated response.
+- **occurrences:** 2 independent occurrences — Product issue #222 comment `5300160711` and the
+  2026-08-15 PR #251 post-merge discussion-timeline transport truncation recorded by
+  [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded
+  retrieval that retains completeness status; [Product #252](https://github.com/Chris0Jeky/developer-lens/issues/252)
+  records this mandatory evidence fix.
+- **promotion:** At the second occurrence, #222 owns a completeness-aware bounded retrieval
+  contract: record a surface as complete or transport-truncated, preserve only decisive observed
+  facts, and refuse totals not completely collected. Do not retry, filter, or recollect merely to
+  fill a truncated response.
+
+  **2026-08-15 recurrence note:** The required PR #251 delayed sweep at T+10m07 proved the exact
+  merge SHA, 8/8 resolved threads, zero late Codex findings, and zero closing refs, but its merged
+  discussion timeline was transport-truncated. The collector correctly refused to assert a total
+  comment count and did not retry, filter, or recollect; the truncation changes no PR #251 verdict.
 
 ### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
 
@@ -1233,3 +1300,118 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One environment-specific episode. If it recurs on an unchanged docs-only range,
   open a bounded Windows storage-test compatibility task with a reproducer; do not weaken the full
   gate or label it flaky.
+
+### FR-051 — `gh pr checks` rejected an unsupported JSON field before a snapshot read
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only CLI query-shape friction)`
+- **symptom:** A bounded `gh pr checks --json` query requested unsupported field `conclusion` and
+  failed before returning check evidence.
+- **impact:** A mechanical merge snapshot can pause before collecting its stated fields, without
+  changing GitHub or repository state.
+- **workaround:** Reissue the query with supported fields, then confirm the exact run through
+  `gh run view`; the corrected read supplied the required evidence.
+- **occurrences:** 1 independent occurrence — 2026-08-15 PR #251 merge snapshot, recorded by
+  [Product issue #222 comment 5300251294](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300251294).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns typed
+  Windows-safe query-shape helpers; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
+  records this bounded classification.
+- **promotion:** One query-schema occurrence. If it recurs, add the supported-field contract to
+  #222's checked helper; this documentation slice does not implement that helper.
+
+### FR-052 — mechanical review-thread summary disagreed with its complete source
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (merge-snapshot count integrity)`
+- **symptom:** A mechanical snapshot reported seven review threads while its pagination-complete
+  source surface contained eight.
+- **impact:** A merge snapshot can misstate review-debt coverage even when the underlying source is
+  complete; no merge judgment relied on the incorrect count.
+- **workaround:** Use the one permitted bounded remeasure. Pagination-complete GraphQL established
+  total 8, resolved 8, unresolved 0, outdated 1.
+- **occurrences:** 1 independent occurrence — 2026-08-15 PR #251 merge snapshot, recorded by
+  [Product issue #222 comment 5300251294](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300251294).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns small typed
+  count assertions; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) records
+  this bounded classification.
+- **promotion:** One count-integrity occurrence. On recurrence, #222 must add a checked source-total
+  assertion; do not reopen PR #251 or create a second documentation patch.
+
+### FR-053 — estate-registry absence left no Developer Lens fallback route
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (cold-start routing coverage)`
+- **symptom:** A review-hop lookup found the canonical estate registry absent and its fallback REPOS
+  map missing the Developer Lens row.
+- **impact:** A cold-start coordinator lacks the expected routing fallback and must rely on the
+  repository's local canon rather than treating the absent external surface as current authority.
+- **workaround:** Re-read the local `AGENTS.md`, `CLAUDE.md`, tier declaration, and live Git state;
+  retain the missing external registry/fallback result as explicit coverage, not a safe default.
+- **occurrences:** 1 independent occurrence — 2026-08-15 PR #251 review hop, recorded by
+  [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735).
+- **task:** [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
+  owns deployed registry/fallback routing; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
+  records this bounded classification.
+- **promotion:** One absence/fallback predicate. Do not conflate it with FR-031's stale deployed-row
+  predicate; if it recurs, #133 must select a checked fallback-presence contract.
+
+### FR-054 — unspecified PowerShell parse failure interrupted a read-only audit
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only command authoring interruption)`
+- **symptom:** A read-only PowerShell audit command stopped with a parser error and was reissued
+  successfully; the available evidence does not establish FR-048's specific invalid-loop form.
+- **impact:** The audit had to be repeated before it could produce evidence, without changing
+  repository or GitHub state.
+- **workaround:** Reissue the bounded read-only command after correcting its syntax; preserve the
+  parse failure as distinct coverage rather than guessing a loop-specific cause.
+- **occurrences:** 1 independent occurrence — 2026-08-15 PR #251 review hop, recorded by
+  [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe command-boundary helper debt; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
+  records this bounded classification.
+- **promotion:** One parser-error predicate. Do not merge it into FR-048 without the exact loop-form
+  evidence; a recurrence should select #222's cheapest checked parse-safe command contract.
+
+### FR-055 — PowerShell variable interpolation made a field-count scan unparsable
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only proof authoring interruption)`
+- **symptom:** A PowerShell mechanical-scan pattern placed `$field:` inside an interpolated string,
+  which the parser rejected before the scan read the friction log.
+- **impact:** The bounded proof had to be reissued with an explicitly delimited variable reference;
+  no repository or GitHub state changed.
+- **workaround:** Use `${field}` where a variable is immediately followed by a colon in an
+  interpolated PowerShell string, then rerun the exact read-only scan.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product #246 mechanical-log proof.
+- **task:** [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) owns this
+  one-file consolidation proof; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+  retains the broader Windows-safe helper debt.
+- **promotion:** One exact interpolation predicate. Do not merge it into FR-048 or FR-054; a
+  recurrence would make #222's checked command-construction helper the cheapest enforcement layer.
+
+### FR-056 — hand-built GraphQL closing syntax failed before a thread snapshot
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only query authoring interruption)`
+- **symptom:** A fresh reviewer hand-built a GraphQL query with malformed closing syntax; it failed
+  before returning review-thread evidence.
+- **impact:** The exact-head thread snapshot had to be reissued, without changing GitHub or
+  repository state.
+- **workaround:** Correct the query syntax and use the pagination-complete read; the corrected
+  query returned zero threads.
+- **occurrences:** 1 independent occurrence — PR #252 fresh review at
+  `3fd004fec41ff96a03ef63e7a7802fa429841c00`, recorded by
+  [Product issue #222 comment 5300314833](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300314833).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns typed
+  query-shape helpers; [Product #252](https://github.com/Chris0Jeky/developer-lens/issues/252)
+  records this mandatory evidence classification.
+- **promotion:** One GraphQL-closing-syntax predicate. Do not merge it into FR-039's malformed
+  PowerShell field-form predicate or FR-054/FR-055's PowerShell parser predicates; a recurrence
+  should select #222's checked query-construction contract.
