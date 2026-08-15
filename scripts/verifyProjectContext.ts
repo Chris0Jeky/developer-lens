@@ -3,8 +3,8 @@ import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fg from 'fast-glob'
 import {
+  createGitIndexTrackedTextValidationAccess,
   extractMarkdownLinkTargets,
-  parseGitIndexEntries,
   parsePromptLibrary,
   parseSkillFrontmatter,
   resolveRepositoryLinkTarget,
@@ -339,13 +339,10 @@ const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md', '.cla
 })
 
 if (existsSync(resolve(root, '.git'))) {
-  for (const error of validateTrackedTextForWindowsUserHomePaths({
-    listEntries: () => parseGitIndexEntries(execFileSync('git', ['ls-files', '--stage', '-z'], {
-      cwd: root,
-      encoding: 'buffer',
-    })),
-    readBlob: (objectId) => execFileSync('git', ['cat-file', 'blob', objectId], { cwd: root }),
-  })) {
+  const trackedTextAccess = createGitIndexTrackedTextValidationAccess((args) =>
+    execFileSync('git', args, { cwd: root, encoding: 'buffer' }),
+  )
+  for (const error of validateTrackedTextForWindowsUserHomePaths(trackedTextAccess)) {
     failures.push(`tracked text: ${error}`)
   }
 } else {

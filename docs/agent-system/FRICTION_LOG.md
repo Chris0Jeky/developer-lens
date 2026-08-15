@@ -1286,10 +1286,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
   as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
   the focused test plus the hosted rerun.
-- **occurrences:** 3 independent occurrences — Product issue #222 comment `5300160711`, the
+- **occurrences:** 4 independent occurrences — Product issue #222 comment `5300160711`, the
   2026-08-15 PR #251 post-merge discussion-timeline transport truncation recorded by
   [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636),
-  and the 2026-08-15 combined memory/skill read transport truncation.
+  the 2026-08-15 combined memory/skill read transport truncation, and the 2026-08-15 PR #256
+  combined-source review read transport truncation.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded
   retrieval that retains completeness status; [Product #252](https://github.com/Chris0Jeky/developer-lens/issues/252)
   records this mandatory evidence fix.
@@ -1307,6 +1308,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   response was not treated as complete; bounded individual reads recovered only the exact policy
   facts needed for the review. This remains current canonical transport-truncation coverage and does
   not settle whether a future broader-source class should be separate.
+
+  **2026-08-15 recurrence note:** A PR #256 combined-source review read transport-truncated. The
+  response was not treated as complete; only bounded relevant sections were reissued, with no total
+  or inference asserted from the truncated response. This is the fourth canonical occurrence.
 
 ### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
 
@@ -1538,3 +1543,23 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One review-thread identity predicate. If it recurs independently, Product #222
   should add a checked exact-PR thread-ID binding before a resolution mutation; do not conflate it
   with FR-026 scalar serialization, FR-052 count integrity, or FR-056 query syntax.
+
+### FR-060 — pending check status aborted a combined read batch
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only check-state collection)`
+- **symptom:** A read-only `gh pr checks` invocation returned exit 1 while checks were pending. Because
+  it ran in a fail-fast combined batch, later unrelated reads did not run; no GitHub or repository
+  mutation occurred.
+- **impact:** An expected pending check state can be mistaken for a command failure and leave a
+  bounded evidence batch incomplete.
+- **workaround:** Query structured PR/check status separately, or treat pending as an expected
+  state without allowing it to abort unrelated reads.
+- **occurrences:** 1 independent occurrence — 2026-08-15 during the Product PR #256 review/fix
+  hop.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns
+  Windows-safe, status-aware read helpers.
+- **promotion:** One check-state/command-batch occurrence. Do not conflate it with FR-013’s
+  timeout or FR-051’s unsupported query-shape predicate. A second independent occurrence promotes
+  a checked status-aware command helper under Product #222.

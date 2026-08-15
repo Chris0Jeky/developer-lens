@@ -10,6 +10,7 @@ import {
   PRODUCT_CLAUDE_ROUTING_TOKENS,
   RETIRED_PROMPT_SENTINEL,
   containsWindowsUserHomePath,
+  createGitIndexTrackedTextValidationAccess,
   extractMarkdownLinkTargets,
   findBareHumanRefs,
   isProtectedTrackedPath,
@@ -43,6 +44,14 @@ const indexEntry = (
   objectId: 'a'.repeat(40),
   stage: '0',
   ...overrides,
+})
+const accessForEntries = (
+  entries: readonly GitIndexEntry[],
+  readBlob: (objectId: string) => Uint8Array,
+) => ({
+  listPaths: () => entries.map((entry) => entry.path),
+  listEntries: (_paths: readonly string[]) => entries,
+  readBlob,
 })
 
 describe('project context validation', () => {
@@ -98,10 +107,12 @@ describe('project context validation', () => {
     expect(containsWindowsUserHomePath('source: ' + serializedBackwardHome)).toBe(true)
     expect(containsWindowsUserHomePath('source: C:/Synthetic/FixtureUser/workspace')).toBe(false)
 
-    const errors = validateTrackedTextForWindowsUserHomePaths({
-      listEntries: () => [indexEntry('docs/guide.md')],
-      readBlob: () => blob('source: ' + forwardHome),
-    })
+    const errors = validateTrackedTextForWindowsUserHomePaths(
+      accessForEntries(
+        [indexEntry('docs/guide.md')],
+        () => blob('source: ' + forwardHome),
+      ),
+    )
 
     expect(errors).toEqual(['docs/guide.md: contains a Windows user-home path'])
     expect(errors.join('\n')).not.toContain('FixtureUser')
@@ -125,25 +136,15 @@ describe('project context validation', () => {
       './' + root.toUpperCase() + '//child.md',
       '/' + root.replaceAll('/', '\\\\') + '\\\\child.md',
     ])
-    const protectedEntries: readonly GitIndexEntry[] = protectedPaths.map(
-      (path) =>
-        ({
-          path,
-          get stage(): string {
-            throw new Error('protected entry stage was accessed')
-          },
-          get mode(): string {
-            throw new Error('protected entry mode was accessed')
-          },
-          get objectId(): string {
-            throw new Error('protected entry object ID was accessed')
-          },
-        }) as GitIndexEntry,
-    )
+    let metadataCalls = 0
     let blobReads = 0
 
     const errors = validateTrackedTextForWindowsUserHomePaths({
-      listEntries: () => protectedEntries,
+      listPaths: () => protectedPaths,
+      listEntries: () => {
+        metadataCalls += 1
+        throw new Error('protected metadata was enumerated')
+      },
       readBlob: () => {
         blobReads += 1
         throw new Error('protected blob was read')
@@ -153,6 +154,7 @@ describe('project context validation', () => {
     expect(errors).toEqual(
       Array.from({ length: protectedPaths.length }, () => 'protected Git-tracked path is not allowed'),
     )
+    expect(metadataCalls).toBe(0)
     expect(blobReads).toBe(0)
     expect(errors.join('\n')).not.toContain('child.md')
     expect(errors.join('\n')).not.toContain('a'.repeat(40))
@@ -166,10 +168,11 @@ describe('project context validation', () => {
     const safeObjectId = 'd'.repeat(40)
     const blobReads: string[] = []
     const errors = validateTrackedTextForWindowsUserHomePaths({
-      listEntries: () => [
-        indexEntry('./DIST//ignored.md', { objectId: protectedObjectId }),
-        indexEntry('distilled/guide.md', { objectId: safeObjectId }),
-      ],
+      listPaths: () => ['./DIST//ignored.md', 'distilled/guide.md'],
+      listEntries: (paths) => {
+        expect(paths).toEqual(['distilled/guide.md'])
+        return [indexEntry('distilled/guide.md', { objectId: safeObjectId })]
+      },
       readBlob: (objectId) => {
         blobReads.push(objectId)
         if (objectId !== safeObjectId) {
@@ -193,27 +196,120 @@ describe('project context validation', () => {
     }
   })
 
+  it('builds literal staged-metadata commands only for eligible Git paths', () => {
+    const protectedPath = 'public/data/invented-private.json'
+    const safePath = 'docs/safe name.md'
+    const safeObjectId = 'f'.repeat(40)
+    const calls: string[][] = []
+    const access = createGitIndexTrackedTextValidationAccess((args) => {
+      calls.push([...args])
+      if (args[0] === 'ls-files') {
+        return blob([protectedPath, safePath, ''].join('\0'))
+      }
+      if (args[0] === '--literal-pathspecs') {
+        return blob(['100644 ' + safeObjectId + ' 0\t' + safePath, ''].join('\0'))
+      }
+      if (args[0] === 'cat-file') {
+        return blob('source: C:/Synthetic/FixtureUser/workspace')
+      }
+      throw new Error('unexpected Git command')
+    })
+
+    const errors = validateTrackedTextForWindowsUserHomePaths(access)
+
+    expect(errors).toEqual(['protected Git-tracked path is not allowed'])
+    expect(calls).toEqual([
+      ['ls-files', '-z'],
+      ['--literal-pathspecs', 'ls-files', '--stage', '-z', '--', safePath],
+      ['cat-file', 'blob', safeObjectId],
+    ])
+    expect(calls.slice(1).flat()).not.toContain(protectedPath)
+  })
+
+  it('preserves a leading BOM when selecting literal Git metadata', () => {
+    const safePath = '\uFEFFdocs/bom-safe.md'
+    const safeObjectId = 'e'.repeat(40)
+    const calls: string[][] = []
+    const access = createGitIndexTrackedTextValidationAccess((args) => {
+      calls.push([...args])
+      if (args[0] === 'ls-files') {
+        return blob([safePath, ''].join('\0'))
+      }
+      if (args[0] === '--literal-pathspecs') {
+        return blob(['100644 ' + safeObjectId + ' 0\t' + safePath, ''].join('\0'))
+      }
+      if (args[0] === 'cat-file') {
+        return blob('source: C:/Synthetic/FixtureUser/workspace')
+      }
+      throw new Error('unexpected Git command')
+    })
+
+    expect(validateTrackedTextForWindowsUserHomePaths(access)).toEqual([])
+    expect(calls).toEqual([
+      ['ls-files', '-z'],
+      ['--literal-pathspecs', 'ls-files', '--stage', '-z', '--', safePath],
+      ['cat-file', 'blob', safeObjectId],
+    ])
+  })
+
+  it('does not request metadata when Git names contain only protected paths', () => {
+    const protectedPath = '.developer-lens/invented-private.md'
+    const calls: string[][] = []
+    const access = createGitIndexTrackedTextValidationAccess((args) => {
+      calls.push([...args])
+      if (args[0] === 'ls-files') {
+        return blob([protectedPath, ''].join('\0'))
+      }
+      throw new Error('protected path reached a later Git command')
+    })
+
+    const errors = validateTrackedTextForWindowsUserHomePaths(access)
+
+    expect(errors).toEqual(['protected Git-tracked path is not allowed'])
+    expect(calls).toEqual([['ls-files', '-z']])
+  })
+
   it('fails closed for Git enumeration and eligible entry access errors', () => {
     const inaccessible = validateTrackedTextForWindowsUserHomePaths({
-      listEntries: () => {
+      listPaths: () => {
         throw new Error('fixture enumeration failure')
       },
+      listEntries: () => [],
       readBlob: () => blob(''),
     })
-    expect(inaccessible).toEqual(['unable to enumerate Git-tracked text'])
+    expect(inaccessible).toEqual(['unable to enumerate Git-tracked paths'])
+
+    const invalidPathEncoding = validateTrackedTextForWindowsUserHomePaths(
+      createGitIndexTrackedTextValidationAccess((args) => {
+        expect(args).toEqual(['ls-files', '-z'])
+        return new Uint8Array([0xff, 0])
+      }),
+    )
+    expect(invalidPathEncoding).toEqual(['unable to enumerate Git-tracked paths'])
 
     const metadataFailure = validateTrackedTextForWindowsUserHomePaths({
-      listEntries: () => [indexEntry('docs/unsupported', { mode: '160000' })],
+      listPaths: () => ['docs/metadata-failure.md'],
+      listEntries: () => {
+        throw new Error('fixture metadata failure')
+      },
       readBlob: () => blob(''),
     })
-    expect(metadataFailure).toEqual(['docs/unsupported: unsupported Git index mode'])
+    expect(metadataFailure).toEqual(['unable to enumerate eligible Git-tracked metadata'])
+    expect(metadataFailure.join('\n')).not.toContain('metadata-failure.md')
 
-    const readFailure = validateTrackedTextForWindowsUserHomePaths({
-      listEntries: () => [indexEntry('docs/guide.md')],
-      readBlob: () => {
+    const unsupportedMetadata = validateTrackedTextForWindowsUserHomePaths(
+      accessForEntries(
+        [indexEntry('docs/unsupported', { mode: '160000' })],
+        () => blob(''),
+      ),
+    )
+    expect(unsupportedMetadata).toEqual(['docs/unsupported: unsupported Git index mode'])
+
+    const readFailure = validateTrackedTextForWindowsUserHomePaths(
+      accessForEntries([indexEntry('docs/guide.md')], () => {
         throw new Error('fixture blob failure')
-      },
-    })
+      }),
+    )
     expect(readFailure).toEqual(['docs/guide.md: unable to read Git index blob'])
   })
 
@@ -221,19 +317,21 @@ describe('project context validation', () => {
     const stagedHome = ['C:', 'Users', 'FixtureUser', 'workspace'].join('\\\\')
     const cleanWorkingTreeReplacement = 'source: C:/Synthetic/FixtureUser/workspace'
     const blobReads: string[] = []
-    const errors = validateTrackedTextForWindowsUserHomePaths({
-      listEntries: () => [
-        indexEntry('docs/staged-private.md', { objectId: 'b'.repeat(40) }),
-        indexEntry('docs/link.md', { mode: '120000', objectId: 'c'.repeat(40) }),
-      ],
-      readBlob: (objectId) => {
-        blobReads.push(objectId)
-        if (objectId === 'b'.repeat(40)) {
-          return blob('source: ' + stagedHome)
-        }
-        return blob('target: ' + stagedHome)
-      },
-    })
+    const errors = validateTrackedTextForWindowsUserHomePaths(
+      accessForEntries(
+        [
+          indexEntry('docs/staged-private.md', { objectId: 'b'.repeat(40) }),
+          indexEntry('docs/link.md', { mode: '120000', objectId: 'c'.repeat(40) }),
+        ],
+        (objectId) => {
+          blobReads.push(objectId)
+          if (objectId === 'b'.repeat(40)) {
+            return blob('source: ' + stagedHome)
+          }
+          return blob('target: ' + stagedHome)
+        },
+      ),
+    )
 
     expect(errors).toEqual([
       'docs/staged-private.md: contains a Windows user-home path',
@@ -258,10 +356,9 @@ describe('project context validation', () => {
       parseGitIndexEntries(blob('100644 ' + 'a'.repeat(40) + ' 0\tdocs/unterminated')),
     ).toThrow('unterminated Git index record')
     expect(
-      validateTrackedTextForWindowsUserHomePaths({
-        listEntries: () => [indexEntry('docs/conflict.md', { stage: '1' })],
-        readBlob: () => blob(''),
-      }),
+      validateTrackedTextForWindowsUserHomePaths(
+        accessForEntries([indexEntry('docs/conflict.md', { stage: '1' })], () => blob('')),
+      ),
     ).toEqual(['docs/conflict.md: unmerged Git index entry'])
   })
 

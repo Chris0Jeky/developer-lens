@@ -113,8 +113,54 @@ export interface GitIndexEntry {
 }
 
 export interface TrackedTextValidationAccess {
-  listEntries: () => readonly GitIndexEntry[]
+  listPaths: () => readonly string[]
+  listEntries: (paths: readonly string[]) => readonly GitIndexEntry[]
   readBlob: (objectId: string) => Uint8Array
+}
+
+export type GitIndexCommandExecutor = (args: readonly string[]) => Uint8Array
+
+/** Parse NUL-delimited Git pathnames without treating a path as shell text. */
+export function parseGitTrackedPaths(raw: Uint8Array): string[] {
+  const paths: string[] = []
+  const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true })
+  let start = 0
+  for (let index = 0; index < raw.length; index += 1) {
+    if (raw[index] !== 0) {
+      continue
+    }
+    const path = decoder.decode(raw.slice(start, index))
+    if (!path) {
+      throw new Error('invalid Git tracked path')
+    }
+    paths.push(path)
+    start = index + 1
+  }
+  if (start !== raw.length) {
+    throw new Error('unterminated Git tracked path')
+  }
+  return paths
+}
+
+/** Build literal Git pathspec arguments so Git metadata cannot expand an eligible path. */
+export function buildGitIndexMetadataArgs(paths: readonly string[]): string[] {
+  return ['--literal-pathspecs', 'ls-files', '--stage', '-z', '--', ...paths]
+}
+
+/** Build an injected Git-index adapter whose metadata reads occur only after name classification. */
+export function createGitIndexTrackedTextValidationAccess(
+  execute: GitIndexCommandExecutor,
+): TrackedTextValidationAccess {
+  return {
+    listPaths: () => parseGitTrackedPaths(execute(['ls-files', '-z'])),
+    listEntries: (paths) => {
+      if (paths.length === 0) {
+        return []
+      }
+      return parseGitIndexEntries(execute(buildGitIndexMetadataArgs(paths)))
+    },
+    readBlob: (objectId) => execute(['cat-file', 'blob', objectId]),
+  }
 }
 
 /** Parse NUL-delimited Git index records without treating a path as shell text. */
@@ -149,17 +195,31 @@ export function validateTrackedTextForWindowsUserHomePaths(
   access: TrackedTextValidationAccess,
 ): string[] {
   const errors: string[] = []
-  let entries: readonly GitIndexEntry[]
+  let paths: readonly string[]
   try {
-    entries = access.listEntries()
+    paths = access.listPaths()
   } catch {
-    return ['unable to enumerate Git-tracked text']
+    return ['unable to enumerate Git-tracked paths']
   }
-  for (const entry of entries) {
-    if (isProtectedTrackedPath(entry.path)) {
+  const eligiblePaths: string[] = []
+  for (const path of paths) {
+    if (isProtectedTrackedPath(path)) {
       errors.push('protected Git-tracked path is not allowed')
       continue
     }
+    eligiblePaths.push(path)
+  }
+  if (eligiblePaths.length === 0) {
+    return errors
+  }
+  let entries: readonly GitIndexEntry[]
+  try {
+    entries = access.listEntries(eligiblePaths)
+  } catch {
+    errors.push('unable to enumerate eligible Git-tracked metadata')
+    return errors
+  }
+  for (const entry of entries) {
     if (entry.stage !== '0') {
       errors.push(`${entry.path}: unmerged Git index entry`)
       continue
