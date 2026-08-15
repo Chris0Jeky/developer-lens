@@ -155,7 +155,7 @@ Rules that bind entries:
 
   **2026-08-15 late-review note:** Product PR #266 merged at
   `2026-08-15T17:47:37Z`; its exact-head Codex review for
-  `3d1ff0b0af5929ef2af51759dcc99d9349f492ecc` arrived at `2026-08-15T17:48:49Z` with a P2 split
+  `3d1ffb0af5929ef2af51759dcc99d9349f492ecc` arrived at `2026-08-15T17:48:49Z` with a P2 split
   finding. The thread was replied to and left open for the bounded successor. This records a third
   late-review occurrence only; no runtime, data, or release harm is claimed. Product issue #222
   owns the connector follow-up.
@@ -1532,7 +1532,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   CLI command-shape mechanism and select the existing #222 checked contract.
 
   **2026-08-15 split correction:** The installed `gh api` rejected the combined `--slurp` and
-  `--jq` shape during comment collection, recorded by [Product issue #222 comment 5303418489](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303418489).
+  `--jq` shape during comment collection, recorded by [Product issue #222 comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568).
   This is the fourth CLI command-shape occurrence under FR-051 and remains covered by the selected
   #222 checked contract. The separate Python module-interface mismatch remains canonical under
   FR-071 and is not counted here.
