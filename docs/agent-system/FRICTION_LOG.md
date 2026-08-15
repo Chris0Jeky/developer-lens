@@ -1442,24 +1442,6 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   command bounded and parse-fail-closed; reconsider a checked helper only if this exact invalid-loop
   form recurs independently.
 
-### FR-063 — PowerShell direct-after-foreach pipeline rejected a metadata inventory
-
-- **first-seen:** 2026-08-15
-- **status:** `promoted`
-- **severity:** `LOW (read-only inventory authoring interruption)`
-- **symptom:** A read-only file-metadata helper piped directly after a valid `foreach` form and
-  stopped with `An empty pipe element is not allowed` before the inventory completed.
-- **impact:** The bounded inventory had to be reissued, without a mutation or evidence gap.
-- **workaround:** Collect `foreach` output into an intermediate array before piping it to the
-  metadata helper; the corrected bounded inventory completes without mutation.
-- **occurrences:** 2 independent occurrences — 2026-08-15 Product PR #258 final review and Product
-  PR #260 review.
-- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
-  Windows-safe inventory-helper boundary.
-- **promotion:** Promoted at the second occurrence: Product #222 owns a checked inventory helper
-  that captures loop output before piping while preserving bounded fail-closed behavior. Do not
-  conflate this valid-foreach pipeline predicate with FR-048's invalid-loop-form predicate.
-
 ### FR-049 — failed CI log transport truncated before complete retrieval
 
 - **first-seen:** 2026-08-15
@@ -1848,6 +1830,24 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 Product #257 UTF-8 metadata note:** The standalone gate again reached the same
   untouched storage-v3 and activation failures after lint, context, and generated-view checks; build
   did not run. The result is not flaky and was not retried.
+
+### FR-063 — PowerShell direct-after-foreach pipeline rejected a metadata inventory
+
+- **first-seen:** 2026-08-15
+- **status:** `promoted`
+- **severity:** `LOW (read-only inventory authoring interruption)`
+- **symptom:** A read-only file-metadata helper piped directly after a valid `foreach` form and
+  stopped with `An empty pipe element is not allowed` before the inventory completed.
+- **impact:** The bounded inventory had to be reissued, without a mutation or evidence gap.
+- **workaround:** Collect `foreach` output into an intermediate array before piping it to the
+  metadata helper; the corrected bounded inventory completes without mutation.
+- **occurrences:** 2 independent occurrences — 2026-08-15 Product PR #258 final review and Product
+  PR #260 review.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe inventory-helper boundary.
+- **promotion:** Promoted at the second occurrence: Product #222 owns a checked inventory helper
+  that captures loop output before piping while preserving bounded fail-closed behavior. Do not
+  conflate this valid-foreach pipeline predicate with FR-048's invalid-loop-form predicate.
 
 ### FR-064 — tracked-text guard self-triggered on ledger evidence
 
