@@ -73,12 +73,14 @@ Rules that bind entries:
   are treated as human-gated, and lab work is prepared and parked rather than merged. Isolated
   worktrees are used for preparation only — isolation does not make a *merge* safe while a
   competing writer can race the remote.
-- **occurrences:** 7 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
+- **occurrences:** 8 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
   plus an orphaned partial worktree directory left for manual deletion), 2026-08-07 (lab checkout
   competing writer), 2026-08-09 (a separate coordinator advanced the active q-8 branch between
   this session's read and attempted write), 2026-08-10 (a concurrent post-merge comment assigned
   the PR #238 merge to an external context after this coordinator had issued it), 2026-08-10 (two
   later PR #237 P2 threads were replied to and resolved after this coordinator parked the PR).
+  2026-08-15 (guarded delegate observed a pre-existing friction-log modification and relinquished
+  the occupied worktree after the intended correction appeared at a new remote head).
 - **task:** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` (closed owner decision) and
   [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) (live release coordination).
 - **promotion:** The physical process-cleanup half remains owner-only (W4); the owner confirmed its
@@ -124,6 +126,17 @@ Rules that bind entries:
   overlapping friction worktree was present after PR #265 merged. The coordinator relinquished the
   primary and overlap role; no tracked work was lost. It is recorded by
   [Product issue #222 comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568).
+
+  **2026-08-15 ownership note:** A guarded delegate at
+  `docs/record-post268-friction-20260815` / `6e90dec` found a pre-existing `FRICTION_LOG.md`
+  modification, made no write, and stopped. Immediate refresh found clean new commit `934ed23`
+  with the intended one-line correction; the remote branch later advanced to that exact head before
+  this governor's guarded push. Ownership cannot be inferred, no work was lost, and the occupied
+  worktree was relinquished. This complete chain is one new occurrence, recorded by
+  [Product #200 comment 5304291181](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304291181)
+  and [Product #200 comment 5304325128](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304325128).
+  It does not prove a leaked process: `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` remains
+  closed and normal Lab gates remain in force.
 
 ### FR-002 — review connector misses or lands late on an exact head
 
@@ -1316,7 +1329,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 3 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 4 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1335,6 +1348,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   npm, screenshot, alternate-browser fallback, mutation, or protected-data access occurred. This
   third occurrence is recorded by [Product issue #222 comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568)
   and remains owned by [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200).
+
+  **2026-08-15 fourth-preflight note:** The required in-app-browser selector returned exactly
+  `Browser is not available: iab` before tab, navigation, screenshot, server, or protected-data
+  access. No alternate browser was attempted. [Product #200 comment 5304336245](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304336245)
+  records this fourth occurrence. QA remains parked until an in-app browser is connected, and
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
@@ -2117,3 +2136,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   exact-reference evidence boundary.
 - **promotion:** One occurrence remains task debt. Keep distinct from moved-HEAD ownership, path
   normalization, and unsupported fields; do not create a reference-validation framework.
+
+### FR-079 — report wrapper stopped on empty detached-branch output
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (reporting/command-boundary reliability)`
+- **symptom:** Fresh worktree creation succeeded at detached `origin/main`, then report-only
+  `.Trim()` on empty `git branch --show-current` output stopped the wrapper.
+- **impact:** The wrapper stopped before reporting the intended checkout; re-sense proved the exact
+  intended checkout; after successful creation, the report-only failure caused no further
+  repository or GitHub mutation.
+- **workaround:** Handle null or whitespace branch output explicitly before trimming, then re-sense
+  the exact intended checkout.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304293054](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304293054).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns this
+  reporting/command boundary.
+- **promotion:** One occurrence remains task debt; do not promote. This is distinct from FR-030's
+  timestamp nulls and FR-026's object expansion.

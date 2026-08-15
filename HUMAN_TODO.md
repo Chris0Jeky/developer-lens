@@ -149,6 +149,17 @@ publication route remains active.
   `dl-worktrees/value01` directory remains a manual owner review/delete action, but is not a
   blocker to this closed process gate.
 
+  Update (2026-08-15, Product #200 ownership observation): a guarded delegate at
+  `docs/record-post268-friction-20260815` / `6e90dec` found a pre-existing `FRICTION_LOG.md`
+  modification, made no write, and stopped. Immediate refresh found clean new commit `934ed23`
+  with the intended one-line correction; the remote branch later advanced to that exact head before
+  this governor's guarded push. Ownership cannot be inferred, no work was lost, and the occupied
+  worktree was relinquished. This is one FR-001 occurrence, recorded by
+  [Product #200 comment 5304291181](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304291181)
+  and [Product #200 comment 5304325128](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304325128).
+  It does not prove a leaked process or reopen this checked owner closure; normal Lab gates remain
+  in force.
+
 - [x] **q-9 — Claude subagent model pins: SUPERSEDED by owner decision A5 (mandate v2,
   2026-08-08).** On 2026-08-07 the owner directed Opus 4.8 (high) pins for implementation/review
   and Sonnet 4.6 (high) for mechanical work, deliberately avoiding Opus 5. The owner mandate v2
@@ -181,6 +192,12 @@ publication route remains active.
 
 ## Changelog
 
+- 2026-08-15 (Product #200 ownership observation): added the factual guarded-delegate/remote-head
+  sequence to closed q-8 and FR-001: a pre-existing friction-log modification caused a no-write
+  stop, the intended correction appeared cleanly at `934ed23`, and the occupied worktree was
+  relinquished with no work lost. Ownership remains uninferrable; no leaked process, owner action,
+  or q-8 reopening is claimed, and normal Lab gates remain in force. Evidence: Product #200
+  comments 5304291181 and 5304325128.
 - 2026-08-09 (owner-decision closeout): closed q-8 on the owner's explicit confirmation that they
   merged lab PR #24 and that the leaked-session action should close, plus the subsequently clean
   `claude agents --json --all` and report-only MCP-hygiene results (claude.exe/orphan MCP/Docker MCP
