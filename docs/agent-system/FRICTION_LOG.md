@@ -1364,8 +1364,8 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   mismatch.
 - **workaround:** Normalize both resolved paths before comparing them, then separately prove branch,
   HEAD, and porcelain status.
-- **occurrences:** 2 independent occurrences — 2026-08-15 during Product #200 resume repair and
-  during Product #246's pinned-worktree guard.
+- **occurrences:** 3 independent occurrences — 2026-08-15 during Product #200 resume repair,
+  during Product #246's pinned-worktree guard, and during the scoped branch preflight.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe evidence-helper boundary.
 - **promotion:** At the second occurrence, Product #222 owns the cheapest checked normalized-path
@@ -1375,6 +1375,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 recurrence note:** Git again rendered the same top-level path with forward slashes,
   while the guard's literal used Windows separators. No state mismatch existed; a normalized
   comparison is required before treating the guard as failed.
+
+  **2026-08-15 third-occurrence note:** A forward-slash/backslash false root mismatch stopped
+  before branch creation, as recorded by [Product issue #222 comment 5303605491](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303605491).
+  Resolved-path case-insensitive comparison plus separate HEAD and porcelain checks passed; only
+  then was the scoped branch created. The checked normalized-path helper remains unimplemented.
 
 ### FR-048 — PowerShell loop syntax typo stopped a read-only state inventory
 
