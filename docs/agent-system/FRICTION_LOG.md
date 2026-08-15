@@ -703,7 +703,7 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 11 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 12 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
   inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
@@ -749,6 +749,11 @@ Rules that bind entries:
   including quoting the whole form field, each produced malformed `-lens`. Typed owner, name, and
   number variables supplied with `-F` completed the bounded query. These ninth through eleventh
   occurrences retain FR-022's promotion and Product #222 ownership.
+
+  **2026-08-15 recurrence note:** A malformed inline `gh pr view` jq projection stopped before
+  execution; plain structured JSON fields completed the bounded read without mutation. Product
+  #222's existing structured-query/direct-field contract remains selected but is NOT implemented,
+  as recorded by [Product #222 comment 5303708410](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303708410).
 
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
@@ -1703,7 +1708,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-057 — `rg` discovery named a nonexistent `tests/` directory
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only discovery interruption)`
 - **symptom:** A read-only fresh-context review invocation named a nonexistent `tests/` directory,
   so `rg` exited 1 before it could inspect that target.
@@ -1711,12 +1716,16 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   without a repository mutation or evidence gap.
 - **workaround:** Inspect only the bounded existing paths relevant to the review; that follow-up
   read completed successfully.
-- **occurrences:** 1 independent occurrence — 2026-08-15 exact-head review hop.
+- **occurrences:** 2 independent occurrences — 2026-08-15 exact-head review hop and the guessed
+  absent taskdeck/README.md target.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe command/discovery boundary.
-- **promotion:** One discovery-target occurrence. If it recurs independently, Product #222 should
-  select the cheapest checked existing-path preflight for review commands; do not add a generic
-  retry or merge it into the distinct path-normalization and parser mechanisms.
+- **promotion:** Promoted at the second independent occurrence: Product #222 owns the checked
+  existing-path preflight for bounded discovery commands. It is not implemented. Keep it distinct
+  from FR-058's skill paths and FR-073's glob parsing; do not add a generic retry.
+
+  **2026-08-15 recurrence note:** A guessed absent `taskdeck/README.md` discovery target stopped
+  the bounded read; other explicit paths completed it without mutation, as recorded by [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285).
 
 ### FR-058 — continuation-skill discovery assumed an absent path
 
@@ -2012,3 +2021,52 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   Windows-safe evidence command contract.
 - **promotion:** One path-selection occurrence. Keep distinct from FR-051's CLI query-shape events;
   do not create a glob framework or promote until an independent recurrence.
+
+### FR-074 — PowerShell `-split` inside `git show` native arguments interrupted proof
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only command-boundary interruption)`
+- **symptom:** PowerShell `-split` was placed inside `git show` native arguments; Git reported that
+  switch `l` expects a numerical value, and the wrapper stopped before later proof.
+- **impact:** A bounded read-only proof can stop before its later checks, without changing the
+  repository or GitHub state.
+- **workaround:** Capture native output in a scalar first, then apply `-split` in PowerShell.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe command-boundary helper.
+- **promotion:** One occurrence remains task debt. Keep distinct from FR-026's object expansion and
+  FR-022's quoting; do not promote until an independent recurrence.
+
+### FR-075 — Markdown backticks terminated a JavaScript command template
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only command composition interruption)`
+- **symptom:** Markdown backticks inside the JavaScript template used to compose a PowerShell
+  command terminated the template and raised `SyntaxError: Unexpected identifier 'docs'` before
+  shell, tool, or GitHub execution.
+- **impact:** The composed read-only command cannot reach execution, without changing the
+  repository or GitHub state.
+- **workaround:** Remove delimiter-sensitive formatting from the template and keep JSON on stdin.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded command-composition contract.
+- **promotion:** One occurrence remains task debt; do not create or promote a generic templating
+  framework.
+
+### FR-076 — issue-scoped direct-comment REST paths returned HTTP 404
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only comment lookup friction)`
+- **symptom:** Issue-scoped direct-comment REST paths returned HTTP 404, while repository-level
+  `issues/comments/<id>` paths succeeded.
+- **impact:** A bounded read-only comment lookup can stop before collecting its evidence, without
+  changing repository or GitHub state.
+- **workaround:** Use the repository-level `issues/comments/<id>` path for direct comment lookup.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303708410](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303708410).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded comment-lookup contract.
+- **promotion:** One occurrence remains task debt. Keep distinct from FR-051's unsupported-field
+  and query-shape events; do not promote until an independent recurrence.
