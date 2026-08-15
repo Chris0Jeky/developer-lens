@@ -364,7 +364,7 @@ Rules that bind entries:
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 7 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
+- **occurrences:** 8 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
   (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite),
   2026-08-09 (the release-state/worktree-preservation documentation worktree), and 2026-08-09
   (the #200 state-reconciliation worktree), plus 2026-08-10 (the PR #238/#237/Lab #62 factual
@@ -397,6 +397,10 @@ Rules that bind entries:
   **2026-08-15 recurrence note:** Product #246's required context verifier again stopped before its
   first check because the fresh worktree lacked `fast-glob`. The canonical lockfile-pinned `npm ci`
   bootstrap is rerun before proof; no new mechanism or enforcement layer is warranted.
+
+  **2026-08-15 browser-preflight note:** The fresh docs-only worktree lacked `fast-glob`, so
+  `verify:context` stopped before its first test. The promoted lockfile-pinned `npm ci` bootstrap
+  was then authorized and selected before rerunning the verifier.
 
 ### FR-013 — full product gate exceeded a compound shell timeout
 
@@ -753,7 +757,7 @@ Rules that bind entries:
   the intended target; an unchecked hunk could corrupt an unrelated friction record.
 - **workaround:** Restore the unrelated field and reapply the edit with the unique entry heading in
   the patch context, then inspect the complete file diff.
-- **occurrences:** 2 independent occurrences — 2026-08-09 during PR232's second friction capture,
+- **occurrences:** 3 independent occurrences — 2026-08-09 during PR232's second friction capture,
   and 2026-08-15 during Product #234 FR-050 promotion.
 - **task:** [#234](https://github.com/Chris0Jeky/developer-lens/issues/234) owns the current
   remediation; [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) retains the historical
@@ -766,6 +770,11 @@ Rules that bind entries:
   **2026-08-15 recurrence note:** A broad FR-050 status hunk matched FR-004 because the field is
   repeated. Immediate staged-diff review caught the wrong field before commit; a unique-heading
   patch restored FR-004 and updated FR-050. No source behavior or unrelated committed record changed.
+
+  **2026-08-15 browser-preflight note:** A repeated `status` field hunk targeting FR-044 matched
+  FR-004 instead. Exact diff review caught the unintended change after the first local commit; the
+  correction restored FR-004 and applied FR-044's promotion. This recurrence retains the promoted
+  heading-bounded edit and immediate diff review.
 
 ### FR-025 — occupied PR232 worktree entered a concurrent main merge
 
@@ -1228,7 +1237,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-044 — mandated browser-client discovery found no available browser
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (visual-QA tooling availability)`
 - **symptom:** The Product #200 visual-QA executor initialized the mandated browser-client surface
   and followed bootstrap troubleshooting, but browser discovery returned no available browsers.
@@ -1236,11 +1245,19 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 1 independent occurrence — Product #200 comment `5299321093` on 2026-08-15.
+- **occurrences:** 2 independent occurrences — Product #200 comment `5299321093` and the
+  2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
-- **promotion:** Not promoted after one occurrence. If it recurs, select the cheapest
-  environment-availability preflight or connector repair rather than a repository fallback.
+- **promotion:** Promoted at the second independent occurrence: Product #200 lane selection must
+  confirm at least one connected browser before allocating visual QA; otherwise park the lane.
+  Connector provisioning remains external task debt because repository code cannot create a connected
+  browser. No standalone or alternate-browser fallback is authorized; the
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` gate remains parked pending required proof.
+
+  **2026-08-15 Product #200 recurrence note:** The mandated browser client was loaded for public
+  showcase QA, `getForUrl` found no browser, bootstrap troubleshooting was read, and the one permitted
+  browser list was empty. No navigation, proof, mutation, or protected-data access occurred.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
@@ -1783,3 +1800,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   review-evidence hardening.
 - **promotion:** One delegated-SHA divergence occurrence. Do not promote until an independent
   recurrence establishes that a checked payload-validation safeguard is warranted.
+
+### FR-068 — UTC/local timestamp-kind mismatch produced a false age
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only evidence-timing calculation)`
+- **symptom:** A PR #264 reviewer mixed a UTC timestamp with local `DateTime` semantics in an age
+  calculation and obtained an impossible negative age. One bounded `DateTimeOffset` remeasure
+  produced valid pull-request and head ages.
+- **impact:** An uncorrected timestamp-kind mismatch can make an age-floor judgment wrong, without
+  changing repository or GitHub state.
+- **workaround:** Use `DateTimeOffset` for both operands in the age calculation, then retain the
+  bounded remeasure as evidence.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product PR #264 review.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe evidence helper boundary.
+- **promotion:** One timestamp-kind occurrence. A second independent occurrence selects a checked
+  `DateTimeOffset`-only age helper under Product #222.
