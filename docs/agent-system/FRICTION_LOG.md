@@ -166,7 +166,7 @@ Rules that bind entries:
 ### FR-004 — pushes from inside a worktree are refused by the floor guard
 
 - **first-seen:** 2026-08-08
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **symptom:** A `git push` issued from inside a registered worktree is denied by the repository
   floor guard, even for an ordinary scoped feature branch.
 - **impact:** A worktree lane that is otherwise finished cannot publish its own branch, which can
@@ -1236,11 +1236,19 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 1 independent occurrence — Product #200 comment `5299321093` on 2026-08-15.
+- **occurrences:** 2 independent occurrences — Product #200 comment `5299321093` and the
+  2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
-- **promotion:** Not promoted after one occurrence. If it recurs, select the cheapest
-  environment-availability preflight or connector repair rather than a repository fallback.
+- **promotion:** Promoted at the second independent occurrence: Product #200 lane selection must
+  confirm at least one connected browser before allocating visual QA; otherwise park the lane.
+  Connector provisioning remains external task debt because repository code cannot create a connected
+  browser. No standalone or alternate-browser fallback is authorized; the
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` gate remains parked pending required proof.
+
+  **2026-08-15 Product #200 recurrence note:** The mandated browser client was loaded for public
+  showcase QA, `getForUrl` found no browser, bootstrap troubleshooting was read, and the one permitted
+  browser list was empty. No navigation, proof, mutation, or protected-data access occurred.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
