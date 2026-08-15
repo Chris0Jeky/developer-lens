@@ -2172,3 +2172,34 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   Windows-safe evidence-command contract.
 - **promotion:** One occurrence remains task debt; do not promote or add a helper. Keep distinct
   from other formatting and PowerShell entries.
+
+### FR-081 — unbraced native Git diff range lost the intended revision boundary
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only revision/command-boundary friction)`
+- **symptom:** An unbraced `$base..HEAD` in native `git diff` arguments did not form the
+  intended revision range, and Git printed usage.
+- **impact:** The bounded read-only diff proof was delayed, without changing the repository or
+  GitHub state.
+- **workaround:** Build one scalar range as `"${base}..HEAD"` before passing it to native Git.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304526664](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304526664).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe revision/evidence-command boundary.
+- **promotion:** One occurrence remains task debt; do not promote or add a framework.
+
+### FR-082 — terminal block comparator counted its trailing separator as content
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only proof-predicate friction)`
+- **symptom:** A block comparator treated a terminal entry's trailing separator CR/LF as content,
+  so appending FR-080 falsely reported FR-079 changed.
+- **impact:** The bounded raw-block comparison proof was delayed, without changing the repository
+  or GitHub state.
+- **workaround:** Normalize only the boundary trailing CR/LF after extraction before comparing
+  block content; preserve all internal content and separators.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304526664](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304526664).
+- **task:** [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) owns the
+  bounded proof-predicate contract.
+- **promotion:** One occurrence remains task debt; do not promote or add a framework.
