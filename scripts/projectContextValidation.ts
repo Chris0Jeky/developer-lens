@@ -175,7 +175,7 @@ export function createGitIndexTrackedTextValidationAccess(
 /** Parse NUL-delimited Git index records without treating a path as shell text. */
 export function parseGitIndexEntries(raw: Uint8Array): GitIndexEntry[] {
   const entries: GitIndexEntry[] = []
-  const decoder = new TextDecoder()
+  const decoder = new TextDecoder('utf-8', { fatal: true, ignoreBOM: true })
   let start = 0
   for (let index = 0; index < raw.length; index += 1) {
     if (raw[index] !== 0) {

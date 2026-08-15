@@ -514,6 +514,27 @@ describe('project context validation', () => {
     expect(metadataFailure).toEqual(['unable to enumerate eligible Git-tracked metadata'])
     expect(metadataFailure.join('\n')).not.toContain('metadata-failure.md')
 
+    let malformedBlobReads = 0
+    const malformedMetadata = validateTrackedTextForWindowsUserHomePaths(
+      createGitIndexTrackedTextValidationAccess((args) => {
+        if (args[0] === 'ls-files') {
+          return blob(['docs/safe.md', ''].join('\0'))
+        }
+        if (args[0] === '--literal-pathspecs') {
+          return new Uint8Array([
+            ...blob('100644 ' + 'a'.repeat(40) + ' 0\tdocs/'),
+            0xff,
+            ...blob('safe.md\0'),
+          ])
+        }
+        malformedBlobReads += 1
+        throw new Error('unexpected blob read')
+      }),
+    )
+    expect(malformedMetadata).toEqual(['unable to enumerate eligible Git-tracked metadata'])
+    expect(malformedBlobReads).toBe(0)
+    expect(malformedMetadata.join('\n')).not.toMatch(/\uFFFD|ff|docs\/safe|a{40}/i)
+
     const unsupportedMetadata = validateTrackedTextForWindowsUserHomePaths(
       accessForEntries(
         [indexEntry('docs/unsupported', { mode: '160000' })],

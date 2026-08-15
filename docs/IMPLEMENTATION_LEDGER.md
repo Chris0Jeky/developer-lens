@@ -4770,6 +4770,28 @@ rollbackable commit only if the issue remains OPEN and the remote base remains
 `df18b1b4c2b7321e81250069bbb198c3c2e3df14`. Do not push, open a PR, comment, merge, or rerun the
 full gate from this hop.
 
+## 2026-08-15 — Product #257 fatal UTF-8 staged metadata decoding
+
+**Changed.** `parseGitIndexEntries` now uses fatal UTF-8 decoding with BOM preservation. An injected
+otherwise-valid metadata record containing an invalid byte now fails closed through the public
+validator with only the generic eligible-metadata diagnostic, before blob reads or a final snapshot.
+Valid UTF-8, BOM, OID, whitespace, and tab coverage remains in the existing validator suite.
+
+**Verified.** Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. The validator suite
+passed (1 file, 45 tests), including the injected adapter-level invalid-metadata assertion with zero
+blob reads and no replacement-character, path, invalid-byte, or object-ID leakage.
+
+**Verified / residual risk.** The focused named malformed-metadata test passed (1 passed, 44
+skipped). Staged `npm.cmd run verify:context` passed (47 Markdown files, 31 required files), and
+cached/working diff checks were clean. The standalone 300-second `npm.cmd run check` was RED at
+123.1 seconds after lint, context, and generated-view checks, then the same untouched storage-v3 and
+activation failures (`INVALID_TASK_INSTALLATION_KEY` and `INVALID_GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD`)
+occurred before build. FR-062 is its fourth recurrence; no retry or flaky claim was made. Exact
+base-to-head review remains the next local evidence step. No protected-data access, filesystem fixture,
+push, pull request, comment, merge, release, or Product #257 closure was attempted.
+
+**Docs-state sync.** `CURRENT_STATE.md` is unchanged. **Human actions.** None.
+
 ## 2026-08-15 — Product #257 tracked-path diagnostic escaping
 
 **Changed.** Added one private metadata-derived diagnostic-path escape helper. It preserves ordinary
