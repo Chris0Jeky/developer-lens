@@ -4535,3 +4535,16 @@ No tag, version, package, publication, release, owner sign-off, or browser QA is
 `git diff --check`. FR-045 records the one read-only PowerShell helper failure observed during the
 PR #249 review and links Product issue #222 comment `5299611271`; its Windows-safe helper debt owns
 any enforcement promotion.
+
+## 2026-08-15 — PR #249 final review-round active-slice repair
+
+Review comment `3787866689` confirmed that the operative `active_slice` still scheduled delivered
+Lab changelog/media work and repeated obsolete Lab pre-tag blockers. The field now records the live
+sequence: Lab pre-sign-off and authority work through PR #88 is delivered; Product browser visual
+QA stays NOT VERIFIED, BLOCKED, and PARKED until the mandated in-app or connected browser surface
+is available; agents then produce visual proof; only after proof may the owner sign off at
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`; after Product records that sign-off, agents own
+the synchronized release mechanics under A1=FULL and the ordinary gates. Lab #29 remains open until
+the joint tag; no tag, release, publication, or issue closure is claimed. This second fix round is
+the final permitted non-CRITICAL round for PR #249. `npm.cmd run verify:context` and
+`git diff --check` passed; the separate LOW review comment `3787866695` was not changed in this fix.
