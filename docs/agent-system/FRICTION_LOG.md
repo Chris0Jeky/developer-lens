@@ -1072,3 +1072,23 @@ patch changed no file and the one-section retry succeeded.
   preparation and the parked QA lane.
 - **promotion:** Not promoted after one occurrence. If it recurs, select the cheapest
   environment-availability preflight or connector repair rather than a repository fallback.
+
+### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only GitHub helper reliability)`
+- **symptom:** A PR #249 review helper declared a parameter named `$Args`, shadowing PowerShell's
+  automatic `$args` variable. `gh` therefore ran without the intended arguments and emitted help
+  text; `ConvertFrom-Json` then failed with `Invalid JSON primitive: Work.`
+- **impact:** The intended read-only GitHub snapshot was not collected by that invocation and had to
+  be repeated; no repository or GitHub mutation occurred.
+- **workaround:** Rename the parameter to `$GhArguments`, capture the command output as one scalar
+  string through `Out-String`, and pass that scalar to `ConvertFrom-Json`.
+- **occurrences:** 1 independent occurrence — Product PR #249 exact-head review, recorded by Product
+  issue #222 comment `5299611271` on 2026-08-15.
+- **task:** [Product issue #222 comment 5299611271](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299611271)
+  owns the Windows-safe governor-helper debt.
+- **promotion:** One occurrence; no new enforcement layer is justified yet. On recurrence, Product
+  #222 is the selected task-debt layer for the cheapest checked Windows-safe helper rather than
+  another ad hoc workaround.

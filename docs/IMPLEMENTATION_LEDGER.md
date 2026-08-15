@@ -4508,3 +4508,30 @@ until the agent proof exists. No release mechanics are authorized.
 **Friction and continuation.** FR-044 records this one occurrence against Product #200 comment
 `5299321093`; the browser skill's safe stop is the applied workaround. If it recurs, choose the
 cheapest environment-availability preflight or connector repair rather than a repository fallback.
+
+## 2026-08-15 — Lab release-authority dependency landed; PR #249 HIGH resolved
+
+**Review resolution.** Product PR #249 exact-head review comment `5299383272` correctly found a
+HIGH cross-repository contradiction: Product assigned post-sign-off release mechanics to agents,
+while three operative Lab surfaces still assigned them to the owner. The bounded Lab dependency is
+now LANDED through PR #88. Its final head `a4cbce97333161e188af505e3b69b1b47faafd0a` over base
+`2806574915e80118e43dee577bf0c53ea0d1fc83` merged at 2026-08-15T00:47:58Z as
+`bacfc211e8b10f49fc283335866d735e50dcf0e6`. Required PR run `31853663291` and merge run
+`31854697005` are green; accepted exact-head review comment `5299527443` is MERGE-SOUND. A delayed
+2026-08-15T00:58:52Z post-merge sweep found no late review, top-level or inline comment, unresolved
+thread, or closing-reference debt.
+
+**Current authority and resume.** Lab's current operational surfaces now match owner constitution
+A1=FULL: agents produce the visual proof; the owner supplies only the final Product aesthetic
+sign-off at `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`; after Product records that sign-off,
+agents execute synchronized version, tag, package, and approved C0-publication mechanics through
+the ordinary gates. No Lab authority-prose pre-tag dependency remains. Product browser/visual QA is
+still NOT VERIFIED, BLOCKED, and PARKED because the mandated in-app or connected browser was
+unavailable. Its exact unlock remains that browser surface plus completed agent visual proof, so
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` stays open and cannot proceed before proof.
+No tag, version, package, publication, release, owner sign-off, or browser QA is claimed.
+
+**Proof and friction.** This docs/authority fix passed `npm.cmd run verify:context` and
+`git diff --check`. FR-045 records the one read-only PowerShell helper failure observed during the
+PR #249 review and links Product issue #222 comment `5299611271`; its Windows-safe helper debt owns
+any enforcement promotion.

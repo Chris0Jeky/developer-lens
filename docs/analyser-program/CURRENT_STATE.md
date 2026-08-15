@@ -41,8 +41,17 @@ latest_truth_repair: >-
   final `2e970b82d3cd2e87db3c1b68aa4a6003f9776a2f` merged as
   `2806574915e80118e43dee577bf0c53ea0d1fc83`; exact-head run `31849606661` and merge run
   `31850603185` are green, issue #76 is closed, and delayed sweep comment `5299230783` is clean at
-  T+10m55s. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed. No known Lab #29 pre-tag deliverable remains;
-  Lab #29 stays open until the joint tag.
+  T+10m55s. Lab release-authority repair PR #88 final
+  `a4cbce97333161e188af505e3b69b1b47faafd0a` over
+  `2806574915e80118e43dee577bf0c53ea0d1fc83` merged at 2026-08-15T00:47:58Z as
+  `bacfc211e8b10f49fc283335866d735e50dcf0e6`; exact-head run `31853663291` and merge run
+  `31854697005` are green, accepted review comment `5299527443` is MERGE-SOUND, and the delayed
+  2026-08-15T00:58:52Z sweep found no late review, comment, thread, or closing-reference debt. Lab
+  operational surfaces now implement A1=FULL: after agent visual proof, the owner supplies only the
+  Product aesthetic sign-off and agents execute synchronized version, tag, package, and approved
+  C0-publication mechanics under the ordinary gates. No Lab authority-prose pre-tag dependency
+  remains. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed. No known Lab #29 pre-tag
+  deliverable remains; Lab #29 stays open until the joint tag.
 merged: ['R1-R3 cards DL-OPS-CI-01 #70, DL-SPINE-04 #73, DL-SPINE-01 #74, DL-BRIDGE-01 #72,
   DL-METRIC-01 #75, DL-SPINE-02 #84, DL-SPINE-03 #85, DL-UX-ED #87, DL-FINDING-01 #88,
   DL-COMPARE-01 #89, DL-VALIDATE-01 #92, DL-VALUE-01 #94, DL-LIFE-01 #100, DL-EVQ-03 #99',
@@ -167,8 +176,9 @@ next_value_slice: 'ACTIVE WAVE: P0.5 v0.1.0 release programme #200 (product-only
   Exact unlock: an in-app or connected browser becomes available through that mandated surface.
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open but is not the next owner handoff
   until agent browser/visual proof exists. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed and no known Lab #29 pre-tag
-  deliverable remains; Lab #29 stays open until the joint tag. The v0.1.0 tag is JOINT across
-  Product and Lab (O2/H7=BOTH); no product-only tag is authorized. Under OWNER_CONSTITUTION A1=FULL,
+  deliverable remains; Lab #29 stays open until the joint tag. Lab PR #88 has landed the operative
+  A1=FULL actor split, so no Lab authority-prose pre-tag dependency remains. The v0.1.0 tag is JOINT
+  across Product and Lab (O2/H7=BOTH); no product-only tag is authorized. Under OWNER_CONSTITUTION A1=FULL,
   agents execute the synchronized version/tag/package/C0-publication sequence only after the owner
   sign-off; never describe that tag or publication as owner-executed. Do not infer the sign-off,
   activate a release, create a tag, or publish before it. The historical context below is superseded
@@ -371,8 +381,9 @@ blockers: 'P0.5 #200 remains active. Product agent browser/visual QA is NOT VERI
   Playwright or alternate-browser fallback. Exact unlock: an in-app or connected browser becomes
   available through the mandated surface. `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains
   open but is not the next owner handoff until agent browser/visual proof exists. `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed and no
-  known Lab #29 pre-tag deliverable remains; Lab #29 stays open until the joint tag. The v0.1.0 tag
-  remains joint under O2/H7=BOTH, so no product-only tag, release, or publication is authorized.
+  known Lab #29 pre-tag deliverable remains; Lab #29 stays open until the joint tag. Lab PR #88
+  landed the A1=FULL release-actor correction, so no Lab authority-prose pre-tag dependency remains.
+  The v0.1.0 tag remains joint under O2/H7=BOTH, so no product-only tag, release, or publication is authorized.
   Following owner sign-off, OWNER_CONSTITUTION A1=FULL authorizes agents to execute the synchronized
   version/tag/package/C0-publication sequence. No data, model, telemetry, or credential action is
   authorized by this release repair.'
