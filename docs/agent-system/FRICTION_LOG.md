@@ -668,7 +668,7 @@ Rules that bind entries:
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
   inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
-  argument events).
+  argument events), the Product PR #258 inline reproduction, and the Product PR #261 review.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns structured/JSON-input
   Windows-safe CLI helpers for recurring evidence queries.
 - **promotion:** The cheapest enforcing layer is the Windows-safe structured-query helper already
@@ -695,13 +695,15 @@ Rules that bind entries:
 
   **2026-08-15 PR #258 recurrence note:** An optional inline production reproduction used `npx`
   through PowerShell, which stripped native-command quoting before the command could evaluate;
-  static code composition supplied the decisive review evidence instead. Separately, the
-  coordinator's first multiline single-quoted `gh issue create --body` command contained the
-  apostrophe in `#242's`, so PowerShell terminated parsing before the later bullets and before any
-  GitHub mutation. Neither failed attempt was retried. These are two distinct command-boundary
-  occurrences, raising the canonical total to eight while preserving Product
+  static code composition supplied the decisive review evidence instead. This is one FR-022
+  occurrence; the distinct pre-native multiline-body parse failure is FR-065. Product
   [#222](https://github.com/Chris0Jeky/developer-lens/issues/222)'s existing structured-query helper
-  promotion and task ownership.
+  promotion and task ownership remain unchanged.
+
+  **2026-08-15 PR #261 review note:** An optional inline `npx tsx -e` probe and a quote-safe
+  environment attempt both lost native-command quoting before execution, then stopped. Production
+  test and static-diff composition supplied decisive evidence without mutation. The two stopped
+  attempts are one review occurrence, raising the canonical total to eight.
 
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
@@ -1662,3 +1664,40 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 Product #257 recurrence note:** The standalone 300-second full gate again passed
   lint, context, and generated-view checks before failing in the same untouched storage-v3 and
   activation seams. The result is not flaky and was not retried.
+
+### FR-064 — tracked-text guard self-triggered on ledger evidence
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (hosted context-gate interruption)`
+- **symptom:** Hosted `Verify project context` stopped because the Git-index guard recognized a
+  drive-rooted user-home-path example embedded in the Product #257 implementation ledger.
+- **impact:** The hosted context gate stopped before its remaining steps; no repository or external
+  mutation occurred.
+- **workaround:** Describe the guarded structure without reproducing a guard-matching value in
+  tracked evidence, then stage documentation before running context verification because it scans
+  Git-index blobs.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product #257 hosted-red fix round.
+- **task:** [Product #257](https://github.com/Chris0Jeky/developer-lens/issues/257) owns this
+  consumer-context delivery; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+  retains shared Windows-safe command and evidence-boundary debt.
+- **promotion:** One self-triggering-evidence occurrence. Do not promote until an independent
+  recurrence establishes that a checked authoring safeguard is warranted.
+
+### FR-065 — PowerShell single-quoted multiline issue body stopped before native execution
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (pre-mutation command-authoring interruption)`
+- **symptom:** A coordinator's multiline single-quoted PowerShell issue body contained an apostrophe,
+  so parsing stopped before the native issue-creation command ran.
+- **impact:** The intended issue body was not submitted; no GitHub or repository mutation occurred.
+- **workaround:** Use structured JSON or standard input for multiline bodies, or a quote-safe scalar
+  when the payload is short. This outer PowerShell parse predicate is distinct from FR-022's
+  native-command inner-quote stripping.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product PR #258 coordinator hop, recorded
+  by [Product #222 comment 5301096382](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5301096382).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe command-construction boundary.
+- **promotion:** One pre-native multiline-body parse occurrence. Do not promote until an independent
+  recurrence establishes that a checked body-construction safeguard is warranted.

@@ -4731,12 +4731,11 @@ push, open a PR, comment, merge, or rerun the full gate from this hop.
 ## 2026-08-15 — Product #257 Windows user-home drive-token boundary
 
 **Changed.** Added only an ASCII token boundary before the Windows drive prefix in the tracked-text
-Windows user-home detector. Direct case-insensitive `C:/Users/<segment>` forms, backslash forms,
-and repeated serialized separators remain detected. Invented URI-suffix `basic:/users/current` and
-word-embedded `prefixC:/Users/FixtureUser` values now remain eligible text rather than false
-positives. The existing generic literal-free violation remains the result for a genuine invented
-Windows-home blob. No URI parser, root/index logic, diagnostics, or other Product #257 residual
-changed.
+Windows user-home detector. Direct case-insensitive drive-rooted user-home forms, backslash forms,
+and repeated serialized separators remain detected. Invented URI-suffix and word-embedded
+drive-form lookalikes now remain eligible text rather than false positives. The existing generic
+literal-free violation remains the result for a genuine invented Windows-home blob. No URI parser,
+root/index logic, diagnostics, or other Product #257 residual changed.
 
 **Verified.** Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. Before the edit, an
 invented inline probe returned `true` for both false-positive candidates and a genuine invented
