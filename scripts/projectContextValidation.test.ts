@@ -145,6 +145,39 @@ describe('project context validation', () => {
     ).toEqual([])
   })
 
+  it('escapes control characters in metadata-derived tracked-path diagnostics', () => {
+    const controlPath =
+      'docs/control' + String.fromCharCode(10, 13, 27, 133, 0x2028, 0x2029, 92) + 'segment.md'
+    const escapedPath = 'docs/control\\u000A\\u000D\\u001B\\u0085\\u2028\\u2029\\\\segment.md'
+    const homePath = ['C:', 'Users', 'FixtureUser', 'workspace'].join('/')
+    const messages = [
+      ...validateTrackedTextForWindowsUserHomePaths(
+        accessForEntries([indexEntry(controlPath, { stage: '1' })], () => blob('')),
+      ),
+      ...validateTrackedTextForWindowsUserHomePaths(
+        accessForEntries([indexEntry(controlPath, { mode: '160000' })], () => blob('')),
+      ),
+      ...validateTrackedTextForWindowsUserHomePaths(
+        accessForEntries([indexEntry(controlPath)], () => blob('source: ' + homePath)),
+      ),
+      ...validateTrackedTextForWindowsUserHomePaths(
+        accessForEntries([indexEntry(controlPath)], () => {
+          throw new Error('invented blob read failure')
+        }),
+      ),
+    ]
+
+    expect(messages).toEqual([
+      `${escapedPath}: unmerged Git index entry`,
+      `${escapedPath}: unsupported Git index mode`,
+      `${escapedPath}: contains a Windows user-home path`,
+      `${escapedPath}: unable to read Git index blob`,
+    ])
+    for (const message of messages) {
+      expect(message).not.toMatch(/[\u0000-\u001F\u007F-\u009F\u2028\u2029]/)
+    }
+  })
+
   it('rejects every protected root before Git metadata or blob access', () => {
     const protectedRoots = [
       '.developer-lens',

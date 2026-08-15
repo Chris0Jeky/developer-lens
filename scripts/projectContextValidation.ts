@@ -105,6 +105,15 @@ export function containsWindowsUserHomePath(contents: string): boolean {
   return windowsUserHomePathPattern.test(contents)
 }
 
+function escapeDiagnosticPath(path: string): string {
+  return path.replace(/[\\\u0000-\u001F\u007F-\u009F\u2028\u2029]/g, (character) => {
+    if (character === '\\') {
+      return '\\\\'
+    }
+    return `\\u${character.charCodeAt(0).toString(16).toUpperCase().padStart(4, '0')}`
+  })
+}
+
 export interface GitIndexEntry {
   mode: string
   objectId: string
@@ -359,21 +368,22 @@ export function validateTrackedTextForWindowsUserHomePaths(
     return errors
   }
   for (const entry of finalSnapshot) {
+    const diagnosticPath = escapeDiagnosticPath(entry.path)
     if (entry.stage !== '0') {
-      errors.push(`${entry.path}: unmerged Git index entry`)
+      errors.push(`${diagnosticPath}: unmerged Git index entry`)
       continue
     }
     if (entry.mode !== '100644' && entry.mode !== '100755' && entry.mode !== '120000') {
-      errors.push(`${entry.path}: unsupported Git index mode`)
+      errors.push(`${diagnosticPath}: unsupported Git index mode`)
       continue
     }
     try {
       const contents = new TextDecoder().decode(access.readBlob(entry.objectId))
       if (containsWindowsUserHomePath(contents)) {
-        errors.push(`${entry.path}: contains a Windows user-home path`)
+        errors.push(`${diagnosticPath}: contains a Windows user-home path`)
       }
     } catch {
-      errors.push(`${entry.path}: unable to read Git index blob`)
+      errors.push(`${diagnosticPath}: unable to read Git index blob`)
     }
   }
   return errors

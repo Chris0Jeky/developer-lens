@@ -4769,3 +4769,46 @@ perform an exact staged-diff review, recheck Product #257 and `origin/main`, the
 rollbackable commit only if the issue remains OPEN and the remote base remains
 `df18b1b4c2b7321e81250069bbb198c3c2e3df14`. Do not push, open a PR, comment, merge, or rerun the
 full gate from this hop.
+
+## 2026-08-15 — Product #257 tracked-path diagnostic escaping
+
+**Changed.** Added one private metadata-derived diagnostic-path escape helper. It preserves ordinary
+safe path text byte-for-byte and deterministically renders backslash, C0/C1 controls, and the two
+Unicode line-separator code points as ASCII escapes. The validator computes that value once for each
+reconciled entry and uses it only in the existing unmerged-entry, unsupported-mode, user-home-content,
+and unreadable-blob messages. Protected-path and metadata-mismatch diagnostics remain generic; no
+metadata or blob read, eligibility decision, filesystem fixture, or other Product #257 residual changed.
+
+**Verified.** Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. Before the edit, an
+injected pure-data probe showed that LF, CR, ESC, C1, both Unicode line separators, and backslash
+were emitted raw by the unsupported-mode diagnostic. The focused named validator test passed (1
+passed, 44 skipped), then `npm.cmd test -- scripts/projectContextValidation.test.ts` passed (1 file,
+45 tests). It asserts exact one-line ASCII-escaped output for all four path-bearing messages and no
+raw controls, while existing ordinary safe-path assertions remain unchanged. `npm.cmd run
+verify:context` passed (47 Markdown files, 31 required files) and `git diff --check` was clean before
+this ledger append. The public issue read found Product #257 OPEN, and `origin/main` matched pinned
+base `440894e9b527088e659efd644d75cb5b073b5b7e` before the edit.
+
+**NOT verified / residual risk.** The standalone `npm.cmd run check` ran within the 300-second
+boundary and was RED at 122.3 seconds. Lint completed with non-failing intentional control-regex
+warnings; context verification and generated-view checks passed. Full Vitest then failed before build
+in untouched storage-v3 and activation seams with `INVALID_TASK_INSTALLATION_KEY` and
+`INVALID_GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD`. This is not called flaky and does not establish a
+regression in the metadata-diagnostic seam. No retry, build, protected/generated/private-data access,
+credential handling, external-model call, telemetry, push, pull request, comment, merge, release, or
+Product #257 closure was attempted.
+
+**Failures and workarounds.** FR-062 records its third exact fresh-worktree recurrence; no new
+mechanism is selected, and exact-head hosted CI remains required.
+
+**Docs-state sync.** `CURRENT_STATE.md` is unchanged: this consumer-context diagnostic rendering
+repair does not change current state, release, owner gates, data, capability, browser, Lab, or authority.
+
+**Human actions.** None. `Chris0Jeky/developer-lens::HUMAN_TODO.md` is unchanged.
+
+**Exact resume.** On `fix/tracked-path-diagnostic-escape-20260815`, stage the four owned files,
+rerun `npm.cmd run verify:context` against the staged index and `git diff --check`, perform an exact
+staged-diff review, recheck Product #257 and `origin/main`, then make one local rollbackable commit
+only if the issue remains OPEN and the remote base remains
+`440894e9b527088e659efd644d75cb5b073b5b7e`. Do not push, open a PR, comment, merge, or rerun the
+full gate from this hop.

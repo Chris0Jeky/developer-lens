@@ -792,7 +792,7 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 6 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+- **occurrences:** 7 independent occurrences — 2026-08-10 during the Product #200 reconciliation
   and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
   resolution, recorded by
   [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
@@ -828,6 +828,11 @@ Rules that bind entries:
   review diffs printed usage before reading their ranges. Passing the range through the explicit
   scalar `$range` completed both bounded diffs. This sixth occurrence retains FR-026's promoted
   explicit-scalar native-boundary mechanism and Product #222 ownership.
+
+  **2026-08-15 Product PR #262 review note:** An unquoted PowerShell `@{upstream}` revspec parsed
+  as a hash literal before Git executed. Passing the revision through a quoted explicit scalar
+  completed the bounded read. This seventh occurrence retains FR-026's promoted explicit-scalar
+  native-boundary mechanism and Product #222 ownership.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
@@ -1536,7 +1541,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository state.
 - **workaround:** Correct the query syntax and use the pagination-complete read; the corrected
   query returned zero threads.
-- **occurrences:** 3 independent occurrences — PR #252 fresh review at
+- **occurrences:** 4 independent occurrences — PR #252 fresh review at
   `3fd004fec41ff96a03ef63e7a7802fa429841c00`, recorded by
   [Product issue #222 comment 5300314833](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300314833),
   and the 2026-08-15 exact-final PR #254 review.
@@ -1556,6 +1561,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   had a closing-brace syntax error. The corrected bounded query succeeded, so no GitHub mutation or
   evidence gap resulted. This third occurrence retains Product #222's promoted query-construction
   mechanism and ownership.
+
+  **2026-08-15 Product PR #262 review note:** The first bounded GraphQL thread query had an extra
+  closing brace. The corrected query returned zero threads, with no GitHub mutation or evidence gap.
+  This fourth occurrence retains FR-056's promoted query-construction mechanism and Product #222
+  ownership.
 
 ### FR-057 — `rg` discovery named a nonexistent `tests/` directory
 
@@ -1651,8 +1661,8 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Preserve the one full-gate result and its exact signatures; do not change the
   unrelated storage or activation seams in this slice. A later exact-head gate must classify its own
   outcome before any publication decision.
-- **occurrences:** 2 independent occurrences — 2026-08-15 Product #259 and Product #257
-  fresh-worktree proofs.
+- **occurrences:** 3 independent occurrences — 2026-08-15 Product #259 and Product #257
+  fresh-worktree proofs, plus Product #257 diagnostic-path escaping.
 - **task:** [Product #259](https://github.com/Chris0Jeky/developer-lens/issues/259) records this
   bounded validator delivery; [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200)
   retains the release-proof boundary.
@@ -1664,6 +1674,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 Product #257 recurrence note:** The standalone 300-second full gate again passed
   lint, context, and generated-view checks before failing in the same untouched storage-v3 and
   activation seams. The result is not flaky and was not retried.
+
+  **2026-08-15 Product #257 diagnostic-path note:** The standalone gate again reached the same
+  untouched storage-v3 and activation failures after lint, context, and generated-view checks. The
+  build did not run; the result is not flaky and was not retried. No new mechanism is selected.
 
 ### FR-064 — tracked-text guard self-triggered on ledger evidence
 
@@ -1701,3 +1715,42 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   Windows-safe command-construction boundary.
 - **promotion:** One pre-native multiline-body parse occurrence. Do not promote until an independent
   recurrence establishes that a checked body-construction safeguard is warranted.
+
+### FR-066 — canonical estate lookup was absent without fallback coverage
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (external routing-evidence coverage)`
+- **symptom:** The required canonical ESTATE lookup returned `PathNotFound`. The reviewer stopped
+  without inspecting a fallback registry and relied on the supplied repository/worktree identity and
+  repository-local canon.
+- **impact:** External registry and fallback state remain NOT VERIFIED, while the exact repository
+  evidence is complete; no repository or external mutation occurred.
+- **workaround:** Explicitly report the missing and uninspected external routing surfaces, then use
+  pinned repository-local and live-Git evidence for the bounded review.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product PR #262 review.
+- **task:** [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
+  owns deployed registry/fallback routing; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
+  records this bounded review classification.
+- **promotion:** One incomplete-external-routing-coverage occurrence. Do not promote until an
+  independent recurrence establishes that a checked coverage safeguard is warranted.
+
+### FR-067 — delegated SHA payload diverged from live branch evidence
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (coordination-range evidence interruption)`
+- **symptom:** A delivered task SHA literal had 41 characters, while the coordinator's recorded
+  request and the live branch showed the corresponding 40-character head. The first bounded range
+  failed before reading; fetching and live-branch inspection supplied the actual head, and the
+  corrected bounded range succeeded.
+- **impact:** Delivery and source payload divergence remains unresolved, but no mutation or evidence
+  gap occurred after the live head supplied the corrected range.
+- **workaround:** Validate delegated SHA length and existence against live Git before issuing range
+  commands; report any source-payload divergence without attributing its origin as settled fact.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product PR #262 coordination review.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) and
+  [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) own shared command and
+  review-evidence hardening.
+- **promotion:** One delegated-SHA divergence occurrence. Do not promote until an independent
+  recurrence establishes that a checked payload-validation safeguard is warranted.
