@@ -13,6 +13,7 @@ import {
   createGitIndexTrackedTextValidationAccess,
   extractMarkdownLinkTargets,
   findBareHumanRefs,
+  formatCurrentStateValidationErrors,
   isProtectedTrackedPath,
   isTrackedTextPathEligible,
   normalizeSharedText,
@@ -662,7 +663,10 @@ describe('project context validation', () => {
     expect(() => {
       materializationErrors = validateCurrentStateDocument(state(nestedAliases))
     }).not.toThrow()
-    expect(materializationErrors).toEqual(['current state: YAML materialization failed'])
+    expect(materializationErrors).toEqual(['YAML materialization failed'])
+    expect(formatCurrentStateValidationErrors(materializationErrors)).toEqual([
+      'current state: YAML materialization failed',
+    ])
     for (const [key, replacement, expected] of [
       ['updated', 'updated: 2026-8-10', 'updated must be a YYYY-MM-DD string'],
       ['updated', "updated: '2026-02-30'", 'updated must be a YYYY-MM-DD string'],

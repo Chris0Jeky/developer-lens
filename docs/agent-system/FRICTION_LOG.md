@@ -333,7 +333,7 @@ Rules that bind entries:
 ### FR-011 — branch cleanup bypassed a protected deletion rule after merge
 
 - **first-seen:** 2026-08-09
-- **status:** `open`
+- **status:** `promoted`
 - **symptom:** After merged PR #218, an exact clean-worktree audit and local branch deletion,
   `git push origin --delete docs/prompt-system-overhaul` succeeded while GitHub reported a privileged
   bypass of the `Cannot delete this branch` rule.
@@ -342,11 +342,17 @@ Rules that bind entries:
   deleted branch remains recoverable.
 - **workaround:** Do not recreate the branch in this slice. Future cleanup must inspect applicable
   rules first and avoid any silent administrative bypass.
-- **occurrences:** 1 recorded — 2026-08-09, after PR #218 merge cleanup.
+- **occurrences:** 2 recorded — 2026-08-09, after PR #218 merge cleanup, and 2026-08-15 after
+  Product PR #258 cleanup.
 - **task:** [#221](https://github.com/Chris0Jeky/developer-lens/issues/221)
-- **promotion:** Task debt pending #221. A future cleanup path should prove the deletion rule and
-  explicit authority before acting, and report any privileged bypass in the same hop; this slice
-  changes no rules and does not recreate the branch.
+- **promotion:** Promoted at the second occurrence: Product #221 owns a checked cleanup helper or
+  contract that queries applicable branch rules before deletion and refuses any required privileged
+  bypass. Until it exists, leave a merged remote branch rather than delete it. This slice changes no
+  rules and does not recreate a branch.
+
+  **2026-08-15 Product PR #258 cleanup recurrence note:** After a clean merged-branch audit found
+  no open child pull request, remote deletion succeeded but GitHub reported a privileged bypass of
+  `Cannot delete this branch`. The branch remains merged; no replacement branch or retry is selected.
 
 ### FR-012 — fresh product worktree lacks the Node tool bootstrap
 
@@ -784,7 +790,7 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 5 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+- **occurrences:** 6 independent occurrences — 2026-08-10 during the Product #200 reconciliation
   and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
   resolution, recorded by
   [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
@@ -815,6 +821,11 @@ Rules that bind entries:
   GraphQL refused the malformed node ID with `NOT_FOUND` before any mutation. Retrying with the
   explicit scalar `$threadId` completed all three replies and resolutions. This fifth occurrence
   retains FR-026's promoted explicit-scalar native-boundary mechanism and Product #222 ownership.
+
+  **2026-08-15 Product PR #260 review note:** `$expectedBase..$expectedHead` misexpanded, so both
+  review diffs printed usage before reading their ranges. Passing the range through the explicit
+  scalar `$range` completed both bounded diffs. This sixth occurrence retains FR-026's promoted
+  explicit-scalar native-boundary mechanism and Product #222 ownership.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
@@ -1282,24 +1293,37 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-048 — PowerShell loop syntax typo stopped a read-only state inventory
 
 - **first-seen:** 2026-08-15
-- **status:** `promoted`
+- **status:** `workaround-documented`
 - **severity:** `LOW (read-only authoring interruption)`
 - **symptom:** A PowerShell inventory used an invalid loop form and stopped with an unexpected-token
   parser error before it read or changed repository state.
 - **impact:** The state-structure inventory had to be reissued, delaying a bounded documentation
   repair without weakening any evidence.
 - **workaround:** Use PowerShell's `foreach (...)` form and rerun the same read-only command.
-- **occurrences:** 2 independent occurrences — 2026-08-15 during Product #200 resume repair and
-  the Product PR #258 final review.
+- **occurrences:** 1 independent occurrence — 2026-08-15 during Product #200 resume repair.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe helper and command-boundary debt.
-- **promotion:** Promoted at the second independent occurrence: Product #222 owns the checked
-  inventory-helper pattern that collects `foreach` output into an intermediate array before piping.
-  Keep the read bounded and fail closed on parse or inventory errors; do not add a generic retry.
+- **promotion:** One invalid-loop-form occurrence; no new enforcement layer is justified. Keep the
+  command bounded and parse-fail-closed; reconsider a checked helper only if this exact invalid-loop
+  form recurs independently.
 
-  **2026-08-15 Product PR #258 final-review note:** A read-only file-metadata helper piped directly
-  after `foreach` and stopped with `An empty pipe element is not allowed`. Collecting the loop output
-  into an intermediate array completed the bounded inventory, with no mutation or evidence gap.
+### FR-063 — PowerShell direct-after-foreach pipeline rejected a metadata inventory
+
+- **first-seen:** 2026-08-15
+- **status:** `promoted`
+- **severity:** `LOW (read-only inventory authoring interruption)`
+- **symptom:** A read-only file-metadata helper piped directly after a valid `foreach` form and
+  stopped with `An empty pipe element is not allowed` before the inventory completed.
+- **impact:** The bounded inventory had to be reissued, without a mutation or evidence gap.
+- **workaround:** Collect `foreach` output into an intermediate array before piping it to the
+  metadata helper; the corrected bounded inventory completes without mutation.
+- **occurrences:** 2 independent occurrences — 2026-08-15 Product PR #258 final review and Product
+  PR #260 review.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe inventory-helper boundary.
+- **promotion:** Promoted at the second occurrence: Product #222 owns a checked inventory helper
+  that captures loop output before piping while preserving bounded fail-closed behavior. Do not
+  conflate this valid-foreach pipeline predicate with FR-048's invalid-loop-form predicate.
 
 ### FR-049 — failed CI log transport truncated before complete retrieval
 
@@ -1314,7 +1338,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
   as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
   the focused test plus the hosted rerun.
-- **occurrences:** 5 independent occurrences — Product issue #222 comment `5300160711`, the
+- **occurrences:** 6 independent occurrences — Product issue #222 comment `5300160711`, the
   2026-08-15 PR #251 post-merge discussion-timeline transport truncation recorded by
   [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636),
   the 2026-08-15 combined memory/skill read transport truncation, and the 2026-08-15 PR #256
@@ -1345,6 +1369,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-15 recurrence note:** A PR #256 final-fix combined source response transport-truncated.
   It was not treated as complete; only bounded relevant sections were reread for the snapshot
   reconciliation, with no total or completeness claim. This is the fifth canonical occurrence.
+
+  **2026-08-15 Product PR #260 review note:** A combined five-file high-context diff transport
+  truncated. The response was not treated as complete; bounded separate code, test, log, and ledger
+  diffs completed the review. This sixth occurrence retains FR-049's completeness-aware promotion
+  and Product #222 ownership.
 
 ### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
 
@@ -1555,7 +1584,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository mutation or missing final skill evidence.
 - **workaround:** Check the named repository-local skill path before reading it; the corrected
   bounded read supplied the applicable continuation instructions.
-- **occurrences:** 2 independent occurrences — 2026-08-15 PR #254 superseder-scout hop and the
+- **occurrences:** 3 independent occurrences — 2026-08-15 PR #254 superseder-scout hop and the
   2026-08-15 Product PR #256 final-fix orientation hop.
 - **task:** [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) records this
   bounded classification; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
@@ -1563,6 +1592,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** Promoted at the second direct skill-path occurrence: Product #222 owns a checked
   repository-local continuation-skill-path preflight before planned skill reads. Do not change
   FR-057's reviewed `rg` exit-status scalar or merge this into its command-specific mechanism.
+
+  **2026-08-15 Product PR #260 review note:** The first memory-skill path returned `PathNotFound`.
+  The repository-local `.agents/skills/developer-lens-continuation/SKILL.md` path succeeded. This
+  third occurrence retains FR-058's promotion and Product #222 ownership.
 
 ### FR-059 — guessed review-thread node ID failed before resolution
 
@@ -1602,3 +1635,24 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One check-state/command-batch occurrence. Do not conflate it with FR-013’s
   timeout or FR-051’s unsupported query-shape predicate. A second independent occurrence promotes
   a checked status-aware command helper under Product #222.
+
+### FR-062 — fresh-worktree full gate fails untouched storage and activation seams
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (local full-gate limitation)`
+- **symptom:** Product #259's standalone 300-second `npm.cmd run check` passed lint, context, and
+  generated-view checks, then failed broadly in untouched storage-v3 and activation suites with
+  `INVALID_TASK_INSTALLATION_KEY` and `INVALID_GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD` errors.
+- **impact:** The full suite and build are NOT VERIFIED for this exact head, while the focused
+  current-state validator proof remains separate evidence.
+- **workaround:** Preserve the one full-gate result and its exact signatures; do not change the
+  unrelated storage or activation seams in this slice. A later exact-head gate must classify its own
+  outcome before any publication decision.
+- **occurrences:** 1 independent occurrence — 2026-08-15 Product #259 fresh-worktree proof.
+- **task:** [Product #259](https://github.com/Chris0Jeky/developer-lens/issues/259) records this
+  bounded validator delivery; [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200)
+  retains the release-proof boundary.
+- **promotion:** One exact signature family. Do not conflate it with FR-050's
+  `STORAGE_V3_ARTIFACT_INVALID` predicate or select a remediation without an independent bounded
+  reproduction outside this delivery range.

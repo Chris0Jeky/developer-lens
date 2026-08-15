@@ -5,6 +5,7 @@ import fg from 'fast-glob'
 import {
   createGitIndexTrackedTextValidationAccess,
   extractMarkdownLinkTargets,
+  formatCurrentStateValidationErrors,
   parsePromptLibrary,
   parseSkillFrontmatter,
   resolveRepositoryLinkTarget,
@@ -70,9 +71,7 @@ const requiredFiles = [
 requiredFiles.forEach(requireFile)
 
 if (failures.length === 0) {
-  for (const error of validateCurrentStateDocument(read('docs/analyser-program/CURRENT_STATE.md'))) {
-    failures.push(`current state: ${error}`)
-  }
+  failures.push(...formatCurrentStateValidationErrors(validateCurrentStateDocument(read('docs/analyser-program/CURRENT_STATE.md'))))
 
   try {
     const tier = JSON.parse(read('.agent-harness/tier.json')) as unknown
