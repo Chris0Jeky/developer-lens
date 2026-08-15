@@ -356,8 +356,8 @@ Rules that bind entries:
   deleted branch remains recoverable.
 - **workaround:** Do not recreate the branch in this slice. Future cleanup must inspect applicable
   rules first and avoid any silent administrative bypass.
-- **occurrences:** 2 recorded — 2026-08-09, after PR #218 merge cleanup, and 2026-08-15 after
-  Product PR #258 cleanup.
+- **occurrences:** 3 recorded — 2026-08-09, after PR #218 merge cleanup, 2026-08-15 after
+  Product PR #258 cleanup, and 2026-08-15 after PR #268 cleanup.
 - **task:** [#221](https://github.com/Chris0Jeky/developer-lens/issues/221)
 - **promotion:** Promoted at the second occurrence: Product #221 owns a checked cleanup helper or
   contract that queries applicable branch rules before deletion and refuses any required privileged
@@ -367,6 +367,14 @@ Rules that bind entries:
   **2026-08-15 Product PR #258 cleanup recurrence note:** After a clean merged-branch audit found
   no open child pull request, remote deletion succeeded but GitHub reported a privileged bypass of
   `Cannot delete this branch`. The branch remains merged; no replacement branch or retry is selected.
+
+  **2026-08-15 PR #268 cleanup recurrence note:** Remote deletion of
+  `docs/reconcile-post-266-friction-20260815` succeeded while GitHub reported a privileged bypass
+  of `Cannot delete this branch`, as recorded by [Product #221 comment 5303683130](https://github.com/Chris0Jeky/developer-lens/issues/221#issuecomment-5303683130).
+  Merged commit `fdd60c2cf9289140f4adc2c778aeb7e20dec8e5a` remains on `main` and recoverable, so no
+  work was lost. Do not recreate or retry the deletion. The existing stop rule remains binding:
+  leave merged remote branches when deletion requires a bypass. The checked helper/contract remains
+  unimplemented.
 
 ### FR-012 — fresh product worktree lacks the Node tool bootstrap
 
@@ -528,9 +536,9 @@ Rules that bind entries:
   normalization. The intended index remains LF and `git diff --check` is clean.
 - **workaround:** Stage only the named files, inspect the cached diff, and run
   `git diff --cached --check`; do not normalize unrelated lines or files in this slice.
-- **occurrences:** 2 independent occurrences — the four-file #200 documentation reconciliation on
+- **occurrences:** 3 independent occurrences — the four-file #200 documentation reconciliation on
   2026-08-09 shares one checkout/config cause; the Product #246 one-file consolidation emitted the
-  same warning on 2026-08-15.
+  same warning on 2026-08-15; and the 2026-08-15 DL-CONTEXT-01 generator run emitted it again.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the bounded
   pre-QA documentation reconciliation.
 - **promotion:** At the second independent occurrence, Product #222 owns the cheapest checked
@@ -539,6 +547,13 @@ Rules that bind entries:
 
   **2026-08-15 recurrence note:** The one-file #246 scan emitted the same LF/CRLF warning. This
   selects the existing #222 enforcement debt without a bulk line-ending rewrite in this slice.
+
+  **2026-08-15 DL-CONTEXT-01 recurrence note:** LF/CRLF warnings affected the canonical card
+  source, generated Taskdeck manifest, and generated delivery roadmap, as recorded by [Product #222 comment 5303623855](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303623855).
+  The roadmap HEAD and worktree blob were both
+  `592e92982ed0e4b82a2514b777c6e39aca222b68`; raw/content diffs were empty, and a bounded index
+  refresh cleared the false status. No semantic or bulk-normalization change was made. The
+  existing policy/verification debt remains unimplemented.
 
 ### FR-017 — MCP hygiene cleanup needed a canonical-location retry and bounded second pass
 
