@@ -691,7 +691,7 @@ Rules that bind entries:
   to an otherwise reproducible GitHub state snapshot.
 - **workaround:** Use `(Get-Date).ToUniversalTime().ToString('o')`, which succeeded on the same
   shell without changing repository or GitHub state.
-- **occurrences:** 3 independent occurrences — 2026-08-09 during the PR232 final review-thread
+- **occurrences:** 4 independent occurrences — 2026-08-09 during the PR232 final review-thread
   snapshot, plus 2026-08-13 and 2026-08-14 (the immutable FR-032 Windows PowerShell UTC-switch
   recurrences).
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
@@ -704,6 +704,11 @@ Rules that bind entries:
   **2026-08-15 consolidation note:** FR-032's immutable Product events contain the same rejected
   `Get-Date -AsUTC` predicate and compatible expression. Its ID remains a consolidated pointer;
   the canonical total is three.
+
+  **2026-08-15 recurrence note:** PowerShell 5.1 again rejected `Get-Date -AsUTC`; the compatible
+  `DateTime` UTC expression completed the read-only timestamp step. This raises this canonical
+  mechanism's total to four. FR-032 remains its immutable historical pointer, so no disputed
+  duplicate arithmetic or second UTC framework is revived; Product #222 retains the selected helper.
 
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
@@ -756,7 +761,7 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 3 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+- **occurrences:** 4 independent occurrences — 2026-08-10 during the Product #200 reconciliation
   and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
   resolution, recorded by
   [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
@@ -776,6 +781,11 @@ Rules that bind entries:
   ID before changing thread state. Building the field from an explicit scalar thread ID succeeded.
   This recurrence confirms the promoted explicit-scalar native-argument boundary; Product #222
   retains that enforcement direction rather than adding a second helper.
+
+  **2026-08-15 recurrence note:** An unquoted `$base..$head` Git range expanded incorrectly and
+  `git diff` printed usage before reading evidence. Passing the intended range as one explicit
+  scalar variable completed the bounded diff. This is the promoted single-value native-argument
+  boundary; Product #222 remains the selected enforcement rather than adding a range-specific rule.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
@@ -1137,7 +1147,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-043 — bounded Product queue scout overran and was interrupted
 
 - **first-seen:** 2026-08-14
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (queue-observation cost)`
 - **symptom:** A bounded Product #200 queue scout exceeded its intended observation window and was
   interrupted before producing a complete, directly usable snapshot.
@@ -1145,11 +1155,18 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   incomplete scout output; no repository or GitHub mutation occurred.
 - **workaround:** Use a direct structured snapshot of the named Product/Lab refs, checks, review
   state, and issue state before making a release-truth claim.
-- **occurrences:** 1 independent occurrence — Product #200 comment `5298981016` on 2026-08-14.
+- **occurrences:** 2 independent occurrences — Product #200 comment `5298981016` on 2026-08-14 and the 2026-08-15 recursive estate-registry search timeout.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the bounded
-  release-governor queue.
-- **promotion:** Not promoted after one occurrence. If it recurs, select the cheapest bounded checked
-  scout or timeout enforcement that preserves a complete structured snapshot.
+  release-governor queue; [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
+  owns the affected registry/fallback route.
+- **promotion:** Promoted at the second independent occurrence to a direct named-path snapshot plus
+  one fallback-map read. A recursive broad search is not an acceptable prerequisite for a routing
+  claim; retain an incomplete/timed-out search as explicit coverage and use the bounded direct route.
+
+  **2026-08-15 promotion note:** A recursive estate-registry search timed out before completing.
+  The exact canonical-path absence and fallback-map omission were then checked directly, so the
+  timeout did not create an evidence gap. This is a scout-timeout recurrence, distinct from and
+  additionally counted by FR-053's registry-absence predicate; #133 owns the fallback route.
 
 ### FR-044 — mandated browser-client discovery found no available browser
 
@@ -1263,9 +1280,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
   as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
   the focused test plus the hosted rerun.
-- **occurrences:** 2 independent occurrences — Product issue #222 comment `5300160711` and the
+- **occurrences:** 3 independent occurrences — Product issue #222 comment `5300160711`, the
   2026-08-15 PR #251 post-merge discussion-timeline transport truncation recorded by
-  [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636).
+  [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636),
+  and the 2026-08-15 combined memory/skill read transport truncation.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded
   retrieval that retains completeness status; [Product #252](https://github.com/Chris0Jeky/developer-lens/issues/252)
   records this mandatory evidence fix.
@@ -1278,6 +1296,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   merge SHA, 8/8 resolved threads, zero late Codex findings, and zero closing refs, but its merged
   discussion timeline was transport-truncated. The collector correctly refused to assert a total
   comment count and did not retry, filter, or recollect; the truncation changes no PR #251 verdict.
+
+  **2026-08-15 recurrence note:** A combined memory/skill read transport-truncated. The combined
+  response was not treated as complete; bounded individual reads recovered only the exact policy
+  facts needed for the review. This remains current canonical transport-truncation coverage and does
+  not settle whether a future broader-source class should be separate.
 
 ### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
 
@@ -1304,7 +1327,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-051 — `gh pr checks` rejected an unsupported JSON field before a snapshot read
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only CLI query-shape friction)`
 - **symptom:** A bounded `gh pr checks --json` query requested unsupported field `conclusion` and
   failed before returning check evidence.
@@ -1312,13 +1335,22 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   changing GitHub or repository state.
 - **workaround:** Reissue the query with supported fields, then confirm the exact run through
   `gh run view`; the corrected read supplied the required evidence.
-- **occurrences:** 1 independent occurrence — 2026-08-15 PR #251 merge snapshot, recorded by
-  [Product issue #222 comment 5300251294](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300251294).
+- **occurrences:** 3 independent occurrences — 2026-08-15 PR #251 merge snapshot, recorded by
+  [Product issue #222 comment 5300251294](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300251294),
+  plus the exact-final PR #254 `closingIssues` field rejection and unsupported `gh pr diff` path
+  arguments.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns typed
   Windows-safe query-shape helpers; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
   records this bounded classification.
-- **promotion:** One query-schema occurrence. If it recurs, add the supported-field contract to
-  #222's checked helper; this documentation slice does not implement that helper.
+- **promotion:** Promoted at the second independent occurrence: Product #222 owns a checked CLI
+  command-shape contract that admits only supported JSON fields and command arguments before a
+  read-only snapshot. Use a bounded local Git diff when the requested `gh` command has no path
+  argument surface; do not retry unsupported invocation shapes.
+
+  **2026-08-15 promotion note:** `gh pr view --json closingIssues` failed before evidence was read;
+  `closingIssuesReferences` completed the bounded read. Separately, `gh pr diff` rejected path
+  arguments, and the bounded local Git diff completed the required inspection. Both are the same
+  CLI command-shape mechanism and select the existing #222 checked contract.
 
 ### FR-052 — mechanical review-thread summary disagreed with its complete source
 
@@ -1350,9 +1382,9 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository's local canon rather than treating the absent external surface as current authority.
 - **workaround:** Re-read the local `AGENTS.md`, `CLAUDE.md`, tier declaration, and live Git state;
   retain the missing external registry/fallback result as explicit coverage, not a safe default.
-- **occurrences:** 2 independent occurrences — 2026-08-15 PR #251 review hop, recorded by
+- **occurrences:** 3 independent occurrences — 2026-08-15 PR #251 review hop, recorded by
   [Product issue #222 comment 5300234735](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300234735),
-  and the 2026-08-15 exact-final PR #254 review hop.
+  the 2026-08-15 exact-final PR #254 review hop, and its recursive estate-registry search.
 - **task:** [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133)
   owns deployed registry/fallback routing; [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246)
   records this bounded classification.
@@ -1365,6 +1397,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   live-Git inspection completed successfully, so the absence remains explicit coverage rather than
   an evidence gap. This second independent event selects the existing #133 fallback-presence
   contract; no duplicate Product helper or retry mechanism is introduced.
+
+  **2026-08-15 recurrence note:** The later recursive search again found the canonical registry
+  absent and the fallback REPOS map without a Developer Lens row. Its timeout is recorded separately
+  under FR-043; the confirmed absence is this entry's third independent occurrence and remains
+  owned by [Chris0Jeky/claude-config#133](https://github.com/Chris0Jeky/claude-config/issues/133).
 
 ### FR-054 — unspecified PowerShell parse failure interrupted a read-only audit
 
@@ -1406,7 +1443,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-056 — hand-built GraphQL closing syntax failed before a thread snapshot
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only query authoring interruption)`
 - **symptom:** A fresh reviewer hand-built a GraphQL query with malformed closing syntax; it failed
   before returning review-thread evidence.
@@ -1414,15 +1451,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository state.
 - **workaround:** Correct the query syntax and use the pagination-complete read; the corrected
   query returned zero threads.
-- **occurrences:** 1 independent occurrence — PR #252 fresh review at
+- **occurrences:** 2 independent occurrences — PR #252 fresh review at
   `3fd004fec41ff96a03ef63e7a7802fa429841c00`, recorded by
-  [Product issue #222 comment 5300314833](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300314833).
+  [Product issue #222 comment 5300314833](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300314833),
+  and the 2026-08-15 exact-final PR #254 review.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns typed
   query-shape helpers; [Product #252](https://github.com/Chris0Jeky/developer-lens/issues/252)
   records this mandatory evidence classification.
-- **promotion:** One GraphQL-closing-syntax predicate. Do not merge it into FR-039's malformed
-  PowerShell field-form predicate or FR-054/FR-055's PowerShell parser predicates; a recurrence
-  should select #222's checked query-construction contract.
+- **promotion:** Promoted at the second independent occurrence to Product #222's checked
+  query-construction contract. Do not merge it into FR-039's malformed PowerShell field-form
+  predicate or FR-054/FR-055's PowerShell parser predicates; use a syntactically complete formatted
+  query before the bounded read.
+
+  **2026-08-15 promotion note:** A hand-built GraphQL query again omitted its closing brace and
+  failed before it returned evidence; the formatted complete query succeeded. This second event
+  selects #222's existing query-construction contract without introducing another GraphQL mechanism.
 
 ### FR-057 — `rg` discovery named a nonexistent `tests/` directory
 
@@ -1441,3 +1484,41 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One discovery-target occurrence. If it recurs independently, Product #222 should
   select the cheapest checked existing-path preflight for review commands; do not add a generic
   retry or merge it into the distinct path-normalization and parser mechanisms.
+
+### FR-058 — continuation-skill discovery assumed an absent path
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only skill-discovery interruption)`
+- **symptom:** A superseder scout first named an absent continuation-skill path before locating the
+  repository-local `.agents/skills/developer-lens-continuation/SKILL.md`.
+- **impact:** The first bounded discovery read failed closed and delayed orientation, without a
+  repository mutation or missing final skill evidence.
+- **workaround:** Check the named repository-local skill path before reading it; the corrected
+  bounded read supplied the applicable continuation instructions.
+- **occurrences:** 1 independent occurrence — 2026-08-15 PR #254 superseder-scout hop.
+- **task:** [Product #246](https://github.com/Chris0Jeky/developer-lens/issues/246) records this
+  bounded classification; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+  retains the shared command/discovery hardening debt.
+- **promotion:** One direct skill-path predicate. Do not change FR-057's reviewed `rg` exit-status
+  scalar or merge this into its command-specific mechanism. At a second independent occurrence,
+  Product #222 should select a checked repository-local skill-path preflight.
+
+### FR-059 — guessed review-thread node ID failed before resolution
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (review-thread identity evidence)`
+- **symptom:** A GraphQL resolution call used a guessed review-thread node ID after a reply and
+  returned `NOT_FOUND`; a bounded pagination-complete mapping then identified the correct PRRT ID.
+- **impact:** A thread can remain unresolved or be reported without an exact identity binding if a
+  guessed identifier is trusted.
+- **workaround:** Derive the thread node ID from a pagination-complete exact-PR mapping before the
+  resolution call, then reread the resolved thread state. The failed guessed-ID call made no partial
+  resolution mutation; the correctly mapped resolution completed.
+- **occurrences:** 1 independent occurrence — 2026-08-15 exact-final PR #254 thread-resolution hop.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns typed
+  GitHub evidence and command-boundary helpers.
+- **promotion:** One review-thread identity predicate. If it recurs independently, Product #222
+  should add a checked exact-PR thread-ID binding before a resolution mutation; do not conflate it
+  with FR-026 scalar serialization, FR-052 count integrity, or FR-056 query syntax.
