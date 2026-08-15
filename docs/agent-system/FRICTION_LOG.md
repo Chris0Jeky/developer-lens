@@ -364,7 +364,7 @@ Rules that bind entries:
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 7 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
+- **occurrences:** 8 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
   (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite),
   2026-08-09 (the release-state/worktree-preservation documentation worktree), and 2026-08-09
   (the #200 state-reconciliation worktree), plus 2026-08-10 (the PR #238/#237/Lab #62 factual
@@ -397,6 +397,10 @@ Rules that bind entries:
   **2026-08-15 recurrence note:** Product #246's required context verifier again stopped before its
   first check because the fresh worktree lacked `fast-glob`. The canonical lockfile-pinned `npm ci`
   bootstrap is rerun before proof; no new mechanism or enforcement layer is warranted.
+
+  **2026-08-15 browser-preflight note:** The fresh docs-only worktree lacked `fast-glob`, so
+  `verify:context` stopped before its first test. The promoted lockfile-pinned `npm ci` bootstrap
+  was then authorized and selected before rerunning the verifier.
 
 ### FR-013 — full product gate exceeded a compound shell timeout
 
@@ -753,7 +757,7 @@ Rules that bind entries:
   the intended target; an unchecked hunk could corrupt an unrelated friction record.
 - **workaround:** Restore the unrelated field and reapply the edit with the unique entry heading in
   the patch context, then inspect the complete file diff.
-- **occurrences:** 2 independent occurrences — 2026-08-09 during PR232's second friction capture,
+- **occurrences:** 3 independent occurrences — 2026-08-09 during PR232's second friction capture,
   and 2026-08-15 during Product #234 FR-050 promotion.
 - **task:** [#234](https://github.com/Chris0Jeky/developer-lens/issues/234) owns the current
   remediation; [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) retains the historical
@@ -766,6 +770,11 @@ Rules that bind entries:
   **2026-08-15 recurrence note:** A broad FR-050 status hunk matched FR-004 because the field is
   repeated. Immediate staged-diff review caught the wrong field before commit; a unique-heading
   patch restored FR-004 and updated FR-050. No source behavior or unrelated committed record changed.
+
+  **2026-08-15 browser-preflight note:** A repeated `status` field hunk targeting FR-044 matched
+  FR-004 instead. Exact diff review caught the unintended change after the first local commit; the
+  correction restored FR-004 and applied FR-044's promotion. This recurrence retains the promoted
+  heading-bounded edit and immediate diff review.
 
 ### FR-025 — occupied PR232 worktree entered a concurrent main merge
 
