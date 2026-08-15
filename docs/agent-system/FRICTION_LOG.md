@@ -703,7 +703,7 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 12 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 13 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
   inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
@@ -754,6 +754,11 @@ Rules that bind entries:
   execution; plain structured JSON fields completed the bounded read without mutation. Product
   #222's existing structured-query/direct-field contract remains selected but is NOT implemented,
   as recorded by [Product #222 comment 5303708410](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303708410).
+
+  **2026-08-15 recurrence note:** A PowerShell double-quoted `node -e` probe consumed JavaScript
+  template backticks/interpolation and raised `SyntaxError: Unexpected token |`. A concatenation
+  retry returned description length 1478 without mutation; the existing direct-field/structured
+  command contract remains selected but unimplemented, as recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953).
 
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
@@ -2025,18 +2030,26 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-074 — PowerShell `-split` inside `git show` native arguments interrupted proof
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only command-boundary interruption)`
 - **symptom:** PowerShell `-split` was placed inside `git show` native arguments; Git reported that
   switch `l` expects a numerical value, and the wrapper stopped before later proof.
 - **impact:** A bounded read-only proof can stop before its later checks, without changing the
   repository or GitHub state.
 - **workaround:** Capture native output in a scalar first, then apply `-split` in PowerShell.
-- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285).
+- **occurrences:** 2 independent occurrences — the `git show`/`-split` proof stop recorded by
+  [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285)
+  and the independent `Sort-Object`/`-Join` reviewer count event recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe command-boundary helper.
-- **promotion:** One occurrence remains task debt. Keep distinct from FR-026's object expansion and
-  FR-022's quoting; do not promote until an independent recurrence.
+- **promotion:** Promoted at the second independent occurrence: Product #222 owns the checked
+  operator-placement contract, which captures or parenthesizes command output before applying
+  PowerShell operators. It is not implemented. Keep distinct from FR-054's parser errors, FR-026's
+  object expansion, and FR-022's quoting.
+
+  **2026-08-15 recurrence/promotion note:** An independent `Sort-Object`/`-Join` reviewer count
+  event was stopped before mutation; the bounded retry used the selected capture/parenthesize
+  contract, as recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953).
 
 ### FR-075 — Markdown backticks terminated a JavaScript command template
 
