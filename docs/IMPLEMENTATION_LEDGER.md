@@ -4456,3 +4456,45 @@ friction entry. **Exact resume.** Start from live Lab main and Lab #29 for final
 note sync, then screenshot/video package; reconcile late PR #75 review only if new defect evidence
 appears. Do not reopen Lane-P. Do not merge or tag without their respective gates. Otherwise,
 Product work remains issue-backed.
+
+## 2026-08-15 — P0.5 Product operational resume truth repair (issue #200)
+
+**Changed.** Replaced the stale, oversized operational snapshot in
+`docs/analyser-program/CURRENT_STATE.md` with the single compact resume artifact. It records live
+Product `main` `331dd628f34609896374de3b7f800f5ef971caa8`, Lab `main`
+`41b4f23358b570d6c20740cb7f27dcffe246c688`, and Lab PR #87 as OPEN/PARKED at
+`53b87c01a8b6f0472a5a94419fddf4abac45eea2` over that Lab base. The artifact retains the green
+`Prove the lab` run `31858427099`, eight resolved review threads, and the fresh exact-head
+MERGE-SOUND review, while explicitly keeping helper eligibility **NOT VERIFIED** because the
+one-shot unfiltered thread collection truncated at 20,000 characters before the helper could run.
+Lab PR #87 remains parked until a fresh coherent exact-head/base/check/review snapshot and a
+successful helper evaluation are available.
+
+**Release state.** Lab `Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` is closed. Product
+browser/visual QA remains BLOCKED and NOT VERIFIED because the required connected in-app browser
+client is unavailable; the only unlock is that client plus agent proof. After that proof, only
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains as the P0.5 owner gate. The artifact
+correctly applies `OWNER_CONSTITUTION.md` A1=FULL: agents, not the owner, execute synchronized
+tag, version, package, and C0-publication mechanics after the sign-off and their normal gates.
+P1 #174 remains unselected until the P0.5 baseline is complete.
+
+**Verified.** `npm.cmd ci` completed with 0 vulnerabilities; `npm.cmd run verify:context` passed
+(47 Markdown files, 31 required files); `git diff --check` passed. The context verifier parsed the
+current-state YAML and enforced all required resume fields. Live Git/GitHub reads verified the
+named refs, PR status, required check, review-thread resolution,
+and issue #200 comment `5300081760` before the edit.
+
+**NOT verified / residual risk.** No browser/visual proof, tag, release, package publication,
+C0 publication, Lab merge, helper eligibility, owner sign-off, or hosted CI/review for this local
+documentation commit was attempted. No protected/generated/private input, credential, browser
+profile, cache, real-data, external-model, telemetry, or code/config path was inspected or moved.
+
+**Failures and workarounds.** FR-014 records the same-hop UTF-8 patch-context recurrence;
+FR-022 records a PowerShell quote-stripping read-only YAML-inspection failure; FR-047 and FR-048
+record the normalized Git-path guard and read-only loop-syntax interruptions. All failed closed
+before mutation; Product #222 retains the durable Windows-safe command-boundary debt.
+
+**Exact resume.** Keep Lab PR #87 parked. Do not substitute another browser surface. When the
+connected in-app browser is available, run the bounded Product visual-QA proof; then obtain only
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` before agents execute the synchronized release
+mechanics. Refresh all refs, checks, threads, helper eligibility, and owner gates again first.
