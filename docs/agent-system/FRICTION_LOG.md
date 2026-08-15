@@ -733,9 +733,9 @@ Rules that bind entries:
   without narrowing it could aim a repeated field at the wrong historical entry.
 - **workaround:** Re-read the exact section, apply one file and one unique heading at a time, then
   inspect the complete diff before staging.
-- **occurrences:** 4 independent occurrences on 2026-08-10 — the #222 friction burn-down, its
+- **occurrences:** 5 independent occurrences — four on 2026-08-10: the #222 friction burn-down, its
   review-fix state reconciliation, the merged PR #238 fixture-evidence reconciliation on parked PR
-  #237, and this current Product/Lab state correction.
+  #237, and that Product/Lab state correction; one on 2026-08-15 during PR #250 fix round 1.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns live release-state
   reconciliation; [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains the parked
   helper branch and its earlier unmerged occurrence evidence.
@@ -747,6 +747,11 @@ _Note 2026-08-10 (main-line consolidation):_ Parked PR #237 recorded its first t
 unmerged FR-028. This main-line entry preserves those observed facts under the next available ID
 without importing the blocked helper or reopening its exhausted review pipeline. The fourth failed
 patch changed no file and the one-section retry succeeded.
+
+_Note 2026-08-15 (PR #250 fix round 1):_ A multi-hunk FR-039 patch lacked the unique entry heading,
+so atomic patch verification rejected it before any file changed. The exact FR-039 section was
+re-read and the heading-bounded retry succeeded. FR-027's existing atomic-verification plus
+heading-bounded-retry enforcement remains selected; no new parser or structure is warranted.
 
 ### FR-028 — bundled thread helper treats `--help` as a live current-branch lookup
 
@@ -972,7 +977,7 @@ patch changed no file and the one-section retry succeeded.
 ### FR-039 — malformed PowerShell GraphQL field forms failed before read-only review evidence
 
 - **first-seen:** 2026-08-14
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only GitHub evidence friction)`
 - **symptom:** Two malformed PowerShell `gh api graphql` field forms failed before the review query
   could execute.
@@ -980,11 +985,22 @@ patch changed no file and the one-section retry succeeded.
   state.
 - **workaround:** Serialize GraphQL variables as JSON through stdin; the equivalent read succeeded
   without mutation.
-- **occurrences:** 1 episode comprising two malformed field forms — 2026-08-14.
+- **occurrences:** 2 independent occurrences — one episode comprising two malformed field forms on
+  2026-08-14; one inline-query argument failure on 2026-08-15, recorded by
+  [Product issue #222 comment 5299863958](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299863958).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe structured GitHub command boundary.
-- **promotion:** Reuse Product #222's JSON-stdin enforcement direction; no new helper/framework is
-  selected for this single read-only episode.
+- **promotion:** Promoted at the second independent occurrence to Product #222's structured
+  GraphQL-variable/JSON-stdin checked boundary. Future governor GraphQL calls keep repository names
+  and numeric IDs in typed variables rather than interpolated query text; no new structure is
+  selected.
+
+  **2026-08-15 recurrence note:** An inline GraphQL query with escaped repository strings was
+  distorted at the PowerShell/native argument boundary; GraphQL received `developer-lens` as an
+  expression and rejected the malformed `-lens` number. The successful read moved owner, repository
+  name, and integer PR number into structured GraphQL variables and passed the query as one scalar,
+  returning an empty, complete review-thread list. The failed call mutated neither GitHub nor the
+  repository.
 
 ### FR-040 — concurrent duplicate Lane-P merge invalidated old-base eligibility evidence
 
