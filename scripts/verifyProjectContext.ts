@@ -4,9 +4,11 @@ import { resolve } from 'node:path'
 import fg from 'fast-glob'
 import {
   extractMarkdownLinkTargets,
+  parseGitIndexEntries,
   parsePromptLibrary,
   parseSkillFrontmatter,
   resolveRepositoryLinkTarget,
+  validateTrackedTextForWindowsUserHomePaths,
   validateAgentFrictionParity,
   validateContinuousWorkProtocol,
   validateContinuationSkillParity,
@@ -335,6 +337,20 @@ const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md', '.cla
   onlyFiles: true,
   ignore: ['**/node_modules/**', '.claude/worktrees/**'],
 })
+
+if (existsSync(resolve(root, '.git'))) {
+  for (const error of validateTrackedTextForWindowsUserHomePaths({
+    listEntries: () => parseGitIndexEntries(execFileSync('git', ['ls-files', '--stage', '-z'], {
+      cwd: root,
+      encoding: 'buffer',
+    })),
+    readBlob: (objectId) => execFileSync('git', ['cat-file', 'blob', objectId], { cwd: root }),
+  })) {
+    failures.push(`tracked text: ${error}`)
+  }
+} else {
+  // Not a Git checkout (for example, an exported archive): the tracked-text guard cannot apply.
+}
 
 for (const path of markdownFiles) {
   const contents = read(path)

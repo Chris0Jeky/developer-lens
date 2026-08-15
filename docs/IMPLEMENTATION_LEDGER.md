@@ -4551,3 +4551,36 @@ live Git/GitHub before any selection, proof, merge, or release action. Keep Lab 
 the required connected in-app browser is available, perform the bounded Product visual-QA proof,
 then request only `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` before synchronized release
 mechanics under their normal exact-head gates.
+
+## 2026-08-15 — Product #234 protected tracked-index path guard
+
+**Changed.** Added a Git-index-only tracked-text guard in `scripts/projectContextValidation.ts` and
+wired it into `scripts/verifyProjectContext.ts`. It parses NUL-safe stage records, scans only
+regular-file blobs and symlink payload blobs, fails closed for enumeration, stage, mode, and blob-access
+failures, and never reads working-tree content. The guard detects case-insensitive Windows user-home
+text with forward, backslash, and repeated serialized separators. It now rejects each named protected
+or generated root (including its exact root form) before stage, mode, object-ID, or blob access, using
+case-insensitive separator and leading-prefix normalization and a generic literal-free diagnostic.
+
+**Verified.** `npm.cmd ci` completed with 0 vulnerabilities. `npm.cmd test --
+scripts/projectContextValidation.test.ts` passed 36 tests, including staged-index blobs, symlink
+payloads, NUL-safe parsing, doubled separators, protected-root variants, zero protected reads, eligible
+root-boundary lookalikes, and literal/OID redaction. `npm.cmd run verify:context` passed after
+the changed guard was staged into the Git index; `git diff --check` and the cached diff check were
+clean.
+
+**NOT verified / residual risk.** The one declared `npm.cmd run check` attempt is RED at
+the existing storage-v3 root `StorageV3ArtifactError: STORAGE_V3_ARTIFACT_INVALID` after lint,
+context, and generated-view checks; the full Vitest stage failed broadly and the build stage did not run.
+This does not establish a regression in this isolated guard. Hosted CI on this commit's exact head is
+mandatory; no build, publication, push, pull request, comment, merge, or protected/private-content
+access was attempted. Deliberate non-goals remain UTF-16 decoding, left-drive boundaries, arbitrary
+eligible-path home literals, the 1 MiB buffer limit, and binary policy.
+
+**Failures and workarounds.** The same storage-gate signature was the second independent FR-050
+occurrence, so FR-050 is promoted to the exact-head hosted-CI requirement without weakening or retrying
+the local full gate.
+
+**Exact resume.** This local branch `fix/reject-protected-tracked-paths-20260815` began from
+base `9dbd2960cdc24e036053608b67e408e34387751b`. After its local commit, do not push, open a PR,
+comment, or merge from this hop; obtain hosted CI for that exact head before any publication decision.

@@ -61,6 +61,125 @@ export function resolveRepositoryLinkTarget(
   return { kind: 'local', target }
 }
 
+const protectedTrackedPathRoots = [
+  '.developer-lens',
+  '.developer-lens-synthetic',
+  '.agent-harness/runtime',
+  '.claude/worktrees',
+  'coverage',
+  'dist',
+  'dist-ssr',
+  'node_modules',
+  'public/data',
+] as const
+
+const windowsUserHomePathPattern = /[a-z]:[\\/]+users[\\/]+[^\\/\r\n]+/i
+
+/**
+ * Normalize a Git-index pathname only for protected-root classification. Git stores path bytes;
+ * this deliberately does not resolve dot segments or access the working tree.
+ */
+export function normalizeTrackedPathForRootClassification(path: string): string {
+  let normalized = path.replaceAll('\\', '/').replace(/\/+/g, '/').toLowerCase()
+  while (normalized.startsWith('./') || normalized.startsWith('/')) {
+    normalized = normalized.startsWith('./') ? normalized.slice(2) : normalized.slice(1)
+  }
+  return normalized
+}
+
+/** True when a tracked pathname names a protected/generated root or one of its descendants. */
+export function isProtectedTrackedPath(path: string): boolean {
+  const normalized = normalizeTrackedPathForRootClassification(path)
+  return protectedTrackedPathRoots.some(
+    (root) => normalized === root || normalized.startsWith(`${root}/`),
+  )
+}
+
+/** Keep the prior eligibility predicate for callers that only need root classification. */
+export function isTrackedTextPathEligible(path: string): boolean {
+  return !isProtectedTrackedPath(path)
+}
+
+/** Detect a Windows user-home prefix without retaining or reporting its private segment. */
+export function containsWindowsUserHomePath(contents: string): boolean {
+  return windowsUserHomePathPattern.test(contents)
+}
+
+export interface GitIndexEntry {
+  mode: string
+  objectId: string
+  stage: string
+  path: string
+}
+
+export interface TrackedTextValidationAccess {
+  listEntries: () => readonly GitIndexEntry[]
+  readBlob: (objectId: string) => Uint8Array
+}
+
+/** Parse NUL-delimited Git index records without treating a path as shell text. */
+export function parseGitIndexEntries(raw: Uint8Array): GitIndexEntry[] {
+  const entries: GitIndexEntry[] = []
+  const decoder = new TextDecoder()
+  let start = 0
+  for (let index = 0; index < raw.length; index += 1) {
+    if (raw[index] !== 0) {
+      continue
+    }
+    const record = decoder.decode(raw.slice(start, index))
+    start = index + 1
+    const match = /^([0-7]{6}) ([0-9a-f]{40}|[0-9a-f]{64}) ([0-3])\t([\s\S]+)$/i.exec(record)
+    if (!match) {
+      throw new Error('invalid Git index record')
+    }
+    const [, mode = '', objectId = '', stage = '', path = ''] = match
+    entries.push({ mode, objectId, stage, path })
+  }
+  if (start !== raw.length) {
+    throw new Error('unterminated Git index record')
+  }
+  return entries
+}
+
+/**
+ * Validate Git-index blobs without reading working-tree content or following symlinks. Protected
+ * paths fail before stage, mode, object-ID, or blob access so they cannot reach any content read.
+ */
+export function validateTrackedTextForWindowsUserHomePaths(
+  access: TrackedTextValidationAccess,
+): string[] {
+  const errors: string[] = []
+  let entries: readonly GitIndexEntry[]
+  try {
+    entries = access.listEntries()
+  } catch {
+    return ['unable to enumerate Git-tracked text']
+  }
+  for (const entry of entries) {
+    if (isProtectedTrackedPath(entry.path)) {
+      errors.push('protected Git-tracked path is not allowed')
+      continue
+    }
+    if (entry.stage !== '0') {
+      errors.push(`${entry.path}: unmerged Git index entry`)
+      continue
+    }
+    if (entry.mode !== '100644' && entry.mode !== '100755' && entry.mode !== '120000') {
+      errors.push(`${entry.path}: unsupported Git index mode`)
+      continue
+    }
+    try {
+      const contents = new TextDecoder().decode(access.readBlob(entry.objectId))
+      if (containsWindowsUserHomePath(contents)) {
+        errors.push(`${entry.path}: contains a Windows user-home path`)
+      }
+    } catch {
+      errors.push(`${entry.path}: unable to read Git index blob`)
+    }
+  }
+  return errors
+}
+
 function parseScalar(value: string): { value?: string; error?: string } {
   if (value.startsWith('"')) {
     if (!value.endsWith('"')) {

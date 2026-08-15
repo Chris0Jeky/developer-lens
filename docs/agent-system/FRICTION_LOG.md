@@ -722,13 +722,19 @@ Rules that bind entries:
   the intended target; an unchecked hunk could corrupt an unrelated friction record.
 - **workaround:** Restore the unrelated field and reapply the edit with the unique entry heading in
   the patch context, then inspect the complete file diff.
-- **occurrences:** 1 independent occurrence — 2026-08-09 during PR232's second friction capture.
-- **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
-  reconciliation and its factual documentation proof.
-- **promotion:** Deliberately NOT promoted after one occurrence because heading-anchored patches and
-  immediate diff inspection are already the cheapest fail-closed seam. A second independent
-  occurrence should add a focused verifier for duplicate-entry field drift rather than another
-  prose reminder.
+- **occurrences:** 2 independent occurrences — 2026-08-09 during PR232's second friction capture,
+  and 2026-08-15 during Product #234 FR-050 promotion.
+- **task:** [#234](https://github.com/Chris0Jeky/developer-lens/issues/234) owns the current
+  remediation; [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) retains the historical
+  release-reconciliation context.
+- **promotion:** At the second independent occurrence, the selected guard is a mandatory
+  heading-bounded field edit followed by immediate `git diff --cached` review before commit. A
+  general verifier cannot infer which historical entry an agent intended to patch and would not
+  prevent target selection, so no structural checker is chosen in this code slice.
+
+  **2026-08-15 recurrence note:** A broad FR-050 status hunk matched FR-004 because the field is
+  repeated. Immediate staged-diff review caught the wrong field before commit; a unique-heading
+  patch restored FR-004 and updated FR-050. No source behavior or unrelated committed record changed.
 
 ### FR-025 — occupied PR232 worktree entered a concurrent main merge
 
@@ -1305,7 +1311,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `MEDIUM (local full-gate limitation)`
 - **symptom:** On a documentation-only Product PR #251 fix round, `npm.cmd run check` reached its
   full Vitest stage but failed broadly in unrelated storage/activation suites with
@@ -1317,12 +1323,22 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Do not change code or tests in this documentation fix round. Retain the passing
   focused state contract and context proofs, record the exact local signature, and rely on the
   required hosted rerun for the corrected head.
-- **occurrences:** 1 diagnosed local-gate episode — 2026-08-15 during Product PR #251 fix round.
-- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the release
-  proof boundary; Product PR #251 is the bounded documentation correction.
-- **promotion:** One environment-specific episode. If it recurs on an unchanged docs-only range,
-  open a bounded Windows storage-test compatibility task with a reproducer; do not weaken the full
-  gate or label it flaky.
+- **occurrences:** 2 diagnosed local-gate episodes — 2026-08-15 during Product PR #251 fix round,
+  and 2026-08-15 during the independent Product #234 tracked-path guard worktree.
+- **task:** [Product #234](https://github.com/Chris0Jeky/developer-lens/issues/234) owns the current
+  exact-head proof; [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) retains
+  the release proof boundary.
+- **promotion:** Promoted at the second independent occurrence to an exact-head hosted-CI requirement
+  whenever this local full gate reaches the same `STORAGE_V3_ARTIFACT_INVALID` root. The local
+  gate remains mandatory and is attempted once; do not weaken it or label it flaky. A bounded Windows
+  storage-test compatibility task still needs a reproduction independent of the delivery range before
+  selecting a local remediation.
+
+  **2026-08-15 promotion note:** In the fresh Product #234 tracked-path guard worktree, `npm.cmd ci`,
+  the focused 36-test validator suite, and context verification passed. The one declared `npm.cmd run
+  check` attempt passed lint, context, and generated-view checks, then failed broadly in storage
+  and activation tests at the exact storage-v3 root; the build stage did not run. No retry was made.
+  Hosted CI for the eventual exact #234 head is mandatory.
 
 ### FR-051 — `gh pr checks` rejected an unsupported JSON field before a snapshot read
 
