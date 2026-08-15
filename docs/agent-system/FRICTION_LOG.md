@@ -2030,7 +2030,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-074 — PowerShell `-split` inside `git show` native arguments interrupted proof
 
 - **first-seen:** 2026-08-15
-- **status:** `promoted`
+- **status:** `workaround-documented`
 - **severity:** `LOW (read-only command-boundary interruption)`
 - **symptom:** PowerShell `-split` was placed inside `git show` native arguments; Git reported that
   switch `l` expects a numerical value, and the wrapper stopped before later proof.
