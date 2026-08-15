@@ -701,8 +701,10 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 2 independent occurrences — 2026-08-10 during the Product #200 reconciliation
-  and during PR #239's multiline review-triage comment.
+- **occurrences:** 3 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+  and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
+  resolution, recorded by
+  [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the durable
   Windows-safe structured evidence helpers.
 - **promotion:** Promoted at the second occurrence to structured JSON stdin for multiline native
@@ -713,6 +715,12 @@ Rules that bind entries:
   three native arguments and failed before any GitHub write. Serialising `{body: <text>}` with
   `ConvertTo-Json` and sending it through `gh api --input -` created the intended public PR comment
   without exposing a path or private value.
+
+  **2026-08-15 recurrence note:** Passing `-F thread=$item.Thread` to `gh api graphql` expanded the
+  PowerShell object followed by the literal `.Thread`, so the mutation refused the malformed node
+  ID before changing thread state. Building the field from an explicit scalar thread ID succeeded.
+  This recurrence confirms the promoted explicit-scalar native-argument boundary; Product #222
+  retains that enforcement direction rather than adding a second helper.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
@@ -1038,3 +1046,78 @@ patch changed no file and the one-section retry succeeded.
   mechanically generated patch artifact inline.
 - **promotion:** One occurrence; at a second occurrence fold the inline-patch requirement into the
   DL-P review prompt bodies rather than adding a new mechanism.
+
+### FR-043 — bounded Product queue scout overran and was interrupted
+
+- **first-seen:** 2026-08-14
+- **status:** `workaround-documented`
+- **severity:** `LOW (queue-observation cost)`
+- **symptom:** A bounded Product #200 queue scout exceeded its intended observation window and was
+  interrupted before producing a complete, directly usable snapshot.
+- **impact:** The release-truth repair needed a fresh structured reread instead of relying on the
+  incomplete scout output; no repository or GitHub mutation occurred.
+- **workaround:** Use a direct structured snapshot of the named Product/Lab refs, checks, review
+  state, and issue state before making a release-truth claim.
+- **occurrences:** 1 independent occurrence — Product #200 comment `5298981016` on 2026-08-14.
+- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the bounded
+  release-governor queue.
+- **promotion:** Not promoted after one occurrence. If it recurs, select the cheapest bounded checked
+  scout or timeout enforcement that preserves a complete structured snapshot.
+
+### FR-044 — mandated browser-client discovery found no available browser
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (visual-QA tooling availability)`
+- **symptom:** The Product #200 visual-QA executor initialized the mandated browser-client surface
+  and followed bootstrap troubleshooting, but browser discovery returned no available browsers.
+- **impact:** Agent browser/visual QA could not produce the required proof, so the owner handoff at
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
+- **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
+  the required browser skill already enforces that stop.
+- **occurrences:** 1 independent occurrence — Product #200 comment `5299321093` on 2026-08-15.
+- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
+  preparation and the parked QA lane.
+- **promotion:** Not promoted after one occurrence. If it recurs, select the cheapest
+  environment-availability preflight or connector repair rather than a repository fallback.
+
+### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only GitHub helper reliability)`
+- **symptom:** A PR #249 review helper declared a parameter named `$Args`, shadowing PowerShell's
+  automatic `$args` variable. `gh` therefore ran without the intended arguments and emitted help
+  text; `ConvertFrom-Json` then failed with `Invalid JSON primitive: Work.`
+- **impact:** The intended read-only GitHub snapshot was not collected by that invocation and had to
+  be repeated; no repository or GitHub mutation occurred.
+- **workaround:** Rename the parameter to `$GhArguments`, capture the command output as one scalar
+  string through `Out-String`, and pass that scalar to `ConvertFrom-Json`.
+- **occurrences:** 1 independent occurrence — Product PR #249 exact-head review, recorded by Product
+  issue #222 comment `5299611271` on 2026-08-15.
+- **task:** [Product issue #222 comment 5299611271](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299611271)
+  owns the Windows-safe governor-helper debt.
+- **promotion:** One occurrence; no new enforcement layer is justified yet. On recurrence, Product
+  #222 is the selected task-debt layer for the cheapest checked Windows-safe helper rather than
+  another ad hoc workaround.
+
+### FR-046 — GitHub database IDs overflowed Int32 while PowerShell errors left exit zero
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (GitHub evidence false-success risk)`
+- **symptom:** PR #249 thread-triage reporting cast 10-digit GitHub review-comment database IDs to
+  `System.Int32`. Each overflow raised a non-terminating PowerShell error, but the compound command
+  still exited 0.
+- **impact:** A governor helper can omit or corrupt result identifiers while reporting a successful
+  command, weakening the evidence used to decide whether review debt is resolved.
+- **workaround:** Treat the compound result as unproven and perform a separate pagination-complete
+  read. That read verified all four threads resolved; no duplicate reply or mutation retry was
+  issued.
+- **occurrences:** 1 independent occurrence — Product issue #222 comment `5299759496` on
+  2026-08-15.
+- **task:** [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496)
+  owns the Windows-safe governor-helper debt.
+- **promotion:** One occurrence; keep this `workaround-documented`. Product #222 owns the cheapest
+  future enforcement: retain GitHub database IDs as strings or Int64 and make a helper fail when
+  PowerShell emits error records, not only when a native process returns a nonzero exit code.
