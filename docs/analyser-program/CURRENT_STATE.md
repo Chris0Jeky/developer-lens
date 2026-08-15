@@ -1,13 +1,18 @@
 # Current state (compact resume artifact — DL-CONTEXT-01)
 
-This is the single operational resume artifact. Live Git and GitHub outrank it;
-`docs/IMPLEMENTATION_LEDGER.md` retains completed-slice evidence and history.
+This is the single operational resume artifact. Live Git and GitHub outrank its timestamped
+observations and must be refreshed before action; `docs/IMPLEMENTATION_LEDGER.md` retains
+completed-slice evidence and history.
 
 ```yaml
 updated: '2026-08-15'
 work_class: 'W1 operational-truth repair'
 active_wave: 'P0.5 v0.1.0 release programme — Product issue #200'
-product_main: '501347528931d60845bda376e0b75ee916eebc14'
+remote_refs_last_observed_at: '2026-08-15T05:06:25Z'
+observation_semantics: >-
+  product_main and lab_main are last-observed remote-ref snapshots at remote_refs_last_observed_at,
+  not perpetual current-baseline assertions; refresh live Git/GitHub before any action.
+product_main: '992db7adeba6937946829d171f197771ad1e065a'
 lab_main: '41b4f23358b570d6c20740cb7f27dcffe246c688'
 active_slice: 'P0.5 issue #200 operational resume repair; no code, release, or data lane is selected.'
 next_value_slice: 'Keep Lab PR #87 parked; when the required connected in-app browser is available, run the bounded Product browser/visual proof before requesting Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).'
@@ -16,10 +21,11 @@ blockers: >-
   client is unavailable. Lab PR #87 is independently parked because merge-helper eligibility is
   NOT VERIFIED.
 last_verified_checks: >-
-  2026-08-15 live refresh: Product main 501347528931d60845bda376e0b75ee916eebc14 (PR #252 merge;
-  build/deploy run 31862460503 SUCCESS); Lab main
+  2026-08-15T05:06:25Z remote-ref observation: Product main
+  992db7adeba6937946829d171f197771ad1e065a (PR #254 merge); Lab main
   41b4f23358b570d6c20740cb7f27dcffe246c688; Lab PR #87 required run 31858427099 SUCCESS;
-  8 of 8 review threads resolved. Run npm.cmd run verify:context and git diff --check for this docs slice.
+  8 of 8 review threads resolved. Refresh live Git/GitHub before action; run npm.cmd run
+  verify:context and git diff --check for this docs slice.
 active_horizon:
   - 'P0 governor bootstrap PR #206 — delivered'
   - 'P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
@@ -27,8 +33,8 @@ active_horizon:
 operational_resume:
   consumer: 'The next Product/Lab release coordinator.'
   question: 'What is landed, parked, unproved, owner-gated, and agent-executable?'
-  product_state: 'Product main is the exact live baseline above.'
-  lab_state: 'Lab main is the exact live baseline above.'
+  product_state: 'Product main above is a last-observed remote-ref snapshot, not a perpetual current baseline.'
+  lab_state: 'Lab main above is a last-observed remote-ref snapshot, not a perpetual current baseline.'
   next_selection: 'Do not select P1 issue #174 before the P0.5 baseline is complete.'
 
 parked_lab_pr:

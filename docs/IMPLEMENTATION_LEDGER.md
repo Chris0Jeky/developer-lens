@@ -4524,3 +4524,30 @@ perform the bounded Product visual-QA proof, then request only
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` before agents perform synchronized release
 mechanics under their normal exact-head gates. Refresh every ref, check, review thread, helper
 eligibility, and owner gate again before any merge or release action.
+
+## 2026-08-15 — timestamped Product/Lab state observation correction
+
+**Changed.** Reframed the compact resume artifact's Product and Lab ref values as timestamped
+last-observed remote-ref snapshots rather than perpetual exact-current assertions. The artifact now
+records `remote_refs_last_observed_at` and keeps live Git/GitHub precedence plus mandatory refresh
+before action explicit. Product's observed ref advanced through PR #254; valid Lab state and parked
+PR #87 facts remain observations, not standing merge authority.
+
+**Verified.** At `2026-08-15T05:06:25Z`, public Git/GitHub reads found Product `main` at
+`992db7adeba6937946829d171f197771ad1e065a`, PR #254 MERGED at `2026-08-15T05:04:51Z`, and Lab
+`main` at `41b4f23358b570d6c20740cb7f27dcffe246c688`. Lab PR #87 remained OPEN at
+`53b87c01a8b6f0472a5a94419fddf4abac45eea2` over that Lab base. The state schema vocabulary and
+release statuses are preserved; the snapshot does not claim these refs stay current after this
+documentation commit lands.
+
+**NOT verified / residual risk.** No browser/visual proof, Lab helper evaluation or merge, tag,
+release, package/C0 publication, owner sign-off, hosted CI/review, protected-data access, or
+capability activation was attempted. After browser proof, the sole P0.5 Product owner gate remains
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`; A1=FULL still assigns subsequent synchronized
+release mechanics to agents under their normal exact-head gates.
+
+**Exact resume.** Treat all compact-state refs as observations at their recorded timestamp. Refresh
+live Git/GitHub before any selection, proof, merge, or release action. Keep Lab PR #87 parked; when
+the required connected in-app browser is available, perform the bounded Product visual-QA proof,
+then request only `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` before synchronized release
+mechanics under their normal exact-head gates.
