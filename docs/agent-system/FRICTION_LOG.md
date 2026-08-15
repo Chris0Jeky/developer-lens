@@ -356,8 +356,8 @@ Rules that bind entries:
   deleted branch remains recoverable.
 - **workaround:** Do not recreate the branch in this slice. Future cleanup must inspect applicable
   rules first and avoid any silent administrative bypass.
-- **occurrences:** 2 recorded — 2026-08-09, after PR #218 merge cleanup, and 2026-08-15 after
-  Product PR #258 cleanup.
+- **occurrences:** 3 recorded — 2026-08-09, after PR #218 merge cleanup, 2026-08-15 after
+  Product PR #258 cleanup, and 2026-08-15 after PR #268 cleanup.
 - **task:** [#221](https://github.com/Chris0Jeky/developer-lens/issues/221)
 - **promotion:** Promoted at the second occurrence: Product #221 owns a checked cleanup helper or
   contract that queries applicable branch rules before deletion and refuses any required privileged
@@ -367,6 +367,14 @@ Rules that bind entries:
   **2026-08-15 Product PR #258 cleanup recurrence note:** After a clean merged-branch audit found
   no open child pull request, remote deletion succeeded but GitHub reported a privileged bypass of
   `Cannot delete this branch`. The branch remains merged; no replacement branch or retry is selected.
+
+  **2026-08-15 PR #268 cleanup recurrence note:** Remote deletion of
+  `docs/reconcile-post-266-friction-20260815` succeeded while GitHub reported a privileged bypass
+  of `Cannot delete this branch`, as recorded by [Product #221 comment 5303683130](https://github.com/Chris0Jeky/developer-lens/issues/221#issuecomment-5303683130).
+  Merged commit `fdd60c2cf9289140f4adc2c778aeb7e20dec8e5a` remains on `main` and recoverable, so no
+  work was lost. Do not recreate or retry the deletion. The existing stop rule remains binding:
+  leave merged remote branches when deletion requires a bypass. The checked helper/contract remains
+  unimplemented.
 
 ### FR-012 — fresh product worktree lacks the Node tool bootstrap
 
@@ -528,9 +536,9 @@ Rules that bind entries:
   normalization. The intended index remains LF and `git diff --check` is clean.
 - **workaround:** Stage only the named files, inspect the cached diff, and run
   `git diff --cached --check`; do not normalize unrelated lines or files in this slice.
-- **occurrences:** 2 independent occurrences — the four-file #200 documentation reconciliation on
+- **occurrences:** 3 independent occurrences — the four-file #200 documentation reconciliation on
   2026-08-09 shares one checkout/config cause; the Product #246 one-file consolidation emitted the
-  same warning on 2026-08-15.
+  same warning on 2026-08-15; and the 2026-08-15 DL-CONTEXT-01 generator run emitted it again.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the bounded
   pre-QA documentation reconciliation.
 - **promotion:** At the second independent occurrence, Product #222 owns the cheapest checked
@@ -539,6 +547,13 @@ Rules that bind entries:
 
   **2026-08-15 recurrence note:** The one-file #246 scan emitted the same LF/CRLF warning. This
   selects the existing #222 enforcement debt without a bulk line-ending rewrite in this slice.
+
+  **2026-08-15 DL-CONTEXT-01 recurrence note:** LF/CRLF warnings affected the canonical card
+  source, generated Taskdeck manifest, and generated delivery roadmap, as recorded by [Product #222 comment 5303623855](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303623855).
+  The roadmap HEAD and worktree blob were both
+  `592e92982ed0e4b82a2514b777c6e39aca222b68`; raw/content diffs were empty, and a bounded index
+  refresh cleared the false status. No semantic or bulk-normalization change was made. The
+  existing policy/verification debt remains unimplemented.
 
 ### FR-017 — MCP hygiene cleanup needed a canonical-location retry and bounded second pass
 
@@ -688,7 +703,7 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 11 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 13 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
   inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
@@ -734,6 +749,16 @@ Rules that bind entries:
   including quoting the whole form field, each produced malformed `-lens`. Typed owner, name, and
   number variables supplied with `-F` completed the bounded query. These ninth through eleventh
   occurrences retain FR-022's promotion and Product #222 ownership.
+
+  **2026-08-15 recurrence note:** A malformed inline `gh pr view` jq projection stopped before
+  execution; plain structured JSON fields completed the bounded read without mutation. Product
+  #222's existing structured-query/direct-field contract remains selected but is NOT implemented,
+  as recorded by [Product #222 comment 5303708410](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303708410).
+
+  **2026-08-15 recurrence note:** A PowerShell double-quoted `node -e` probe consumed JavaScript
+  template backticks/interpolation and raised `SyntaxError: Unexpected token |`. A concatenation
+  retry returned description length 1478 without mutation; the existing direct-field/structured
+  command contract remains selected but unimplemented, as recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953).
 
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
@@ -1688,7 +1713,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-057 — `rg` discovery named a nonexistent `tests/` directory
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only discovery interruption)`
 - **symptom:** A read-only fresh-context review invocation named a nonexistent `tests/` directory,
   so `rg` exited 1 before it could inspect that target.
@@ -1696,12 +1721,16 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   without a repository mutation or evidence gap.
 - **workaround:** Inspect only the bounded existing paths relevant to the review; that follow-up
   read completed successfully.
-- **occurrences:** 1 independent occurrence — 2026-08-15 exact-head review hop.
+- **occurrences:** 2 independent occurrences — 2026-08-15 exact-head review hop and the guessed
+  absent taskdeck/README.md target.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe command/discovery boundary.
-- **promotion:** One discovery-target occurrence. If it recurs independently, Product #222 should
-  select the cheapest checked existing-path preflight for review commands; do not add a generic
-  retry or merge it into the distinct path-normalization and parser mechanisms.
+- **promotion:** Promoted at the second independent occurrence: Product #222 owns the checked
+  existing-path preflight for bounded discovery commands. It is not implemented. Keep it distinct
+  from FR-058's skill paths and FR-073's glob parsing; do not add a generic retry.
+
+  **2026-08-15 recurrence note:** A guessed absent `taskdeck/README.md` discovery target stopped
+  the bounded read; other explicit paths completed it without mutation, as recorded by [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285).
 
 ### FR-058 — continuation-skill discovery assumed an absent path
 
@@ -1997,3 +2026,94 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   Windows-safe evidence command contract.
 - **promotion:** One path-selection occurrence. Keep distinct from FR-051's CLI query-shape events;
   do not create a glob framework or promote until an independent recurrence.
+
+### FR-074 — PowerShell `-split` inside `git show` native arguments interrupted proof
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only command-boundary interruption)`
+- **symptom:** PowerShell `-split` was placed inside `git show` native arguments; Git reported that
+  switch `l` expects a numerical value, and the wrapper stopped before later proof.
+- **impact:** A bounded read-only proof can stop before its later checks, without changing the
+  repository or GitHub state.
+- **workaround:** Capture native output in a scalar first, then apply `-split` in PowerShell.
+- **occurrences:** 1 independent occurrence — the `git show`/`-split` proof stop recorded by
+  [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe command-boundary helper.
+- **promotion:** One occurrence remains task debt under Product #222; do not create or promote an
+  operator framework. Keep distinct from FR-054's parser errors, FR-026's object expansion, and
+  FR-022's quoting.
+
+  **2026-08-15 classification-correction note:** The exact-head connector review thread [PR #270
+  `PRRT_kwDOTrfxUM6ZiQes`](https://github.com/Chris0Jeky/developer-lens/pull/270) showed that the
+  `Sort-Object`/`-Join` reviewer count event does not match FR-074's native symptom/workaround.
+  It is not counted here and is canonical under FR-078.
+
+### FR-078 — PowerShell cmdlet pipeline placed `-Join` as a `Sort-Object` parameter
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (cmdlet-pipeline evidence friction)`
+- **symptom:** The final reviewer placed PowerShell `-Join` as if it were a `Sort-Object`
+  parameter, so the read-only unique-ID count stopped.
+- **impact:** Review proof was delayed, without changing the repository or GitHub state.
+- **workaround:** Capture or parenthesize sorted pipeline output before applying `-join`; the
+  bounded retry passed.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953)
+  and [PR #270 review thread `PRRT_kwDOTrfxUM6ZiQes`](https://github.com/Chris0Jeky/developer-lens/pull/270).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded cmdlet-pipeline evidence contract.
+- **promotion:** One occurrence remains task debt. Keep distinct from FR-074's native arguments
+  and FR-054's parser failures; no helper is implemented.
+
+### FR-075 — Markdown backticks terminated a JavaScript command template
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only command composition interruption)`
+- **symptom:** Markdown backticks inside the JavaScript template used to compose a PowerShell
+  command terminated the template and raised `SyntaxError: Unexpected identifier 'docs'` before
+  shell, tool, or GitHub execution.
+- **impact:** The composed read-only command cannot reach execution, without changing the
+  repository or GitHub state.
+- **workaround:** Remove delimiter-sensitive formatting from the template and keep JSON on stdin.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded command-composition contract.
+- **promotion:** One occurrence remains task debt; do not create or promote a generic templating
+  framework.
+
+### FR-076 — issue-scoped direct-comment REST paths returned HTTP 404
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only comment lookup friction)`
+- **symptom:** Issue-scoped direct-comment REST paths returned HTTP 404, while repository-level
+  `issues/comments/<id>` paths succeeded.
+- **impact:** A bounded read-only comment lookup can stop before collecting its evidence, without
+  changing repository or GitHub state.
+- **workaround:** Use the repository-level `issues/comments/<id>` path for direct comment lookup.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303708410](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303708410).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded comment-lookup contract.
+- **promotion:** One occurrence remains task debt. Keep distinct from FR-051's unsupported-field
+  and query-shape events; do not promote until an independent recurrence.
+
+### FR-077 — a trailing digit corrupted an exact review reference
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (exact-ref evidence friction)`
+- **symptom:** The final scoped review added a trailing `3` to parent SHA
+  `1bbb280ef53edec44accc63a601102bee0fd290f`, so Git returned `fatal: bad revision` before reading
+  the diff.
+- **impact:** Exact-head review paused before the bounded diff could be read, without changing the
+  repository or GitHub state.
+- **workaround:** Copy and reverify exact refs, then rerun the bounded range; the corrected range
+  succeeded.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5303753398](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303753398).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  exact-reference evidence boundary.
+- **promotion:** One occurrence remains task debt. Keep distinct from moved-HEAD ownership, path
+  normalization, and unsupported fields; do not create a reference-validation framework.
