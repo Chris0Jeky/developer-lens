@@ -4781,9 +4781,14 @@ Valid UTF-8, BOM, OID, whitespace, and tab coverage remains in the existing vali
 passed (1 file, 45 tests), including the injected adapter-level invalid-metadata assertion with zero
 blob reads and no replacement-character, path, invalid-byte, or object-ID leakage.
 
-**NOT verified / residual risk.** Context verification, diff checks, and the standalone full gate
-remain to run for this exact head. No protected-data access, filesystem fixture, push, pull request,
-comment, merge, release, or Product #257 closure was attempted.
+**Verified / residual risk.** The focused named malformed-metadata test passed (1 passed, 44
+skipped). Staged `npm.cmd run verify:context` passed (47 Markdown files, 31 required files), and
+cached/working diff checks were clean. The standalone 300-second `npm.cmd run check` was RED at
+123.1 seconds after lint, context, and generated-view checks, then the same untouched storage-v3 and
+activation failures (`INVALID_TASK_INSTALLATION_KEY` and `INVALID_GITHUB_CORE_ACTIVATION_TASK_CARD_LOAD`)
+occurred before build. FR-062 is its fourth recurrence; no retry or flaky claim was made. Exact
+base-to-head review remains the next local evidence step. No protected-data access, filesystem fixture,
+push, pull request, comment, merge, release, or Product #257 closure was attempted.
 
 **Docs-state sync.** `CURRENT_STATE.md` is unchanged. **Human actions.** None.
 
