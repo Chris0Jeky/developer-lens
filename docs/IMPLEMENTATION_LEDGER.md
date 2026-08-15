@@ -4498,3 +4498,29 @@ before mutation; Product #222 retains the durable Windows-safe command-boundary 
 connected in-app browser is available, run the bounded Product visual-QA proof; then obtain only
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` before agents execute the synchronized release
 mechanics. Refresh all refs, checks, threads, helper eligibility, and owner gates again first.
+
+## 2026-08-15 — Product PR #252 main-baseline correction
+
+**Changed.** Corrected the compact Product resume artifact after [PR #252](https://github.com/Chris0Jeky/developer-lens/pull/252) advanced Product `main` from stale
+`331dd628f34609896374de3b7f800f5ef971caa8` to merge `501347528931d60845bda376e0b75ee916eebc14`.
+The state now makes its existing exact-live-baseline claim truthful and records the coupled Product
+build/deploy evidence. The valid Lab `main` and parked PR #87 facts were retained unchanged.
+
+**Verified.** A final public Git/GitHub refresh found Product `main` at
+`501347528931d60845bda376e0b75ee916eebc14`, PR #252 MERGED at `2026-08-15T03:40:58Z`, and
+Product build/deploy run `31862460503` SUCCESS at that same head. Lab `main` remained
+`41b4f23358b570d6c20740cb7f27dcffe246c688`; Lab PR #87 remained OPEN at
+`53b87c01a8b6f0472a5a94419fddf4abac45eea2` over that base, so it remains PARKED.
+
+**NOT verified / residual risk.** No browser/visual proof, Lab merge-helper evaluation, tag,
+release, package/C0 publication, owner sign-off, protected-data access, or hosted CI/review for
+this local documentation commit was attempted. Product browser proof remains the prerequisite for
+the sole remaining Product owner gate,
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`; no release action is authorized by this
+correction.
+
+**Exact resume.** Keep Lab PR #87 parked. When the required connected in-app browser is available,
+perform the bounded Product visual-QA proof, then request only
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` before agents perform synchronized release
+mechanics under their normal exact-head gates. Refresh every ref, check, review thread, helper
+eligibility, and owner gate again before any merge or release action.
