@@ -122,6 +122,8 @@ describe('project context validation', () => {
     expect(containsWindowsUserHomePath('source: ' + backwardHome)).toBe(true)
     expect(containsWindowsUserHomePath('source: ' + serializedBackwardHome)).toBe(true)
     expect(containsWindowsUserHomePath('source: C:/Synthetic/FixtureUser/workspace')).toBe(false)
+    expect(containsWindowsUserHomePath('scheme: basic:/users/current')).toBe(false)
+    expect(containsWindowsUserHomePath('source: prefixC:/Users/FixtureUser')).toBe(false)
 
     const errors = validateTrackedTextForWindowsUserHomePaths(
       accessForEntries(
@@ -132,6 +134,15 @@ describe('project context validation', () => {
 
     expect(errors).toEqual(['docs/guide.md: contains a Windows user-home path'])
     expect(errors.join('\n')).not.toContain('FixtureUser')
+
+    expect(
+      validateTrackedTextForWindowsUserHomePaths(
+        accessForEntries(
+          [indexEntry('docs/uri-reference.md')],
+          () => blob('scheme: basic:/users/current\nsource: prefixC:/Users/FixtureUser'),
+        ),
+      ),
+    ).toEqual([])
   })
 
   it('rejects every protected root before Git metadata or blob access', () => {

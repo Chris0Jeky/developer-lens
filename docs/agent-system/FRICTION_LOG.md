@@ -1639,7 +1639,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-062 — fresh-worktree full gate fails untouched storage and activation seams
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `MEDIUM (local full-gate limitation)`
 - **symptom:** Product #259's standalone 300-second `npm.cmd run check` passed lint, context, and
   generated-view checks, then failed broadly in untouched storage-v3 and activation suites with
@@ -1649,10 +1649,16 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Preserve the one full-gate result and its exact signatures; do not change the
   unrelated storage or activation seams in this slice. A later exact-head gate must classify its own
   outcome before any publication decision.
-- **occurrences:** 1 independent occurrence — 2026-08-15 Product #259 fresh-worktree proof.
+- **occurrences:** 2 independent occurrences — 2026-08-15 Product #259 and Product #257
+  fresh-worktree proofs.
 - **task:** [Product #259](https://github.com/Chris0Jeky/developer-lens/issues/259) records this
   bounded validator delivery; [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200)
   retains the release-proof boundary.
-- **promotion:** One exact signature family. Do not conflate it with FR-050's
-  `STORAGE_V3_ARTIFACT_INVALID` predicate or select a remediation without an independent bounded
-  reproduction outside this delivery range.
+- **promotion:** Promoted at the second independent occurrence: Product #200 owns a checked
+  fresh-worktree prerequisite contract that identifies this signature before unrelated full-suite
+  results are interpreted. Do not conflate it with FR-050's `STORAGE_V3_ARTIFACT_INVALID` predicate
+  or change storage and activation seams in a delivery slice; exact-head hosted CI remains required.
+
+  **2026-08-15 Product #257 recurrence note:** The standalone 300-second full gate again passed
+  lint, context, and generated-view checks before failing in the same untouched storage-v3 and
+  activation seams. The result is not flaky and was not retried.
