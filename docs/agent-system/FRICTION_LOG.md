@@ -1415,3 +1415,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One GraphQL-closing-syntax predicate. Do not merge it into FR-039's malformed
   PowerShell field-form predicate or FR-054/FR-055's PowerShell parser predicates; a recurrence
   should select #222's checked query-construction contract.
+
+### FR-057 — `rg` discovery named a nonexistent `tests/` directory
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only discovery interruption)`
+- **symptom:** A read-only fresh-context review invocation named a nonexistent `tests/` directory,
+  so `rg` exited 1 before it could inspect that target.
+- **impact:** The bounded discovery step had to select existing paths before it could complete,
+  without a repository mutation or evidence gap.
+- **workaround:** Inspect only the bounded existing paths relevant to the review; that follow-up
+  read completed successfully.
+- **occurrences:** 1 independent occurrence — 2026-08-15 exact-head review hop.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  Windows-safe command/discovery boundary.
+- **promotion:** One discovery-target occurrence. If it recurs independently, Product #222 should
+  select the cheapest checked existing-path preflight for review commands; do not add a generic
+  retry or merge it into the distinct path-normalization and parser mechanisms.
