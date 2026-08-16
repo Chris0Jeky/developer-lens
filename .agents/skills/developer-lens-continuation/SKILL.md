@@ -38,8 +38,9 @@ Use the repository's tracked sources rather than caching project state in this s
 3. Start inline and fan out only for useful disjoint lanes. Native `gpt-5.6-luna` subagents are
    generally available without defining custom agents; once Sol/Terra delegates, use Luna by
    default for every clear, bounded, well-paved, directly verifiable lane, including focused
-   implementation, tests, checks, formatting, migrations, triage, and extraction, not only
-   inventory. Set the Luna model explicitly when spawning it; do not create a custom agent or
+   implementation, tests, checks, formatting, triage, extraction, and W1/W2 mechanical migrations
+   under an already-approved recipe, not migration design or W3 implementation. Set the Luna model
+   explicitly when spawning it; do not create a custom agent or
    launch nested Codex merely to select this model. For a decomposable queue, discover the live
    collaboration ceiling, fill every useful Luna slot with a unique disjoint lane, and replenish
    slots as results arrive. Keep one writer per checkout; parallel write lanes require separate

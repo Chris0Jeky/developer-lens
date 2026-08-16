@@ -67,8 +67,9 @@ Foundation rules that bind every runtime:
 Start inline and fan out only for useful disjoint lanes. Native `gpt-5.6-luna` subagents are
 generally available without defining custom agents; once Sol/Terra delegates, Luna is the default
 for every clear, bounded, well-paved, directly verifiable lane, including focused implementation,
-tests, checks, formatting, migrations, triage, and extraction, not only inventory. Set the Luna
-model explicitly when spawning it; do not create a custom agent or launch nested Codex merely to
+tests, checks, formatting, triage, extraction, and W1/W2 mechanical migrations under an
+already-approved recipe, not migration design or W3 implementation. Set the Luna model explicitly
+when spawning it; do not create a custom agent or launch nested Codex merely to
 select this model. For decomposable work, discover the live collaboration ceiling and keep every
 useful Luna slot occupied from a deduplicated queue; replenish slots as results arrive and never
 hard-code a smaller normal fleet. Use one writer per checkout; parallel writers require separate
