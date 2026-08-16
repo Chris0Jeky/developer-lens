@@ -1372,17 +1372,17 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   third occurrence is recorded by [Product issue #222 comment 5303399568](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303399568)
   and remains owned by [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200).
 
-  **2026-08-15 fourth-preflight note:** The required in-app-browser selector returned exactly
-  `Browser is not available: iab` before tab, navigation, screenshot, server, or protected-data
-  access. No alternate browser was attempted. [Product #200 comment 5304336245](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304336245)
-  records this fourth occurrence. QA remains parked until an in-app browser is connected, and
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
-
-  **2026-08-15 fifth-preflight note:** Connected in-app browser setup and troubleshooting
+  **2026-08-15 fourth-preflight note:** Connected in-app browser setup and troubleshooting
   completed, but the one permitted inventory read returned `[]`. No navigation, fallback browser,
-  server, protected-data access, or visual proof occurred. This independent fifth occurrence is
+  server, protected-data access, or visual proof occurred. This independent fourth occurrence is
   recorded by [Product #200 comment 5304287388](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304287388)
   and [Product #222 comment 5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
+
+  **2026-08-15 fifth/latest-preflight note:** The required in-app-browser selector returned exactly
+  `Browser is not available: iab` before tab, navigation, screenshot, server, or protected-data
+  access. No alternate browser was attempted. [Product #200 comment 5304336245](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304336245)
+  records this fifth and latest occurrence. QA remains parked until an in-app browser is connected,
+  and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
@@ -1808,7 +1808,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-060 — pending check status aborted a combined read batch
 
 - **first-seen:** 2026-08-15
-- **status:** `promoted`
+- **status:** `workaround-documented`
 - **severity:** `LOW (read-only check-state collection)`
 - **symptom:** A read-only `gh pr checks` invocation returned exit 1 while checks were pending. Because
   it ran in a fail-fast combined batch, later unrelated reads did not run; no GitHub or repository
@@ -1817,20 +1817,13 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   bounded evidence batch incomplete.
 - **workaround:** Query structured PR/check status separately, or treat pending as an expected
   state without allowing it to abort unrelated reads.
-- **occurrences:** 2 independent occurrences — 2026-08-15 during the Product PR #256 review/fix
-  hop, and the later no-match inventory batch recorded below.
+- **occurrences:** 1 independent occurrence — 2026-08-15 during the Product PR #256 review/fix
+  hop.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns
   Windows-safe, status-aware read helpers.
-- **promotion:** At the second independent occurrence, Product #222 selects the cheapest checked
-  status-aware read helper that explicitly handles pending and no-match states without aborting
-  unrelated reads. Keep distinct from FR-013's timeout, FR-051's unsupported query-shape predicate,
-  and FR-079's detached-branch report wrapper.
-
-  **2026-08-15 no-match recurrence note:** A combined read-only inventory batch contained an
-  unhandled no-match search and stopped before emitting lane results. Separated retries handled
-  no-match explicitly and completed; no repository or GitHub mutation occurred. This second
-  occurrence is recorded by [Product #222 comment
-  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
+- **promotion:** One check-state/command-batch occurrence. Do not conflate it with FR-013’s
+  timeout or FR-051’s unsupported query-shape predicate. A second independent occurrence promotes
+  a checked status-aware command helper under Product #222.
 
 ### FR-062 — fresh-worktree full gate fails untouched storage and activation seams
 
@@ -2313,3 +2306,22 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   explicit UTF-8 or ASCII-safe external-body boundary.
 - **promotion:** One occurrence remains unpromoted task debt; do not add a helper. Keep distinct from
   FR-014 and FR-036's read-side Markdown decoding and FR-029's Python review decoding.
+
+### FR-087 — unhandled no-match inventory search aborted a fail-fast combined read batch
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only inventory collection)`
+- **symptom:** A combined read-only inventory batch contained an unhandled no-match search and
+  stopped before emitting later lane results; no repository or GitHub mutation occurred.
+- **impact:** A valid empty/no-match inventory result can be treated as a command failure and leave
+  an otherwise bounded evidence batch incomplete.
+- **workaround:** Retry the bounded reads separately and handle no-match explicitly before using
+  their results.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment
+  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns
+  Windows-safe, status-aware read helpers.
+- **promotion:** One no-match/command-batch occurrence remains unpromoted task debt; do not add a
+  helper. Keep distinct from FR-060's pending-check status and FR-051's unsupported query-shape
+  predicate.

@@ -4919,7 +4919,7 @@ lane.
 **Changed.** Reconstructed the bounded two-file browser-evidence record from current main
 `521049c31ecfe8ec717efb6afd90e3a0629c6ae7`, rather than rebasing or carrying forward the old
 branch history. Canonical FR-016, FR-022, FR-024, and FR-044 now record their independent
-browser-preflight state-sync recurrences (FR-044's fifth permitted inventory was empty). FR-060
+browser-preflight state-sync recurrences (FR-044's fifth/latest selector reported `iab` unavailable). FR-060
 preserves its original title, first-seen date, severity, symptom, impact, and workaround verbatim;
 only its status, occurrence count, promotion, and dated no-match recurrence record changed. FR-001
 remains exactly 8 occurrences with no moved-base event added. Current-main FR-081, FR-084, and
@@ -4953,3 +4953,33 @@ inferred or changed.
 availability, and the owner gate before any later action. Only a newly available required browser
 can unlock the bounded visual proof; do not substitute another browser. After that proof, request
 only `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` before synchronized release mechanics.
+
+## 2026-08-16 — Product PR #277 post-merge late-review reconciliation
+
+**Changed.** Reconciled the post-merge late review of Product PR #277: FR-060 is restored to its
+original one-occurrence, workaround-documented state; the separate unhandled no-match inventory
+search is FR-087; and FR-044 orders the empty inventory as fourth preflight and the later selector
+result as fifth/latest. FR-086 is unchanged.
+
+**Verified.** Exact PR #277 head `82c1c8c` passed required `Prove the pull request` run
+`31918685540`; merge `6bcc392` passed merged-main showcase run `31919029533`. Fresh-worktree
+`npm.cmd ci` completed with 0 vulnerabilities; `npm.cmd run verify:context` passed 47 Markdown and
+31 required files; `git diff --check` was clean; and focused friction ID uniqueness/order plus
+FR-087 EOF assertions passed. The replacement worktree was removed; the old PR #272 evidence
+worktree is preserved.
+
+**NOT verified / residual risk.** Browser `iab` remains unavailable and its permitted inventory is
+empty, so browser/visual proof remains parked. No browser fallback, protected-data access,
+release, capability, source, credential, telemetry, or owner-gate action occurred.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` remains authoritative: its selector
+result is the latest browser proof. `HUMAN_TODO.md` is unchanged.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is not
+inferred or changed.
+
+**Exact resume.** Product `main` is `6bcc392`; PR #277 is merged, required run `31918685540` and
+merged-main showcase run `31919029533` are successful, the clean replacement worktree is removed,
+and the superseded PR #272 evidence worktree remains preserved. Wait for the required connected
+in-app-browser proof; only then request the remaining q-10(c) owner sign-off before release
+mechanics.
