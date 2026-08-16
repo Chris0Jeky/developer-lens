@@ -4913,3 +4913,43 @@ inferred or changed.
 diff, commit `fix: require current-state observation timestamp`, and hand the exact local head to
 the coordinator. Do not push, open/comment on PRs/issues, merge, or modify worktrees from this
 lane.
+
+## 2026-08-16 — Product PR #272 browser-evidence reconstruction on current main
+
+**Changed.** Reconstructed the bounded two-file browser-evidence record from current main
+`521049c31ecfe8ec717efb6afd90e3a0629c6ae7`, rather than rebasing or carrying forward the old
+branch history. Canonical FR-016, FR-022, FR-024, and FR-044 now record their independent
+browser-preflight state-sync recurrences (FR-044's fifth permitted inventory was empty). FR-060
+preserves its original title, first-seen date, severity, symptom, impact, and workaround verbatim;
+only its status, occurrence count, promotion, and dated no-match recurrence record changed. FR-001
+remains exactly 8 occurrences with no moved-base event added. Current-main FR-081, FR-084, and
+FR-085 are preserved, and FR-086 records the separately observed PowerShell JSON Unicode-punctuation
+corruption in external GitHub text.
+
+**Verified.** Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. The required context,
+whitespace, and focused friction-record preservation assertions are recorded after this append.
+
+**NOT verified / residual risk.** This is documentation reconstruction only. No browser,
+navigation, alternate-browser fallback, server, protected-data access, visual proof, release,
+owner-gate action, data, credential, telemetry, GitHub mutation, push, pull request, comment, or
+merge occurred. Browser/visual QA remains parked pending the required connected in-app-browser
+proof; release remains downstream of
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and normal exact-head gates.
+
+**Failures and workarounds.** FR-016 retains the selected-but-unimplemented Product #222
+line-ending policy/verification debt. FR-022 retains its selected-but-unimplemented structured
+query contract. FR-024 retains the heading-bounded edit/diff rule. FR-044 retains the promoted
+browser-preflight rule. FR-060 now records its no-match batch as the second promoted occurrence
+without changing its immutable evidence fields. FR-086 remains one unpromoted external-body
+encoding occurrence. No alternate browser or release workaround is authorized.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` and `HUMAN_TODO.md` are unchanged:
+the current browser and release boundaries remain authoritative.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is not
+inferred or changed.
+
+**Exact resume.** Refresh live Product refs, PR/check/review state, connected in-app-browser
+availability, and the owner gate before any later action. Only a newly available required browser
+can unlock the bounded visual proof; do not substitute another browser. After that proof, request
+only `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` before synchronized release mechanics.

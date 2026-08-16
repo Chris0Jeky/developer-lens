@@ -549,7 +549,7 @@ Rules that bind entries:
   normalization. The intended index remains LF and `git diff --check` is clean.
 - **workaround:** Stage only the named files, inspect the cached diff, and run
   `git diff --cached --check`; do not normalize unrelated lines or files in this slice.
-- **occurrences:** 3 independent occurrences — the four-file #200 documentation reconciliation on
+- **occurrences:** 4 independent occurrences — the four-file #200 documentation reconciliation on
   2026-08-09 shares one checkout/config cause; the Product #246 one-file consolidation emitted the
   same warning on 2026-08-15; and the 2026-08-15 DL-CONTEXT-01 generator run emitted it again.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the bounded
@@ -567,6 +567,11 @@ Rules that bind entries:
   `592e92982ed0e4b82a2514b777c6e39aca222b68`; raw/content diffs were empty, and a bounded index
   refresh cleared the false status. No semantic or bulk-normalization change was made. The
   existing policy/verification debt remains unimplemented.
+
+  **2026-08-15 browser-preflight state-sync recurrence note:** The scoped documentation update
+  emitted the same LF/CRLF warning. The existing Product #222 policy/verification debt remains
+  selected but unimplemented; no bulk normalization was made, as recorded by [Product #222 comment
+  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
 
 ### FR-017 — MCP hygiene cleanup needed a canonical-location retry and bounded second pass
 
@@ -716,7 +721,7 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 13 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 14 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
   inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
@@ -773,6 +778,11 @@ Rules that bind entries:
   retry returned description length 1478 without mutation; the existing direct-field/structured
   command contract remains selected but unimplemented, as recorded by [Product #222 comment 5303735953](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303735953).
 
+  **2026-08-15 recurrence note:** A PowerShell quoted-literal GraphQL query received malformed
+  `-lens`; typed owner, name, and number variables completed the same read without mutation. The
+  existing Product #222 structured-query contract remains selected and unimplemented, as recorded
+  by [Product #222 comment 5304365805](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304365805).
+
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
 - **first-seen:** 2026-08-09
@@ -819,7 +829,7 @@ Rules that bind entries:
   the intended target; an unchecked hunk could corrupt an unrelated friction record.
 - **workaround:** Restore the unrelated field and reapply the edit with the unique entry heading in
   the patch context, then inspect the complete file diff.
-- **occurrences:** 3 independent occurrences — 2026-08-09 during PR232's second friction capture,
+- **occurrences:** 4 independent occurrences — 2026-08-09 during PR232's second friction capture,
   and 2026-08-15 during Product #234 FR-050 promotion.
 - **task:** [#234](https://github.com/Chris0Jeky/developer-lens/issues/234) owns the current
   remediation; [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) retains the historical
@@ -837,6 +847,12 @@ Rules that bind entries:
   FR-004 instead. Exact diff review caught the unintended change after the first local commit; the
   correction restored FR-004 and applied FR-044's promotion. This recurrence retains the promoted
   heading-bounded edit and immediate diff review.
+
+  **2026-08-15 browser-preflight state-sync recurrence note:** A repeated-schema patch context
+  first selected FR-057's `status` field. Immediate diff inspection restored it, and the
+  heading-scoped patch then completed the intended update. This fourth actual wrong-target
+  recurrence retains the existing heading-bounded/diff rule; no structural checker was added, as
+  recorded by [Product #222 comment 5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
 
 ### FR-025 — occupied PR232 worktree entered a concurrent main merge
 
@@ -1336,7 +1352,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 4 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 5 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1361,6 +1377,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   access. No alternate browser was attempted. [Product #200 comment 5304336245](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304336245)
   records this fourth occurrence. QA remains parked until an in-app browser is connected, and
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
+
+  **2026-08-15 fifth-preflight note:** Connected in-app browser setup and troubleshooting
+  completed, but the one permitted inventory read returned `[]`. No navigation, fallback browser,
+  server, protected-data access, or visual proof occurred. This independent fifth occurrence is
+  recorded by [Product #200 comment 5304287388](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304287388)
+  and [Product #222 comment 5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
@@ -1786,7 +1808,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-060 — pending check status aborted a combined read batch
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only check-state collection)`
 - **symptom:** A read-only `gh pr checks` invocation returned exit 1 while checks were pending. Because
   it ran in a fail-fast combined batch, later unrelated reads did not run; no GitHub or repository
@@ -1795,13 +1817,20 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   bounded evidence batch incomplete.
 - **workaround:** Query structured PR/check status separately, or treat pending as an expected
   state without allowing it to abort unrelated reads.
-- **occurrences:** 1 independent occurrence — 2026-08-15 during the Product PR #256 review/fix
-  hop.
+- **occurrences:** 2 independent occurrences — 2026-08-15 during the Product PR #256 review/fix
+  hop, and the later no-match inventory batch recorded below.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns
   Windows-safe, status-aware read helpers.
-- **promotion:** One check-state/command-batch occurrence. Do not conflate it with FR-013’s
-  timeout or FR-051’s unsupported query-shape predicate. A second independent occurrence promotes
-  a checked status-aware command helper under Product #222.
+- **promotion:** At the second independent occurrence, Product #222 selects the cheapest checked
+  status-aware read helper that explicitly handles pending and no-match states without aborting
+  unrelated reads. Keep distinct from FR-013's timeout, FR-051's unsupported query-shape predicate,
+  and FR-079's detached-branch report wrapper.
+
+  **2026-08-15 no-match recurrence note:** A combined read-only inventory batch contained an
+  unhandled no-match search and stopped before emitting lane results. Separated retries handled
+  no-match explicitly and completed; no repository or GitHub mutation occurred. This second
+  occurrence is recorded by [Product #222 comment
+  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
 
 ### FR-062 — fresh-worktree full gate fails untouched storage and activation seams
 
@@ -2266,3 +2295,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One occurrence remains task debt; do not promote or add a hook or helper. Keep
   distinct from FR-024's wrong repeated-field target: all content here was intended; only the
   commit boundary was wrong.
+
+### FR-086 — PowerShell JSON piping corrupted Unicode punctuation in external GitHub text
+
+- **first-seen:** 2026-08-15
+- **status:** `workaround-documented`
+- **severity:** `LOW (external evidence/write reliability)`
+- **symptom:** Windows PowerShell JSON piped to `gh` replaced Unicode dash punctuation with literal
+  question marks in the PR #272 body and review comment `5304630655`.
+- **impact:** External evidence text can be corrupted although the repository and its head remain
+  unchanged.
+- **workaround:** Rewrite the affected external surfaces with ASCII-only punctuation; both were
+  corrected without a head change.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment
+  5304634628](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304634628).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns an
+  explicit UTF-8 or ASCII-safe external-body boundary.
+- **promotion:** One occurrence remains unpromoted task debt; do not add a helper. Keep distinct from
+  FR-014 and FR-036's read-side Markdown decoding and FR-029's Python review decoding.
