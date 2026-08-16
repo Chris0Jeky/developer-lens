@@ -35,10 +35,18 @@ Use the repository's tracked sources rather than caching project state in this s
 1. Prefer the first dependency-safe incomplete product slice in
    `docs/analyser-program/CURRENT_STATE.md`; the ledger is history, never the task source.
 2. State objective, owned paths, non-goals, acceptance behavior, rollback and focused checks.
-3. For a decomposable queue, discover the live collaboration ceiling, fill every useful Luna slot
-   with a unique disjoint lane, and replenish slots as results arrive. Keep one writer per checkout;
-   parallel write lanes require separate coordinator-owned worktrees and non-overlapping paths.
-   Escalate judgment-heavy implementation or review to Terra/Sol.
+3. Start inline and fan out only for useful disjoint lanes. Native `gpt-5.6-luna` subagents are
+   generally available without defining custom agents; once Sol/Terra delegates, use Luna by
+   default for every clear, bounded, well-paved, directly verifiable lane, including focused
+   implementation, tests, checks, formatting, migrations, triage, and extraction, not only
+   inventory. Set the Luna model explicitly when spawning it; do not create a custom agent or
+   launch nested Codex merely to select this model. For a decomposable queue, discover the live
+   collaboration ceiling, fill every useful Luna slot with a unique disjoint lane, and replenish
+   slots as results arrive. Keep one writer per checkout; parallel write lanes require separate
+   coordinator-owned worktrees and
+   non-overlapping paths. Keep Terra/Sol children for delegated tasks whose own ambiguity,
+   architecture, security, or causal-review judgment requires them. Existing authority, privacy,
+   proving, review, and merge rules remain binding.
 4. Use invented fixtures first. An approved real migration or sensitive-source task must still
    define exact local scope, read-only credentials, retained fields, coverage behavior, deletion,
    rollback and failure tests before activation.

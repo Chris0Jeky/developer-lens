@@ -64,11 +64,17 @@ Foundation rules that bind every runtime:
 
 ## Codex swarm routing
 
-For decomposable work, discover the live collaboration ceiling and keep every useful Luna slot
-occupied from a deduplicated queue of disjoint bounded lanes; replenish slots as results arrive and
-never hard-code a smaller normal fleet. Use one writer per checkout; parallel writers require
-separate coordinator-owned worktrees and non-overlapping paths. Escalate judgment-heavy
-implementation or review to Terra/Sol.
+Start inline and fan out only for useful disjoint lanes. Native `gpt-5.6-luna` subagents are
+generally available without defining custom agents; once Sol/Terra delegates, Luna is the default
+for every clear, bounded, well-paved, directly verifiable lane, including focused implementation,
+tests, checks, formatting, migrations, triage, and extraction, not only inventory. Set the Luna
+model explicitly when spawning it; do not create a custom agent or launch nested Codex merely to
+select this model. For decomposable work, discover the live collaboration ceiling and keep every
+useful Luna slot occupied from a deduplicated queue; replenish slots as results arrive and never
+hard-code a smaller normal fleet. Use one writer per checkout; parallel writers require separate
+coordinator-owned worktrees and non-overlapping paths. Keep Terra/Sol children for delegated tasks whose own
+ambiguity, architecture, security, or causal-review judgment requires them. Existing authority,
+privacy, proving, review, and merge rules remain binding.
 
 ## Prove and close
 
