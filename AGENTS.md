@@ -72,8 +72,11 @@ model explicitly when spawning it; do not create a custom agent or launch nested
 select this model. For decomposable work, discover the live collaboration ceiling and keep every
 useful Luna slot occupied from a deduplicated queue; replenish slots as results arrive and never
 hard-code a smaller normal fleet. Use one writer per checkout; parallel writers require separate
-coordinator-owned worktrees and non-overlapping paths. Keep Terra/Sol children for delegated tasks whose own
-ambiguity, architecture, security, or causal-review judgment requires them. Existing authority,
+coordinator-owned worktrees and non-overlapping paths. In Codex, when Sol/Terra delegates, prefer
+native `gpt-5.6-luna` for paved, directly verifiable W1/W2 child work, including focused
+implementation, tests, and checks. Keep Terra/Sol children for genuinely judgment-heavy
+investigation or review, or for implementing an already-approved W3 design; architecture,
+contracts, methodology, and final decisions remain coordinator-owned. Existing authority,
 privacy, proving, review, and merge rules remain binding.
 
 ## Prove and close

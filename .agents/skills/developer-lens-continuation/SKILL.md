@@ -43,9 +43,11 @@ Use the repository's tracked sources rather than caching project state in this s
    launch nested Codex merely to select this model. For a decomposable queue, discover the live
    collaboration ceiling, fill every useful Luna slot with a unique disjoint lane, and replenish
    slots as results arrive. Keep one writer per checkout; parallel write lanes require separate
-   coordinator-owned worktrees and
-   non-overlapping paths. Keep Terra/Sol children for delegated tasks whose own ambiguity,
-   architecture, security, or causal-review judgment requires them. Existing authority, privacy,
+   coordinator-owned worktrees and non-overlapping paths. In Codex, when Sol/Terra delegates,
+   prefer native `gpt-5.6-luna` for paved, directly verifiable W1/W2 child work, including focused
+   implementation, tests, and checks. Keep Terra/Sol children for genuinely judgment-heavy
+   investigation or review, or for implementing an already-approved W3 design; architecture,
+   contracts, methodology, and final decisions remain coordinator-owned. Existing authority, privacy,
    proving, review, and merge rules remain binding.
 4. Use invented fixtures first. An approved real migration or sensitive-source task must still
    define exact local scope, read-only credentials, retained fields, coverage behavior, deletion,
