@@ -67,13 +67,17 @@ Foundation rules that bind every runtime:
 Start inline and fan out only for useful disjoint lanes. Native `gpt-5.6-luna` subagents are
 generally available without defining custom agents; once Sol/Terra delegates, Luna is the default
 for every clear, bounded, well-paved, directly verifiable lane, including focused implementation,
-tests, checks, formatting, migrations, triage, and extraction, not only inventory. Set the Luna
-model explicitly when spawning it; do not create a custom agent or launch nested Codex merely to
+tests, checks, formatting, triage, extraction, and W1/W2 mechanical migrations under an
+already-approved recipe, not migration design or W3 implementation. Set the Luna model explicitly
+when spawning it; do not create a custom agent or launch nested Codex merely to
 select this model. For decomposable work, discover the live collaboration ceiling and keep every
 useful Luna slot occupied from a deduplicated queue; replenish slots as results arrive and never
 hard-code a smaller normal fleet. Use one writer per checkout; parallel writers require separate
-coordinator-owned worktrees and non-overlapping paths. Keep Terra/Sol children for delegated tasks whose own
-ambiguity, architecture, security, or causal-review judgment requires them. Existing authority,
+coordinator-owned worktrees and non-overlapping paths. In Codex, when Sol/Terra delegates, prefer
+native `gpt-5.6-luna` for paved, directly verifiable W1/W2 child work, including focused
+implementation, tests, and checks. Keep Terra/Sol children for genuinely judgment-heavy
+investigation or review, or for implementing an already-approved W3 design; architecture,
+contracts, methodology, and final decisions remain coordinator-owned. Existing authority,
 privacy, proving, review, and merge rules remain binding.
 
 ## Prove and close

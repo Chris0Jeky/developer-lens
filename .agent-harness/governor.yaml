@@ -58,6 +58,10 @@ model_roles:
   reviewer: { target: opus-5-high, agent: dl-reviewer, role: fresh-context-adversarial-review }
   mechanic: { target: sonnet-4-6-high, agent: dl-mechanic, role: deterministic-sweeps }
   governor_lite: { target: [terra, opus-5, opus-4-8-ultra], role: 'W0-W2 autonomous, W3 only with approved plan' }
+codex_delegation:
+  luna: { target: gpt-5.6-luna, work_classes: [W1, W2], role: 'paved, directly verifiable child work' }
+  terra_sol: { target: [terra, sol], role: 'genuinely judgment-heavy investigation/review or approved-W3 implementation' }
+  coordinator: { role: 'architecture, contracts, methodology, and final decisions' }
 risk_tiers:
   W0: observation-and-reporting          # any capable model; no writes
   W1: mechanical-administration          # mechanic applies, scout only proposes; focused verification

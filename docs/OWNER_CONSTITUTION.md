@@ -142,6 +142,11 @@ umbrella brand is a later owner choice (N6).
   `claude-opus-5`; pins live in `.claude/agents/`. Codex-side Sol/Luna/Terra specialisation is
   preserved. Never invent or commit unsupported model identifiers; if a target identifier stops
   resolving, retain working pins and open one owner-visible compatibility issue.
+- **Codex routing clarification (2026-08-16; Claude pins/routes unchanged):** when Sol/Terra
+  delegates, native `gpt-5.6-luna` is preferred for paved, directly verifiable W1/W2 child work,
+  including focused implementation, tests, and checks. Terra/Sol children are for genuinely
+  judgment-heavy investigation or review, or for implementing an already-approved W3 design;
+  architecture, contracts, methodology, and final decisions remain coordinator-owned.
 - **A6 ideas:** all three modes (cheap capture, commissioned proposal, bounded exploratory
   branch); agent-generated ideas are labelled as such and pass an independent critic before
   promotion — protocol in [docs/agent-system/IDEA_PROTOCOL.md](agent-system/IDEA_PROTOCOL.md).
@@ -202,7 +207,7 @@ M8=FORCE  M9=LADDER(non-conservative, all three lanes continuously)  M10=DESC
 O1=AGPL  O2=V01  O3=SOURCE+GH+NPM+UVX+DESKTOP(staged)  O4=RELEASE
 O5=CONTRIB+COC+TEMPL+DISC+ROAD  O6=OPTIN+LOCAL  O7=PORT(→LOCALPRO/CONSULT intent)
 O8=CLOSED  O9=SPLIT
-A1=FULL  A2=BATCH(blend)  A3=15  A4=OPEN  A5=SLT(Fable5=Sol, Opus5-low=Luna, Opus5-high=Terra)
+A1=FULL  A2=BATCH(blend)  A3=15  A4=OPEN  A5=SLT(Fable5=Sol, Opus5-low=Luna, Opus5-high=Terra) CODEX(Luna=W1/W2:PAVED-DIRECTLY-VERIFIABLE; Terra|Sol=JUDGMENT-HEAVY|APPROVED-W3; coordinator=ARCHITECTURE|CONTRACTS|METHODOLOGY|FINAL)
 A6=BRANCH(all three modes)  A7=CI  A8=STATE  A9=CURRENT  A10=TWO
 H1=TRIGGER  H2=NEXTLAB  H3=PARK  H4=NOCLAIM  H5=BEFORE  H6=REL  H7=BOTH
 B1=CURRENT  B2=REFL(cinematic visuals)  B3=PRODUCT+ML+AGENT+RESEARCH

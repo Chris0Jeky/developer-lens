@@ -26,6 +26,9 @@ sweep post-merge comments.
 
 - **Route:** `dl-mechanic` (Sonnet 4.6 high) applies the writes; `dl-scout` may only propose them
   (it is read-only by prompt); Governor Lite may own the lane.
+- **Codex route (clarified 2026-08-16):** when Sol/Terra delegates, native `gpt-5.6-luna` is
+  preferred for paved, directly verifiable W1 child work. The coordinator retains the judgment
+  boundary; a child does not reinterpret the approved recipe.
 - **Writes:** tracked files and GitHub metadata inside the approved plan.
 - **Review:** focused verification against the narrowest proof. Escalate to a high-effort model the
   moment the "mechanical" recipe requires a judgment call.
@@ -38,6 +41,11 @@ prompt-library or control-plane generation.
 
 - **Route:** `dl-implementer` (Opus 5 high) implements; `dl-reviewer` (Opus 5 high) reviews in a
   **separate context**; the coordinator steps in only when the slice turns cross-cutting.
+- **Codex route (clarified 2026-08-16):** when Sol/Terra delegates, native `gpt-5.6-luna` is
+  preferred for paved, directly verifiable W2 child work, including focused implementation, tests,
+  and checks. Terra/Sol children are for genuinely judgment-heavy investigation or review, or for
+  implementing an already-approved W3 design; architecture, contracts, methodology, and final
+  decisions remain coordinator-owned.
 - **Writes:** the slice's owned paths, stated up front.
 - **Review:** one fresh-context adversarial pass against the exact final head, plus the narrowest
   proof from the run-and-prove table in [CLAUDE.md](../../CLAUDE.md) (`npm run check` for a code or
@@ -52,6 +60,9 @@ experimental channel design.
 - **Route:** the flagship coordinator (Fable 5) owns design and sequencing; `dl-scout` performs
   archaeology; `dl-implementer` implements the approved design; an independent substantial review
   follows. Governor Lite may **execute** a flagship-approved W3 plan but may never invent one.
+- **Codex boundary (clarified 2026-08-16):** Terra/Sol children may investigate, review, or
+  implement an already-approved W3 design, but architecture, contracts, methodology, and final
+  decisions remain coordinator-owned.
 - **Writes:** contracts under `shared/`, charter and matrix prose, workflow and schema changes.
 - **Review:** independent fresh-context review is mandatory, plus cross-repo compatibility proof on
   both sides where a shared contract moves ([CROSS_REPO_CONTRACT.md](CROSS_REPO_CONTRACT.md)).
