@@ -10,11 +10,11 @@ import {
   CLAIM_STATEMENT_CODES,
   claimStabilityKey,
   claimStabilityKeyToken,
-  computeClaimId,
 } from '../../shared/claims.js'
 import { C1_LIMITATION_CODES, C1_STATEMENT_CODES } from '../externalModel/c1Contract.js'
 import { reconcileGithubCoreReceipts } from '../connectors/github/core.js'
 import { openStorageDatabase } from './database.js'
+import { computeClaimId } from './claimId.js'
 import {
   installIncrementalGithubCoreStorage,
   persistIncrementalGithubCoreTransition,

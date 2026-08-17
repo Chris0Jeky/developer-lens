@@ -31,12 +31,12 @@ import {
   claimMayCiteLayer,
   claimStabilityKey,
   claimStabilityKeyToken,
-  computeClaimId,
   type CitableLayer,
   type ClaimEvidenceEdge,
   type ClaimLayer,
   type ClaimRecord,
 } from '../../shared/claims.js'
+import { computeClaimId } from './claimId.js'
 import { EVIDENCE_LAYERS, CANONICAL_ENVELOPE_SCHEMA_VERSION } from '../../shared/provenance.js'
 import { runStorageChecks } from './database.js'
 

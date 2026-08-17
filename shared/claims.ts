@@ -1,4 +1,3 @@
-import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { EVIDENCE_LAYERS } from './provenance.js'
 
@@ -463,10 +462,4 @@ export function claimIdMaterial(identity: ClaimIdentity): string {
     parsed.scopeId,
     parsed.schemaVersion,
   ].join(MATERIAL_FIELD_SEPARATOR)
-}
-
-/** `cl_` + SHA-256 over the canonical material. */
-export function computeClaimId(identity: ClaimIdentity): string {
-  const digest = createHash('sha256').update(claimIdMaterial(identity), 'utf8').digest('hex')
-  return `cl_${digest}`
 }

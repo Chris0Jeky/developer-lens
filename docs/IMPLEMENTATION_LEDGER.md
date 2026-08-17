@@ -4983,3 +4983,25 @@ merged-main showcase run `31919029533` are successful, the clean replacement wor
 and the superseded PR #272 evidence worktree remains preserved. Wait for the required connected
 in-app-browser proof; only then request the remaining q-10(c) owner sign-off before release
 mechanics.
+
+## 2026-08-17 - Product issue #217 server-only claim ID hashing
+
+**Changed.** Moved the SHA-256 `computeClaimId` wrapper from `shared/claims.ts` to
+`server/storage/claimId.ts`; updated the three production consumers and five direct storage test
+consumers. Claim material, schemas, constants, and the golden claim ID are unchanged; the replay
+test now fresh-imports the split material and hashing modules.
+
+**Verified.** Fresh-worktree `npm.cmd ci` completed with 0 vulnerabilities. The seven requested
+focused suites passed with 186 tests passed and 1 skipped. `npm.cmd run build` passed with no
+`node:crypto` externalization warning (only the existing large-chunk advisory). `npm.cmd run check`
+passed: lint, context, generated checks, 86 test files (1,506 passed and 10 skipped), and build.
+`git diff --check` is clean.
+
+**NOT verified / residual risk.** No protected data, generated output inspection, schema/wire change,
+or client behavior was involved. No push, pull request, review, merge, activation, credential,
+telemetry, or deployment action occurred.
+
+**Exact resume.** On `fix/server-only-claim-id-20260817` from base
+`6a2a1ea3fb59014670a25d01109ff24c77715d38`, review the committed range through current HEAD,
+then publish/open a PR; do not touch
+`FRICTION_LOG.md` or `CURRENT_STATE.md`.
