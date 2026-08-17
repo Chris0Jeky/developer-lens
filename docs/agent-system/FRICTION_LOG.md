@@ -810,9 +810,9 @@ Rules that bind entries:
   to an otherwise reproducible GitHub state snapshot.
 - **workaround:** Use `(Get-Date).ToUniversalTime().ToString('o')`, which succeeded on the same
   shell without changing repository or GitHub state.
-- **occurrences:** 5 independent occurrences — 2026-08-09 during the PR232 final review-thread
+- **occurrences:** 6 independent occurrences — 2026-08-09 during the PR232 final review-thread
   snapshot, plus 2026-08-13 and 2026-08-14 (the immutable FR-032 Windows PowerShell UTC-switch
-  recurrences).
+  recurrences), and 2026-08-17 during a live governor snapshot.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   Windows-safe evidence helper and its explicit timestamp normalization.
 - **promotion:** Promoted to Product #222's typed UTC-normalization contract; retain the compatible
@@ -832,6 +832,12 @@ Rules that bind entries:
   compatible `[DateTime]::UtcNow.ToString('o')` expression completed the read-only timestamp step.
   This fifth event is recorded by [Product issue #222 comment 5303376604](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303376604).
   Product #222's typed UTC-normalization contract remains selected, but its helper is NOT implemented.
+
+  **2026-08-17 recurrence note:** Windows PowerShell rejected `Get-Date -AsUTC` while composing a
+  live governor snapshot because this shell does not support that switch. The compatible
+  `[DateTime]::UtcNow.ToString('o')` expression completed the timestamp step; no repository or
+  GitHub mutation occurred. This sixth occurrence remains owned by [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+  under the selected typed UTC-normalization contract.
 
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
