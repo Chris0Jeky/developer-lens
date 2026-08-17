@@ -2382,3 +2382,20 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   connector evidence boundary.
 - **promotion:** Promotion waits for a second independent occurrence; do not select connector
   repair or add a framework.
+
+### FR-089 — GitHub connector metadata update returned an internal error
+
+- **first-seen:** 2026-08-17
+- **status:** `workaround-documented`
+- **severity:** `LOW (connector metadata-update evidence boundary)`
+- **symptom:** A metadata-only `github_update_pull_request` call for open Product PR #283 returned
+  `Mcp error: -32603: Internal error` before the update could complete.
+- **impact:** The intended PR metadata update was not confirmed, while no PR or repository mutation
+  occurred.
+- **workaround:** Stop and preserve the failed update as unperformed; verify the remote PR state before
+  any retry.
+- **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the connector
+  metadata-update evidence boundary.
+- **promotion:** One occurrence remains task debt; require a second independent occurrence before
+  selecting connector repair or adding a framework.
