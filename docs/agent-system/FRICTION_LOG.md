@@ -737,7 +737,7 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 15 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 16 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
   inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
@@ -798,6 +798,10 @@ Rules that bind entries:
   `-lens`; typed owner, name, and number variables completed the same read without mutation. The
   existing Product #222 structured-query contract remains selected and unimplemented, as recorded
   by [Product #222 comment 5304365805](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304365805).
+
+  **2026-08-17 recurrence note:** One command-boundary episode had two PowerShell quoted-literal
+  GraphQL invocations fail before the JSON-stdin form succeeded; no mutation occurred. Product #222
+  owns the enforcement.
 
   **2026-08-17 recurrence note:** A `gh pr view ... --jq` invocation under Windows PowerShell made
   GitHub CLI emit `accepts at most 1 arg(s), received 4` before the projection could run. The
@@ -1413,9 +1417,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
   **2026-08-17 sixth-preflight note:** The required `iab` selector returned exactly
-  `Browser is not available: iab` before tab, server, navigation, screenshot, or protected-data
-  access. No alternate browser was attempted. Product QA remains parked. This independent sixth
-  occurrence is recorded by [Product #200 comment 5317470356](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5317470356).
+  `Browser is not available: iab`; troubleshooting inventory showed only Chrome. No alternate
+  browser was attempted, and no navigation, server, screenshot, fallback, or protected-data access
+  occurred. Product QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200).
+  This single sixth occurrence is recorded by [Product #200 comment 5317470356](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5317470356).
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
