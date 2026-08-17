@@ -2399,3 +2399,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   metadata-update evidence boundary.
 - **promotion:** One occurrence remains task debt; require a second independent occurrence before
   selecting connector repair or adding a framework.
+
+  **2026-08-17 clarification:** After the first error, the remote PR state was verified and one
+  same-scope metadata retry succeeded at the unchanged head. This is not a second occurrence; no
+  repository or head change occurred.
