@@ -1352,7 +1352,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 5 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 6 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1383,6 +1383,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   access. No alternate browser was attempted. [Product #200 comment 5304336245](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304336245)
   records this fifth and latest occurrence. QA remains parked until an in-app browser is connected,
   and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
+
+  **2026-08-17 sixth-preflight note:** The required `iab` selector returned exactly
+  `Browser is not available: iab` before tab, server, navigation, screenshot, or protected-data
+  access. No alternate browser was attempted. Product QA remains parked. This independent sixth
+  occurrence is recorded by [Product #200 comment 5317470356](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5317470356).
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
@@ -2325,3 +2330,22 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One no-match/command-batch occurrence remains unpromoted task debt; do not add a
   helper. Keep distinct from FR-060's pending-check status and FR-051's unsupported query-shape
   predicate.
+
+### FR-088 — GitHub app PR-file fetch returned API 404 for existing Product PRs
+
+- **first-seen:** 2026-08-17
+- **status:** `workaround-documented`
+- **severity:** `LOW (GitHub app PR-file evidence boundary)`
+- **symptom:** `github_fetch_pr` returned a GitHub API 404 with `documentation_url` for
+  `pulls/pulls#list-pull-requests-files` on recent existing Product PRs, while the same app
+  installation successfully returned their review threads.
+- **impact:** App-based PR metadata/diff/file evidence was unavailable for the affected recent
+  Product PRs even though structured review-thread reads succeeded; repository and GitHub state
+  were unchanged.
+- **workaround:** Use structured review-thread reads through the app, with `gh` for PR
+  metadata/diff/files as the in-scope fallback.
+- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5317474198](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5317474198).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  connector evidence boundary.
+- **promotion:** Promotion waits for a second independent occurrence; do not select connector
+  repair or add a framework.
