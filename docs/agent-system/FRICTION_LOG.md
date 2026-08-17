@@ -1417,10 +1417,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
   **2026-08-17 sixth-preflight note:** The required `iab` selector returned exactly
-  `Browser is not available: iab`; troubleshooting inventory showed only Chrome. No alternate
-  browser was attempted, and no navigation, server, screenshot, fallback, or protected-data access
-  occurred. Product QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200).
-  This single sixth occurrence is recorded by [Product #200 comment 5317470356](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5317470356).
+  `Browser is not available: iab`; troubleshooting inventory showed only Chrome. No navigation,
+  server, screenshot, fallback, or protected-data access occurred. QA remains parked under [Product
+  #200](https://github.com/Chris0Jeky/developer-lens/issues/200).
+
+  **2026-08-17 clarification:** No alternate browser was attempted. [Product #200 comment 5317470356](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5317470356)
+  records this same sixth occurrence, not a seventh.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
