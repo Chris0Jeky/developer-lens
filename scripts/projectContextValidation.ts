@@ -107,7 +107,7 @@ export function containsWindowsUserHomePath(contents: string): boolean {
 
 function escapeDiagnosticPath(path: string): string {
   // oxlint-disable-next-line no-control-regex -- control ranges are intentionally sanitized
-  return path.replace(/[\\\u0000-\u001F\u007F-\u009F\u2028\u2029]/g, (character) => {
+  return path.replace(/[\\\u0000-\u001F\u007F-\u009F\u2028\u2029\u202A-\u202E\u2066-\u2069]/g, (character) => {
     if (character === '\\') {
       return '\\\\'
     }
