@@ -2396,11 +2396,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   occurred.
 - **workaround:** Stop and preserve the failed update as unperformed; verify the remote PR state before
   any retry.
-- **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **occurrences:** 2 independent occurrences — the original 2026-08-17 PR #281 snapshot and the
+  delayed merged-PR #283 sweep, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the connector
   metadata-update evidence boundary.
-- **promotion:** One occurrence remains task debt; require a second independent occurrence before
-  selecting connector repair or adding a framework.
+- **promotion:** Promoted at the second independent occurrence to the already-working scoped REST/CLI
+  fallback after exact-head confirmation; do not select connector repair or add a framework.
 
   **2026-08-17 clarification:** After the first error, the remote PR state was verified and one
   same-scope metadata retry succeeded at the unchanged head. This is not a second occurrence; no
@@ -2427,3 +2428,8 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   plus connector PR metadata succeeded at unchanged head `6461ee13292eb9b3575b5cc3ce34146264578fef`.
   Run `32046990288` was `SUCCESS`, created `16:44:13Z`, and completed `16:47:01Z`; this is not a
   second occurrence.
+
+  **2026-08-17 second-occurrence note:** During the delayed merged-PR #283 sweep,
+  `github_get_pr_info` returned `ConnectError: [Errno -5] No address associated with hostname`, while
+  concurrent `gh pr view` and the review-thread connector succeeded. No evidence gap or mutation
+  resulted. This second occurrence is recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
