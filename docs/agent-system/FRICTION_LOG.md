@@ -73,7 +73,7 @@ Rules that bind entries:
   are treated as human-gated, and lab work is prepared and parked rather than merged. Isolated
   worktrees are used for preparation only — isolation does not make a *merge* safe while a
   competing writer can race the remote.
-- **occurrences:** 8 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
+- **occurrences:** 9 recorded — 2026-08-04 (post-handoff session), 2026-08-04 (surviving dev server
   plus an orphaned partial worktree directory left for manual deletion), 2026-08-07 (lab checkout
   competing writer), 2026-08-09 (a separate coordinator advanced the active q-8 branch between
   this session's read and attempted write), 2026-08-10 (a concurrent post-merge comment assigned
@@ -137,6 +137,14 @@ Rules that bind entries:
   and [Product #200 comment 5304325128](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5304325128).
   It does not prove a leaked process: `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-8` remains
   closed and normal Lab gates remain in force.
+
+  **2026-08-17 overlapping-PR ownership note:** After this governor opened Product #281, a live
+  refresh found independently created Product #282 from the same base editing the same friction-log
+  region and duplicating the sixth browser occurrence while adding distinct FR-022 evidence.
+  Ownership was not inferred, no work was lost, and #282 was left untouched. Convergence is oldest
+  eligible overlapping lane first, then merge current main into this owned branch and retain distinct
+  occurrences once. [Product #200 comment 5317534794](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5317534794)
+  records the event.
 
 ### FR-002 — review connector misses or lands late on an exact head
 
