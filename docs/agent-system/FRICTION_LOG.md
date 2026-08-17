@@ -2405,3 +2405,25 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-17 clarification:** After the first error, the remote PR state was verified and one
   same-scope metadata retry succeeded at the unchanged head. This is not a second occurrence; no
   repository or head change occurred.
+
+### FR-090 — GitHub GraphQL service unavailability interrupted a batched PR snapshot
+
+- **first-seen:** 2026-08-17
+- **status:** `workaround-documented`
+- **severity:** `LOW (hosted GitHub evidence availability)`
+- **symptom:** A final exact-head PR #281 CI/review snapshot batched `gh run view`, `gh pr view`,
+  and a review-thread read; the GitHub GraphQL request returned HTTP 503, `No server is currently
+  available to service your request`.
+- **impact:** The batch failed before producing evidence; no GitHub or repository mutation occurred.
+- **workaround:** Treat the batched snapshot as unavailable and use one scoped REST/connector retry
+  only after confirming the exact head.
+- **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the transient
+  GitHub/GraphQL evidence-availability boundary.
+- **promotion:** One occurrence remains task debt; require a second independent occurrence before
+  selecting connector repair or adding a framework.
+
+  **2026-08-17 clarification:** One scoped retry using REST `gh api repos/.../actions/runs/32046990288`
+  plus connector PR metadata succeeded at unchanged head `6461ee13292eb9b3575b5cc3ce34146264578fef`.
+  Run `32046990288` was `SUCCESS`, created `16:44:13Z`, and completed `16:47:01Z`; this is not a
+  second occurrence.
