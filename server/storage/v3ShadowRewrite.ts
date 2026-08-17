@@ -8,11 +8,11 @@ import {
   ClaimScopeSchema,
   LimitationInstanceSchema,
   claimMayCiteLayer,
-  computeClaimId,
   type ClaimEvidenceEdge,
   type ClaimRecord,
   type ClaimScope,
 } from '../../shared/claims.js'
+import { computeClaimId } from './claimId.js'
 import { CoverageRecordSchema, type CoverageRecord } from '../../shared/coverage.js'
 import { EvidenceLayerSchema, type EvidenceLayer } from '../../shared/provenance.js'
 import {

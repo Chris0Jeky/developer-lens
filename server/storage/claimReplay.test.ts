@@ -12,10 +12,10 @@ import {
   claimIdMaterial,
   claimStabilityKey,
   claimStabilityKeyToken,
-  computeClaimId,
 } from '../../shared/claims.js'
 import { reconcileGithubCoreReceipts } from '../connectors/github/core.js'
 import { openStorageDatabase } from './database.js'
+import { computeClaimId } from './claimId.js'
 import {
   installIncrementalGithubCoreStorage,
   persistIncrementalGithubCoreTransition,
@@ -234,10 +234,11 @@ describe('claim ID canonicalisation is byte-stable', () => {
     for (let run = 0; run < 32; run += 1) expect(computeClaimId(BASE_IDENTITY)).toBe(first)
 
     vi.resetModules()
-    const fresh = await import('../../shared/claims.js')
-    expect(fresh.CLAIM_ID_MATERIAL_VERSION).toBe(CLAIM_ID_MATERIAL_VERSION)
-    expect(fresh.claimIdMaterial(BASE_IDENTITY)).toBe(GOLDEN_MATERIAL)
-    expect(fresh.computeClaimId(BASE_IDENTITY)).toBe(first)
+    const freshClaims = await import('../../shared/claims.js')
+    const freshClaimId = await import('./claimId.js')
+    expect(freshClaims.CLAIM_ID_MATERIAL_VERSION).toBe(CLAIM_ID_MATERIAL_VERSION)
+    expect(freshClaims.claimIdMaterial(BASE_IDENTITY)).toBe(GOLDEN_MATERIAL)
+    expect(freshClaimId.computeClaimId(BASE_IDENTITY)).toBe(first)
   })
 
   it('changes the ID for every changed component of the material', () => {
