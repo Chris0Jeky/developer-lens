@@ -5002,5 +5002,6 @@ or client behavior was involved. No push, pull request, review, merge, activatio
 telemetry, or deployment action occurred.
 
 **Exact resume.** On `fix/server-only-claim-id-20260817` from base
-`6a2a1ea3fb59014670a25d01109ff24c77715d38`, review and commit the bounded diff; do not touch
+`6a2a1ea3fb59014670a25d01109ff24c77715d38`, review the committed range through current HEAD,
+then publish/open a PR; do not touch
 `FRICTION_LOG.md` or `CURRENT_STATE.md`.
