@@ -861,8 +861,9 @@ Rules that bind entries:
   the intended target; an unchecked hunk could corrupt an unrelated friction record.
 - **workaround:** Restore the unrelated field and reapply the edit with the unique entry heading in
   the patch context, then inspect the complete file diff.
-- **occurrences:** 4 independent occurrences — 2026-08-09 during PR232's second friction capture,
-  and 2026-08-15 during Product #234 FR-050 promotion.
+- **occurrences:** 5 independent occurrences — 2026-08-09 during PR232's second friction capture,
+  and 2026-08-15 during Product #234 FR-050 promotion; plus 2026-08-17 during the FR-090 correction,
+  recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 - **task:** [#234](https://github.com/Chris0Jeky/developer-lens/issues/234) owns the current
   remediation; [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) retains the historical
   release-reconciliation context.
@@ -885,6 +886,11 @@ Rules that bind entries:
   heading-scoped patch then completed the intended update. This fourth actual wrong-target
   recurrence retains the existing heading-bounded/diff rule; no structural checker was added, as
   recorded by [Product #222 comment 5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
+
+  **2026-08-17 recurrence note:** A repeated-schema patch intended to update FR-090's occurrence
+  count and promotion instead changed FR-089, while the new FR-090 note remained under FR-090. The
+  error was caught before push; no source behavior or unrelated committed record changed. This fifth
+  occurrence is recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 
 ### FR-025 — occupied PR232 worktree entered a concurrent main merge
 
@@ -2396,12 +2402,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   occurred.
 - **workaround:** Stop and preserve the failed update as unperformed; verify the remote PR state before
   any retry.
-- **occurrences:** 2 independent occurrences — the original 2026-08-17 PR #281 snapshot and the
-  delayed merged-PR #283 sweep, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the connector
   metadata-update evidence boundary.
-- **promotion:** Promoted at the second independent occurrence to the already-working scoped REST/CLI
-  fallback after exact-head confirmation; do not select connector repair or add a framework.
+- **promotion:** One occurrence remains task debt; require a second independent occurrence before
+  selecting connector repair or adding a framework.
 
   **2026-08-17 clarification:** After the first error, the remote PR state was verified and one
   same-scope metadata retry succeeded at the unchanged head. This is not a second occurrence; no
@@ -2418,11 +2423,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **impact:** The batch failed before producing evidence; no GitHub or repository mutation occurred.
 - **workaround:** Treat the batched snapshot as unavailable and use one scoped REST/connector retry
   only after confirming the exact head.
-- **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **occurrences:** 2 independent occurrences — the original 2026-08-17 PR #281 snapshot and the
+  delayed merged-PR #283 sweep, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the transient
   GitHub/GraphQL evidence-availability boundary.
-- **promotion:** One occurrence remains task debt; require a second independent occurrence before
-  selecting connector repair or adding a framework.
+- **promotion:** Promoted at the second independent occurrence to the already-working scoped REST/CLI
+  fallback after exact-head confirmation; do not select connector repair or add a framework.
 
   **2026-08-17 clarification:** One scoped retry using REST `gh api repos/.../actions/runs/32046990288`
   plus connector PR metadata succeeded at unchanged head `6461ee13292eb9b3575b5cc3ce34146264578fef`.
