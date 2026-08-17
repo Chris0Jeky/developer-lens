@@ -456,10 +456,12 @@ Rules that bind entries:
   `npm run check` with a 300-second boundary. It passed in 114.7 seconds (86 files, 1,487 passed, 10
   skipped, build and 17-file credential scan green); the narrow docs checks were then rerun after
   this log entry.
-- **occurrences:** 3 independent occurrences — 2026-08-09 during PR #226's latest-base proof and
-  2026-08-15 during Product PR #251 fix-round proof.
+- **occurrences:** 4 independent occurrences — 2026-08-09 during PR #226's latest-base proof,
+  2026-08-15 during Product PR #251 fix-round proof, 2026-08-15 during Product #242 proof, and
+  2026-08-17 during Product #257 proof.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
-  preparation and its exact-head evidence.
+  preparation and its exact-head evidence; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+  owns the command-boundary helper debt.
 - **promotion:** The second occurrence selects a 300-second command-sized timeout boundary for the
   full gate. Record the measured result in the same-hop evidence before deciding whether a future
   run-and-prove-table revision is justified; do not rely on a compound caller timeout.
@@ -475,6 +477,12 @@ Rules that bind entries:
   boundary remains the correct future proving boundary; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
   retains the command-boundary debt and [Product #242](https://github.com/Chris0Jeky/developer-lens/issues/242)
   records the validator slice.
+
+  **2026-08-17 Product #257 recurrence note:** The unchanged `npm run check` exceeded its 124-second
+  execution window with no result or emitted failure. This occurrence is unverified, not red, and
+  the check is rerunning alone at the already-selected 300-second boundary. [Product #222 comment
+  5317511708](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5317511708) records
+  the recurrence.
 
 ### FR-014 — implicit PowerShell decoding corrupted patch context
 
