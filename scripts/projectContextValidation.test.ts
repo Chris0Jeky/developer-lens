@@ -36,6 +36,22 @@ import {
 } from './projectContextValidation.js'
 
 const blob = (contents: string): Uint8Array => new TextEncoder().encode(contents)
+const utf16Blob = (contents: string, endian: 'le' | 'be'): Uint8Array => {
+  const bytes = new Uint8Array(2 + contents.length * 2)
+  bytes.set(endian === 'le' ? [0xff, 0xfe] : [0xfe, 0xff])
+  for (let index = 0; index < contents.length; index += 1) {
+    const codeUnit = contents.charCodeAt(index)
+    const offset = 2 + index * 2
+    if (endian === 'le') {
+      bytes[offset] = codeUnit & 0xff
+      bytes[offset + 1] = codeUnit >> 8
+    } else {
+      bytes[offset] = codeUnit >> 8
+      bytes[offset + 1] = codeUnit & 0xff
+    }
+  }
+  return bytes
+}
 const indexEntry = (
   path: string,
   overrides: Partial<{ mode: string; objectId: string; stage: string }> = {},
@@ -143,6 +159,47 @@ describe('project context validation', () => {
         ),
       ),
     ).toEqual([])
+  })
+
+  it('decodes BOM-marked UTF-16 blobs and rejects Windows user-home paths without exposing the literal', () => {
+    const home = ['C:', 'Users', 'FixtureUser', 'workspace'].join('\\')
+    for (const endian of ['le', 'be'] as const) {
+      const errors = validateTrackedTextForWindowsUserHomePaths(
+        accessForEntries(
+          [indexEntry(`docs/${endian}.md`)],
+          () => utf16Blob('source: ' + home, endian),
+        ),
+      )
+
+      expect(errors).toEqual([`docs/${endian}.md: contains a Windows user-home path`])
+      expect(errors.join('\n')).not.toContain(home)
+    }
+  })
+
+  it('accepts safe BOM-marked UTF-16 blobs', () => {
+    for (const endian of ['le', 'be'] as const) {
+      expect(
+        validateTrackedTextForWindowsUserHomePaths(
+          accessForEntries(
+            [indexEntry(`docs/safe-${endian}.md`)],
+            () => utf16Blob('source: C:/Synthetic/FixtureUser/workspace', endian),
+          ),
+        ),
+      ).toEqual([])
+    }
+  })
+
+  it('fails closed for malformed UTF-16 blobs without leaking literals', () => {
+    const malformed = [new Uint8Array([0xff, 0xfe, 0x41])]
+    const home = ['C:', 'Users', 'FixtureUser', 'workspace'].join('\\')
+    for (const [index, bytes] of malformed.entries()) {
+      const errors = validateTrackedTextForWindowsUserHomePaths(
+        accessForEntries([indexEntry(`docs/malformed-${index}.md`)], () => bytes),
+      )
+
+      expect(errors).toEqual([`docs/malformed-${index}.md: unable to read Git index blob`])
+      expect(errors.join('\n')).not.toContain(home)
+    }
   })
 
   it('escapes control characters in metadata-derived tracked-path diagnostics', () => {
