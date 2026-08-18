@@ -259,14 +259,14 @@ source, never this table. Horizon: A = active queue, F = frozen by the current r
 | DL-WB-01 | Research workbench harness + frozen benchmark format | workbench | implementation | READY |  | none | M6 | medium/M |
 | DL-WB-02 | Model registry + promotion mechanics | workbench | implementation | BLOCKED_BY_DEPENDENCY |  | DL-WB-01, DL-SPINE-01 | M6 | medium/M |
 | DL-WB-C1 | Candidate: robust weekly change-points (PELT/BOCPD) | workbench | research | RESEARCH | F | DL-WB-01, DL-LAB-01 | M6 | medium/M |
-| DL-WB-C2 | Candidate: change-intent classifier vs rule baseline | workbench | research | RESEARCH | F | DL-WB-01, DL-SEM-02 | M6 | medium/M |
+| DL-WB-C2 | Candidate: change-intent classifier vs rule baseline | workbench | research | PARKED | F | DL-WB-01, DL-SEM-02 | M6 | medium/M |
 | DL-WB-C3 | Candidate: metadata-only CI failure-family classifier (likely reject) | workbench | research | RESEARCH | F | DL-WB-01, DL-CI-01 | M6 | medium/M |
 | DL-WB-C4 | Candidate: sequence/motif discovery | workbench | research | RESEARCH | F | DL-WB-01, DL-LAB-01 | M6 | medium/M |
 | DL-WB-C5 | Candidate: dynamic communities / graph embeddings | workbench | research | RESEARCH | F | DL-WB-01, DL-GRAPH-01 | M6 | medium/M |
 | DL-WB-C6 | Candidate: time-to-event queue analysis (censoring-aware) | workbench | research | RESEARCH | F | DL-WB-01, DL-OBSV-01 | M6 | medium/M |
 | DL-WB-C7 | Candidate: probabilistic observability model | workbench | research | RESEARCH | F | DL-WB-01, DL-LIFE-01 | M6 | medium/M |
 | DL-WB-C8 | Candidate: architecture-change classifier | workbench | research | RESEARCH | F | DL-WB-01, DL-TIME-01 | M6 | medium/M |
-| DL-WB-C9 | Candidate: retrieval-ranking ladder (lexical/vector vs structured) | workbench | research | RESEARCH | F | DL-WB-01, DL-RAG-02 | M7 | medium/M |
+| DL-WB-C9 | Candidate: retrieval-ranking ladder (lexical/vector vs structured) | workbench | research | PARKED | F | DL-WB-01, DL-RAG-02 | M7 | medium/M |
 | DL-RAG-01 | Structured evidence retrieval + counter-evidence quotas | retrieval | implementation | BLOCKED_BY_DEPENDENCY |  | DL-PACK-02 | M7 | medium/M |
 | DL-RAG-02 | Retrieval benchmark + privacy canary battery | retrieval | evaluation | BLOCKED_BY_DEPENDENCY |  | DL-RAG-01 | M7 | medium/M |
 | DL-HYP-01 | Deterministic hypothesis composer + falsifier registry | hypothesis | implementation | BLOCKED_BY_DEPENDENCY |  | DL-RAG-01, DL-SPINE-05 | M7 | medium/M |

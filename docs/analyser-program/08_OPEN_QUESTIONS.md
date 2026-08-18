@@ -19,8 +19,8 @@ charter, matrix, policy, task, deletion, and (where a candidate is evaluated) ho
 | DL-Q-LOCALMODEL | `D12=NO` records the pinned offline local-model option as not planned; only a newer explicitly recorded owner decision may supersede it. | No model, dependency, weights, model invocation, or activation is active; no policy/task/agent route may reconsider or supersede D12=NO. The separate OpenAI/Luna G4 boundary is unchanged. |
 | DL-Q-CONSENT | Own/curated-public per-candidate validation is proposal-eligible through the existing consent, charter, matrix, and release gates. | No dataset is assembled or used by this record. A future candidate task needs its dataset card, consent/refusal/deletion controls, release review, and untouched holdout. |
 | DL-Q-AGENTCFG | `D5=PRES` records a presence-only `agent_config` role. | No content reads, portfolio timing, adoption inference, or runtime activation is allowed. Timing remains the separate DL-Q-AGENTCFG-TIMING gate. |
-| G-e (artifact metadata) | Artifact/cache metadata-only counts are proposal-eligible only through a scoped reviewed capability/matrix change. | No artifact/cache access or collection is active; q-2 standing G3 does not cover this source. |
-| GH-DISCUSS-01 | Discussion metadata is proposal-eligible only through a scoped reviewed capability/matrix change. | No discussion access or collection is active; q-2 standing G3 does not cover this source. |
+| G-e (artifact metadata) | Artifact/cache metadata-only counts are proposal-eligible only through a scoped reviewed capability/matrix change. | No artifact/cache access or collection is active; the standing G3 authority recorded by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2` does not cover this source. |
+| GH-DISCUSS-01 | Discussion metadata is proposal-eligible only through a scoped reviewed capability/matrix change. | No discussion access or collection is active; the standing G3 authority recorded by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2` does not cover this source. |
 
 ## 2. Owner-gate register (remaining decisions — never assumed)
 
@@ -29,7 +29,7 @@ blocks the deterministic critical path.
 
 | Gate (card) | Remaining decision | Required evidence or route |
 |---|---|---|
-| DL-Q-XCONTRACT | May a C4-byte content hash become a cross-repository identity key with a deletion cascade? | Coincidence fixture plus explicit owner decision; no q-2 inference. |
+| DL-Q-XCONTRACT | May a C4-byte content hash become a cross-repository identity key with a deletion cascade? | Coincidence fixture plus explicit owner decision; no inference from `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2`. |
 | DL-Q-AGENTCFG-TIMING | Is portfolio-level agent-config adoption timing suppressed to per-repository presence? | Explicit owner decision plus the two-portfolio fixture. |
 | DL-Q-GRAIN | Does the ISO-week operational-timing floor bind freshness-age durations? | Explicit owner decision with the composition-ledger check. |
 | G-d / DL-PORT-02 / DL-PROV-01 | May rulesets/branch-protection and attestations enter the capability matrix? | Reviewed matrix change or explicit owner route per source; these cards remain owner/matrix gated and unchanged. |
@@ -40,7 +40,8 @@ migration (#5, #6, #59), the P12 lane (#41, #57), and UX polish (#55).
 
 **2026-08-18 reconciliation note:** Discussions and artifact metadata are proposal-eligible only
 through scoped reviewed capability/matrix work and are not active. Rulesets and attestations remain
-behind the reviewed-matrix or explicit-owner route. This note does not widen q-2 standing G3.
+behind the reviewed-matrix or explicit-owner route. This note does not widen the standing G3
+authority recorded by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2`.
 
 **2026-08-04 review correction:** DL-PORT-02 and DL-PROV-01 originally carried standing-G3
 authority lines on the board; both are now OWNER_GATED/PARKED behind G-d, and `02` §0's
