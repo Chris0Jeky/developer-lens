@@ -64,15 +64,18 @@ publication route remains active.
 
 - [ ] **q-6 — Intelligence-platform owner gates (constitution-v2 reconciliation; open and
   non-blocking).** The 2026-08-18 reconciliation replaces the stale “seven genuinely open”
-  framing. The following are resolved, agent-executable policy work (not activation): (a) PR/issue
+  framing. The following owner decisions resolve authority for agent-executable repository/card/
+  charter/matrix reconciliation only (not implementation selection or activation): (a) PR/issue
   prose under explicit capability, retention, and parser controls; (b) a durable retrieval index,
   `D1=DURABLE`, subject to the deletion planner and a reviewed task card; (d) own/curated-public
   per-candidate validation under the existing consent, charter, matrix, and release gates; (f)
   `agent_config` presence-only classification, `D5=PRES`; and (g) Discussions and artifact-metadata
   eligibility through reviewed capability/matrix work. The pinned offline local model option (c)
-  is recorded as `D12=NO` (option only), not planned implementation. These constitution decisions
-  do not activate any capability, source, sink, model, telemetry, credential, or data path; charter
-  and capability-matrix reconciliation remains agent work under those gates.
+  is recorded as `D12=NO` (option only), not planned implementation. The existing QUESTION cards,
+  pack/index, and open-question register remain blocked/stale and must be updated through a
+  separately reviewed #201 slice before implementation selection. These constitution decisions do
+  not activate any capability, source, sink, model, telemetry, credential, or data path. D5=PRES
+  resolves only the presence-only role; portfolio adoption-timing suppression remains open.
 
   Retain as genuinely open owner decisions (q-6 remains unchecked): (e) C4-byte content-hash
   cross-repository linkage and deletion cascade; portfolio adoption-timing suppression; rulesets /
@@ -189,8 +192,9 @@ publication route remains active.
 ## Changelog
 
 - 2026-08-18 (constitution-v2 reconciliation): replaced q-6’s stale “seven genuinely open”
-  framing with resolved agent-executable policy lanes and retained only the owner decisions that
-  remain open; q-6 stays unchecked and no capability is activated.
+  framing with owner authority for agent-executable reconciliation only; stale QUESTION cards and
+  the open-question register remain blocked pending a separately reviewed #201 slice. q-6 stays
+  unchecked and no capability is activated.
 - 2026-08-15 (Product #200 ownership observation): added the factual guarded-delegate/remote-head
   sequence to closed q-8 and FR-001: a pre-existing friction-log modification caused a no-write
   stop, the intended correction appeared cleanly at `934ed23`, and the occupied worktree was
