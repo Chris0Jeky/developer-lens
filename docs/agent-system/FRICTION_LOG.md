@@ -1380,7 +1380,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 9 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 10 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1447,6 +1447,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `document.defaultView` or omit resource timing and split visual proof from optional metrics.
   Viewport screenshots were unreliable at the scrolled bottom, so DOM assertions and top screenshots
   were retained. The unauthorized ChromeDevTools evidence above remains invalid release proof.
+
+  **2026-08-18 tenth-finalization note:** The approved browser-client disconnected again while
+  finalizing the tab handoff. The prior desktop/mobile proof remains valid, but tab handoff and final
+  disposition are NOT VERIFIED; do not assume the agent-created local tab stayed open or was cleaned
+  up. Stop closeout without an alternate-browser fallback or further retry; q-10(c) remains open, and
+  the owner can use the localhost URL after reconnecting Browser in a future session.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
