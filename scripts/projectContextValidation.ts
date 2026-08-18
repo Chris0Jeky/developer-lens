@@ -105,6 +105,16 @@ export function containsWindowsUserHomePath(contents: string): boolean {
   return windowsUserHomePathPattern.test(contents)
 }
 
+function decodeTrackedTextBlob(raw: Uint8Array): string {
+  if (raw[0] === 0xff && raw[1] === 0xfe) {
+    return new TextDecoder('utf-16le', { fatal: true }).decode(raw)
+  }
+  if (raw[0] === 0xfe && raw[1] === 0xff) {
+    return new TextDecoder('utf-16be', { fatal: true }).decode(raw)
+  }
+  return new TextDecoder().decode(raw)
+}
+
 function escapeDiagnosticPath(path: string): string {
   // oxlint-disable-next-line no-control-regex -- control ranges are intentionally sanitized
   return path.replace(/[\\\u0000-\u001F\u007F-\u009F\u2028\u2029\u202A-\u202E\u2066-\u2069]/g, (character) => {
@@ -379,7 +389,7 @@ export function validateTrackedTextForWindowsUserHomePaths(
       continue
     }
     try {
-      const contents = new TextDecoder().decode(access.readBlob(entry.objectId))
+      const contents = decodeTrackedTextBlob(access.readBlob(entry.objectId))
       if (containsWindowsUserHomePath(contents)) {
         errors.push(`${diagnosticPath}: contains a Windows user-home path`)
       }
