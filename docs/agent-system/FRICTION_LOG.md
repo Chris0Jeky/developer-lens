@@ -2481,8 +2481,16 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   did not change repository or GitHub state.
 - **workaround:** Build the payload in PowerShell with `ConvertTo-Json` and pipe it to
   `gh api --input -`; the retry succeeded.
-- **occurrences:** 1 independent occurrence.
+- **occurrences:** 2 independent occurrences — the 2026-08-18 REST review-post transfer failure
+  and the inline jq equality-filter recurrence below.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   cross-runtime structured-payload transfer boundary.
-- **promotion:** One occurrence remains workaround-documented task debt; do not add a helper until
-  an independent recurrence establishes that a checked transfer contract is warranted.
+- **promotion:** Promoted at the second independent occurrence: avoid nested inline jq string
+  comparisons across JavaScript, PowerShell, and `gh`; fetch structured JSON and filter in one
+  runtime (PowerShell `ConvertFrom-Json`) or use a JSON payload/stdin boundary. Product #222 owns
+  the checked cross-runtime transfer contract.
+
+  **2026-08-18 recurrence note:** Inline jq equality filters embedded through JavaScript to
+  PowerShell to `gh api --jq` lost the SHA string quotes and failed parsing. Preceding REST calls
+  succeeded and no mutation occurred; structured JSON filtering in one runtime is the selected
+  enforcement route.
