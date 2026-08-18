@@ -1420,13 +1420,14 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
   **2026-08-18 eighth-preflight note:** The mandated browser client was disconnected or unavailable
-  during the current preflight. The isolated ChromeDevTools follow-up rendered the safe localhost
-  invented Method Trial, but screenshot persistence to an out-of-scope target was denied and no file
-  was created. Inline image output is the bounded workaround; no protected-data access occurred. A
-  `resize_page` request for 390x844 reported innerWidth 502, so reliable mobile proof requires
-  explicit DevTools emulation at 390x844x1 with mobile/touch and an innerWidth/scrollWidth assertion.
-  QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200), and
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
+  during the current preflight. An isolated ChromeDevTools follow-up rendered the safe localhost
+  invented Method Trial, but that external browser-control path is not authorized by the Browser
+  skill, so its screenshot and mobile observations are invalid release proof. Screenshot persistence
+  was also denied and no file was created; the 390x844 request reported innerWidth 502. Do not use
+  inline output or external browser control as a fallback. Stop and retry only through the approved
+  browser-client surface, with explicit mobile emulation and innerWidth/scrollWidth assertions. No
+  protected-data access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
+  and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
