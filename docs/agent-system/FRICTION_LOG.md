@@ -825,6 +825,10 @@ Rules that bind entries:
   compatible `(Get-Date).ToUniversalTime().ToString('o')` / DateTime route succeeded without
   mutation. Recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 
+  **2026-08-18 portable-workaround clarification:** The same UTC evidence boundary is also
+  satisfied by `[DateTime]::UtcNow.ToString('o')`; `Get-Date -AsUTC` remained unavailable. Product
+  #222's existing typed UTC-normalization task remains the linked enforcement route.
+
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
 - **first-seen:** 2026-08-09
@@ -875,12 +879,19 @@ Rules that bind entries:
 - **workaround:** Preserve the raced evidence, wait for the current writer to complete, and refresh
   the exact merge and status state from the resulting head. This documentation slice takes no
   detour into the occupied worktree.
-- **occurrences:** 1 independent occurrence — 2026-08-10 during the Product #200 reconciliation.
+- **occurrences:** 2 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+  and the 2026-08-18 UTF-16-slice recurrence below.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
   coordination and worktree ownership evidence.
-- **promotion:** The cheapest enforcing layer is a coordinator-owned worktree lease or explicit
-  handoff recorded before a moved-main merge. Task debt at one occurrence; no additional repair is
-  selected in this hop.
+- **promotion:** At the second independent occurrence, retain the coordinator-owned one-writer,
+  pinned-head, and live-refresh boundary before mutation. The external concurrent-writer condition
+  remains task debt under [#200](https://github.com/Chris0Jeky/developer-lens/issues/200); no new
+  helper is selected in this documentation slice.
+
+  **2026-08-18 UTF-16-slice recurrence note:** The bounded UTF-16 slice encountered an unexpected
+  base/main divergence while main moved concurrently. The stale base was not treated as proof;
+  live base/main state was rechecked before continuation. This is the second independent
+  moved-main/one-writer occurrence and remains owned by [#200](https://github.com/Chris0Jeky/developer-lens/issues/200).
 
 ### FR-026 — PowerShell object expansion obscured a scalar merge message
 
@@ -893,7 +904,7 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 11 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+- **occurrences:** 12 independent occurrences — 2026-08-10 during the Product #200 reconciliation
   and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
   resolution, recorded by
   [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
@@ -955,6 +966,12 @@ Rules that bind entries:
   recorded by [Product #222 comment 5304526664](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304526664)
   and [PR #274 review comment 3790412576](https://github.com/Chris0Jeky/developer-lens/pull/274#discussion_r3790412576).
   The canonical promoted explicit-scalar boundary now counts this as FR-026's eleventh occurrence.
+
+  **2026-08-18 REST review-post note:** The first REST review-post attempt returned HTTP 422 because
+  the shell command referenced an unset `REVIEW_BODY` environment variable; the JavaScript variable
+  was not transferred into the spawned PowerShell process. Retrying with a PowerShell
+  `ConvertTo-Json` payload piped to `gh api --input -` succeeded. This is the twelfth occurrence
+  under the existing structured-JSON/stdin boundary; Product #222 retains the enforcement route.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
@@ -1360,7 +1377,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 7 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 8 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1401,6 +1418,15 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `No browser is available`; required troubleshooting inventory was `[]`. No navigation, server,
   screenshot, fallback, or protected-data access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
   and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
+
+  **2026-08-18 eighth-preflight note:** The mandated browser client was disconnected or unavailable
+  during the current preflight. The isolated ChromeDevTools follow-up rendered the safe localhost
+  invented Method Trial, but screenshot persistence to an out-of-scope target was denied and no file
+  was created. Inline image output is the bounded workaround; no protected-data access occurred. A
+  `resize_page` request for 390x844 reported innerWidth 502, so reliable mobile proof requires
+  explicit DevTools emulation at 390x844x1 with mobile/touch and an innerWidth/scrollWidth assertion.
+  QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200), and
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
@@ -2337,7 +2363,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-087 — unhandled no-match inventory search aborted a fail-fast combined read batch
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only inventory collection)`
 - **symptom:** A combined read-only inventory batch contained an unhandled no-match search and
   stopped before emitting later lane results; no repository or GitHub mutation occurred.
@@ -2345,13 +2371,23 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   an otherwise bounded evidence batch incomplete.
 - **workaround:** Retry the bounded reads separately and handle no-match explicitly before using
   their results.
-- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment
-  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
+- **occurrences:** 2 independent occurrences, recorded by [Product #222 comment
+  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086) and
+  the 2026-08-18 recurrence below.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns
   Windows-safe, status-aware read helpers.
-- **promotion:** One no-match/command-batch occurrence remains unpromoted task debt; do not add a
-  helper. Keep distinct from FR-060's pending-check status and FR-051's unsupported query-shape
-  predicate.
+- **promotion:** Promoted at the second independent occurrence: optional-path searches must
+  prefilter candidates with `Test-Path` (or execute separately with explicit exit-code handling)
+  before fail-fast aggregation. No new helper is needed because the repository already documents
+  this pattern. Keep distinct from FR-060's pending-check status and FR-051's unsupported
+  query-shape predicate.
+
+  **2026-08-18 recurrence note:** A combined read-only batch again aborted because an optional or
+  missing candidate file caused a search command to return nonzero, suppressing later otherwise-valid
+  read results. In the current parallel `rg` call, two assumed Method Trial test paths did not
+  exist, so the orchestration cell discarded useful sibling output. No mutation occurred; prefilter
+  with `rg --files` and handle each result independently. This recurrence remains owned by
+  [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 
 ### FR-088 — Pages/API availability outage required a bounded deployment rerun
 
@@ -2385,7 +2421,31 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   no repository or GitHub mutation occurred.
 - **workaround:** Use bounded REST PR, check, and review endpoints for the in-scope evidence while
   GraphQL quota is exhausted.
-- **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **occurrences:** 2 independent occurrences, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
+  and the 2026-08-18 publication recurrence below.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   review-state evidence route.
-- **promotion:** One occurrence is workaround-documented; no repository-code fix is selected.
+- **promotion:** At the second independent occurrence, retain the bounded REST fallback under
+  Product #222's review/publication evidence route; no new helper is selected in this slice.
+
+  **2026-08-18 publication recurrence note:** GraphQL quota exhaustion also stopped `gh pr create`
+  before PR mutation (`0/5000` remaining while REST core retained capacity). The identical ready PR
+  was created through the authenticated REST pulls endpoint as PR #287. No repository or GitHub
+  mutation occurred before the fallback request.
+
+### FR-090 — Luna spawn rejected an incompatible option combination
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (delegation setup friction)`
+- **symptom:** An attempted Luna spawn combining full-history fork settings with an explicit
+  `agent_type` was rejected before the child lane started.
+- **impact:** The bounded delegated lane was delayed while the invocation shape was corrected; no
+  repository or GitHub mutation occurred.
+- **workaround:** Retry with `fork_turns=none`; the Luna spawn then succeeded.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #214](https://github.com/Chris0Jeky/developer-lens/issues/214) owns the prompt
+  operating system and delegation-shape follow-up.
+- **promotion:** One invocation-compatibility occurrence remains task debt. Repository prompts
+  select Luna for paved W1/W2 work but do not encode this option constraint; keep the workaround in
+  the task record and do not add a helper after one occurrence.
