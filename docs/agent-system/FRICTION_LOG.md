@@ -2299,18 +2299,24 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-084 — PowerShell path normalization regex stopped the worktree cleanup guard
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (worktree-guard/path-normalization command-boundary)`
 - **symptom:** The cleanup guard used PowerShell `-replace '\','/'`; the lone backslash was an
   invalid regex, so the wrapper stopped before `git worktree remove`.
 - **impact:** The cleanup guard was delayed without file, worktree, Git, or GitHub mutation.
 - **workaround:** Use the literal string `.Replace('\','/')` or equivalent non-regex
   normalization, then revalidate the exact target; the retry succeeded.
-- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304582104](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304582104).
+- **occurrences:** 2 independent occurrences, recorded by [Product #222 comment 5304582104](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304582104) and [Product #222 comment 5322375973](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5322375973).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   worktree-guard/path-normalization command boundary.
-- **promotion:** One occurrence remains task debt; do not promote or add a helper. Keep distinct
-  from FR-047's Git path rendering mismatch.
+- **promotion:** Promoted at the second occurrence: Product #222 owns a checked cleanup helper
+  that uses literal normalization and terminating validation before mutation. Keep distinct from
+  FR-047's Git path rendering mismatch.
+
+  **2026-08-18 Product PR #291 cleanup recurrence note:** During explicit clean worktree teardown,
+  `-replace '\','/'` produced the same invalid-regex error. PowerShell continued and removed both
+  clean worktrees. A literal `.Replace('\','/')` reread proved both exact paths absent and
+  unregistered, with no tracked work loss (only regenerable `node_modules`/`dist`).
 
 ### FR-085 — local commit boundary was initially non-independent
 
