@@ -913,7 +913,7 @@ Rules that bind entries:
   for a factual state record, without changing repository or GitHub state.
 - **workaround:** Join the content as a scalar with `[string]::Join` or read it with `-Raw` before
   placing it in the object. The corrected evidence path completed without mutation.
-- **occurrences:** 12 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+- **occurrences:** 11 independent occurrences — 2026-08-10 during the Product #200 reconciliation
   and during PR #239's multiline review-triage comment; 2026-08-15 during PR #249 thread
   resolution, recorded by
   [Product issue #222 comment 5299759496](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5299759496).
@@ -975,12 +975,6 @@ Rules that bind entries:
   recorded by [Product #222 comment 5304526664](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304526664)
   and [PR #274 review comment 3790412576](https://github.com/Chris0Jeky/developer-lens/pull/274#discussion_r3790412576).
   The canonical promoted explicit-scalar boundary now counts this as FR-026's eleventh occurrence.
-
-  **2026-08-18 REST review-post note:** The first REST review-post attempt returned HTTP 422 because
-  the shell command referenced an unset `REVIEW_BODY` environment variable; the JavaScript variable
-  was not transferred into the spawned PowerShell process. Retrying with a PowerShell
-  `ConvertTo-Json` payload piped to `gh api --input -` succeeded. This is the twelfth occurrence
-  under the existing structured-JSON/stdin boundary; Product #222 retains the enforcement route.
 
 ### FR-027 — stale multi-entry patch context failed closed
 
@@ -2447,12 +2441,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   no repository or GitHub mutation occurred.
 - **workaround:** Use bounded REST PR, check, and review endpoints for the in-scope evidence while
   GraphQL quota is exhausted.
-- **occurrences:** 2 independent occurrences, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
-  and the 2026-08-18 publication recurrence below.
+- **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   review-state evidence route.
-- **promotion:** At the second independent occurrence, retain the bounded REST fallback under
-  Product #222's review/publication evidence route; no new helper is selected in this slice.
+- **promotion:** One occurrence is workaround-documented; retain the bounded REST fallback under
+  Product #222's review/publication evidence route. No repository-code fix or new helper is selected.
 
   **2026-08-18 publication recurrence note:** GraphQL quota exhaustion also stopped `gh pr create`
   before PR mutation (`0/5000` remaining while REST core retained capacity). The identical ready PR
@@ -2475,3 +2468,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One invocation-compatibility occurrence remains task debt. Repository prompts
   select Luna for paved W1/W2 work but do not encode this option constraint; keep the workaround in
   the task record and do not add a helper after one occurrence.
+
+### FR-091 — JavaScript-to-PowerShell review payload was not transferred
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (cross-runtime review-payload transport)`
+- **symptom:** The first REST review-post attempt returned HTTP 422 because the spawned PowerShell
+  command referenced an unset `REVIEW_BODY` environment variable; the JavaScript variable was not
+  transferred into that process.
+- **impact:** The bounded review-post paused before the intended external write; the failed request
+  did not change repository or GitHub state.
+- **workaround:** Build the payload in PowerShell with `ConvertTo-Json` and pipe it to
+  `gh api --input -`; the retry succeeded.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  cross-runtime structured-payload transfer boundary.
+- **promotion:** One occurrence remains workaround-documented task debt; do not add a helper until
+  an independent recurrence establishes that a checked transfer contract is warranted.
