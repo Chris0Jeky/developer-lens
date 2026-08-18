@@ -1356,7 +1356,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 6 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 7 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1392,6 +1392,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Browser is not available: iab`; troubleshooting inventory showed only Chrome. No navigation,
   server, screenshot, fallback, or protected-data access occurred. QA remains parked under [Product
   #200](https://github.com/Chris0Jeky/developer-lens/issues/200).
+
+  **2026-08-18 seventh-preflight note:** The local synthetic Method Trial server returned HTTP 200;
+  browser inventory offered Chrome only, which disconnected before tab creation. A fresh selection
+  returned exactly `No browser is available`. No tab, navigation, screenshot, or protected-data
+  access occurred. The owner unlock remains attach or mention `@Browser` so the built-in browser is
+  selected; this occurrence remains owned by [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200).
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
@@ -2319,7 +2325,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-087 — unhandled no-match inventory search aborted a fail-fast combined read batch
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only inventory collection)`
 - **symptom:** A combined read-only inventory batch contained an unhandled no-match search and
   stopped before emitting later lane results; no repository or GitHub mutation occurred.
@@ -2327,10 +2333,52 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   an otherwise bounded evidence batch incomplete.
 - **workaround:** Retry the bounded reads separately and handle no-match explicitly before using
   their results.
-- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment
-  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
+- **occurrences:** 2 independent occurrences, recorded by [Product #222 comment
+  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086) and
+  the 2026-08-18 recurrence below.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns
   Windows-safe, status-aware read helpers.
-- **promotion:** One no-match/command-batch occurrence remains unpromoted task debt; do not add a
-  helper. Keep distinct from FR-060's pending-check status and FR-051's unsupported query-shape
+- **promotion:** Promoted at the second independent occurrence: optional-path searches must prefilter
+  candidates with `Test-Path` (or execute separately with explicit exit-code handling) before
+  fail-fast aggregation. No new helper is needed because the repository already documents this
+  pattern. Keep distinct from FR-060's pending-check status and FR-051's unsupported query-shape
   predicate.
+
+  **2026-08-18 recurrence note:** A combined read-only batch again aborted because an optional or
+  missing candidate file caused a search command to return nonzero, suppressing later otherwise-valid
+  read results. No mutation occurred; the reads were retried separately. This recurrence remains
+  owned by [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+
+### FR-088 — exact-main Pages deploy provider returned HTTP 503
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (hosted deploy availability)`
+- **symptom:** Build and privacy checks passed; only the `deploy-pages` create deployment request
+  returned HTTP 503.
+- **impact:** The exact-main Pages deployment was temporarily unavailable at the provider step,
+  without a code or privacy-proof failure.
+- **workaround:** The passive workflow retry attempt 3 succeeded at the same exact Product main
+  `d99cf4c48a32b5846ee8f2c92decd8f71fe1000f` (run `32050076126`). No code workaround or change was
+  made.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the release
+  deployment lane.
+- **promotion:** One hosted deploy-availability occurrence remains unpromoted task debt; do not
+  promote.
+
+### FR-089 — strict UTF-16 fallback crossed a tracked-text slice boundary
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (tracked-text slice-boundary/integration)`
+- **symptom:** The strict fatal fallback in the bounded UTF-16 slice attempted to decode the tracked
+  social-card PNG, causing `verify:context` to fail even though focused tests passed.
+- **impact:** A local pre-publication context check was red; no publication or runtime state changed.
+- **workaround:** Preserve the pre-existing UTF-8 fallback in this bounded UTF-16 slice. Leave issue
+  #257's explicitly separate binary/text/large-blob policy to its own future slice.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #257](https://github.com/Chris0Jeky/developer-lens/issues/257) owns the tracked
+  binary/text/large-blob policy.
+- **promotion:** One occurrence remains unpromoted task debt; do not add a framework or promote. No
+  protected or generated content was inspected.
