@@ -798,13 +798,13 @@ Rules that bind entries:
   to an otherwise reproducible GitHub state snapshot.
 - **workaround:** Use `(Get-Date).ToUniversalTime().ToString('o')`, which succeeded on the same
   shell without changing repository or GitHub state.
-- **occurrences:** 5 independent occurrences — 2026-08-09 during the PR232 final review-thread
+- **occurrences:** 6 independent occurrences — 2026-08-09 during the PR232 final review-thread
   snapshot, plus 2026-08-13 and 2026-08-14 (the immutable FR-032 Windows PowerShell UTC-switch
-  recurrences).
+  recurrences), and the 2026-08-18 Product #222 recurrence below.
 - **task:** [#222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   Windows-safe evidence helper and its explicit timestamp normalization.
 - **promotion:** Promoted to Product #222's typed UTC-normalization contract; retain the compatible
-  expression until that helper is implemented. The fifth recurrence confirms the selected contract,
+  expression until that helper is implemented. The sixth recurrence confirms the selected contract,
   but the helper is NOT implemented and no parallel PowerShell framework is warranted.
 
   **2026-08-15 consolidation note:** FR-032's immutable Product events contain the same rejected
@@ -820,6 +820,10 @@ Rules that bind entries:
   compatible `[DateTime]::UtcNow.ToString('o')` expression completed the read-only timestamp step.
   This fifth event is recorded by [Product issue #222 comment 5303376604](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303376604).
   Product #222's typed UTC-normalization contract remains selected, but its helper is NOT implemented.
+
+  **2026-08-18 Product #222 recurrence note:** PowerShell 5.1 rejected `Get-Date -AsUTC`; the
+  compatible `(Get-Date).ToUniversalTime().ToString('o')` / DateTime route succeeded without
+  mutation. Recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
@@ -1356,7 +1360,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 6 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 7 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1392,6 +1396,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Browser is not available: iab`; troubleshooting inventory showed only Chrome. No navigation,
   server, screenshot, fallback, or protected-data access occurred. QA remains parked under [Product
   #200](https://github.com/Chris0Jeky/developer-lens/issues/200).
+
+  **2026-08-18 seventh-preflight note:** Browser runtime selection returned exactly
+  `No browser is available`; required troubleshooting inventory was `[]`. No navigation, server,
+  screenshot, fallback, or protected-data access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
+  and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
@@ -1879,13 +1888,17 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **impact:** The bounded inventory had to be reissued, without a mutation or evidence gap.
 - **workaround:** Collect `foreach` output into an intermediate array before piping it to the
   metadata helper; the corrected bounded inventory completes without mutation.
-- **occurrences:** 2 independent occurrences — 2026-08-15 Product PR #258 final review and Product
-  PR #260 review.
+- **occurrences:** 3 independent occurrences — 2026-08-15 Product PR #258 final review and Product
+  PR #260 review, plus the 2026-08-18 Product #222 recurrence below.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe inventory-helper boundary.
 - **promotion:** Promoted at the second occurrence: Product #222 owns a checked inventory helper
   that captures loop output before piping while preserving bounded fail-closed behavior. Do not
   conflate this valid-foreach pipeline predicate with FR-048's invalid-loop-form predicate.
+
+  **2026-08-18 Product #222 recurrence note:** A read-only PowerShell metadata helper piped directly
+  after `foreach` stopped with `An empty pipe element is not allowed`; collecting into an
+  intermediate array succeeded without mutation. Recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 
 ### FR-064 — tracked-text guard self-triggered on ledger evidence
 
@@ -2334,3 +2347,24 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One no-match/command-batch occurrence remains unpromoted task debt; do not add a
   helper. Keep distinct from FR-060's pending-check status and FR-051's unsupported query-shape
   predicate.
+
+### FR-088 — Pages/API availability outage required a bounded deployment rerun
+
+- **first-seen:** 2026-08-17
+- **status:** `workaround-documented`
+- **severity:** `LOW (hosted deployment availability)`
+- **symptom:** The full build/privacy/upload gate was green, but the Pages deployment returned
+  HTTP 503. Attempt 1 failed Configure GitHub Pages after full gate/showcase success; attempt 2
+  build/configure/upload succeeded but deploy job 95448607182 failed; attempt 3 reran only deploy
+  and succeeded as deploy run 32050076126, job 95549290431. The bounded rerun was initially
+  impeded by GitHub TLS/API availability.
+- **impact:** Public showcase publication was temporarily unavailable; no repository-code defect
+  was identified.
+- **workaround:** After GitHub API availability returned, rerun only the failed deployment job;
+  the bounded rerun succeeded.
+- **occurrences:** 1 incident, recorded under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200)
+  and [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
+  preparation; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded hosted-evidence route.
+- **promotion:** One incident is workaround-documented; no repository-code fix is selected.
