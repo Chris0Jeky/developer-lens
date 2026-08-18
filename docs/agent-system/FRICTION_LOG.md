@@ -2487,8 +2487,8 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   did not change repository or GitHub state.
 - **workaround:** Build the payload in PowerShell with `ConvertTo-Json` and pipe it to
   `gh api --input -`; the retry succeeded.
-- **occurrences:** 2 independent occurrences — the 2026-08-18 REST review-post transfer failure
-  and the inline jq equality-filter recurrence below.
+- **occurrences:** 3 independent occurrences — the 2026-08-18 REST review-post transfer failure,
+  inline jq equality-filter recurrence, and multiline PR-body edit recurrence below.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   cross-runtime structured-payload transfer boundary.
 - **promotion:** Promoted at the second independent occurrence: avoid nested inline jq string
@@ -2500,6 +2500,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   PowerShell to `gh api --jq` lost the SHA string quotes and failed parsing. Preceding REST calls
   succeeded and no mutation occurred; structured JSON filtering in one runtime is the selected
   enforcement route.
+
+  **2026-08-18 multiline-body recurrence note:** PowerShell passed a multiline variable to
+  `gh pr edit --body`; `gh` split it into multiple argv and rejected it. The exact-head push and
+  REST review post were unaffected. Use REST PATCH with JSON/stdin and single-runtime transport for
+  multiline PR bodies; Product #222 owns the enforcement route.
 
 ### FR-092 — local exact head was treated as unverifiable before publication
 
