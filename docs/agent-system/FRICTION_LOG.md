@@ -1369,7 +1369,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 7 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 8 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1409,6 +1409,12 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   **2026-08-18 seventh-preflight note:** Browser runtime selection returned exactly
   `No browser is available`; required troubleshooting inventory was `[]`. No navigation, server,
   screenshot, fallback, or protected-data access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
+  and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
+
+  **2026-08-18 eighth-preflight note:** The required `iab` selector returned exactly
+  `Browser is not available: iab`; after mandated bootstrap troubleshooting, inventory showed only
+  a connected Chrome extension. No navigation, server, screenshot, fallback, or protected-data
+  access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
   and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
