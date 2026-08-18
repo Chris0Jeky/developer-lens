@@ -51,7 +51,8 @@ lab_delivery:
     - 'PR #90 merged 2026-08-15T10:50:11Z as 0fd8a50a39bb6632e21982c33c6a5c409a6fcf6f.'
     - 'PR #91 merged 2026-08-15T13:46:55Z as 2d6f857a6c49748c4554fc6af7b9762c6e7375e7.'
     - 'PR #92 merged as 80f421cd9a9701abf0ab767e9c480d378d907528.'
-  main_check: 'Workflow Check run 31898421660 completed SUCCESS at the Lab main SHA above.'
+    - 'PR #94 merged 2026-08-16T02:45:53Z as 5c3ee6e1fe9eeb911febc60ea6fef1954625d5bc.'
+  main_check: 'Workflow Check run 31922651816 (push) completed SUCCESS at exact Lab main SHA 5c3ee6e1fe9eeb911febc60ea6fef1954625d5bc.'
   open_pull_requests: '0 at the timestamped observation above.'
   superseded_instruction: 'The former parked-PR #87 and merge-helper-eligibility blocker no longer applies because PR #87 is merged.'
 

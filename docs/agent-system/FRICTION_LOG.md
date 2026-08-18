@@ -2373,3 +2373,19 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   preparation; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   bounded hosted-evidence route.
 - **promotion:** One incident is workaround-documented; no repository-code fix is selected.
+
+### FR-089 — GitHub GraphQL quota exhaustion blocked review-state inspection
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (hosted review-state evidence availability)`
+- **symptom:** GitHub GraphQL quota was exhausted during PR review-state inspection, with 0/5000
+  remaining until 00:56:11Z while REST core remained at 4919/5000.
+- **impact:** GraphQL review-state inspection was unavailable during the bounded review window;
+  no repository or GitHub mutation occurred.
+- **workaround:** Use bounded REST PR, check, and review endpoints for the in-scope evidence while
+  GraphQL quota is exhausted.
+- **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
+  review-state evidence route.
+- **promotion:** One occurrence is workaround-documented; no repository-code fix is selected.
