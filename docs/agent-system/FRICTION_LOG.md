@@ -2382,3 +2382,20 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   binary/text/large-blob policy.
 - **promotion:** One occurrence remains unpromoted task debt; do not add a framework or promote. No
   protected or generated content was inspected.
+
+### FR-090 — GitHub publication transport exhausted GraphQL quota
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (GitHub publication transport)`
+- **symptom:** `gh pr create` stopped before PR mutation because the authenticated GraphQL quota was
+  exhausted (`0/5000` remaining), although REST core retained `4917/5000`.
+- **impact:** The code branch was pushed, but PR creation paused before the publication record existed.
+- **workaround:** Query `rate_limit`, then create the identical ready PR with the authenticated REST
+  pulls endpoint; this succeeded as PR #287 at exact head
+  `88090219e4609616ea1b0447a431b49dbc3182df`.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the governor
+  helper and publication fallback boundary.
+- **promotion:** One publication-transport occurrence remains unpromoted task debt; use REST only as
+  a bounded fallback. Do not add a helper or framework yet.
