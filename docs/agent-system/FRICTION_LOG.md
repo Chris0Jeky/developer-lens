@@ -1386,7 +1386,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 8 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 9 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1394,7 +1394,8 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   confirm at least one connected browser before allocating visual QA; otherwise park the lane.
   Connector provisioning remains external task debt because repository code cannot create a connected
   browser. No standalone or alternate-browser fallback is authorized; the
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` gate remains parked pending required proof.
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` gate remains owner-gated pending explicit
+  aesthetic sign-off once approved browser proof is complete.
 
   **2026-08-15 Product #200 recurrence note:** The mandated browser client was loaded for public
   showcase QA, `getForUrl` found no browser, bootstrap troubleshooting was read, and the one permitted
@@ -1437,6 +1438,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   browser-client surface, with explicit mobile emulation and innerWidth/scrollWidth assertions. No
   protected-data access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
   and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
+
+  **2026-08-18 ninth-preflight/proof note:** The approved browser-client first selected a Chrome
+  extension instance, then disconnected before session naming; one documented discovery/reselection
+  retry found a new Chrome instance and succeeded. The approved proof loaded the safe localhost
+  invented Method Trial and verified desktop and 390px mobile layout, no horizontal overflow, no
+  warning/error logs, and no cross-origin or protected-data resources. This proof is valid; QA is
+  ready for explicit `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` aesthetic sign-off and is
+  not parked.
+
+  **2026-08-18 browser-client API notes:** The emitted docs advertised `networkidle`, but
+  `waitForLoadState({state: 'networkidle'})` rejected it; use documented `domcontentloaded` or
+  `load` after checking URL/title/readyState. Page evaluation had no bare `performance`; use
+  `document.defaultView` or omit resource timing and split visual proof from optional metrics.
+  Viewport screenshots were unreliable at the scrolled bottom, so DOM assertions and top screenshots
+  were retained. The unauthorized ChromeDevTools evidence above remains invalid release proof.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
