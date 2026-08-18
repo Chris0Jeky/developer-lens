@@ -2463,11 +2463,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   repository or GitHub mutation occurred.
 - **workaround:** Retry with `fork_turns=none`; the Luna spawn then succeeded.
 - **occurrences:** 1 independent occurrence.
-- **task:** [Product #214](https://github.com/Chris0Jeky/developer-lens/issues/214) owns the prompt
-  operating system and delegation-shape follow-up.
-- **promotion:** One invocation-compatibility occurrence remains task debt. Repository prompts
-  select Luna for paved W1/W2 work but do not encode this option constraint; keep the workaround in
-  the task record and do not add a helper after one occurrence.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the open
+  governor delegation-shape follow-up.
+- **promotion:** One invocation-compatibility occurrence remains task debt under open Product #222.
+  Repository prompts select Luna for paved W1/W2 work but do not encode this option constraint; keep
+  the workaround in the task record and do not add a helper after one occurrence.
 
 ### FR-091 — JavaScript-to-PowerShell review payload was not transferred
 
@@ -2494,3 +2494,21 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   PowerShell to `gh api --jq` lost the SHA string quotes and failed parsing. Preceding REST calls
   succeeded and no mutation occurred; structured JSON filtering in one runtime is the selected
   enforcement route.
+
+### FR-092 — local exact head was treated as unverifiable before publication
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (review provenance classification)`
+- **symptom:** A fresh reviewer treated the shared local exact head as unverifiable solely because it
+  was not yet published to GitHub, despite the shared worktree being available; a second reviewer
+  inspected the local head successfully.
+- **impact:** Review was delayed by an unnecessary remote-provenance prerequisite; no repository or
+  GitHub mutation occurred.
+- **workaround:** Verify the local commit/worktree directly before requiring remote provenance; if
+  the review surface is REST-only, publish the checked branch then re-review.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the open
+  review-evidence and provenance-boundary follow-up.
+- **promotion:** One occurrence remains workaround-documented task debt; do not add a helper until an
+  independent recurrence establishes that a checked local-versus-remote provenance rule is warranted.
