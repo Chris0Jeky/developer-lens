@@ -1502,7 +1502,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Treat the full log as NOT VERIFIED; retain the run metadata and exact failed test
   as bounded evidence, make no second log fetch or filtered retrieval, and prove the correction with
   the focused test plus the hosted rerun.
-- **occurrences:** 8 independent occurrences — Product issue #222 comment `5300160711`, the
+- **occurrences:** 9 independent occurrences — Product issue #222 comment `5300160711`, the
   2026-08-15 PR #251 post-merge discussion-timeline transport truncation recorded by
   [Product issue #222 comment 5300291636](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5300291636),
   the 2026-08-15 combined memory/skill read transport truncation, and the 2026-08-15 PR #256
@@ -1548,6 +1548,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   truncated. The response was not treated as complete; bounded separate code, test, log, and ledger
   diffs completed the review. This sixth occurrence retains FR-049's completeness-aware promotion
   and Product #222 ownership.
+
+  **2026-08-18 Product #222 recurrence note:** While materializing a bounded exact-head diff, a
+  diagnostic treated the shell tool's string result as an object and enumerated character-index
+  keys, amplifying the response until transport truncation. The output was not treated as complete;
+  subsequent reads stayed bounded without object-key enumeration. Recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 
 ### FR-050 — local Windows full gate rejects invented storage-v3 artifact roots
 
