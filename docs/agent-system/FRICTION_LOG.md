@@ -369,8 +369,9 @@ Rules that bind entries:
   deleted branch remains recoverable.
 - **workaround:** Do not recreate the branch in this slice. Future cleanup must inspect applicable
   rules first and avoid any silent administrative bypass.
-- **occurrences:** 3 recorded — 2026-08-09, after PR #218 merge cleanup, 2026-08-15 after
-  Product PR #258 cleanup, and 2026-08-15 after PR #268 cleanup.
+- **occurrences:** 4 recorded — 2026-08-09, after PR #218 merge cleanup, 2026-08-15 after
+  Product PR #258 cleanup, 2026-08-15 after PR #268 cleanup, and 2026-08-18 after Product PR
+  #285 cleanup.
 - **task:** [#221](https://github.com/Chris0Jeky/developer-lens/issues/221)
 - **promotion:** Promoted at the second occurrence: Product #221 owns a checked cleanup helper or
   contract that queries applicable branch rules before deletion and refuses any required privileged
@@ -388,6 +389,14 @@ Rules that bind entries:
   work was lost. Do not recreate or retry the deletion. The existing stop rule remains binding:
   leave merged remote branches when deletion requires a bypass. The checked helper/contract remains
   unimplemented.
+
+  **2026-08-18 Product PR #285 cleanup recurrence note:** After Product PR #285 merged, remote
+  deletion of `docs/reconcile-release-unblock-20260818` succeeded while GitHub reported a
+  privileged bypass of `Cannot delete this branch`. Merged commit
+  `1496547b4910275857291e708c231fdf35078fcc` remains on `main` and recoverable; no work was lost.
+  Do not recreate or retry the deletion. The existing stop rule remains binding: leave merged
+  remote branches when deletion requires a bypass until Product #221's checked helper/contract
+  exists.
 
 ### FR-012 — fresh product worktree lacks the Node tool bootstrap
 
