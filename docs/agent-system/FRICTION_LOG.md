@@ -834,6 +834,10 @@ Rules that bind entries:
   compatible `(Get-Date).ToUniversalTime().ToString('o')` / DateTime route succeeded without
   mutation. Recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 
+  **2026-08-18 portable-workaround clarification:** The same UTC evidence boundary is also
+  satisfied by `[DateTime]::UtcNow.ToString('o')`; `Get-Date -AsUTC` remained unavailable. Product
+  #222's existing typed UTC-normalization task remains the linked enforcement route.
+
 ### FR-024 — repeated-schema patch context selected the wrong friction entry
 
 - **first-seen:** 2026-08-09
@@ -884,12 +888,19 @@ Rules that bind entries:
 - **workaround:** Preserve the raced evidence, wait for the current writer to complete, and refresh
   the exact merge and status state from the resulting head. This documentation slice takes no
   detour into the occupied worktree.
-- **occurrences:** 1 independent occurrence — 2026-08-10 during the Product #200 reconciliation.
+- **occurrences:** 2 independent occurrences — 2026-08-10 during the Product #200 reconciliation
+  and the 2026-08-18 UTF-16-slice recurrence below.
 - **task:** [#200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns the active release
   coordination and worktree ownership evidence.
-- **promotion:** The cheapest enforcing layer is a coordinator-owned worktree lease or explicit
-  handoff recorded before a moved-main merge. Task debt at one occurrence; no additional repair is
-  selected in this hop.
+- **promotion:** At the second independent occurrence, retain the coordinator-owned one-writer,
+  pinned-head, and live-refresh boundary before mutation. The external concurrent-writer condition
+  remains task debt under [#200](https://github.com/Chris0Jeky/developer-lens/issues/200); no new
+  helper is selected in this documentation slice.
+
+  **2026-08-18 UTF-16-slice recurrence note:** The bounded UTF-16 slice encountered an unexpected
+  base/main divergence while main moved concurrently. The stale base was not treated as proof;
+  live base/main state was rechecked before continuation. This is the second independent
+  moved-main/one-writer occurrence and remains owned by [#200](https://github.com/Chris0Jeky/developer-lens/issues/200).
 
 ### FR-026 — PowerShell object expansion obscured a scalar merge message
 
@@ -1369,7 +1380,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 7 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 10 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1377,7 +1388,8 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   confirm at least one connected browser before allocating visual QA; otherwise park the lane.
   Connector provisioning remains external task debt because repository code cannot create a connected
   browser. No standalone or alternate-browser fallback is authorized; the
-  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` gate remains parked pending required proof.
+  `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` gate remains owner-gated pending explicit
+  aesthetic sign-off once approved browser proof is complete.
 
   **2026-08-15 Product #200 recurrence note:** The mandated browser client was loaded for public
   showcase QA, `getForUrl` found no browser, bootstrap troubleshooting was read, and the one permitted
@@ -1410,6 +1422,37 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `No browser is available`; required troubleshooting inventory was `[]`. No navigation, server,
   screenshot, fallback, or protected-data access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
   and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
+
+  **2026-08-18 eighth-preflight note:** The mandated browser client was disconnected or unavailable
+  during the current preflight. An isolated ChromeDevTools follow-up rendered the safe localhost
+  invented Method Trial, but that external browser-control path is not authorized by the Browser
+  skill, so its screenshot and mobile observations are invalid release proof. Screenshot persistence
+  was also denied and no file was created; the 390x844 request reported innerWidth 502. Do not use
+  inline output or external browser control as a fallback. Stop and retry only through the approved
+  browser-client surface, with explicit mobile emulation and innerWidth/scrollWidth assertions. No
+  protected-data access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
+  and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
+
+  **2026-08-18 ninth-preflight/proof note:** The approved browser-client first selected a Chrome
+  extension instance, then disconnected before session naming; one documented discovery/reselection
+  retry found a new Chrome instance and succeeded. The approved proof loaded the safe localhost
+  invented Method Trial and verified desktop and 390px mobile layout, no horizontal overflow, no
+  warning/error logs, and no cross-origin or protected-data resources. This proof is valid; QA is
+  ready for explicit `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` aesthetic sign-off and is
+  not parked.
+
+  **2026-08-18 browser-client API notes:** The emitted docs advertised `networkidle`, but
+  `waitForLoadState({state: 'networkidle'})` rejected it; use documented `domcontentloaded` or
+  `load` after checking URL/title/readyState. Page evaluation had no bare `performance`; use
+  `document.defaultView` or omit resource timing and split visual proof from optional metrics.
+  Viewport screenshots were unreliable at the scrolled bottom, so DOM assertions and top screenshots
+  were retained. The unauthorized ChromeDevTools evidence above remains invalid release proof.
+
+  **2026-08-18 tenth-finalization note:** The approved browser-client disconnected again while
+  finalizing the tab handoff. The prior desktop/mobile proof remains valid, but tab handoff and final
+  disposition are NOT VERIFIED; do not assume the agent-created local tab stayed open or was cleaned
+  up. Stop closeout without an alternate-browser fallback or further retry; q-10(c) remains open, and
+  the owner can use the localhost URL after reconnecting Browser in a future session.
 
 ### FR-045 — `$Args` parameter shadowed PowerShell's automatic `$args`
 
@@ -2346,7 +2389,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-087 — unhandled no-match inventory search aborted a fail-fast combined read batch
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (read-only inventory collection)`
 - **symptom:** A combined read-only inventory batch contained an unhandled no-match search and
   stopped before emitting later lane results; no repository or GitHub mutation occurred.
@@ -2354,13 +2397,23 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   an otherwise bounded evidence batch incomplete.
 - **workaround:** Retry the bounded reads separately and handle no-match explicitly before using
   their results.
-- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment
-  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086).
+- **occurrences:** 2 independent occurrences, recorded by [Product #222 comment
+  5304288086](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304288086) and
+  the 2026-08-18 recurrence below.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns
   Windows-safe, status-aware read helpers.
-- **promotion:** One no-match/command-batch occurrence remains unpromoted task debt; do not add a
-  helper. Keep distinct from FR-060's pending-check status and FR-051's unsupported query-shape
-  predicate.
+- **promotion:** Promoted at the second independent occurrence: optional-path searches must
+  prefilter candidates with `Test-Path` (or execute separately with explicit exit-code handling)
+  before fail-fast aggregation. No new helper is needed because the repository already documents
+  this pattern. Keep distinct from FR-060's pending-check status and FR-051's unsupported
+  query-shape predicate.
+
+  **2026-08-18 recurrence note:** A combined read-only batch again aborted because an optional or
+  missing candidate file caused a search command to return nonzero, suppressing later otherwise-valid
+  read results. In the current parallel `rg` call, two assumed Method Trial test paths did not
+  exist, so the orchestration cell discarded useful sibling output. No mutation occurred; prefilter
+  with `rg --files` and handle each result independently. This recurrence remains owned by
+  [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 
 ### FR-088 — Pages/API availability outage required a bounded deployment rerun
 
@@ -2397,4 +2450,76 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   review-state evidence route.
-- **promotion:** One occurrence is workaround-documented; no repository-code fix is selected.
+- **promotion:** One occurrence is workaround-documented; retain the bounded REST fallback under
+  Product #222's review/publication evidence route. No repository-code fix or new helper is selected.
+
+  **2026-08-18 publication recurrence note:** GraphQL quota exhaustion also stopped `gh pr create`
+  before PR mutation (`0/5000` remaining while REST core retained capacity). The identical ready PR
+  was created through the authenticated REST pulls endpoint as PR #287. No repository or GitHub
+  mutation occurred before the fallback request.
+
+### FR-090 — Luna spawn rejected an incompatible option combination
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (delegation setup friction)`
+- **symptom:** An attempted Luna spawn combining full-history fork settings with an explicit
+  `agent_type` was rejected before the child lane started.
+- **impact:** The bounded delegated lane was delayed while the invocation shape was corrected; no
+  repository or GitHub mutation occurred.
+- **workaround:** Retry with `fork_turns=none`; the Luna spawn then succeeded.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the open
+  governor delegation-shape follow-up.
+- **promotion:** One invocation-compatibility occurrence remains task debt under open Product #222.
+  Repository prompts select Luna for paved W1/W2 work but do not encode this option constraint; keep
+  the workaround in the task record and do not add a helper after one occurrence.
+
+### FR-091 — JavaScript-to-PowerShell review payload was not transferred
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (cross-runtime review-payload transport)`
+- **symptom:** The first REST review-post attempt returned HTTP 422 because the spawned PowerShell
+  command referenced an unset `REVIEW_BODY` environment variable; the JavaScript variable was not
+  transferred into that process.
+- **impact:** The bounded review-post paused before the intended external write; the failed request
+  did not change repository or GitHub state.
+- **workaround:** Build the payload in PowerShell with `ConvertTo-Json` and pipe it to
+  `gh api --input -`; the retry succeeded.
+- **occurrences:** 3 independent occurrences — the 2026-08-18 REST review-post transfer failure,
+  inline jq equality-filter recurrence, and multiline PR-body edit recurrence below.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  cross-runtime structured-payload transfer boundary.
+- **promotion:** Promoted at the second independent occurrence: avoid nested inline jq string
+  comparisons across JavaScript, PowerShell, and `gh`; fetch structured JSON and filter in one
+  runtime (PowerShell `ConvertFrom-Json`) or use a JSON payload/stdin boundary. Product #222 owns
+  the checked cross-runtime transfer contract.
+
+  **2026-08-18 recurrence note:** Inline jq equality filters embedded through JavaScript to
+  PowerShell to `gh api --jq` lost the SHA string quotes and failed parsing. Preceding REST calls
+  succeeded and no mutation occurred; structured JSON filtering in one runtime is the selected
+  enforcement route.
+
+  **2026-08-18 multiline-body recurrence note:** PowerShell passed a multiline variable to
+  `gh pr edit --body`; `gh` split it into multiple argv and rejected it. The exact-head push and
+  REST review post were unaffected. Use REST PATCH with JSON/stdin and single-runtime transport for
+  multiline PR bodies; Product #222 owns the enforcement route.
+
+### FR-092 — local exact head was treated as unverifiable before publication
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (review provenance classification)`
+- **symptom:** A fresh reviewer treated the shared local exact head as unverifiable solely because it
+  was not yet published to GitHub, despite the shared worktree being available; a second reviewer
+  inspected the local head successfully.
+- **impact:** Review was delayed by an unnecessary remote-provenance prerequisite; no repository or
+  GitHub mutation occurred.
+- **workaround:** Verify the local commit/worktree directly before requiring remote provenance; if
+  the review surface is REST-only, publish the checked branch then re-review.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the open
+  review-evidence and provenance-boundary follow-up.
+- **promotion:** One occurrence remains workaround-documented task debt; do not add a helper until an
+  independent recurrence establishes that a checked local-versus-remote provenance rule is warranted.
