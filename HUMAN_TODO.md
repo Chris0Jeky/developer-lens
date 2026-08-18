@@ -62,27 +62,23 @@ publication route remains active.
   reviewed parser, transport, projection, storage, rollback, deletion, and exact-head proving
   checks named by that private card.
 
-- [ ] **q-6 — Intelligence-platform owner gates (none blocking; decide at leisure).** The
-  2026-08-04 planning session (plus its reconciliation) consolidated seven genuinely open owner
-  decisions in
-  `docs/analyser-program/08_OPEN_QUESTIONS.md` §1, mirrored as QUESTION cards on the seeded local
-  Taskdeck board: (a) PR/issue prose semantic tier; (b) durable retrieval index as a reviewed
-  sink; (c) pinned offline local model option; (d) per-candidate consented real datasets for ML
-  validation; (e) cross-repository artifact identity key; (f) `agent_config` role class +
-  adoption-timing suppression; (g) capability-matrix rows for rulesets/attestations/discussions
-  (G-d) and artifact metadata-only counts (G-e) — the affected cards (DL-PORT-02, DL-PROV-01) are
-  owner-gated on the board and must not be implemented before a reviewed matrix change or your
-  decision; (h) *(added by the 2026-08-04 reconciliation review; question card DL-Q-GRAIN on the
-  board and in `08_OPEN_QUESTIONS.md` §1)* display grain for freshness age:
-  the UX renders staleness as an hour-precision age (`stale 31h`, canonical feature
-  `DL.COV.FRESHNESS_AGE_H.v1`) while operational collection timing is floored to ISO week — decide
-  whether the week floor also binds derived age durations (which can pin the collection run) or
-  whether hour-grain staleness is an accepted exception. Additionally, the future real local
-  Taskdeck dogfood analysis
-  (spec: `docs/analyser-program/06_TASKDECK_DEMO_PLAN.md` §2) still needs your explicit selection
-  of exact immutable refs and approval of its activation card before any run. Nothing on the
-  implementation critical path depends on any of these; refusing all of them leaves a complete
-  deterministic product.
+- [ ] **q-6 — Intelligence-platform owner gates (constitution-v2 reconciliation; open and
+  non-blocking).** The 2026-08-18 reconciliation replaces the stale “seven genuinely open”
+  framing. The following are resolved, agent-executable policy work (not activation): (a) PR/issue
+  prose under explicit capability, retention, and parser controls; (b) a durable retrieval index,
+  `D1=DURABLE`, subject to the deletion planner and a reviewed task card; (d) own/curated-public
+  per-candidate validation under the existing consent, charter, matrix, and release gates; (f)
+  `agent_config` presence-only classification, `D5=PRES`; and (g) Discussions and artifact-metadata
+  eligibility through reviewed capability/matrix work. The pinned offline local model option (c)
+  is recorded as `D12=NO` (option only), not planned implementation. These constitution decisions
+  do not activate any capability, source, sink, model, telemetry, credential, or data path; charter
+  and capability-matrix reconciliation remains agent work under those gates.
+
+  Retain as genuinely open owner decisions (q-6 remains unchecked): (e) C4-byte content-hash
+  cross-repository linkage and deletion cascade; portfolio adoption-timing suppression; rulesets /
+  attestations eligibility; freshness-age display grain; and the exact immutable Taskdeck ref plus
+  activation when its later card activates. No Taskdeck access or activation is implied by this
+  reconciliation, and the deterministic product remains complete without these choices.
 
 - [x] **q-7 — `PR gate / Prove the pull request` is required on `main`.** On 2026-08-05 the
   owner configured classic branch protection for `main` to require the exact
@@ -192,6 +188,9 @@ publication route remains active.
 
 ## Changelog
 
+- 2026-08-18 (constitution-v2 reconciliation): replaced q-6’s stale “seven genuinely open”
+  framing with resolved agent-executable policy lanes and retained only the owner decisions that
+  remain open; q-6 stays unchecked and no capability is activated.
 - 2026-08-15 (Product #200 ownership observation): added the factual guarded-delegate/remote-head
   sequence to closed q-8 and FR-001: a pre-existing friction-log modification caused a no-write
   stop, the intended correction appeared cleanly at `934ed23`, and the occupied worktree was
