@@ -2398,3 +2398,52 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   review-state evidence route.
 - **promotion:** One occurrence is workaround-documented; no repository-code fix is selected.
+
+### FR-090 — broad tracked-text search printed a synthetic research fixture during a design pass
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only search-scope/context expansion)`
+- **symptom:** A broad tracked-text search during the read-only design pass unexpectedly printed
+  part of a tracked synthetic research fixture outside the owned planning files.
+- **impact:** The search broadened output and context, without accessing private or protected data
+  or changing repository state.
+- **workaround:** Subsequent reads were path-bounded to the listed planning files.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded Windows-safe evidence command contract.
+- **promotion:** One occurrence remains task debt; no promotion. Keep the search path-bounded on
+  future planning passes.
+
+### FR-091 — coordinator interruption made a healthy Vitest result uncollectable
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (coordination/test-supervision)`
+- **symptom:** A coordinator interrupted the builder based on total slice elapsed while the
+  healthy Vitest phase had run for only about two minutes; the test processes outlived the
+  interrupted agent turn and their result became uncollectable.
+- **impact:** The required full gate lost its direct exit/output evidence despite no tracked work
+  being lost.
+- **workaround:** Process creation/command-line evidence clarified the state; the healthy test
+  process was allowed to finish, and one exact gate rerun will supply collectable proof.
+- **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded coordination and evidence-command contract.
+- **promotion:** One occurrence remains task debt; no promotion.
+
+### FR-092 — focused proof ran from the clean primary instead of the reviewed worktree
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (proof-cwd coordination)`
+- **symptom:** A focused validator test was run from the clean primary checkout while reviewing
+  PR #287's exact branch SHA, so it exercised `main` (45 tests) rather than the PR worktree
+  (expected 48); SHA-based diff checks were correct.
+- **impact:** The test result was discarded because it did not prove the reviewed worktree.
+- **workaround:** Pair proof cwd with `git rev-parse HEAD` and require it equals the reviewed head
+  before counting worktree-local tests; rerun in the exact worktree.
+- **occurrences:** 1 independent occurrence, recorded under [Product #257](https://github.com/Chris0Jeky/developer-lens/issues/257).
+- **task:** [Product #257](https://github.com/Chris0Jeky/developer-lens/issues/257) owns the
+  exact-head proof-cwd contract.
+- **promotion:** One occurrence remains task debt; no promotion.
