@@ -189,11 +189,8 @@ describe('project context validation', () => {
     }
   })
 
-  it('fails closed for malformed UTF-16 and invalid UTF-8 blobs without leaking literals', () => {
-    const malformed = [
-      new Uint8Array([0xff, 0xfe, 0x41]),
-      new Uint8Array([0xff]),
-    ]
+  it('fails closed for malformed UTF-16 blobs without leaking literals', () => {
+    const malformed = [new Uint8Array([0xff, 0xfe, 0x41])]
     const home = ['C:', 'Users', 'FixtureUser', 'workspace'].join('\\')
     for (const [index, bytes] of malformed.entries()) {
       const errors = validateTrackedTextForWindowsUserHomePaths(

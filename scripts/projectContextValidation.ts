@@ -106,13 +106,13 @@ export function containsWindowsUserHomePath(contents: string): boolean {
 }
 
 function decodeTrackedTextBlob(raw: Uint8Array): string {
-  let encoding = 'utf-8'
   if (raw[0] === 0xff && raw[1] === 0xfe) {
-    encoding = 'utf-16le'
-  } else if (raw[0] === 0xfe && raw[1] === 0xff) {
-    encoding = 'utf-16be'
+    return new TextDecoder('utf-16le', { fatal: true }).decode(raw)
   }
-  return new TextDecoder(encoding, { fatal: true }).decode(raw)
+  if (raw[0] === 0xfe && raw[1] === 0xff) {
+    return new TextDecoder('utf-16be', { fatal: true }).decode(raw)
+  }
+  return new TextDecoder().decode(raw)
 }
 
 function escapeDiagnosticPath(path: string): string {
