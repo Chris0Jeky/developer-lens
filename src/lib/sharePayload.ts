@@ -110,6 +110,12 @@ const CHAPTERS: Record<
   },
 }
 
+/**
+ * The nine Wrapped chapters in story order, derived from `CHAPTERS` so a new chapter cannot
+ * drift out of the headless exporter. String keys keep insertion order, so this stays stable.
+ */
+export const WRAPPED_CHAPTER_IDS: readonly string[] = Object.freeze(Object.keys(CHAPTERS))
+
 const OVERVIEW = {
   eyebrow: 'Developer Lens · Development retrospective',
   title: () => 'A development trail, brought into focus.',
