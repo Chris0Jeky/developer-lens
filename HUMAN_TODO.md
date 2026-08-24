@@ -169,7 +169,7 @@ publication route remains active.
   resolves `opus` to `claude-opus-5`; a live launch succeeded). Pins live in `.claude/agents/`;
   a further change requires another owner decision.
 
-- [ ] **q-10 — Owner/manual action register from mandate v2 (none blocking for current work).**
+- [ ] **q-10 — q-10(c) blocks each release tag after browser proof; remaining items are deferred/non-blocking.**
   Consolidated from the mandate's remaining human actions: (a) AGPL/CLA legal review — approve the
   contributor-agreement approach before substantial external code is accepted; (b) choose the
   external umbrella brand (N6, later); (c) final five-minute screenshot/video aesthetic sign-off per
