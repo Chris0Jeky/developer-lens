@@ -5,18 +5,18 @@ observations and must be refreshed before action; `docs/IMPLEMENTATION_LEDGER.md
 completed-slice evidence and history.
 
 ```yaml
-updated: '2026-08-18'
-state_observed_at: '2026-08-18T01:27:26Z'
-work_class: 'W0 release-readiness truth reconciliation'
+updated: '2026-08-24'
+state_observed_at: '2026-08-24T11:20:28Z'
+work_class: 'W1 open-pull-request closeout and state reconciliation'
 active_wave: 'P0.5 v0.1.0 release programme — Product issue #200'
-remote_refs_last_observed_at: '2026-08-18T01:27:26Z'
+remote_refs_last_observed_at: '2026-08-24T11:20:28Z'
 observation_semantics: >-
   product_main and lab_main are last-observed remote-ref snapshots at remote_refs_last_observed_at,
   not perpetual current-baseline assertions; refresh live Git/GitHub before any action.
-product_main: '3dabf11b3e8cd46d44daffd0bfbe8aca5694795f'
-lab_main: '12b9c161015249eaf7f6f9fedd8593d81315b7d9'
-active_slice: 'P0.5 issue #200 release unblock: Product/Lab hosted proof and the approved browser-client Method Trial proof are complete; Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is ready for explicit owner aesthetic sign-off.'
-next_value_slice: 'Request or await explicit Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; perform no tag or publication before that gate. The v0.1.0 metadata slice must be re-created from scratch after that gate, because its branch is unrecoverable — see Product #298.'
+product_main: '83d6d44e12754fa4063973cd08a5a10bb931de43'
+lab_main: '6a86cd801646e4a9daee127eea93742ba996f050'
+active_slice: 'The four open Product pull requests are closed out: #290, #295, #291, and #292 are merged and Product has zero open pull requests. P0.5 issue #200 remains the active wave, and Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is still the sole tag-blocking owner gate.'
+next_value_slice: 'Request or await explicit Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; perform no tag or publication before that gate. Agent-executable now without touching that gate: Product #296 (export boundary guards match fixed template copy), #297 (Taskdeck card consumers left inconsistent by the q-6 reconciliation), #299 (archive the P0.5 browser-proof milestone in the ledger), #300 (headless-export test and IO edges), and #293 (the FR-050 local-gate root cause, still only partly explained). The v0.1.0 metadata slice must be re-created from scratch after the owner gate because its branch is unrecoverable — see Product #298.'
 blockers: >-
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is the sole remaining tag-blocking owner gate and is
   ready for explicit aesthetic sign-off. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6
@@ -24,21 +24,26 @@ blockers: >-
   release truth slice; no
   tag, release, package publication, or public publication is authorized before that owner action.
 last_verified_checks: >-
-  2026-08-18T01:27:26Z live REST/Git observation: Product main 3dabf11b3e8cd46d44daffd0bfbe8aca5694795f
-  merged PR #287; exact hosted `Prove the pull request` run 32087230133 succeeded at head
-  2010857f0a37dac7e27a98d1360b7c3e4ef350ff, and the final exact-head review was clean. Product has
-  zero open pull requests, tags, and releases. Lab main 12b9c161015249eaf7f6f9fedd8593d81315b7d9;
-  exact `Prove the lab` run 32084666662 succeeded, with zero open pull requests, tags, and releases.
-  The approved browser-client proof loaded the tracked invented C0 Method Trial and verified desktop
-  and explicit 390px mobile layouts, no horizontal overflow, warning/error logs, cross-origin or
-  protected-data resources, or fetch/XHR. The invalid external ChromeDevTools attempt is friction-only
-  and not proof. Issue #200 comments 5322224538 and 5322231402 retain the proof and LOW release-note
-  follow-up. The local branch release/prepare-product-v0.1.0-20260818 at 54217ff was recorded as
-  unpushed on 2026-08-18 and is now unrecoverable: on 2026-08-24 `git cat-file -t 54217ff` reports
-  `Not a valid object name` in the primary checkout, no such branch exists locally or on origin,
-  the single worktree does not hold it, and no reachable commit carries `"version": "0.1.0"`.
-  Product #298 records what it contained and how to re-create it. No tag or publication occurred. Run npm.cmd run
-  verify:context and git diff --check for this docs slice.
+  2026-08-24T11:20:28Z live REST/Git observation. Product main is
+  83d6d44e12754fa4063973cd08a5a10bb931de43 after merging PR #290 (fe00d49), PR #295 (2ef28d9),
+  PR #291 (1e1d548) and PR #292 (83d6d44) in that order; Product has zero open pull requests,
+  tags, and releases. Every merge used a merge commit, never a squash. Each pull request was
+  re-proved by the hosted `Prove the pull request` gate at its exact merged head after the base
+  moved: #290 job 95566609756, #295 run 32720247497 at c2999a7, #291 run 32720596546 at c3406a5,
+  #292 run 32721070738 at fe80e94. The merged-main full gate `Deploy public showcase`
+  (npm run check plus build:showcase plus the Pages deploy) succeeded at 1e1d548 as run
+  32720877203. At 83d6d44 run 32721323216 first failed its gate step on a strict 5s test timeout in
+  `scripts/storeLifecycle.test.ts` (1 failed / 1532 passed) with the deploy job skipped; the tree at
+  83d6d44 is byte-identical to fe80e94, which the PR gate had just proved green, and no merged path
+  touches that seam, so the failed job was re-run once on the same commit and passed. Recorded as
+  FR-097 with Product #301 owning the per-test timeout fix. The public site returned HTTP 200. Lab main is
+  6a86cd801646e4a9daee127eea93742ba996f050 with `Check` run 32206737622 successful and zero open
+  pull requests, tags, and releases. `npm run export:artifacts` was exercised on this box and
+  wrote 35 synthetic public-demo artifacts with its privacy scan clean over 9 forbidden patterns.
+  Local `npm test` on this Windows box remains red in `scripts/storeLifecycle.test.ts` and its
+  storage-v3 peers for the environment reason tracked in Product #293; hosted ubuntu CI is
+  unaffected and is the authoritative signal. Refresh live Git/GitHub before action; run
+  npm.cmd run verify:context and git diff --check for any docs slice.
 active_horizon:
   - 'P0 governor bootstrap PR #206 — delivered'
   - 'P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
@@ -46,9 +51,9 @@ active_horizon:
 operational_resume:
   consumer: 'The next Product/Lab release coordinator.'
   question: 'What is landed, parked, unproved, owner-gated, and agent-executable?'
-  product_state: 'Product main above is a last-observed remote-ref snapshot, not a perpetual current baseline; PR #287 is merged and Product has zero open pull requests, tags, and releases at the observation.'
-  lab_state: 'Lab main above is a last-observed remote-ref snapshot, not a perpetual current baseline; the exact lab proof is green and Lab has zero open pull requests, tags, and releases at the observation.'
-  next_selection: 'Request or await Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; the release-prep branch is unrecoverable and its slice is re-created after that gate under Product #298. Do not tag, publish, or select P1 issue #174 before that owner gate.'
+  product_state: 'Product main above is a last-observed remote-ref snapshot, not a perpetual current baseline; PRs #290, #295, #291 and #292 are merged and Product has zero open pull requests, tags, and releases at the observation.'
+  lab_state: 'Lab main above is a last-observed remote-ref snapshot, not a perpetual current baseline; the exact lab check is green and Lab has zero open pull requests, tags, and releases at the observation.'
+  next_selection: 'Request or await Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off. Until it lands, select from the open agent-executable issues #296, #297, #299, #300, #293, and #294; the release-prep branch is unrecoverable and its slice is re-created only after the owner gate, under Product #298. Do not tag, publish, or select P1 issue #174 before that owner gate.'
 
 lab_delivery:
   repository: 'Chris0Jeky/developer-lens-lab'
@@ -58,8 +63,8 @@ lab_delivery:
     - 'PR #91 merged 2026-08-15T13:46:55Z as 2d6f857a6c49748c4554fc6af7b9762c6e7375e7.'
     - 'PR #92 merged as 80f421cd9a9701abf0ab767e9c480d378d907528.'
     - 'PR #94 merged 2026-08-16T02:45:53Z as 5c3ee6e1fe9eeb911febc60ea6fef1954625d5bc.'
-  main_check: 'Exact Prove the lab run 32084666662 completed SUCCESS at Lab main SHA 12b9c161015249eaf7f6f9fedd8593d81315b7d9.'
-  open_pull_requests: '0 at the 2026-08-18T01:27:26Z observation; tags and releases also 0.'
+  main_check: 'Exact Check run 32206737622 completed SUCCESS at Lab main SHA 6a86cd801646e4a9daee127eea93742ba996f050. The earlier Prove the lab run 32084666662 at 12b9c161015249eaf7f6f9fedd8593d81315b7d9 is superseded.'
+  open_pull_requests: '0 at the 2026-08-24T11:20:28Z observation; tags and releases also 0.'
   superseded_instruction: 'The former parked-PR #87 and merge-helper-eligibility blocker no longer applies because PR #87 is merged.'
 
 release_readiness:
@@ -77,13 +82,17 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  Product main 3dabf11b3e8cd46d44daffd0bfbe8aca5694795f and Lab main 12b9c161015249eaf7f6f9fedd8593d81315b7d9
-  are the last-observed refs. PR #287 and the exact Product/Lab hosted proving runs are green, and
-  the approved browser-client Method Trial proof is complete. The external ChromeDevTools attempt is
+  Product main 83d6d44e12754fa4063973cd08a5a10bb931de43 and Lab main 6a86cd801646e4a9daee127eea93742ba996f050
+  are the last-observed refs, and Product has zero open pull requests: #290, #295, #291 and #292 all
+  merged on 2026-08-24, each re-proved by the hosted gate at its exact merged head after the base
+  moved. The exact Product/Lab hosted proving runs are green, and the approved browser-client Method
+  Trial proof is complete. The external ChromeDevTools attempt is
   invalid and must not substitute for approved proof. Do NOT attempt to refresh
   release/prepare-product-v0.1.0-20260818 at 54217ff: that object no longer exists anywhere, and
   Product #298 owns re-creating the slice after the owner gate. Request only
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off. After that owner action, agents may perform synchronized release mechanics under
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off. While that gate is open the
+  agent-executable queue is Product #296, #297, #299, #300, #293 and #294; none of them touches the
+  owner gate, a tag, a publication, or any capability activation. After that owner action, agents may perform synchronized release mechanics under
   A1=FULL; until then no tag, release, package publication, or public publication is authorized. Re-refresh
   every live ref, check, review thread, and owner gate before any release action.
 ```

@@ -5005,3 +5005,110 @@ telemetry, or deployment action occurred.
 `6a2a1ea3fb59014670a25d01109ff24c77715d38`, review the committed range through current HEAD,
 then publish/open a PR; do not touch
 `FRICTION_LOG.md` or `CURRENT_STATE.md`.
+
+## 2026-08-18 - P0.5 browser-proof milestone (archived from the live resume artifact)
+
+Recorded here because `docs/analyser-program/CURRENT_STATE.md` is replaced wholesale on every
+reconciliation and this milestone would otherwise have no durable home. Raised as a review finding
+on PR #292 and tracked as Product #299.
+
+**Verified.** Product hosted `Prove the pull request` run `32087230133` succeeded at head
+`2010857f0a37dac7e27a98d1360b7c3e4ef350ff`, and its final exact-head review was clean. Lab
+`Prove the lab` run `32084666662` succeeded at Lab main `12b9c161015249eaf7f6f9fedd8593d81315b7d9`.
+The approved browser-client visual proof recorded in Product #200 comment `5322224538` was taken at
+Product main `c8e9a74703d100fa4d3c3fc363aedbb8dc2daee5` against the tracked invented C0 Method
+Trial fixture: desktop and explicit 390px mobile render the six expected sections, mobile has no
+document-level horizontal overflow, the disclosure expands, warning and error logs are empty, and
+resource timing shows no cross-origin request, no `public/data` or protected path, and no
+fetch/XHR. The invented/offline, non-promotion, and unsupported/limitations boundaries are visible.
+
+**NOT verified.** The live tab handoff and final disposition after that proof are NOT VERIFIED --
+the approved browser client disconnected during finalization. No alternate browser surface was
+used. The earlier external ChromeDevTools attempt is friction-only and is explicitly NOT proof; it
+must never be substituted for the approved surface.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remained open throughout and
+is not inferred. No tag, release, package publication, or C0 publication occurred.
+
+## 2026-08-24 - Open-pull-request closeout: #290, #295, #291, #292
+
+**Changed.** Merged all four open Product pull requests, in base-first order, each with a merge
+commit and never a squash: #290 `fe00d49` (q-10 heading), #295 `2ef28d9` (headless artifact
+export), #291 `1e1d548` (q-6 planning cards), #292 `83d6d44` (release-state reconciliation).
+Product main is `83d6d44e12754fa4063973cd08a5a10bb931de43` with zero open pull requests.
+
+PR #295 arrived from an interrupted session with a red hosted gate: `scripts/exportArtifacts.test.ts`
+spelled a Windows user-home path as a literal to prove the export privacy scanner catches one, and
+the repository own Git-index guard rejected it, stopping `Verify project context` before any later
+gate step ran. The canary is now assembled from its segments, the idiom
+`scripts/projectContextValidation.test.ts` already uses. Its three connector findings were then
+triaged. `--out` treated any directory holding an `export-manifest.json` as a previous export and
+removed the directory recursively, so a stale or copied manifest beside unrelated files was enough
+for a rerun to delete them; the manifest is now an allowlist and deletion is driven by the
+directory listing, never by manifest strings. An unknown argument was interpolated raw into a
+console message and now yields only an option name or a position. The share/portable
+substring-versus-template finding was declined and tracked as #296. A fresh-context adversarial
+review of those fixes found no CRITICAL or HIGH defect but did find a false safety claim in the
+README - "can never delete a file this command did not write", where the allowlist is of names and
+not of authorship - fixed together with two low-severity refusal-path defects.
+
+Three lanes had each appended a friction entry starting at `FR-090` while none was on `main`.
+#295 kept `FR-090`, #291 took `FR-091`..`FR-093`, #292 took `FR-094`..`FR-096`. FR-044 needed a
+real reconciliation rather than a pick: two lanes each recorded a different eighth browser
+preflight on 2026-08-18 - an `iab` selector refusal and a disconnected-client attempt - so both
+notes are preserved, the later ordinals were re-sequenced to ninth/tenth/eleventh, the count is
+`11`, and a merge-reconciliation note records why the sequence jumps.
+
+**Verified.** Each pull request was re-proved by the hosted `Prove the pull request` gate at its
+exact merged head after the base moved: #290 job `95566609756`, #295 run `32720247497` at
+`c2999a7`, #291 run `32720596546` at `c3406a5`, #292 run `32721070738` at `fe80e94`. The
+merged-main full gate `Deploy public showcase` (`npm run check` plus `build:showcase` plus the
+Pages deploy) succeeded at `1e1d548` as run `32720877203`, and the public site returned HTTP 200.
+At `83d6d44` that same workflow (run `32721323216`) first failed its gate step on a strict 5s test
+timeout in `scripts/storeLifecycle.test.ts` (1 failed / 1532 passed / 2 skipped), skipping the
+deploy job. That red was investigated rather than dismissed: `83d6d44^{tree}` and `fe80e94^{tree}`
+are both `a5c49d6d758cb5ee72ca0073de9b3f75bca937ca`, so the tree was byte-identical to the one the
+#292 gate had just proved green; `git diff 3dabf11..83d6d44 --name-only` lists no `storeLifecycle`,
+`server/storage/`, or `vitest.config.ts` path; and the run showed 139s wall clock against 296s of
+summed test time. The failed job was re-run once on the same commit and its gate step passed.
+Recorded as FR-097, with Product #301 owning an explicit per-test timeout rather than a relaxed
+global CI timeout.
+Locally at the #295 head: `npm run lint`, `npm run verify:context`,
+`node docs/analyser-program/taskdeck/tools/generate.mjs --check`, `npm run check:research-pack`,
+`npm run check:method-trial-view`, `tsc -b --force`, `npm run build:showcase`, `git diff --check`,
+and 16 of 16 focused export tests. `npm run export:artifacts` wrote 35 synthetic public-demo
+artifacts with the privacy scan clean over 9 forbidden patterns; the rerun-in-place path, the
+refusal to delete an unclaimed file, the unreadable and `null` and array manifest refusals, the
+subdirectory refusal, and the sanitized unknown-option message were each exercised directly.
+
+**NOT verified.** The `--source local` export lane was never executed; running it means reading
+`.developer-lens/`, which the protected-data rule forbids outside a named task. Its refusals,
+argument parsing, and full-aliasing assertion are covered by tests; the read of an actual local
+dashboard is not. The post-write privacy-scan cleanup branch has no test - it is close to
+unreachable because the pre-write scan applies the identical pattern set to the identical content -
+and is tracked in #300. The browser visual proof archived above was not re-run.
+
+**Failures and workarounds.** Local `npm test` on this Windows box is red in
+`scripts/storeLifecycle.test.ts` and its storage-v3 peers (`STORAGE_V3_ARTIFACT_INVALID` raised
+from `captureRoot`). `git diff origin/main...HEAD --name-only` for the export branch listed no
+`server/storage/` or `storeLifecycle` path, so the red cannot originate there, and hosted ubuntu CI
+passed those suites. An attempt to disconfirm the FR-050 root cause by repointing `TMP` and `TEMP`
+at a long, canonically cased directory did NOT restore green, so the recorded 8.3 short-path cause
+is confirmed but not established as complete - recorded on FR-050 and left to Product #293.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` refreshed to the
+2026-08-24T11:20:28Z observation. `HUMAN_TODO.md` changed only through PR #290 heading correction;
+no owner decision was inferred or closed.
+
+**Residual risk.** The friction-ID renumbering and the FR-044 ordinal re-sequencing are editorial
+judgements made at merge time, not owner decisions; anyone citing `FR-090` through `FR-096` from a
+link predating 2026-08-24 should re-resolve it. The v0.1.0 release-prep commit `54217ff` is
+unrecoverable (Product #298) and its slice must be re-created after the owner gate.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
+Product v0.1.0 tag-blocking owner action. Nothing in this closeout infers, anticipates, or closes
+it.
+
+**Exact resume.** Product main `83d6d44`, zero open pull requests. Request or await q-10(c). The
+agent-executable queue is Product #296, #297, #299, #300, #293 and #294; none touches the owner
+gate, a tag, a publication, or a capability activation.
