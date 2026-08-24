@@ -5033,8 +5033,9 @@ is not inferred. No tag, release, package publication, or C0 publication occurre
 ## 2026-08-24 - Open-pull-request closeout: #290, #295, #291, #292
 
 **Changed.** Merged all four open Product pull requests, in base-first order, each with a merge
-commit and never a squash: #290 `fe00d49` (q-10 heading), #295 `2ef28d9` (headless artifact
-export), #291 `1e1d548` (q-6 planning cards), #292 `83d6d44` (release-state reconciliation).
+commit and never a squash: #290 `fe00d49` (`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10` heading),
+#295 `2ef28d9` (headless artifact export), #291 `1e1d548` (`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6`
+planning cards), #292 `83d6d44` (release-state reconciliation).
 Product main is `83d6d44e12754fa4063973cd08a5a10bb931de43` with zero open pull requests.
 
 PR #295 arrived from an interrupted session with a red hosted gate: `scripts/exportArtifacts.test.ts`
@@ -5109,6 +5110,7 @@ unrecoverable (Product #298) and its slice must be re-created after the owner ga
 Product v0.1.0 tag-blocking owner action. Nothing in this closeout infers, anticipates, or closes
 it.
 
-**Exact resume.** Product main `83d6d44`, zero open pull requests. Request or await q-10(c). The
-agent-executable queue is Product #296, #297, #299, #300, #293 and #294; none touches the owner
-gate, a tag, a publication, or a capability activation.
+**Exact resume.** Product main `83d6d44`, zero open pull requests. Request or await
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`. The agent-executable queue is Product
+#296, #297, #300, #293, #294 and #301; none touches the owner gate, a tag, a publication, or a
+capability activation. Product #299 is discharged by the milestone entry above.

@@ -16,7 +16,7 @@ observation_semantics: >-
 product_main: '83d6d44e12754fa4063973cd08a5a10bb931de43'
 lab_main: '6a86cd801646e4a9daee127eea93742ba996f050'
 active_slice: 'The four open Product pull requests are closed out: #290, #295, #291, and #292 are merged and Product has zero open pull requests. P0.5 issue #200 remains the active wave, and Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is still the sole tag-blocking owner gate.'
-next_value_slice: 'Request or await explicit Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; perform no tag or publication before that gate. Agent-executable now without touching that gate: Product #296 (export boundary guards match fixed template copy), #297 (Taskdeck card consumers left inconsistent by the q-6 reconciliation), #299 (archive the P0.5 browser-proof milestone in the ledger), #300 (headless-export test and IO edges), and #293 (the FR-050 local-gate root cause, still only partly explained). The v0.1.0 metadata slice must be re-created from scratch after the owner gate because its branch is unrecoverable — see Product #298.'
+next_value_slice: 'Request or await explicit Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; perform no tag or publication before that gate. Agent-executable now without touching that gate: Product #296 (export boundary guards match fixed template copy), #297 (Taskdeck card consumers left inconsistent by the constitution-v2 reconciliation), #300 (headless-export test and IO edges), #301 (a strict 5s CI timeout on a slow storage test that can false-red main and skip its deploy), and #293 (the FR-050 local-gate root cause, still only partly explained). Product #299 is discharged by the milestone entry this same change adds to docs/IMPLEMENTATION_LEDGER.md; do not re-select it. The v0.1.0 metadata slice must be re-created from scratch after the owner gate because its branch is unrecoverable — see Product #298.'
 blockers: >-
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is the sole remaining tag-blocking owner gate and is
   ready for explicit aesthetic sign-off. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6
@@ -53,7 +53,7 @@ operational_resume:
   question: 'What is landed, parked, unproved, owner-gated, and agent-executable?'
   product_state: 'Product main above is a last-observed remote-ref snapshot, not a perpetual current baseline; PRs #290, #295, #291 and #292 are merged and Product has zero open pull requests, tags, and releases at the observation.'
   lab_state: 'Lab main above is a last-observed remote-ref snapshot, not a perpetual current baseline; the exact lab check is green and Lab has zero open pull requests, tags, and releases at the observation.'
-  next_selection: 'Request or await Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off. Until it lands, select from the open agent-executable issues #296, #297, #299, #300, #293, and #294; the release-prep branch is unrecoverable and its slice is re-created only after the owner gate, under Product #298. Do not tag, publish, or select P1 issue #174 before that owner gate.'
+  next_selection: 'Request or await Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off. Until it lands, select from the open agent-executable issues #296, #297, #300, #301, #293, and #294 (#299 is discharged by this change); the release-prep branch is unrecoverable and its slice is re-created only after the owner gate, under Product #298. Do not tag, publish, or select P1 issue #174 before that owner gate.'
 
 lab_delivery:
   repository: 'Chris0Jeky/developer-lens-lab'
@@ -91,7 +91,7 @@ exact_resume_point: >-
   release/prepare-product-v0.1.0-20260818 at 54217ff: that object no longer exists anywhere, and
   Product #298 owns re-creating the slice after the owner gate. Request only
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off. While that gate is open the
-  agent-executable queue is Product #296, #297, #299, #300, #293 and #294; none of them touches the
+  agent-executable queue is Product #296, #297, #300, #301, #293 and #294; none of them touches the
   owner gate, a tag, a publication, or any capability activation. After that owner action, agents may perform synchronized release mechanics under
   A1=FULL; until then no tag, release, package publication, or public publication is authorized. Re-refresh
   every live ref, check, review thread, and owner gate before any release action.
