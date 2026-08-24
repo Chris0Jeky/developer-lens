@@ -878,7 +878,7 @@ Rules that bind entries:
 ### FR-025 — occupied PR232 worktree entered a concurrent main merge
 
 - **first-seen:** 2026-08-10
-- **status:** `open`
+- **status:** `promoted`
 - **severity:** `LOW (one-writer coordination evidence)`
 - **symptom:** An occupied PR232 worktree unexpectedly entered a concurrent merge of moved main.
   Conflict and status evidence then raced, and two read-only 30-second status probes timed out
@@ -2458,7 +2458,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   was created through the authenticated REST pulls endpoint as PR #287. No repository or GitHub
   mutation occurred before the fallback request.
 
-### FR-090 — Luna spawn rejected an incompatible option combination
+### FR-094 — Luna spawn rejected an incompatible option combination
 
 - **first-seen:** 2026-08-18
 - **status:** `workaround-documented`
@@ -2475,10 +2475,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   Repository prompts select Luna for paved W1/W2 work but do not encode this option constraint; keep
   the workaround in the task record and do not add a helper after one occurrence.
 
-### FR-091 — JavaScript-to-PowerShell review payload was not transferred
+### FR-095 — JavaScript-to-PowerShell review payload was not transferred
 
 - **first-seen:** 2026-08-18
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (cross-runtime review-payload transport)`
 - **symptom:** The first REST review-post attempt returned HTTP 422 because the spawned PowerShell
   command referenced an unset `REVIEW_BODY` environment variable; the JavaScript variable was not
@@ -2506,7 +2506,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   REST review post were unaffected. Use REST PATCH with JSON/stdin and single-runtime transport for
   multiline PR bodies; Product #222 owns the enforcement route.
 
-### FR-092 — local exact head was treated as unverifiable before publication
+### FR-096 — local exact head was treated as unverifiable before publication
 
 - **first-seen:** 2026-08-18
 - **status:** `workaround-documented`

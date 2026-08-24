@@ -15,11 +15,13 @@ observation_semantics: >-
   not perpetual current-baseline assertions; refresh live Git/GitHub before any action.
 product_main: '3dabf11b3e8cd46d44daffd0bfbe8aca5694795f'
 lab_main: '12b9c161015249eaf7f6f9fedd8593d81315b7d9'
-active_slice: 'P0.5 issue #200 release unblock: Product/Lab hosted proof and the approved browser-client Method Trial proof are complete; Product q-10(c) is ready for explicit owner aesthetic sign-off.'
-next_value_slice: 'Refresh the unpushed release/prepare-product-v0.1.0-20260818 branch at 54217ff against Product main, then request or await explicit Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; perform no tag or publication before that gate.'
+active_slice: 'P0.5 issue #200 release unblock: Product/Lab hosted proof and the approved browser-client Method Trial proof are complete; Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is ready for explicit owner aesthetic sign-off.'
+next_value_slice: 'Request or await explicit Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; perform no tag or publication before that gate. The v0.1.0 metadata slice must be re-created from scratch after that gate, because its branch is unrecoverable — see Product #298.'
 blockers: >-
-  Product q-10(c) is the sole remaining tag-blocking owner gate and is ready for explicit aesthetic
-  sign-off. Other q-6/q-10 decisions are deferred and nonblocking for this release truth slice; no
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is the sole remaining tag-blocking owner gate and is
+  ready for explicit aesthetic sign-off. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6
+  and Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 decisions are deferred and nonblocking for this
+  release truth slice; no
   tag, release, package publication, or public publication is authorized before that owner action.
 last_verified_checks: >-
   2026-08-18T01:27:26Z live REST/Git observation: Product main 3dabf11b3e8cd46d44daffd0bfbe8aca5694795f
@@ -31,8 +33,11 @@ last_verified_checks: >-
   and explicit 390px mobile layouts, no horizontal overflow, warning/error logs, cross-origin or
   protected-data resources, or fetch/XHR. The invalid external ChromeDevTools attempt is friction-only
   and not proof. Issue #200 comments 5322224538 and 5322231402 retain the proof and LOW release-note
-  follow-up. Local unpushed branch release/prepare-product-v0.1.0-20260818 remains at 54217ff and
-  must be refreshed after this truth lane; no tag or publication occurred. Run npm.cmd run
+  follow-up. The local branch release/prepare-product-v0.1.0-20260818 at 54217ff was recorded as
+  unpushed on 2026-08-18 and is now unrecoverable: on 2026-08-24 `git cat-file -t 54217ff` reports
+  `Not a valid object name` in the primary checkout, no such branch exists locally or on origin,
+  the single worktree does not hold it, and no reachable commit carries `"version": "0.1.0"`.
+  Product #298 records what it contained and how to re-create it. No tag or publication occurred. Run npm.cmd run
   verify:context and git diff --check for this docs slice.
 active_horizon:
   - 'P0 governor bootstrap PR #206 — delivered'
@@ -43,7 +48,7 @@ operational_resume:
   question: 'What is landed, parked, unproved, owner-gated, and agent-executable?'
   product_state: 'Product main above is a last-observed remote-ref snapshot, not a perpetual current baseline; PR #287 is merged and Product has zero open pull requests, tags, and releases at the observation.'
   lab_state: 'Lab main above is a last-observed remote-ref snapshot, not a perpetual current baseline; the exact lab proof is green and Lab has zero open pull requests, tags, and releases at the observation.'
-  next_selection: 'Refresh the unpushed release-prep branch against Product main, then request or await Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off. Do not tag, publish, or select P1 issue #174 before that owner gate.'
+  next_selection: 'Request or await Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; the release-prep branch is unrecoverable and its slice is re-created after that gate under Product #298. Do not tag, publish, or select P1 issue #174 before that owner gate.'
 
 lab_delivery:
   repository: 'Chris0Jeky/developer-lens-lab'
@@ -75,9 +80,10 @@ exact_resume_point: >-
   Product main 3dabf11b3e8cd46d44daffd0bfbe8aca5694795f and Lab main 12b9c161015249eaf7f6f9fedd8593d81315b7d9
   are the last-observed refs. PR #287 and the exact Product/Lab hosted proving runs are green, and
   the approved browser-client Method Trial proof is complete. The external ChromeDevTools attempt is
-  invalid and must not substitute for approved proof. Refresh release/prepare-product-v0.1.0-20260818
-  at 54217ff against Product main, then request only Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)
-  aesthetic sign-off. After that owner action, agents may perform synchronized release mechanics under
+  invalid and must not substitute for approved proof. Do NOT attempt to refresh
+  release/prepare-product-v0.1.0-20260818 at 54217ff: that object no longer exists anywhere, and
+  Product #298 owns re-creating the slice after the owner gate. Request only
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off. After that owner action, agents may perform synchronized release mechanics under
   A1=FULL; until then no tag, release, package publication, or public publication is authorized. Re-refresh
   every live ref, check, review thread, and owner gate before any release action.
 ```
