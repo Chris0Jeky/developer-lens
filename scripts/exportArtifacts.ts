@@ -1,4 +1,5 @@
 import { readFile, mkdir, readdir, rm, writeFile } from 'node:fs/promises'
+import type { Dirent } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { DashboardData, RangeKey } from '../shared/types.js'
@@ -208,19 +209,82 @@ function buildRangeArtifacts(
   return { artifacts, violations }
 }
 
-async function assertWritableOutputDirectory(directory: string): Promise<void> {
-  let entries: string[]
+/**
+ * What a rerun is allowed to remove from `--out`.
+ *
+ * `existed` is false when the directory is absent, so a failed run can take the directory it
+ * created back out. `replaceable` names ONLY entries this command previously wrote: the manifest
+ * plus the exact files that manifest claims. Anything else in the directory — a note the operator
+ * dropped beside an export, an unrelated download, a stale manifest copied into a populated
+ * folder — makes the run refuse instead, because the alternative is deleting a file this command
+ * never owned.
+ */
+interface OutputDirectoryPlan {
+  existed: boolean
+  replaceable: string[]
+}
+
+async function readPriorManifestFiles(directory: string): Promise<ReadonlySet<string>> {
+  let parsed: unknown
   try {
-    entries = await readdir(directory)
+    parsed = JSON.parse(await readFile(join(directory, EXPORT_MANIFEST_FILE), 'utf8'))
+  } catch {
+    throw new ArtifactExportError(
+      `refused: the output directory holds an unreadable ${EXPORT_MANIFEST_FILE}; ` +
+        'point --out at a dedicated export directory',
+    )
+  }
+  const artifacts = (parsed as { artifacts?: unknown }).artifacts
+  if (!Array.isArray(artifacts)) {
+    throw new ArtifactExportError(
+      `refused: the output directory holds a ${EXPORT_MANIFEST_FILE} with no artifact list; ` +
+        'point --out at a dedicated export directory',
+    )
+  }
+  const files = new Set<string>([EXPORT_MANIFEST_FILE])
+  for (const artifact of artifacts) {
+    const file = (artifact as { file?: unknown }).file
+    if (typeof file === 'string') files.add(file)
+  }
+  return files
+}
+
+async function planOutputDirectory(directory: string): Promise<OutputDirectoryPlan> {
+  let entries: Dirent[]
+  try {
+    entries = await readdir(directory, { withFileTypes: true })
   } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
+      return { existed: false, replaceable: [] }
+    }
     throw error
   }
-  if (entries.length === 0 || entries.includes(EXPORT_MANIFEST_FILE)) return
-  throw new ArtifactExportError(
-    `refused: the output directory is not empty and holds no ${EXPORT_MANIFEST_FILE}; ` +
-      'point --out at a dedicated export directory',
-  )
+  if (entries.length === 0) return { existed: true, replaceable: [] }
+  if (!entries.some((entry) => entry.name === EXPORT_MANIFEST_FILE)) {
+    throw new ArtifactExportError(
+      `refused: the output directory is not empty and holds no ${EXPORT_MANIFEST_FILE}; ` +
+        'point --out at a dedicated export directory',
+    )
+  }
+  const owned = await readPriorManifestFiles(directory)
+  // Deletion is driven by the directory listing, never by the manifest, so a manifest naming
+  // `../something` can only ever fail to match a real entry.
+  for (const entry of entries) {
+    if (!entry.isFile() || !owned.has(entry.name)) {
+      throw new ArtifactExportError(
+        'refused: the output directory holds an entry the previous ' +
+          `${EXPORT_MANIFEST_FILE} does not claim, so a rerun would delete it; ` +
+          'point --out at a dedicated export directory',
+      )
+    }
+  }
+  return { existed: true, replaceable: entries.map((entry) => entry.name) }
+}
+
+async function removeFiles(directory: string, files: readonly string[]): Promise<void> {
+  for (const file of files) {
+    await rm(join(directory, file), { force: true })
+  }
 }
 
 export async function exportArtifacts(
@@ -228,7 +292,7 @@ export async function exportArtifacts(
 ): Promise<ExportArtifactsResult> {
   const patterns: ForbiddenPattern[] = createForbiddenPatterns(options.env ?? process.env)
   const outputDirectory = resolve(options.outputDirectory)
-  await assertWritableOutputDirectory(outputDirectory)
+  const plan = await planOutputDirectory(outputDirectory)
 
   const artifacts: PendingArtifact[] = []
   const violations: string[] = []
@@ -298,7 +362,9 @@ export async function exportArtifacts(
   }
   artifacts.push(manifestArtifact)
 
-  await rm(outputDirectory, { force: true, recursive: true })
+  // Only the previous export's own files are removed; `planOutputDirectory` already refused if
+  // the directory held anything else.
+  await removeFiles(outputDirectory, plan.replaceable)
   await mkdir(outputDirectory, { recursive: true })
   for (const artifact of artifacts) {
     await writeFile(join(outputDirectory, artifact.file), artifact.content, 'utf8')
@@ -307,7 +373,11 @@ export async function exportArtifacts(
   // Second pass over what actually landed, using the same scanner the showcase build runs.
   const scan = await scanDirectoryForForbiddenPatterns(outputDirectory, patterns)
   if (scan.violations.length > 0) {
-    await rm(outputDirectory, { force: true, recursive: true })
+    await removeFiles(
+      outputDirectory,
+      artifacts.map((artifact) => artifact.file),
+    )
+    if (!plan.existed) await rm(outputDirectory, { force: true, recursive: true })
     throw new ArtifactExportError(
       `privacy scan failed after write: ${scan.violations.join('; ')}`,
     )
@@ -413,7 +483,16 @@ function parseInvocation(argv: readonly string[]): ParseResult {
       repositoryRedaction = value
       if (argument === '--repository-redaction') index += 1
     } else {
-      return { ok: false, message: `refused: unknown argument ${argument}` }
+      // Never echo the supplied value: a wrapper can forward a credential-bearing option, and
+      // this message is written to the console. Only a recognizable option NAME is safe to
+      // repeat, and a positional value is reported by position alone.
+      const optionName = /^--[a-z0-9][a-z0-9-]*/i.exec(argument)?.[0]
+      return {
+        ok: false,
+        message: optionName
+          ? `refused: unknown option ${optionName}`
+          : `refused: unexpected argument at position ${index + 1}`,
+      }
     }
   }
 

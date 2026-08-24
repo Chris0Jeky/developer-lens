@@ -158,12 +158,112 @@ describe('headless artifact export', () => {
     expect(readdirSync(directory)).toContain('unrelated.txt')
   })
 
+  it('replaces its own previous export in place', async () => {
+    const first = await exportArtifacts({
+      outputDirectory: output,
+      source: 'synthetic',
+      ranges: ['6m'],
+      repositoryRedaction: 'all-aliases',
+      loadDashboard: syntheticDashboard,
+      env: {},
+    })
+    const second = await exportArtifacts({
+      outputDirectory: output,
+      source: 'synthetic',
+      ranges: ['6m'],
+      repositoryRedaction: 'all-aliases',
+      loadDashboard: syntheticDashboard,
+      env: {},
+    })
+
+    expect(second.artifacts.map((artifact) => artifact.file).sort()).toEqual(
+      first.artifacts.map((artifact) => artifact.file).sort(),
+    )
+    expect(readdirSync(output).sort()).toEqual(
+      second.artifacts.map((artifact) => artifact.file).sort(),
+    )
+  })
+
+  it('refuses a rerun that would delete a file the previous manifest does not claim', async () => {
+    await exportArtifacts({
+      outputDirectory: output,
+      source: 'synthetic',
+      ranges: ['6m'],
+      repositoryRedaction: 'all-aliases',
+      loadDashboard: syntheticDashboard,
+      env: {},
+    })
+    writeFileSync(join(output, 'operator-notes.md'), 'keep me', 'utf8')
+
+    await expect(
+      exportArtifacts({
+        outputDirectory: output,
+        source: 'synthetic',
+        ranges: ['6m'],
+        repositoryRedaction: 'all-aliases',
+        loadDashboard: syntheticDashboard,
+        env: {},
+      }),
+    ).rejects.toThrow(/does not claim/)
+    expect(readFileSync(join(output, 'operator-notes.md'), 'utf8')).toBe('keep me')
+  })
+
+  it('refuses a rerun beside an unreadable manifest without deleting anything', async () => {
+    writeFileSync(join(directory, EXPORT_MANIFEST_FILE), 'not json', 'utf8')
+    writeFileSync(join(directory, 'unrelated.txt'), 'keep me', 'utf8')
+
+    await expect(
+      exportArtifacts({
+        outputDirectory: directory,
+        source: 'synthetic',
+        ranges: ['6m'],
+        repositoryRedaction: 'all-aliases',
+        loadDashboard: syntheticDashboard,
+        env: {},
+      }),
+    ).rejects.toThrow(/unreadable/)
+    expect(readFileSync(join(directory, 'unrelated.txt'), 'utf8')).toBe('keep me')
+  })
+
+  it('refuses an unknown option without echoing its value', async () => {
+    const lines: string[] = []
+    const code = await runExportArtifactsCli(
+      ['--token=ghp_exportCanaryValue'],
+      {},
+      (line) => {
+        lines.push(line)
+      },
+    )
+
+    expect(code).toBe(1)
+    const logged = lines.join('\n')
+    expect(logged).toContain('unknown option --token')
+    expect(logged).not.toContain('ghp_exportCanaryValue')
+  })
+
+  it('reports a positional argument by position only', async () => {
+    const lines: string[] = []
+    const code = await runExportArtifactsCli(
+      ['ghp_positionalCanaryValue'],
+      {},
+      (line) => {
+        lines.push(line)
+      },
+    )
+
+    expect(code).toBe(1)
+    expect(lines.join('\n')).toContain('unexpected argument at position 1')
+    expect(lines.join('\n')).not.toContain('ghp_positionalCanaryValue')
+  })
+
   it('fails closed and writes nothing when a forbidden pattern reaches an artifact', async () => {
     const poisoned = (range: RangeKey): Promise<DashboardData> => {
       const dashboard = createPublicShowcaseDashboard(range)
       // A leaked local path inside a rendered field. The share card renders the archetype-free
       // title, so poison a field the portable report is known to render: the language name.
-      dashboard.languages[0].name = 'C:\\Users\\canary\\lens'
+      // Assembled at runtime: the literal would itself be a Windows user-home path in tracked
+      // text, which `npm run verify:context` rejects on the Git index (FR-064).
+      dashboard.languages[0].name = ['C:', 'Users', 'canary', 'lens'].join('\\')
       return Promise.resolve(dashboard)
     }
 

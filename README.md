@@ -85,7 +85,12 @@ unless `--acknowledge-redaction` is also present, defaults to aliasing every rep
 than only private ones, and never writes the local dashboard record, because the export sink in
 [`docs/data-charter.md`](docs/data-charter.md) accepts only a pre-redacted view. Nothing reaches the
 disk until the artifacts pass the same privacy scan the showcase build runs, and the written
-directory is scanned again afterwards; any hit deletes the output and fails the command.
+directory is scanned again afterwards; any hit deletes what this command wrote and fails it.
+
+Rerunning over the same `--out` replaces that export in place. It only ever removes files the
+previous `export-manifest.json` claims: a directory holding anything else — a note left beside an
+export, an unrelated download, a manifest copied into a populated folder — is refused rather than
+cleared, so `--out` can never delete a file this command did not write.
 
 ## Private by construction
 
