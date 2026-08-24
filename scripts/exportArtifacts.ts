@@ -234,7 +234,10 @@ async function readPriorManifestFiles(directory: string): Promise<ReadonlySet<st
         'point --out at a dedicated export directory',
     )
   }
-  const artifacts = (parsed as { artifacts?: unknown }).artifacts
+  const artifacts =
+    typeof parsed === 'object' && parsed !== null
+      ? (parsed as { artifacts?: unknown }).artifacts
+      : undefined
   if (!Array.isArray(artifacts)) {
     throw new ArtifactExportError(
       `refused: the output directory holds a ${EXPORT_MANIFEST_FILE} with no artifact list; ` +
@@ -260,6 +263,14 @@ async function planOutputDirectory(directory: string): Promise<OutputDirectoryPl
     throw error
   }
   if (entries.length === 0) return { existed: true, replaceable: [] }
+  // Classify every entry BEFORE reading the manifest: a symlinked or directory
+  // `export-manifest.json` must be refused without following it to an arbitrary target.
+  if (entries.some((entry) => !entry.isFile())) {
+    throw new ArtifactExportError(
+      'refused: the output directory holds an entry that is not a regular file; ' +
+        'point --out at a dedicated export directory',
+    )
+  }
   if (!entries.some((entry) => entry.name === EXPORT_MANIFEST_FILE)) {
     throw new ArtifactExportError(
       `refused: the output directory is not empty and holds no ${EXPORT_MANIFEST_FILE}; ` +
@@ -268,9 +279,11 @@ async function planOutputDirectory(directory: string): Promise<OutputDirectoryPl
   }
   const owned = await readPriorManifestFiles(directory)
   // Deletion is driven by the directory listing, never by the manifest, so a manifest naming
-  // `../something` can only ever fail to match a real entry.
+  // `../something` can only ever fail to match a real entry. The manifest is untrusted input,
+  // so this is an allowlist of NAMES: a file whose name a prior manifest claims is replaced
+  // whoever wrote it. Everything else refuses.
   for (const entry of entries) {
-    if (!entry.isFile() || !owned.has(entry.name)) {
+    if (!owned.has(entry.name)) {
       throw new ArtifactExportError(
         'refused: the output directory holds an entry the previous ' +
           `${EXPORT_MANIFEST_FILE} does not claim, so a rerun would delete it; ` +

@@ -88,9 +88,11 @@ disk until the artifacts pass the same privacy scan the showcase build runs, and
 directory is scanned again afterwards; any hit deletes what this command wrote and fails it.
 
 Rerunning over the same `--out` replaces that export in place. It only ever removes files the
-previous `export-manifest.json` claims: a directory holding anything else — a note left beside an
+previous `export-manifest.json` names: a directory holding anything else — a note left beside an
 export, an unrelated download, a manifest copied into a populated folder — is refused rather than
-cleared, so `--out` can never delete a file this command did not write.
+cleared. The manifest is an allowlist of file names, not of authorship, so a file you wrote
+yourself under a name the previous export used is still replaced. Keep anything you want to edit
+and keep outside the export directory.
 
 ## Private by construction
 
