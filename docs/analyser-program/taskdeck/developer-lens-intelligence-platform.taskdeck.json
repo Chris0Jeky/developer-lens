@@ -798,7 +798,7 @@
     },
     {
       "title": "DL-SEM-01 - Change-intent rule families + multilingual fixtures",
-      "description": "[DL-SEM-01 | epic:semantic | implementation | READY | risk:medium | effort:M | M4]\nOutcome: cap.commit.intent rule classifier over ephemeral subjects: conventional-commit + language-agnostic rule families, controlled categories incl. migration/config/dependency/revert, unknown otherwise.\nDeps: none | Unlock: -\nPaths: server/connectors/commitIntent/*; tests\nAuthority: G2 approved (matrix cap.commit.intent); ephemeral opt-in; no external model; runtime default-off until activation card\nProhibited: Subjects never persisted/logged; no per-author dimension; PR/issue prose out of scope (owner-gated DL-Q-PROSE)\nBehavior: ADR-10 tier-1; C4 destroyed in-process; classifier version recorded.\nAccept: Golden categories on multilingual/injection/revert/empty/long fixtures; canary subjects absent from every sink.\nProve: npm test -- server/connectors/commitIntent/rules.test.ts\nFixtures: Multilingual, ambiguous, injection-like, fixup/revert, emoji, very long subjects.\nRollback: Revocation destroys summaries + classifier cache.\nDemo: Category mix on fixture corpus.",
+      "description": "[DL-SEM-01 | epic:semantic | implementation | READY | risk:medium | effort:M | M4]\nOutcome: cap.commit.intent rule classifier over ephemeral subjects: conventional-commit + language-agnostic rule families, controlled categories incl. migration/config/dependency/revert, unknown otherwise.\nDeps: none | Unlock: -\nPaths: server/connectors/commitIntent/*; tests\nAuthority: G2 approved (matrix cap.commit.intent); ephemeral opt-in; no external model; runtime default-off until activation card\nProhibited: Subjects never persisted/logged; no per-author dimension; PR/issue prose remains inactive; DL-Q-PROSE is a non-activating record and any future reviewed text task carries its own prerequisites\nBehavior: ADR-10 tier-1; C4 destroyed in-process; classifier version recorded.\nAccept: Golden categories on multilingual/injection/revert/empty/long fixtures; canary subjects absent from every sink.\nProve: npm test -- server/connectors/commitIntent/rules.test.ts\nFixtures: Multilingual, ambiguous, injection-like, fixup/revert, emoji, very long subjects.\nRollback: Revocation destroys summaries + classifier cache.\nDemo: Category mix on fixture corpus.",
       "columnName": "Ready",
       "labels": [
         "status:ready",
@@ -1066,7 +1066,7 @@
     },
     {
       "title": "DL-PROV-01 - Attestation/provenance coverage",
-      "description": "[DL-PROV-01 | epic:ci-studio | implementation | PARKED | risk:medium | effort:M | M8]\nOutcome: PARKED and OWNER-GATED: subject-digest attestation verification coverage ratios (GH-ATTEST-01). Revisit once CI-01 evidence shows a real decision this would change AND the G-d gate is decided.\nDeps: DL-CI-01 | Unlock: OWNER GATE G-d (registry rows - covers GH-ATTEST-01; corrected 2026-08-04, was mislabelled G-e which governs artifact metadata only): NO standing-G3 matrix row - requires a reviewed matrix/registry change or explicit owner decision; plus CI evidence demonstrating a legitimate provenance question\nPaths: server/connectors/github/attestations.ts (future)\nAuthority: gate:owner-decision (G-d, 08_OPEN_QUESTIONS section 1) — NOT covered by q-2 standing G3; a G-e approval (artifact metadata) authorises NOTHING here\nProhibited: No implementation before the G-d gate; existence never rendered as trust; raw bundles/certs/signers never retained\nBehavior: Coverage ratios only, per matrix.\nAccept: n/a until unparked; unpark requires a named decision question.\nProve: n/a (parked)\nFixtures: Invalid-attestation fixture planned.\nRollback: n/a\nDemo: n/a",
+      "description": "[DL-PROV-01 | epic:ci-studio | implementation | PARKED | risk:medium | effort:M | M8]\nOutcome: PARKED and OWNER-GATED: subject-digest attestation verification coverage ratios (GH-ATTEST-01). Revisit once CI-01 evidence shows a real decision this would change AND the G-d gate is decided.\nDeps: DL-CI-01 | Unlock: OWNER GATE G-d (registry rows - covers GH-ATTEST-01; corrected 2026-08-04, was mislabelled G-e which governs artifact metadata only): NO standing-G3 matrix row - requires a reviewed matrix/registry change or explicit owner decision; plus CI evidence demonstrating a legitimate provenance question\nPaths: server/connectors/github/attestations.ts (future)\nAuthority: gate:owner-decision (G-d, 08_OPEN_QUESTIONS section 2) — NOT covered by Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2 standing G3; a G-e approval (artifact metadata) authorises NOTHING here\nProhibited: No implementation before the G-d gate; existence never rendered as trust; raw bundles/certs/signers never retained\nBehavior: Coverage ratios only, per matrix.\nAccept: n/a until unparked; unpark requires a named decision question.\nProve: n/a (parked)\nFixtures: Invalid-attestation fixture planned.\nRollback: n/a\nDemo: n/a",
       "columnName": "Proposed",
       "labels": [
         "status:parked",
@@ -1095,7 +1095,7 @@
     },
     {
       "title": "DL-PORT-02 - Policy/config evolution aggregates",
-      "description": "[DL-PORT-02 | epic:portfolio | implementation | OWNER_GATED | risk:medium | effort:M | M5]\nOutcome: GH-RULE-01 policy-presence aggregates over time (enforcement/rule-type flags) joining era comparison; policy quality never claimed.\nDeps: DL-LIFE-01, DL-LIFE-02 | Unlock: OWNER GATE G-d: GH-RULE-01 (rulesets/branch protection) has NO standing-G3 matrix row and may need administration-read — requires a reviewed capability-matrix/registry change or explicit owner decision BEFORE any implementation; then lifecycle merged\nPaths: server/connectors/github/rulesets.ts; tests\nAuthority: gate:owner-decision (G-d, 08_OPEN_QUESTIONS section 1) — NOT covered by q-2 standing G3; do not build on the DL-LIFE-01 dependency alone\nProhibited: No implementation before the G-d gate; no privilege escalation past read-only least-privilege; no patterns/status names/bypass actors/integrations\nBehavior: Snapshot policy traits; permission denial -> restricted coverage.\nAccept: Layered/disabled/evaluate fixtures classify; denial fixture yields restricted not zero.\nProve: npm test -- server/connectors/github/rulesets.test.ts\nFixtures: Layered rulesets, permission denial.\nRollback: Revocation cascade.\nDemo: Policy-presence timeline data.",
+      "description": "[DL-PORT-02 | epic:portfolio | implementation | OWNER_GATED | risk:medium | effort:M | M5]\nOutcome: GH-RULE-01 policy-presence aggregates over time (enforcement/rule-type flags) joining era comparison; policy quality never claimed.\nDeps: DL-LIFE-01, DL-LIFE-02 | Unlock: OWNER GATE G-d: GH-RULE-01 (rulesets/branch protection) has NO standing-G3 matrix row and may need administration-read — requires a reviewed capability-matrix/registry change or explicit owner decision BEFORE any implementation; then lifecycle merged\nPaths: server/connectors/github/rulesets.ts; tests\nAuthority: gate:owner-decision (G-d, 08_OPEN_QUESTIONS section 2) — NOT covered by Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2 standing G3; do not build on the DL-LIFE-01 dependency alone\nProhibited: No implementation before the G-d gate; no privilege escalation past read-only least-privilege; no patterns/status names/bypass actors/integrations\nBehavior: Snapshot policy traits; permission denial -> restricted coverage.\nAccept: Layered/disabled/evaluate fixtures classify; denial fixture yields restricted not zero.\nProve: npm test -- server/connectors/github/rulesets.test.ts\nFixtures: Layered rulesets, permission denial.\nRollback: Revocation cascade.\nDemo: Policy-presence timeline data.",
       "columnName": "Proposed",
       "labels": [
         "status:owner-gated",
@@ -1224,7 +1224,7 @@
     },
     {
       "title": "DL-WB-02 - Model registry + promotion mechanics",
-      "description": "[DL-WB-02 | epic:workbench | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: model_registry rows (method@version, cards, gate evidence, promotion state seeded->benchmarked->validated->shipped); UI claims resolve the registry so demotion removes claims automatically.\nDeps: DL-WB-01, DL-SPINE-01 | Unlock: harness + claim tables merged\nPaths: server/research/registry.ts; tests\nAuthority: G2 approved\nProhibited: validated requires separately-authorised consented dataset (owner gate DL-Q-CONSENT); invented benchmarks cap at benchmarked\nBehavior: ADR-19 ladder; every modelled claim FKs a registry row; ONE primary promotion attempt per candidate per tier - a materially new method@version is a NEW preregistered candidate in the same fixed correction family (m only grows; no fresh wave-level q for retries).\nAccept: Demotion fixture removes dependent claims from resolution; promotion without gate evidence fails.\nProve: npm test -- server/research/registry.test.ts\nFixtures: Promotion/demotion sequences.\nRollback: Registry rows are data.\nDemo: Registry state table.",
+      "description": "[DL-WB-02 | epic:workbench | implementation | BLOCKED_BY_DEPENDENCY | risk:medium | effort:M | M6]\nOutcome: model_registry rows (method@version, cards, gate evidence, promotion state seeded->benchmarked->validated->shipped); UI claims resolve the registry so demotion removes claims automatically.\nDeps: DL-WB-01, DL-SPINE-01 | Unlock: harness + claim tables merged\nPaths: server/research/registry.ts; tests\nAuthority: G2 approved\nProhibited: DL-Q-CONSENT is a non-activating record; any future reviewed validation task carries its own consent, deletion, release, and holdout prerequisites; invented benchmarks cap at benchmarked\nBehavior: ADR-19 ladder; every modelled claim FKs a registry row; ONE primary promotion attempt per candidate per tier - a materially new method@version is a NEW preregistered candidate in the same fixed correction family (m only grows; no fresh wave-level q for retries).\nAccept: Demotion fixture removes dependent claims from resolution; promotion without gate evidence fails.\nProve: npm test -- server/research/registry.test.ts\nFixtures: Promotion/demotion sequences.\nRollback: Registry rows are data.\nDemo: Registry state table.",
       "columnName": "Proposed",
       "labels": [
         "status:blocked",
@@ -1253,10 +1253,10 @@
     },
     {
       "title": "DL-WB-C2 - Candidate: change-intent classifier vs rule baseline",
-      "description": "[DL-WB-C2 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M6]\nOutcome: Local classifier candidate vs SEM-01 rules: macro-F1, per-class support, calibration error, selective risk, repo/time/language holdouts, multilingual/unknown behaviour.\nDeps: DL-WB-01, DL-SEM-02 | Unlock: rules + harness merged\nPaths: server/research/intentClassifier/*; owner-labelled invented corpus; model card\nAuthority: G2 approved; C4 ephemeral inputs, C0 benchmark corpus; local model only\nProhibited: No commit-author features; no external model; no persistence of subjects\nBehavior: ADR-10/19; >=500 labelled invented items, >=50/class before any tuning.\nAccept: Gate beaten or rejection recorded; abstention behaviour proven on unknown-language slice.\nProve: Harness artifacts + registry entry\nFixtures: Owner-labelled invented multilingual corpus.\nRollback: Registry demotion; rules remain.\nDemo: Confusion/calibration plots.",
+      "description": "[DL-WB-C2 | epic:workbench | research | PARKED | risk:medium | effort:M | M6]\nOutcome: PARKED because D12=NO leaves the pinned offline local-model option not planned: no candidate run is selected. Unpark only after a newer explicitly recorded owner decision supersedes D12=NO and a separately reviewed activation/candidate task is approved.\nDeps: DL-WB-01, DL-SEM-02 | Unlock: Newer explicitly recorded owner decision superseding D12=NO plus a separately reviewed activation/candidate task\nPaths: server/research/intentClassifier/*; owner-labelled invented corpus; model card\nAuthority: D12=NO; candidate is parked and non-activating until a newer explicitly recorded owner decision supersedes it and a separately reviewed activation/candidate task passes\nProhibited: No commit-author features; no local-model dependency, weights, invocation, or activation; no persistence of subjects\nBehavior: ADR-10/19; >=500 labelled invented items, >=50/class before any tuning.\nAccept: Gate beaten or rejection recorded; abstention behaviour proven on unknown-language slice.\nProve: Harness artifacts + registry entry\nFixtures: Owner-labelled invented multilingual corpus.\nRollback: Registry demotion; rules remain.\nDemo: Confusion/calibration plots.",
       "columnName": "Proposed",
       "labels": [
-        "status:research",
+        "status:parked",
         "type:research",
         "privacy:C0",
         "risk:medium",
@@ -1358,10 +1358,10 @@
     },
     {
       "title": "DL-WB-C9 - Candidate: retrieval-ranking ladder (lexical/vector vs structured)",
-      "description": "[DL-WB-C9 | epic:workbench | research | RESEARCH | risk:medium | effort:M | M7]\nOutcome: BM25-over-controlled-templates and local pinned vector candidates vs RAG-01 structured retrieval: Recall@k/nDCG/MRR + counter-evidence recall + privacy canaries; likely outcome is structured suffices.\nDeps: DL-WB-01, DL-RAG-02 | Unlock: retrieval benchmark merged\nPaths: server/research/retrievalLadder/*; model card\nAuthority: G2 approved; local-only; ADR-20 ladder\nProhibited: No prose inputs; no hosted/external embeddings (owner gate); durable index is owner gate DL-Q-INDEX\nBehavior: ADR-20; each rung must beat the previous on the same benchmark.\nAccept: Ladder verdicts recorded; \"vectors not justified\" is a valid success.\nProve: Harness artifacts + registry entry\nFixtures: RAG-02 benchmark suite.\nRollback: Registry state; structured retrieval remains.\nDemo: Ladder scoreboard.",
+      "description": "[DL-WB-C9 | epic:workbench | research | PARKED | risk:medium | effort:M | M7]\nOutcome: PARKED as a whole, including BM25 and vector/structured retrieval comparison, because D12=NO leaves the pinned offline local-model option not planned. Unpark only after a newer explicitly recorded owner decision supersedes D12=NO and a separately reviewed activation/candidate task is approved.\nDeps: DL-WB-01, DL-RAG-02 | Unlock: Newer explicitly recorded owner decision superseding D12=NO plus a separately reviewed activation/candidate task\nPaths: server/research/retrievalLadder/*; model card\nAuthority: D12=NO; candidate is parked and non-activating until a newer explicitly recorded owner decision supersedes it and a separately reviewed activation/candidate task passes\nProhibited: No prose inputs; no hosted/external embeddings; DL-Q-INDEX is a non-activating record and any future reviewed retrieval task carries its own sink, deletion, and retention prerequisites\nBehavior: ADR-20; each rung must beat the previous on the same benchmark.\nAccept: Ladder verdicts recorded; \"vectors not justified\" is a valid success.\nProve: Harness artifacts + registry entry\nFixtures: RAG-02 benchmark suite.\nRollback: Registry state; structured retrieval remains.\nDemo: Ladder scoreboard.",
       "columnName": "Proposed",
       "labels": [
-        "status:research",
+        "status:parked",
         "type:research",
         "privacy:C1",
         "risk:medium",
@@ -1743,59 +1743,59 @@
       ]
     },
     {
-      "title": "DL-Q-PROSE - Owner gate: PR/issue prose semantic tier (tier-2 semantics)",
-      "description": "[DL-Q-PROSE | epic:open-questions | process | QUESTION | risk:high | effort:S | M7]\nOutcome: Open owner decision: should any PR/issue prose (titles/bodies) ever enter ephemeral semantic analysis or durable text derivatives? Currently OUTSIDE the charter; ADR-10 tier-1 (commit subjects) is the only text input. Requires a reviewed charter/matrix change; not assumed by any card.\nDeps: none | Unlock: Explicit owner decision + charter revision\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: gate:owner-decision — a new data-class boundary\nProhibited: No design work may assume approval\nBehavior: Recorded with privacy analysis of both outcomes in 08.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
-      "columnName": "Open Questions",
+      "title": "DL-Q-PROSE - Constitution record: PR/issue prose eligibility (non-activation)",
+      "description": "[DL-Q-PROSE | epic:open-questions | process | DONE | risk:high | effort:S | M7]\nOutcome: Constitution-v2 reconciliation records PR/issue prose as proposal-eligible only through a separately reviewed capability/matrix/policy task with explicit class, retention, parser, deletion, and holdout controls. This record authorizes reconciliation only; it does not activate a source, sink, semantic analysis, or durable derivative. Until that reviewed work lands, commit subjects remain the only text input.\nDeps: none | Unlock: Future reviewed charter/matrix/policy task plus deletion and holdout proofs before activation\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: Constitution-v2 reconciliation record; recorded authority only; no capability activation\nProhibited: No prose reads, semantic analysis, durable text derivative, model payload, or runtime activation; the standing G3 authority recorded by Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2 does not cover this source\nBehavior: Proposal work must name the reviewed capability, policy, parser, retention, deletion, and holdout controls before any activation decision.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Done",
       "labels": [
-        "status:question",
+        "status:done",
         "type:process",
         "privacy:C1",
         "risk:high",
         "M7-interpretation",
         "epic:open-questions",
-        "gate:owner-decision"
+        "gate:G2"
       ]
     },
     {
-      "title": "DL-Q-INDEX - Owner gate: durable retrieval index as a reviewed sink",
-      "description": "[DL-Q-INDEX | epic:open-questions | process | QUESTION | risk:medium | effort:S | M7]\nOutcome: Open owner decision: initial retrieval indexes are task-scoped/process-local/deleted-on-revocation (ADR-20); any DURABLE index is a new sink requiring separate review. Recorded, not assumed.\nDeps: none | Unlock: Explicit owner decision after RAG-02 evidence\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: gate:owner-decision\nProhibited: No durable index before the gate\nBehavior: ADR-20 rung-3 condition.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
-      "columnName": "Open Questions",
+      "title": "DL-Q-INDEX - Constitution record: durable retrieval index eligibility (non-activation)",
+      "description": "[DL-Q-INDEX | epic:open-questions | process | DONE | risk:medium | effort:S | M7]\nOutcome: Constitution-v2 reconciliation records D1=DURABLE retrieval indexes as proposal-eligible only through separately reviewed sink/policy/task work with linkage, retention, revocation/deletion, and holdout controls. It does not activate a durable index; ADR-20 task-scoped, process-local, deleted-on-revocation behavior remains the default until that reviewed work lands.\nDeps: none | Unlock: Future reviewed sink/policy/task plus deletion-planner and holdout proofs before activation\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: Constitution-v2 reconciliation record; recorded authority only; no capability activation\nProhibited: No durable index, retrieval store, persistence, or runtime activation; the standing G3 authority recorded by Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2 does not cover this sink\nBehavior: Only a separately reviewed sink/policy/task may propose a durable index, with deletion-planner and holdout evidence attached.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Done",
       "labels": [
-        "status:question",
+        "status:done",
         "type:process",
         "privacy:C1",
         "risk:medium",
         "M7-interpretation",
         "epic:open-questions",
-        "gate:owner-decision"
+        "gate:G2"
       ]
     },
     {
-      "title": "DL-Q-LOCALMODEL - Owner gate: pinned offline local model option",
-      "description": "[DL-Q-LOCALMODEL | epic:open-questions | process | QUESTION | risk:medium | effort:S | M8]\nOutcome: Open owner decision: a future local model (pinned, licensed, offline, no remote code) for composition/retrieval. Distinct from the approved OpenAI/Luna G4 boundary; requires its own review of weights provenance + resource budget.\nDeps: none | Unlock: Explicit owner decision\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: gate:owner-decision\nProhibited: No local-model dependency added before the gate\nBehavior: ADR-21 future option.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
-      "columnName": "Open Questions",
+      "title": "DL-Q-LOCALMODEL - Constitution record: pinned offline local-model option (D12=NO)",
+      "description": "[DL-Q-LOCALMODEL | epic:open-questions | process | DONE | risk:medium | effort:S | M8]\nOutcome: Constitution-v2 reconciliation records D12=NO: the pinned offline local-model option is not planned and cannot be reconsidered by a policy, task, or agent route. Only a newer explicitly recorded owner decision may supersede D12=NO. This record activates no model or dependency and does not alter the separate OpenAI/Luna G4 boundary.\nDeps: none | Unlock: none — not planned\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: Constitution-v2 reconciliation record; D12=NO; only a newer explicitly recorded owner decision may supersede; no capability activation\nProhibited: No local-model dependency, weights, model invocation, or activation; no policy/task/agent route may reconsider or supersede D12=NO; the authority recorded by Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2 and G4 does not authorize this option\nBehavior: The deterministic composer remains the complete baseline; no policy, task, or agent route may reopen this option.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Done",
       "labels": [
-        "status:question",
+        "status:done",
         "type:process",
         "privacy:C1",
         "risk:medium",
         "M8-story-frontier",
         "epic:open-questions",
-        "gate:owner-decision"
+        "gate:G2"
       ]
     },
     {
-      "title": "DL-Q-CONSENT - Owner gate: consented real dataset for ML validation (per candidate)",
-      "description": "[DL-Q-CONSENT | epic:open-questions | process | QUESTION | risk:high | effort:S | M6]\nOutcome: Open owner decision (per WB candidate): promotion past benchmarked requires a separately authorised, representative, consented real dataset with its own dataset card and untouched holdout. No candidate may cross this line on invented data.\nDeps: none | Unlock: Explicit per-candidate owner authorisation\nPaths: docs/analyser-program/08 owner-gate register; 03 promotion ladder\nAuthority: gate:owner-decision\nProhibited: Invented benchmarks never substitute; holdout reuse forbidden\nBehavior: ADR-19 ladder rule.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
-      "columnName": "Open Questions",
+      "title": "DL-Q-CONSENT - Constitution record: consented validation dataset eligibility (per candidate)",
+      "description": "[DL-Q-CONSENT | epic:open-questions | process | DONE | risk:high | effort:S | M6]\nOutcome: Constitution-v2 reconciliation records own/curated-public per-candidate validation as proposal-eligible only through the existing consent, charter, matrix, and release gates. This record assembles or uses no dataset and activates no reader or model. A future reviewed candidate task must carry its dataset card, consent/refusal/deletion controls, and untouched holdout before validation can proceed.\nDeps: none | Unlock: Future reviewed candidate task plus consent, deletion, release, and untouched-holdout proofs before validation\nPaths: docs/analyser-program/08 owner-gate register; 03 promotion ladder\nAuthority: Constitution-v2 reconciliation record; recorded authority only; no capability activation\nProhibited: No real/private dataset assembly, reader, model validation, or promotion; invented benchmarks never substitute and holdout reuse is forbidden\nBehavior: A candidate remains benchmarked until its separately reviewed consent, deletion, release, and untouched-holdout gates pass.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Done",
       "labels": [
-        "status:question",
+        "status:done",
         "type:process",
         "privacy:C1",
         "risk:high",
         "M6-time-graph-wb",
         "epic:open-questions",
-        "gate:owner-decision"
+        "gate:G2"
       ]
     },
     {
@@ -2012,7 +2012,7 @@
     },
     {
       "title": "DL-Q-GRAIN - Owner gate: freshness-age display grain (hour precision vs ISO-week floor)",
-      "description": "[DL-Q-GRAIN | epic:open-questions | process | QUESTION | risk:medium | effort:S | M2]\nOutcome: Open owner decision (q-6 h, surfaced by the 2026-08-04 reconciliation review): the UX renders staleness as an hour-precision age (DL.COV.FRESHNESS_AGE_H.v1) while operational collection timing is floored to ISO week - an hour-grain age can pin the collection run on a single-owner installation. Decide whether the week floor binds derived age durations too, or hour-grain staleness is an accepted exception with a recorded rationale.\nDeps: none | Unlock: Explicit owner decision; recorded in HUMAN_TODO q-6 (h) and 08 section 1\nPaths: docs/analyser-program/08 owner-gate register; HUMAN_TODO q-6 (h)\nAuthority: gate:owner-decision\nProhibited: No surface may rely on hour-grain operational ages before the decision\nBehavior: Composition-ledger (DL-CAD-03) class of risk; either outcome is complete.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "description": "[DL-Q-GRAIN | epic:open-questions | process | QUESTION | risk:medium | effort:S | M2]\nOutcome: Open owner decision (subitem (h) in Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6, surfaced by the 2026-08-04 reconciliation review): the UX renders staleness as an hour-precision age (DL.COV.FRESHNESS_AGE_H.v1) while operational collection timing is floored to ISO week - an hour-grain age can pin the collection run on a single-owner installation. Decide whether the week floor binds derived age durations too, or hour-grain staleness is an accepted exception with a recorded rationale.\nDeps: none | Unlock: Explicit owner decision; recorded in Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 (subitem (h)) and 08 section 2\nPaths: docs/analyser-program/08 owner-gate register; Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 (subitem (h))\nAuthority: gate:owner-decision\nProhibited: No surface may rely on hour-grain operational ages before the decision\nBehavior: Composition-ledger (DL-CAD-03) class of risk; either outcome is complete.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
       "columnName": "Open Questions",
       "labels": [
         "status:question",
@@ -2039,8 +2039,22 @@
       ]
     },
     {
-      "title": "DL-Q-AGENTCFG - Owner gate: agent_config role class + adoption-timing suppression (frontier A14)",
-      "description": "[DL-Q-AGENTCFG | epic:open-questions | process | QUESTION | risk:medium | effort:S | M6]\nOutcome: Open owner decision, two parts: (a) may the closed role taxonomy gain agent_config; (b) if yes, portfolio-level adoption timing is suppressed to per-repository presence only (synchronised-adoption week is a personal-timeline proxy). Attach the two-portfolio fixture so the gate is answered with evidence.\nDeps: none | Unlock: Explicit owner decision with fixture evidence attached\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: gate:owner-decision\nProhibited: No content reads ever (presence only); no design work assumes approval\nBehavior: Frontier A14 gate.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "title": "DL-Q-AGENTCFG - Constitution record: agent_config presence-only role (D5=PRES)",
+      "description": "[DL-Q-AGENTCFG | epic:open-questions | process | DONE | risk:medium | effort:S | M6]\nOutcome: Constitution-v2 reconciliation records D5=PRES for presence-only agent_config classification. This closes the role-taxonomy question only; it authorizes no content reads and no portfolio timing or adoption inference, and does not activate any source or runtime path.\nDeps: none | Unlock: Future scoped reviewed capability/matrix/task work; no activation by this record\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: Constitution-v2 reconciliation record; recorded D5=PRES only; no capability activation\nProhibited: No manifest/body/content reads, no portfolio adoption week or timing, no person metrics, and no runtime activation\nBehavior: A future scoped capability/matrix task may add only the presence role under reviewed controls; adoption timing remains separately gated by DL-Q-AGENTCFG-TIMING.\nAccept: n/a\nProve: n/a\nFixtures: n/a\nRollback: n/a\nDemo: n/a",
+      "columnName": "Done",
+      "labels": [
+        "status:done",
+        "type:process",
+        "privacy:C1",
+        "risk:medium",
+        "M6-time-graph-wb",
+        "epic:open-questions",
+        "gate:G2"
+      ]
+    },
+    {
+      "title": "DL-Q-AGENTCFG-TIMING - Owner gate: agent_config portfolio adoption-timing suppression (frontier A14)",
+      "description": "[DL-Q-AGENTCFG-TIMING | epic:open-questions | process | QUESTION | risk:medium | effort:S | M6]\nOutcome: Open owner decision: whether portfolio-level agent_config adoption timing remains suppressed to per-repository presence. An explicit owner decision plus a two-portfolio fixture is required before any aggregate output can be designed; the D5=PRES presence record does not decide timing.\nDeps: none | Unlock: Explicit owner decision plus two-portfolio fixture evidence\nPaths: docs/analyser-program/08 owner-gate register\nAuthority: gate:owner-decision\nProhibited: No portfolio adoption week, synchronized-adoption inference, content reads, or timing output before the gate\nBehavior: Frontier A14 timing gate; fixture must test whether aggregate output can name an adoption week.\nAccept: n/a\nProve: n/a\nFixtures: Two invented portfolios with presence-only agent_config role facts.\nRollback: n/a\nDemo: n/a",
       "columnName": "Open Questions",
       "labels": [
         "status:question",
