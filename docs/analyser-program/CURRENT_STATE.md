@@ -6,33 +6,39 @@ completed-slice evidence and history.
 
 ```yaml
 updated: '2026-08-18'
-state_observed_at: '2026-08-18T00:11:01Z'
-work_class: 'W0 connected-browser availability observation'
+state_observed_at: '2026-08-18T01:27:26Z'
+work_class: 'W0 release-readiness truth reconciliation'
 active_wave: 'P0.5 v0.1.0 release programme — Product issue #200'
-remote_refs_last_observed_at: '2026-08-18T00:11:01Z'
+remote_refs_last_observed_at: '2026-08-18T01:27:26Z'
 observation_semantics: >-
   product_main and lab_main are last-observed remote-ref snapshots at remote_refs_last_observed_at,
   not perpetual current-baseline assertions; refresh live Git/GitHub before any action.
-product_main: 'd99cf4c48a32b5846ee8f2c92decd8f71fe1000f'
-lab_main: '5c3ee6e1fe9eeb911febc60ea6fef1954625d5bc'
-active_slice: 'P0.5 issue #200 release unblock: public showcase deployment is green; the required browser runtime remains unavailable, so Product visual QA is parked with no fallback.'
-next_value_slice: 'The lane is parked until an external event makes a connected in-app browser available; only then rerun its availability preflight and, if it passes, run the already-specified bounded Product browser/visual proof before requesting Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).'
+product_main: '3dabf11b3e8cd46d44daffd0bfbe8aca5694795f'
+lab_main: '12b9c161015249eaf7f6f9fedd8593d81315b7d9'
+active_slice: 'P0.5 issue #200 release unblock: Product/Lab hosted proof and the approved browser-client Method Trial proof are complete; Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is ready for explicit owner aesthetic sign-off.'
+next_value_slice: 'Request or await explicit Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; perform no tag or publication before that gate. The v0.1.0 metadata slice must be re-created from scratch after that gate, because its branch is unrecoverable — see Product #298.'
 blockers: >-
-  Product browser/visual QA is NOT VERIFIED because browser runtime selection returned exactly
-  `No browser is available` and required troubleshooting inventory `[]` before any navigation,
-  server, screenshot, fallback, or protected-data access. This is the sole current release blocker;
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) remains downstream after browser proof.
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is the sole remaining tag-blocking owner gate and is
+  ready for explicit aesthetic sign-off. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6
+  and Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 decisions are deferred and nonblocking for this
+  release truth slice; no
+  tag, release, package publication, or public publication is authorized before that owner action.
 last_verified_checks: >-
-  2026-08-18T00:11:01Z live observation: Product main d99cf4c48a32b5846ee8f2c92decd8f71fe1000f; no open
-  Product pull requests. Public showcase deployment run 32050076126 attempt 3 SUCCESS, deploy job
-  95549290431; attempt 1 failed Configure GitHub Pages after full gate/showcase success, attempt 2
-  build/configure/upload succeeded but deploy job 95448607182 failed, and attempt 3 reran only
-  deploy and succeeded. Public site returned HTTP 200 with Last-Modified
-  `2026-08-18T00:02:35Z`. Lab main 5c3ee6e1fe9eeb911febc60ea6fef1954625d5bc and its latest
-  check are green. Browser runtime selection returned `No browser is available`; required
-  troubleshooting inventory was `[]`, with no navigation, server, screenshot, fallback, or
-  protected-data access. Refresh live Git/GitHub before action; run npm.cmd run verify:context and
-  git diff --check for this docs slice.
+  2026-08-18T01:27:26Z live REST/Git observation: Product main 3dabf11b3e8cd46d44daffd0bfbe8aca5694795f
+  merged PR #287; exact hosted `Prove the pull request` run 32087230133 succeeded at head
+  2010857f0a37dac7e27a98d1360b7c3e4ef350ff, and the final exact-head review was clean. Product has
+  zero open pull requests, tags, and releases. Lab main 12b9c161015249eaf7f6f9fedd8593d81315b7d9;
+  exact `Prove the lab` run 32084666662 succeeded, with zero open pull requests, tags, and releases.
+  The approved browser-client proof loaded the tracked invented C0 Method Trial and verified desktop
+  and explicit 390px mobile layouts, no horizontal overflow, warning/error logs, cross-origin or
+  protected-data resources, or fetch/XHR. The invalid external ChromeDevTools attempt is friction-only
+  and not proof. Issue #200 comments 5322224538 and 5322231402 retain the proof and LOW release-note
+  follow-up. The local branch release/prepare-product-v0.1.0-20260818 at 54217ff was recorded as
+  unpushed on 2026-08-18 and is now unrecoverable: on 2026-08-24 `git cat-file -t 54217ff` reports
+  `Not a valid object name` in the primary checkout, no such branch exists locally or on origin,
+  the single worktree does not hold it, and no reachable commit carries `"version": "0.1.0"`.
+  Product #298 records what it contained and how to re-create it. No tag or publication occurred. Run npm.cmd run
+  verify:context and git diff --check for this docs slice.
 active_horizon:
   - 'P0 governor bootstrap PR #206 — delivered'
   - 'P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
@@ -40,9 +46,9 @@ active_horizon:
 operational_resume:
   consumer: 'The next Product/Lab release coordinator.'
   question: 'What is landed, parked, unproved, owner-gated, and agent-executable?'
-  product_state: 'Product main above is a last-observed remote-ref snapshot, not a perpetual current baseline.'
-  lab_state: 'Lab main above is a last-observed remote-ref snapshot, not a perpetual current baseline.'
-  next_selection: 'The lane is parked until an external event makes a connected in-app browser available; only then rerun its availability preflight and, if it passes, complete the already-specified bounded Product visual QA. Do not select P1 issue #174 before the P0.5 baseline is complete.'
+  product_state: 'Product main above is a last-observed remote-ref snapshot, not a perpetual current baseline; PR #287 is merged and Product has zero open pull requests, tags, and releases at the observation.'
+  lab_state: 'Lab main above is a last-observed remote-ref snapshot, not a perpetual current baseline; the exact lab proof is green and Lab has zero open pull requests, tags, and releases at the observation.'
+  next_selection: 'Request or await Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; the release-prep branch is unrecoverable and its slice is re-created after that gate under Product #298. Do not tag, publish, or select P1 issue #174 before that owner gate.'
 
 lab_delivery:
   repository: 'Chris0Jeky/developer-lens-lab'
@@ -52,14 +58,14 @@ lab_delivery:
     - 'PR #91 merged 2026-08-15T13:46:55Z as 2d6f857a6c49748c4554fc6af7b9762c6e7375e7.'
     - 'PR #92 merged as 80f421cd9a9701abf0ab767e9c480d378d907528.'
     - 'PR #94 merged 2026-08-16T02:45:53Z as 5c3ee6e1fe9eeb911febc60ea6fef1954625d5bc.'
-  main_check: 'Workflow Check run 31922651816 (push) completed SUCCESS at exact Lab main SHA 5c3ee6e1fe9eeb911febc60ea6fef1954625d5bc.'
-  open_pull_requests: '0 at the timestamped observation above.'
+  main_check: 'Exact Prove the lab run 32084666662 completed SUCCESS at Lab main SHA 12b9c161015249eaf7f6f9fedd8593d81315b7d9.'
+  open_pull_requests: '0 at the 2026-08-18T01:27:26Z observation; tags and releases also 0.'
   superseded_instruction: 'The former parked-PR #87 and merge-helper-eligibility blocker no longer applies because PR #87 is merged.'
 
 release_readiness:
   lab_q11: 'CLOSED: Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 is recorded signed off.'
-  browser_visual_qa: 'NOT VERIFIED: browser runtime selection returned exactly `No browser is available` and required troubleshooting inventory `[]` before navigation, server, screenshot, fallback, or protected-data access; no fallback browser surface is authorized.'
-  browser_qa_unlock: 'The lane is parked until an external event makes a connected in-app browser available; only then rerun its availability preflight and, if it passes, an agent records the already-specified bounded Product visual-QA proof.'
+  browser_visual_qa: 'VERIFIED: the approved browser-client proof loaded the tracked invented C0 Method Trial at desktop and explicit 390px mobile; no horizontal overflow, warning/error logs, cross-origin or protected-data resources, or fetch/XHR were observed. The external ChromeDevTools attempt is invalid friction-only, not proof.'
+  browser_qa_unlock: 'Proof is complete and the lane is ready for explicit Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off; it is not parked. No alternate browser surface is authorized.'
   remaining_owner_gate_after_browser_proof: 'Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) — five-minute product aesthetic sign-off.'
   release_actor_after_owner_gate: 'OWNER_CONSTITUTION.md A1=FULL: agents execute the synchronized tag, version, package, and C0-publication mechanics after Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c), under their normal exact-head gates.'
   prohibited_until_then: 'No tag, release, package publication, C0 publication, or owner decision is inferred from this state.'
@@ -71,14 +77,13 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  The required browser preflight is VERIFIED unavailable: browser runtime selection returned exactly
-  `No browser is available` and required troubleshooting inventory `[]`. Do not substitute missing
-  browser proof with another browser tool or fallback. The lane is parked until an external event
-  makes a connected in-app browser available;
-  only then rerun its availability preflight and, if it passes, perform the already-specified
-  bounded Product visual-QA proof.
-  Once that proof is recorded, request only Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)
-  aesthetic sign-off; after it,
-  agents perform the synchronized release mechanics under A1=FULL. Re-refresh every live ref,
-  check, review thread, and owner gate before any merge or release action.
+  Product main 3dabf11b3e8cd46d44daffd0bfbe8aca5694795f and Lab main 12b9c161015249eaf7f6f9fedd8593d81315b7d9
+  are the last-observed refs. PR #287 and the exact Product/Lab hosted proving runs are green, and
+  the approved browser-client Method Trial proof is complete. The external ChromeDevTools attempt is
+  invalid and must not substitute for approved proof. Do NOT attempt to refresh
+  release/prepare-product-v0.1.0-20260818 at 54217ff: that object no longer exists anywhere, and
+  Product #298 owns re-creating the slice after the owner gate. Request only
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off. After that owner action, agents may perform synchronized release mechanics under
+  A1=FULL; until then no tag, release, package publication, or public publication is authorized. Re-refresh
+  every live ref, check, review thread, and owner gate before any release action.
 ```
