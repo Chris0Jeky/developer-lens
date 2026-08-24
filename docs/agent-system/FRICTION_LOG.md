@@ -730,7 +730,7 @@ Rules that bind entries:
 - **workaround:** Use quote-safe projections and separate direct field reads, preserving the
   path-set-order assertion as a distinct predicate rather than conflating it with inner-quote
   parsing. The Lab PR59 recurrence is recorded by [#222 comment 5234236530](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5234236530).
-- **occurrences:** 15 independent command-boundary occurrences — 2026-08-09 during the initial PR232
+- **occurrences:** 16 independent command-boundary occurrences — 2026-08-09 during the initial PR232
   ISO-timestamp filter, the Lab PR59 commit projection/newline split, and the externally recorded
   PR232 exact-final-head review-thread snapshot; 2026-08-15 during this Product #200 YAML
   inspection attempt; plus 2026-08-14 and 2026-08-15 (the immutable FR-039 malformed GraphQL
@@ -795,6 +795,12 @@ Rules that bind entries:
   **2026-08-17 recurrence note:** One command-boundary episode had two PowerShell quoted-literal
   GraphQL invocations fail before the JSON-stdin form succeeded; no mutation occurred. Product #222
   owns the enforcement.
+
+  **2026-08-18 recurrence note:** A PowerShell double-quoted `gh pr review` body placed Markdown
+  delimiters immediately before head `0e...`; backtick-zero caused GitHub to retain only
+  `Independent exact-head review at `. Corrected plain-text review `4956365283` was posted and
+  reread in full, superseding truncated review `4956288924`. No repository content or conclusion
+  changed. Product #222's structured JSON/stdin helper promotion remains the selected enforcement.
 
 ### FR-023 — Windows PowerShell lacked the requested UTC date switch
 
@@ -1380,7 +1386,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` cannot yet begin.
 - **workaround:** Park safely. Do not use standalone Playwright or an alternate-browser fallback;
   the required browser skill already enforces that stop.
-- **occurrences:** 10 independent occurrences — Product #200 comment `5299321093` and the
+- **occurrences:** 11 independent occurrences — Product #200 comment `5299321093` and the
   2026-08-15 Product #200/public-showcase browser-client preflight.
 - **task:** [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200) owns release
   preparation and the parked QA lane.
@@ -1423,7 +1429,17 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   screenshot, fallback, or protected-data access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
   and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
-  **2026-08-18 eighth-preflight note:** The mandated browser client was disconnected or unavailable
+  **2026-08-18 eighth-preflight note:** The required `iab` selector returned exactly
+  `Browser is not available: iab`; after mandated bootstrap troubleshooting, inventory showed only
+  a connected Chrome extension. No navigation, server, screenshot, fallback, or protected-data
+  access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
+  and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
+
+  **2026-08-18 merge reconciliation:** two lanes each recorded an eighth preflight on the
+  same day — the `iab` selector refusal above and the disconnected-client attempt below. Both
+  are preserved and the later ordinals were re-sequenced when the branches merged.
+
+  **2026-08-18 ninth-preflight note:** The mandated browser client was disconnected or unavailable
   during the current preflight. An isolated ChromeDevTools follow-up rendered the safe localhost
   invented Method Trial, but that external browser-control path is not authorized by the Browser
   skill, so its screenshot and mobile observations are invalid release proof. Screenshot persistence
@@ -1433,7 +1449,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   protected-data access occurred. QA remains parked under [Product #200](https://github.com/Chris0Jeky/developer-lens/issues/200),
   and `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains downstream.
 
-  **2026-08-18 ninth-preflight/proof note:** The approved browser-client first selected a Chrome
+  **2026-08-18 tenth-preflight/proof note:** The approved browser-client first selected a Chrome
   extension instance, then disconnected before session naming; one documented discovery/reselection
   retry found a new Chrome instance and succeeded. The approved proof loaded the safe localhost
   invented Method Trial and verified desktop and 390px mobile layout, no horizontal overflow, no
@@ -1448,7 +1464,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   Viewport screenshots were unreliable at the scrolled bottom, so DOM assertions and top screenshots
   were retained. The unauthorized ChromeDevTools evidence above remains invalid release proof.
 
-  **2026-08-18 tenth-finalization note:** The approved browser-client disconnected again while
+  **2026-08-18 eleventh-finalization note:** The approved browser-client disconnected again while
   finalizing the tab handoff. The prior desktop/mobile proof remains valid, but tab handoff and final
   disposition are NOT VERIFIED; do not assume the agent-created local tab stayed open or was cleaned
   up. Stop closeout without an alternate-browser fallback or further retry; q-10(c) remains open, and
@@ -2376,18 +2392,24 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-084 — PowerShell path normalization regex stopped the worktree cleanup guard
 
 - **first-seen:** 2026-08-15
-- **status:** `workaround-documented`
+- **status:** `promoted`
 - **severity:** `LOW (worktree-guard/path-normalization command-boundary)`
 - **symptom:** The cleanup guard used PowerShell `-replace '\','/'`; the lone backslash was an
   invalid regex, so the wrapper stopped before `git worktree remove`.
 - **impact:** The cleanup guard was delayed without file, worktree, Git, or GitHub mutation.
 - **workaround:** Use the literal string `.Replace('\','/')` or equivalent non-regex
   normalization, then revalidate the exact target; the retry succeeded.
-- **occurrences:** 1 independent occurrence, recorded by [Product #222 comment 5304582104](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304582104).
+- **occurrences:** 2 independent occurrences, recorded by [Product #222 comment 5304582104](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304582104) and [Product #222 comment 5322375973](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5322375973).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   worktree-guard/path-normalization command boundary.
-- **promotion:** One occurrence remains task debt; do not promote or add a helper. Keep distinct
-  from FR-047's Git path rendering mismatch.
+- **promotion:** Promoted at the second occurrence: Product #222 owns a checked cleanup helper
+  that uses literal normalization and terminating validation before mutation. Keep distinct from
+  FR-047's Git path rendering mismatch.
+
+  **2026-08-18 Product PR #291 cleanup recurrence note:** During explicit clean worktree teardown,
+  `-replace '\','/'` produced the same invalid-regex error. PowerShell continued and removed both
+  clean worktrees. A literal `.Replace('\','/')` reread proved both exact paths absent and
+  unregistered, with no tracked work loss (only regenerable `node_modules`/`dist`).
 
 ### FR-085 — local commit boundary was initially non-independent
 
@@ -2517,6 +2539,55 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** 1 independent occurrence, during the headless artifact export slice.
 - **task:** [Product #294](https://github.com/Chris0Jeky/developer-lens/issues/294).
 - **promotion:** One occurrence is workaround-documented; no repository-code fix is selected.
+
+### FR-091 — broad tracked-text search printed a synthetic research fixture during a design pass
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (read-only search-scope/context expansion)`
+- **symptom:** A broad tracked-text search during the read-only design pass unexpectedly printed
+  part of a tracked synthetic research fixture outside the owned planning files.
+- **impact:** The search broadened output and context, without accessing private or protected data
+  or changing repository state.
+- **workaround:** Subsequent reads were path-bounded to the listed planning files.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded Windows-safe evidence command contract.
+- **promotion:** One occurrence remains task debt; no promotion. Keep the search path-bounded on
+  future planning passes.
+
+### FR-092 — coordinator interruption made a healthy Vitest result uncollectable
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (coordination/test-supervision)`
+- **symptom:** A coordinator interrupted the builder based on total slice elapsed while the
+  healthy Vitest phase had run for only about two minutes; the test processes outlived the
+  interrupted agent turn and their result became uncollectable.
+- **impact:** The required full gate lost its direct exit/output evidence despite no tracked work
+  being lost.
+- **workaround:** Process creation/command-line evidence clarified the state; the healthy test
+  process was allowed to finish, and one exact gate rerun will supply collectable proof.
+- **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
+  bounded coordination and evidence-command contract.
+- **promotion:** One occurrence remains task debt; no promotion.
+
+### FR-093 — focused proof ran from the clean primary instead of the reviewed worktree
+
+- **first-seen:** 2026-08-18
+- **status:** `workaround-documented`
+- **severity:** `LOW (proof-cwd coordination)`
+- **symptom:** A focused validator test was run from the clean primary checkout while reviewing
+  PR #287's exact branch SHA, so it exercised `main` (45 tests) rather than the PR worktree
+  (expected 48); SHA-based diff checks were correct.
+- **impact:** The test result was discarded because it did not prove the reviewed worktree.
+- **workaround:** Pair proof cwd with `git rev-parse HEAD` and require it equals the reviewed head
+  before counting worktree-local tests; rerun in the exact worktree.
+- **occurrences:** 1 independent occurrence, recorded under [Product #257](https://github.com/Chris0Jeky/developer-lens/issues/257).
+- **task:** [Product #257](https://github.com/Chris0Jeky/developer-lens/issues/257) owns the
+  exact-head proof-cwd contract.
+- **promotion:** One occurrence remains task debt; no promotion.
 
 ### FR-094 — Luna spawn rejected an incompatible option combination
 

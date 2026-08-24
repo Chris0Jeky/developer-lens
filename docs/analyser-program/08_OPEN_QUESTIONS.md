@@ -5,31 +5,49 @@ decisions bind only when recorded in `HUMAN_TODO.md`; charter/matrix changes bin
 those documents. This file is the programme's question ledger: genuinely open owner gates, the full
 frontier decision record, convergence evidence, and coordinator adjudications.
 
-## 1. Owner-gate register (open decisions — never assumed)
+## 1. Constitution-resolved decision records (not active)
 
-Each gate exists as a QUESTION card on the seeded Taskdeck board. None blocks the critical path.
+The 2026-08-18 constitution-v2 reconciliation records authority for planning reconciliation
+only. These records do not activate a capability, source, sink, model, telemetry, credential, or
+data path. A proposal can become executable only through the separately reviewed capability,
+charter, matrix, policy, task, deletion, and (where a candidate is evaluated) holdout route.
 
-| Gate (card) | Decision the owner would make | If approved | If refused | Unblocking evidence to attach |
-|---|---|---|---|---|
-| DL-Q-PROSE | May PR/issue prose (titles/bodies) ever enter ephemeral semantic analysis or durable text derivatives? | A reviewed charter+matrix revision defining a new text tier with its own class/retention/deletion; tier-2 semantic features become designable | Commit subjects (`cap.commit.intent`) remain the only text input — the programme is complete without it | The tier-1 intent-mix results on real consented data, showing where subject-only semantics abstains |
-| DL-Q-INDEX | May any retrieval index become durable (outlive its task)? | A separately reviewed sink with retention/deletion/linkage rules | Indexes stay task-scoped, process-local, deleted on revocation (ADR-20 default) | RAG-02 benchmark evidence that rebuild cost is material |
-| DL-Q-LOCALMODEL | May a pinned, licensed, offline local model be added for composition/retrieval? | Weights-provenance + resource-budget review, then a WB candidate | Deterministic composer + optional G4 external route remain the whole surface | WB-C9 ladder verdicts showing a concrete gap |
-| DL-Q-CONSENT | Per WB candidate: may a representative, consented real dataset be assembled for validation? | Candidate may attempt `benchmarked → validated` with its own dataset card + untouched holdout | Candidate stays at `benchmarked` forever — a legitimate end-state (roadmap F1) | The candidate's invented-benchmark gate result |
-| DL-Q-XCONTRACT | May a cross-repository artifact identity key (content hash of C4 bytes) exist for shared-contract drift? | A new linkage primitive with two-way deletion cascade, reviewed as its own sink | Shared-contract drift stays parked (A11); co-change lift (COUP-03) remains the only cross-repo signal | The four-repo coincidence fixture: can alias-only matching exclude coincidental version tokens? |
-| DL-Q-AGENTCFG | (a) May the role taxonomy gain `agent_config`? (b) If yes, is portfolio-level adoption timing suppressed to per-repository presence? | Presence-only role lands; portfolio timing suppressed per (b) | Taxonomy stays at 14 roles; agent-config surfaces stay invisible | The two-portfolio fixture: can a reader name the adoption week from aggregate output? |
-| DL-Q-GRAIN | Does the ISO-week operational-timing floor (grain-floor extension, Appendix I item 9) bind derived age *durations* — the hour-precision `DL.COV.FRESHNESS_AGE_H.v1` staleness display (`stale 31h`) can pin the collection run on a single-owner installation — or is hour-grain staleness an accepted exception? (= HUMAN_TODO q-6 h, added by the 2026-08-04 reconciliation review) | Freshness ages render in whole weeks; the canonical feature gains a display rule | Hour-grain staleness stays with a recorded rationale and a DL-CAD-03 composition-ledger tag | The composition-ledger check on (freshness age × any other operational-timing surface) |
+| Record (card) | Recorded authority | Non-activation boundary and future prerequisites |
+|---|---|---|
+| DL-Q-PROSE | PR/issue prose is proposal-eligible only through explicit reviewed capability, class, retention, parser, deletion, and holdout work. | Commit subjects remain the only text input. No prose read, semantic analysis, durable text derivative, or model payload is active. |
+| DL-Q-INDEX | `D1=DURABLE` retrieval is proposal-eligible only through a separately reviewed sink/policy/task with linkage and deletion controls. | ADR-20 task-scoped/process-local/deleted-on-revocation remains the default. No durable index is active; deletion-planner and holdout proofs remain prerequisites. |
+| DL-Q-LOCALMODEL | `D12=NO` records the pinned offline local-model option as not planned; only a newer explicitly recorded owner decision may supersede it. | No model, dependency, weights, model invocation, or activation is active; no policy/task/agent route may reconsider or supersede D12=NO. The separate OpenAI/Luna G4 boundary is unchanged. |
+| DL-Q-CONSENT | Own/curated-public per-candidate validation is proposal-eligible through the existing consent, charter, matrix, and release gates. | No dataset is assembled or used by this record. A future candidate task needs its dataset card, consent/refusal/deletion controls, release review, and untouched holdout. |
+| DL-Q-AGENTCFG | `D5=PRES` records a presence-only `agent_config` role. | No content reads, portfolio timing, adoption inference, or runtime activation is allowed. Timing remains the separate DL-Q-AGENTCFG-TIMING gate. |
+| G-e (artifact metadata) | Artifact/cache metadata-only counts are proposal-eligible only through a scoped reviewed capability/matrix change. | No artifact/cache access or collection is active; the standing G3 authority recorded by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2` does not cover this source. |
+| GH-DISCUSS-01 | Discussion metadata is proposal-eligible only through a scoped reviewed capability/matrix change. | No discussion access or collection is active; the standing G3 authority recorded by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2` does not cover this source. |
 
-| G-d (registry rows) | May the capability matrix gain rows for `GH-RULE-01` (rulesets/branch protection — may need administration-read), `GH-ATTEST-01` (attestations), or `GH-DISCUSS-01` (discussion metadata)? These are in the canonical §3 catalog but NOT in the q-2 standing-G3 set. | Reviewed matrix/registry change per source; DL-PORT-02 and DL-PROV-01 unblock | Policy-evolution and provenance-coverage features stay ungated-off; the programme is complete without them | The specific decision question each source would answer, from CI/portfolio evidence |
-| G-e (artifact metadata) | May artifact/cache **metadata-only** counts (`GH-ACT-ART-X` is "not now") ever be collected? | A reviewed matrix row with its own class/retention | Stays rejected-for-now | A demonstrated disk/cost decision it would change |
+## 2. Owner-gate register (remaining decisions — never assumed)
+
+Each remaining gate exists as a QUESTION or owner-gated card on the seeded Taskdeck board. None
+blocks the deterministic critical path.
+
+| Gate (card) | Remaining decision | Required evidence or route |
+|---|---|---|
+| DL-Q-XCONTRACT | May a C4-byte content hash become a cross-repository identity key with a deletion cascade? | Coincidence fixture plus explicit owner decision; no inference from `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2`. |
+| DL-Q-AGENTCFG-TIMING | Is portfolio-level agent-config adoption timing suppressed to per-repository presence? | Explicit owner decision plus the two-portfolio fixture. |
+| DL-Q-GRAIN | Does the ISO-week operational-timing floor bind freshness-age durations? | Explicit owner decision with the composition-ledger check. |
+| G-d / DL-PORT-02 / DL-PROV-01 | May rulesets/branch-protection and attestations enter the capability matrix? | Reviewed matrix change or explicit owner route per source; these cards remain owner/matrix gated and unchanged. |
+| DL-DEMO-A1 | May future local Taskdeck dogfood activate against an exact immutable Taskdeck ref and committed-tree scope? | Owner must explicitly select the exact immutable ref/scope and later approve the activation card; no Taskdeck access or activation is implied. |
 
 Also open (pre-existing, reaffirmed): the six GitHub issues in DL-Q-CONSTRAINTS gate real
 migration (#5, #6, #59), the P12 lane (#41, #57), and UX polish (#55).
+
+**2026-08-18 reconciliation note:** Discussions and artifact metadata are proposal-eligible only
+through scoped reviewed capability/matrix work and are not active. Rulesets and attestations remain
+behind the reviewed-matrix or explicit-owner route. This note does not widen the standing G3
+authority recorded by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-2`.
 
 **2026-08-04 review correction:** DL-PORT-02 and DL-PROV-01 originally carried standing-G3
 authority lines on the board; both are now OWNER_GATED/PARKED behind G-d, and `02` §0's
 "no ungated dependency" sentence was corrected accordingly.
 
-## 2. Frontier decision ledger (31 candidates, 3 passes)
+## 3. Frontier decision ledger (31 candidates, 3 passes)
 
 Verdicts are the coordinator's, after adjudicating Scout A (system archaeology/contracts lens),
 Scout B (temporal dynamics/counterfactuals/evidence-quality lens), and the convergence critic.
@@ -77,7 +95,7 @@ are recorded here durably.
 | A11 | Cross-repo shared-contract drift | Coincidence fixture + DL-Q-XCONTRACT owner gate |
 | C-11 | Seasonality atlas | Only the machine-subject-only slice may return, and only if LAB-01's baseline genuinely needs an explicit seasonal producer; human-initiated families are schema-rejected, not coarsened |
 | C-12 | Deliberate mutability probe | Fold measurement into the checkpoint protocol's existing bounded-overlap re-reads (accepted); revisit only if overlap-derived mutability is too sparse |
-| A14 | Agent-config presence role (owner-gated, not parked) | DL-Q-AGENTCFG owner decision with the two-portfolio fixture attached — listed here so all 31 candidates have a §2 disposition row |
+| A14 | Agent-config presence role (presence resolved; timing still owner-gated) | DL-Q-AGENTCFG-TIMING owner decision with the two-portfolio fixture attached — listed here so all 31 candidates have a disposition row |
 
 ### Rejected (recorded so they are not re-proposed under new names)
 
@@ -93,7 +111,7 @@ are recorded here durably.
 | — | Collection cost-per-evidence optimiser | Optimises toward more of the cheapest data; inverts charter minimality |
 | — | Query Lab attention analytics | Behaviour trace of the owner; explicit non-goal |
 
-## 3. Convergence statement
+## 4. Convergence statement
 
 Three independent passes ran: Scout A (archaeology/contracts lens, 14 candidates), Scout B
 (dynamics/counterfactuals/evidence-quality lens, 14 candidates), and a completeness critic given
@@ -105,7 +123,7 @@ the problem space itself is exhausted: **backlog expansion is closed for this pl
 analytical ideas enter through evidence-backed questions (DL-OPEN-01's generators) after the first
 value slice (DL-VALUE-01) is evaluated; no further speculative scouting occurs before then.**
 
-## 4. Coordinator adjudications (recorded decisions on draft-raised items)
+## 5. Coordinator adjudications (recorded decisions on draft-raised items)
 
 1. **ADR-01 stability key** (C-03 finding): accepted; amended into ADR-01. Claim history groups by
    (`statement_code`, `method_id@version`, `window`, `scope_alias`, `schema_version`).
@@ -131,7 +149,7 @@ value slice (DL-VALUE-01) is evaluated; no further speculative scouting occurs b
 12. **Mutability measurement** (C-12 residue): folded into the checkpoint protocol's
     bounded-overlap re-reads; no scheduler, ever (non-goal).
 
-## 5. Documentation-reconciliation queue (verified doc-vs-code deltas, 2026-08-04)
+## 6. Documentation-reconciliation queue (verified doc-vs-code deltas, 2026-08-04)
 
 The code-map pass verified thirteen deltas between the canonical architecture's descriptions and
 live code. Disposition:
@@ -152,7 +170,7 @@ live code. Disposition:
   existing resume point already owns assembly); D13 (portable-export alias default not implemented
   as documented — owned by DL-BRIDGE-05).
 
-## 6. Cheapest-evidence menu (what would resolve the biggest open questions)
+## 7. Cheapest-evidence menu (what would resolve the biggest open questions)
 
 | Question | Cheapest resolving evidence | Cost class |
 |---|---|---|
