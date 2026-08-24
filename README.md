@@ -65,6 +65,35 @@ not an anonymity guarantee: distinctive aggregate activity can still be recognis
 Developer Lens does not provide a hosted URL for a private dashboard. The public link always opens
 the separate synthetic showcase, so it cannot be mistaken for a published version of local data.
 
+### Headless export
+
+The same artifacts can be produced without a browser. The share, caption, report, and portable
+builders are pure functions, so a command can render them directly:
+
+```powershell
+npm run export:artifacts
+```
+
+With no flags this writes the synthetic showcase set — an overview card, one card per Wrapped
+chapter, all three caption tones, the compact report, the portable dashboard, the portable Wrapped,
+and the dashboard JSON for both ranges — into the gitignored `artifacts/` directory, alongside an
+`export-manifest.json`. Everything it writes is invented C0 data and safe to publish. Use
+`--out <dir>` for another location and `--range 6m` to narrow the run.
+
+A local export uses the same acknowledgement boundary as Share Studio. `--source local` refuses
+unless `--acknowledge-redaction` is also present, defaults to aliasing every repository name rather
+than only private ones, and never writes the local dashboard record, because the export sink in
+[`docs/data-charter.md`](docs/data-charter.md) accepts only a pre-redacted view. Nothing reaches the
+disk until the artifacts pass the same privacy scan the showcase build runs, and the written
+directory is scanned again afterwards; any hit deletes what this command wrote and fails it.
+
+Rerunning over the same `--out` replaces that export in place. It only ever removes files the
+previous `export-manifest.json` names: a directory holding anything else — a note left beside an
+export, an unrelated download, a manifest copied into a populated folder — is refused rather than
+cleared. The manifest is an allowlist of file names, not of authorship, so a file you wrote
+yourself under a name the previous export used is still replaced. Keep anything you want to edit
+and keep outside the export directory.
+
 ## Private by construction
 
 Developer Lens uses your existing `gh` authentication but never reads or persists the token. The API binds to `127.0.0.1`, and collected data stays in the gitignored `.developer-lens/` directory.
@@ -284,6 +313,9 @@ npm run verify:context
 
 - `scripts/collect.ts` — collection orchestration and private dataset writes.
 - `scripts/exportDemo.ts` — deterministic public showcase generation.
+- `scripts/exportArtifacts.ts` — headless share/report/portable export with a gated local lane.
+- `scripts/exportPrivacyGuards.ts` — the forbidden-pattern scanner and export boundary assertions
+  shared by the showcase verifier and the headless exporter.
 - `scripts/verifyShowcase.ts` — structural privacy assertions and artifact scanning.
 - `server/github.ts` — authenticated GitHub ingestion.
 - `server/localGit.ts` — explicitly scoped local Git enrichment.

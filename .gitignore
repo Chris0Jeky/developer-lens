@@ -18,6 +18,10 @@ dist-ssr
 # Local synthetic V2 bridge store. Invented C0 fixtures, rebuilt by npm run seed:v2.
 .developer-lens-synthetic/
 
+# Headless artifact export output (npm run export:artifacts). Always regenerable, and a local
+# export is derived from private data. Never commit this directory.
+/artifacts/
+
 # Governor runtime cache — never authority. Losing it must not make the repo unresumable.
 .agent-harness/runtime/
 

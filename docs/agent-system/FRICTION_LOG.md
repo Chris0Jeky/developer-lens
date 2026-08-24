@@ -1607,6 +1607,35 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   and activation tests at the exact storage-v3 root; the build stage did not run. No retry was made.
   Hosted CI for the eventual exact #234 head is mandatory.
 
+  **2026-08-23 root-cause note:** The reproduction independent of any delivery range now exists.
+  `captureRoot` in `server/storage/v3ArtifactCatalogue.ts` rejects a directory whenever
+  `realpathSync.native(path) !== path`. On a Windows box whose `TMP`/`TEMP` point at an 8.3 short
+  path, `os.tmpdir()` returns the short form while `realpathSync.native` returns the long form, so
+  every fixture built on `mkdtempSync(join(tmpdir(), ...))` fails at the artifact root. The
+  identical failure set reproduces on a detached worktree at `origin/main` (3dabf11) with no branch
+  changes present — 68 failed / 9 passed / 3 skipped across `v3RevocationReplay`,
+  `activationTaskLoader`, `v3MigrationCleanup`, and `storeLifecycle` — so this is an environment
+  limitation, not a delivery-range regression, and hosted ubuntu CI is unaffected. Full local
+  signature on that box: 240 failed / 1280 passed / 10 skipped over 16 files. Candidate
+  remediations are recorded in
+  [Product #293](https://github.com/Chris0Jeky/developer-lens/issues/293); none is selected here.
+  Occurrence count is now 3 diagnosed local-gate episodes.
+
+  **2026-08-24 partial-disconfirmation note:** The short-path finding above is confirmed —
+  `os.tmpdir()` on this box returns the 8.3 form while `realpathSync.native` returns the long
+  form, so `canonical !== path` trips. It is NOT established as the complete cause. Repointing
+  `TMP` and `TEMP` at a long, canonically cased directory and rerunning
+  `npx vitest run scripts/storeLifecycle.test.ts` still failed (15 failed / 2 passed / 3 skipped)
+  with the same `STORAGE_V3_ARTIFACT_INVALID` raised from `captureRoot`, so either the override
+  does not reach the Vitest worker or a second `captureRoot` predicate also fails on this
+  filesystem — `lstatSync(..., { bigint: true }).dev` was measured as `0n` here. That question is
+  left to [Product #293](https://github.com/Chris0Jeky/developer-lens/issues/293) rather than
+  pursued inside a delivery slice. It does not change the disposition of PR #295: the failing
+  suites are `scripts/storeLifecycle.test.ts` and its storage-v3 peers, and
+  `git diff origin/main...HEAD --name-only` for that branch lists no `server/storage/` or
+  `storeLifecycle` path, so the red cannot originate there. Hosted ubuntu CI remains the
+  authoritative signal.
+
 ### FR-051 — `gh pr checks` rejected an unsupported JSON field before a snapshot read
 
 - **first-seen:** 2026-08-15
@@ -1938,12 +1967,23 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **workaround:** Describe the guarded structure without reproducing a guard-matching value in
   tracked evidence, then stage documentation before running context verification because it scans
   Git-index blobs.
-- **occurrences:** 1 independent occurrence — 2026-08-15 Product #257 hosted-red fix round.
+- **occurrences:** 2 independent occurrences — 2026-08-15 Product #257 hosted-red fix round
+  (ledger evidence), and 2026-08-23 Product PR #295, where the headless-export test asserted that
+  the artifact privacy scanner catches a leaked local path and spelled that canary as a literal in
+  tracked test source. Hosted `Verify project context` stopped on
+  `scripts/exportArtifacts.test.ts: contains a Windows user-home path` before any later gate step
+  ran, so the pull-request head sat red for a fixture the guard was right to reject.
 - **task:** [Product #257](https://github.com/Chris0Jeky/developer-lens/issues/257) owns this
   consumer-context delivery; [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222)
   retains shared Windows-safe command and evidence-boundary debt.
-- **promotion:** One self-triggering-evidence occurrence. Do not promote until an independent
-  recurrence establishes that a checked authoring safeguard is warranted.
+- **promotion:** The second occurrence does not warrant a new enforcement layer, because the
+  enforcement already exists and worked: the guard rejected the value both times and nothing
+  reached `main`. What recurs is an authoring habit, and the cheapest layer that fixes it is the
+  idiom already used in `scripts/projectContextValidation.test.ts` — assemble a guard-matching
+  value at runtime from its segments rather than writing the literal into tracked text. PR #295
+  adopted that idiom. Both occurrences also cost a hosted round trip because the guard reads
+  Git-index blobs, so run `npm run verify:context` AFTER staging and before pushing whenever a
+  change adds a deliberately guard-shaped fixture.
 
 ### FR-065 — PowerShell single-quoted multiline issue body stopped before native execution
 
@@ -2415,6 +2455,26 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** 1 independent occurrence, recorded under [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   review-state evidence route.
+- **promotion:** One occurrence is workaround-documented; no repository-code fix is selected.
+
+### FR-090 — empty local `node_modules/.bin` let a foreign repository's `tsc` produce a false red
+
+- **first-seen:** 2026-08-23
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (false-red proving signal)`
+- **symptom:** `npm run build` failed with about ten `error TS1360` diagnostics in
+  `shared/whyContract.ts` (zod `satisfies` checks reporting optional-vs-required property
+  mismatches) while the pinned compiler invoked directly as
+  `node node_modules/typescript/bin/tsc -b --force` exited 0 with no output on the same tree.
+  `node_modules/.bin/` existed but held zero entries, so npm's PATH prepend fell through to the
+  inherited PATH, which carried another repository's `node_modules/.bin`.
+- **impact:** A gate step reported red for a reason unrelated to the change under test, and the
+  tsx- and vitest-based steps had silently been resolving through the same foreign shims.
+- **workaround:** `npm ci` restored 63 `.bin` entries; `npm run build` and `npm run build:showcase`
+  then passed. Before trusting a red `npm run build`, confirm that `tsc` resolves inside this
+  repository.
+- **occurrences:** 1 independent occurrence, during the headless artifact export slice.
+- **task:** [Product #294](https://github.com/Chris0Jeky/developer-lens/issues/294).
 - **promotion:** One occurrence is workaround-documented; no repository-code fix is selected.
 
 ### FR-091 — broad tracked-text search printed a synthetic research fixture during a design pass

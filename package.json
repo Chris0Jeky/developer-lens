@@ -11,6 +11,7 @@
     "collect": "tsx scripts/collect.ts",
     "analyze": "tsx scripts/analyze.ts",
     "export:demo": "tsx scripts/exportDemo.ts",
+    "export:artifacts": "tsx scripts/exportArtifacts.ts",
     "seed:v2": "tsx server/api/v2/syntheticImporter.ts",
     "store:lifecycle": "tsx scripts/storeLifecycle.ts",
     "render:social": "tsx scripts/renderSocialCard.ts",
