@@ -2654,3 +2654,33 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   review-evidence and provenance-boundary follow-up.
 - **promotion:** One occurrence remains workaround-documented task debt; do not add a helper until an
   independent recurrence establishes that a checked local-versus-remote provenance rule is warranted.
+
+### FR-097 — hosted merged-main gate went red on a strict 5s test timeout, skipping the Pages deploy
+
+- **first-seen:** 2026-08-24
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (false-red on main; deploy skipped)`
+- **symptom:** `Deploy public showcase` at Product main `83d6d44` (run `32721323216`, first
+  attempt) failed its `Run the full local gate` step with
+  `Error: Test timed out in 5000ms` on `scripts/storeLifecycle.test.ts > proves shared-artifact
+  deletion lineage and explicit survivor catalogue semantics` — 1 failed / 1532 passed / 2 skipped
+  across 87 files. No assertion reported a wrong value.
+- **impact:** The `deploy` job was skipped, so that commit produced no Pages deployment. A merge
+  that was correct looked red on `main`.
+- **workaround:** Establish that the tree is unchanged before re-running, then re-run the failed
+  job once. Evidence used here: `git rev-parse 83d6d44^{tree}` equals `fe80e94^{tree}`
+  (`a5c49d6d758cb5ee72ca0073de9b3f75bca937ca`), and that identical tree had passed the PR #292
+  gate `32721070738` minutes earlier; `git diff 3dabf11..83d6d44 --name-only` lists no
+  `storeLifecycle`, `server/storage/`, or `vitest.config.ts` path; the run showed 139s wall clock
+  against 296s of summed test time. The re-run passed `Run the full local gate` on the same commit.
+  Do not conclude "flaky" without that tree-identity and untouched-seam evidence.
+- **occurrences:** 1 independent occurrence, during the 2026-08-24 open-pull-request closeout.
+- **task:** [Product #301](https://github.com/Chris0Jeky/developer-lens/issues/301) owns the
+  per-test timeout fix.
+- **promotion:** One occurrence is workaround-documented, but the enforcement route is already
+  chosen and cheap because `vitest.config.ts` documents this exact class: it widens the timeout to
+  15s only on local Windows and deliberately keeps the strict 5s on CI, and this synchronous
+  whole-lifecycle SQLite test is not in its named slow list. #301 adds an explicit per-test timeout
+  at the call site rather than relaxing the global CI timeout, so the strict default stays honest
+  for every other test. A false red on `main` skips the deploy, which is worse than a false red on
+  a pull request.
