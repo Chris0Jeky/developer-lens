@@ -2417,7 +2417,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   review-state evidence route.
 - **promotion:** One occurrence is workaround-documented; no repository-code fix is selected.
 
-### FR-090 — broad tracked-text search printed a synthetic research fixture during a design pass
+### FR-091 — broad tracked-text search printed a synthetic research fixture during a design pass
 
 - **first-seen:** 2026-08-18
 - **status:** `workaround-documented`
@@ -2433,7 +2433,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** One occurrence remains task debt; no promotion. Keep the search path-bounded on
   future planning passes.
 
-### FR-091 — coordinator interruption made a healthy Vitest result uncollectable
+### FR-092 — coordinator interruption made a healthy Vitest result uncollectable
 
 - **first-seen:** 2026-08-18
 - **status:** `workaround-documented`
@@ -2450,7 +2450,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   bounded coordination and evidence-command contract.
 - **promotion:** One occurrence remains task debt; no promotion.
 
-### FR-092 — focused proof ran from the clean primary instead of the reviewed worktree
+### FR-093 — focused proof ran from the clean primary instead of the reviewed worktree
 
 - **first-seen:** 2026-08-18
 - **status:** `workaround-documented`
