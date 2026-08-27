@@ -1,0 +1,353 @@
+{
+  "$comment": "Structural transport validation only. The producer derives this projection only after MethodTrialViewSchema.parse succeeds; consumers must still treat it as invented C0 evidence and preserve its limitations.",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "additionalProperties": false,
+  "properties": {
+    "classification": {
+      "const": "C0",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "c0_synthetic_only",
+              "bounded_three_case_selection",
+              "missingness_and_confound",
+              "thresholds_nonviable"
+            ],
+            "type": "string"
+          },
+          "display_text": {
+            "enum": [
+              "Evidence is limited to invented C0 weekly system series.",
+              "Only three bounded representative windows are exported.",
+              "Missing observations and instrumentation confounds are explicit.",
+              "Both threshold selections are nonviable."
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "display_text"
+        ],
+        "type": "object"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "type": "array"
+    },
+    "methods": {
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "additionalProperties": false,
+          "properties": {
+            "display_name": {
+              "const": "Rolling median and MAD",
+              "type": "string"
+            },
+            "method_code": {
+              "const": "rolling_median_mad",
+              "type": "string"
+            }
+          },
+          "required": [
+            "method_code",
+            "display_name"
+          ],
+          "type": "object"
+        },
+        "candidate": {
+          "additionalProperties": false,
+          "properties": {
+            "display_name": {
+              "const": "Gaussian BOCPD",
+              "type": "string"
+            },
+            "method_code": {
+              "const": "bocpd_gaussian",
+              "type": "string"
+            }
+          },
+          "required": [
+            "method_code",
+            "display_name"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "baseline",
+        "candidate"
+      ],
+      "type": "object"
+    },
+    "metrics": {
+      "additionalProperties": false,
+      "properties": {
+        "detection_rate": {
+          "additionalProperties": false,
+          "properties": {
+            "baseline": {
+              "additionalProperties": false,
+              "properties": {
+                "status": {
+                  "const": "measured",
+                  "type": "string"
+                },
+                "value": {
+                  "maximum": 1000000,
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "status",
+                "value"
+              ],
+              "type": "object"
+            },
+            "candidate": {
+              "additionalProperties": false,
+              "properties": {
+                "status": {
+                  "const": "measured",
+                  "type": "string"
+                },
+                "value": {
+                  "maximum": 1000000,
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "status",
+                "value"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "baseline",
+            "candidate"
+          ],
+          "type": "object"
+        },
+        "false_alerts_per_year": {
+          "additionalProperties": false,
+          "properties": {
+            "baseline": {
+              "additionalProperties": false,
+              "properties": {
+                "status": {
+                  "const": "measured",
+                  "type": "string"
+                },
+                "value": {
+                  "maximum": 1000000,
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "status",
+                "value"
+              ],
+              "type": "object"
+            },
+            "candidate": {
+              "additionalProperties": false,
+              "properties": {
+                "status": {
+                  "const": "measured",
+                  "type": "string"
+                },
+                "value": {
+                  "maximum": 1000000,
+                  "minimum": 0,
+                  "type": "number"
+                }
+              },
+              "required": [
+                "status",
+                "value"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "baseline",
+            "candidate"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "false_alerts_per_year",
+        "detection_rate"
+      ],
+      "type": "object"
+    },
+    "provenance": {
+      "additionalProperties": false,
+      "properties": {
+        "derivation": {
+          "const": "MethodTrialViewSchema.parse",
+          "type": "string"
+        },
+        "public_url": {
+          "const": "https://chris0jeky.github.io/developer-lens/?view=method-trial",
+          "type": "string"
+        },
+        "run_id": {
+          "const": "wbc1_demo",
+          "type": "string"
+        },
+        "source_contract_schema_sha256": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "source_fixture_sha256": {
+          "pattern": "^sha256:[0-9a-f]{64}$",
+          "type": "string"
+        },
+        "source_lab_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        },
+        "source_product_contract_commit": {
+          "pattern": "^[0-9a-f]{40}$",
+          "type": "string"
+        }
+      },
+      "required": [
+        "source_fixture_sha256",
+        "source_contract_schema_sha256",
+        "source_lab_commit",
+        "source_product_contract_commit",
+        "run_id",
+        "public_url",
+        "derivation"
+      ],
+      "type": "object"
+    },
+    "retained_fallback": {
+      "additionalProperties": false,
+      "properties": {
+        "method_code": {
+          "const": "rolling_median_mad",
+          "type": "string"
+        },
+        "retained": {
+          "const": true,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "method_code",
+        "retained"
+      ],
+      "type": "object"
+    },
+    "schema_version": {
+      "const": "DeveloperLensMethodTrialSummary.v1",
+      "type": "string"
+    },
+    "threshold_viability": {
+      "additionalProperties": false,
+      "properties": {
+        "baseline": {
+          "const": false,
+          "type": "boolean"
+        },
+        "candidate": {
+          "const": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "baseline",
+        "candidate"
+      ],
+      "type": "object"
+    },
+    "trial": {
+      "additionalProperties": false,
+      "properties": {
+        "question": {
+          "const": "Can the BOCPD candidate reduce false alerts per year versus the rolling median and MAD baseline without worsening detection or calibration?",
+          "type": "string"
+        },
+        "title": {
+          "const": "WB-C1 method trial: why the simple baseline won",
+          "type": "string"
+        },
+        "verdict": {
+          "const": "reject",
+          "type": "string"
+        },
+        "verdict_summary": {
+          "const": "The candidate is rejected because both selections are nonviable and false alerts are higher.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "title",
+        "question",
+        "verdict",
+        "verdict_summary"
+      ],
+      "type": "object"
+    },
+    "unsupported_claims": {
+      "items": {
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "real_repository_validity",
+              "person_level_inference",
+              "model_promotion",
+              "online_pelt_performance"
+            ],
+            "type": "string"
+          },
+          "display_text": {
+            "enum": [
+              "This result does not establish validity on real repositories.",
+              "No person-level inference is supported or attempted.",
+              "This rejected trial cannot promote a model.",
+              "Offline PELT markers do not establish online performance."
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "display_text"
+        ],
+        "type": "object"
+      },
+      "maxItems": 4,
+      "minItems": 4,
+      "type": "array"
+    }
+  },
+  "required": [
+    "schema_version",
+    "classification",
+    "trial",
+    "methods",
+    "metrics",
+    "threshold_viability",
+    "retained_fallback",
+    "limitations",
+    "unsupported_claims",
+    "provenance"
+  ],
+  "type": "object"
+}

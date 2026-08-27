@@ -3,9 +3,15 @@ import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { z } from 'zod'
+import {
+  METHOD_TRIAL_PUBLIC_URL,
+  MethodTrialSummarySchema,
+} from '../shared/methodTrialSummary.js'
 import { MethodTrialViewSchema } from '../shared/methodTrialView.js'
 
 const CONTRACT_ROOT = ['research-contracts', 'method-trial-view', 'v1'] as const
+const SUMMARY_ROOT = ['research-contracts', 'method-trial-summary', 'v1'] as const
+const METHOD_TRIAL_FIXTURE = [...CONTRACT_ROOT, 'wbc1.fixture.json'] as const
 
 function stableValue(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(stableValue)
@@ -166,22 +172,106 @@ export function renderMethodTrialViewSchema(): string {
   return stableJson(enrichStandaloneSchema(z.toJSONSchema(MethodTrialViewSchema)))
 }
 
-export async function generateMethodTrialView(root = process.cwd(), check = false): Promise<void> {
-  const outputRoot = resolve(root, ...CONTRACT_ROOT)
-  const schemaText = renderMethodTrialViewSchema()
-  if (!check) await mkdir(outputRoot, { recursive: true })
-  const path = resolve(outputRoot, 'schema.json')
+export function renderMethodTrialSummarySchema(): string {
+  const schema = z.toJSONSchema(MethodTrialSummarySchema) as JsonObject
+  schema.$schema = 'https://json-schema.org/draft/2020-12/schema'
+  schema.$comment =
+    'Structural transport validation only. The producer derives this projection only after MethodTrialViewSchema.parse succeeds; consumers must still treat it as invented C0 evidence and preserve its limitations.'
+  return stableJson(schema)
+}
+
+export function summarySha256(summaryText: string): string {
+  return `sha256:${createHash('sha256').update(summaryText, 'utf8').digest('hex')}`
+}
+
+export async function deriveMethodTrialSummary(root = process.cwd()): Promise<string> {
+  const fixturePath = resolve(root, ...METHOD_TRIAL_FIXTURE)
+  const fixtureText = await readFile(fixturePath, 'utf8')
+  const view = MethodTrialViewSchema.parse(JSON.parse(fixtureText))
+  const sourceFixtureSha256 = `sha256:${createHash('sha256').update(fixtureText, 'utf8').digest('hex')}`
+  const summary = MethodTrialSummarySchema.parse({
+    schema_version: 'DeveloperLensMethodTrialSummary.v1',
+    classification: view.trial.classification,
+    trial: {
+      title: view.trial.title,
+      question: view.trial.question,
+      verdict: view.decision.outcome,
+      verdict_summary: view.decision.summary,
+    },
+    methods: {
+      baseline: {
+        method_code: view.methods.baseline.method_code,
+        display_name: view.methods.baseline.display_name,
+      },
+      candidate: {
+        method_code: view.methods.candidate.method_code,
+        display_name: view.methods.candidate.display_name,
+      },
+    },
+    metrics: {
+      false_alerts_per_year: {
+        baseline: view.scorecard.baseline.false_alerts_per_year,
+        candidate: view.scorecard.candidate.false_alerts_per_year,
+      },
+      detection_rate: {
+        baseline: view.scorecard.baseline.detection_rate,
+        candidate: view.scorecard.candidate.detection_rate,
+      },
+    },
+    threshold_viability: {
+      baseline: view.scorecard.threshold_selection.baseline.viable,
+      candidate: view.scorecard.threshold_selection.candidate.viable,
+    },
+    retained_fallback: view.decision.fallback,
+    limitations: view.claims.limitations,
+    unsupported_claims: view.claims.unsupported,
+    provenance: {
+      source_fixture_sha256: sourceFixtureSha256,
+      source_contract_schema_sha256: schemaSha256(),
+      source_lab_commit: view.reproducibility.lab_commit,
+      source_product_contract_commit: view.reproducibility.product_contract_commit,
+      run_id: view.reproducibility.run_id,
+      public_url: METHOD_TRIAL_PUBLIC_URL,
+      derivation: 'MethodTrialViewSchema.parse',
+    },
+  })
+  return stableJson(summary)
+}
+
+async function checkOrWrite(path: string, content: string, check: boolean, label: string): Promise<void> {
   if (check) {
     let existing: string
     try {
       existing = await readFile(path, 'utf8')
     } catch {
-      throw new Error(`method-trial-view schema is missing: ${path}`)
+      throw new Error(`${label} is missing: ${path}`)
     }
-    if (existing !== schemaText) throw new Error(`method-trial-view schema drift: ${path}`)
+    if (existing !== content) throw new Error(`${label} drift: ${path}`)
   } else {
-    await writeFile(path, schemaText, 'utf8')
+    await writeFile(path, content, 'utf8')
   }
+}
+
+export async function generateMethodTrialView(root = process.cwd(), check = false): Promise<void> {
+  const outputRoot = resolve(root, ...CONTRACT_ROOT)
+  const schemaText = renderMethodTrialViewSchema()
+  if (!check) await mkdir(outputRoot, { recursive: true })
+  await checkOrWrite(resolve(outputRoot, 'schema.json'), schemaText, check, 'method-trial-view schema')
+
+  const summaryRoot = resolve(root, ...SUMMARY_ROOT)
+  if (!check) await mkdir(summaryRoot, { recursive: true })
+  await checkOrWrite(
+    resolve(summaryRoot, 'schema.json'),
+    renderMethodTrialSummarySchema(),
+    check,
+    'method-trial-summary schema',
+  )
+  await checkOrWrite(
+    resolve(summaryRoot, 'wbc1.summary.json'),
+    await deriveMethodTrialSummary(root),
+    check,
+    'method-trial-summary fixture',
+  )
 }
 
 export function schemaSha256(schemaText = renderMethodTrialViewSchema()): string {
