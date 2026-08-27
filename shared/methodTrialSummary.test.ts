@@ -5,7 +5,7 @@ import { describe, expect, it } from 'vitest'
 import {
   deriveMethodTrialSummary,
   renderMethodTrialSummarySchema,
-  schemaSha256,
+  summarySha256,
 } from '../scripts/generateMethodTrialView.js'
 import { MethodTrialSummarySchema } from './methodTrialSummary.js'
 import { MethodTrialViewSchema } from './methodTrialView.js'
@@ -51,7 +51,7 @@ describe('DeveloperLensMethodTrialSummary.v1', () => {
   it('pins generated schema and artifact drift', async () => {
     expect(await readFile(schemaPath, 'utf8')).toBe(renderMethodTrialSummarySchema())
     expect(MethodTrialSummarySchema.parse(JSON.parse(await readFile(summaryPath, 'utf8')))).toBeTruthy()
-    expect(schemaSha256()).toMatch(/^sha256:[0-9a-f]{64}$/)
+    expect(summarySha256(await readFile(summaryPath, 'utf8'))).toMatch(/^sha256:[0-9a-f]{64}$/)
   })
 
   it('rejects extra fields and contradictory metric claims', async () => {
