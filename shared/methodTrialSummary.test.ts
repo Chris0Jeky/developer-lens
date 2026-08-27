@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { Ajv2020 } from 'ajv/dist/2020.js'
 import { describe, expect, it } from 'vitest'
 import {
   deriveMethodTrialSummary,
@@ -17,6 +18,11 @@ const schemaPath = resolve('research-contracts', 'method-trial-summary', 'v1', '
 function measuredValue(measurement: { status: string; value?: number }): number {
   if (measurement.status !== 'measured' || measurement.value === undefined) throw new Error('expected measured value')
   return measurement.value
+}
+
+async function standaloneValidator() {
+  const schema = JSON.parse(await readFile(schemaPath, 'utf8'))
+  return new Ajv2020({ allErrors: true, strict: true }).compile(schema)
 }
 
 describe('DeveloperLensMethodTrialSummary.v1', () => {
@@ -61,6 +67,12 @@ describe('DeveloperLensMethodTrialSummary.v1', () => {
     const contradictory = structuredClone(summary)
     contradictory.metrics.false_alerts_per_year.candidate.value = 2
     expect(() => MethodTrialSummarySchema.parse(contradictory)).toThrow()
+
+    const impossibleDetection = structuredClone(summary)
+    impossibleDetection.metrics.detection_rate.candidate.value = 1.01
+    expect(MethodTrialSummarySchema.safeParse(impossibleDetection).success).toBe(false)
+    const validate = await standaloneValidator()
+    expect(validate(impossibleDetection), JSON.stringify(validate.errors)).toBe(false)
 
     const duplicatedLimitation = structuredClone(summary)
     duplicatedLimitation.limitations[1] = duplicatedLimitation.limitations[0]

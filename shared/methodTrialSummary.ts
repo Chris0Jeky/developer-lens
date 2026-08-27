@@ -29,9 +29,19 @@ const measured = z.strictObject({
   value: z.number().finite().min(0).max(1_000_000),
 })
 
-const metricPair = z.strictObject({
+const measuredUnitInterval = z.strictObject({
+  status: z.literal('measured'),
+  value: z.number().finite().min(0).max(1),
+})
+
+const falseAlertMetricPair = z.strictObject({
   baseline: measured,
   candidate: measured,
+})
+
+const detectionMetricPair = z.strictObject({
+  baseline: measuredUnitInterval,
+  candidate: measuredUnitInterval,
 })
 
 const limitation = z.strictObject({
@@ -63,38 +73,38 @@ const unsupportedClaim = z.strictObject({
  */
 export const MethodTrialSummarySchema = z
   .strictObject({
-  schema_version: z.literal(METHOD_TRIAL_SUMMARY_SCHEMA_VERSION),
-  classification: z.literal('C0'),
-  trial: z.strictObject({
-    title: z.literal(METHOD_TRIAL_TITLE),
-    question: z.literal(METHOD_TRIAL_QUESTION),
-    verdict: z.literal('reject'),
-    verdict_summary: z.literal('The candidate is rejected because both selections are nonviable and false alerts are higher.'),
-  }),
-  methods: z.strictObject({
-    baseline: z.strictObject({
+    schema_version: z.literal(METHOD_TRIAL_SUMMARY_SCHEMA_VERSION),
+    classification: z.literal('C0'),
+    trial: z.strictObject({
+      title: z.literal(METHOD_TRIAL_TITLE),
+      question: z.literal(METHOD_TRIAL_QUESTION),
+      verdict: z.literal('reject'),
+      verdict_summary: z.literal('The candidate is rejected because both selections are nonviable and false alerts are higher.'),
+    }),
+    methods: z.strictObject({
+      baseline: z.strictObject({
+        method_code: z.literal('rolling_median_mad'),
+        display_name: z.literal('Rolling median and MAD'),
+      }),
+      candidate: z.strictObject({
+        method_code: z.literal('bocpd_gaussian'),
+        display_name: z.literal('Gaussian BOCPD'),
+      }),
+    }),
+    metrics: z.strictObject({
+      false_alerts_per_year: falseAlertMetricPair,
+      detection_rate: detectionMetricPair,
+    }),
+    threshold_viability: z.strictObject({
+      baseline: z.literal(false),
+      candidate: z.literal(false),
+    }),
+    retained_fallback: z.strictObject({
       method_code: z.literal('rolling_median_mad'),
-      display_name: z.literal('Rolling median and MAD'),
+      retained: z.literal(true),
     }),
-    candidate: z.strictObject({
-      method_code: z.literal('bocpd_gaussian'),
-      display_name: z.literal('Gaussian BOCPD'),
-    }),
-  }),
-  metrics: z.strictObject({
-    false_alerts_per_year: metricPair,
-    detection_rate: metricPair,
-  }),
-  threshold_viability: z.strictObject({
-    baseline: z.literal(false),
-    candidate: z.literal(false),
-  }),
-  retained_fallback: z.strictObject({
-    method_code: z.literal('rolling_median_mad'),
-    retained: z.literal(true),
-  }),
-  limitations: z.array(limitation).length(4),
-  unsupported_claims: z.array(unsupportedClaim).length(4),
+    limitations: z.array(limitation).length(4),
+    unsupported_claims: z.array(unsupportedClaim).length(4),
     provenance: z.strictObject({
       source_fixture_sha256: sha256,
       source_contract_schema_sha256: sha256,
