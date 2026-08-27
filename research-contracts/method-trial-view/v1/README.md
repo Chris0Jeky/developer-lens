@@ -29,3 +29,23 @@ Run the cross-repository consumer proof with:
 npm test -- shared/methodTrialView.test.ts src/components/MethodTrialRoute.test.tsx src/App.test.tsx
 npm run check:method-trial-view
 ```
+
+## Compact public research bridge
+
+The product generator also derives
+[`method-trial-summary/v1/wbc1.summary.json`](../../method-trial-summary/v1/wbc1.summary.json)
+after `MethodTrialViewSchema.parse` succeeds. This versioned projection is the safe, compact
+cross-repository surface for public portfolio consumers: it carries the frozen title/question,
+rejected verdict, method names, headline false-alert and detection measurements, threshold
+viability, retained fallback, limitations, unsupported claims, fixture/schema digests, and the
+public method-trial URL. It intentionally omits representative timelines and reproducibility
+commands, so consumers do not need to copy or expose the large fixture.
+
+The summary is still invented C0 research evidence. It does not describe real repositories,
+people, production telemetry, online PELT performance, or model promotion. Its standalone schema
+is structural transport validation; the generator's semantic parse and focused tests are the
+acceptance gate.
+
+Merge order for the CommitAtlas bridge is explicit: Developer Lens producer first, then the
+CommitAtlas consumer pinned to this summary schema/artifact. A consumer must not fetch the live
+showcase or the full fixture as a substitute for this contract.
