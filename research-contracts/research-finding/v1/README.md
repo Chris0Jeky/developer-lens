@@ -11,6 +11,10 @@ is provenance, not an identity key or promotion authority. The `benchmarked` out
 never promotion. Consumers must render an unavailable metric as `NOT MEASURED`, and must enforce
 that `reject` retains the baseline method while non-reject outcomes retain no fallback.
 
+In this exemplar, `source_product_contract_commit` anchors the existing Product WB-C1 input/view
+contract used to derive the finding. It is not a self-hash or circular commit field; consumers
+later pin the newly published ResearchFinding schema commit externally when they vendor this seam.
+
 ## Shape and semantics
 
 The artifact uses snake_case and contains `schema_version`, `classification`, `subject_class`,

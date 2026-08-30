@@ -15,6 +15,7 @@ import {
   RESEARCH_FINDING_SCHEMA_VERSION,
   ResearchFindingSchema,
   UNSUPPORTED_CLAIMS,
+  assertResearchFindingPrivacy,
   computeResearchFindingBundleHash,
   stableJson,
   type ResearchFinding,
@@ -83,7 +84,9 @@ export function renderResearchFindingSchema(): string {
 }
 
 export function renderResearchFindingFixture(): string {
-  return stableJson(createWbc1ResearchFinding())
+  const finding = createWbc1ResearchFinding()
+  assertResearchFindingPrivacy(finding)
+  return stableJson(finding)
 }
 
 export function fixtureSha256(fixtureText = renderResearchFindingFixture()): string {
@@ -101,6 +104,7 @@ async function writeOrCheck(path: string, content: string, check: boolean): Prom
 export async function generateResearchFinding(root = process.cwd(), check = false): Promise<void> {
   const outputRoot = resolve(root, ...CONTRACT_ROOT)
   const fixture = renderResearchFindingFixture()
+  assertResearchFindingPrivacy(JSON.parse(fixture))
   const outputs = new Map([
     ['schema.json', renderResearchFindingSchema()],
     ['wbc1.fixture.json', fixture],
