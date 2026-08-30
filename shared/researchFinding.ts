@@ -77,9 +77,27 @@ const metric = z.discriminatedUnion('key', [
     candidate: z.union([z.strictObject({ status: z.literal('measured'), value: z.number().finite().min(0).max(10_000) }), unavailable]),
   }),
 ])
-const gate = z.discriminatedUnion('code', (Object.keys(GATES) as GateCode[]).map((code) => z.strictObject({ code: z.literal(code), label: z.literal(GATES[code]), passed: z.boolean().nullable() })) as [typeof gate, ...typeof gate[]])
-const limitation = z.discriminatedUnion('code', (Object.keys(LIMITATIONS) as LimitationCode[]).map((code) => z.strictObject({ code: z.literal(code), display_text: z.literal(LIMITATIONS[code]) })) as [typeof limitation, ...typeof limitation[]])
-const unsupportedClaim = z.discriminatedUnion('code', (Object.keys(UNSUPPORTED_CLAIMS) as UnsupportedClaimCode[]).map((code) => z.strictObject({ code: z.literal(code), display_text: z.literal(UNSUPPORTED_CLAIMS[code]) })) as [typeof unsupportedClaim, ...typeof unsupportedClaim[]])
+const gate = z.discriminatedUnion('code', [
+  z.strictObject({ code: z.literal('baseline_selection'), label: z.literal(GATES.baseline_selection), passed: z.boolean().nullable() }),
+  z.strictObject({ code: z.literal('candidate_selection'), label: z.literal(GATES.candidate_selection), passed: z.boolean().nullable() }),
+  z.strictObject({ code: z.literal('detection_floor'), label: z.literal(GATES.detection_floor), passed: z.boolean().nullable() }),
+  z.strictObject({ code: z.literal('delay_budget'), label: z.literal(GATES.delay_budget), passed: z.boolean().nullable() }),
+  z.strictObject({ code: z.literal('false_alert_improvement'), label: z.literal(GATES.false_alert_improvement), passed: z.boolean().nullable() }),
+  z.strictObject({ code: z.literal('not_worse_detection'), label: z.literal(GATES.not_worse_detection), passed: z.boolean().nullable() }),
+  z.strictObject({ code: z.literal('confound_guard'), label: z.literal(GATES.confound_guard), passed: z.boolean().nullable() }),
+])
+const limitation = z.discriminatedUnion('code', [
+  z.strictObject({ code: z.literal('c0_synthetic_only'), display_text: z.literal(LIMITATIONS.c0_synthetic_only) }),
+  z.strictObject({ code: z.literal('bounded_three_case_selection'), display_text: z.literal(LIMITATIONS.bounded_three_case_selection) }),
+  z.strictObject({ code: z.literal('missingness_and_confound'), display_text: z.literal(LIMITATIONS.missingness_and_confound) }),
+  z.strictObject({ code: z.literal('thresholds_nonviable'), display_text: z.literal(LIMITATIONS.thresholds_nonviable) }),
+])
+const unsupportedClaim = z.discriminatedUnion('code', [
+  z.strictObject({ code: z.literal('real_repository_validity'), display_text: z.literal(UNSUPPORTED_CLAIMS.real_repository_validity) }),
+  z.strictObject({ code: z.literal('person_level_inference'), display_text: z.literal(UNSUPPORTED_CLAIMS.person_level_inference) }),
+  z.strictObject({ code: z.literal('model_promotion'), display_text: z.literal(UNSUPPORTED_CLAIMS.model_promotion) }),
+  z.strictObject({ code: z.literal('online_pelt_performance'), display_text: z.literal(UNSUPPORTED_CLAIMS.online_pelt_performance) }),
+])
 
 export const ResearchFindingSchema = z.strictObject({
   schema_version: z.literal(RESEARCH_FINDING_SCHEMA_VERSION),
