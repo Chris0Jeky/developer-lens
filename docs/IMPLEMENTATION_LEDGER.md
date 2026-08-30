@@ -5218,3 +5218,49 @@ v0.1.0 tag-blocking owner action. Nothing in this slice infers, anticipates, or 
 a ready pull request closing #296, require its exact-head gate and independent privacy review, then
 merge and re-check merged main. Select Product #305 next under the producer-first cross-repository
 contract workflow; do not tag or publish.
+
+## 2026-08-30 — ResearchFindingProjection.v1 producer contract
+
+**Changed.** After PR #308 merged as `81cf305` and closed #296, selected Product #305 as step 1 of
+the declared producer-first chain. Added the strict, snake_case `ResearchFindingProjection.v1`
+runtime contract, generated Draft 2020-12 schema, invented C0 WB-C1 fixture, and README registries.
+Every method, metric, gate, limitation, and unsupported-claim code is bound to reviewed display
+text; metric codes also bind unit and direction. Runtime semantics require distinct methods,
+unique and ordered codes, and a rejected finding to retain its baseline with a measured worse
+candidate or failed gate. RFC 8785 canonicalization computes `bundle_hash` with that field omitted,
+and the generator fails closed on the finding-specific privacy boundary before writing. The default
+gate now checks generated research-finding drift.
+
+**Verified.** Six focused research-finding tests and the existing method-trial suites pass 19 tests.
+The tests independently compile the standalone schema with strict AJV, reject every issue #305
+negative case, compare README and schema registries exactly, round-trip the fixture, recompute both
+hashes, exercise RFC 8785 number and UTF-16 property-order vectors, and run both the finding-specific
+and shared forbidden-pattern privacy scans over the written fixture. `npm run check:research-finding`,
+lint, TypeScript, `npm run verify:context`, and `git diff --check` pass.
+
+**NOT verified.** Product #305 has not yet run its exact-head hosted gate or independent
+contract/privacy review and is not published on Product main. Lab #97 and CommitAtlas #154 have not
+consumed it and remain intentionally blocked. No consumer command was run.
+
+**Failures and workarounds.** The first review found three weak acceptance proofs: the fixture hash
+test was tautological, README registry checks proved presence rather than exact sets, and privacy
+was asserted only in tests. The single fix round binds README hashes to computed bytes, parses exact
+README/schema registry pairs, adds the RFC property vector and strict AJV, and moves privacy refusal
+into generation. No dependency or workaround was added.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` records merged PR #308, removes the
+late review's stale #301 sentence, refreshes Product/Lab refs, and identifies Product #305 → Lab #97
+→ CommitAtlas #154 as the binding merge order. `HUMAN_TODO.md` is unchanged.
+
+**Residual risk.** JSON Schema provides strict structural validation, while cross-field decision,
+ordering, and privacy rules remain runtime obligations documented in the contract README. The
+fixture's `source_product_contract_commit` anchors the existing WB-C1 input/view contract, not its
+own yet-unpublished commit; consumers pin the published ResearchFinding schema commit externally.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
+v0.1.0 tag-blocking owner action. Nothing in this contract slice infers or closes it.
+
+**Exact resume.** Publish `feature/issue305-research-finding-20260830` from Product main `81cf305`,
+open a ready pull request closing #305, require exact-head hosted proof and one independent
+contract/privacy review, then merge producer-first. Announce the landed Product commit on
+CommitAtlas #111; only then may Lab #97 begin. Do not tag or publish a release.
