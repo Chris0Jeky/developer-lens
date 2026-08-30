@@ -5271,3 +5271,46 @@ sole Product v0.1.0 tag-blocking owner action. Nothing in this reconciliation in
 the committed Product #311 repair to the coordinator for publication and its normal exact-head
 review/CI gates. Keep Product #309/#305 parked at `2d510e1` until the HIGH is repaired; do not
 advance Lab #97 or CommitAtlas #154 before the producer chain lands, and do not tag or publish.
+
+## 2026-08-30 - Product #314 Gate B scope and provenance follow-up
+
+**Changed.** Product #314 is the bounded post-merge follow-up to PR #312's late review. The Gate B
+ladder and supporting reference architecture now name the exact owner-consented (the owner's own
+data) or curated-public eligibility scope. The dataset-card template now distinguishes
+`owner_consented_real` from `curated_public_real`, requiring the appropriate consent or curation
+provenance reference rather than treating every real dataset as consented. The feature catalog and
+Gate B contract retain the reviewed per-candidate task, retention/deletion, release-review, and
+untouched-holdout proofs without authorizing third-party private data or a new owner gate. The
+existing FR-053 entry records the fourth estate-registry absence occurrence from PR #312 review
+comment 3888307823; no duplicate friction entry was added. `CURRENT_STATE.md` records #314 active
+and the observed Lab drift from main `6cf185b` after PR #103 to `8276ea6`, with Lab PR #105 open.
+`HUMAN_TODO.md` and executable prompt blocks are unchanged.
+
+**Verified.** On the #314 branch after the repository-required `npm.cmd ci` (359 packages audited,
+0 vulnerabilities), `npm.cmd run verify:context` passed (47 Markdown files, 31 required files),
+`node docs/analyser-program/taskdeck/tools/generate.mjs --check` passed (128 cards; only the
+existing near-limit warnings), the bounded Gate B consistency probes found no stale broad
+eligibility wording and found both provenance kinds, and `git diff --check` passed.
+
+**NOT verified.** This worker has not pushed, opened a pull request, or merged. No hosted #314 gate,
+independent review, release, tag, publication, protected-data access, real input, external model,
+telemetry, or credential path was exercised.
+
+**Failures and workarounds.** The prescribed estate registry was absent at its expected local path;
+the canonical FR-053 recurrence was updated and local repository canon plus live Git/GitHub evidence
+were used as the bounded fallback. No retry loop or duplicate friction record was introduced.
+
+**Docs-state sync.** `CURRENT_STATE.md` now points at Product main `cf96dab`, identifies Product
+#314 as the active follow-up, keeps Product #309/#305 parked for its numeric-leading-handle HIGH,
+and records Lab main `8276ea6` plus open Lab PR #105 observationally. `HUMAN_TODO.md` and the
+executable prompt surface remain unchanged.
+
+**Residual risk.** The contracts are planning artifacts and do not activate collection or model
+validation. Exact-head hosted proof and the normal one-review gate remain for the eventual PR.
+Live refs must be refreshed again before publication or merge.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains the sole Product
+release-tag owner action; q-6 remains unchanged and non-blocking for this reconciliation.
+
+**Exact resume.** On `fix/issue314-gateb-scope-20260830` from base `cf96dab`, complete the local
+proof, commit, and hand the branch to the coordinator. Do not push, open, or merge from this worker.
