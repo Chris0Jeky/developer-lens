@@ -5236,17 +5236,25 @@ The tests independently compile the standalone schema with strict AJV, reject ev
 negative case, compare README and schema registries exactly, round-trip the fixture, recompute both
 hashes, exercise RFC 8785 number and UTF-16 property-order vectors, and run both the finding-specific
 and shared forbidden-pattern privacy scans over the written fixture. `npm run check:research-finding`,
-lint, TypeScript, `npm run verify:context`, and `git diff --check` pass.
+lint, a forced TypeScript project build, `npm run verify:context`, and `git diff --check` pass.
 
-**NOT verified.** Product #305 has not yet run its exact-head hosted gate or independent
-contract/privacy review and is not published on Product main. Lab #97 and CommitAtlas #154 have not
-consumed it and remain intentionally blocked. No consumer command was run.
+**NOT verified.** Product #305's first exact-head hosted gate failed its build and therefore skipped
+the showcase step. The repaired head still needs a new exact-head hosted gate and a verification
+pass scoped to the type repair; it is not published on Product main. Lab #97 and CommitAtlas #154
+have not consumed it and remain intentionally blocked. No consumer command was run.
 
 **Failures and workarounds.** The first review found three weak acceptance proofs: the fixture hash
 test was tautological, README registry checks proved presence rather than exact sets, and privacy
 was asserted only in tests. The single fix round binds README hashes to computed bytes, parses exact
 README/schema registry pairs, adds the RFC property vector and strict AJV, and moves privacy refusal
 into generation. No dependency or workaround was added.
+
+The first published PR #309 head then exposed TS7022 in three discriminated-union declarations:
+their tuple casts referenced `typeof` the declarations being initialized. Required hosted run
+`33287256111` failed `Type-check and build` and skipped the showcase proof. The earlier local
+incremental `tsc -b` result was a false green; the repair replaces the self-references with explicit
+literal variants and passes `npx tsc -b --force --pretty false`. FR-098 records the proving-command
+lesson under Product #294. This red is repaired, not dismissed or retried unchanged.
 
 **Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` records merged PR #308, removes the
 late review's stale #301 sentence, refreshes Product/Lab refs, and identifies Product #305 → Lab #97
@@ -5260,7 +5268,7 @@ own yet-unpublished commit; consumers pin the published ResearchFinding schema c
 **Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
 v0.1.0 tag-blocking owner action. Nothing in this contract slice infers or closes it.
 
-**Exact resume.** Publish `feature/issue305-research-finding-20260830` from Product main `81cf305`,
-open a ready pull request closing #305, require exact-head hosted proof and one independent
-contract/privacy review, then merge producer-first. Announce the landed Product commit on
-CommitAtlas #111; only then may Lab #97 begin. Do not tag or publish a release.
+**Exact resume.** Push the Product #309 TS7022 repair and this state update on
+`feature/issue305-research-finding-20260830`, require the new exact-head hosted proof and a bounded
+verification of the repaired type seam, then merge producer-first. Announce the landed Product
+commit on CommitAtlas #111; only then may Lab #97 begin. Do not tag or publish a release.

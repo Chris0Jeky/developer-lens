@@ -6,10 +6,10 @@ completed-slice evidence and history.
 
 ```yaml
 updated: '2026-08-30'
-state_observed_at: '2026-08-30T02:05:53Z'
+state_observed_at: '2026-08-30T02:13:05Z'
 work_class: 'W3 producer-owned cross-repository contract'
 active_wave: 'P0.5 v0.1.0 release programme — Product issue #200'
-remote_refs_last_observed_at: '2026-08-30T02:05:53Z'
+remote_refs_last_observed_at: '2026-08-30T02:13:05Z'
 observation_semantics: >-
   product_main and lab_main are last-observed remote-ref snapshots at remote_refs_last_observed_at,
   not perpetual current-baseline assertions; refresh live Git/GitHub before any action.
@@ -52,7 +52,10 @@ last_verified_checks: >-
   lint, TypeScript, verify:context, and git diff --check pass on the unpushed branch. Standalone AJV
   strict validation, runtime semantic validation, exact README/schema registry parity, RFC 8785
   vectors, fixture/bundle hashes, and the invented fixture privacy scans are covered. Hosted Ubuntu
-  proof and exact-head review remain required. Lab main is
+  proof and exact-head review remain required. The first PR #309 head failed hosted build with
+  TS7022 because three Zod tuple casts self-referenced their own declarations; the bounded repair
+  uses explicit literal variants, and a forced local TypeScript build passes. FR-098 records why
+  the earlier incremental local command was false-green. Lab main is
   7262cfb0b8e5310dfbe6ccba6828d53015b30a00 with successful Check run 33286624282; Lab PR #100 is
   open, and tags/releases are zero. The local Windows storage-path limitation remains Product #293.
   Refresh live Git/GitHub before action.
@@ -116,8 +119,9 @@ exact_resume_point: >-
   7262cfb0b8e5310dfbe6ccba6828d53015b30a00 are the last-observed refs. Product PR #308 is merged
   with exact-head and merged-main proof green; #296 and #301 are closed; Product has zero open pull
   requests, tags, and releases. Publish Product #305 from
-  `feature/issue305-research-finding-20260830`, require exact-head hosted proof and one independent
-  contract/privacy review, then merge and announce the published Product commit on CommitAtlas
+  `feature/issue305-research-finding-20260830`, push the TS7022 repair and state update, require the
+  new exact-head hosted proof and a verification pass scoped to that repair, then merge and
+  announce the published Product commit on CommitAtlas
   #111. Lab #97 consumes only after Product lands, and CommitAtlas #154 follows both producer steps.
   Product #304 is the separate larger projection/export contract. The approved browser-client Method Trial proof
   remains complete; the external ChromeDevTools attempt is invalid and must not substitute for it.
