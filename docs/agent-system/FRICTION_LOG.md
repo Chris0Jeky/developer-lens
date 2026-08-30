@@ -2689,3 +2689,18 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   at the call site rather than relaxing the global CI timeout, so the strict default stays honest
   for every other test. A false red on `main` skips the deploy, which is worse than a false red on
   a pull request.
+
+### FR-098 — PowerShell blocked the npm shim during the #297 context check
+
+- **first-seen:** 2026-08-30
+- **status:** `workaround-documented`
+- **severity:** `LOW (local command invocation)`
+- **symptom:** Invoking `npm run verify:context` from PowerShell failed because the system
+  `npm.ps1` shim is not digitally signed under the active execution policy.
+- **impact:** The context check did not start; no repository or GitHub state changed.
+- **workaround:** Invoke the Windows command shim explicitly as `npm.cmd run verify:context`.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #297](https://github.com/Chris0Jeky/developer-lens/issues/297) owns the
+  planning-card consistency repair where this check was encountered.
+- **promotion:** One occurrence remains workaround-documented task debt; do not add a helper until
+  an independent recurrence establishes that a repository-local enforcement change is warranted.

@@ -79,11 +79,14 @@ the deterministic baseline by at least the preregistered **minimum meaningful im
 the final invented holdout; (iv) the primary test survives BH-FDR control (§1.4); (v) abstention,
 drift, resource, and privacy sub-gates all pass; (vi) removal test passes.
 
-**Gate B — validated.** Everything in A, plus: a consented real dataset exists with its own dataset
-card, an explicit capability/consent revision, a retention and deletion plan, and its own untouched
-final holdout. **Invented fixtures can never carry a candidate past `benchmarked`** — this is
-absolute. Because no consented real research dataset exists today and none is authorised by G1–G4,
-**every Gate B instance is a new owner gate**, recorded in `08_OPEN_QUESTIONS.md`, never assumed.
+**Gate B — validated.** Everything in A, plus: a consented or curated-public real dataset exists
+with its own dataset card, an explicit reviewed capability/consent revision, a retention and
+deletion plan, release review, and its own untouched final holdout. **Invented fixtures can never
+carry a candidate past `benchmarked`** — this is absolute. Constitution-v2 records that
+per-candidate validation is eligible under the existing consent, charter, matrix, and release
+gates (DL-Q-CONSENT); it does not assemble a dataset, activate a reader or model, or approve a
+candidate. **Each Gate B instance still requires its own reviewed candidate task and proofs**, and
+the task's holdout may not be reused.
 
 **Gate C — shipped.** Canonical §9's eight conditions, restated as executable checks:
 1. beats a deterministic baseline on the preregistered offline gate;
@@ -945,7 +948,7 @@ prevents the sunk-cost drift that turns "research" into "shipping because we bui
 
 | G | Gate | Why it is a gate, not a decision this document can make |
 |---|---|---|
-| **G-ML-1** | Any **consented real research dataset** for gate B, per candidate. | ADR-19: `validated` requires "a separately authorised, representative, consented dataset with its own card". No such authority exists under G1–G4. |
+| **G-ML-1** | Any candidate's transition from `benchmarked` to `validated`, per candidate. | ADR-19 still requires a representative consented or curated-public dataset with its own card, explicit reviewed capability/consent revision, retention/deletion, release review, and untouched holdout. Constitution-v2/DL-Q-CONSENT records eligibility under the existing gates; it is not dataset, reader, model, or candidate activation, and this row requests no redundant owner authorization. Each reviewed candidate task must supply these proofs. |
 | **G-ML-2** | Any **durable index** (lexical or vector) built by WB-C9. | ADR-20: "any durable index is a separately reviewed sink (owner gate)". |
 | **G-ML-3** | ADR-10 **Tier-2 semantics** (PR/issue prose, durable text embeddings) as an input to WB-C2. | ADR-10 records this as an explicit owner-gated policy proposal; **no card here assumes it**. |
 | **G-ML-4** | Adding **WB-C10** to the ADR-19 candidate register. | **Adjudicated 2026-08-04 (08 §4.8): accepted as DL-TRACE-03's evaluation specification, not a separate register entry or board card.** The register stays C1…C9. |
