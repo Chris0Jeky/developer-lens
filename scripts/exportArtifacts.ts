@@ -21,12 +21,14 @@ import {
 import { buildStandaloneReport } from '../src/lib/standaloneReport.js'
 import { createPublicShowcaseDashboard, SHOWCASE_RANGES } from './exportDemo.js'
 import {
+  createPrivacyControlDashboard,
   createForbiddenPatterns,
-  dashboardRepositoryIdentities,
   forbiddenPatternViolations,
-  portableBoundaryViolations,
+  portablePayloadBoundaryViolations,
+  renderedPortableBoundaryViolations,
   scanDirectoryForForbiddenPatterns,
-  shareBoundaryViolations,
+  sharePayloadBoundaryViolations,
+  renderedShareBoundaryViolations,
   type ForbiddenPattern,
 } from './exportPrivacyGuards.js'
 
@@ -94,6 +96,8 @@ export interface ExportArtifactsOptions {
   repositoryRedaction: RepositoryRedaction
   /** Injected so tests can drive the pipeline without reading `.developer-lens/`. */
   loadDashboard: (range: RangeKey) => Promise<DashboardData>
+  /** Local exports require the same redaction acknowledgement as the CLI surface. */
+  acknowledgeRedaction?: boolean
   /** Fixed per range for a reproducible synthetic export; random for a local one. */
   aliasSeed?: (range: RangeKey) => string
   env?: Readonly<Record<string, string | undefined>>
@@ -133,6 +137,11 @@ function buildRangeArtifacts(
   const violations: string[] = []
 
   const overview = createSharePayload(dashboard)
+  const shareControlDashboard = createPrivacyControlDashboard(dashboard, {
+    repositoryIdentities: true,
+    pullRequestTitles: true,
+  })
+  const overviewControl = createSharePayload(shareControlDashboard)
   const shareOutputs: PendingArtifact[] = [
     pending(`${overview.fileStem}.svg`, 'share-card', range, buildShareCardSvg(overview)),
     pending(
@@ -152,18 +161,23 @@ function buildRangeArtifacts(
   ]
 
   for (const [index, chapterId] of WRAPPED_CHAPTER_IDS.entries()) {
-    const chapter = createSharePayload(dashboard, {
+    const context = {
       kind: 'wrapped',
       chapterId,
       chapterNumber: index + 1,
-    })
+    } as const
+    const chapter = createSharePayload(dashboard, context)
+    const chapterControl = createSharePayload(shareControlDashboard, context)
     shareOutputs.push(
       pending(`${chapter.fileStem}.svg`, 'share-card', range, buildShareCardSvg(chapter)),
     )
+    violations.push(...sharePayloadBoundaryViolations(chapter.fileStem, chapter, chapterControl))
   }
 
+  violations.push(...sharePayloadBoundaryViolations(overview.fileStem, overview, overviewControl))
+
   for (const artifact of shareOutputs) {
-    violations.push(...shareBoundaryViolations(artifact.file, dashboard, artifact.content))
+    violations.push(...renderedShareBoundaryViolations(artifact.file, artifact.content))
   }
   artifacts.push(...shareOutputs)
 
@@ -174,19 +188,28 @@ function buildRangeArtifacts(
       repositoryRedaction: options.repositoryRedaction,
     })
     const output = buildPortableExperienceReport(payload)
+    const portableControlDashboard = createPrivacyControlDashboard(dashboard, {
+      pullRequestTitles: true,
+      subjectLogin: true,
+      generatedAt: true,
+      repositoryIdentities:
+        payload.scope === 'redacted-local' && payload.repositoryRedaction === 'all-aliases',
+    })
+    const controlPayload = createPortableExportPayload(portableControlDashboard, {
+      aliasSeed: options.aliasSeed,
+      artifact,
+      repositoryRedaction: options.repositoryRedaction,
+    })
     const file = `${payload.fileStem}.html`
-    violations.push(...portableBoundaryViolations(file, dashboard, output))
-    if (payload.repositoryRedaction === 'all-aliases') {
-      // The EFFECTIVE redaction, not the requested one: a public-demo payload resolves to
-      // `synthetic` and legitimately keeps its approved invented names, and `private-aliases`
-      // legitimately keeps public repository names. Only full aliasing promises no survivors.
-      for (const identity of dashboardRepositoryIdentities(dashboard)) {
-        if (output.includes(identity)) {
-          violations.push(`${file}: a repository identity survived full aliasing`)
-          break
-        }
-      }
-    }
+    violations.push(
+      ...portablePayloadBoundaryViolations(
+        file,
+        payload,
+        controlPayload,
+        payload.scope === 'redacted-local' && payload.repositoryRedaction === 'all-aliases',
+      ),
+    )
+    violations.push(...renderedPortableBoundaryViolations(file, output))
     if (artifact === 'wrapped' && !output.includes('data-chapter="9"')) {
       violations.push(`${file}: portable Wrapped does not contain all nine chapters`)
     }
@@ -303,6 +326,11 @@ async function removeFiles(directory: string, files: readonly string[]): Promise
 export async function exportArtifacts(
   options: ExportArtifactsOptions,
 ): Promise<ExportArtifactsResult> {
+  if (options.source === 'local' && !options.acknowledgeRedaction) {
+    throw new ArtifactExportError(
+      `refused: a local export requires ${ACKNOWLEDGE_REDACTION_FLAG}`,
+    )
+  }
   const patterns: ForbiddenPattern[] = createForbiddenPatterns(options.env ?? process.env)
   const outputDirectory = resolve(options.outputDirectory)
   const plan = await planOutputDirectory(outputDirectory)
@@ -563,6 +591,7 @@ export async function runExportArtifactsCli(
       source: invocation.source,
       ranges: invocation.ranges,
       repositoryRedaction: invocation.repositoryRedaction,
+      acknowledgeRedaction: invocation.acknowledgedRedaction,
       loadDashboard:
         invocation.source === 'local'
           ? loadLocalDashboard

@@ -7,10 +7,13 @@ import { buildPortableExperienceReport } from '../src/lib/portableExportReport.j
 import { createShareCaption, createSharePayload } from '../src/lib/sharePayload.js'
 import { buildStandaloneReport } from '../src/lib/standaloneReport.js'
 import {
+  createPrivacyControlDashboard,
   createForbiddenPatterns,
-  portableBoundaryViolations,
+  portablePayloadBoundaryViolations,
+  renderedPortableBoundaryViolations,
+  renderedShareBoundaryViolations,
   scanDirectoryForForbiddenPatterns,
-  shareBoundaryViolations,
+  sharePayloadBoundaryViolations,
 } from './exportPrivacyGuards.js'
 import {
   APPROVED_SHOWCASE_REPOSITORY_NAMES,
@@ -67,8 +70,14 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
     buildShareCardSvg(sharePayload),
     buildStandaloneReport(sharePayload),
   ].join('\n')
+  const shareControlDashboard = createPrivacyControlDashboard(dashboard, {
+    repositoryIdentities: true,
+    pullRequestTitles: true,
+  })
+  const shareControlPayload = createSharePayload(shareControlDashboard)
   assert(sharePayload.scope === 'public-demo', `${range}: share scope is not public-demo`)
-  assertNoViolations(shareBoundaryViolations(range, dashboard, shareOutput))
+  assertNoViolations(sharePayloadBoundaryViolations(range, sharePayload, shareControlPayload))
+  assertNoViolations(renderedShareBoundaryViolations(range, shareOutput))
 
   for (const artifact of ['dashboard', 'wrapped'] as const) {
     const portablePayload = createPortableExportPayload(dashboard, {
@@ -77,6 +86,16 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
       repositoryRedaction: 'private-aliases',
     })
     const portableOutput = buildPortableExperienceReport(portablePayload)
+    const portableControlDashboard = createPrivacyControlDashboard(dashboard, {
+      pullRequestTitles: true,
+      subjectLogin: true,
+      generatedAt: true,
+    })
+    const portableControlPayload = createPortableExportPayload(portableControlDashboard, {
+      aliasSeed: `synthetic-showcase-${range}`,
+      artifact,
+      repositoryRedaction: 'private-aliases',
+    })
     const portableRepositoryNames = portablePayload.repositories.map(
       (repository) => repository.label,
     )
@@ -92,8 +111,14 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
       `${range}: a portable repository is not a canonical synthetic showcase identity`,
     )
     assertNoViolations(
-      portableBoundaryViolations(`${range} portable ${artifact}`, dashboard, portableOutput),
+      portablePayloadBoundaryViolations(
+        `${range} portable ${artifact}`,
+        portablePayload,
+        portableControlPayload,
+        false,
+      ),
     )
+    assertNoViolations(renderedPortableBoundaryViolations(`${range} portable ${artifact}`, portableOutput))
     if (artifact === 'wrapped') {
       assert(
         portableOutput.includes('data-chapter="9"'),

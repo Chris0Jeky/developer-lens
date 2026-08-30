@@ -1,6 +1,8 @@
 import { readFile, readdir } from 'node:fs/promises'
 import { extname, join } from 'node:path'
 import type { DashboardData } from '../shared/types.js'
+import type { PortableExportPayload } from '../src/lib/portableExportPayload.js'
+import type { SharePayload } from '../src/lib/sharePayload.js'
 
 /**
  * One shared privacy scanner for every generated artifact.
@@ -125,73 +127,85 @@ export async function scanDirectoryForForbiddenPatterns(
   return { filesScanned, violations }
 }
 
-function meaningful(values: readonly string[]): string[] {
-  return values.map((value) => value.trim()).filter((value) => value.length > 0)
-}
-
-/** Repository identities as they appear in the source dashboard, never in an export. */
-export function dashboardRepositoryIdentities(dashboard: DashboardData): string[] {
-  return meaningful(
-    dashboard.repositories.flatMap((repository) => [
-      repository.nameWithOwner,
-      repository.displayName,
-    ]),
-  )
+export interface PrivacyControlOptions {
+  repositoryIdentities?: boolean
+  pullRequestTitles?: boolean
+  subjectLogin?: boolean
+  generatedAt?: boolean
 }
 
 /**
- * Summary-share invariants: cards, captions, and the compact report carry six allowlisted
- * aggregates and fixed copy, so no repository identity or pull-request title can legitimately
- * appear in them for ANY scope — synthetic or local.
+ * Clone a dashboard for differential export-boundary checks. Each selected source field gets a
+ * distinct, content-free canary. The clone deliberately changes no aggregate or unrelated field:
+ * a payload that does not emit the selected source values must remain identical to the control.
  */
-export function shareBoundaryViolations(
-  where: string,
+export function createPrivacyControlDashboard(
   dashboard: DashboardData,
-  output: string,
-): string[] {
-  const violations: string[] = []
-  for (const identity of dashboardRepositoryIdentities(dashboard)) {
-    if (output.includes(identity)) {
-      violations.push(`${where}: a repository identity escaped into the share output`)
-      break
+  options: PrivacyControlOptions,
+): DashboardData {
+  const control = structuredClone(dashboard)
+  if (options.repositoryIdentities) {
+    control.repositories = control.repositories.map((repository, index) => ({
+      ...repository,
+      nameWithOwner: `__developer_lens_export_control_repository_name_${index}__`,
+      displayName: `__developer_lens_export_control_repository_display_${index}__`,
+    }))
+  }
+  if (options.pullRequestTitles) {
+    control.pullRequests = control.pullRequests.map((pullRequest, index) => ({
+      ...pullRequest,
+      title: `__developer_lens_export_control_pull_request_title_${index}__`,
+    }))
+  }
+  if (options.subjectLogin) {
+    control.meta.subject = {
+      ...control.meta.subject,
+      login: '__developer_lens_export_control_subject_login__',
     }
   }
-  for (const title of meaningful(dashboard.pullRequests.map((pullRequest) => pullRequest.title))) {
-    if (output.includes(title)) {
-      violations.push(`${where}: a pull request title escaped into the share output`)
-      break
-    }
+  if (options.generatedAt) {
+    control.meta.generatedAt = '__developer_lens_export_control_generated_at__'
   }
-  if (/<script\b/i.test(output)) violations.push(`${where}: share output contains a script`)
-  return violations
+  return control
 }
 
-/**
- * Portable-experience invariants that hold for every scope. Repository labels are deliberately
- * NOT checked here: the synthetic showcase publishes its approved invented names, and a local
- * export under `private-aliases` keeps public repository names by design. Callers that require
- * full aliasing add `dashboardRepositoryIdentities` on top.
- */
-export function portableBoundaryViolations(
+function payloadsDiffer(actual: object, control: object): boolean {
+  return JSON.stringify(actual) !== JSON.stringify(control)
+}
+
+/** Compares structured share payloads so fixed copy cannot trigger a source-value false positive. */
+export function sharePayloadBoundaryViolations(
   where: string,
-  dashboard: DashboardData,
-  output: string,
+  actual: SharePayload,
+  control: SharePayload,
 ): string[] {
+  return payloadsDiffer(actual, control)
+    ? [`${where}: share payload depends on a prohibited repository identity or pull-request title`]
+    : []
+}
+
+/** Compares structured portable payloads; full aliasing also makes repository identities invariant. */
+export function portablePayloadBoundaryViolations(
+  where: string,
+  actual: PortableExportPayload,
+  control: PortableExportPayload,
+  allAliases: boolean,
+): string[] {
+  if (!payloadsDiffer(actual, control)) return []
+  return [
+    allAliases
+      ? `${where}: portable payload depends on a prohibited identity, title, subject, or generation time`
+      : `${where}: portable payload depends on a prohibited title, subject, or generation time`,
+  ]
+}
+
+/** Rendered-output checks that remain necessary for executable or remotely loaded content. */
+export function renderedShareBoundaryViolations(where: string, output: string): string[] {
+  return /<script\b/i.test(output) ? [`${where}: share output contains a script`] : []
+}
+
+export function renderedPortableBoundaryViolations(where: string, output: string): string[] {
   const violations: string[] = []
-  for (const title of meaningful(dashboard.pullRequests.map((pullRequest) => pullRequest.title))) {
-    if (output.includes(title)) {
-      violations.push(`${where}: a pull request title escaped into the portable output`)
-      break
-    }
-  }
-  const login = dashboard.meta.subject.login.trim()
-  if (login.length > 0 && output.includes(login)) {
-    violations.push(`${where}: subject identity escaped into the portable output`)
-  }
-  const generatedAt = dashboard.meta.generatedAt.trim()
-  if (generatedAt.length > 0 && output.includes(generatedAt)) {
-    violations.push(`${where}: exact generation time escaped into the portable output`)
-  }
   if (/<script\b/i.test(output)) violations.push(`${where}: portable output contains a script`)
   if (/<(?:img|link)\b/i.test(output)) {
     violations.push(`${where}: portable output references an external asset`)

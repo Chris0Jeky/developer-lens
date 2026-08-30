@@ -6,29 +6,30 @@ completed-slice evidence and history.
 
 ```yaml
 updated: '2026-08-30'
-state_observed_at: '2026-08-30T01:05:53Z'
-work_class: 'W2 post-merge contract repair and live-state reconciliation'
+state_observed_at: '2026-08-30T01:43:52Z'
+work_class: 'W2 bounded export privacy repair and queue continuation'
 active_wave: 'P0.5 v0.1.0 release programme — Product issue #200'
-remote_refs_last_observed_at: '2026-08-30T01:05:53Z'
+remote_refs_last_observed_at: '2026-08-30T01:43:52Z'
 observation_semantics: >-
   product_main and lab_main are last-observed remote-ref snapshots at remote_refs_last_observed_at,
   not perpetual current-baseline assertions; refresh live Git/GitHub before any action.
-product_main: '425708e03e7bbc3cf09f64e9c154938989647dbe'
+product_main: '1e6b97b69eb457c81455c141b6b4470215491567'
 lab_main: '6a86cd801646e4a9daee127eea93742ba996f050'
 active_slice: >-
-  Product PR #303 is merged at 425708e with its exact-head PR gate and merged-main showcase
-  deployment green, but its missing LF attribute makes the new summary drift check fail on Windows.
-  The active follow-up adds that attribute, tolerates already-materialized CRLF only at the
-  generated-text comparison boundary, and reconciles the live state. Product has zero open
-  pull requests, tags, and releases. P0.5 issue #200 remains the active release wave, and
+  Product PR #306 repaired PR #303's LF contract and merged as fda8ce6; Product PR #307 then fixed
+  the named shared-artifact lifecycle timeout and merged as 1e6b97b, closing #301. Their exact-head
+  gates and merged-main showcase deployments are green. The current #296 slice replaces complete
+  rendered-output substring scans with structured differential payload checks, proves an invented
+  local-shaped full-alias collision, and preserves static script, external-asset, secret, and path
+  checks. Product had zero open pull requests, tags, and releases before this branch was published.
+  P0.5 issue #200 remains the active release wave, and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is still the sole tag-blocking owner gate.
 next_value_slice: >-
-  After the PR #303 LF follow-up lands, fix Product #301: give the named shared-artifact lifecycle
-  test an explicit per-test timeout without relaxing the global 5s CI default, then re-run the
-  queue. Next bounded Product work is #296; the highest-value new mission contract is Product
-  #305, followed through producer-first cross-repository sequencing, while #304 is the separate
-  larger public-lens and export-profile contract. #297 remains a planning-consistency repair; #293
-  is parked pending a security-reviewed Windows path-identity design; #300 is low-priority. Request
+  Carry Product #296 through its exact-head gate and independent privacy review. Then select Product
+  #305, the producer-first ResearchFindingProjection.v1 contract, using the cross-repository
+  contract workflow; #304 is the separate larger public-lens and export-profile contract. #297
+  remains a planning-consistency repair; #293 is parked pending a security-reviewed Windows
+  path-identity design; #300 is low-priority. Request
   or await explicit Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off, but
   perform no tag or publication before that gate. The v0.1.0 metadata slice must be re-created from
   scratch after the owner gate — see Product #298.
@@ -40,23 +41,18 @@ blockers: >-
   selected repair. No tag, release, package publication, or public publication is authorized
   before Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
 last_verified_checks: >-
-  2026-08-30T01:05:53Z live REST, GraphQL, and Git observation. Product local HEAD, origin/main,
-  and GitHub main are 425708e03e7bbc3cf09f64e9c154938989647dbe after PR #303 merged from exact
-  head e494cced8c15520e6ebbde811f2000a09cfa68b2. Exact-head Prove the pull request run 33127892444
-  succeeded, and merged-main Deploy public showcase run 33128174965 succeeded through build,
-  synthetic showcase/privacy proof, Pages artifact, and deploy. Product has zero open pull
-  requests, tags, and releases. GitHub records no submitted review, review comment, or review
-  thread for PR #303. A fresh-context post-merge review found one HIGH defect: the new summary JSON
-  lacks the LF attribute used by the generator's raw drift comparison, so the focused summary test
-  and check:method-trial-view fail on a core.autocrlf Windows checkout. No other introduced
-  correctness, privacy, provenance, schema, consumer, or public-route defect was found. The
-  follow-up's focused 13-test summary/view proof, check:method-trial-view, verify:context, and
-  git diff --check are green. The full local check remains red at the pre-existing Product #293
-  Windows path-identity wall: 240 storage and activation-path tests failed before the unrelated
-  build step could run. PR #303 added the strict C0 DeveloperLensMethodTrialSummary.v1 producer
-  contract; CommitAtlas PR #101
-  consumed that exact producer commit and closed CommitAtlas #100. Product #304 and #305 are new
-  dependency-safe cross-repository producer tasks. Lab main remains
+  2026-08-30T01:43:52Z live REST and Git observation. Product local HEAD, origin/main, and GitHub
+  main are 1e6b97b69eb457c81455c141b6b4470215491567. PR #306 merged as fda8ce6 after exact-head
+  Prove the pull request run 33285524300 passed; merged-main run 33285666196 passed. PR #307 merged
+  as 1e6b97b after exact-head run 33285700817 and a clean automatic Codex review; merged-main run
+  33285862915 passed the full gate, synthetic showcase/privacy proof, Pages artifact, and deploy.
+  Product had zero open pull requests, tags, and releases at the observation, and #301 is closed.
+  For #296, 17 focused export tests, build:showcase, lint, TypeScript build, verify:context, and git
+  diff --check pass on the unpushed branch. The invented local-shaped regression reads no protected
+  data. The full local check was not repeated because its known Product #293 Windows path-identity
+  wall is outside this seam; hosted Ubuntu proof remains required. PR #303's strict C0
+  DeveloperLensMethodTrialSummary.v1 producer contract remains consumed by CommitAtlas PR #101.
+  Product #304 and #305 are dependency-safe cross-repository producer tasks. Lab main remains
   6a86cd801646e4a9daee127eea93742ba996f050, with successful Check run 32206737622 and zero open
   pull requests, tags, and releases. The known strict-timeout false-red is still owned by Product
   #301; the local Windows storage-path limitation remains Product #293. Refresh live Git/GitHub
@@ -77,10 +73,10 @@ operational_resume:
     exact Lab check is green and Lab has zero open pull requests, tags, and releases at the
     observation.
   next_selection: >-
-    Land the PR #303 LF repair, then select Product #301 as the next bounded repair and re-sense.
-    After it, prefer Product #296 or the producer-first Product #305 contract; Product #304 is a
-    larger separate contract/export lane, #297 is planning consistency, #293 is parked pending
-    design, and #300 remains low-priority. Request or await
+    Publish and land Product #296 after exact-head proof and independent privacy review, then select
+    the producer-first Product #305 contract. Product #304 is a larger separate contract/export
+    lane, #297 is planning consistency, #293 is parked pending design, and #300 remains low-priority.
+    Request or await
     Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off, and do not tag or publish
     before it. The release-prep branch is unrecoverable and is re-created only after the owner gate
     under Product #298.
@@ -118,15 +114,13 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  Product main 425708e03e7bbc3cf09f64e9c154938989647dbe and Lab main
-  6a86cd801646e4a9daee127eea93742ba996f050 are the last-observed refs. Product PR #303 merged from
-  e494cced8c15520e6ebbde811f2000a09cfa68b2 with exact-head run 33127892444 green; merged-main run
-  33128174965 is also green, and Product has zero open pull requests, tags, and releases. Its
-  post-merge review found the missing LF attribute, and the PR review required legacy-checkout CRLF
-  tolerance at the generated-text comparison boundary; land that bounded repair and re-prove the
-  summary seam, then fix Product #301 and re-run the deterministic queue. Product #305 is the
-  dependency-safe generalized research-contract successor to #303, while Product #304 is a
-  separate larger projection/export contract. The approved browser-client Method Trial proof
+  Product main 1e6b97b69eb457c81455c141b6b4470215491567 and Lab main
+  6a86cd801646e4a9daee127eea93742ba996f050 are the last-observed refs. Product PRs #306 and #307
+  are merged with exact-head and merged-main proof green, #301 is closed, and Product had zero open
+  pull requests, tags, and releases before the #296 branch was published. Carry #296 through its
+  exact-head gate, independent privacy review, merge, and post-merge sweep; then select #305 under
+  producer-first cross-repository sequencing. Product #304 is the separate larger projection/export
+  contract. The approved browser-client Method Trial proof
   remains complete; the external ChromeDevTools attempt is invalid and must not substitute for it.
   Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818 at 54217ff: Product #298 owns
   re-creating that slice after Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). Until that owner
