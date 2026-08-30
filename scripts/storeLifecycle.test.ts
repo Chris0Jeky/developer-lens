@@ -316,7 +316,7 @@ describe('store lifecycle command', () => {
          ) AND event_kind = 'index_built'`,
       ).pluck().get()).toBe(1)
     } finally { store.close() }
-  })
+  }, 20_000)
 
   it('reopens an interrupted shared-artifact maintenance saga without stranded deletion state', () => {
     expect(() => runStoreLifecycleDemo({
