@@ -127,20 +127,6 @@ export async function scanDirectoryForForbiddenPatterns(
   return { filesScanned, violations }
 }
 
-function meaningful(values: readonly string[]): string[] {
-  return values.map((value) => value.trim()).filter((value) => value.length > 0)
-}
-
-/** Repository identities as they appear in the source dashboard, never in an export. */
-export function dashboardRepositoryIdentities(dashboard: DashboardData): string[] {
-  return meaningful(
-    dashboard.repositories.flatMap((repository) => [
-      repository.nameWithOwner,
-      repository.displayName,
-    ]),
-  )
-}
-
 export interface PrivacyControlOptions {
   repositoryIdentities?: boolean
   pullRequestTitles?: boolean
@@ -225,32 +211,4 @@ export function renderedPortableBoundaryViolations(where: string, output: string
     violations.push(`${where}: portable output references an external asset`)
   }
   return violations
-}
-
-/**
- * Compatibility wrapper for callers that only have rendered output. Source-value invariants are
- * checked with `sharePayloadBoundaryViolations` before rendering; this wrapper retains only the
- * executable-content check for older showcase verification call sites.
- */
-export function shareBoundaryViolations(
-  where: string,
-  dashboard: DashboardData,
-  output: string,
-): string[] {
-  void dashboard
-  return renderedShareBoundaryViolations(where, output)
-}
-
-/**
- * Compatibility wrapper for callers that only have rendered output. Portable source-value
- * invariants are checked with `portablePayloadBoundaryViolations`; this wrapper retains only the
- * executable-content and external-asset checks.
- */
-export function portableBoundaryViolations(
-  where: string,
-  dashboard: DashboardData,
-  output: string,
-): string[] {
-  void dashboard
-  return renderedPortableBoundaryViolations(where, output)
 }

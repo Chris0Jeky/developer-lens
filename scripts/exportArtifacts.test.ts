@@ -17,10 +17,10 @@ import {
   createPrivacyControlDashboard,
   createForbiddenPatterns,
   portablePayloadBoundaryViolations,
-  portableBoundaryViolations,
+  renderedPortableBoundaryViolations,
+  renderedShareBoundaryViolations,
   scanDirectoryForForbiddenPatterns,
   sharePayloadBoundaryViolations,
-  shareBoundaryViolations,
 } from './exportPrivacyGuards.js'
 
 interface Manifest {
@@ -107,21 +107,25 @@ describe('headless artifact export', () => {
     }
   })
 
-  it('allows source values that happen to match fixed export copy', async () => {
+  it('allows local source values that happen to match fixed export copy', async () => {
     const dashboard = createPublicShowcaseDashboard('6m')
+    dashboard.meta.mode = 'private'
+    dashboard.meta.privacy = 'local-only'
     dashboard.repositories[0].displayName = 'developer-lens'
     dashboard.pullRequests[0].title = 'The privacy boundary'
 
     const result = await exportArtifacts({
       outputDirectory: output,
-      source: 'synthetic',
+      source: 'local',
       ranges: ['6m'],
       repositoryRedaction: 'all-aliases',
+      acknowledgeRedaction: true,
       loadDashboard: () => Promise.resolve(dashboard),
-      aliasSeed: () => 'synthetic-fixed-copy-collision',
+      aliasSeed: () => 'local-fixed-copy-collision',
       env: {},
     })
 
+    expect(result.scope).toBe('redacted-local')
     expect(result.privacyScan.status).toBe('passed')
   })
 
@@ -358,7 +362,7 @@ describe('shared export privacy guards', () => {
     const actual = createSharePayload(dashboard)
     const control = createSharePayload(controlDashboard)
 
-    expect(shareBoundaryViolations('card.svg', dashboard, 'clean aggregate copy')).toEqual([])
+    expect(renderedShareBoundaryViolations('card.svg', 'clean aggregate copy')).toEqual([])
     expect(sharePayloadBoundaryViolations('card.svg', actual, control)).toEqual([])
 
     const planted = { ...actual, title: dashboard.repositories[0].displayName }
@@ -389,7 +393,7 @@ describe('shared export privacy guards', () => {
       repositoryRedaction: 'all-aliases',
     })
 
-    expect(portableBoundaryViolations('p.html', dashboard, '<p>aggregates only</p>')).toEqual([])
+    expect(renderedPortableBoundaryViolations('p.html', '<p>aggregates only</p>')).toEqual([])
     expect(portablePayloadBoundaryViolations('p.html', actual, control, true)).toEqual([])
     const planted = {
       ...actual,
@@ -402,10 +406,10 @@ describe('shared export privacy guards', () => {
       'p.html: portable payload depends on a prohibited identity, title, subject, or generation time',
     )
     expect(violations.join('\n')).not.toContain(dashboard.repositories[0].displayName)
-    expect(portableBoundaryViolations('p.html', dashboard, '<script>x()</script>')).toContain(
+    expect(renderedPortableBoundaryViolations('p.html', '<script>x()</script>')).toContain(
       'p.html: portable output contains a script',
     )
-    expect(portableBoundaryViolations('p.html', dashboard, '<img src="x">')).toContain(
+    expect(renderedPortableBoundaryViolations('p.html', '<img src="x">')).toContain(
       'p.html: portable output references an external asset',
     )
   })

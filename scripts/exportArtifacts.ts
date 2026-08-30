@@ -96,6 +96,8 @@ export interface ExportArtifactsOptions {
   repositoryRedaction: RepositoryRedaction
   /** Injected so tests can drive the pipeline without reading `.developer-lens/`. */
   loadDashboard: (range: RangeKey) => Promise<DashboardData>
+  /** Local exports require the same redaction acknowledgement as the CLI surface. */
+  acknowledgeRedaction?: boolean
   /** Fixed per range for a reproducible synthetic export; random for a local one. */
   aliasSeed?: (range: RangeKey) => string
   env?: Readonly<Record<string, string | undefined>>
@@ -324,6 +326,11 @@ async function removeFiles(directory: string, files: readonly string[]): Promise
 export async function exportArtifacts(
   options: ExportArtifactsOptions,
 ): Promise<ExportArtifactsResult> {
+  if (options.source === 'local' && !options.acknowledgeRedaction) {
+    throw new ArtifactExportError(
+      `refused: a local export requires ${ACKNOWLEDGE_REDACTION_FLAG}`,
+    )
+  }
   const patterns: ForbiddenPattern[] = createForbiddenPatterns(options.env ?? process.env)
   const outputDirectory = resolve(options.outputDirectory)
   const plan = await planOutputDirectory(outputDirectory)
@@ -584,6 +591,7 @@ export async function runExportArtifactsCli(
       source: invocation.source,
       ranges: invocation.ranges,
       repositoryRedaction: invocation.repositoryRedaction,
+      acknowledgeRedaction: invocation.acknowledgedRedaction,
       loadDashboard:
         invocation.source === 'local'
           ? loadLocalDashboard
