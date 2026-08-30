@@ -5114,3 +5114,52 @@ it.
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`. The agent-executable queue is Product
 #296, #297, #300, #293, #294 and #301; none touches the owner gate, a tag, a publication, or a
 capability activation. Product #299 is discharged by the milestone entry above.
+
+## 2026-08-30 — Product PR #303 late review, LF repair, and live-state reconciliation
+
+**Changed.** Reconciled Product main after PR #303 merged as `425708e` from exact head `e494cce`.
+The merged slice publishes the invented-C0 `DeveloperLensMethodTrialSummary.v1` bridge; CommitAtlas
+PR #101 consumed that exact producer head and closed CommitAtlas #100. Product has zero open pull
+requests, tags, and releases; new producer tasks #304 and #305 are open. A fresh-context late
+review found one concrete HIGH defect in #303: the new JSON contract files were not covered by the
+repository's LF attributes, so a `core.autocrlf=true` checkout materialized CRLF while the generator
+raw-compared against LF. This follow-up adds the missing `text eol=lf` rule and refreshes the compact
+resume artifact. No contract content, capability, data path, release, or owner gate changed.
+
+**Verified.** Live REST, GraphQL, and Git agreed on Product main `425708e`; PR #303's exact-head
+`Prove the pull request` run `33127892444` and merged-main `Deploy public showcase` run
+`33128174965` are successful. GitHub records no submitted review, review comment, or review thread
+on #303, so the independent late review supplies the missing lens and found no other introduced
+correctness, privacy, provenance, schema, consumer, or public-route defect. Before the repair,
+`git ls-files --eol` showed `i/lf w/crlf` and the focused tests failed 2 of 13 on newline-only
+comparisons; `check:method-trial-view` reported summary schema drift. After the repair and one
+deterministic generator rematerialization, `git ls-files --eol` shows `i/lf w/lf attr/text eol=lf`,
+the two focused suites pass 13 of 13, `npm.cmd run check:method-trial-view` passes,
+`npm.cmd run verify:context` passes 47 Markdown and 31 required files, and `git diff --check` is
+clean.
+
+**NOT verified.** The local full `npm.cmd run check` does not pass on this Windows checkout: lint,
+context, both generated drift checks, and 72 test files passed, but 16 test files failed with 240
+storage/activation-path failures at the pre-existing Product #293 path-identity boundary; the gate
+stopped before build. Hosted Ubuntu proof for this follow-up is still required. No protected data,
+real input, browser, release, tag, package, publication, external model, telemetry, or credential
+path was exercised.
+
+**Failures and workarounds.** The initial focused failure was the reviewed defect and is repaired,
+not dismissed. The full-check failure is the already tracked Product #293 environment boundary; it
+was run once and not retried or worked around. No new friction-log entry was needed.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` now records PR #303, the exact hosted
+runs, the review defect and follow-up, current zero-PR/tag/release state, unchanged Lab main, new
+#304/#305 contract work, and Product #301 as the next bounded repair.
+
+**Residual risk.** Standalone JSON Schema intentionally cannot enforce every cross-field semantic
+relation; the generator and focused semantic tests remain the binding producer proof. The follow-up
+still needs exact-head hosted CI and one bounded review before merge.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
+v0.1.0 tag-blocking owner action. Nothing in this slice infers, anticipates, or closes it.
+
+**Exact resume.** On `fix/pr303-summary-eol-20260830` from base `425708e`, commit and publish the
+three-file repair, open a ready pull request linked from merged PR #303, and require the exact
+`Prove the pull request` gate. After merge, refresh and select Product #301; do not tag or publish.
