@@ -5171,3 +5171,50 @@ v0.1.0 tag-blocking owner action. Nothing in this slice infers, anticipates, or 
 **Exact resume.** On `fix/pr303-summary-eol-20260830` from base `425708e`, commit and publish the
 three-file repair, open a ready pull request linked from merged PR #303, and require the exact
 `Prove the pull request` gate. After merge, refresh and select Product #301; do not tag or publish.
+
+## 2026-08-30 — Product #301 closeout and #296 export-boundary repair
+
+**Changed.** PR #306 repaired the PR #303 generated-summary LF contract, and PR #307 gave only the
+named shared-artifact deletion-lineage test an explicit 20-second timeout while preserving the
+global five-second default. Product #301 is closed. The next deterministic slice, Product #296,
+replaces source-value substring scans over complete rendered exports with differential checks over
+the structured share and portable payloads. Fixed branding and chapter copy can no longer collide
+with an invented local repository name or pull-request title, while full aliasing still requires
+repository identities to be invariant. Direct local export API calls now require the same explicit
+redaction acknowledgement as the CLI. Rendered script and external-asset checks and the shared
+secret/path scan remain unchanged.
+
+**Verified.** PR #306 exact-head run `33285524300` and merged-main run `33285666196` passed. PR #307
+exact-head run `33285700817`, its automatic Codex review, and merged-main run `33285862915` passed;
+the latter completed the full gate, synthetic showcase/privacy proof, Pages artifact, and deploy at
+main `1e6b97b`. For #296, the invented local-shaped full-alias collision and planted structured leak
+are covered among 17 passing focused export tests. `npm run build:showcase`, lint, TypeScript build,
+`npm run verify:context`, and `git diff --check` pass on the branch.
+
+**NOT verified.** Product #296 still requires exact-head hosted CI, one fresh-context independent
+privacy review, merge, and merged-main proof. The full local gate was not repeated: its known
+Product #293 Windows storage-path identity failures do not exercise this export seam. No protected
+data, actual local dashboard, browser, release, tag, package, publication, external model,
+telemetry, or credential path was exercised.
+
+**Failures and workarounds.** The first #296 review found that the collision regression used the
+synthetic lane even though the acceptance criterion named a local-shaped export. The fix round now
+uses an invented in-memory `local-only` dashboard, `source: local`, full aliasing, and explicit
+redaction acknowledgement; it does not read `.developer-lens/` or any private input.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` now records merged PRs #306/#307,
+closed #301, the active #296 proof, and Product #305 as the next producer-first contract task.
+`HUMAN_TODO.md` is unchanged.
+
+**Residual risk.** Differential checks prove that prohibited source fields cannot affect the
+structured payload; static rendered checks separately reject executable or remotely loaded
+content. Future payload fields must be added to the control projection when their source domain is
+prohibited. Hosted Ubuntu proof remains outstanding until the #296 pull request runs.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
+v0.1.0 tag-blocking owner action. Nothing in this slice infers, anticipates, or closes it.
+
+**Exact resume.** Publish `fix/issue296-export-boundary-20260830` from Product main `1e6b97b`, open
+a ready pull request closing #296, require its exact-head gate and independent privacy review, then
+merge and re-check merged main. Select Product #305 next under the producer-first cross-repository
+contract workflow; do not tag or publish.
