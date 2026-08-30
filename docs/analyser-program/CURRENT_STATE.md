@@ -55,7 +55,10 @@ last_verified_checks: >-
   proof and exact-head review remain required. The first PR #309 head failed hosted build with
   TS7022 because three Zod tuple casts self-referenced their own declarations; the bounded repair
   uses explicit literal variants, and a forced local TypeScript build passes. FR-098 records why
-  the earlier incremental local command was false-green. Lab main is
+  the earlier incremental local command was false-green. The final review round then confirmed five
+  merge blockers in runtime hash enforcement, CRLF comparison, one-character handle rejection,
+  offline-method scope, and metric/gate consistency; commit `fa1cac2` fixes all five with focused
+  regression coverage. Lab main is
   7262cfb0b8e5310dfbe6ccba6828d53015b30a00 with successful Check run 33286624282; Lab PR #100 is
   open, and tags/releases are zero. The local Windows storage-path limitation remains Product #293.
   Refresh live Git/GitHub before action.
@@ -119,8 +122,9 @@ exact_resume_point: >-
   7262cfb0b8e5310dfbe6ccba6828d53015b30a00 are the last-observed refs. Product PR #308 is merged
   with exact-head and merged-main proof green; #296 and #301 are closed; Product has zero open pull
   requests, tags, and releases. Publish Product #305 from
-  `feature/issue305-research-finding-20260830`, push the TS7022 repair and state update, require the
-  new exact-head hosted proof and a verification pass scoped to that repair, then merge and
+  `feature/issue305-research-finding-20260830`, push the final review-fix batch and state update,
+  require the new exact-head hosted proof and one final exact-head contract/privacy verification,
+  then merge and
   announce the published Product commit on CommitAtlas
   #111. Lab #97 consumes only after Product lands, and CommitAtlas #154 follows both producer steps.
   Product #304 is the separate larger projection/export contract. The approved browser-client Method Trial proof

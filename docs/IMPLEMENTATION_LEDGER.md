@@ -5256,6 +5256,15 @@ incremental `tsc -b` result was a false green; the repair replaces the self-refe
 literal variants and passes `npx tsc -b --force --pretty false`. FR-098 records the proving-command
 lesson under Product #294. This red is repaired, not dismissed or retried unchanged.
 
+The automatic connector review of the original head then identified five causal merge blockers:
+runtime parsing accepted a formatted but incorrect bundle hash; generated CRLF bytes could evade
+the drift check; one-character handles escaped the privacy token; the reserved offline PELT method
+could occupy an online comparison; and the two metric-backed gates could contradict their measured
+values. The final bounded review-fix commit `fa1cac2` recomputes the bundle hash at runtime, compares
+generated text after CRLF-only normalization while pinning fixture JSON to LF, closes the handle
+regex, rejects offline PELT in v1 method slots, and binds both gate booleans to their measurements.
+Focused tamper, arbitrary-hash, PELT, contradiction, privacy, and normalization regressions pass.
+
 **Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` records merged PR #308, removes the
 late review's stale #301 sentence, refreshes Product/Lab refs, and identifies Product #305 → Lab #97
 → CommitAtlas #154 as the binding merge order. `HUMAN_TODO.md` is unchanged.
@@ -5268,7 +5277,7 @@ own yet-unpublished commit; consumers pin the published ResearchFinding schema c
 **Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
 v0.1.0 tag-blocking owner action. Nothing in this contract slice infers or closes it.
 
-**Exact resume.** Push the Product #309 TS7022 repair and this state update on
-`feature/issue305-research-finding-20260830`, require the new exact-head hosted proof and a bounded
-verification of the repaired type seam, then merge producer-first. Announce the landed Product
+**Exact resume.** Push the Product #309 final review-fix batch and this state update on
+`feature/issue305-research-finding-20260830`, require the new exact-head hosted proof and one final
+exact-head contract/privacy verification, then merge producer-first. Announce the landed Product
 commit on CommitAtlas #111; only then may Lab #97 begin. Do not tag or publish a release.
