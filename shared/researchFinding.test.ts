@@ -4,7 +4,7 @@ import { resolve } from 'node:path'
 import { Ajv2020 } from 'ajv/dist/2020.js'
 import { describe, expect, it } from 'vitest'
 import { createForbiddenPatterns, forbiddenPatternViolations } from '../scripts/exportPrivacyGuards.js'
-import { fixtureSha256, renderResearchFindingSchema, renderResearchFindingFixture } from '../scripts/generateResearchFinding.js'
+import { fixtureSha256, normalizeGeneratedText, renderResearchFindingSchema, renderResearchFindingFixture } from '../scripts/generateResearchFinding.js'
 import {
   GATES,
   LIMITATIONS,
@@ -97,6 +97,19 @@ describe('ResearchFindingProjection.v1', () => {
     expect(() => ResearchFindingSchema.parse({ ...fixture, gates: [fixture.gates[1], fixture.gates[0]] })).toThrow()
     expect(() => ResearchFindingSchema.parse({ ...fixture, decision: { ...fixture.decision, retained_fallback: 'bocpd_gaussian' } })).toThrow()
     expect(() => ResearchFindingSchema.parse({ ...fixture, decision: { ...fixture.decision, outcome: 'benchmarked', retained_fallback: 'rolling_median_mad' } })).toThrow()
+    const tampered = structuredClone(fixture)
+    tampered.finding.title = 'A changed finding with the same formatted hash'
+    expect(() => ResearchFindingSchema.parse(tampered)).toThrow()
+    const arbitraryHash = structuredClone(tampered)
+    arbitraryHash.provenance.bundle_hash = `sha256:${'f'.repeat(64)}`
+    expect(() => ResearchFindingSchema.parse(arbitraryHash)).toThrow()
+    const pelt = structuredClone(fixture)
+    pelt.methods.baseline = { method_code: 'pelt_offline', display_name: 'PELT descriptive marker' }
+    expect(() => ResearchFindingSchema.parse(pelt)).toThrow()
+    const contradictory = structuredClone(fixture)
+    contradictory.gates[4].passed = true
+    contradictory.gates[5].passed = false
+    expect(() => ResearchFindingSchema.parse(contradictory)).toThrow()
   })
 
   it('publishes registries consistently in the README', async () => {
@@ -136,6 +149,7 @@ describe('ResearchFindingProjection.v1', () => {
     expect(() => canonicalizeJson(new Date(0))).toThrow()
     expect(() => canonicalizeJson({ toJSON: () => ({}) })).toThrow()
     expect(() => canonicalizeJson('\ud800')).toThrow()
+    expect(normalizeGeneratedText('first\r\nsecond\nthird\rfourth')).toBe('first\nsecond\nthird\rfourth')
   })
 
   it('rejects planted privacy boundary violations while allowing the exact provenance URL', async () => {
@@ -143,7 +157,7 @@ describe('ResearchFindingProjection.v1', () => {
     assertResearchFindingPrivacy(fixture)
     const fixtureText = await readFile(fixturePath, 'utf8')
     expect(forbiddenPatternViolations(fixturePath, fixtureText, createForbiddenPatterns({}))).toEqual([])
-    const planted = { ...fixture, generated_at: fixture.generated_at, finding: { ...fixture.finding, title: 'owner/repository @person email@example.com /private/path 2026-01-01' } }
+    const planted = { ...fixture, generated_at: fixture.generated_at, finding: { ...fixture.finding, title: 'owner/repository @a @person email@example.com /private/path 2026-01-01' } }
     expect(researchFindingPrivacyViolations(planted)).toEqual(expect.arrayContaining(['denied identity, email, path, or repository token', 'date outside generated_at']))
     expect(() => assertResearchFindingPrivacy(planted)).toThrow()
     expect(researchFindingPrivacyViolations({ ...fixture, provenance: { ...fixture.provenance, public_url: RESEARCH_FINDING_PUBLIC_URL } })).toEqual([])

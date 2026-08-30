@@ -99,7 +99,7 @@ const unsupportedClaim = z.discriminatedUnion('code', [
   z.strictObject({ code: z.literal('online_pelt_performance'), display_text: z.literal(UNSUPPORTED_CLAIMS.online_pelt_performance) }),
 ])
 
-export const ResearchFindingSchema = z.strictObject({
+const ResearchFindingContentSchema = z.strictObject({
   schema_version: z.literal(RESEARCH_FINDING_SCHEMA_VERSION),
   classification: z.enum(['C0', 'C1']),
   subject_class: z.enum(['software-system', 'repository', 'instrument', 'aggregate-window']),
@@ -114,6 +114,7 @@ export const ResearchFindingSchema = z.strictObject({
   provenance: z.strictObject({ producer: z.literal(RESEARCH_FINDING_PRODUCER), source_lab_commit: commit, source_product_contract_commit: commit, bundle_hash: sha256, public_url: z.literal(RESEARCH_FINDING_PUBLIC_URL).optional() }),
 }).superRefine((value, ctx) => {
   if (value.methods.baseline.method_code === value.methods.candidate.method_code) ctx.addIssue({ code: 'custom', path: ['methods'], message: 'baseline and candidate methods must be distinct' })
+  if (value.methods.baseline.method_code === 'pelt_offline' || value.methods.candidate.method_code === 'pelt_offline') ctx.addIssue({ code: 'custom', path: ['methods'], message: 'pelt_offline is reserved for a future offline metric schema' })
   const metricKeys = value.metrics.map((item) => item.key)
   if (new Set(metricKeys).size !== metricKeys.length) ctx.addIssue({ code: 'custom', path: ['metrics'], message: 'metric keys must be unique' })
   if (value.gates) {
@@ -128,11 +129,25 @@ export const ResearchFindingSchema = z.strictObject({
   if (new Set(unsupportedCodes).size !== unsupportedCodes.length) ctx.addIssue({ code: 'custom', path: ['unsupported_claims'], message: 'unsupported claim codes must be unique' })
   const worse = value.metrics.some((item) => item.baseline.status === 'measured' && item.candidate.status === 'measured' && (item.better_when === 'higher' ? item.candidate.value < item.baseline.value : item.candidate.value > item.baseline.value))
   const failedGate = value.gates?.some((item) => item.passed === false) ?? false
+  const falseAlertMetric = value.metrics.find((item) => item.key === 'false_alerts_per_year')
+  const detectionMetric = value.metrics.find((item) => item.key === 'detection_rate')
+  const falseAlertGate = value.gates?.find((item) => item.code === 'false_alert_improvement')
+  const detectionGate = value.gates?.find((item) => item.code === 'not_worse_detection')
+  if (falseAlertMetric?.baseline.status === 'measured' && falseAlertMetric.candidate.status === 'measured' && falseAlertGate) {
+    if (falseAlertGate.passed !== (falseAlertMetric.candidate.value < falseAlertMetric.baseline.value)) ctx.addIssue({ code: 'custom', path: ['gates'], message: 'false_alert_improvement must match measured metric values' })
+  }
+  if (detectionMetric?.baseline.status === 'measured' && detectionMetric.candidate.status === 'measured' && detectionGate) {
+    if (detectionGate.passed !== (detectionMetric.candidate.value >= detectionMetric.baseline.value)) ctx.addIssue({ code: 'custom', path: ['gates'], message: 'not_worse_detection must match measured metric values' })
+  }
   if (value.decision.outcome === 'reject') {
     if (value.decision.retained_fallback !== value.methods.baseline.method_code) ctx.addIssue({ code: 'custom', path: ['decision', 'retained_fallback'], message: 'reject must retain the baseline method' })
     if (!worse && !failedGate) ctx.addIssue({ code: 'custom', path: ['decision'], message: 'reject requires worse measured metric or failed gate' })
   } else if (value.decision.retained_fallback !== null) ctx.addIssue({ code: 'custom', path: ['decision', 'retained_fallback'], message: 'non-reject decisions cannot retain a fallback' })
 })
+export const ResearchFindingSchema = ResearchFindingContentSchema.superRefine((value, ctx) => {
+  if (value.provenance.bundle_hash !== computeResearchFindingBundleHash(value)) ctx.addIssue({ code: 'custom', path: ['provenance', 'bundle_hash'], message: 'bundle_hash does not match the canonical artifact body' })
+})
+export { ResearchFindingContentSchema }
 export type ResearchFinding = z.infer<typeof ResearchFindingSchema>
 export const ResearchFindingProjectionSchema = ResearchFindingSchema
 export type ResearchFindingProjection = ResearchFinding
@@ -182,7 +197,7 @@ export function computeResearchFindingBundleHash(value: Omit<ResearchFinding, 'p
   return `sha256:${createHash('sha256').update(canonicalizeJson(body), 'utf8').digest('hex')}`
 }
 
-const DENIED_TOKEN = /(?:@[A-Za-z][A-Za-z0-9_-]{1,38}|\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:[A-Za-z]:\\|\/|\\)[^\s"']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b)/
+const DENIED_TOKEN = /(?:@[A-Za-z][A-Za-z0-9_-]{0,38}|\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:[A-Za-z]:\\|\/|\\)[^\s"']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b)/
 const DATE_TOKEN = /\b\d{4}-\d{2}-\d{2}\b/
 
 export function researchFindingPrivacyViolations(value: unknown): string[] {

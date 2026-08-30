@@ -14,6 +14,7 @@ import {
   RESEARCH_FINDING_PUBLIC_URL,
   RESEARCH_FINDING_SCHEMA_VERSION,
   ResearchFindingSchema,
+  ResearchFindingContentSchema,
   UNSUPPORTED_CLAIMS,
   assertResearchFindingPrivacy,
   computeResearchFindingBundleHash,
@@ -24,7 +25,7 @@ import {
 const CONTRACT_ROOT = ['research-contracts', 'research-finding', 'v1'] as const
 
 export function createWbc1ResearchFinding(): ResearchFinding {
-  const finding = ResearchFindingSchema.parse({
+  const finding = ResearchFindingContentSchema.parse({
     schema_version: RESEARCH_FINDING_SCHEMA_VERSION,
     classification: 'C0',
     subject_class: 'software-system',
@@ -93,11 +94,15 @@ export function fixtureSha256(fixtureText = renderResearchFindingFixture()): str
   return `sha256:${createHash('sha256').update(fixtureText, 'utf8').digest('hex')}`
 }
 
+export function normalizeGeneratedText(text: string): string {
+  return text.replaceAll('\r\n', '\n')
+}
+
 async function writeOrCheck(path: string, content: string, check: boolean): Promise<void> {
   if (check) {
     let existing: string
     try { existing = await readFile(path, 'utf8') } catch { throw new Error(`research-finding output is missing: ${path}`) }
-    if (existing !== content) throw new Error(`research-finding output drift: ${path}`)
+    if (normalizeGeneratedText(existing) !== normalizeGeneratedText(content)) throw new Error(`research-finding output drift: ${path}`)
   } else await writeFile(path, content, 'utf8')
 }
 

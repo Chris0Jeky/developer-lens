@@ -73,7 +73,13 @@ unit: `rate` and `ratio` are 0..1; integer `count` is 0..1,000,000; `count_per_y
 
 Each code has exactly the displayed text. Runtime validation rejects a changed pairing, repeated
 metric or gate codes, and gates that leave registry order. A rejected finding requires a failed
-gate or a measured candidate metric worse than baseline under `better_when`.
+gate or a measured candidate metric worse than baseline under `better_when`. In v1,
+`pelt_offline` is reserved in the method registry and cannot be selected as the baseline or
+candidate because the published metrics and gates describe online comparisons; an offline finding
+requires a future schema version. When both relevant values are measured, `false_alert_improvement`
+must equal candidate false alerts being lower than baseline, and `not_worse_detection` must equal
+candidate detection being at least baseline. The runtime also recomputes `bundle_hash` over the
+canonical artifact body and rejects a mismatch.
 
 ## Canonical hash and privacy
 
