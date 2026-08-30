@@ -2399,7 +2399,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **impact:** The cleanup guard was delayed without file, worktree, Git, or GitHub mutation.
 - **workaround:** Use the literal string `.Replace('\','/')` or equivalent non-regex
   normalization, then revalidate the exact target; the retry succeeded.
-- **occurrences:** 2 independent occurrences, recorded by [Product #222 comment 5304582104](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304582104) and [Product #222 comment 5322375973](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5322375973).
+- **occurrences:** 3 independent occurrences, recorded by [Product #222 comment 5304582104](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5304582104), [Product #222 comment 5322375973](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5322375973), and the 2026-08-30 worktree-creation guard recurrence below.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   worktree-guard/path-normalization command boundary.
 - **promotion:** Promoted at the second occurrence: Product #222 owns a checked cleanup helper
@@ -2410,6 +2410,11 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   `-replace '\','/'` produced the same invalid-regex error. PowerShell continued and removed both
   clean worktrees. A literal `.Replace('\','/')` reread proved both exact paths absent and
   unregistered, with no tracked work loss (only regenerable `node_modules`/`dist`).
+
+  **2026-08-30 Product #301 worktree-creation recurrence note:** The pre-creation root guard
+  compared Git's slash-normalized root to a Windows path literal and stopped before mutation.
+  Resolving both operands to canonical paths before comparison preserved the terminating guard and
+  allowed the coordinator to retry without weakening it.
 
 ### FR-085 — local commit boundary was initially non-independent
 

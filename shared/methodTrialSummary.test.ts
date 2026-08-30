@@ -5,6 +5,7 @@ import { Ajv2020 } from 'ajv/dist/2020.js'
 import { describe, expect, it } from 'vitest'
 import {
   deriveMethodTrialSummary,
+  normalizeGeneratedText,
   renderMethodTrialSummarySchema,
   summarySha256,
 } from '../scripts/generateMethodTrialView.js'
@@ -48,14 +49,15 @@ describe('DeveloperLensMethodTrialSummary.v1', () => {
     expect(summary.provenance.source_fixture_sha256).toBe(
       `sha256:${createHash('sha256').update(fixtureText, 'utf8').digest('hex')}`,
     )
-    expect(summaryText).toBe(await readFile(summaryPath, 'utf8'))
+    expect(summaryText).toBe(normalizeGeneratedText(await readFile(summaryPath, 'utf8')))
     expect(summaryText.length).toBeLessThan(10_000)
     expect(summaryText).not.toContain('representative_cases')
     expect(summaryText).not.toContain('week-000')
   })
 
   it('pins generated schema and artifact drift', async () => {
-    expect(await readFile(schemaPath, 'utf8')).toBe(renderMethodTrialSummarySchema())
+    expect(normalizeGeneratedText(await readFile(schemaPath, 'utf8'))).toBe(renderMethodTrialSummarySchema())
+    expect(normalizeGeneratedText('first\r\nsecond\nthird\rfourth')).toBe('first\nsecond\nthird\rfourth')
     expect(MethodTrialSummarySchema.parse(JSON.parse(await readFile(summaryPath, 'utf8')))).toBeTruthy()
     expect(summarySha256(await readFile(summaryPath, 'utf8'))).toMatch(/^sha256:[0-9a-f]{64}$/)
   })

@@ -238,6 +238,10 @@ export async function deriveMethodTrialSummary(root = process.cwd()): Promise<st
   return stableJson(summary)
 }
 
+export function normalizeGeneratedText(text: string): string {
+  return text.replaceAll('\r\n', '\n')
+}
+
 async function checkOrWrite(path: string, content: string, check: boolean, label: string): Promise<void> {
   if (check) {
     let existing: string
@@ -246,7 +250,9 @@ async function checkOrWrite(path: string, content: string, check: boolean, label
     } catch {
       throw new Error(`${label} is missing: ${path}`)
     }
-    if (existing !== content) throw new Error(`${label} drift: ${path}`)
+    if (normalizeGeneratedText(existing) !== normalizeGeneratedText(content)) {
+      throw new Error(`${label} drift: ${path}`)
+    }
   } else {
     await writeFile(path, content, 'utf8')
   }
