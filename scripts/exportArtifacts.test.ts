@@ -3,7 +3,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import type { DashboardData, RangeKey } from '../shared/types.js'
-import { WRAPPED_CHAPTER_IDS } from '../src/lib/sharePayload.js'
+import { createPortableExportPayload } from '../src/lib/portableExportPayload.js'
+import { createSharePayload, WRAPPED_CHAPTER_IDS } from '../src/lib/sharePayload.js'
 import {
   ACKNOWLEDGE_REDACTION_FLAG,
   ArtifactExportError,
@@ -13,9 +14,12 @@ import {
 } from './exportArtifacts.js'
 import { createPublicShowcaseDashboard } from './exportDemo.js'
 import {
+  createPrivacyControlDashboard,
   createForbiddenPatterns,
+  portablePayloadBoundaryViolations,
   portableBoundaryViolations,
   scanDirectoryForForbiddenPatterns,
+  sharePayloadBoundaryViolations,
   shareBoundaryViolations,
 } from './exportPrivacyGuards.js'
 
@@ -101,6 +105,24 @@ describe('headless artifact export', () => {
     for (const artifact of manifest.artifacts) {
       expect(artifact.bytes).toBeGreaterThan(0)
     }
+  })
+
+  it('allows source values that happen to match fixed export copy', async () => {
+    const dashboard = createPublicShowcaseDashboard('6m')
+    dashboard.repositories[0].displayName = 'developer-lens'
+    dashboard.pullRequests[0].title = 'The privacy boundary'
+
+    const result = await exportArtifacts({
+      outputDirectory: output,
+      source: 'synthetic',
+      ranges: ['6m'],
+      repositoryRedaction: 'all-aliases',
+      loadDashboard: () => Promise.resolve(dashboard),
+      aliasSeed: () => 'synthetic-fixed-copy-collision',
+      env: {},
+    })
+
+    expect(result.privacyScan.status).toBe('passed')
   })
 
   it('covers both supported ranges by default through the CLI', async () => {
@@ -325,30 +347,61 @@ describe('shared export privacy guards', () => {
     ).toBeGreaterThan(0)
   })
 
-  it('flags a repository identity or pull-request title escaping a share artifact', () => {
+  it('keeps fixed copy collisions separate from source-value differential checks', () => {
     const dashboard = createPublicShowcaseDashboard('6m')
-    const identity = dashboard.repositories[0].displayName
-    const title = dashboard.pullRequests[0].title
+    dashboard.repositories[0].displayName = 'developer-lens'
+    dashboard.pullRequests[0].title = 'The privacy boundary'
+    const controlDashboard = createPrivacyControlDashboard(dashboard, {
+      repositoryIdentities: true,
+      pullRequestTitles: true,
+    })
+    const actual = createSharePayload(dashboard)
+    const control = createSharePayload(controlDashboard)
 
     expect(shareBoundaryViolations('card.svg', dashboard, 'clean aggregate copy')).toEqual([])
-    expect(shareBoundaryViolations('card.svg', dashboard, `built ${identity}`)).toContain(
-      'card.svg: a repository identity escaped into the share output',
+    expect(sharePayloadBoundaryViolations('card.svg', actual, control)).toEqual([])
+
+    const planted = { ...actual, title: dashboard.repositories[0].displayName }
+    const violations = sharePayloadBoundaryViolations('card.svg', planted, control)
+    expect(violations).toContain(
+      'card.svg: share payload depends on a prohibited repository identity or pull-request title',
     )
-    expect(shareBoundaryViolations('card.svg', dashboard, `about ${title}`)).toContain(
-      'card.svg: a pull request title escaped into the share output',
-    )
+    expect(violations.join('\n')).not.toContain(dashboard.repositories[0].displayName)
   })
 
-  it('flags identity, timing, scripts, and remote assets escaping a portable artifact', () => {
+  it('checks portable payload differentials and keeps rendered checks static-only', () => {
     const dashboard = createPublicShowcaseDashboard('6m')
+    dashboard.meta.privacy = 'local-only'
+    const controlDashboard = createPrivacyControlDashboard(dashboard, {
+      pullRequestTitles: true,
+      subjectLogin: true,
+      generatedAt: true,
+      repositoryIdentities: true,
+    })
+    const actual = createPortableExportPayload(dashboard, {
+      aliasSeed: 'portable-control-test',
+      artifact: 'dashboard',
+      repositoryRedaction: 'all-aliases',
+    })
+    const control = createPortableExportPayload(controlDashboard, {
+      aliasSeed: 'portable-control-test',
+      artifact: 'dashboard',
+      repositoryRedaction: 'all-aliases',
+    })
 
     expect(portableBoundaryViolations('p.html', dashboard, '<p>aggregates only</p>')).toEqual([])
-    expect(
-      portableBoundaryViolations('p.html', dashboard, `<p>${dashboard.meta.subject.login}</p>`),
-    ).toContain('p.html: subject identity escaped into the portable output')
-    expect(
-      portableBoundaryViolations('p.html', dashboard, `<p>${dashboard.meta.generatedAt}</p>`),
-    ).toContain('p.html: exact generation time escaped into the portable output')
+    expect(portablePayloadBoundaryViolations('p.html', actual, control, true)).toEqual([])
+    const planted = {
+      ...actual,
+      repositories: actual.repositories.map((repository, index) =>
+        index === 0 ? { ...repository, label: dashboard.repositories[0].displayName } : repository,
+      ),
+    }
+    const violations = portablePayloadBoundaryViolations('p.html', planted, control, true)
+    expect(violations).toContain(
+      'p.html: portable payload depends on a prohibited identity, title, subject, or generation time',
+    )
+    expect(violations.join('\n')).not.toContain(dashboard.repositories[0].displayName)
     expect(portableBoundaryViolations('p.html', dashboard, '<script>x()</script>')).toContain(
       'p.html: portable output contains a script',
     )
