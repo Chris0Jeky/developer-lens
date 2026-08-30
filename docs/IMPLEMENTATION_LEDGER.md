@@ -5147,7 +5147,9 @@ path was exercised.
 
 **Failures and workarounds.** The initial focused failure was the reviewed defect and is repaired,
 not dismissed. The full-check failure is the already tracked Product #293 environment boundary; it
-was run once and not retried or worked around. No new friction-log entry was needed.
+was run once and not retried or worked around. A later #301 worktree-creation guard stopped before
+mutation on slash-normalized versus Windows-literal root comparison; FR-084 records the recurrence
+under Product #222, and the retry resolves both operands before comparison.
 
 **Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` now records PR #303, the exact hosted
 runs, the review defect and follow-up, current zero-PR/tag/release state, unchanged Lab main, new
