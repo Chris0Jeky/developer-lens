@@ -18,7 +18,8 @@ lab_main: '6a86cd801646e4a9daee127eea93742ba996f050'
 active_slice: >-
   Product PR #303 is merged at 425708e with its exact-head PR gate and merged-main showcase
   deployment green, but its missing LF attribute makes the new summary drift check fail on Windows.
-  The active follow-up adds that attribute and reconciles the live state. Product has zero open
+  The active follow-up adds that attribute, tolerates already-materialized CRLF only at the
+  generated-text comparison boundary, and reconciles the live state. Product has zero open
   pull requests, tags, and releases. P0.5 issue #200 remains the active release wave, and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is still the sole tag-blocking owner gate.
 next_value_slice: >-
@@ -37,7 +38,7 @@ blockers: >-
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 decisions are deferred and nonblocking for the
   selected repair. No tag, release, package publication, or public publication is authorized
-  before q-10(c).
+  before Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
 last_verified_checks: >-
   2026-08-30T01:05:53Z live REST, GraphQL, and Git observation. Product local HEAD, origin/main,
   and GitHub main are 425708e03e7bbc3cf09f64e9c154938989647dbe after PR #303 merged from exact
@@ -102,7 +103,8 @@ release_readiness:
     Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) — five-minute Product aesthetic sign-off.
   release_actor_after_owner_gate: >-
     OWNER_CONSTITUTION.md A1=FULL: agents execute synchronized tag, version, package, and
-    C0-publication mechanics after q-10(c), under normal exact-head gates.
+    C0-publication mechanics after Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c), under normal
+    exact-head gates.
   prohibited_until_then: >-
     No tag, release, package publication, C0 publication, or owner decision is inferred from this
     state.
@@ -120,8 +122,9 @@ exact_resume_point: >-
   6a86cd801646e4a9daee127eea93742ba996f050 are the last-observed refs. Product PR #303 merged from
   e494cced8c15520e6ebbde811f2000a09cfa68b2 with exact-head run 33127892444 green; merged-main run
   33128174965 is also green, and Product has zero open pull requests, tags, and releases. Its
-  post-merge review found the missing LF attribute; land the one-line attribute repair and re-prove
-  the summary seam, then fix Product #301 and re-run the deterministic queue. Product #305 is the
+  post-merge review found the missing LF attribute, and the PR review required legacy-checkout CRLF
+  tolerance at the generated-text comparison boundary; land that bounded repair and re-prove the
+  summary seam, then fix Product #301 and re-run the deterministic queue. Product #305 is the
   dependency-safe generalized research-contract successor to #303, while Product #304 is a
   separate larger projection/export contract. The approved browser-client Method Trial proof
   remains complete; the external ChromeDevTools attempt is invalid and must not substitute for it.

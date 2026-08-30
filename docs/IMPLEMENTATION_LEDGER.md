@@ -5123,8 +5123,10 @@ PR #101 consumed that exact producer head and closed CommitAtlas #100. Product h
 requests, tags, and releases; new producer tasks #304 and #305 are open. A fresh-context late
 review found one concrete HIGH defect in #303: the new JSON contract files were not covered by the
 repository's LF attributes, so a `core.autocrlf=true` checkout materialized CRLF while the generator
-raw-compared against LF. This follow-up adds the missing `text eol=lf` rule and refreshes the compact
-resume artifact. No contract content, capability, data path, release, or owner gate changed.
+raw-compared against LF. This follow-up adds the missing `text eol=lf` rule, normalizes only CRLF
+versus LF at generated-text comparison boundaries for already-materialized checkouts, and refreshes
+the compact resume artifact. No contract content, capability, data path, release, or owner gate
+changed.
 
 **Verified.** Live REST, GraphQL, and Git agreed on Product main `425708e`; PR #303's exact-head
 `Prove the pull request` run `33127892444` and merged-main `Deploy public showcase` run
@@ -5133,8 +5135,10 @@ on #303, so the independent late review supplies the missing lens and found no o
 correctness, privacy, provenance, schema, consumer, or public-route defect. Before the repair,
 `git ls-files --eol` showed `i/lf w/crlf` and the focused tests failed 2 of 13 on newline-only
 comparisons; `check:method-trial-view` reported summary schema drift. After the repair and one
-deterministic generator rematerialization, `git ls-files --eol` shows `i/lf w/lf attr/text eol=lf`,
-the two focused suites pass 13 of 13, `npm.cmd run check:method-trial-view` passes,
+deterministic generator rematerialization, `git ls-files --eol` shows `i/lf w/lf attr/text eol=lf`.
+The first PR review then proved the attribute alone leaves already-materialized files unchanged;
+the fix round makes the generator and focused comparison tolerate only CRLF-versus-LF differences.
+The two focused suites pass 13 of 13, `npm.cmd run check:method-trial-view` passes,
 `npm.cmd run verify:context` passes 47 Markdown and 31 required files, and `git diff --check` is
 clean.
 
@@ -5156,8 +5160,10 @@ runs, the review defect and follow-up, current zero-PR/tag/release state, unchan
 #304/#305 contract work, and Product #301 as the next bounded repair.
 
 **Residual risk.** Standalone JSON Schema intentionally cannot enforce every cross-field semantic
-relation; the generator and focused semantic tests remain the binding producer proof. The follow-up
-still needs exact-head hosted CI and one bounded review before merge.
+relation; the generator and focused semantic tests remain the binding producer proof. Local
+worktree bytes may remain CRLF until Git rematerializes them, but the tracked blob and fresh
+checkouts are pinned LF and the comparison now treats newline representation as non-semantic. The
+follow-up still needs exact-head hosted CI and one bounded fix review before merge.
 
 **Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
 v0.1.0 tag-blocking owner action. Nothing in this slice infers, anticipates, or closes it.
