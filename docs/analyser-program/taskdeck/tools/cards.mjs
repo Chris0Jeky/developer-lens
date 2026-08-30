@@ -321,11 +321,11 @@ export const CARDS = [
 
 // ============ EP-XRAY ============
 { id: 'DL-XRAY-01', title: 'Committed-tree role taxonomy + fixtures', epic: 'xray', type: 'contract', status: 'READY', risk: 'low', effort: 'S', milestone: 'M3', privacy: 'C1', gate: 'gate:G3-standing',
-  outcome: 'Closed 14-role taxonomy (build/test/docs/config/migration/api_surface/ci_definition/dependency_manifest/generated/vendored/binary_asset/schema_definition/fixture_golden/snapshot_artifact — last three accepted 2026-08-04, frontier A4) with classification rules as data + fixture corpus incl. sniff-precision floor.',
+  outcome: 'Closed 15-role taxonomy (build/test/docs/config/migration/api_surface/ci_definition/dependency_manifest/generated/vendored/binary_asset/schema_definition/fixture_golden/snapshot_artifact/agent_config — agent_config is presence-only under D5=PRES; last three accepted 2026-08-04, agent_config accepted 2026-08-18) with classification rules as data + fixture corpus incl. sniff-precision floor.',
   deps: 'none', unlock: '',
   paths: 'shared/ sourceRoles contract; fixtures; tests',
   authority: 'G2+G3 standing (cap.source.structure boundary); contract-only, no tree read here', prohibited: PROH_STD + '; no path retention in outputs',
-  behavior: 'ADR-05: extension/manifest classification tables; roles are counts/presence only; unknown -> unclassified bucket, disclosed.',
+  behavior: 'ADR-05: extension/manifest classification tables; roles are counts/presence only, with agent_config presence-only; unknown -> unclassified bucket, disclosed.',
   accept: 'Classification goldens on fixture trees; unknown-extension handling proven; no path strings in any output type.',
   prove: 'npm test -- shared/sourceRoles.test.ts',
   fixtures: 'Invented tree listings: monorepo, generated-heavy, symlink/binary mix.',
@@ -957,17 +957,17 @@ export const CARDS = [
   rollback: 'Registry state; deterministic deltas remain.',
   demo: 'Attribution + calibration report.' },
 
-{ id: 'DL-WB-C9', title: 'Candidate: retrieval-ranking ladder (lexical/vector vs structured)', epic: 'workbench', type: 'research', status: 'PARKED', risk: 'medium', effort: 'M', milestone: 'M7', privacy: 'C1', gate: 'gate:G2', horizon: 'frozen',
-  outcome: 'PARKED as a whole, including BM25 and vector/structured retrieval comparison, because D12=NO leaves the pinned offline local-model option not planned. Unpark only after a newer explicitly recorded owner decision supersedes D12=NO and a separately reviewed activation/candidate task is approved.',
-  deps: 'DL-WB-01, DL-RAG-02', unlock: 'Newer explicitly recorded owner decision superseding D12=NO plus a separately reviewed activation/candidate task',
+{ id: 'DL-WB-C9', title: 'Candidate: retrieval-ranking ladder (BM25 vs structured; vector parked)', epic: 'workbench', type: 'research', status: 'RESEARCH', risk: 'medium', effort: 'M', milestone: 'M7', privacy: 'C1', gate: 'gate:G2', horizon: 'frozen',
+  outcome: 'Rungs 1 and 2 remain executable: compare ADR-20 structured retrieval with model-free BM25 over controlled templates. Rung 3 local pinned offline vectors is PARKED because D12=NO leaves that model option not planned; only a newer explicitly recorded owner decision may supersede D12=NO. Any candidate still needs its separately reviewed activation task and proofs.',
+  deps: 'DL-WB-01, DL-RAG-02', unlock: 'Retrieval benchmark merged for rungs 1-2; rung 3 additionally requires a newer explicitly recorded owner decision superseding D12=NO',
   paths: 'server/research/retrievalLadder/*; model card',
-  authority: 'D12=NO; candidate is parked and non-activating until a newer explicitly recorded owner decision supersedes it and a separately reviewed activation/candidate task passes', prohibited: 'No prose inputs; no hosted/external embeddings; DL-Q-INDEX is a non-activating record and any future reviewed retrieval task carries its own sink, deletion, and retention prerequisites',
+  authority: 'G2 approved for local structured/BM25 research only; rung 3 local pinned vectors remain not planned under D12=NO; any activation still requires a separately reviewed candidate task and proofs', prohibited: 'No prose inputs; no hosted/external embeddings; no local-model dependency, weights, invocation, or activation for rung 3 while D12=NO; DL-Q-INDEX is a non-activating record and any future reviewed retrieval task carries its own sink, deletion, and retention prerequisites',
   behavior: 'ADR-20; each rung must beat the previous on the same benchmark.',
-  accept: 'Ladder verdicts recorded; "vectors not justified" is a valid success.',
+  accept: 'Ladder verdicts recorded for rungs 1 and 2, with rung 2 evaluated only if rung 1 measurably fails recall; rung 3 remains parked unless D12=NO is superseded. "Vectors not justified" is a valid success.',
   prove: 'Harness artifacts + registry entry',
   fixtures: 'RAG-02 benchmark suite.',
-  rollback: 'Registry state; structured retrieval remains.',
-  demo: 'Ladder scoreboard.' },
+  rollback: 'Registry state; structured retrieval remains and BM25 is removable.',
+  demo: 'Ladder scoreboard for rungs 1-2; vector rung parked.' },
 
 // ============ EP-RAG ============
 { id: 'DL-RAG-01', title: 'Structured evidence retrieval + counter-evidence quotas', epic: 'retrieval', type: 'implementation', status: 'BLOCKED_BY_DEPENDENCY', risk: 'medium', effort: 'M', milestone: 'M7', privacy: 'C1', gate: 'gate:G2',
@@ -983,16 +983,16 @@ export const CARDS = [
   demo: 'One retrieval trace showing all four evidence classes.' },
 
 { id: 'DL-RAG-02', title: 'Retrieval benchmark + privacy canary battery', epic: 'retrieval', type: 'evaluation', status: 'BLOCKED_BY_DEPENDENCY', risk: 'medium', effort: 'M', milestone: 'M7', privacy: 'C0', gate: 'gate:G2',
-  outcome: 'Frozen invented retrieval benchmark: Recall@k, nDCG/MRR, citation validity, counter-evidence recall, unsupported-claim rate, deletion proof, stale-index behaviour, membership-inference + uniqueness-leakage probes.',
+  outcome: 'Frozen invented retrieval benchmark for the structured rung 1 and model-free BM25 rung 2: Recall@k, nDCG/MRR, citation validity, counter-evidence recall, unsupported-claim rate, deletion proof, stale-index behaviour, membership-inference + uniqueness-leakage probes. The model-dependent vector rung is outside scope while D12=NO.',
   deps: 'DL-RAG-01', unlock: 'structured retrieval merged',
   paths: 'server/retrieval/benchmark/*; canary suite',
-  authority: 'G2 approved', prohibited: 'Benchmark data all invented; no real pack in evaluation',
+  authority: 'G2 approved for invented rung 1/rung 2 evaluation', prohibited: 'Benchmark data all invented; no real pack in evaluation; no local-model/vector rung while D12=NO',
   behavior: 'ADR-20 evaluation battery; deletion proof = index rebuilt-empty after simulated revocation.',
-  accept: 'All metrics computable on the suite; canary battery green on rung 1; suite versioned+checksummed.',
+  accept: 'All metrics computable on the suite; canary battery green on rung 1; evaluate BM25 only when rung 1 measurably fails recall; suite versioned+checksummed.',
   prove: 'npm test -- server/retrieval/benchmark.test.ts',
   fixtures: 'Invented packs with planted relevance + adversarial rare-code combinations.',
   rollback: 'Benchmark is data.',
-  demo: 'Benchmark scoreboard for rung 1.' },
+  demo: 'Benchmark scoreboard for rungs 1-2.' },
 
 // ============ EP-HYP ============
 { id: 'DL-HYP-01', title: 'Deterministic hypothesis composer + falsifier registry', epic: 'hypothesis', type: 'implementation', status: 'BLOCKED_BY_DEPENDENCY', risk: 'medium', effort: 'M', milestone: 'M7', privacy: 'C1', gate: 'gate:G2',
@@ -1333,7 +1333,7 @@ export const CARDS = [
 
 { id: 'DL-MIG-01', title: 'Migration-ledger archaeology: append vs rewrite regimes (frontier A3)', epic: 'xray', type: 'implementation', status: 'BLOCKED_BY_DEPENDENCY', risk: 'low', effort: 'S', milestone: 'M6', privacy: 'C1', gate: 'gate:G3-standing',
   outcome: 'Monotonicity test over migration-role counts across ordered comparable snapshots; count-decrease events classify as rewrite/squash candidates only after coverage-shift separation; multi-ledger monorepos gate the claim.',
-  deps: 'DL-XRAY-02', unlock: 'role enumeration merged (uses 14-role taxonomy incl. schema_definition)',
+  deps: 'DL-XRAY-02', unlock: 'role enumeration merged (uses the closed taxonomy incl. presence-only agent_config)',
   paths: 'server/analysis/migrationLedger.ts; tests',
   authority: 'G2+G3 standing (cap.source.structure)', prohibited: 'Rename/role-rule change never read as squash (coverage_shift_candidate); no ledger-quality wording',
   behavior: 'Frontier A3: window function over snapshot series; DL.MIG.LEDGER_MONOTONICITY.v1 + REGIME_TRANSITION.v1 (proposed).',

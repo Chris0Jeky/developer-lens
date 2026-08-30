@@ -175,8 +175,10 @@ The roadmap ends in alternatives, not one inevitable architecture:
 
 - **F1 — Deterministic-complete stop.** Ship M1–M5 + M8 story over deterministic claims only;
   the workbench candidates all record honest rejections. A fully legitimate end-state.
-- **F2 — Research-validated modelling.** Some WB candidates pass invented gates and the owner
-  authorises consented validation (DL-Q-CONSENT); Pattern Lens gains modelled claims.
+- **F2 — Research-validated modelling.** Some WB candidates pass invented gates and proceed through
+  a separately reviewed per-candidate validation task under DL-Q-CONSENT's constitution eligibility,
+  carrying its consent, charter, matrix, release, deletion, and untouched-holdout proofs; Pattern
+  Lens gains modelled claims only after that validation.
 - **F3 — External-hypothesis composition.** The P12 lane activates within G4; the composer's
   optional external step re-words/re-ranks within closed enums. Requires its own activation card.
 - **F4 — Dogfood-first.** DL-DEMO-A1's owner gate opens early and the structure lanes are proven
@@ -266,7 +268,7 @@ source, never this table. Horizon: A = active queue, F = frozen by the current r
 | DL-WB-C6 | Candidate: time-to-event queue analysis (censoring-aware) | workbench | research | RESEARCH | F | DL-WB-01, DL-OBSV-01 | M6 | medium/M |
 | DL-WB-C7 | Candidate: probabilistic observability model | workbench | research | RESEARCH | F | DL-WB-01, DL-LIFE-01 | M6 | medium/M |
 | DL-WB-C8 | Candidate: architecture-change classifier | workbench | research | RESEARCH | F | DL-WB-01, DL-TIME-01 | M6 | medium/M |
-| DL-WB-C9 | Candidate: retrieval-ranking ladder (lexical/vector vs structured) | workbench | research | PARKED | F | DL-WB-01, DL-RAG-02 | M7 | medium/M |
+| DL-WB-C9 | Candidate: retrieval-ranking ladder (BM25 vs structured; vector parked) | workbench | research | RESEARCH | F | DL-WB-01, DL-RAG-02 | M7 | medium/M |
 | DL-RAG-01 | Structured evidence retrieval + counter-evidence quotas | retrieval | implementation | BLOCKED_BY_DEPENDENCY |  | DL-PACK-02 | M7 | medium/M |
 | DL-RAG-02 | Retrieval benchmark + privacy canary battery | retrieval | evaluation | BLOCKED_BY_DEPENDENCY |  | DL-RAG-01 | M7 | medium/M |
 | DL-HYP-01 | Deterministic hypothesis composer + falsifier registry | hypothesis | implementation | BLOCKED_BY_DEPENDENCY |  | DL-RAG-01, DL-SPINE-05 | M7 | medium/M |
