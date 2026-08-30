@@ -5218,3 +5218,56 @@ v0.1.0 tag-blocking owner action. Nothing in this slice infers, anticipates, or 
 a ready pull request closing #296, require its exact-head gate and independent privacy review, then
 merge and re-check merged main. Select Product #305 next under the producer-first cross-repository
 contract workflow; do not tag or publish.
+
+## 2026-08-30 - Product #311 consumer wording and live-state reconciliation
+
+**Changed.** Reconciled the residual Product #297 consumers tracked by #311. The ML promotion
+ladder now records constitution-v2 eligibility for per-candidate Gate B validation under the
+existing consent, charter, matrix, and release gates, while retaining each candidate's own reviewed
+task and proofs and removing the redundant owner-gate wording. The validated-dataset description
+now names reviewed, consented or curated-public representative data without expanding authority.
+ADR-05 now records the closed 15-role taxonomy, including the presence-only `agent_config` role
+accepted by the constitution-v2 reconciliation; its existing prohibition on file-body reads is
+unchanged. Refreshed `CURRENT_STATE.md` to the live main facts: PR #310 and issue #297 merged at
+`641f09f`, PR #309/#305 parked at `2d510e1` for the numeric-leading-handle HIGH, Lab #97 and
+CommitAtlas #154 blocked, Product #311 active, and
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` the sole release-tag blocker. `HUMAN_TODO.md`
+and executable prompt blocks are unchanged.
+
+**Verified.** Live GitHub REST/GraphQL-backed CLI reads and Git agree on Product main
+`641f09f31b5736a8d13237d7d41f27af7a07efb9`. PR #310 merged issue #297; required Prove the pull
+request run `33288227008` and merged-main run `33288379849` succeeded. PR #309 is open at exact
+head `2d510e1496555c8a41c8b1aba5541ebbcbc9d1f8`, with hosted run `33287769506` green, and is
+parked by its final exact-head review for the numeric-leading-handle HIGH. After `npm.cmd ci`
+(0 vulnerabilities), `npm.cmd run verify:context` passed (47 Markdown files, 31 required files),
+`node docs/analyser-program/taskdeck/tools/generate.mjs --check` passed (128 cards), and
+`git diff --check` passed.
+
+**NOT verified.** This worker did not push, open a pull request, or merge. Product #311 has no
+hosted check yet. No Lab #97 or CommitAtlas #154 consumer command was run; no release, tag,
+publication, browser proof, protected-data access, real input, external model, telemetry, or
+credential path was exercised.
+
+**Failures and workarounds.** The initial context check could not start before dependency
+installation because the fresh worktree had no `node_modules` (`fast-glob` was missing). The
+repository-required locked `npm.cmd ci` install completed successfully; the context check then
+passed. Taskdeck emitted only its existing near-limit description warnings.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` now records Product main
+`641f09f`, the green runs `33288227008` and `33288379849`, parked Product #309/#305 at
+`2d510e1`, blocked Lab #97 and CommitAtlas #154, active Product #311, and the unchanged sole
+release blocker `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`. `HUMAN_TODO.md` is unchanged.
+
+**Residual risk.** Product #309/#305 remains parked until its confirmed numeric-leading-handle
+privacy defect is repaired under the permitted continuation; Lab #97 and CommitAtlas #154 remain
+blocked behind the producer-first chain. The live-state refs are observations and must be refreshed
+before a later action. The prescribed machine estate registry was unavailable at its expected local
+path during orientation; no protected or private data was read.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the
+sole Product v0.1.0 tag-blocking owner action. Nothing in this reconciliation infers or closes it.
+
+**Exact resume.** On `fix/issue311-state-consistency-20260830` from Product main `641f09f`, hand
+the committed Product #311 repair to the coordinator for publication and its normal exact-head
+review/CI gates. Keep Product #309/#305 parked at `2d510e1` until the HIGH is repaired; do not
+advance Lab #97 or CommitAtlas #154 before the producer chain lands, and do not tag or publish.

@@ -6,57 +6,54 @@ completed-slice evidence and history.
 
 ```yaml
 updated: '2026-08-30'
-state_observed_at: '2026-08-30T01:43:52Z'
-work_class: 'W2 bounded export privacy repair and queue continuation'
+state_observed_at: '2026-08-30T02:48:59Z'
+work_class: 'W2 bounded documentation and state-consistency repair'
 active_wave: 'P0.5 v0.1.0 release programme — Product issue #200'
-remote_refs_last_observed_at: '2026-08-30T01:43:52Z'
+remote_refs_last_observed_at: '2026-08-30T02:48:59Z'
 observation_semantics: >-
   product_main and lab_main are last-observed remote-ref snapshots at remote_refs_last_observed_at,
   not perpetual current-baseline assertions; refresh live Git/GitHub before any action.
-product_main: '1e6b97b69eb457c81455c141b6b4470215491567'
-lab_main: '6a86cd801646e4a9daee127eea93742ba996f050'
+product_main: '641f09f31b5736a8d13237d7d41f27af7a07efb9'
+lab_main: '6cf185bedc2ec3203b22ee5165c6560975069d35'
 active_slice: >-
-  Product PR #306 repaired PR #303's LF contract and merged as fda8ce6; Product PR #307 then fixed
-  the named shared-artifact lifecycle timeout and merged as 1e6b97b, closing #301. Their exact-head
-  gates and merged-main showcase deployments are green. The current #296 slice replaces complete
-  rendered-output substring scans with structured differential payload checks, proves an invented
-  local-shaped full-alias collision, and preserves static script, external-asset, secret, and path
-  checks. Product had zero open pull requests, tags, and releases before this branch was published.
+  Product PR #310 merged issue #297 at `641f09f` after required Prove the pull request run
+  33288227008 and merged-main run 33288379849 both completed successfully. Product PR #309,
+  carrying issue #305, is parked at exact head `2d510e1` under the two-review-round ceiling after
+  final exact-head verification found a HIGH privacy defect for numeric-leading handles such as
+  `@1` and `@123`; it must not merge. Product issue #311 is the active bounded repair for the
+  residual Gate B and ADR-05 consumer wording. Lab #97 and CommitAtlas #154 remain blocked behind
+  the producer-first chain. Product main has one open pull request (#309) at this observation.
   P0.5 issue #200 remains the active release wave, and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is still the sole tag-blocking owner gate.
 next_value_slice: >-
-  Carry Product #296 through its exact-head gate and independent privacy review. Then select Product
-  #305, the producer-first ResearchFindingProjection.v1 contract, using the cross-repository
-  contract workflow; #304 is the separate larger public-lens and export-profile contract. #297
-  remains a planning-consistency repair; #293 is parked pending a security-reviewed Windows
-  path-identity design; #300 is low-priority. Request
-  or await explicit Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off, but
-  perform no tag or publication before that gate. The v0.1.0 metadata slice must be re-created from
-  scratch after the owner gate — see Product #298.
+  Complete the Product #311 documentation/state repair on its pinned branch, then publish it as a
+  ready pull request with the exact context and generated-card proofs. Keep Product #309/#305
+  parked until the numeric-leading-handle HIGH is repaired through its permitted continuation;
+  Lab #97 and CommitAtlas #154 cannot advance before the producer chain lands. Product #304 is a
+  separate larger public-lens and export-profile contract; #293 remains parked pending a
+  security-reviewed Windows path-identity design; #300 is low-priority. Request or await explicit
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off, but perform no tag or
+  publication before that gate. The v0.1.0 metadata slice must be re-created from scratch after the
+  owner gate — see Product #298.
 blockers: >-
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is the sole remaining tag-blocking owner gate
-  and is ready for explicit aesthetic sign-off. The other
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 decisions are deferred and nonblocking for the
-  selected repair. No tag, release, package publication, or public publication is authorized
-  before Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
+  and is ready for explicit aesthetic sign-off. Product #309/#305 is parked for the confirmed
+  numeric-leading-handle HIGH; Lab #97 and CommitAtlas #154 are blocked dependencies, not owner
+  gates. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 decisions are deferred and nonblocking for this
+  repair. No tag, release, package publication, or public publication is authorized before
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
 last_verified_checks: >-
-  2026-08-30T01:43:52Z live REST and Git observation. Product local HEAD, origin/main, and GitHub
-  main are 1e6b97b69eb457c81455c141b6b4470215491567. PR #306 merged as fda8ce6 after exact-head
-  Prove the pull request run 33285524300 passed; merged-main run 33285666196 passed. PR #307 merged
-  as 1e6b97b after exact-head run 33285700817 and a clean automatic Codex review; merged-main run
-  33285862915 passed the full gate, synthetic showcase/privacy proof, Pages artifact, and deploy.
-  Product had zero open pull requests, tags, and releases at the observation, and #301 is closed.
-  For #296, 17 focused export tests, build:showcase, lint, TypeScript build, verify:context, and git
-  diff --check pass on the unpushed branch. The invented local-shaped regression reads no protected
-  data. The full local check was not repeated because its known Product #293 Windows path-identity
-  wall is outside this seam; hosted Ubuntu proof remains required. PR #303's strict C0
-  DeveloperLensMethodTrialSummary.v1 producer contract remains consumed by CommitAtlas PR #101.
-  Product #304 and #305 are dependency-safe cross-repository producer tasks. Lab main remains
-  6a86cd801646e4a9daee127eea93742ba996f050, with successful Check run 32206737622 and zero open
-  pull requests, tags, and releases. The known strict-timeout false-red is still owned by Product
-  #301; the local Windows storage-path limitation remains Product #293. Refresh live Git/GitHub
-  before action.
+  2026-08-30T02:48:59Z live REST, Git, and GitHub observation agrees on Product main
+  641f09f31b5736a8d13237d7d41f27af7a07efb9. PR #310 merged as `641f09f` for issue #297; required
+  Prove the pull request run 33288227008 and merged-main run 33288379849 both succeeded. PR #309
+  is open and parked at `2d510e1` for the numeric-leading-handle HIGH, with hosted run 33287769506
+  green. Product #311 is the active repair and has no hosted PR or check yet. Lab main is
+  6cf185bedc2ec3203b22ee5165c6560975069d35; Lab #97 remains open and blocked. CommitAtlas #154
+  remains open and blocked. After `npm.cmd ci`, local #311 proof passes `npm.cmd run verify:context`,
+  `node docs/analyser-program/taskdeck/tools/generate.mjs --check`, and `git diff --check`; no
+  protected data, real input, browser, release, tag, package, publication, external model,
+  telemetry, or credential path is selected. Refresh live Git/GitHub before action.
 active_horizon:
   - 'P0 governor bootstrap PR #206 — delivered'
   - 'P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
@@ -65,28 +62,28 @@ operational_resume:
   consumer: 'The next Product/Lab release coordinator.'
   question: 'What is landed, parked, unproved, owner-gated, and agent-executable?'
   product_state: >-
-    Product main above is a last-observed remote-ref snapshot, not a perpetual current baseline;
-    PR #303 is merged after the earlier four-PR closeout, and Product has zero open pull requests,
-    tags, and releases at the observation.
+    Product main is the last-observed `641f09f` merge of PR #310 for issue #297, with both required
+    hosted runs green. PR #309/#305 is open but parked at `2d510e1` for the numeric-leading-handle
+    HIGH; Product #311 is the active state-consistency repair on its dedicated branch.
   lab_state: >-
-    Lab main above is a last-observed remote-ref snapshot, not a perpetual current baseline; the
-    exact Lab check is green and Lab has zero open pull requests, tags, and releases at the
-    observation.
+    Lab main is the last-observed `6cf185b`; Lab #97 is open and blocked behind Product #305, and
+    the unrelated Lab PR #103 remains open. CommitAtlas #154 is open and blocked behind Product
+    #305 and Lab #97; its current main is the separate last-observed `b8d1cb3` ref.
   next_selection: >-
-    Publish and land Product #296 after exact-head proof and independent privacy review, then select
-    the producer-first Product #305 contract. Product #304 is a larger separate contract/export
-    lane, #297 is planning consistency, #293 is parked pending design, and #300 remains low-priority.
-    Request or await
-    Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off, and do not tag or publish
-    before it. The release-prep branch is unrecoverable and is re-created only after the owner gate
-    under Product #298.
+    Publish Product #311 after its local context and generated-card proofs, then repair the parked
+    Product #309/#305 numeric-leading-handle HIGH through the permitted continuation. Only after
+    Product #305 and Lab #97 land may CommitAtlas #154 proceed. Product #304 is a separate larger
+    projection/export lane, #293 is parked pending design, and #300 remains low-priority. Request
+    or await Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off, and do not tag
+    or publish before it. The release-prep branch is unrecoverable and is re-created only after the
+    owner gate under Product #298.
 
 lab_delivery:
   repository: 'Chris0Jeky/developer-lens-lab'
   main_check: >-
-    Exact Check run 32206737622 completed SUCCESS at Lab main SHA
-    6a86cd801646e4a9daee127eea93742ba996f050.
-  open_pull_requests: '0 at the 2026-08-30T01:05:53Z observation; tags and releases also 0.'
+    Lab main last observed at SHA 6cf185bedc2ec3203b22ee5165c6560975069d35; no current Lab check
+    is asserted by this Product-only state repair.
+  open_pull_requests: 'PR #103 at the 2026-08-30 observation; Lab #97 remains blocked; tags/releases were not reselected.'
 
 release_readiness:
   lab_q11: 'CLOSED: Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 is recorded signed off.'
@@ -114,14 +111,14 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  Product main 1e6b97b69eb457c81455c141b6b4470215491567 and Lab main
-  6a86cd801646e4a9daee127eea93742ba996f050 are the last-observed refs. Product PRs #306 and #307
-  are merged with exact-head and merged-main proof green, #301 is closed, and Product had zero open
-  pull requests, tags, and releases before the #296 branch was published. Carry #296 through its
-  exact-head gate, independent privacy review, merge, and post-merge sweep; then select #305 under
-  producer-first cross-repository sequencing. Product #304 is the separate larger projection/export
-  contract. The approved browser-client Method Trial proof
-  remains complete; the external ChromeDevTools attempt is invalid and must not substitute for it.
+  Product main `641f09f31b5736a8d13237d7d41f27af7a07efb9` is the last-observed Product ref after
+  merged PR #310/closed issue #297; required runs 33288227008 and 33288379849 are green. Product
+  PR #309/#305 remains parked at `2d510e1` for the numeric-leading-handle HIGH. Product #311 is
+  the active documentation/state repair on `fix/issue311-state-consistency-20260830`, with Lab
+  #97 and CommitAtlas #154 blocked behind the producer chain. Complete the local proof, commit,
+  and hand the branch to the coordinator for publication; do not push, open, or merge from this
+  worker. The approved browser-client Method Trial proof remains complete; the external
+  ChromeDevTools attempt is invalid and must not substitute for it.
   Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818 at 54217ff: Product #298 owns
   re-creating that slice after Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). Until that owner
   action, no tag, release, package publication, or public publication is authorized. Re-refresh

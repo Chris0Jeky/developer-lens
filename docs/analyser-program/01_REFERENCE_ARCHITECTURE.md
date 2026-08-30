@@ -374,9 +374,12 @@ needs the concrete role taxonomy, monorepo boundaries, and comparability rules.
 (ADR-06 controls); retained output is C1: language/byte-share by controlled vocabulary, role
 presence/counts for a closed role taxonomy {build, test, docs, config, migration, api_surface,
 ci_definition, dependency_manifest, generated, vendored, binary_asset, **schema_definition,
-fixture_golden, snapshot_artifact**} (14 roles; the last three accepted 2026-08-04 from frontier
-finding A4 — they make golden/fixture-anchored contract surfaces and migration-ledger archaeology
-observable), package/monorepo boundary count via manifest-presence classes, and
+fixture_golden, snapshot_artifact, agent_config**} (15 roles; `schema_definition`,
+`fixture_golden`, and `snapshot_artifact` were accepted 2026-08-04 from frontier finding A4, and
+the presence-only `agent_config` role was accepted 2026-08-18 from the constitution-v2
+reconciliation — they make golden/fixture-anchored contract surfaces, migration-ledger archaeology,
+and configuration presence observable), package/monorepo boundary count via manifest-presence
+classes, and
 parser/enumeration coverage. Paths, names, file lists are
 C4 and destroyed. Boundaries (corrected 2026-08-04 review round): no working tree, no submodule
 recursion without its own consent, and **no file-body reads of any kind under

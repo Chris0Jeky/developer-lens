@@ -69,7 +69,7 @@ seeded ──(A)──> benchmarked(invented) ──(B)──> validated(consent
 |---|---|---|---|
 | `seeded` | A named research question with a deterministic baseline identified. | A dataset card and a model card **skeleton** exist; no tuning has occurred. | Nothing. Not even a "coming soon" affordance. |
 | `benchmarked` | The candidate beat its deterministic baseline on a frozen invented suite under a preregistration. | Gate **A** below. | Nothing user-visible. Results are visible only inside the workbench and the registry. |
-| `validated` | The candidate beat its baseline on a separately authorised, consented, representative **real** dataset with its own dataset card and an untouched final holdout. | Gate **B** below — **each instance is its own owner gate (G)**. | Nothing yet; `validated` is a precondition, not a licence. |
+| `validated` | The candidate beat its baseline on a reviewed, consented or curated-public, representative **real** dataset with its own dataset card and an untouched final holdout. | Gate **B** below — constitution-v2 makes per-candidate validation eligible under the existing consent, charter, matrix, and release gates; each candidate still requires its own reviewed task and proofs. | Nothing yet; `validated` is a precondition, not a licence. |
 | `shipped` | The model produces `modelled` claims in the product. | Gate **C** below: canonical §9's eight conditions, all met at the exact head. | `modelled`-layer claims with layer badge, evidence, alternatives, falsifier. |
 | `demoted` | Any gate later fails (drift trip, calibration failure, defect, revoked data). | Automatic on trip. | Claims disappear automatically because the UI resolves the registry (ADR-19). |
 
