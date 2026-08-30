@@ -60,7 +60,7 @@ empty primary panels on the synthetic corpus (brief §5 "deterministic completen
 ### 1.1 Promotion ladder (ADR-19, elaborated)
 
 ```
-seeded ──(A)──> benchmarked(invented) ──(B)──> validated(consented, real) ──(C)──> shipped
+seeded ──(A)──> benchmarked(invented) ──(B)──> validated(own-consented-or-curated-public, real) ──(C)──> shipped
    ^                    |                            |                            |
    └────────────────────┴──── demoted ───────────────┴────────────────────────────┘
 ```
@@ -69,7 +69,7 @@ seeded ──(A)──> benchmarked(invented) ──(B)──> validated(consent
 |---|---|---|---|
 | `seeded` | A named research question with a deterministic baseline identified. | A dataset card and a model card **skeleton** exist; no tuning has occurred. | Nothing. Not even a "coming soon" affordance. |
 | `benchmarked` | The candidate beat its deterministic baseline on a frozen invented suite under a preregistration. | Gate **A** below. | Nothing user-visible. Results are visible only inside the workbench and the registry. |
-| `validated` | The candidate beat its baseline on a reviewed, consented or curated-public, representative **real** dataset with its own dataset card and an untouched final holdout. | Gate **B** below — constitution-v2 makes per-candidate validation eligible under the existing consent, charter, matrix, and release gates; each candidate still requires its own reviewed task and proofs. | Nothing yet; `validated` is a precondition, not a licence. |
+| `validated` | The candidate beat its baseline on a reviewed, owner-consented (the owner's own data) or curated-public, representative **real** dataset with its own dataset card and an untouched final holdout. | Gate **B** below — constitution-v2 makes this per-candidate validation eligible under the existing consent, charter, matrix, and release gates; each candidate still requires its own reviewed task and proofs. | Nothing yet; `validated` is a precondition, not a licence. |
 | `shipped` | The model produces `modelled` claims in the product. | Gate **C** below: canonical §9's eight conditions, all met at the exact head. | `modelled`-layer claims with layer badge, evidence, alternatives, falsifier. |
 | `demoted` | Any gate later fails (drift trip, calibration failure, defect, revoked data). | Automatic on trip. | Claims disappear automatically because the UI resolves the registry (ADR-19). |
 
@@ -79,12 +79,13 @@ the deterministic baseline by at least the preregistered **minimum meaningful im
 the final invented holdout; (iv) the primary test survives BH-FDR control (§1.4); (v) abstention,
 drift, resource, and privacy sub-gates all pass; (vi) removal test passes.
 
-**Gate B — validated.** Everything in A, plus: a consented or curated-public real dataset exists
-with its own dataset card, an explicit reviewed capability/consent revision, a retention and
-deletion plan, release review, and its own untouched final holdout. **Invented fixtures can never
-carry a candidate past `benchmarked`** — this is absolute. Constitution-v2 records that
-per-candidate validation is eligible under the existing consent, charter, matrix, and release
-gates (DL-Q-CONSENT); it does not assemble a dataset, activate a reader or model, or approve a
+**Gate B — validated.** Everything in A, plus: an owner-consented (the owner's own data) or
+curated-public real dataset exists with its own dataset card, an explicit reviewed capability and
+provenance record (including a consent revision for owner-consented data), a retention and deletion
+plan, release review, and its own untouched final holdout. **Invented fixtures can never carry a
+candidate past `benchmarked`** — this is absolute. Constitution-v2 records that this per-candidate
+validation is eligible under the existing consent, charter, matrix, and release gates
+(DL-Q-CONSENT); it does not assemble a dataset, activate a reader or model, or approve a
 candidate. **Each Gate B instance still requires its own reviewed candidate task and proofs**, and
 the task's holdout may not be reused.
 
@@ -249,7 +250,7 @@ immediately and irreversibly into `wb_result` (**proposed**) with the prereg has
 - A **failed** gate **consumes** the holdout. The candidate cannot re-attempt on the same holdout.
   Re-attempt is admissible **only as a materially new candidate** under §1.4 item 6(ii) — a new
   `candidate_id` with a *new* preregistration and a *new* sealed holdout (new generator seed range,
-  or for real data a new consented slice — which is a new owner gate) — and that successor stays in
+  or for real data a new owner-consented or curated-public slice) — and that successor stays in
   its predecessor's correction family. Re-running the *unchanged* candidate in a later wave is
   prohibited outright (§1.4 item 6(iii)).
 - A **passed** gate also consumes it: post-promotion monitoring uses drift monitors and fresh data,
@@ -325,7 +326,7 @@ changes. No candidate may require a GPU, a download, or a model weight fetched a
 
 ## 2. Card templates
 
-### 2.1 Dataset card template (invented benchmark = generator parameters)
+### 2.1 Dataset card template (invented benchmark or Gate B dataset)
 
 **R2.1 — For invented suites, the generator parameters *are* the dataset card.** A frozen suite is
 `{generator_id@version, parameter set, seed range, checksum}`; regenerating from the same tuple must
@@ -334,7 +335,7 @@ reproduce byte-identical fixtures, or the suite is not frozen.
 ```
 dataset_card:
   dataset_id:           BENCH-WB-C{n}.v1            # proposed ID style
-  kind:                 invented | consented_real
+  kind:                 invented | owner_consented_real | curated_public_real
   generator_id:         gen.wb.<family>.v1          # proposed
   generator_version:    <semver>                    # bump ⇒ new dataset_id
   seed_range:           [lo, hi]                    # final holdout sub-range sealed separately
@@ -345,10 +346,11 @@ dataset_card:
   negative_controls:    fixtures with NO planted effect (required, ≥30% of units)
   confound_controls:    fixtures where a coverage/parser shift mimics the effect (required)
   class_balance:        per-class support, including `unknown`
-  privacy_class:        C0 for invented; real datasets carry their true class
+  privacy_class:        C0 for invented; owner-consented and curated-public datasets carry their true class
   known_limitations:    explicit list, always including "planted effects are not real effects"
   not_represented:      what the generator deliberately does not model
-  consent_ref:          null for invented; capability + consent_revision for real
+  consent_ref:          null for invented and curated_public_real; capability + consent_revision for owner_consented_real
+  curation_ref:         null for invented and owner_consented_real; source + curation-review reference for curated_public_real
   retention_deletion:   invented = tracked test asset; real = capability cascade (ADR-03)
 ```
 
@@ -948,7 +950,7 @@ prevents the sunk-cost drift that turns "research" into "shipping because we bui
 
 | G | Gate | Why it is a gate, not a decision this document can make |
 |---|---|---|
-| **G-ML-1** | Any candidate's transition from `benchmarked` to `validated`, per candidate. | ADR-19 still requires a representative consented or curated-public dataset with its own card, explicit reviewed capability/consent revision, retention/deletion, release review, and untouched holdout. Constitution-v2/DL-Q-CONSENT records eligibility under the existing gates; it is not dataset, reader, model, or candidate activation, and this row requests no redundant owner authorization. Each reviewed candidate task must supply these proofs. |
+| **G-ML-1** | Per-candidate Gate B evidence bundle for a transition from `benchmarked` to `validated` (not an additional owner gate). | ADR-19 requires a representative owner-consented (the owner's own data) or curated-public dataset with its own card, a reviewed capability/provenance record, retention/deletion, release review, and an untouched holdout. Constitution-v2/DL-Q-CONSENT records eligibility under the existing gates; it is not dataset, reader, model, or candidate activation. Each reviewed candidate task must supply these proofs, including a consent revision for owner-consented data. |
 | **G-ML-2** | Any **durable index** (lexical or vector) built by WB-C9. | ADR-20: "any durable index is a separately reviewed sink (owner gate)". |
 | **G-ML-3** | ADR-10 **Tier-2 semantics** (PR/issue prose, durable text embeddings) as an input to WB-C2. | ADR-10 records this as an explicit owner-gated policy proposal; **no card here assumes it**. |
 | **G-ML-4** | Adding **WB-C10** to the ADR-19 candidate register. | **Adjudicated 2026-08-04 (08 §4.8): accepted as DL-TRACE-03's evaluation specification, not a separate register entry or board card.** The register stays C1…C9. |

@@ -61,8 +61,7 @@ Appendix F).
 
 **Owner gates surfaced by this catalog** (flagged, never assumed authorised; each belongs in
 `08_OPEN_QUESTIONS.md`): **G-a** ADR-10 Tier-2 semantics (PR/issue prose, durable text embeddings);
-**G-b** ADR-20 step-3 durable vector index as a reviewed sink; **G-c** ADR-19 `validated` promotion
-on consented real data, per candidate; **G-d** capability-registry rows that the canonical §3 matrix
+**G-b** ADR-20 step-3 durable vector index as a reviewed sink; **G-d** capability-registry rows that the canonical §3 matrix
 describes but `source-capability-matrix.md` does not yet carry (`GH-RULE-01` policy aggregates,
 `GH-ATTEST-01` attestation coverage, `GH-TAXONOMY-01` topics/licence/custom properties,
 `GH-DISCUSS-01` discussion metadata); **G-e** artifact/cache **metadata-only** counts
@@ -71,6 +70,11 @@ describes but `source-capability-matrix.md` does not yet carry (`GH-RULE-01` pol
 (DL-PORT-02) and the attestation entry (DL-PROV-01) — and both are therefore OWNER_GATED/PARKED
 on the board and in `07_DELIVERY_ROADMAP.md`, with G-d/G-e recorded in `08_OPEN_QUESTIONS.md` §1
 and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-control violation.
+
+Gate B validation is not an additional owner gate: constitution-v2 records the owner-consented
+(the owner's own data) or curated-public scope as eligible under the existing consent, charter,
+matrix, and release gates. Each candidate still needs its own reviewed task and proof bundle,
+including retention/deletion, release review, and an untouched final holdout.
 
 ---
 
@@ -1136,8 +1140,9 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   effects, versioned and checksummed; the generation parameters **are** the dataset card). No source
   collection.
 - **Classes / prohibited / posture** — **C0** benchmark data. Prohibited: person targets of any
-  kind; collaborator or identity covariates; training on real data without a separately authorised,
-  consented, carded dataset (**owner gate G-c**); reusing a consumed final holdout. Posture `E`
+  kind; collaborator or identity covariates; training on real data without a separately reviewed,
+  owner-consented (the owner's own data) or curated-public, carded dataset under the Gate B proof
+  bundle; reusing a consumed final holdout. Posture `E`
   offline (`server/research/*` or notebooks, P11).
 - **Canonical objects** — `model_registry` rows (method ID/version, card links, gate evidence,
   promotion state) and `statistical_output`/`model_output` tables (canonical §6). Feature
@@ -1147,7 +1152,7 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
   metric, minimum practically-meaningful improvement, feature-availability time, split policy —
   rolling-origin / nested time-aware — and the final holdout fixed **before tuning**), false-discovery
   control across the candidate family (Benjamini–Hochberg), dataset cards, model cards, and the
-  promotion ladder `seeded → benchmarked(invented) → validated(consented,real) → shipped`. **Invented
+  promotion ladder `seeded → benchmarked(invented) → validated(own-consented-or-curated-public,real) → shipped`. **Invented
   fixtures can never carry a candidate past `benchmarked`.** Candidate register, all `seeded`, none
   implementation-ready: C1 change-points, C2 change-intent classifier, C3 CI-family classifier
   (metadata-only; **reject if baseline unbeaten**), C4 motifs, C5 communities/embeddings, C6
@@ -1163,7 +1168,7 @@ and `HUMAN_TODO.md` q-6. Implementation before those gates is a charter change-c
 - **Confounders / falsifiers / bounds** — Confounders: planted-effect benchmarks are easier than
   reality, which is exactly why `benchmarked ≠ validated`; leakage through feature-availability time;
   multiple comparisons across nine candidate families. Falsifier: a candidate that beats the baseline
-  on invented data and fails on the consented set — the ladder is designed to make this visible, not
+  on invented data and fails on the eligible owner-consented or curated-public set — the ladder is designed to make this visible, not
   embarrassing. Bounds: offline compute only; no model runs inside a collection path.
 - **UI / corpus / eval / deps / rollout** — UI: registry state surfaces as **layer badges** wherever a
   modelled claim renders; there is no "model dashboard" competing with evidence. Corpus: the frozen
