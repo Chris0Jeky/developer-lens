@@ -73,7 +73,8 @@ a different gate from the lab's `q-8`, and a bare `q-N` fails the verifier for e
 Any product-owned schema or presentation-contract change runs this sequence, in order:
 
 1. **Product generation and check** — regenerate the artifact and run its drift gate
-   (`npm run check:research-pack`, `npm run check:method-trial-view`).
+   (`npm run check:research-pack`, `npm run check:method-trial-view`,
+   `npm run check:research-finding`).
 2. **Lab check-only sync** — the lab validates as a consumer without redefining the contract.
 3. **Fixture and export proof on both sides** — the lab proves its consumer path against the exact
    fixture bytes; the product proves its producer and rendering path.
@@ -105,9 +106,11 @@ archaeology — the requirement is the proof, not a particular automation shape.
   MERGE safe while the competing writer can still race the remote); it may not be merged by an
   agent. Without a verified isolated worktree, preparation stays a non-writing plan. That
   conditional protocol remains preserved; the product q-8 is now closed.
-- **Shared surfaces today:** the `methodTrialView` contract with C0 fixture parity, and the
-  ResearchPack schema (issues #181/#182 — #181's schema slice has shipped). Both live under
-  `shared/` on the product side with their generation and drift-check scripts in `scripts/`.
+- **Shared surfaces today:** the `methodTrialView` contract with C0 fixture parity, the
+  ResearchPack schema (issues #181/#182 — #181's schema slice has shipped), and the
+  `ResearchFindingProjection.v1` contract (issue #305, PR #309; drift gate
+  `npm run check:research-finding`). All three live under `shared/` on the product side with
+  their generation and drift-check scripts in `scripts/`.
 - **Prompt operating system: merged on both sides.** Product PR #218 and lab PR #35 deliver the
   library, repo-neutral parity manifest, and shared blocks. Non-blocking hardening remains product
   #216 and lab #34; it does not change the delivered prompt-OS status or any capability boundary.
