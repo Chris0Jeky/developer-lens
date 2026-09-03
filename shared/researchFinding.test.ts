@@ -238,4 +238,33 @@ describe('ResearchFindingProjection.v1', () => {
       expect(() => assertResearchFindingPrivacy(planted)).toThrow()
     }
   })
+
+  it('rejects email addresses and handles whose domain starts with a non-ASCII character', async () => {
+    const fixture = await readFixture()
+    const denied = 'denied identity, email, path, or repository token'
+    // #322: an ASCII-only pattern let any address whose domain begins with a non-ASCII character
+    // through every branch. One planted title per form, plus the already-caught ASCII and
+    // non-ASCII-local-part forms as guards against regressing the other direction. Each title
+    // isolates the address: no slash, no path separator, no date.
+    const planted = [
+      'me@éxample.com', // non-ASCII domain
+      'δοκιμή@παράδειγμα.δοκιμή', // fully non-ASCII address
+      'contact me@éxample.com now', // embedded in surrounding text
+      'me@xn--xample-9ua.com', // punycode form of the first
+      'plain@example.com', // ASCII, previously caught
+      'josé@example.com', // non-ASCII local part, previously caught
+      'ping @éxample about it', // bare non-ASCII handle
+    ]
+    for (const title of planted) {
+      const finding = { ...fixture, finding: { ...fixture.finding, title } }
+      expect(researchFindingPrivacyViolations(finding), title).toContain(denied)
+      expect(() => assertResearchFindingPrivacy(finding), title).toThrow()
+    }
+    // Non-ASCII prose without an identifier must still pass: the widened classes must not turn
+    // ordinary accented or non-Latin text into a violation.
+    for (const title of ['détection améliorée à 3 %', 'Δοκιμή χωρίς διεύθυνση', 'costs 5 € per run']) {
+      const finding = { ...fixture, finding: { ...fixture.finding, title } }
+      expect(researchFindingPrivacyViolations(finding), title).not.toContain(denied)
+    }
+  })
 })

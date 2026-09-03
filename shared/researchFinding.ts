@@ -232,10 +232,13 @@ export function computeResearchFindingBundleHash(value: Omit<ResearchFinding, 'p
   return `sha256:${createHash('sha256').update(canonicalizeJson(body), 'utf8').digest('hex')}`
 }
 
-// The handle branch admits a leading digit: GitHub handles are alphanumeric-or-hyphen and may
-// start with a digit, so a leading-letter-only class let @1 / @123 / @0xdeadbeef past every
-// branch of this pattern and out through the public projection unredacted.
-const DENIED_TOKEN = /(?:@[A-Za-z0-9][A-Za-z0-9_-]{0,38}|\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:[A-Za-z]:\\|\/|\\)[^\s"']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b)/
+// The handle and email branches are Unicode-aware under the `u` flag. Two identifier forms have
+// already slipped past ASCII-only branches here: GitHub handles may start with a digit
+// (@1 / @123 / @0xdeadbeef), and an email whose domain begins with a non-ASCII character
+// (me@éxample.com, δοκιμή@παράδειγμα.δοκιμή) matched no branch at all (#322). The email branch
+// deliberately carries no `\b` anchors: JavaScript keeps `\b` ASCII-defined even under `u`, so a
+// word boundary never fires beside a non-ASCII run. Over-matching is the safe direction here.
+const DENIED_TOKEN = /(?:@[\p{L}\p{N}][\p{L}\p{N}_-]{0,38}|[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.\p{L}{2,}|(?:[A-Za-z]:\\|\/|\\)[^\s"']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b)/u
 const DATE_TOKEN = /\b\d{4}-\d{2}-\d{2}\b/
 
 export function researchFindingPrivacyViolations(value: unknown): string[] {
