@@ -31,18 +31,27 @@ export const GATES = {
 } as const
 export type GateCode = keyof typeof GATES
 
-// The preregistered candidate detection floor of the pinned source contract
-// (`shared/methodTrialView.ts`, `CANDIDATE_DETECTION_FLOOR`). v1 pins it so an exported
-// `detection_floor` verdict is derivable from the detection evidence the projection carries.
+// The preregistered candidate detection floor, hand-copied from the inline literal in the pinned
+// source contract's `CANDIDATE_DETECTION_FLOOR` rule (`shared/methodTrialView.ts`, `candidate >=
+// 0.75`), which is not exported. Nothing binds the two, so a change there does not fail here.
+// v1 pins the value so an exported `detection_floor` verdict is derivable from the detection
+// evidence the projection carries.
 export const RESEARCH_FINDING_DETECTION_FLOOR = 0.75 as const
 
-// Gates the projection can derive from its own metric evidence, mirroring the source contract's
-// scored gates. `requiresBaseline` marks a rule that needs the baseline measurement too; when a
-// required measurement is unavailable or its metric is absent, the gate must be null, exactly as
-// the source contract derives `not_applicable`. The remaining registry gates
-// (`baseline_selection`, `candidate_selection`, `delay_budget`, `confound_guard`) rest on
-// selection viability, detection delay and confound evidence that v1 does not transport, so they
-// cannot be derived here; see the README's stated derivation scope.
+// Gates the projection can derive from its own metric evidence, in the shape of the source
+// contract's scored gates. `requiresBaseline` marks a rule that needs the baseline measurement
+// too; when a required measurement is unavailable or its metric is absent, the gate must be null,
+// exactly as the source contract derives `not_applicable`.
+//
+// Two rules match the source contract exactly; one deliberately does not. `false_alert_improvement`
+// here means any improvement (`candidate < baseline`), while the source contract applies a
+// preregistered 20% rule (`candidate <= baseline * 0.8`), so the two disagree over the interval
+// `0.8 * baseline < candidate < baseline`. That predates this table and is tracked separately;
+// the README states the rule this contract actually enforces.
+//
+// The remaining registry gates (`baseline_selection`, `candidate_selection`, `delay_budget`,
+// `confound_guard`) rest on selection viability, detection delay and confound evidence that v1
+// does not transport, so they cannot be derived here; see the README's stated derivation scope.
 const DERIVED_GATES: ReadonlyArray<{
   code: GateCode
   metric: MetricCode

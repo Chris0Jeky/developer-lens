@@ -5446,9 +5446,11 @@ may Lab #97 begin. Do not tag or publish a release.
 any judgment. A throwaway script built each alleged artifact from the tracked fixture, recomputed
 `provenance.bundle_hash`, and reported `ResearchFindingSchema.safeParse`. All five behaviours are
 real; only two are defects this contract can repair. `ResearchFindingProjection.v1` now derives
-`detection_floor`, `false_alert_improvement` and `not_worse_detection` from one table that mirrors
+`detection_floor`, `false_alert_improvement` and `not_worse_detection` from one table shaped like
 the pinned source contract's scored gates in `shared/methodTrialView.ts`, with the preregistered
-candidate floor exported as `RESEARCH_FINDING_DETECTION_FLOOR` (0.75). A gate whose required
+candidate floor exported as `RESEARCH_FINDING_DETECTION_FLOOR` (0.75). Two of the three rules match
+that contract exactly; `false_alert_improvement` does not, and that divergence predates this table
+(see the review note below). A gate whose required
 measurement is `unavailable`, or whose metric is absent, must now be `null`, matching the source
 contract's `not_applicable` derivation. The contract README replaces its two-gate sentence with the
 full derivation scope, states that the four remaining gates rest on selection viability, delay and
@@ -5491,8 +5493,22 @@ sound repair is outcome-neutral claim text, which changes a published registry a
 refreshed at the next phase boundary. `HUMAN_TODO.md` and the executable prompt surface are
 unchanged.
 
+**Review note.** One fresh-context adversarial pass over this diff returned no CRITICAL or HIGH and
+one substantive MEDIUM: the code comment and this entry originally claimed the derivation table
+mirrors the source contract's scored gates, but `false_alert_improvement` means any improvement
+here (`candidate < baseline`) against a preregistered 20% rule there (`candidate <= baseline * 0.8`),
+so the two disagree over `0.8 * baseline < candidate < baseline`. `git show d07584c` confirms that
+rule predates this diff — it is the contract's own pre-existing semantics, not a regression
+introduced here — so the correction applied was to the false "mirrors" claim, and the divergence
+itself is tracked as Product #321 rather than repaired in this round. The pass also noted that
+`RESEARCH_FINDING_DETECTION_FLOOR` is a hand copy with no drift binding to the source literal
+(recorded in the comment and below), and that one test case name misdescribed what it asserts
+(renamed). Its remaining LOW, that the boolean branch of `false_alert_improvement` has no resealed
+negative case, is left as coverage thinness: a flipped operator still breaks the fixture round-trip.
+
 **Residual risk.** v1 now pins the candidate detection floor at 0.75, so a future producer with a
-different preregistered floor needs a new schema version. Four of the seven registry gates remain
+different preregistered floor needs a new schema version, and nothing fails if the source
+contract's own inline 0.75 later changes. Four of the seven registry gates remain
 transport-only values that no consumer can verify from the artifact alone; the README now says so,
 which is disclosure, not enforcement.
 

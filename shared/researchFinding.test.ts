@@ -190,13 +190,13 @@ describe('ResearchFindingProjection.v1', () => {
       gateOf(finding, 'not_worse_detection').passed = true
     })
     expect(() => ResearchFindingSchema.parse(belowFloor)).toThrow(/detection_floor must derive/)
-    const atFloor = mutate((finding) => {
+    const belowFloorDeclaredFail = mutate((finding) => {
       metricOf(finding, 'detection_rate').baseline = { status: 'measured', value: 0.5 }
       metricOf(finding, 'detection_rate').candidate = { status: 'measured', value: 0.5 }
       gateOf(finding, 'detection_floor').passed = false
       gateOf(finding, 'not_worse_detection').passed = true
     })
-    expect(ResearchFindingSchema.parse(atFloor).gates?.[2].passed).toBe(false)
+    expect(ResearchFindingSchema.parse(belowFloorDeclaredFail).gates?.[2].passed).toBe(false)
 
     // An unavailable supporting measurement must produce a null gate, never a boolean verdict.
     for (const [gateCode, metricKey, side] of [
