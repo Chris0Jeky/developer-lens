@@ -254,6 +254,7 @@ describe('ResearchFindingProjection.v1', () => {
       'plain@example.com', // ASCII, previously caught
       'josé@example.com', // non-ASCII local part, previously caught
       'ping @éxample about it', // bare non-ASCII handle
+      'reported by @_jekyt today', // underscore-leading handle
     ]
     for (const title of planted) {
       const finding = { ...fixture, finding: { ...fixture.finding, title } }
