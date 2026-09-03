@@ -374,9 +374,12 @@ needs the concrete role taxonomy, monorepo boundaries, and comparability rules.
 (ADR-06 controls); retained output is C1: language/byte-share by controlled vocabulary, role
 presence/counts for a closed role taxonomy {build, test, docs, config, migration, api_surface,
 ci_definition, dependency_manifest, generated, vendored, binary_asset, **schema_definition,
-fixture_golden, snapshot_artifact**} (14 roles; the last three accepted 2026-08-04 from frontier
-finding A4 — they make golden/fixture-anchored contract surfaces and migration-ledger archaeology
-observable), package/monorepo boundary count via manifest-presence classes, and
+fixture_golden, snapshot_artifact, agent_config**} (15 roles; `schema_definition`,
+`fixture_golden`, and `snapshot_artifact` were accepted 2026-08-04 from frontier finding A4, and
+the presence-only `agent_config` role was accepted 2026-08-18 from the constitution-v2
+reconciliation — they make golden/fixture-anchored contract surfaces, migration-ledger archaeology,
+and configuration presence observable), package/monorepo boundary count via manifest-presence
+classes, and
 parser/enumeration coverage. Paths, names, file lists are
 C4 and destroyed. Boundaries (corrected 2026-08-04 review round): no working tree, no submodule
 recursion without its own consent, and **no file-body reads of any kind under
@@ -720,10 +723,10 @@ planning session.
   unit, and the family's `m` only grows); re-testing an unchanged candidate is prohibited; an
   online-FDR procedure is admissible only via a dedicated, formally specified preregistration
   amendment.
-- **Promotion ladder**: `seeded → benchmarked(invented) → validated(consented,real) → shipped`,
-  where `validated` requires a separately authorised, representative, consented dataset with its
-  own card and an untouched final holdout — invented fixtures can never carry a candidate past
-  `benchmarked`. Every shipped model keeps the §9 eight conditions (baseline beat, holdouts,
+- **Promotion ladder**: `seeded → benchmarked(invented) → validated(own-consented-or-curated-public,real) → shipped`,
+  where `validated` requires a separately reviewed, representative owner-consented (the owner's
+  own data) or curated-public dataset with its own card and an untouched final holdout — invented
+  fixtures can never carry a candidate past `benchmarked`. Every shipped model keeps the §9 eight conditions (baseline beat, holdouts,
   calibration, drift, explainability, abstention, fallback, no person targets).
 - **Registry**: `model_registry` rows with method ID/version, card links, gate evidence,
   promotion state; UI claims resolve the registry so a demoted model disappears from claims
@@ -735,8 +738,9 @@ C5 communities/embeddings, C6 time-to-event (KM baseline, censoring-aware), C7 p
 observability, C8 architecture-change classifier, C9 aggregate retrieval ranking (ADR-20).
 
 **Cards.** WB-01 (workbench harness + benchmark format), WB-02 (registry + promotion mechanics),
-WB-C1…C9 (candidate cards, research). **Privacy.** All benchmark data invented C0; consented
-real validation is its own owner-gated future decision per candidate.
+WB-C1…C9 (candidate cards, research). **Privacy.** All benchmark data invented C0; owner-consented
+(the owner's own data) or curated-public real validation remains a reviewed per-candidate Gate B
+proof bundle, not a new owner decision.
 
 ---
 
