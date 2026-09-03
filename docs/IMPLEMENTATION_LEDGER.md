@@ -5512,6 +5512,21 @@ contract's own inline 0.75 later changes. Four of the seven registry gates remai
 transport-only values that no consumer can verify from the artifact alone; the README now says so,
 which is disclosure, not enforcement.
 
+**Late connector findings on the pushed heads.** Two further threads arrived after the fix push and
+were triaged once each rather than reopening the pipeline. The first, that `CURRENT_STATE.md` still
+named `9e12749` as #309's head and listed the exact-head gate as outstanding, was correct and is
+repaired in `263417c`. The second is Product #322 and is a confirmed HIGH: `DENIED_TOKEN`
+(`shared/researchFinding.ts:238`) is ASCII-only in every branch, so an email whose domain begins
+with a non-ASCII character matches none of them. Measured — `me@éxample.com`,
+`δοκιμή@παράδειγμα.δοκιμή` and the same address embedded in text all return no violation, while
+`plain@example.com` and `josé@example.com` are caught, because a non-ASCII local part still leaves
+an ASCII tail for the handle branch. It is pre-existing and byte-identical to `d07584c`, so it is
+not a regression from this work, but it is the same structural defect class as the
+numeric-leading-handle HIGH that parked #309 before, under the `sensitive_data: true` overlay.
+It is deliberately not repaired here: this round's fix budget was spent, and the obvious
+`\p{L}\p{N}` repair meets JavaScript's ASCII-defined `\b` under `/u`, which is exactly the trap
+that produced both prior defects. **#309 must not merge until #322 is repaired.**
+
 **Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
 v0.1.0 tag-blocking owner action. Nothing here infers or closes it. The merge decision on #309 is
-the owner's.
+the owner's, and this session's recommendation is to park it behind Product #322.

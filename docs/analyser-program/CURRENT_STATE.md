@@ -26,19 +26,26 @@ active_slice: >-
   never-triaged connector threads, derived `detection_floor`, `false_alert_improvement` and
   `not_worse_detection` from the artifact's own metric evidence, required a null gate where a
   supporting measurement is unavailable, and stated the derivation scope in the contract README.
-  Its exact-head hosted gate has since passed, so the merge decision is the owner's. Product
+  Its exact-head hosted gate has since passed, but #309 must NOT merge as it stands: a later
+  connector thread surfaced Product #322, a confirmed HIGH in which `DENIED_TOKEN` misses an email
+  whose domain begins with a non-ASCII character, so a direct identifier reaches the public
+  projection unredacted. It is pre-existing and untouched by this branch, but it is the same
+  structural defect class as the numeric-leading-handle HIGH that parked #309 before, under the
+  `sensitive_data: true` overlay. Product
   #305 remains step 1 of the ResearchFindingProjection.v1 chain; Lab #97 and CommitAtlas #154 stay
   blocked until it lands. P0.5 issue #200 remains the active release wave, and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is still the sole tag-blocking owner gate.
 next_value_slice: >-
-  Product #309/#305 has passed its exact-head hosted gate at `607be3d` and one fresh-context
-  adversarial review; the owner holds the merge decision. On merge, announce the landed Product
-  commit on CommitAtlas #111. Only then may Lab #97 consume the contract; CommitAtlas #154 follows both
+  Repair Product #322 — the non-ASCII email-domain hole in `DENIED_TOKEN` — with a planted
+  regression per address form, then re-prove and merge Product #309/#305, which has otherwise
+  passed its exact-head hosted gate and one fresh-context adversarial review. On merge, announce
+  the landed Product commit on CommitAtlas #111. Only then may Lab #97 consume the contract; CommitAtlas #154 follows both
   producer steps. Product #318 is the tracked Windows-only CRLF failure in the research-finding
   README registry test and does not block the hosted gate. Products #319, #320 and #321 are the
   contract findings deliberately deferred out of #309 rather than repaired in it: four gates v1
   cannot derive, the reject-specific `model_promotion` claim text, and the
   `false_alert_improvement` divergence from the source contract's preregistered 20% rule. Product
+  #322 is different in kind and is the merge blocker, not a deferral. Product
   #304 is a separate larger
   public-lens and export-profile contract; #293 remains parked pending a security-reviewed Windows
   path-identity design; #300 is low-priority. Request or await explicit
@@ -49,8 +56,8 @@ blockers: >-
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is the sole remaining tag-blocking owner gate
   and is ready for explicit aesthetic sign-off. Lab #97 and CommitAtlas #154 are blocked
   dependencies behind Product #305, not owner gates. Product #309 is no longer parked: its
-  numeric-leading-handle HIGH is repaired, its exact-head hosted proof passed at `607be3d`, and
-  only the owner's merge decision remains. The other
+  numeric-leading-handle HIGH is repaired and its exact-head hosted proof passed, but it is parked
+  again on the confirmed HIGH Product #322 and must not merge until that is repaired. The other
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 decisions are deferred and nonblocking here. No
   tag, release, package publication, or public publication is authorized before
@@ -63,7 +70,7 @@ last_verified_checks: >-
   at `641f09f`. At the 2026-09-03T01:50:40Z re-observation Product main is unchanged, Product has
   exactly one open pull request (#309, head
   `607be3d6706291339cef32221d29b62092244792`), zero tags, and zero releases; issues #296, #297,
-  #301, #311, and #314 are closed and #305, #318, #319, #320 and #321 are open. The exact-head
+  #301, #311, and #314 are closed and #305, #318, #319, #320, #321 and #322 are open. The exact-head
   hosted `Prove the pull request` gate succeeded at `607be3d` (run 33705025649) and at the
   preceding `a3c69b4` (run 33704362816). Local proof at `607be3d`: `npx tsc --noEmit`,
   `npm run lint`, `npm run verify:context`, `npm run check:research-finding`, `git diff --check`,
@@ -148,11 +155,12 @@ exact_resume_point: >-
   commit, with the numeric-leading-handle HIGH repaired at `9e12749` and the gate-derivation
   triage round landed at head `607be3d`; it supersedes the earlier parked-at-`2d510e1` state. Its
   exact-head hosted gate passed at `607be3d` (run 33705025649) and one fresh-context adversarial
-  review is done, so the merge decision is the owner's; merge producer-first and announce the
-  landed Product commit on CommitAtlas #111. Lab #97 consumes only after Product lands, and CommitAtlas #154 follows both
+  review is done, but Product #322 is a confirmed HIGH privacy defect that blocks the merge:
+  repair it with planted regressions, re-prove, then merge producer-first and announce the landed
+  Product commit on CommitAtlas #111. Lab #97 consumes only after Product lands, and CommitAtlas #154 follows both
   producer steps. Product #318 tracks the Windows-only CRLF README registry test failure; Product
   #304 is the separate larger projection/export contract; Products #319, #320 and #321 carry the
-  contract findings deferred out of #309. The approved browser-client Method Trial
+  contract findings deferred out of #309, and Product #322 is the confirmed HIGH that blocks it. The approved browser-client Method Trial
   proof remains complete; the external ChromeDevTools attempt is invalid and must not substitute
   for it.
   Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818 at 54217ff: Product #298 owns
