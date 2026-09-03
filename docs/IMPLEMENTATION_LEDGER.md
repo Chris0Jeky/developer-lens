@@ -5377,3 +5377,64 @@ v0.1.0 tag-blocking owner action. Nothing in this contract slice infers or close
 `feature/issue305-research-finding-20260830`, require the new exact-head hosted proof and one final
 exact-head contract/privacy verification, then merge producer-first. Announce the landed Product
 commit on CommitAtlas #111; only then may Lab #97 begin. Do not tag or publish a release.
+
+## 2026-09-03 — Product #305 numeric-handle repair and main reconciliation
+
+**Changed.** Two follow-ups to the #305 contract on PR #309. First, `9e12749` repaired the
+confirmed HIGH that parked the pull request: the `DENIED_TOKEN` handle branch required a leading
+letter, so a GitHub handle beginning with a digit (`@1`, `@123`, `@0xdeadbeef`) matched no branch of
+the pattern — not the email branch, which needs a dot-TLD, not the path branch, which needs a
+separator, not the repository branch, which needs a slash — and reached the public projection
+unredacted. `researchFindingPrivacyViolations` returned an empty array for such a title, so
+`assertResearchFindingPrivacy` did not throw. The branch is now
+`@[A-Za-z0-9][A-Za-z0-9_-]{0,38}`, with a regression that isolates the handle so no other denied
+token can mask the result. Second, merge `1809c4c` reconciled the branch with Product main after
+PR #310 (#297), PR #312 (#311) and PR #316 (#314) landed past its `81cf305` base. No source or test
+file conflicted. `docs/IMPLEMENTATION_LEDGER.md` kept both sides' appended entries, main's first.
+`docs/analyser-program/CURRENT_STATE.md` was rewritten from live observation rather than taking a
+side. `docs/agent-system/FRICTION_LOG.md` auto-merged with both FR-053's fourth occurrence and
+FR-098 intact.
+
+**Verified.** On the merged head, `npm run verify:context` passed (47 Markdown files, 31 required
+files), `git diff --check` was clean, `npx tsc --noEmit` was clean, and
+`npm run check:research-finding` reported no generated drift. `npm run check` ran lint,
+verify:context, check:research-pack, check:method-trial-view and check:research-finding green, then
+Vitest reported 1535 passed, 10 skipped and 1 failed across 89 files. `npm run build` and its
+`verify:no-secrets` step passed separately over 19 build output files. The reconciled ledger is
+exactly main's file plus this branch's 63 appended lines, so neither side's evidence was dropped.
+Live REST reads at 2026-09-03T01:06:45Z gave Product main `64f4cee`, Lab main `e7d5627`, one open
+Product pull request (#309), zero open Lab pull requests, and zero tags or releases in both.
+
+**NOT verified.** No hosted check existed at `9e12749` because GitHub cannot build the merge ref of
+a conflicting pull request; the exact-head hosted gate at the reconciled head and the final
+exact-head contract/privacy verification both remain outstanding, and this session does not merge.
+Lab #97 and CommitAtlas #154 have not consumed the contract. No release, tag, publication, browser
+proof, protected-data access, real input, external model, telemetry, or credential path was
+exercised.
+
+**Failures and workarounds.** The single Vitest failure is `publishes registries consistently in
+the README`, and it is the pre-existing Windows-only defect tracked as Product #318, not a
+regression from this work: `.gitattributes` pins only `research-contracts/**/*.json` to `eol=lf`, so
+the contract README is checked out CRLF on Windows and the table parser sees a trailing empty cell.
+Hosted Ubuntu runs the same test green. It is reported, not repaired here. `npm run check` stops at
+that failure, so `npm run build` was run separately to cover the rest of the milestone gate.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` now records Product main `64f4cee`
+after PR #316, Lab main `e7d5627` after Lab PR #105, #309 unparked at the reconciled head with its
+HIGH repaired, Product #318 as the tracked Windows-only test defect, and the unchanged sole release
+blocker `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`. Where main and this branch could not
+both be true — main recorded #309 parked at `2d510e1` and forbidden to merge — the newer measured
+reality wins and is stated as such. `HUMAN_TODO.md` and the executable prompt surface are unchanged.
+
+**Residual risk.** The reconciled state file is a timestamped observation and must be refreshed
+before any later action. Product #318 keeps the local Windows gate one test short of clean, so a
+Windows-only reviewer cannot distinguish a new README registry regression from that known failure
+without checking line endings first.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
+v0.1.0 tag-blocking owner action. Nothing in this repair or reconciliation infers or closes it.
+
+**Exact resume.** On `feature/issue305-research-finding-20260830` at the reconciled head, confirm
+the hosted exact-head gate, take one exact-head contract/privacy verification, and leave the merge
+decision to the owner. Then announce the landed Product commit on CommitAtlas #111; only after that
+may Lab #97 begin. Do not tag or publish a release.
