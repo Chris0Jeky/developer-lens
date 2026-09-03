@@ -5327,7 +5327,8 @@ candidate or failed gate. RFC 8785 canonicalization computes `bundle_hash` with 
 and the generator fails closed on the finding-specific privacy boundary before writing. The default
 gate now checks generated research-finding drift.
 
-**Verified.** Six focused research-finding tests and the existing method-trial suites pass 19 tests.
+**Verified.** As of this entry six focused research-finding tests and the existing method-trial
+suites pass 19 tests; later entries below add focused cases and restate the current totals.
 The tests independently compile the standalone schema with strict AJV, reject every issue #305
 negative case, compare README and schema registries exactly, round-trip the fixture, recompute both
 hashes, exercise RFC 8785 number and UTF-16 property-order vectors, and run both the finding-specific
@@ -5438,3 +5439,63 @@ v0.1.0 tag-blocking owner action. Nothing in this repair or reconciliation infer
 the hosted exact-head gate, take one exact-head contract/privacy verification, and leave the merge
 decision to the owner. Then announce the landed Product commit on CommitAtlas #111; only after that
 may Lab #97 begin. Do not tag or publish a release.
+
+## 2026-09-03 — #309 gate-derivation triage and bounded fix
+
+**Changed.** Five never-triaged connector threads on PR #309 were reproduced by execution before
+any judgment. A throwaway script built each alleged artifact from the tracked fixture, recomputed
+`provenance.bundle_hash`, and reported `ResearchFindingSchema.safeParse`. All five behaviours are
+real; only two are defects this contract can repair. `ResearchFindingProjection.v1` now derives
+`detection_floor`, `false_alert_improvement` and `not_worse_detection` from one table that mirrors
+the pinned source contract's scored gates in `shared/methodTrialView.ts`, with the preregistered
+candidate floor exported as `RESEARCH_FINDING_DETECTION_FLOOR` (0.75). A gate whose required
+measurement is `unavailable`, or whose metric is absent, must now be `null`, matching the source
+contract's `not_applicable` derivation. The contract README replaces its two-gate sentence with the
+full derivation scope, states that the four remaining gates rest on selection viability, delay and
+confound evidence that v1 does not transport, and states plainly that `bundle_hash` proves transport
+integrity only and never attests that a verdict follows from evidence.
+
+**Verified.** Before the change, a forged artifact with both detection rates at 0.5 and
+`detection_floor: true` parsed successfully, as did every combination of an `unavailable`
+measurement with a boolean gate and an omitted `detection_rate` metric with both detection gates
+`true`. After the change all of them are rejected with a path-scoped issue. The new focused case
+`derives the detection floor and nulls gates whose measurement is unavailable` was proved red
+against the previous derivation (`expected [Function] to throw an error`) and green after. Eight
+focused research-finding cases and the thirteen method-trial cases now pass; the four contract
+suites report 36 passed with the single known Product #318 failure. `npx tsc --noEmit`,
+`npm run lint`, `npm run verify:context` (47 Markdown files, 31 required files),
+`npm run check:research-finding` and `git diff --check` are clean. The generated schema and fixture
+are byte-identical, so the published `bundle_hash` and fixture SHA-256 are unchanged.
+
+**NOT verified.** No hosted exact-head gate existed for this head when the entry was written. No
+consumer command, release, tag, publication, protected-data access, real input, external model or
+credential path was exercised. The declined findings were not repaired and are not proved harmless
+beyond the stated scope argument.
+
+**Failures and workarounds.** `publishes registries consistently in the README` still fails locally
+as the pre-existing Windows-only Product #318 CRLF defect, unchanged by this work; the patched
+README keeps its existing CRLF bytes rather than mixing line endings inside one file.
+
+**Declined with tracked issues.** The `:135` thread asks every exported gate to derive from source
+evidence. The behaviour is real — `baseline_selection`, `candidate_selection`, `delay_budget` and
+`confound_guard` accept any value, and a forged artifact can claim both selections viable while
+still carrying the `thresholds_nonviable` limitation — but v1 transports no viability, delay or
+confound measurement, so nothing exists to derive from and the repair is a schema change, not a
+validation change. The `:129` thread asks that `model_promotion` be restricted to `reject`
+outcomes. The behaviour is real, but the proposed restriction would forbid the non-promotion
+disclaimer on exactly the `benchmarked` outcome the README says is "evidence, never promotion"; the
+sound repair is outcome-neutral claim text, which changes a published registry and its hashes.
+
+**Docs-state sync.** Only the contract README and this ledger changed.
+`docs/analyser-program/CURRENT_STATE.md` still records the pre-reconciliation head and must be
+refreshed at the next phase boundary. `HUMAN_TODO.md` and the executable prompt surface are
+unchanged.
+
+**Residual risk.** v1 now pins the candidate detection floor at 0.75, so a future producer with a
+different preregistered floor needs a new schema version. Four of the seven registry gates remain
+transport-only values that no consumer can verify from the artifact alone; the README now says so,
+which is disclosure, not enforcement.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
+v0.1.0 tag-blocking owner action. Nothing here infers or closes it. The merge decision on #309 is
+the owner's.
