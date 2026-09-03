@@ -5314,3 +5314,248 @@ release-tag owner action; q-6 remains unchanged and non-blocking for this reconc
 
 **Exact resume.** On `fix/issue314-gateb-scope-20260830` from base `cf96dab`, complete the local
 proof, commit, and hand the branch to the coordinator. Do not push, open, or merge from this worker.
+
+## 2026-08-30 — ResearchFindingProjection.v1 producer contract
+
+**Changed.** After PR #308 merged as `81cf305` and closed #296, selected Product #305 as step 1 of
+the declared producer-first chain. Added the strict, snake_case `ResearchFindingProjection.v1`
+runtime contract, generated Draft 2020-12 schema, invented C0 WB-C1 fixture, and README registries.
+Every method, metric, gate, limitation, and unsupported-claim code is bound to reviewed display
+text; metric codes also bind unit and direction. Runtime semantics require distinct methods,
+unique and ordered codes, and a rejected finding to retain its baseline with a measured worse
+candidate or failed gate. RFC 8785 canonicalization computes `bundle_hash` with that field omitted,
+and the generator fails closed on the finding-specific privacy boundary before writing. The default
+gate now checks generated research-finding drift.
+
+**Verified.** As of this entry six focused research-finding tests and the existing method-trial
+suites pass 19 tests; later entries below add focused cases and restate the current totals.
+The tests independently compile the standalone schema with strict AJV, reject every issue #305
+negative case, compare README and schema registries exactly, round-trip the fixture, recompute both
+hashes, exercise RFC 8785 number and UTF-16 property-order vectors, and run both the finding-specific
+and shared forbidden-pattern privacy scans over the written fixture. `npm run check:research-finding`,
+lint, a forced TypeScript project build, `npm run verify:context`, and `git diff --check` pass.
+
+**NOT verified.** Product #305's first exact-head hosted gate failed its build and therefore skipped
+the showcase step. The repaired head still needs a new exact-head hosted gate and a verification
+pass scoped to the type repair; it is not published on Product main. Lab #97 and CommitAtlas #154
+have not consumed it and remain intentionally blocked. No consumer command was run.
+
+**Failures and workarounds.** The first review found three weak acceptance proofs: the fixture hash
+test was tautological, README registry checks proved presence rather than exact sets, and privacy
+was asserted only in tests. The single fix round binds README hashes to computed bytes, parses exact
+README/schema registry pairs, adds the RFC property vector and strict AJV, and moves privacy refusal
+into generation. No dependency or workaround was added.
+
+The first published PR #309 head then exposed TS7022 in three discriminated-union declarations:
+their tuple casts referenced `typeof` the declarations being initialized. Required hosted run
+`33287256111` failed `Type-check and build` and skipped the showcase proof. The earlier local
+incremental `tsc -b` result was a false green; the repair replaces the self-references with explicit
+literal variants and passes `npx tsc -b --force --pretty false`. FR-098 records the proving-command
+lesson under Product #294. This red is repaired, not dismissed or retried unchanged.
+
+The automatic connector review of the original head then identified five causal merge blockers:
+runtime parsing accepted a formatted but incorrect bundle hash; generated CRLF bytes could evade
+the drift check; one-character handles escaped the privacy token; the reserved offline PELT method
+could occupy an online comparison; and the two metric-backed gates could contradict their measured
+values. The final bounded review-fix commit `fa1cac2` recomputes the bundle hash at runtime, compares
+generated text after CRLF-only normalization while pinning fixture JSON to LF, closes the handle
+regex, rejects offline PELT in v1 method slots, and binds both gate booleans to their measurements.
+Focused tamper, arbitrary-hash, PELT, contradiction, privacy, and normalization regressions pass.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` records merged PR #308, removes the
+late review's stale #301 sentence, refreshes Product/Lab refs, and identifies Product #305 → Lab #97
+→ CommitAtlas #154 as the binding merge order. `HUMAN_TODO.md` is unchanged.
+
+**Residual risk.** JSON Schema provides strict structural validation, while cross-field decision,
+ordering, and privacy rules remain runtime obligations documented in the contract README. The
+fixture's `source_product_contract_commit` anchors the existing WB-C1 input/view contract, not its
+own yet-unpublished commit; consumers pin the published ResearchFinding schema commit externally.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
+v0.1.0 tag-blocking owner action. Nothing in this contract slice infers or closes it.
+
+**Exact resume.** Push the Product #309 final review-fix batch and this state update on
+`feature/issue305-research-finding-20260830`, require the new exact-head hosted proof and one final
+exact-head contract/privacy verification, then merge producer-first. Announce the landed Product
+commit on CommitAtlas #111; only then may Lab #97 begin. Do not tag or publish a release.
+
+## 2026-09-03 — Product #305 numeric-handle repair and main reconciliation
+
+**Changed.** Two follow-ups to the #305 contract on PR #309. First, `9e12749` repaired the
+confirmed HIGH that parked the pull request: the `DENIED_TOKEN` handle branch required a leading
+letter, so a GitHub handle beginning with a digit (`@1`, `@123`, `@0xdeadbeef`) matched no branch of
+the pattern — not the email branch, which needs a dot-TLD, not the path branch, which needs a
+separator, not the repository branch, which needs a slash — and reached the public projection
+unredacted. `researchFindingPrivacyViolations` returned an empty array for such a title, so
+`assertResearchFindingPrivacy` did not throw. The branch is now
+`@[A-Za-z0-9][A-Za-z0-9_-]{0,38}`, with a regression that isolates the handle so no other denied
+token can mask the result. Second, merge `1809c4c` reconciled the branch with Product main after
+PR #310 (#297), PR #312 (#311) and PR #316 (#314) landed past its `81cf305` base. No source or test
+file conflicted. `docs/IMPLEMENTATION_LEDGER.md` kept both sides' appended entries, main's first.
+`docs/analyser-program/CURRENT_STATE.md` was rewritten from live observation rather than taking a
+side. `docs/agent-system/FRICTION_LOG.md` auto-merged with both FR-053's fourth occurrence and
+FR-098 intact.
+
+**Verified.** On the merged head, `npm run verify:context` passed (47 Markdown files, 31 required
+files), `git diff --check` was clean, `npx tsc --noEmit` was clean, and
+`npm run check:research-finding` reported no generated drift. `npm run check` ran lint,
+verify:context, check:research-pack, check:method-trial-view and check:research-finding green, then
+Vitest reported 1535 passed, 10 skipped and 1 failed across 89 files. `npm run build` and its
+`verify:no-secrets` step passed separately over 19 build output files. The reconciled ledger is
+exactly main's file plus this branch's 63 appended lines, so neither side's evidence was dropped.
+Live REST reads at 2026-09-03T01:06:45Z gave Product main `64f4cee`, Lab main `e7d5627`, one open
+Product pull request (#309), zero open Lab pull requests, and zero tags or releases in both.
+
+**NOT verified.** No hosted check existed at `9e12749` because GitHub cannot build the merge ref of
+a conflicting pull request; the exact-head hosted gate at the reconciled head and the final
+exact-head contract/privacy verification both remain outstanding, and this session does not merge.
+Lab #97 and CommitAtlas #154 have not consumed the contract. No release, tag, publication, browser
+proof, protected-data access, real input, external model, telemetry, or credential path was
+exercised.
+
+**Failures and workarounds.** The single Vitest failure is `publishes registries consistently in
+the README`, and it is the pre-existing Windows-only defect tracked as Product #318, not a
+regression from this work: `.gitattributes` pins only `research-contracts/**/*.json` to `eol=lf`, so
+the contract README is checked out CRLF on Windows and the table parser sees a trailing empty cell.
+Hosted Ubuntu runs the same test green. It is reported, not repaired here. `npm run check` stops at
+that failure, so `npm run build` was run separately to cover the rest of the milestone gate.
+
+**Docs-state sync.** `docs/analyser-program/CURRENT_STATE.md` now records Product main `64f4cee`
+after PR #316, Lab main `e7d5627` after Lab PR #105, #309 unparked at the reconciled head with its
+HIGH repaired, Product #318 as the tracked Windows-only test defect, and the unchanged sole release
+blocker `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`. Where main and this branch could not
+both be true — main recorded #309 parked at `2d510e1` and forbidden to merge — the newer measured
+reality wins and is stated as such. `HUMAN_TODO.md` and the executable prompt surface are unchanged.
+
+**Residual risk.** The reconciled state file is a timestamped observation and must be refreshed
+before any later action. Product #318 keeps the local Windows gate one test short of clean, so a
+Windows-only reviewer cannot distinguish a new README registry regression from that known failure
+without checking line endings first.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
+v0.1.0 tag-blocking owner action. Nothing in this repair or reconciliation infers or closes it.
+
+**Exact resume.** On `feature/issue305-research-finding-20260830` at the reconciled head, confirm
+the hosted exact-head gate, take one exact-head contract/privacy verification, and leave the merge
+decision to the owner. Then announce the landed Product commit on CommitAtlas #111; only after that
+may Lab #97 begin. Do not tag or publish a release.
+
+## 2026-09-03 — #309 gate-derivation triage and bounded fix
+
+**Changed.** Five never-triaged connector threads on PR #309 were reproduced by execution before
+any judgment. A throwaway script built each alleged artifact from the tracked fixture, recomputed
+`provenance.bundle_hash`, and reported `ResearchFindingSchema.safeParse`. All five behaviours are
+real; only two are defects this contract can repair. `ResearchFindingProjection.v1` now derives
+`detection_floor`, `false_alert_improvement` and `not_worse_detection` from one table shaped like
+the pinned source contract's scored gates in `shared/methodTrialView.ts`, with the preregistered
+candidate floor exported as `RESEARCH_FINDING_DETECTION_FLOOR` (0.75). Two of the three rules match
+that contract exactly; `false_alert_improvement` does not, and that divergence predates this table
+(see the review note below). A gate whose required
+measurement is `unavailable`, or whose metric is absent, must now be `null`, matching the source
+contract's `not_applicable` derivation. The contract README replaces its two-gate sentence with the
+full derivation scope, states that the four remaining gates rest on selection viability, delay and
+confound evidence that v1 does not transport, and states plainly that `bundle_hash` proves transport
+integrity only and never attests that a verdict follows from evidence.
+
+**Verified.** Before the change, a forged artifact with both detection rates at 0.5 and
+`detection_floor: true` parsed successfully, as did every combination of an `unavailable`
+measurement with a boolean gate and an omitted `detection_rate` metric with both detection gates
+`true`. After the change all of them are rejected with a path-scoped issue. The new focused case
+`derives the detection floor and nulls gates whose measurement is unavailable` was proved red
+against the previous derivation (`expected [Function] to throw an error`) and green after. Eight
+focused research-finding cases and the thirteen method-trial cases now pass; the four contract
+suites report 36 passed with the single known Product #318 failure. `npx tsc --noEmit`,
+`npm run lint`, `npm run verify:context` (47 Markdown files, 31 required files),
+`npm run check:research-finding` and `git diff --check` are clean. The generated schema and fixture
+are byte-identical, so the published `bundle_hash` and fixture SHA-256 are unchanged.
+
+**NOT verified.** No hosted exact-head gate existed for this head when the entry was written. No
+consumer command, release, tag, publication, protected-data access, real input, external model or
+credential path was exercised. The declined findings were not repaired and are not proved harmless
+beyond the stated scope argument.
+
+**Failures and workarounds.** `publishes registries consistently in the README` still fails locally
+as the pre-existing Windows-only Product #318 CRLF defect, unchanged by this work; the patched
+README keeps its existing CRLF bytes rather than mixing line endings inside one file.
+
+**Declined with tracked issues.** The `:135` thread asks every exported gate to derive from source
+evidence. The behaviour is real — `baseline_selection`, `candidate_selection`, `delay_budget` and
+`confound_guard` accept any value, and a forged artifact can claim both selections viable while
+still carrying the `thresholds_nonviable` limitation — but v1 transports no viability, delay or
+confound measurement, so nothing exists to derive from and the repair is a schema change, not a
+validation change. The `:129` thread asks that `model_promotion` be restricted to `reject`
+outcomes. The behaviour is real, but the proposed restriction would forbid the non-promotion
+disclaimer on exactly the `benchmarked` outcome the README says is "evidence, never promotion"; the
+sound repair is outcome-neutral claim text, which changes a published registry and its hashes.
+
+**Docs-state sync.** Only the contract README and this ledger changed.
+`docs/analyser-program/CURRENT_STATE.md` still records the pre-reconciliation head and must be
+refreshed at the next phase boundary. `HUMAN_TODO.md` and the executable prompt surface are
+unchanged.
+
+**Review note.** One fresh-context adversarial pass over this diff returned no CRITICAL or HIGH and
+one substantive MEDIUM: the code comment and this entry originally claimed the derivation table
+mirrors the source contract's scored gates, but `false_alert_improvement` means any improvement
+here (`candidate < baseline`) against a preregistered 20% rule there (`candidate <= baseline * 0.8`),
+so the two disagree over `0.8 * baseline < candidate < baseline`. `git show d07584c` confirms that
+rule predates this diff — it is the contract's own pre-existing semantics, not a regression
+introduced here — so the correction applied was to the false "mirrors" claim, and the divergence
+itself is tracked as Product #321 rather than repaired in this round. The pass also noted that
+`RESEARCH_FINDING_DETECTION_FLOOR` is a hand copy with no drift binding to the source literal
+(recorded in the comment and below), and that one test case name misdescribed what it asserts
+(renamed). Its remaining LOW, that the boolean branch of `false_alert_improvement` has no resealed
+negative case, is left as coverage thinness: a flipped operator still breaks the fixture round-trip.
+
+**Residual risk.** v1 now pins the candidate detection floor at 0.75, so a future producer with a
+different preregistered floor needs a new schema version, and nothing fails if the source
+contract's own inline 0.75 later changes. Four of the seven registry gates remain
+transport-only values that no consumer can verify from the artifact alone; the README now says so,
+which is disclosure, not enforcement.
+
+**Late connector findings on the pushed heads.** Two further threads arrived after the fix push and
+were triaged once each rather than reopening the pipeline. The first, that `CURRENT_STATE.md` still
+named `9e12749` as #309's head and listed the exact-head gate as outstanding, was correct and is
+repaired in `263417c`. The second is Product #322 and is a confirmed HIGH: `DENIED_TOKEN`
+(`shared/researchFinding.ts:238`) is ASCII-only in every branch, so an email whose domain begins
+with a non-ASCII character matches none of them. Measured — `me@éxample.com`,
+`δοκιμή@παράδειγμα.δοκιμή` and the same address embedded in text all return no violation, while
+`plain@example.com` and `josé@example.com` are caught, because a non-ASCII local part still leaves
+an ASCII tail for the handle branch. It is pre-existing and byte-identical to `d07584c`, so it is
+not a regression from this work, but it is the same structural defect class as the
+numeric-leading-handle HIGH that parked #309 before, under the `sensitive_data: true` overlay.
+It is deliberately not repaired here: this round's fix budget was spent, and the obvious
+`\p{L}\p{N}` repair meets JavaScript's ASCII-defined `\b` under `/u`, which is exactly the trap
+that produced both prior defects. **#309 must not merge until #322 is repaired.**
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
+v0.1.0 tag-blocking owner action. Nothing here infers or closes it. The merge decision on #309 is
+the owner's, and this session's recommendation is to park it behind Product #322.
+
+## 2026-09-03 — Product #322 repaired on PR #309: Unicode-aware `DENIED_TOKEN`
+
+**Changed.** `shared/researchFinding.ts` `DENIED_TOKEN` now runs under the `u` flag; the handle
+branch is `@[\p{L}\p{N}_][\p{L}\p{N}_-]{0,38}` and the email branch is
+`[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.\p{L}{2,}` with no `\b` anchors, because JavaScript keeps
+`\b` ASCII-defined under `u` and a boundary never fires beside a non-ASCII run. The path and
+repository branches are unchanged. Commits `7a69057` (#322) and `588471a` (underscore-leading
+handle, found by the scoped review of the fix diff). `shared/researchFinding.test.ts` plants one
+title per form — `me@éxample.com`, `δοκιμή@παράδειγμα.δοκιμή`, the address embedded in text,
+punycode, a bare non-ASCII handle, `@_jekyt`, plus the ASCII and non-ASCII-local-part forms as
+guards — and three non-ASCII prose titles that must stay clean.
+
+**Verified.** The new test fails at `edfbb07` (the three MISSED forms return `[]`) and passes at
+`588471a`; `npx tsc --noEmit`, `oxlint` on both files and `npm run check:research-finding` exit 0.
+The suite's only failure is the known Windows-only #318 README registry case. One fresh-context
+scoped review of `edfbb07..adbddf3` found no CRITICAL/HIGH; its MEDIUM on `@_name` is the
+`588471a` widening, its MEDIUM on stale head claims in `CURRENT_STATE.md` is repaired alongside
+this entry, and its remaining MEDIUM (RFC 5321 address literals such as `me@[192.168.0.1]` and
+emoji domains match no branch) is tracked as its own issue rather than a third round here.
+
+**Review threads.** The six threads open after the `edfbb07` connector round are each answered
+once and resolved: #322 (repaired), the `CURRENT_STATE.md` `next_selection` wording (repaired at
+`adbddf3`), the cross-repo contract map (repaired at `adbddf3` — `check:research-finding` and
+`ResearchFindingProjection.v1` are now listed), the lone-surrogate `safeParse` throw (deferred,
+#324), and the two already-triaged #319 / #320 threads.
+
+**Not verified.** The exact-head hosted `Prove the pull request` run at the final head, and any
+Node other than the one on this Windows box.

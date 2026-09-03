@@ -2697,3 +2697,22 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   at the call site rather than relaxing the global CI timeout, so the strict default stays honest
   for every other test. A false red on `main` skips the deploy, which is worse than a false red on
   a pull request.
+
+### FR-098 - incremental local TypeScript build skipped a new contract error
+
+- **first-seen:** 2026-08-30
+- **status:** `workaround-documented`
+- **severity:** `MEDIUM (false-green type proof)`
+- **symptom:** The hosted exact-head Product #309 gate found TS7022 in the new research-finding
+  discriminated-union declarations, while the local `npx tsc -b --pretty false` appeared green
+  because the incremental build cache skipped the changed type surface.
+- **impact:** Normal incremental local typecheck evidence was insufficient for the new contract;
+  no published artifact or runtime data was affected.
+- **workaround:** Use `npx tsc -b --force --pretty false` for an exact final head or any newly added
+  type surface. This does not mean normal `tsc` is broken; it means the cached build was not a
+  proof of the new file.
+- **occurrences:** 1 independent occurrence.
+- **task:** [Product #294](https://github.com/Chris0Jeky/developer-lens/issues/294) owns the
+  cross-repository contract proving follow-up.
+- **promotion:** One occurrence remains workaround-documented; retain the force-build rule for
+  exact-head contract work and do not add a broader cache-clearing helper after one occurrence.
