@@ -6,7 +6,7 @@ completed-slice evidence and history.
 
 ```yaml
 updated: '2026-09-03'
-state_observed_at: '2026-09-03T01:06:45Z'
+state_observed_at: '2026-09-03T01:50:40Z'
 work_class: 'W3 producer-owned cross-repository contract'
 active_wave: 'P0.5 v0.1.0 release programme — Product issue #200'
 remote_refs_last_observed_at: '2026-09-03T01:06:45Z'
@@ -21,17 +21,25 @@ active_slice: >-
   Product main so it is no longer conflicting; the merge carried in PR #310 (#297), PR #312 (#311),
   and PR #316 (#314), which all landed while #309 waited. The numeric-leading-handle HIGH that
   parked #309 at `2d510e1` was repaired at `9e12749` with an isolating regression, so the earlier
-  "parked, must not merge" state no longer holds: #309 is unparked and merge-eligible only after
-  its new exact-head hosted gate and one exact-head contract/privacy verification pass. Product
+  "parked, must not merge" state no longer holds. The branch head is now `607be3d`: after the
+  handle repair and the main reconciliation, one bounded triage round answered the five
+  never-triaged connector threads, derived `detection_floor`, `false_alert_improvement` and
+  `not_worse_detection` from the artifact's own metric evidence, required a null gate where a
+  supporting measurement is unavailable, and stated the derivation scope in the contract README.
+  Its exact-head hosted gate has since passed, so the merge decision is the owner's. Product
   #305 remains step 1 of the ResearchFindingProjection.v1 chain; Lab #97 and CommitAtlas #154 stay
   blocked until it lands. P0.5 issue #200 remains the active release wave, and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is still the sole tag-blocking owner gate.
 next_value_slice: >-
-  Take Product #309/#305 through its new exact-head hosted gate and one exact-head
-  contract/privacy verification, then merge producer-first and announce the landed Product commit
-  on CommitAtlas #111. Only then may Lab #97 consume the contract; CommitAtlas #154 follows both
+  Product #309/#305 has passed its exact-head hosted gate at `607be3d` and one fresh-context
+  adversarial review; the owner holds the merge decision. On merge, announce the landed Product
+  commit on CommitAtlas #111. Only then may Lab #97 consume the contract; CommitAtlas #154 follows both
   producer steps. Product #318 is the tracked Windows-only CRLF failure in the research-finding
-  README registry test and does not block the hosted gate. Product #304 is a separate larger
+  README registry test and does not block the hosted gate. Products #319, #320 and #321 are the
+  contract findings deliberately deferred out of #309 rather than repaired in it: four gates v1
+  cannot derive, the reject-specific `model_promotion` claim text, and the
+  `false_alert_improvement` divergence from the source contract's preregistered 20% rule. Product
+  #304 is a separate larger
   public-lens and export-profile contract; #293 remains parked pending a security-reviewed Windows
   path-identity design; #300 is low-priority. Request or await explicit
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) aesthetic sign-off, but perform no tag or
@@ -41,8 +49,8 @@ blockers: >-
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is the sole remaining tag-blocking owner gate
   and is ready for explicit aesthetic sign-off. Lab #97 and CommitAtlas #154 are blocked
   dependencies behind Product #305, not owner gates. Product #309 is no longer parked: its
-  numeric-leading-handle HIGH is repaired, and only its new exact-head hosted proof and final
-  exact-head verification remain. The other
+  numeric-leading-handle HIGH is repaired, its exact-head hosted proof passed at `607be3d`, and
+  only the owner's merge decision remains. The other
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 decisions are deferred and nonblocking here. No
   tag, release, package publication, or public publication is authorized before
@@ -52,9 +60,17 @@ last_verified_checks: >-
   64f4ceef3dd287034981f357acc4d21ac3da1991 after PR #316 merged issue #314; that PR's required
   Prove the pull request run 33289721069 and the merged-main Deploy public showcase run
   33289860936 both succeeded. PR #312 merged issue #311 at `cf96dab` and PR #310 merged issue #297
-  at `641f09f`. Product has exactly one open pull request (#309, head
-  `9e1274946874321245a7ecee2e2c37cb495802ea`), zero tags, and zero releases; issues #296, #297,
-  #301, #311, and #314 are closed and #305 is open. No hosted check existed at `9e12749` before
+  at `641f09f`. At the 2026-09-03T01:50:40Z re-observation Product main is unchanged, Product has
+  exactly one open pull request (#309, head
+  `607be3d6706291339cef32221d29b62092244792`), zero tags, and zero releases; issues #296, #297,
+  #301, #311, and #314 are closed and #305, #318, #319, #320 and #321 are open. The exact-head
+  hosted `Prove the pull request` gate succeeded at `607be3d` (run 33705025649) and at the
+  preceding `a3c69b4` (run 33704362816). Local proof at `607be3d`: `npx tsc --noEmit`,
+  `npm run lint`, `npm run verify:context`, `npm run check:research-finding`, `git diff --check`,
+  and the four contract Vitest suites (36 passed) are clean apart from the known #318 failure; the
+  full Vitest suite at `a3c69b4` reported 1536 passed, 10 skipped, 1 failed (#318). One
+  fresh-context adversarial review covered the gate-derivation commit `764c5db` and returned no
+  CRITICAL or HIGH. No hosted check existed at `9e12749` before
   this reconciliation because GitHub cannot build the merge ref of a conflicting pull request, so
   the merge with main is itself the precondition for the new exact-head gate. Local proof on the
   merged head: `npm run verify:context`, `git diff --check`, `npx tsc --noEmit`,
@@ -84,8 +100,8 @@ operational_resume:
     and Lab #97 remains blocked behind Product #305. CommitAtlas #154 is open and blocked behind
     Product #305 and Lab #97; its current main is the separate last-observed `9d3307b` ref.
   next_selection: >-
-    Prove and land the producer-first Product #305 contract on PR #309 after its exact-head hosted
-    gate and independent contract/privacy verification. Only then may Lab #97 consume it;
+    Land the producer-first Product #305 contract on PR #309 once the owner decides the merge; its
+    exact-head hosted gate and fresh-context review are done. Only then may Lab #97 consume it;
     CommitAtlas #154 follows both producer steps. Product #318 is a tracked Windows-only test
     defect, #304 is a separate larger projection/export lane, #293 is parked pending design, and
     #300 remains low-priority. Request or await
@@ -129,12 +145,14 @@ exact_resume_point: >-
   Product main `64f4ceef3dd287034981f357acc4d21ac3da1991` and Lab main
   `e7d562765ef4ce482d85fe341b05e020f95568d7` are the last-observed refs. Product PR #309/#305 is
   open on `feature/issue305-research-finding-20260830`, reconciled with main by an explicit merge
-  commit, with the numeric-leading-handle HIGH repaired at `9e12749`; it supersedes the earlier
-  parked-at-`2d510e1` state. Require the new exact-head hosted proof and one exact-head
-  contract/privacy verification, then merge producer-first and announce the landed Product commit
-  on CommitAtlas #111. Lab #97 consumes only after Product lands, and CommitAtlas #154 follows both
+  commit, with the numeric-leading-handle HIGH repaired at `9e12749` and the gate-derivation
+  triage round landed at head `607be3d`; it supersedes the earlier parked-at-`2d510e1` state. Its
+  exact-head hosted gate passed at `607be3d` (run 33705025649) and one fresh-context adversarial
+  review is done, so the merge decision is the owner's; merge producer-first and announce the
+  landed Product commit on CommitAtlas #111. Lab #97 consumes only after Product lands, and CommitAtlas #154 follows both
   producer steps. Product #318 tracks the Windows-only CRLF README registry test failure; Product
-  #304 is the separate larger projection/export contract. The approved browser-client Method Trial
+  #304 is the separate larger projection/export contract; Products #319, #320 and #321 carry the
+  contract findings deferred out of #309. The approved browser-client Method Trial
   proof remains complete; the external ChromeDevTools attempt is invalid and must not substitute
   for it.
   Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818 at 54217ff: Product #298 owns
