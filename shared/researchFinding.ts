@@ -197,7 +197,10 @@ export function computeResearchFindingBundleHash(value: Omit<ResearchFinding, 'p
   return `sha256:${createHash('sha256').update(canonicalizeJson(body), 'utf8').digest('hex')}`
 }
 
-const DENIED_TOKEN = /(?:@[A-Za-z][A-Za-z0-9_-]{0,38}|\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:[A-Za-z]:\\|\/|\\)[^\s"']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b)/
+// The handle branch admits a leading digit: GitHub handles are alphanumeric-or-hyphen and may
+// start with a digit, so a leading-letter-only class let @1 / @123 / @0xdeadbeef past every
+// branch of this pattern and out through the public projection unredacted.
+const DENIED_TOKEN = /(?:@[A-Za-z0-9][A-Za-z0-9_-]{0,38}|\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b|(?:[A-Za-z]:\\|\/|\\)[^\s"']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b)/
 const DATE_TOKEN = /\b\d{4}-\d{2}-\d{2}\b/
 
 export function researchFindingPrivacyViolations(value: unknown): string[] {

@@ -163,4 +163,16 @@ describe('ResearchFindingProjection.v1', () => {
     expect(researchFindingPrivacyViolations({ ...fixture, provenance: { ...fixture.provenance, public_url: RESEARCH_FINDING_PUBLIC_URL } })).toEqual([])
     expect(researchFindingPrivacyViolations({ ...fixture, provenance: { ...fixture.provenance, public_url: 'https://evil.example/finding' } })).toContain('non-allowlisted public_url')
   })
+
+  it('rejects handles that start with a digit', async () => {
+    const fixture = await readFixture()
+    // GitHub handles may begin with a digit, so a leading-letter-only handle pattern lets
+    // @1 / @123 / @0xdeadbeef through. Each title below isolates the handle: there is no
+    // adjacent text, slash, or dot-TLD, so no other denied-token branch can catch it.
+    for (const handle of ['@1', '@123', '@0xdeadbeef', '@2fa']) {
+      const planted = { ...fixture, finding: { ...fixture.finding, title: `reported by ${handle} today` } }
+      expect(researchFindingPrivacyViolations(planted)).toContain('denied identity, email, path, or repository token')
+      expect(() => assertResearchFindingPrivacy(planted)).toThrow()
+    }
+  })
 })
