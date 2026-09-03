@@ -31,6 +31,29 @@ export const GATES = {
 } as const
 export type GateCode = keyof typeof GATES
 
+// The preregistered candidate detection floor of the pinned source contract
+// (`shared/methodTrialView.ts`, `CANDIDATE_DETECTION_FLOOR`). v1 pins it so an exported
+// `detection_floor` verdict is derivable from the detection evidence the projection carries.
+export const RESEARCH_FINDING_DETECTION_FLOOR = 0.75 as const
+
+// Gates the projection can derive from its own metric evidence, mirroring the source contract's
+// scored gates. `requiresBaseline` marks a rule that needs the baseline measurement too; when a
+// required measurement is unavailable or its metric is absent, the gate must be null, exactly as
+// the source contract derives `not_applicable`. The remaining registry gates
+// (`baseline_selection`, `candidate_selection`, `delay_budget`, `confound_guard`) rest on
+// selection viability, detection delay and confound evidence that v1 does not transport, so they
+// cannot be derived here; see the README's stated derivation scope.
+const DERIVED_GATES: ReadonlyArray<{
+  code: GateCode
+  metric: MetricCode
+  requiresBaseline: boolean
+  evaluate: (baseline: number, candidate: number) => boolean
+}> = [
+  { code: 'detection_floor', metric: 'detection_rate', requiresBaseline: false, evaluate: (_baseline, candidate) => candidate >= RESEARCH_FINDING_DETECTION_FLOOR },
+  { code: 'false_alert_improvement', metric: 'false_alerts_per_year', requiresBaseline: true, evaluate: (baseline, candidate) => candidate < baseline },
+  { code: 'not_worse_detection', metric: 'detection_rate', requiresBaseline: true, evaluate: (baseline, candidate) => candidate >= baseline },
+]
+
 export const LIMITATIONS = {
   c0_synthetic_only: 'Evidence is limited to invented C0 weekly system series.',
   bounded_three_case_selection: 'Only three bounded representative windows are exported.',
@@ -129,15 +152,18 @@ const ResearchFindingContentSchema = z.strictObject({
   if (new Set(unsupportedCodes).size !== unsupportedCodes.length) ctx.addIssue({ code: 'custom', path: ['unsupported_claims'], message: 'unsupported claim codes must be unique' })
   const worse = value.metrics.some((item) => item.baseline.status === 'measured' && item.candidate.status === 'measured' && (item.better_when === 'higher' ? item.candidate.value < item.baseline.value : item.candidate.value > item.baseline.value))
   const failedGate = value.gates?.some((item) => item.passed === false) ?? false
-  const falseAlertMetric = value.metrics.find((item) => item.key === 'false_alerts_per_year')
-  const detectionMetric = value.metrics.find((item) => item.key === 'detection_rate')
-  const falseAlertGate = value.gates?.find((item) => item.code === 'false_alert_improvement')
-  const detectionGate = value.gates?.find((item) => item.code === 'not_worse_detection')
-  if (falseAlertMetric?.baseline.status === 'measured' && falseAlertMetric.candidate.status === 'measured' && falseAlertGate) {
-    if (falseAlertGate.passed !== (falseAlertMetric.candidate.value < falseAlertMetric.baseline.value)) ctx.addIssue({ code: 'custom', path: ['gates'], message: 'false_alert_improvement must match measured metric values' })
-  }
-  if (detectionMetric?.baseline.status === 'measured' && detectionMetric.candidate.status === 'measured' && detectionGate) {
-    if (detectionGate.passed !== (detectionMetric.candidate.value >= detectionMetric.baseline.value)) ctx.addIssue({ code: 'custom', path: ['gates'], message: 'not_worse_detection must match measured metric values' })
+  const measuredValue = (measurement: { status: 'measured', value: number } | { status: 'unavailable' } | undefined): number | null =>
+    measurement && measurement.status === 'measured' ? measurement.value : null
+  for (const rule of DERIVED_GATES) {
+    const gateIndex = value.gates?.findIndex((item) => item.code === rule.code) ?? -1
+    if (gateIndex < 0 || !value.gates) continue
+    const metric = value.metrics.find((item) => item.key === rule.metric)
+    const baseline = measuredValue(metric?.baseline)
+    const candidate = measuredValue(metric?.candidate)
+    const expected = candidate === null || (rule.requiresBaseline && baseline === null) ? null : rule.evaluate(baseline ?? 0, candidate)
+    if (value.gates[gateIndex].passed !== expected) {
+      ctx.addIssue({ code: 'custom', path: ['gates', gateIndex, 'passed'], message: expected === null ? `${rule.code} must be null when its supporting measurement is unavailable` : `${rule.code} must derive from the projected metric evidence` })
+    }
   }
   if (value.decision.outcome === 'reject') {
     if (value.decision.retained_fallback !== value.methods.baseline.method_code) ctx.addIssue({ code: 'custom', path: ['decision', 'retained_fallback'], message: 'reject must retain the baseline method' })

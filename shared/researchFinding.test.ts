@@ -10,6 +10,7 @@ import {
   LIMITATIONS,
   METRICS,
   METHODS,
+  RESEARCH_FINDING_DETECTION_FLOOR,
   RESEARCH_FINDING_PUBLIC_URL,
   ResearchFindingSchema,
   UNSUPPORTED_CLAIMS,
@@ -162,6 +163,68 @@ describe('ResearchFindingProjection.v1', () => {
     expect(() => assertResearchFindingPrivacy(planted)).toThrow()
     expect(researchFindingPrivacyViolations({ ...fixture, provenance: { ...fixture.provenance, public_url: RESEARCH_FINDING_PUBLIC_URL } })).toEqual([])
     expect(researchFindingPrivacyViolations({ ...fixture, provenance: { ...fixture.provenance, public_url: 'https://evil.example/finding' } })).toContain('non-allowlisted public_url')
+  })
+
+  it('derives the detection floor and nulls gates whose measurement is unavailable', async () => {
+    const fixture = await readFixture()
+    // A forged projection recomputes bundle_hash, so integrity alone never catches a gate verdict
+    // that the artifact's own metric evidence contradicts. Each case below reseals the artifact.
+    const reseal = (finding: Record<string, any>) => {
+      finding.provenance.bundle_hash = computeResearchFindingBundleHash(finding as any)
+      return finding
+    }
+    const mutate = (change: (finding: Record<string, any>) => void) => {
+      const finding = structuredClone(fixture)
+      change(finding)
+      return reseal(finding)
+    }
+    const gateOf = (finding: Record<string, any>, code: string) => finding.gates.find((gate: any) => gate.code === code)
+    const metricOf = (finding: Record<string, any>, key: string) => finding.metrics.find((metric: any) => metric.key === key)
+
+    // Detection floor is the preregistered candidate rule of the pinned source contract.
+    expect(RESEARCH_FINDING_DETECTION_FLOOR).toBe(0.75)
+    const belowFloor = mutate((finding) => {
+      metricOf(finding, 'detection_rate').baseline = { status: 'measured', value: 0.5 }
+      metricOf(finding, 'detection_rate').candidate = { status: 'measured', value: 0.5 }
+      gateOf(finding, 'detection_floor').passed = true
+      gateOf(finding, 'not_worse_detection').passed = true
+    })
+    expect(() => ResearchFindingSchema.parse(belowFloor)).toThrow(/detection_floor must derive/)
+    const atFloor = mutate((finding) => {
+      metricOf(finding, 'detection_rate').baseline = { status: 'measured', value: 0.5 }
+      metricOf(finding, 'detection_rate').candidate = { status: 'measured', value: 0.5 }
+      gateOf(finding, 'detection_floor').passed = false
+      gateOf(finding, 'not_worse_detection').passed = true
+    })
+    expect(ResearchFindingSchema.parse(atFloor).gates?.[2].passed).toBe(false)
+
+    // An unavailable supporting measurement must produce a null gate, never a boolean verdict.
+    for (const [gateCode, metricKey, side] of [
+      ['false_alert_improvement', 'false_alerts_per_year', 'candidate'],
+      ['false_alert_improvement', 'false_alerts_per_year', 'baseline'],
+      ['not_worse_detection', 'detection_rate', 'baseline'],
+    ] as const) {
+      for (const forged of [true, false]) {
+        const artifact = mutate((finding) => {
+          metricOf(finding, metricKey)[side] = { status: 'unavailable' }
+          gateOf(finding, gateCode).passed = forged
+          if (metricKey === 'detection_rate' && side === 'baseline') gateOf(finding, 'detection_floor').passed = true
+        })
+        expect(() => ResearchFindingSchema.parse(artifact), `${gateCode}/${side}/${forged}`).toThrow(/must be null when its supporting measurement is unavailable/)
+      }
+    }
+    const unavailableCandidate = mutate((finding) => {
+      metricOf(finding, 'detection_rate').candidate = { status: 'unavailable' }
+      gateOf(finding, 'detection_floor').passed = null
+      gateOf(finding, 'not_worse_detection').passed = null
+    })
+    expect(ResearchFindingSchema.parse(unavailableCandidate).gates?.[5].passed).toBeNull()
+    // A gate whose metric is omitted entirely has no evidence either, so it must also be null.
+    expect(() => ResearchFindingSchema.parse(mutate((finding) => {
+      finding.metrics = finding.metrics.filter((metric: any) => metric.key !== 'detection_rate')
+      gateOf(finding, 'detection_floor').passed = true
+      gateOf(finding, 'not_worse_detection').passed = true
+    }))).toThrow(/must be null when its supporting measurement is unavailable/)
   })
 
   it('rejects handles that start with a digit', async () => {

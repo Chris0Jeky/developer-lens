@@ -76,10 +76,18 @@ metric or gate codes, and gates that leave registry order. A rejected finding re
 gate or a measured candidate metric worse than baseline under `better_when`. In v1,
 `pelt_offline` is reserved in the method registry and cannot be selected as the baseline or
 candidate because the published metrics and gates describe online comparisons; an offline finding
-requires a future schema version. When both relevant values are measured, `false_alert_improvement`
+requires a future schema version. Three gates are derived from the metric evidence the
+artifact itself carries, and runtime validation rejects any other value: `detection_floor` must
+equal candidate detection reaching the preregistered floor of 0.75, `false_alert_improvement`
 must equal candidate false alerts being lower than baseline, and `not_worse_detection` must equal
-candidate detection being at least baseline. The runtime also recomputes `bundle_hash` over the
-canonical artifact body and rejects a mismatch.
+candidate detection being at least baseline. When a measurement one of those rules needs is
+`unavailable`, or its metric is absent, that gate must be `null`, mirroring the source contract's
+`not_applicable`. The remaining gates -- `baseline_selection`, `candidate_selection`,
+`delay_budget` and `confound_guard` -- rest on selection viability, detection delay and confound
+measurements that v1 does not transport, so v1 cannot derive them and a consumer that needs them
+derived must read the producer's source view contract. The runtime also recomputes `bundle_hash`
+over the canonical artifact body and rejects a mismatch; `bundle_hash` proves transport integrity
+only, and never attests that a gate verdict follows from evidence.
 
 ## Canonical hash and privacy
 
