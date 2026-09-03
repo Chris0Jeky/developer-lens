@@ -21,7 +21,10 @@ active_slice: >-
   Product main so it is no longer conflicting; the merge carried in PR #310 (#297), PR #312 (#311),
   and PR #316 (#314), which all landed while #309 waited. The numeric-leading-handle HIGH that
   parked #309 at `2d510e1` was repaired at `9e12749` with an isolating regression, so the earlier
-  "parked, must not merge" state no longer holds. The branch head is now `607be3d`: after the
+  "parked, must not merge" state no longer holds. The `607be3d` head and its gate are superseded:
+  the branch now carries the #322 repair (`7a69057`, widened again at `588471a` for
+  underscore-leading handles) and its docs sync on top, and that exact head must re-prove before
+  merge. At `607be3d`, after the
   handle repair and the main reconciliation, one bounded triage round answered the five
   never-triaged connector threads, derived `detection_floor`, `false_alert_improvement` and
   `not_worse_detection` from the artifact's own metric evidence, required a null gate where a

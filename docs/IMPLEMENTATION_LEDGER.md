@@ -5530,3 +5530,32 @@ that produced both prior defects. **#309 must not merge until #322 is repaired.*
 **Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains open and is the sole
 v0.1.0 tag-blocking owner action. Nothing here infers or closes it. The merge decision on #309 is
 the owner's, and this session's recommendation is to park it behind Product #322.
+
+## 2026-09-03 — Product #322 repaired on PR #309: Unicode-aware `DENIED_TOKEN`
+
+**Changed.** `shared/researchFinding.ts` `DENIED_TOKEN` now runs under the `u` flag; the handle
+branch is `@[\p{L}\p{N}_][\p{L}\p{N}_-]{0,38}` and the email branch is
+`[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.\p{L}{2,}` with no `\b` anchors, because JavaScript keeps
+`\b` ASCII-defined under `u` and a boundary never fires beside a non-ASCII run. The path and
+repository branches are unchanged. Commits `7a69057` (#322) and `588471a` (underscore-leading
+handle, found by the scoped review of the fix diff). `shared/researchFinding.test.ts` plants one
+title per form — `me@éxample.com`, `δοκιμή@παράδειγμα.δοκιμή`, the address embedded in text,
+punycode, a bare non-ASCII handle, `@_jekyt`, plus the ASCII and non-ASCII-local-part forms as
+guards — and three non-ASCII prose titles that must stay clean.
+
+**Verified.** The new test fails at `edfbb07` (the three MISSED forms return `[]`) and passes at
+`588471a`; `npx tsc --noEmit`, `oxlint` on both files and `npm run check:research-finding` exit 0.
+The suite's only failure is the known Windows-only #318 README registry case. One fresh-context
+scoped review of `edfbb07..adbddf3` found no CRITICAL/HIGH; its MEDIUM on `@_name` is the
+`588471a` widening, its MEDIUM on stale head claims in `CURRENT_STATE.md` is repaired alongside
+this entry, and its remaining MEDIUM (RFC 5321 address literals such as `me@[192.168.0.1]` and
+emoji domains match no branch) is tracked as its own issue rather than a third round here.
+
+**Review threads.** The six threads open after the `edfbb07` connector round are each answered
+once and resolved: #322 (repaired), the `CURRENT_STATE.md` `next_selection` wording (repaired at
+`adbddf3`), the cross-repo contract map (repaired at `adbddf3` — `check:research-finding` and
+`ResearchFindingProjection.v1` are now listed), the lone-surrogate `safeParse` throw (deferred,
+#324), and the two already-triaged #319 / #320 threads.
+
+**Not verified.** The exact-head hosted `Prove the pull request` run at the final head, and any
+Node other than the one on this Windows box.
