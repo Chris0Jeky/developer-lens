@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "DeveloperLensDecisionExport.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "project",
+    "generatedAt",
+    "decisions"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "DeveloperLensDecisionExport.v1"
+    },
+    "project": {
+      "const": "Chris0Jeky/developer-lens"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "decisions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "decisionId",
+          "selectedOptionId",
+          "status",
+          "rationale",
+          "confirmedByOwner"
+        ],
+        "properties": {
+          "decisionId": {
+            "type": "string",
+            "pattern": "^[A-Z]+-[0-9]{2}$"
+          },
+          "selectedOptionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "status": {
+            "enum": [
+              "confirmed",
+              "proposed-default",
+              "changed-unconfirmed",
+              "deferred"
+            ]
+          },
+          "rationale": {
+            "type": "string"
+          },
+          "confirmedByOwner": {
+            "type": "boolean"
+          },
+          "notes": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

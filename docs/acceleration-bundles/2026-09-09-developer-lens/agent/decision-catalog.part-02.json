@@ -1,0 +1,191 @@
+{
+  "schemaVersion": "DeveloperLensDecisionCatalogPart.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "part": 2,
+  "totalParts": 4,
+  "decisions": [
+    {
+      "id": "CON-01",
+      "area": "Contracts",
+      "title": "Coverage representation in PublicLensProjection",
+      "context": "#304 records a 0–100 versus 0–1 mismatch and asks the producer to publish canonical semantics.",
+      "recommendation": "Export counts plus coverageRatio in [0,1] and a versioned coverageMethodId. Do not retain an ambiguous coverageScore.",
+      "options": [
+        {
+          "id": "ratio",
+          "label": "Counts + ratio + method ID",
+          "description": "Self-describing, testable and resistant to consumer guessing.",
+          "recommended": true
+        },
+        {
+          "id": "percent",
+          "label": "Keep 0–100 percent",
+          "description": "Minimal source change, but retains a generic score name and consumer conversion.",
+          "recommended": false
+        },
+        {
+          "id": "counts-only",
+          "label": "Counts only",
+          "description": "Avoids formula semantics but makes common rendering needlessly repetitive.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "CON-02",
+      "area": "Contracts",
+      "title": "ResearchFinding repair strategy",
+      "context": "Issues #318, #324–#326 are robustness defects; #319–#321 and #327 alter published semantics.",
+      "recommendation": "Land one v1 robustness PR with no semantic reinterpretation, then publish a v2 ADR and implementation for gate semantics.",
+      "options": [
+        {
+          "id": "split",
+          "label": "v1 hardening + v2 semantics",
+          "description": "Protects consumers without silently changing a published contract.",
+          "recommended": true
+        },
+        {
+          "id": "v1-all",
+          "label": "Patch everything in v1",
+          "description": "Fastest, but violates the stated versioning boundary and breaks hashes/meaning.",
+          "recommended": false
+        },
+        {
+          "id": "v2-all",
+          "label": "Wait and fix only in v2",
+          "description": "Clean versioning, but leaves preventable parser/validation crashes in v1.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "CON-03",
+      "area": "Contracts",
+      "title": "Gate representation",
+      "context": "ResearchFinding v1 exports seven gates but carries evidence sufficient to derive only three.",
+      "recommendation": "In v2 every gate carries a rule reference and supporting evidence; omit or mark not-applicable when evidence is absent. Never accept a free-floating verdict.",
+      "options": [
+        {
+          "id": "evidence-gates",
+          "label": "Evidence-bearing gates",
+          "description": "Makes gate integrity mechanically inspectable across producers.",
+          "recommended": true
+        },
+        {
+          "id": "derivable-only",
+          "label": "Export only the three derivable gates",
+          "description": "Smaller contract, but loses useful decision context.",
+          "recommended": false
+        },
+        {
+          "id": "disclosed-unverified",
+          "label": "Keep all with disclosure",
+          "description": "Preserves information but leaves semantic integrity outside validation.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "CON-04",
+      "area": "Contracts",
+      "title": "False-alert improvement rule",
+      "context": "MethodTrialView uses a preregistered 20% improvement threshold; ResearchFinding v1 currently treats any decrease as passing.",
+      "recommendation": "Use the preregistered 20% rule for the decision gate. Add a separately named descriptive any-reduction indicator only if a consumer needs it.",
+      "options": [
+        {
+          "id": "20-percent",
+          "label": "Use preregistered 20% gate",
+          "description": "Keeps projection faithful to the source decision contract.",
+          "recommended": true
+        },
+        {
+          "id": "any-reduction",
+          "label": "Use any reduction",
+          "description": "Intuitive label, but misprojects the trial decision.",
+          "recommended": false
+        },
+        {
+          "id": "both",
+          "label": "Export both under distinct codes",
+          "description": "Useful if consumers need both; adds contract surface and explanation burden.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "CON-05",
+      "area": "Contracts",
+      "title": "Outcome and limitation wording",
+      "context": "The model-promotion copy is reject-specific, and thresholds_nonviable can contradict passing selection gates.",
+      "recommendation": "Use outcome-neutral non-promotion wording and derive threshold limitations from selection evidence rather than accepting them independently.",
+      "options": [
+        {
+          "id": "derive",
+          "label": "Neutral copy + derived limitations",
+          "description": "Removes contradictions and keeps safety statements on every outcome.",
+          "recommended": true
+        },
+        {
+          "id": "restrict",
+          "label": "Restrict text by outcome",
+          "description": "Mechanically simple, but benchmarked results lose an important non-promotion disclaimer.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "ARC-01",
+      "area": "Architecture",
+      "title": "Contract source of truth",
+      "context": "Rules, registries, JSON Schema, README tables and fixtures can drift across Product, Lab and CommitAtlas.",
+      "recommendation": "Own one executable TypeScript registry in Product and generate schema, registry docs and conformance fixtures from it.",
+      "options": [
+        {
+          "id": "codegen",
+          "label": "Product registry + code generation",
+          "description": "One authority, deterministic outputs and cross-repo vectors.",
+          "recommended": true
+        },
+        {
+          "id": "schema-first",
+          "label": "JSON Schema first",
+          "description": "Portable, but cannot express all semantic rules and makes runtime rules secondary.",
+          "recommended": false
+        },
+        {
+          "id": "manual",
+          "label": "Keep parallel hand-maintained forms",
+          "description": "Flexible but perpetuates drift and review cost.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "ARC-02",
+      "area": "Architecture",
+      "title": "Lens extension model",
+      "context": "The product needs more analyses, but an early third-party plugin runtime would expand the attack and compatibility surface.",
+      "recommendation": "Introduce a compile-time LensDefinition registry first. Consider external plugins only after several internally stable lenses expose a real common shape.",
+      "options": [
+        {
+          "id": "compile-time",
+          "label": "Compile-time LensDefinition",
+          "description": "Reusable architecture with ordinary type checking and no new trust boundary.",
+          "recommended": true
+        },
+        {
+          "id": "runtime-plugins",
+          "label": "Runtime plugin API now",
+          "description": "Highly extensible, but premature and security-heavy.",
+          "recommended": false
+        },
+        {
+          "id": "bespoke",
+          "label": "Keep each lens bespoke",
+          "description": "Fast for one lens, but repeats evidence, abstention and projection machinery.",
+          "recommended": false
+        }
+      ]
+    }
+  ]
+}

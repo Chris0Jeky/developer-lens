@@ -1,0 +1,23 @@
+
+schemaVersion: DeveloperLensIssueSeed.v1
+sourceBundle: developer-lens-acceleration-bundle
+issue:
+  title: "Example bounded implementation slice"
+  milestone: "v0.2 Evidence Flagship"
+  labels: ["product", "evidence", "agent-ready"]
+  problem: >
+    State the demonstrated problem and why it matters to a user or a contract consumer.
+  acceptance:
+    - "One executable Product path consumes the change."
+    - "Coverage, missingness and abstention remain explicit."
+    - "Invented positive and hostile fixtures discriminate the behavior."
+  nonGoals:
+    - "No real source activation."
+    - "No person metric."
+    - "No new public sink."
+  proof:
+    - "npm run verify:context"
+    - "npm test -- <focused suites>"
+    - "npm run check"
+    - "npm run build:showcase"
+  humanGate: null

@@ -1,0 +1,165 @@
+{
+  "schemaVersion": "DeveloperLensIssueManifestPart.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "part": 2,
+  "totalParts": 4,
+  "issues": [
+    {
+      "number": 142,
+      "title": "Storage v3: enforce one writer; native file binding before hostile-writer claims",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "high",
+      "dependencies": [
+        "#202"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/142",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 168,
+      "title": "LIFE-03 restore: persist an external immutable selection proof",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "high",
+      "dependencies": [
+        "#202"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/168",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 174,
+      "title": "Phase E: bridge stored observations into a second evidence-aware lens",
+      "cluster": "product-evidence",
+      "proposedMilestone": "v0.2-evidence-flagship",
+      "proposedHorizon": "next",
+      "severity": "critical",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/174",
+      "recommendedDisposition": "schedule-next"
+    },
+    {
+      "number": 177,
+      "title": "LIFE-03: bind restore timestamp replay to verified selection",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [
+        "#202"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/177",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 181,
+      "title": "Encode ResearchPack runtime refinements in standalone JSON Schema",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "next",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/181",
+      "recommendedDisposition": "schedule-next"
+    },
+    {
+      "number": 182,
+      "title": "Harden ResearchPack semantic consistency after v1 producer",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "next",
+      "severity": "high",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/182",
+      "recommendedDisposition": "schedule-next"
+    },
+    {
+      "number": 183,
+      "title": "Optimize very-large scope revocation deletion throughput",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/183",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 189,
+      "title": "Harden MethodTrialView parity and accessible missing-state rendering",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/189",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 200,
+      "title": "P0.5: v0.1.0 release programme — AGPL-3.0-only, community scaffolding, C0 release assets",
+      "cluster": "release-truth",
+      "proposedMilestone": "v0.1-release",
+      "proposedHorizon": "now",
+      "severity": "critical",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/200",
+      "recommendedDisposition": "do-now"
+    },
+    {
+      "number": 201,
+      "title": "Data Charter v2: layered classes (C0–C4/P/X), capability profiles, sink rules",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "next",
+      "severity": "critical",
+      "dependencies": [
+        "#174"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/201",
+      "recommendedDisposition": "schedule-next"
+    },
+    {
+      "number": 202,
+      "title": "Pre-activation readiness programme: consolidate #5 #6 #59 #57 with discriminating tests",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "critical",
+      "dependencies": [
+        "#201"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/202",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 203,
+      "title": "Query system programme: automatic recommendations + deterministic Query Lab + manual Luna",
+      "cluster": "future-product",
+      "proposedMilestone": "v0.4-query-distribution",
+      "proposedHorizon": "later",
+      "severity": "high",
+      "dependencies": [
+        "#174"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/203",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 204,
+      "title": "Team/Leadership aggregate mode (transparent, separately enabled)",
+      "cluster": "future-product",
+      "proposedMilestone": "v0.5-team",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [
+        "#174"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/204",
+      "recommendedDisposition": "park-with-trigger"
+    }
+  ]
+}

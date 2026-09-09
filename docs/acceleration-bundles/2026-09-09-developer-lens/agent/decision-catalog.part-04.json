@@ -1,0 +1,152 @@
+{
+  "schemaVersion": "DeveloperLensDecisionCatalogPart.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "part": 4,
+  "totalParts": 4,
+  "decisions": [
+    {
+      "id": "DAT-03",
+      "area": "Product",
+      "title": "Freshness and exact timestamps",
+      "context": "q-6 asks whether to show exact retrieval time, hour-rounded, day-rounded or age-only.",
+      "recommendation": "Default UI to age/coarse status, expose exact local timestamp in an inspection drawer, and keep public/exported projections at day/week grain or suppress entirely.",
+      "options": [
+        {
+          "id": "layered",
+          "label": "Coarse default, exact local detail",
+          "description": "Useful for debugging without making operational timestamps primary or exportable.",
+          "recommended": true
+        },
+        {
+          "id": "exact",
+          "label": "Exact everywhere",
+          "description": "Maximum traceability but noisier and less privacy-preserving.",
+          "recommended": false
+        },
+        {
+          "id": "age-only",
+          "label": "Age-only everywhere",
+          "description": "Clean and private, but weak for diagnosing collection freshness.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "OPS-01",
+      "area": "Operations",
+      "title": "Telemetry",
+      "context": "No remote telemetry provider or privacy notice is selected, and current local diagnostics are sufficient for a solo project.",
+      "recommendation": "Keep remote telemetry disabled. Add structured local diagnostics and an explicit user-generated support bundle first.",
+      "options": [
+        {
+          "id": "local",
+          "label": "Local diagnostics only",
+          "description": "Matches local-first posture and avoids a premature policy/vendor decision.",
+          "recommended": true
+        },
+        {
+          "id": "remote",
+          "label": "Select remote telemetry now",
+          "description": "Could aid debugging, but adds a new sink before distribution warrants it.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "DST-01",
+      "area": "Distribution",
+      "title": "Distribution ladder",
+      "context": "The roadmap proposes source run, Lab uvx/PyPI, gh launcher, npm CLI and desktop shell.",
+      "recommendation": "After v0.2 value: make source-run excellent, ship a thin npm CLI and gh launcher, then measure setup friction before an Electron shell.",
+      "options": [
+        {
+          "id": "cli-gh-desktop",
+          "label": "CLI → gh → desktop",
+          "description": "Tests demand and packaging boundaries incrementally.",
+          "recommended": true
+        },
+        {
+          "id": "desktop-first",
+          "label": "Desktop first",
+          "description": "Best casual UX, but highest signing/update/security cost.",
+          "recommended": false
+        },
+        {
+          "id": "source-only",
+          "label": "Source-run only",
+          "description": "Low maintenance, but caps adoption and portfolio legibility.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "TEAM-01",
+      "area": "Team",
+      "title": "Team mode boundary",
+      "context": "The constitution authorizes aggregate team/workstream/system views but not individual leaderboards.",
+      "recommendation": "Keep Team mode aggregate-only with explicit audience, coverage and uncertainty. Treat every individual comparison as a separate owner/consent/research gate.",
+      "options": [
+        {
+          "id": "aggregate",
+          "label": "Aggregate system/team mode",
+          "description": "Useful for engineering direction without turning the product into surveillance.",
+          "recommended": true
+        },
+        {
+          "id": "individual",
+          "label": "Add individual ranking",
+          "description": "Commercially tempting but conflicts with current mandate and evidence posture.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "INT-01",
+      "area": "Integration",
+      "title": "Taskdeck integration identity",
+      "context": "q-6 leaves the exact immutable Taskdeck ref and activation card unresolved.",
+      "recommendation": "Pin an exact Taskdeck commit/schema in a local private integration config; keep public docs at compatibility-range level and require an activation card for writes.",
+      "options": [
+        {
+          "id": "exact-private",
+          "label": "Exact local pin + public compatibility range",
+          "description": "Reproducible without leaking machine/integration state into public planning.",
+          "recommended": true
+        },
+        {
+          "id": "floating",
+          "label": "Track Taskdeck main",
+          "description": "Simple but non-reproducible and prone to silent import drift.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "DAT-04",
+      "area": "Activation",
+      "title": "First real canary scope",
+      "context": "The owner already selected one public repository for a bounded metadata-only github.core proof, but no real collection should run before readiness exits.",
+      "recommendation": "Use exactly one owner-selected public repository, metadata-only, tiny request budget, no prose/person fields, short retention, explicit delete/replay drill, and no public derived output.",
+      "options": [
+        {
+          "id": "one-canary",
+          "label": "One bounded public metadata canary",
+          "description": "Maximizes learning per unit of new trust surface.",
+          "recommended": true
+        },
+        {
+          "id": "multi-repo",
+          "label": "Start with several repositories",
+          "description": "More representative, but obscures failures and multiplies identity/deletion scope.",
+          "recommended": false
+        },
+        {
+          "id": "private-first",
+          "label": "Start with private repositories",
+          "description": "High-value data, but needlessly raises stakes for the first activation.",
+          "recommended": false
+        }
+      ]
+    }
+  ]
+}

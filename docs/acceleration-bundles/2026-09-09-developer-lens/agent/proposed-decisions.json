@@ -1,0 +1,196 @@
+{
+  "schemaVersion": "DeveloperLensDecisionExport.v1",
+  "project": "Chris0Jeky/developer-lens",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "decisions": [
+    {
+      "decisionId": "REL-01",
+      "selectedOptionId": "joint",
+      "status": "proposed-default",
+      "rationale": "Keep the joint v0.1.0 release. Do not reopen product-only versus joint-release strategy now.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "REL-02",
+      "selectedOptionId": "merge",
+      "status": "proposed-default",
+      "rationale": "Re-run or confirm exact-head CI, inspect the lockfile-only diff, then merge before cutting release artifacts.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "REL-03",
+      "selectedOptionId": "approve-packet",
+      "status": "proposed-default",
+      "rationale": "Use one bounded proof packet: desktop full page, above fold, 390×844 mobile, 30–60 second scroll video, checksums and exact commit.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "PRD-01",
+      "selectedOptionId": "304-then-174",
+      "status": "proposed-default",
+      "rationale": "Ship #304 immediately after release, then make #174 the dominant product lane.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "PRD-02",
+      "selectedOptionId": "outcome-milestones",
+      "status": "proposed-default",
+      "rationale": "Create four outcome milestones plus a research backlog: v0.1 Release, v0.2 Evidence Flagship, v0.3 Safe Activation, v0.4 Query & Distribution, Research/Later.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "GOV-01",
+      "selectedOptionId": "freeze",
+      "status": "proposed-default",
+      "rationale": "Freeze new permanent governance mechanisms for two product waves. Allow only fixes that remove a demonstrated repeated failure or replace an older mechanism.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "PRD-03",
+      "selectedOptionId": "separate",
+      "status": "proposed-default",
+      "rationale": "Keep current language as a clearly labelled personal/legacy Story mode for v0.1; move new surfaces toward Work Shape or System Signature.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "CON-01",
+      "selectedOptionId": "ratio",
+      "status": "proposed-default",
+      "rationale": "Export counts plus coverageRatio in [0,1] and a versioned coverageMethodId. Do not retain an ambiguous coverageScore.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "CON-02",
+      "selectedOptionId": "split",
+      "status": "proposed-default",
+      "rationale": "Land one v1 robustness PR with no semantic reinterpretation, then publish a v2 ADR and implementation for gate semantics.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "CON-03",
+      "selectedOptionId": "evidence-gates",
+      "status": "proposed-default",
+      "rationale": "In v2 every gate carries a rule reference and supporting evidence; omit or mark not-applicable when evidence is absent. Never accept a free-floating verdict.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "CON-04",
+      "selectedOptionId": "20-percent",
+      "status": "proposed-default",
+      "rationale": "Use the preregistered 20% rule for the decision gate. Add a separately named descriptive any-reduction indicator only if a consumer needs it.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "CON-05",
+      "selectedOptionId": "derive",
+      "status": "proposed-default",
+      "rationale": "Use outcome-neutral non-promotion wording and derive threshold limitations from selection evidence rather than accepting them independently.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "ARC-01",
+      "selectedOptionId": "codegen",
+      "status": "proposed-default",
+      "rationale": "Own one executable TypeScript registry in Product and generate schema, registry docs and conformance fixtures from it.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "ARC-02",
+      "selectedOptionId": "compile-time",
+      "status": "proposed-default",
+      "rationale": "Introduce a compile-time LensDefinition registry first. Consider external plugins only after several internally stable lenses expose a real common shape.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "ARC-03",
+      "selectedOptionId": "strangler",
+      "status": "proposed-default",
+      "rationale": "Use a strangler migration: freeze the legacy Story path except maintenance; route every new System/Research lens through V2; migrate old surfaces only when touched.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "ANA-01",
+      "selectedOptionId": "split",
+      "status": "proposed-default",
+      "rationale": "Product computes deterministic Kaplan–Meier, cumulative-incidence/risk tables and bootstrap uncertainty; Lab owns AFT/model sensitivity and exports reviewed findings later.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "ANA-02",
+      "selectedOptionId": "created-window",
+      "status": "proposed-default",
+      "rationale": "Use PRs created inside the explicit window; merged is the event, closed-unmerged a competing outcome, open at window end right-censored. Start with versioned provisional floors: 20 eligible, 10 merge events, 5 per group.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "PLT-01",
+      "selectedOptionId": "fixture-fix",
+      "status": "proposed-default",
+      "rationale": "Canonicalize fixture-owned temporary roots before invoking the production boundary; retain strict production root identity until a separately reviewed security change.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "SEC-01",
+      "selectedOptionId": "packaging-gate",
+      "status": "proposed-default",
+      "rationale": "Treat a per-launch bearer/CSRF-bound session token as a packaging gate for CLI/desktop, not a blocker for the current synthetic/source-run release.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "DAT-01",
+      "selectedOptionId": "ordered",
+      "status": "proposed-default",
+      "rationale": "Complete #174 on invented stores, then #201, then #202, then one owner-selected public metadata canary with deletion/replay proof.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "DAT-02",
+      "selectedOptionId": "no-default",
+      "status": "proposed-default",
+      "rationale": "Do not persist cross-repository C4 hashes by default. Use ephemeral per-analysis hashes or installation-keyed, purpose-scoped HMACs with explicit retention/deletion if the feature becomes necessary.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "DAT-03",
+      "selectedOptionId": "layered",
+      "status": "proposed-default",
+      "rationale": "Default UI to age/coarse status, expose exact local timestamp in an inspection drawer, and keep public/exported projections at day/week grain or suppress entirely.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "OPS-01",
+      "selectedOptionId": "local",
+      "status": "proposed-default",
+      "rationale": "Keep remote telemetry disabled. Add structured local diagnostics and an explicit user-generated support bundle first.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "DST-01",
+      "selectedOptionId": "cli-gh-desktop",
+      "status": "proposed-default",
+      "rationale": "After v0.2 value: make source-run excellent, ship a thin npm CLI and gh launcher, then measure setup friction before an Electron shell.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "TEAM-01",
+      "selectedOptionId": "aggregate",
+      "status": "proposed-default",
+      "rationale": "Keep Team mode aggregate-only with explicit audience, coverage and uncertainty. Treat every individual comparison as a separate owner/consent/research gate.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "INT-01",
+      "selectedOptionId": "exact-private",
+      "status": "proposed-default",
+      "rationale": "Pin an exact Taskdeck commit/schema in a local private integration config; keep public docs at compatibility-range level and require an activation card for writes.",
+      "confirmedByOwner": false
+    },
+    {
+      "decisionId": "DAT-04",
+      "selectedOptionId": "one-canary",
+      "status": "proposed-default",
+      "rationale": "Use exactly one owner-selected public repository, metadata-only, tiny request budget, no prose/person fields, short retention, explicit delete/replay drill, and no public derived output.",
+      "confirmedByOwner": false
+    }
+  ]
+}
