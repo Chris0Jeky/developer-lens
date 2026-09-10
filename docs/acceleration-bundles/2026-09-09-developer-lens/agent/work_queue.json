@@ -1,0 +1,360 @@
+{
+  "schemaVersion": "DeveloperLensAccelerationQueue.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "tasks": [
+    {
+      "id": "DL-ACC-00",
+      "title": "Reconcile live state after merged PR #309",
+      "phase": "H0",
+      "priority": 0,
+      "issues": [
+        200,
+        317,
+        319,
+        320,
+        321,
+        324,
+        325,
+        326,
+        327
+      ],
+      "dependsOn": [],
+      "output": "CURRENT_STATE, #200 and generated planning artifacts reflect current main and the true open PR set.",
+      "proof": [
+        "npm run verify:context",
+        "node docs/analyser-program/taskdeck/tools/generate.mjs --check",
+        "git diff --check"
+      ],
+      "humanGate": null
+    },
+    {
+      "id": "DL-ACC-01",
+      "title": "Close the open dependency security update",
+      "phase": "H0",
+      "priority": 1,
+      "issues": [],
+      "dependsOn": [
+        "DL-ACC-00"
+      ],
+      "output": "PR #323 exact-head diff reviewed, hosted gate green, merged; new main proved.",
+      "proof": [
+        "hosted Prove the pull request",
+        "lockfile/package diff inspection"
+      ],
+      "humanGate": null
+    },
+    {
+      "id": "DL-ACC-02",
+      "title": "Build the final v0.1 Product proof packet",
+      "phase": "H0",
+      "priority": 2,
+      "issues": [
+        200
+      ],
+      "dependsOn": [
+        "DL-ACC-01"
+      ],
+      "output": "Desktop, above-fold, mobile, short scroll video and checksum manifest tied to exact main.",
+      "proof": [
+        "npm run build:showcase",
+        "privacy scan",
+        "browser console and overflow check"
+      ],
+      "humanGate": null
+    },
+    {
+      "id": "DL-ACC-03",
+      "title": "Cut the joint Product/Lab v0.1.0 release",
+      "phase": "H0",
+      "priority": 3,
+      "issues": [
+        200,
+        298
+      ],
+      "dependsOn": [
+        "DL-ACC-02"
+      ],
+      "output": "Fresh release metadata from current main, synchronized notes, tags and approved C0 assets in both repositories.",
+      "proof": [
+        "full Product gate",
+        "full Lab gate",
+        "tag points to proved commits",
+        "release asset manifest"
+      ],
+      "humanGate": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) approved"
+    },
+    {
+      "id": "DL-ACC-10",
+      "title": "Restore a trustworthy local Windows proving path",
+      "phase": "H1",
+      "priority": 10,
+      "issues": [
+        293,
+        294,
+        318
+      ],
+      "dependsOn": [
+        "DL-ACC-03"
+      ],
+      "output": "Production path identity unchanged; fixture roots canonical; local tool provenance preflight; CRLF-safe registry tests.",
+      "proof": [
+        "targeted Windows tests",
+        "full local check or documented unrelated red",
+        "hosted gate"
+      ],
+      "humanGate": null
+    },
+    {
+      "id": "DL-ACC-11",
+      "title": "Publish PublicLensProjection.v1",
+      "phase": "H1",
+      "priority": 11,
+      "issues": [
+        304,
+        300
+      ],
+      "dependsOn": [
+        "DL-ACC-03"
+      ],
+      "output": "Product-owned schema, fixture, registries, headless profile export, denial/conformance vectors and CommitAtlas handoff.",
+      "proof": [
+        "round-trip",
+        "AJV schema validation",
+        "privacy denial corpus",
+        "showcase build"
+      ],
+      "humanGate": null
+    },
+    {
+      "id": "DL-ACC-12",
+      "title": "Harden ResearchFinding v1 consumer robustness",
+      "phase": "H1",
+      "priority": 12,
+      "issues": [
+        318,
+        324,
+        325,
+        326
+      ],
+      "dependsOn": [
+        "DL-ACC-03"
+      ],
+      "output": "safeParse never throws; prose is nonblank; denied token coverage is fail-closed; README tests line-ending agnostic.",
+      "proof": [
+        "focused regression corpus",
+        "schema/fixture drift checks",
+        "full gate"
+      ],
+      "humanGate": null
+    },
+    {
+      "id": "DL-ACC-13",
+      "title": "Decide and publish ResearchFinding v2 semantics",
+      "phase": "H1",
+      "priority": 13,
+      "issues": [
+        319,
+        320,
+        321,
+        327
+      ],
+      "dependsOn": [
+        "DL-ACC-12"
+      ],
+      "output": "ADR plus v2 evidence-bearing gates, source-faithful rules, neutral safety copy and derived limitations.",
+      "proof": [
+        "cross-field mutation tests",
+        "Product/Lab conformance vectors",
+        "published hash manifest"
+      ],
+      "humanGate": "Decision catalog CON-03/04/05"
+    },
+    {
+      "id": "DL-ACC-20",
+      "title": "Introduce the compile-time lens kernel",
+      "phase": "H2",
+      "priority": 20,
+      "issues": [
+        174,
+        76,
+        135
+      ],
+      "dependsOn": [
+        "DL-ACC-11"
+      ],
+      "output": "LensDefinition, ObservationQuery, SupportAssessment, FindingDraft, evidence and projection interfaces with one migrated lens.",
+      "proof": [
+        "type-level exhaustiveness",
+        "abstention fixtures",
+        "no Node-only import in browser bundle"
+      ],
+      "humanGate": "Decision ARC-02"
+    },
+    {
+      "id": "DL-ACC-21",
+      "title": "Build the generic selected-store observation bridge",
+      "phase": "H2",
+      "priority": 21,
+      "issues": [
+        174,
+        80,
+        135
+      ],
+      "dependsOn": [
+        "DL-ACC-20"
+      ],
+      "output": "Accepted v3 store query over explicit scope/window with coverage, censoring, consent and deletion lineage preserved.",
+      "proof": [
+        "invented selected-store fixtures",
+        "cross-scope isolation",
+        "coverage/missingness regressions",
+        "API contract tests"
+      ],
+      "humanGate": null
+    },
+    {
+      "id": "DL-ACC-22",
+      "title": "Ship change-batch size versus integration-tail lens",
+      "phase": "H2",
+      "priority": 22,
+      "issues": [
+        174
+      ],
+      "dependsOn": [
+        "DL-ACC-21"
+      ],
+      "output": "KM/cumulative-risk analysis, sensitivities, support/abstention, API/UI and Evidence Drawer lineage in one vertical.",
+      "proof": [
+        "golden synthetic cohorts",
+        "censoring/competing-risk tests",
+        "bootstrap determinism",
+        "desktop/mobile QA"
+      ],
+      "humanGate": "Decision ANA-01/02"
+    },
+    {
+      "id": "DL-ACC-30",
+      "title": "Land Data Charter v2 and capability profiles",
+      "phase": "H3",
+      "priority": 30,
+      "issues": [
+        201,
+        317
+      ],
+      "dependsOn": [
+        "DL-ACC-22"
+      ],
+      "output": "C0-C4/P/X sink matrix, Core/Extended/Text/Full/Team profiles, pause/revoke/delete/budget controls.",
+      "proof": [
+        "policy matrix canaries",
+        "sink denials",
+        "context truth sync"
+      ],
+      "humanGate": null
+    },
+    {
+      "id": "DL-ACC-31",
+      "title": "Execute consolidated pre-activation readiness",
+      "phase": "H3",
+      "priority": 31,
+      "issues": [
+        202,
+        5,
+        6,
+        57,
+        59,
+        86,
+        142,
+        168,
+        177
+      ],
+      "dependsOn": [
+        "DL-ACC-30"
+      ],
+      "output": "One reviewed readiness programme closes identity, key, budget, writer, restore and deletion preconditions.",
+      "proof": [
+        "invented adversarial fixtures",
+        "rollback/replay/deletion drill",
+        "single-writer refusal"
+      ],
+      "humanGate": null
+    },
+    {
+      "id": "DL-ACC-32",
+      "title": "Run one bounded public metadata canary",
+      "phase": "H3",
+      "priority": 32,
+      "issues": [],
+      "dependsOn": [
+        "DL-ACC-31"
+      ],
+      "output": "One owner-selected public repository, metadata-only, local output, request/retention budget, deletion and replay proof.",
+      "proof": [
+        "before/after capability receipt",
+        "request ledger",
+        "complete deletion enumeration",
+        "no public output"
+      ],
+      "humanGate": "Exact scope/budget card approval"
+    },
+    {
+      "id": "DL-ACC-40",
+      "title": "Ship deterministic Query Lab and recommendation ranking",
+      "phase": "H4",
+      "priority": 40,
+      "issues": [
+        203
+      ],
+      "dependsOn": [
+        "DL-ACC-22"
+      ],
+      "output": "Local deterministic queries/recommendations with evidence/counter-evidence quotas and complete fallback.",
+      "proof": [
+        "query corpus",
+        "quota tests",
+        "no model dependency"
+      ],
+      "humanGate": null
+    },
+    {
+      "id": "DL-ACC-41",
+      "title": "Add bounded manual Luna hypotheses",
+      "phase": "H4",
+      "priority": 41,
+      "issues": [
+        203
+      ],
+      "dependsOn": [
+        "DL-ACC-40"
+      ],
+      "output": "Previewable C1 allowlisted payload, store:false, manual send, cost cap, hypothesis-only output and local audit.",
+      "proof": [
+        "payload denial tests",
+        "mock provider tests",
+        "budget exhaustion",
+        "deterministic fallback"
+      ],
+      "humanGate": "Workspace opt-in"
+    },
+    {
+      "id": "DL-ACC-42",
+      "title": "Package the useful core",
+      "phase": "H4",
+      "priority": 42,
+      "issues": [
+        205,
+        217
+      ],
+      "dependsOn": [
+        "DL-ACC-22"
+      ],
+      "output": "Source-run polish, npm CLI and gh launcher with per-launch local API token; desktop spike only after setup-friction evidence.",
+      "proof": [
+        "clean-machine smoke tests",
+        "loopback auth tests",
+        "signed manifest strategy"
+      ],
+      "humanGate": "Publishing credentials where required"
+    }
+  ]
+}

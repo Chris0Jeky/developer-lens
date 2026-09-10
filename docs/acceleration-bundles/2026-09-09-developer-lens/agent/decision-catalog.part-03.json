@@ -1,0 +1,191 @@
+{
+  "schemaVersion": "DeveloperLensDecisionCatalogPart.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "part": 3,
+  "totalParts": 4,
+  "decisions": [
+    {
+      "id": "ARC-03",
+      "area": "Architecture",
+      "title": "Legacy dashboard versus V2",
+      "context": "The stable Story UI uses whole-file dashboard JSON while V2 has SQLite, coverage, claims and evidence APIs.",
+      "recommendation": "Use a strangler migration: freeze the legacy Story path except maintenance; route every new System/Research lens through V2; migrate old surfaces only when touched.",
+      "options": [
+        {
+          "id": "strangler",
+          "label": "Strangler migration",
+          "description": "Protects the public experience while steadily eliminating the split data plane.",
+          "recommended": true
+        },
+        {
+          "id": "rewrite",
+          "label": "Rewrite legacy onto V2 now",
+          "description": "Architecturally clean, but high regression risk before product learning.",
+          "recommended": false
+        },
+        {
+          "id": "dual",
+          "label": "Maintain both indefinitely",
+          "description": "Lowest immediate effort but doubles semantics, testing and privacy review.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "ANA-01",
+      "area": "Analytics",
+      "title": "#174 analytical method split",
+      "context": "Integration-tail analysis needs censoring and competing-outcome handling without turning Product into a numerical research runtime.",
+      "recommendation": "Product computes deterministic Kaplan–Meier, cumulative-incidence/risk tables and bootstrap uncertainty; Lab owns AFT/model sensitivity and exports reviewed findings later.",
+      "options": [
+        {
+          "id": "split",
+          "label": "Deterministic Product, model sensitivity in Lab",
+          "description": "Matches repository roles and keeps the product inspectable.",
+          "recommended": true
+        },
+        {
+          "id": "all-product",
+          "label": "Implement AFT in Product now",
+          "description": "One runtime, but adds optimizer/model complexity to the trusted product path.",
+          "recommended": false
+        },
+        {
+          "id": "descriptive-only",
+          "label": "Use medians and bins only",
+          "description": "Simple, but mishandles open/censored work and competing outcomes.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "ANA-02",
+      "area": "Analytics",
+      "title": "#174 cohort and support floor",
+      "context": "A first version must avoid left truncation, tiny-group overclaiming and arbitrary universal thresholds.",
+      "recommendation": "Use PRs created inside the explicit window; merged is the event, closed-unmerged a competing outcome, open at window end right-censored. Start with versioned provisional floors: 20 eligible, 10 merge events, 5 per group.",
+      "options": [
+        {
+          "id": "created-window",
+          "label": "Created-in-window + versioned floors",
+          "description": "Auditable and implementable now; revise after synthetic and owner-data calibration.",
+          "recommended": true
+        },
+        {
+          "id": "all-active",
+          "label": "All PRs active in window",
+          "description": "More data, but requires careful left-truncation machinery immediately.",
+          "recommended": false
+        },
+        {
+          "id": "no-floor",
+          "label": "Render every sample size",
+          "description": "Avoids arbitrary cutoffs but encourages unstable visual claims.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "PLT-01",
+      "area": "Platform",
+      "title": "Windows 8.3 path failure",
+      "context": "The local full suite can fail because test temporary paths arrive in 8.3 short form while root identity checks demand the canonical long form.",
+      "recommendation": "Canonicalize fixture-owned temporary roots before invoking the production boundary; retain strict production root identity until a separately reviewed security change.",
+      "options": [
+        {
+          "id": "fixture-fix",
+          "label": "Fix test fixture roots first",
+          "description": "Restores trustworthy local testing without weakening production confinement.",
+          "recommended": true
+        },
+        {
+          "id": "production-normalize",
+          "label": "Normalize inside production captureRoot",
+          "description": "Broader convenience, but changes an identity guarantee and needs deeper hostile-path review.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "SEC-01",
+      "area": "Security",
+      "title": "Loopback API authorization",
+      "context": "Binding only to 127.0.0.1 is a useful boundary but other same-machine browser contexts/processes may reach a predictable local port.",
+      "recommendation": "Treat a per-launch bearer/CSRF-bound session token as a packaging gate for CLI/desktop, not a blocker for the current synthetic/source-run release.",
+      "options": [
+        {
+          "id": "packaging-gate",
+          "label": "Add token before packaged distribution",
+          "description": "Right-sized timing: protect broader install contexts without derailing v0.1.",
+          "recommended": true
+        },
+        {
+          "id": "now",
+          "label": "Implement before v0.1",
+          "description": "Stronger immediately, but expands the release critical path without a demonstrated current caller.",
+          "recommended": false
+        },
+        {
+          "id": "never",
+          "label": "Rely on loopback only",
+          "description": "Simpler, but insufficient once casual desktop/browser launching broadens exposure.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "DAT-01",
+      "area": "Activation",
+      "title": "Real-data activation order",
+      "context": "The project authorizes bounded real local data in principle, but source/sink policy and readiness work remain incomplete.",
+      "recommendation": "Complete #174 on invented stores, then #201, then #202, then one owner-selected public metadata canary with deletion/replay proof.",
+      "options": [
+        {
+          "id": "ordered",
+          "label": "#174 → #201 → #202 → canary",
+          "description": "Proves product value before spending more effort on activation plumbing.",
+          "recommended": true
+        },
+        {
+          "id": "activation-first",
+          "label": "Finish activation before #174",
+          "description": "Makes real input possible sooner, but risks building ingestion without a valuable consumer.",
+          "recommended": false
+        },
+        {
+          "id": "synthetic-only",
+          "label": "Stay synthetic indefinitely",
+          "description": "Safest, but prevents the standalone product from proving its real utility.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "DAT-02",
+      "area": "Activation",
+      "title": "Cross-repository C4 content hashes",
+      "context": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 leaves durable content-hash linkage and deletion cascade unresolved; hashes can become stable sensitive join keys.",
+      "recommendation": "Do not persist cross-repository C4 hashes by default. Use ephemeral per-analysis hashes or installation-keyed, purpose-scoped HMACs with explicit retention/deletion if the feature becomes necessary.",
+      "options": [
+        {
+          "id": "no-default",
+          "label": "No durable cross-repo hash by default",
+          "description": "Avoids creating a hidden identity graph before a concrete lens needs it.",
+          "recommended": true
+        },
+        {
+          "id": "keyed",
+          "label": "Persist purpose-scoped keyed hashes",
+          "description": "Enables linkage with bounded risk, but only after a named product need.",
+          "recommended": false
+        },
+        {
+          "id": "raw-hash",
+          "label": "Persist raw content hashes",
+          "description": "Convenient, but creates durable correlators and deletion complexity.",
+          "recommended": false
+        }
+      ]
+    }
+  ]
+}

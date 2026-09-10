@@ -1,0 +1,84 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "DeveloperLensIssueManifest.v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatedAt", "issues"],
+  "properties": {
+    "schemaVersion": {
+      "const": "DeveloperLensIssueManifest.v1"
+    },
+    "generatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "issues": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "number",
+          "title",
+          "cluster",
+          "proposedMilestone",
+          "proposedHorizon",
+          "severity",
+          "dependencies",
+          "url",
+          "recommendedDisposition"
+        ],
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string",
+            "minLength": 1
+          },
+          "cluster": {
+            "enum": [
+              "contract-system",
+              "activation-storage",
+              "governance-context",
+              "platform-hardening",
+              "frozen-research",
+              "product-evidence",
+              "future-product",
+              "release-truth",
+              "ux-hardening"
+            ]
+          },
+          "proposedMilestone": {
+            "type": "string",
+            "minLength": 1
+          },
+          "proposedHorizon": {
+            "enum": ["now", "candidate-now", "next", "later"]
+          },
+          "severity": {
+            "enum": ["low", "medium", "high", "critical"]
+          },
+          "dependencies": {
+            "type": "array",
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^#[1-9][0-9]*$"
+            }
+          },
+          "url": {
+            "type": "string",
+            "pattern": "^https://github\\.com/Chris0Jeky/developer-lens/issues/[1-9][0-9]*$"
+          },
+          "recommendedDisposition": {
+            "enum": ["do-now", "schedule-next", "park-with-trigger", "promote-after-release"]
+          }
+        }
+      }
+    }
+  }
+}
