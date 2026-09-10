@@ -1,7 +1,10 @@
 {
   "version": "0.1.0",
-  "project": "developer-lens",
-  "target": "public/observatory.js",
-  "sha256": "cb29b50e21788d5c66f57366d68305506d986f25c6fb271e67476a0f6020de99",
-  "source": "Chris0Jeky/Pulseboard:observatory"
+  "source": "Chris0Jeky/Pulseboard:observatory",
+  "installs": {
+    "public/observatory.js": {
+      "project": "developer-lens",
+      "sha256": "6fb01d931d7c3c059386e524bfb19efa266999edc8cf027075ea967607a3d589"
+    }
+  }
 }
