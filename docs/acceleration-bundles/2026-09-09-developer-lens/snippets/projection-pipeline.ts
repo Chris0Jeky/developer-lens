@@ -27,7 +27,7 @@ export function projectFinding<TInternal, TWire>(
   if (context.maximumDataClass !== dataClass) {
     throw new Error('PROJECTION_DATA_CLASS_MISMATCH')
   }
-  if (context.target === 'public-pages' && dataClass !== 'C0') {
+  if ((context.target === 'public-pages' || context.target === 'commit-atlas') && dataClass !== 'C0') {
     throw new Error('PUBLIC_PROJECTION_REQUIRES_C0')
   }
   if (dataClass === 'C1' && !context.acknowledgeRedaction) {

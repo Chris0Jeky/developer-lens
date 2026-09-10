@@ -208,7 +208,7 @@ function updateHandoff(){
     queue:DATA.workQueue,
     hardStops:[
       'No real/private activation before #201 and #202',
-      'No release tag before Product q-10(c)',
+      'No release tag before Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)',
       'No public non-C0 output',
       'No individual ranking/person inference',
       'No Taskdeck write without exact integration authority'
