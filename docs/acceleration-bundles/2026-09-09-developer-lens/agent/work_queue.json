@@ -60,7 +60,7 @@
         "privacy scan",
         "browser console and overflow check"
       ],
-      "humanGate": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)"
+      "humanGate": null
     },
     {
       "id": "DL-ACC-03",

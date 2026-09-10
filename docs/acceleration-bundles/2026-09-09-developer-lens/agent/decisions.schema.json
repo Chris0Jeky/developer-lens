@@ -7,7 +7,6 @@
     "schemaVersion",
     "project",
     "generatedAt",
-    "sourceSnapshot",
     "decisions"
   ],
   "properties": {
@@ -32,10 +31,7 @@
         "additionalProperties": false,
         "required": [
           "decisionId",
-          "area",
-          "title",
           "selectedOptionId",
-          "selectedOptionLabel",
           "status",
           "rationale",
           "confirmedByOwner"
