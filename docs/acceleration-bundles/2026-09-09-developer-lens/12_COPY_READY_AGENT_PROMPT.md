@@ -1,5 +1,9 @@
 # Historical agent handoff formulation
 
+<!-- prompt-source: historical target: DL-P04-RESUME-RECONCILE -->
+
+> RETIRED PROMPT - HISTORICAL RECORD ONLY - DO NOT EXECUTE.
+
 **Prompt classification:** historical advisory intake. Do not paste this file as an executable repository prompt. Invoke `$developer-lens-continuation` and use `docs/agent-system/PROMPT_LIBRARY.md` as the only canonical executable prompt surface. The text below records the requirements that the original external handoff formulation was intended to carry.
 
 A repository agent should unbundle this directory as a non-authoritative intelligence pack, reconcile it against the live repository, and turn only confirmed parts into repository-native planning and implementation.

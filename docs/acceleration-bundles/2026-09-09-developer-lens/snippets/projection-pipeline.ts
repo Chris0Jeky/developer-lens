@@ -20,12 +20,17 @@ export interface ProjectionResult<T> {
 export function projectFinding<TInternal, TWire>(
   finding: TInternal,
   context: ProjectionContext,
+  classify: (finding: TInternal) => 'C0' | 'C1',
   build: (finding: TInternal) => TWire,
 ): ProjectionResult<TWire> {
-  if (context.target === 'public-pages' && context.maximumDataClass !== 'C0') {
+  const dataClass = classify(finding)
+  if (context.maximumDataClass !== dataClass) {
+    throw new Error('PROJECTION_DATA_CLASS_MISMATCH')
+  }
+  if (context.target === 'public-pages' && dataClass !== 'C0') {
     throw new Error('PUBLIC_PROJECTION_REQUIRES_C0')
   }
-  if (context.maximumDataClass === 'C1' && !context.acknowledgeRedaction) {
+  if (dataClass === 'C1' && !context.acknowledgeRedaction) {
     throw new Error('C1_EXPORT_REQUIRES_ACKNOWLEDGEMENT')
   }
 
@@ -33,7 +38,7 @@ export function projectFinding<TInternal, TWire>(
   // validate structural schema, semantic rules, denied-content corpus and sink policy here
   return {
     schemaVersion: 'PublicLensProjection.v1',
-    dataClass: context.maximumDataClass,
+    dataClass,
     body,
     provenance: {
       producerCommit: process.env.DEVELOPER_LENS_COMMIT ?? 'unknown',

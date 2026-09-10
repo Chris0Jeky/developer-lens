@@ -8,7 +8,7 @@
       "id": "DAT-03",
       "area": "Product",
       "title": "Freshness and exact timestamps",
-      "context": "q-6 asks whether to show exact retrieval time, hour-rounded, day-rounded or age-only.",
+      "context": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 asks whether to show exact retrieval time, hour-rounded, day-rounded or age-only.",
       "recommendation": "Default UI to age/coarse status, expose exact local timestamp in an inspection drawer, and keep public/exported projections at day/week grain or suppress entirely.",
       "options": [
         {
@@ -104,7 +104,7 @@
       "id": "INT-01",
       "area": "Integration",
       "title": "Taskdeck integration identity",
-      "context": "q-6 leaves the exact immutable Taskdeck ref and activation card unresolved.",
+      "context": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 leaves the exact immutable Taskdeck ref and activation card unresolved.",
       "recommendation": "Pin an exact Taskdeck commit/schema in a local private integration config; keep public docs at compatibility-range level and require an activation card for writes.",
       "options": [
         {

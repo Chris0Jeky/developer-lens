@@ -60,7 +60,7 @@
         "privacy scan",
         "browser console and overflow check"
       ],
-      "humanGate": "Product HUMAN_TODO q-10(c)"
+      "humanGate": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)"
     },
     {
       "id": "DL-ACC-03",
@@ -81,7 +81,7 @@
         "tag points to proved commits",
         "release asset manifest"
       ],
-      "humanGate": "q-10(c) approved"
+      "humanGate": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) approved"
     },
     {
       "id": "DL-ACC-10",

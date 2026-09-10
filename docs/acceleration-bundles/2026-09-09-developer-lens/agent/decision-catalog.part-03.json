@@ -164,7 +164,7 @@
       "id": "DAT-02",
       "area": "Activation",
       "title": "Cross-repository C4 content hashes",
-      "context": "q-6 leaves durable content-hash linkage and deletion cascade unresolved; hashes can become stable sensitive join keys.",
+      "context": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 leaves durable content-hash linkage and deletion cascade unresolved; hashes can become stable sensitive join keys.",
       "recommendation": "Do not persist cross-repository C4 hashes by default. Use ephemeral per-analysis hashes or installation-keyed, purpose-scoped HMACs with explicit retention/deletion if the feature becomes necessary.",
       "options": [
         {

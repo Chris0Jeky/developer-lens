@@ -212,6 +212,10 @@ if (failures.length === 0) {
       kind: 'historical',
       target: 'DL-PX01-PRODUCT-DEEP-DISCOVERY',
     },
+    'docs/acceleration-bundles/2026-09-09-developer-lens/12_COPY_READY_AGENT_PROMPT.md': {
+      kind: 'historical',
+      target: 'DL-P04-RESUME-RECONCILE',
+    },
   }
 
   let manifestForLibrary: ReturnType<typeof validatePromptParityManifest>['manifest']

@@ -20,10 +20,16 @@ export function toSurvivalRow(
   batchPrimary: number | null
   batchSensitivity: number | null
 } {
-  const terminal = pr.mergedAt ?? pr.closedAt ?? windowEndExclusive
+  const mergedInWindow = pr.mergedAt != null && pr.mergedAt < windowEndExclusive
+  const closedInWindow = pr.closedAt != null && pr.closedAt < windowEndExclusive
+  const terminal = mergedInWindow
+    ? pr.mergedAt!
+    : closedInWindow
+      ? pr.closedAt!
+      : windowEndExclusive
   const outcome: Outcome =
-    pr.mergedAt != null ? 'merged'
-    : pr.closedAt != null ? 'closed_without_merge'
+    mergedInWindow ? 'merged'
+    : closedInWindow ? 'closed_without_merge'
     : 'right_censored'
 
   return {

@@ -141,7 +141,11 @@ function decisionExport(){
         selectedOptionId:st.status==='deferred'?null:st.selected,
         selectedOptionLabel:st.status==='deferred'?null:(opt?.label??null),
         status:st.status,
-        rationale:st.status==='proposed-default'?d.recommendation:(st.notes||d.recommendation),
+        rationale:st.notes || (st.status==='proposed-default'
+          ? d.recommendation
+          : st.status==='deferred'
+            ? 'Deferred without additional rationale.'
+            : opt?.description || ''),
         confirmedByOwner:st.status==='confirmed',
         notes:st.notes||''
       }

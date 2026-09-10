@@ -56,7 +56,7 @@
       "id": "REL-03",
       "area": "Release",
       "title": "Final Product visual sign-off",
-      "context": "Product HUMAN_TODO q-10(c) is the sole current tag-blocking owner action; Lab visual sign-off is already complete.",
+      "context": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is the sole current tag-blocking owner action; Lab visual sign-off is already complete.",
       "recommendation": "Use one bounded proof packet: desktop full page, above fold, 390×844 mobile, 30–60 second scroll video, checksums and exact commit.",
       "options": [
         {
