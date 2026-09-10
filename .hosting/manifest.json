@@ -1,0 +1,15 @@
+{
+  "schema_version":1,"reviewed_on":"2026-09-10","repository":"Chris0Jeky/developer-lens","stable_id":"developer-lens","runtime_class":"static",
+  "public_origin":"https://chris0jeky.github.io/developer-lens/","origin_evidence":"repository-reported",
+  "target":"Keep synthetic public showcase static; private collector stays local",
+  "source_paths":["README.md","docs/data-charter.md"],
+  "persistent_state":["Private local .developer-lens store; never a public asset"],
+  "invariants":["Public artifacts use invented or explicitly approved projections only","No hosted authenticated GitHub collector","Existing prompt library and continuation workflow remain authoritative","No new real-data/model/telemetry capability is activated"],
+  "gates":["Owned showcase hostname","Synthetic artifact privacy scan","Base-path and export acceptance"],
+  "tasks":[
+    {"id":"DL1","goal":"Prepare a static custom-origin showcase","acceptance":"Existing build:showcase and privacy checks pass with synthetic fixtures"},
+    {"id":"DL2","goal":"Preserve local and public boundaries","acceptance":"No .developer-lens data, tokens, repository URLs or local paths enter the deploy output"},
+    {"id":"DL3","goal":"Route follow-on work through the existing prompt library","acceptance":"No duplicate executable prompts, harness or independent contract authority is added"}
+  ],
+  "activation_authorized":false
+}
