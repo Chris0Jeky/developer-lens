@@ -48,7 +48,7 @@ The durable analytical engine is deterministic. The original narrative was infor
 | Public showcase | Invented C0 synthetic repositories and events | Static GitHub Pages artifact |
 | Local lens | Authenticated public/private GitHub activity plus explicitly selected local Git roots | API bound to `127.0.0.1` |
 | Portable export | Pre-redacted aggregate view selected and acknowledged by the operator | Self-contained local file |
-| CommitAtlas projection | Small product-owned schema, explicitly reviewed for publication | Tracked public artifact, never ambient sync |
+| CommitAtlas projection | Small product-owned schema, explicitly reviewed for publication | Owner-gated tracked public artifact, never ambient sync |
 | Developer Lens Lab | Separate research environment and method qualification | No automatic promotion into the product |
 
 The showcase build regenerates its synthetic data, verifies synthetic identities, rejects repository/PR URLs, and scans the built artifact for credentials and local paths before deployment.
@@ -194,7 +194,7 @@ npm run check
 npm run build:showcase
 ```
 
-`check` runs Oxlint, analytics/API/UI tests, TypeScript builds, and the production build. `build:showcase` exports synthetic ranges, builds for GitHub Pages, verifies the public identity boundary, and scans for secrets, local paths, and external assets.
+`check` runs Oxlint, analytics/API/UI tests, TypeScript builds, and the production build. `build:showcase` exports synthetic ranges, builds for GitHub Pages, verifies the public identity boundary, and scans for secrets and local paths. External tags are rejected for the separately generated portable report; the repository does not yet claim a dist-wide external-resource scan for the complete showcase artifact.
 
 For continued development, start with [CLAUDE.md](CLAUDE.md); [AGENTS.md](AGENTS.md) is the Codex adapter. The analyser programme’s `CURRENT_STATE.md` is the live resume artifact. `HUMAN_TODO.md` is the only source for owner decisions.
 
