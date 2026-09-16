@@ -17,7 +17,7 @@ It should answer questions such as:
 - Which interpretation is plausible, and what observation could disprove it?
 - What is worth examining next, rather than what should be scored?
 
-The product remains private and local by default. Public surfaces use invented data or deliberately redacted, reviewed projections.
+The product remains private and local by default. Current public surfaces use invented data only. A deliberately redacted and reviewed real-derived projection is an architectural capability, not publication authority; publishing one on `origin` still requires a separate recorded owner decision.
 
 ## Product layers
 
@@ -39,7 +39,7 @@ Developer Lens Lab tests candidate methods under a separate research boundary. P
 
 ### Publication bridge
 
-Cards, reports, portable experiences, and CommitAtlas projections are allowlisted views built from redacted aggregate schemas. Publication is explicit, reviewed, and irreversible once committed publicly.
+Cards, reports, portable experiences, and CommitAtlas projections are allowlisted views built from redacted aggregate schemas. Local or portable publication is explicit and reviewed. The current public `origin` remains invented-only; any real-derived projection requires the separate recorded owner decision before tracked publication.
 
 ## Current foundation
 
@@ -166,7 +166,7 @@ Confidence never replaces coverage. More activity is not automatically better. L
 - The public showcase stays synthetic.
 - Local Git roots are explicit; no machine-wide discovery.
 - Tokens are used through existing tools and are not persisted by Developer Lens.
-- Publication requires a reviewed redacted view.
+- Publication requires a reviewed redacted view; a real-derived artifact on `origin` additionally requires the separate recorded owner decision.
 - External model payloads require an activated capability, payload preview, credential, budget, and bounded invocation.
 - The Observatory adapter for the showcase remains inert until a separate notice, CSP, vocabulary, retention, endpoint, and hosted collector review activates it.
 - Protected/private data is not used merely because a task would benefit from it.
