@@ -8,7 +8,7 @@ const STYLE_ATTRIBUTE_PATTERN = /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>
 const STYLE_BLOCK_PATTERN = /<style\b[^>]*>([\s\S]*?)<\/style\s*>/giu
 const CSS_IMPORT_PATTERN = /@import\s+(?:url\(\s*)?(?:"([^"]+)"|'([^']+)'|([^'"\s;)]+))\s*\)?/giu
 const CSS_URL_PATTERN = /url\(\s*(?:"([^"]*)"|'([^']*)'|([^'"\s)]+))\s*\)/giu
-const NETWORK_URL_PATTERN = /(?:https?:)?\/\/[^\s,)'"<>]+/iu
+const NETWORK_URL_PATTERN = /^(?:https?:)?\/\/[^\s,)'"<>]+/iu
 
 const RESOURCE_TAGS: Readonly<Record<string, ReadonlySet<string>>> = {
   src: new Set(['audio', 'embed', 'iframe', 'img', 'input', 'script', 'source', 'track', 'video']),
@@ -23,8 +23,16 @@ function portablePath(root: string, path: string): string {
   return relative(root, path).split(sep).join('/')
 }
 
-function firstNetworkUrl(value: string): string | null {
+function networkUrl(value: string): string | null {
   return NETWORK_URL_PATTERN.exec(value.trim())?.[0] ?? null
+}
+
+function firstSrcsetNetworkUrl(value: string): string | null {
+  for (const candidate of value.split(',')) {
+    const resource = networkUrl(candidate)
+    if (resource) return resource
+  }
+  return null
 }
 
 function attributeValue(match: RegExpExecArray, firstCapture: number): string {
@@ -38,14 +46,14 @@ function scanCss(relativePath: string, css: string): string[] {
   CSS_IMPORT_PATTERN.lastIndex = 0
   for (let match = CSS_IMPORT_PATTERN.exec(css); match; match = CSS_IMPORT_PATTERN.exec(css)) {
     importRanges.push([match.index, match.index + match[0].length])
-    const resource = firstNetworkUrl(attributeValue(match, 1))
+    const resource = networkUrl(attributeValue(match, 1))
     if (resource) violations.push(`${relativePath}: css @import: ${resource}`)
   }
 
   CSS_URL_PATTERN.lastIndex = 0
   for (let match = CSS_URL_PATTERN.exec(css); match; match = CSS_URL_PATTERN.exec(css)) {
     if (importRanges.some(([start, end]) => match.index >= start && match.index < end)) continue
-    const resource = firstNetworkUrl(attributeValue(match, 1))
+    const resource = networkUrl(attributeValue(match, 1))
     if (resource) violations.push(`${relativePath}: css url(): ${resource}`)
   }
 
@@ -68,7 +76,10 @@ function scanMarkup(relativePath: string, markup: string): string[] {
     ) {
       const attribute = attributeMatch[1].toLowerCase()
       if (!RESOURCE_TAGS[attribute]?.has(tag)) continue
-      const resource = firstNetworkUrl(attributeValue(attributeMatch, 2))
+      const value = attributeValue(attributeMatch, 2)
+      const resource = attribute === 'srcset'
+        ? firstSrcsetNetworkUrl(value)
+        : networkUrl(value)
       if (resource) violations.push(`${relativePath}: ${tag} ${attribute}: ${resource}`)
     }
 
