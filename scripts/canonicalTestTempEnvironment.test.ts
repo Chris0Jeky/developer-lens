@@ -10,8 +10,8 @@ import {
 
 describe('canonicalizeWindowsTestTempEnvironment', () => {
   it('rebinds both Windows temporary-directory variables to the canonical path', () => {
-    const shortPath = 'C:\\Users\\CRISTI~1\\AppData\\Local\\Temp'
-    const longPath = 'C:\\Users\\Cristian3\\AppData\\Local\\Temp'
+    const shortPath = 'C:\\TESTRO~1\\Temp'
+    const longPath = 'C:\\TestRoot\\Temp'
     const environment: NodeJS.ProcessEnv = {
       TEMP: shortPath,
       TMP: shortPath,
@@ -51,7 +51,7 @@ describe('canonicalizeWindowsTestTempEnvironment', () => {
   })
 
   it('fails without partially mutating or disclosing the temporary path', () => {
-    const shortPath = 'C:\\Users\\SECRET~1\\AppData\\Local\\Temp'
+    const shortPath = 'C:\\PRIVATE~1\\Temp'
     const environment: NodeJS.ProcessEnv = {
       TEMP: shortPath,
       TMP: shortPath,
