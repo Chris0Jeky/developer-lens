@@ -51,6 +51,36 @@ describe('dist-wide external resource guard', () => {
     expect(violations.some((violation) => violation.includes('anchor'))).toBe(false)
   })
 
+  it('decodes markup character references before classifying resource URLs', async () => {
+    const root = await fixture({
+      'index.html': `<img src="https&#58;//cdn.example.test/encoded.png">
+        <script src="&#x2f;&#x2f;cdn.example.test/encoded.js"></script>`,
+    })
+
+    const violations = await scanDirectoryForExternalResources(root)
+
+    expect(violations).toEqual(expect.arrayContaining([
+      expect.stringContaining('index.html: img src'),
+      expect.stringContaining('index.html: script src'),
+    ]))
+  })
+
+  it('rejects external URLs in SVG presentation attributes', async () => {
+    const root = await fixture({
+      'icons/paint.svg': `<svg xmlns="http://www.w3.org/2000/svg">
+        <rect fill="url(https://cdn.example.test/paint.svg#p)"
+          filter="url(&#x2f;&#x2f;cdn.example.test/filter.svg#f)" />
+      </svg>`,
+    })
+
+    const violations = await scanDirectoryForExternalResources(root)
+
+    expect(violations).toEqual(expect.arrayContaining([
+      expect.stringContaining('icons/paint.svg: rect fill'),
+      expect.stringContaining('icons/paint.svg: rect filter'),
+    ]))
+  })
+
   it('rejects remote CSS imports and URLs in CSS files and inline styles', async () => {
     const root = await fixture({
       'assets/site.css': `@import "//cdn.example.test/base.css";
