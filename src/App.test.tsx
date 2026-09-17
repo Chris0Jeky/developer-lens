@@ -35,8 +35,12 @@ describe('Developer Lens app', () => {
     expect(screen.getByRole('heading', { name: /go past totals/i })).toBeInTheDocument()
     const wrappedTrigger = screen.getByRole('button', { name: /start your wrapped/i })
     await user.click(wrappedTrigger)
-    expect(screen.getByRole('dialog', { name: /developer lens wrapped/i })).toBeInTheDocument()
-    expect(screen.getByRole('heading', { name: /you didn’t just write code/i })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('dialog', { name: /developer lens wrapped/i }),
+    ).toBeInTheDocument()
+    expect(
+      await screen.findByRole('heading', { name: /you didn’t just write code/i }),
+    ).toBeInTheDocument()
 
     await user.keyboard('{ArrowRight}')
     expect(
@@ -77,16 +81,27 @@ describe('Developer Lens app', () => {
     await screen.findByText('Your development trail,')
 
     await user.click(screen.getByRole('button', { name: /start your wrapped/i }))
+    await screen.findByRole('dialog', { name: /developer lens wrapped/i })
     await user.keyboard('{ArrowRight}')
-    await user.click(screen.getByRole('button', { name: /share chapter 2/i }))
+    await user.click(await screen.findByRole('button', { name: /share chapter 2/i }))
 
-    expect(screen.getByRole('dialog', { name: /turn the lens into something/i })).toBeInTheDocument()
+    expect(
+      await screen.findByRole('dialog', { name: /turn the lens into something/i }),
+    ).toBeInTheDocument()
     await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog', { name: /turn the lens into something/i })).not.toBeInTheDocument()
-    expect(screen.getByRole('dialog', { name: /developer lens wrapped.*repositories/i })).toBeInTheDocument()
+    await waitFor(() =>
+      expect(
+        screen.queryByRole('dialog', { name: /turn the lens into something/i }),
+      ).not.toBeInTheDocument(),
+    )
+    expect(
+      await screen.findByRole('dialog', { name: /developer lens wrapped.*repositories/i }),
+    ).toBeInTheDocument()
 
     await user.keyboard('{Escape}')
-    expect(screen.queryByRole('dialog', { name: /developer lens wrapped/i })).not.toBeInTheDocument()
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: /developer lens wrapped/i })).not.toBeInTheDocument(),
+    )
   })
 
   it('keeps the hosted showcase explicitly synthetic and avoids inert PR links', async () => {
