@@ -801,7 +801,7 @@
                 "type": "string"
               },
               "display_text": {
-                "const": "This rejected trial cannot promote a model.",
+                "const": "This trial does not promote a model.",
                 "type": "string"
               }
             },

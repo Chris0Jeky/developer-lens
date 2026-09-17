@@ -74,7 +74,7 @@ export type LimitationCode = keyof typeof LIMITATIONS
 export const UNSUPPORTED_CLAIMS = {
   real_repository_validity: 'This result does not establish validity on real repositories.',
   person_level_inference: 'No person-level inference is supported or attempted.',
-  model_promotion: 'This rejected trial cannot promote a model.',
+  model_promotion: 'This trial does not promote a model.',
   online_pelt_performance: 'Offline PELT markers do not establish online performance.',
 } as const
 export type UnsupportedClaimCode = keyof typeof UNSUPPORTED_CLAIMS

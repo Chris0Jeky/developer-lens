@@ -107,7 +107,7 @@
     }
   ],
   "provenance": {
-    "bundle_hash": "sha256:700110c41bd24e7e9a8a991238ad8390878818ac7ee9a18464cf3c84f2562d6d",
+    "bundle_hash": "sha256:d694f81a114e49d0d26ddaaea2edcbab81ccf9877eafd6f48f845a4494b5c458",
     "producer": "developer-lens-lab",
     "public_url": "https://chris0jeky.github.io/developer-lens/?view=method-trial",
     "source_lab_commit": "0ef193070a9b80b81cef5a1710a1d65e0b271c15",
@@ -126,7 +126,7 @@
     },
     {
       "code": "model_promotion",
-      "display_text": "This rejected trial cannot promote a model."
+      "display_text": "This trial does not promote a model."
     },
     {
       "code": "online_pelt_performance",
