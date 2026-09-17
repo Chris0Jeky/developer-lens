@@ -257,7 +257,8 @@ including retention/deletion, release review, and an untouched final holdout.
   `cap.source.structure` (G3 approved, P10).
 - **Canonical objects** — Closed role taxonomy {build, test, docs, config, migration, api_surface,
   ci_definition, dependency_manifest, generated, vendored, binary_asset, schema_definition,
-  fixture_golden, snapshot_artifact} (14 roles, ADR-05). Features
+  fixture_golden, snapshot_artifact, agent_config} (15 roles, ADR-05; `agent_config` is
+  presence-only under D5=PRES and does not authorize reading configuration bodies). Features
   `DL.XRAY.LANGUAGE_SHARE.v1` (P) — byte share by controlled language vocabulary;
   `DL.XRAY.ROLE_PRESENCE.v1` (P) — presence boolean + file count per role;
   `DL.XRAY.PACKAGE_BOUNDARY_COUNT.v1` (P) — distinct package/monorepo boundaries via
