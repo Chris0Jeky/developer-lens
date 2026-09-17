@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { V2_DEMO_INSIGHTS, V2_DEMO_INSIGHTS_SCHEMA } from './v2Demo'
+import { V2_DEMO_INSIGHTS, V2_DEMO_INSIGHTS_SCHEMA } from './v2Demo.js'
 
 function cloneInsights() {
   return V2_DEMO_INSIGHTS.map((insight) => ({
@@ -24,7 +24,7 @@ describe('V2 demo insight contract', () => {
     expect(V2_DEMO_INSIGHTS_SCHEMA.safeParse(insights).success).toBe(false)
   })
 
-  it('rejects a question that stays at array index three after the semantic orders move', () => {
+  it('rejects a question that stays in the third array position after semantic orders move', () => {
     const insights = cloneInsights()
     insights[0] = { ...insights[0], order: 3 }
     insights[2] = { ...insights[2], order: 1 }
