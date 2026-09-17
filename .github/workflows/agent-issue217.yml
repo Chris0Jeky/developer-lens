@@ -1,0 +1,104 @@
+name: Apply issue 217 client chunk budget
+
+on:
+  push:
+    branches:
+      - fix/issue217-client-chunk-budget-20260917
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/issue217-client-chunk-budget-20260917
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prove the baseline chunk warning
+        shell: bash
+        run: |
+          set -o pipefail
+          npx vite build 2>&1 | tee /tmp/issue217-baseline.log
+          grep -q "Some chunks are larger than 500 kB" /tmp/issue217-baseline.log
+          python - <<'PY'
+          from pathlib import Path
+
+          chunks = sorted((path.stat().st_size, path.name) for path in Path('dist/assets').glob('*.js'))
+          if not chunks:
+              raise SystemExit('baseline emitted no JavaScript chunks')
+          largest_bytes, largest_name = chunks[-1]
+          print(f'baseline largest chunk: {largest_name} ({largest_bytes} bytes)')
+          if largest_bytes <= 500_000:
+              raise SystemExit('expected the baseline to exceed the 500,000-byte budget')
+          PY
+
+      - name: Apply the bounded configuration change
+        run: python .github/agent/issue217.py
+
+      - name: Prove the focused build is green and below budget
+        shell: bash
+        run: |
+          set -o pipefail
+          npx vite build 2>&1 | tee /tmp/issue217-fixed.log
+          if grep -q "Some chunks are larger than 500 kB" /tmp/issue217-fixed.log; then
+            echo "Vite still reported an oversized chunk"
+            exit 1
+          fi
+          python - <<'PY'
+          from pathlib import Path
+
+          chunks = sorted((path.stat().st_size, path.name) for path in Path('dist/assets').glob('*.js'))
+          if not chunks:
+              raise SystemExit('fixed build emitted no JavaScript chunks')
+          oversized = [(size, name) for size, name in chunks if size > 500_000]
+          print('fixed JavaScript chunks:')
+          for size, name in reversed(chunks):
+              print(f'  {name}: {size} bytes')
+          if oversized:
+              raise SystemExit(f'oversized chunks remain: {oversized}')
+          names = {name for _, name in chunks}
+          for prefix in ('react-vendor-', 'charts-vendor-'):
+              if not any(name.startswith(prefix) for name in names):
+                  raise SystemExit(f'missing expected {prefix} chunk')
+          PY
+
+      - name: Prove the full repository and showcase
+        run: |
+          npm run check
+          npm run build:showcase
+          npm run verify:context
+          git checkout -- public/social-card.png
+          git diff --check
+
+      - name: Assert bounded diff
+        shell: python
+        run: |
+          import subprocess
+
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          expected = {'vite.config.ts'}
+          if changed != expected:
+              raise SystemExit(f'unexpected changed files: {sorted(changed)}')
+
+      - name: Commit the verified fix
+        run: |
+          git rm .github/workflows/agent-issue217.yml .github/agent/issue217.py
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vite.config.ts
+          git diff --cached --check
+          git commit -m "fix: enforce the client chunk budget"
+          git push origin HEAD:fix/issue217-client-chunk-budget-20260917
