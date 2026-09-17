@@ -5,7 +5,7 @@ import {
   type HashBoundActivationTaskCardLoadInput,
 } from '../../activationTaskCardLoader.js'
 import {
-  parseGithubCoreActivationTaskCard,
+  parseSelectedGithubCoreActivationTaskCard,
   type GithubCoreActivationTaskCard,
 } from './activationTask.js'
 import {
@@ -82,7 +82,7 @@ export async function loadGithubCoreActivationTaskCard(
 ): Promise<GithubCoreActivationTaskCard> {
   try {
     const loaded = await loadActivationTaskCard(input)
-    const card = parseGithubCoreActivationTaskCard(loaded.parsed)
+    const card = parseSelectedGithubCoreActivationTaskCard(loaded.parsed)
     if (card.localBoundary.root !== `.developer-lens/activation/${loaded.taskId}/`) invalidLoad()
     return card
   } catch (error) {
@@ -102,7 +102,7 @@ export async function loadHashBoundGithubCoreActivationTaskCard(
       taskId: closed.taskId,
       expectedSha256: closed.expectedSha256,
     })
-    const card = parseGithubCoreActivationTaskCard(loaded.parsed)
+    const card = parseSelectedGithubCoreActivationTaskCard(loaded.parsed)
     if (card.localBoundary.root !== `.developer-lens/activation/${loaded.taskId}/`) invalidLoad()
     return card
   } catch (error) {
