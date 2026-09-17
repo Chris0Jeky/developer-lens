@@ -63,26 +63,26 @@ export default defineConfig({
           groups: [
             {
               name: 'react-vendor',
-              test: /node_modules[\/](?:react|react-dom|react-is|scheduler)[\/]/,
+              test: /node_modules[/\\](?:react|react-dom|react-is|scheduler)[/\\]/,
               priority: 40,
             },
             {
               name: 'charts-vendor',
-              test: /node_modules[\/](?:recharts|victory-vendor|d3-[^\/]+)[\/]/,
+              test: /node_modules[/\\](?:recharts|victory-vendor|d3-[^/\\]+)[/\\]/,
               includeDependenciesRecursively: true,
               maxSize: CLIENT_CHUNK_TARGET_BYTES,
               priority: 30,
             },
             {
               name: 'motion-vendor',
-              test: /node_modules[\/](?:framer-motion|motion-dom|motion-utils)[\/]/,
+              test: /node_modules[/\\](?:framer-motion|motion-dom|motion-utils)[/\\]/,
               includeDependenciesRecursively: true,
               maxSize: CLIENT_CHUNK_TARGET_BYTES,
               priority: 20,
             },
             {
               name: 'icons-vendor',
-              test: /node_modules[\/]lucide-react[\/]/,
+              test: /node_modules[/\\]lucide-react[/\\]/,
               includeDependenciesRecursively: true,
               maxSize: CLIENT_CHUNK_TARGET_BYTES,
               priority: 20,
