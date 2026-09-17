@@ -1,0 +1,104 @@
+name: Apply issue 315 retrieval-ladder reconciliation
+
+on:
+  push:
+    branches:
+      - docs/issue315-retrieval-ladder-20260917
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: docs/issue315-retrieval-ladder-20260917
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Reconcile retrieval ladder contracts
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('docs/analyser-program/taskdeck/tools/cards.mjs')
+          text = path.read_text(encoding='utf-8')
+
+          replacements = [
+              (
+                  "outcome: 'Frozen invented retrieval benchmark for the structured rung 1 and model-free BM25 rung 2: Recall@k, nDCG/MRR, citation validity, counter-evidence recall, unsupported-claim rate, deletion proof, stale-index behaviour, membership-inference + uniqueness-leakage probes. The model-dependent vector rung is outside scope while D12=NO.',",
+                  "outcome: 'Frozen candidate-independent invented retrieval benchmark harness: Recall@k, nDCG/MRR, citation validity, counter-evidence recall, unsupported-claim rate, deletion proof, stale-index behaviour, and the prohibited-field, membership-inference, and uniqueness-leakage probes required by later candidates. It proves the structured rung 1 baseline and exposes a stable evaluation seam for the downstream model-free BM25 rung 2 without importing or depending on that candidate. The model-dependent vector rung is outside scope while D12=NO.',",
+              ),
+              (
+                  "behavior: 'ADR-20 evaluation battery; deletion proof = index rebuilt-empty after simulated revocation.',",
+                  "behavior: 'ADR-20 candidate-independent evaluation battery; deletion proof = index rebuilt-empty after simulated revocation. The harness consumes normalized candidate results through its frozen format and never imports the BM25 candidate implementation.',",
+              ),
+              (
+                  "accept: 'All metrics computable on the suite; canary battery green on rung 1; evaluate BM25 only when rung 1 measurably fails recall; suite versioned+checksummed.',",
+                  "accept: 'All metrics are computable on the suite; the rung 1 baseline and its canary battery are green; an invented candidate-result fixture can be scored without a BM25 implementation dependency; suite versioned+checksummed.',",
+              ),
+              (
+                  "outcome: 'Rungs 1 and 2 remain executable: compare ADR-20 structured retrieval with model-free BM25 over controlled templates. Rung 3 local pinned offline vectors is PARKED because D12=NO leaves that model option not planned; only a newer explicitly recorded owner decision may supersede D12=NO. Any candidate still needs its separately reviewed activation task and proofs.',",
+                  "outcome: 'Rungs 1 and 2 remain executable: score the ADR-20 structured baseline with the candidate-independent DL-RAG-02 harness, then evaluate model-free BM25 over controlled templates only when the baseline misses either recall target. Rung 3 local pinned offline vectors is PARKED and reported as not_evaluated because D12=NO leaves that model option not planned; only a newer explicitly recorded owner decision may supersede D12=NO. Any candidate still needs its separately reviewed activation task and proofs.',",
+              ),
+              (
+                  "behavior: 'ADR-20; each rung must beat the previous on the same benchmark.',",
+                  "behavior: 'ADR-20; rung 2 uses the frozen DL-RAG-02 benchmark and must beat rung 1 on that same suite while passing the prohibited-field and uniqueness-leakage privacy canaries. The parked vector rung is policy-not-evaluated, not an experimental rejection.',",
+              ),
+              (
+                  "accept: 'Ladder verdicts recorded for rungs 1 and 2, with rung 2 evaluated only if rung 1 measurably fails recall; rung 3 remains parked unless D12=NO is superseded. \"Vectors not justified\" is a valid success.',",
+                  "accept: 'The rung 1 verdict is always recorded. Rung 2 is evaluated only if rung 1 measurably fails Recall@k OR counter-evidence recall and, when evaluated, must pass the rung-2 prohibited-field and uniqueness-leakage canaries. Rung 3 records not_evaluated with reason D12=NO, never an experimental rejection, unless D12=NO is superseded.',",
+              ),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'expected one match for {old[:72]!r}, found {count}')
+              text = text.replace(old, new)
+
+          path.write_text(text, encoding='utf-8', newline='\n')
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Regenerate taskdeck artifacts
+        run: node docs/analyser-program/taskdeck/tools/generate.mjs
+
+      - name: Prove generated and context consistency
+        run: |
+          node docs/analyser-program/taskdeck/tools/generate.mjs --check
+          npm run verify:context
+          git diff --check
+
+      - name: Assert bounded diff
+        shell: python
+        run: |
+          import subprocess
+
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          expected = {
+              'docs/analyser-program/taskdeck/tools/cards.mjs',
+              'docs/analyser-program/taskdeck/developer-lens-intelligence-platform.taskdeck.json',
+              'docs/analyser-program/07_DELIVERY_ROADMAP.md',
+          }
+          if changed != expected:
+              raise SystemExit(f'unexpected changed files: {sorted(changed)}')
+
+      - name: Commit reconciled contracts
+        run: |
+          git rm .github/workflows/agent-issue315.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/analyser-program/taskdeck/tools/cards.mjs docs/analyser-program/taskdeck/developer-lens-intelligence-platform.taskdeck.json docs/analyser-program/07_DELIVERY_ROADMAP.md
+          git diff --cached --check
+          git commit -m "docs: reconcile retrieval ladder sequencing"
+          git push origin HEAD:docs/issue315-retrieval-ladder-20260917
