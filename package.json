@@ -29,7 +29,7 @@
     "test": "node scripts/verifyLocalToolchain.mjs && vitest run",
     "test:demo:v2": "node scripts/verifyLocalToolchain.mjs && vitest run src/App.test.tsx",
     "test:watch": "node scripts/verifyLocalToolchain.mjs && vitest",
-    "verify:context": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyProjectContext.ts",
+    "verify:context": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyGovernorPolicy.ts && tsx scripts/verifyProjectContext.ts",
     "verify:no-secrets": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyNoSecretsInDist.ts",
     "verify:showcase": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyShowcase.ts",
     "check": "npm run verify:toolchain && npm run lint && npm run verify:context && npm run check:research-pack && npm run check:method-trial-view && npm run check:research-finding && npm run test && npm run build"
