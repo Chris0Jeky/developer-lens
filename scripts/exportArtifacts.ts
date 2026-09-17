@@ -101,6 +101,10 @@ export interface ExportArtifactsOptions {
   /** Fixed per range for a reproducible synthetic export; random for a local one. */
   aliasSeed?: (range: RangeKey) => string
   env?: Readonly<Record<string, string | undefined>>
+  /** Test seam for the otherwise identical post-write scanner pass. */
+  postWriteScanner?: typeof scanDirectoryForForbiddenPatterns
+  /** Test seam for best-effort cleanup; receives the fully resolved file path. */
+  removeFile?: (path: string) => Promise<void>
 }
 
 /** A refusal or a tripped privacy boundary. Never carries a private value in its message. */
@@ -317,10 +321,28 @@ async function planOutputDirectory(directory: string): Promise<OutputDirectoryPl
   return { existed: true, replaceable: entries.map((entry) => entry.name) }
 }
 
-async function removeFiles(directory: string, files: readonly string[]): Promise<void> {
+interface RemovalResult {
+  failed: number
+}
+
+async function defaultRemoveFile(path: string): Promise<void> {
+  await rm(path, { force: true })
+}
+
+async function removeFiles(
+  directory: string,
+  files: readonly string[],
+  removeFile: (path: string) => Promise<void> = defaultRemoveFile,
+): Promise<RemovalResult> {
+  let failed = 0
   for (const file of files) {
-    await rm(join(directory, file), { force: true })
+    try {
+      await removeFile(join(directory, file))
+    } catch {
+      failed += 1
+    }
   }
+  return { failed }
 }
 
 export async function exportArtifacts(
@@ -404,23 +426,41 @@ export async function exportArtifacts(
   artifacts.push(manifestArtifact)
 
   // Only the previous export's own files are removed; `planOutputDirectory` already refused if
-  // the directory held anything else.
-  await removeFiles(outputDirectory, plan.replaceable)
+  // the directory held anything else. Refuse before writing if any prior owned file stays locked.
+  const replacementCleanup = await removeFiles(
+    outputDirectory,
+    plan.replaceable,
+    options.removeFile,
+  )
+  if (replacementCleanup.failed > 0) {
+    throw new ArtifactExportError('refused: previous export cleanup incomplete')
+  }
+
   await mkdir(outputDirectory, { recursive: true })
   for (const artifact of artifacts) {
     await writeFile(join(outputDirectory, artifact.file), artifact.content, 'utf8')
   }
 
   // Second pass over what actually landed, using the same scanner the showcase build runs.
-  const scan = await scanDirectoryForForbiddenPatterns(outputDirectory, patterns)
+  const postWriteScanner = options.postWriteScanner ?? scanDirectoryForForbiddenPatterns
+  const scan = await postWriteScanner(outputDirectory, patterns)
   if (scan.violations.length > 0) {
-    await removeFiles(
+    const cleanup = await removeFiles(
       outputDirectory,
       artifacts.map((artifact) => artifact.file),
+      options.removeFile,
     )
-    if (!plan.existed) await rm(outputDirectory, { force: true, recursive: true })
+    let cleanupFailures = cleanup.failed
+    if (!plan.existed) {
+      try {
+        await rm(outputDirectory, { force: true, recursive: true })
+      } catch {
+        cleanupFailures += 1
+      }
+    }
     throw new ArtifactExportError(
-      `privacy scan failed after write: ${scan.violations.join('; ')}`,
+      `privacy scan failed after write: ${scan.violations.join('; ')}` +
+        (cleanupFailures > 0 ? '; cleanup incomplete' : ''),
     )
   }
 
@@ -524,10 +564,9 @@ function parseInvocation(argv: readonly string[]): ParseResult {
       repositoryRedaction = value
       if (argument === '--repository-redaction') index += 1
     } else {
-      // Never echo the supplied value: a wrapper can forward a credential-bearing option, and
-      // this message is written to the console. Only a recognizable option NAME is safe to
-      // repeat, and a positional value is reported by position alone.
-      const optionName = /^--[a-z0-9][a-z0-9-]*/i.exec(argument)?.[0]
+      // Echo only an option name followed by `=`. An undelimited dash-shaped argument may itself
+      // contain secret text, so it is reported by position without reflecting any substring.
+      const optionName = /^--[a-z0-9][a-z0-9-]*(?==)/i.exec(argument)?.[0]
       return {
         ok: false,
         message: optionName
