@@ -1,5 +1,11 @@
 import { defineConfig } from 'vitest/config'
 import react from '@vitejs/plugin-react'
+import { canonicalizeWindowsTestTempEnvironment } from './scripts/canonicalTestTempEnvironment.js'
+
+// Storage-v3 requires canonical artifact-root paths. On Windows, TEMP/TMP can
+// arrive through an 8.3 short path, so normalize the runner environment before
+// Vitest starts workers or imports fixtures. Production path checks stay strict.
+canonicalizeWindowsTestTempEnvironment()
 
 // Local Windows runs of the full parallel suite hit worker contention: known-slow
 // tests (whole-dashboard render in src/App.test.tsx and dynamic-import storms in
