@@ -1,0 +1,177 @@
+name: Apply issue 293 short-path root fix
+
+on:
+  push:
+    branches:
+      - fix/issue293-short-path-root-20260917
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: fix/issue293-short-path-root-20260917
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Add the filesystem-alias regression test
+        shell: bash
+        run: |
+          cat > server/storage/v3ArtifactCatalogue.shortPath.test.ts <<'EOF'
+          import { createHash } from 'node:crypto'
+          import { mkdtempSync, realpathSync, rmSync } from 'node:fs'
+          import { tmpdir } from 'node:os'
+          import { join, resolve } from 'node:path'
+          import { describe, expect, it, vi } from 'vitest'
+
+          const pathAliases = vi.hoisted(() => new Map<string, string>())
+
+          vi.mock('node:fs', async (importOriginal) => {
+            const actual = await importOriginal<typeof import('node:fs')>()
+            const resolveAlias = (path: unknown): unknown =>
+              typeof path === 'string' ? pathAliases.get(path) ?? path : path
+
+            const existsSync = ((path: unknown) =>
+              Reflect.apply(actual.existsSync, null, [resolveAlias(path)])) as typeof actual.existsSync
+            const lstatSync = ((path: unknown, ...options: unknown[]) =>
+              Reflect.apply(actual.lstatSync, null, [resolveAlias(path), ...options])) as typeof actual.lstatSync
+            const delegatedRealpathSync = ((path: unknown, ...options: unknown[]) =>
+              Reflect.apply(actual.realpathSync, null, [resolveAlias(path), ...options])) as typeof actual.realpathSync
+            Object.defineProperty(delegatedRealpathSync, 'native', {
+              value: ((path: unknown, ...options: unknown[]) =>
+                Reflect.apply(actual.realpathSync.native, null, [resolveAlias(path), ...options])) as typeof actual.realpathSync.native,
+            })
+
+            return { ...actual, existsSync, lstatSync, realpathSync: delegatedRealpathSync }
+          })
+
+          import {
+            openStorageV3ArtifactRoot,
+            storageV3ArtifactRootBinding,
+          } from './v3ArtifactCatalogue.js'
+
+          describe('storage-v3 artifact root filesystem aliases', () => {
+            it('accepts a stable non-symlink alias and binds the canonical root path', () => {
+              const root = mkdtempSync(join(tmpdir(), 'developer-lens-v3-short-path-'))
+              const canonicalRoot = realpathSync.native(root)
+              const shortAlias = resolve(`${root}-CRISTI~1`)
+              pathAliases.set(shortAlias, canonicalRoot)
+
+              try {
+                const handle = openStorageV3ArtifactRoot(shortAlias)
+                const expectedBinding = `root-${createHash('sha256')
+                  .update(canonicalRoot, 'utf8')
+                  .digest('hex')}`
+                expect(storageV3ArtifactRootBinding(handle)).toBe(expectedBinding)
+              } finally {
+                pathAliases.delete(shortAlias)
+                rmSync(root, { recursive: true, force: true })
+              }
+            })
+          })
+          EOF
+
+      - name: Prove the regression is red
+        shell: bash
+        run: |
+          set +e
+          npm test -- server/storage/v3ArtifactCatalogue.shortPath.test.ts > /tmp/issue293-red.log 2>&1
+          status=$?
+          set -e
+          cat /tmp/issue293-red.log
+          if [ "$status" -eq 0 ]; then
+            echo "Expected the pre-fix alias regression to fail"
+            exit 1
+          fi
+          grep -q "STORAGE_V3_ARTIFACT_INVALID" /tmp/issue293-red.log
+
+      - name: Canonicalise only identity-proven aliases
+        shell: python
+        run: |
+          from pathlib import Path
+
+          path = Path('server/storage/v3ArtifactCatalogue.ts')
+          text = path.read_text(encoding='utf-8')
+          old = '''function captureRoot(path: string): RootIdentity {
+            const before = lstatSync(path, { bigint: true })
+            const canonical = realpathSync.native(path)
+            const after = lstatSync(path, { bigint: true })
+            if (
+              !before.isDirectory() || !after.isDirectory()
+              || before.isSymbolicLink() || after.isSymbolicLink()
+              || canonical !== path || !sameIdentity(before, after)
+            ) fail()
+            return Object.freeze({ path, dev: after.dev, ino: after.ino })
+          }'''
+          new = '''function captureRoot(path: string): RootIdentity {
+            const requestedBefore = lstatSync(path, { bigint: true })
+            const canonicalBeforePath = realpathSync.native(path)
+            const canonicalBefore = lstatSync(canonicalBeforePath, { bigint: true })
+            const requestedAfter = lstatSync(path, { bigint: true })
+            const canonicalAfterPath = realpathSync.native(path)
+            const canonicalAfter = lstatSync(canonicalAfterPath, { bigint: true })
+            const snapshots = [requestedBefore, canonicalBefore, requestedAfter, canonicalAfter]
+            if (
+              canonicalBeforePath !== canonicalAfterPath
+              || snapshots.some((snapshot) => !snapshot.isDirectory() || snapshot.isSymbolicLink())
+              || !sameIdentity(requestedBefore, requestedAfter)
+              || !sameIdentity(canonicalBefore, canonicalAfter)
+              || !sameIdentity(requestedBefore, canonicalBefore)
+              || !sameIdentity(requestedAfter, canonicalAfter)
+            ) fail()
+            return Object.freeze({
+              path: canonicalAfterPath,
+              dev: canonicalAfter.dev,
+              ino: canonicalAfter.ino,
+            })
+          }'''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one captureRoot block, found {text.count(old)}')
+          path.write_text(text.replace(old, new), encoding='utf-8', newline='\n')
+
+      - name: Prove focused storage behavior
+        run: |
+          npm test -- server/storage/v3ArtifactCatalogue.shortPath.test.ts server/storage/v3ArtifactCatalogue.test.ts
+
+      - name: Prove the full repository
+        run: |
+          npm run check
+          npm run verify:context
+          git diff --check
+
+      - name: Assert bounded diff
+        shell: python
+        run: |
+          import subprocess
+          changed = set(subprocess.check_output(['git', 'diff', '--name-only'], text=True).splitlines())
+          untracked = set(subprocess.check_output(['git', 'ls-files', '--others', '--exclude-standard'], text=True).splitlines())
+          actual = changed | untracked
+          expected = {
+              'server/storage/v3ArtifactCatalogue.ts',
+              'server/storage/v3ArtifactCatalogue.shortPath.test.ts',
+          }
+          if actual != expected:
+              raise SystemExit(f'unexpected changed files: {sorted(actual)}')
+
+      - name: Commit the verified fix
+        run: |
+          git rm .github/workflows/agent-issue293.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add server/storage/v3ArtifactCatalogue.ts server/storage/v3ArtifactCatalogue.shortPath.test.ts
+          git diff --cached --check
+          git commit -m "fix: accept identity-proven artifact root aliases"
+          git push origin HEAD:fix/issue293-short-path-root-20260917
