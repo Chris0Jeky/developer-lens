@@ -5,6 +5,8 @@ export const GITHUB_CORE_ACTIVATION_TASK_CARD_SCHEMA_VERSION =
   'github-core-activation-task-card.v1' as const
 export const GITHUB_CORE_ACTIVATION_TASK_CARD_ERROR_CODE =
   'INVALID_GITHUB_CORE_ACTIVATION_TASK_CARD' as const
+/** One repository-metadata request plus one lifecycle-page request for each of two probes. */
+export const GITHUB_CORE_MINIMUM_TWO_PROBE_REQUESTS = 4 as const
 
 const CANONICAL_UTC_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/
 const OPAQUE_ID = /^[A-Za-z0-9_-]{1,128}$/
@@ -102,7 +104,7 @@ const readBoundarySchema = strictObject({
   rangeStart: canonicalTimestamp,
   rangeEndPolicy: z.literal('freeze_at_job_start'),
   pageSize: z.number().int().min(1).max(100),
-  maximumRequests: z.number().int().min(1).max(20),
+  maximumRequests: z.number().int().min(GITHUB_CORE_MINIMUM_TWO_PROBE_REQUESTS).max(20),
   localCheckout: z.literal('forbidden'),
   localDatabase: z.literal('forbidden'),
   workingTree: z.literal('forbidden'),
