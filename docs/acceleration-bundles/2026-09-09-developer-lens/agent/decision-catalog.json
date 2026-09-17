@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "DeveloperLensDecisionCatalogIndex.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "materializedSchemaVersion": "DeveloperLensDecisionCatalog.v1",
+  "collectionKey": "decisions",
+  "totalCount": 27,
+  "parts": [
+    {
+      "path": "decision-catalog.part-01.json",
+      "count": 7
+    },
+    {
+      "path": "decision-catalog.part-02.json",
+      "count": 7
+    },
+    {
+      "path": "decision-catalog.part-03.json",
+      "count": 7
+    },
+    {
+      "path": "decision-catalog.part-04.json",
+      "count": 6
+    }
+  ]
+}

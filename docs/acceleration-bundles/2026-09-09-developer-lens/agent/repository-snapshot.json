@@ -1,0 +1,52 @@
+{
+  "schemaVersion": "DeveloperLensReviewSnapshot.v1",
+  "observedAt": "2026-09-09",
+  "reviewOriginallyGeneratedAt": "2026-09-04",
+  "repository": "Chris0Jeky/developer-lens",
+  "visibility": "public",
+  "defaultBranch": "main",
+  "mainCommit": "6a59aa26eee939555dba1af9468c05b598a2be40",
+  "mainTree": "8e1b3a869c1f7b74d04de984abfb98b996e77fa0",
+  "version": "0.0.0",
+  "branchProtection": {
+    "mainProtected": true,
+    "requiredCheck": "Prove the pull request"
+  },
+  "issues": {
+    "total": 105,
+    "open": 52,
+    "closed": 53,
+    "openWithoutMilestone": 52,
+    "openWithoutLabels": 12
+  },
+  "pullRequests": {
+    "total": 222,
+    "merged": 213,
+    "closedUnmerged": 8,
+    "open": 1,
+    "openNumbers": [
+      323
+    ]
+  },
+  "tags": 0,
+  "releases": 0,
+  "pairedLab": {
+    "repository": "Chris0Jeky/developer-lens-lab",
+    "mainCommit": "e7d562765ef4ce482d85fe341b05e020f95568d7",
+    "openPullRequests": 0,
+    "releases": 0
+  },
+  "releaseBlocker": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)",
+  "scope": [
+    "Public tracked source and documentation",
+    "Public issues and pull requests",
+    "Public hosted-check and release metadata"
+  ],
+  "notInspected": [
+    ".developer-lens/",
+    "generated private datasets",
+    "credentials",
+    "browser profiles",
+    "real activation inputs"
+  ]
+}
