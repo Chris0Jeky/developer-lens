@@ -136,26 +136,41 @@ between that helper and L1 is the whole of `DL-RAG-01`.
    **Nothing is truncated before ranking.** Every eligible row is ranked (step 2), and the candidate
    cap (**R** 500 rows) is applied **after** ranking, to the ranked sequence, and it is
    **role-aware** (corrected 2026-08-04 review round — one normative rule, identical in §2, §4,
-   and §7): the §4 quota pools for `contradicts`, `coverage_basis`, and `limitation_basis` are
-   reserved first, each filled with its highest-ranked qualifying rows; the remaining budget then
-   takes `supports`/`contextualizes` rows in rank order. Within every role the cap removes only
-   the *lowest-ranked* rows of that role — never an arbitrary subset, and never a counter-evidence
-   row in favour of a higher-ranked support row. **I** This is what makes step 3's
+   and §7): the §4 mandatory quota pools for `coverage_basis`, `limitation_basis`,
+   `contradicts`, and `supports` are reserved first, each filled to its registered minimum from its
+   highest-ranked qualifying rows; only after all four minima are secured may `contextualizes` or
+   surplus rows consume the remaining budget in rank order. Within every role the cap removes only
+   the *lowest-ranked discretionary* rows — never an arbitrary subset, never a mandatory
+   counter-evidence row in favour of a support row, and never a required `supports_min` row in favour
+   of contextual material. **I** This is what makes step 3's
    byte-identical claim true rather than merely stated: `LIMIT` without a total `ORDER BY` returns an
    implementation-chosen subset (DuckDB is free to vary it with row order, parallelism, or scan
    plan), so a pre-rank cap would let two runs over the same pack admit *different* candidate pools,
    producing different result sets, different quota fills, and different claims from identical
    inputs — while §5.2 #4 still passed, because every returned ID would resolve fine.
 
-   **Eligible-set ceiling (resource guard, still deterministic).** If the eligible set exceeds a
-   preregistered working ceiling (**R** 50,000 rows) beyond which ranking every row is impractical,
-   the reader does **not** fall back to an unordered `LIMIT`. It orders the *entire* eligible set by
-   the total pre-cap key `(-support_count, window_start, feature_id, scope_alias, evidence_id)`
-   ascending, and takes the ceiling-sized **prefix** of that order. The key is a **total** order, not
-   a heuristic: `evidence_id` is unique within a pack (**V** canonical dictionary — "every ID must
-   exist in the same pack"; IDs are pack-scoped opaque strings), so it is an absolute final
-   tie-break and no two distinct rows can compare equal. Two runs over the same snapshot therefore
-   take the same prefix, whatever the physical row order. **R**
+   **Eligible-set ceiling (resource guard, still deterministic and role-aware).** If the
+   eligible set exceeds a preregistered working ceiling (**R** 50,000 rows) beyond which ranking
+   every row is impractical, the reader does **not** take a flat global prefix. Before distance
+   ranking it assigns each eligible row one closed §4 evidence role using the same deterministic
+   family registry and the fixed priority `coverage_basis → limitation_basis → contradicts →
+   supports → contextualizes` for any multiply-qualified row.
+
+   The ceiling is populated in two deterministic stages. First, each mandatory role
+   (`coverage_basis`, `limitation_basis`, `contradicts`, and `supports`) receives a reservoir of up
+   to the post-rank candidate cap (**R** 500) from that role, ordered by the total pre-cap key
+   `(-support_count, window_start, feature_id, scope_alias, evidence_id)` ascending. The reservoirs
+   are unioned and deduplicated by `evidence_id`. Second, every remaining ceiling slot is filled
+   from all not-yet-admitted rows by the same total key; `contextualizes` has no reserved share
+   because it has no minimum quota. `evidence_id` is unique within a pack, so the key remains an
+   absolute final tie-break and physical row order cannot change the admitted working set.
+
+   Reserving 500 rows per mandatory role costs at most 2,000 of the 50,000-row working ceiling and
+   is sufficient for any final 500-row candidate pool. A support-count flood in one role therefore
+   cannot erase another role before ranking, while the global second stage still uses spare capacity
+   rather than partitioning the working set into fixed silos. This is a pre-rank resource guard, not
+   a claim that truncation preserves full recall: whenever it binds the ordinary truncation
+   limitation and per-role counts below are mandatory. **R**
 
    **Scope of that guarantee (stated precisely, because it is easy to overclaim).** Pack-uniqueness
    plus pack immutability gives reproducibility **over the same pack build** — which is what the
@@ -169,8 +184,8 @@ between that helper and L1 is the whole of `DL-RAG-01`.
 
    **Truncation is recorded whenever it binds — both kinds.** If the eligible-set ceiling binds, or
    the post-ranking candidate cap binds, or both, the reader returns a
-   `RAG_CANDIDATE_POOL_TRUNCATED` limitation (proposed code) carrying the eligible-row count, the
-   ranked count, and the admitted count as bounded integers; `completeness` is lowered and the tier
+   `RAG_CANDIDATE_POOL_TRUNCATED` limitation (proposed code) carrying total and per-role eligible/admitted counts plus the ranked and final admitted totals
+   as bounded integers; `completeness` is lowered and the tier
    gate is re-evaluated (§4.3). A cap that binds silently is a defect, not an optimisation: it is
    precisely the case where the retrieved set stops being a faithful selection over the pack, and
    the downstream claim must be told. **R**
@@ -351,14 +366,13 @@ Eligible set  (above the working ceiling: deterministic total-order prefix + tru
         │
         ▼  rank ALL eligible rows (L1 distance | L2 BM25 | L3 vectors) → total-order ranked sequence
         │
-        ▼  §4 counter-evidence quota pools RESERVED per role from the ranked sequence
-        │     (contradicts / coverage_basis / limitation_basis filled FIRST — a global cap must
-        │      never starve a role pool while qualifying counter-evidence exists; corrected
-        │      2026-08-04 review round)
-        ▼  candidate cap consumes the REMAINING budget from supporting rows
+        ▼  §4 mandatory quota pools RESERVED per role from the ranked sequence
+        │     (coverage_basis / limitation_basis / contradicts / supports minima filled FIRST —
+        │      neither contextual material nor another role may starve a required pool)
+        ▼  candidate cap consumes the REMAINING budget from contextual and surplus rows
         │     (RAG_CANDIDATE_POOL_TRUNCATED if it binds)
         │
-        ▼  §4 counter-evidence quotas verified over the final set
+        ▼  all §4 role quotas verified over the final set
 Retrieval result set (evidence IDs + roles + coverage rows) + transient RetrievalLimitation[]
         │
         ├──────────────► ADR-21 deterministic composer (local, complete product)
@@ -473,14 +487,17 @@ would explain the signal (the ADR-17 `coverage_shift_candidate` channel). **R** 
 
 ### 4.2 Fill order (budget safety)
 
-Slots are filled in the order **coverage → limitation → contradicts → supports**, and only then is
-`total_max` (and, downstream, the G4 16,000-byte input ceiling **D-charter**) applied by truncating
-**supporting** evidence. **R**
+Slots are filled in the order **coverage → limitation → contradicts → supports** until every
+registered minimum is met. Only then may `contextualizes` rows or surplus rows from any role consume
+the remaining `total_max`. The post-rank candidate cap, `total_max`, and downstream G4 16,000-byte
+input ceiling **D-charter** remove the lowest-ranked **discretionary** rows first. They never consume a
+required minimum; if the available rows or byte budget cannot carry every minimum, the corresponding
+§4.3 shortfall is emitted and the claim is lowered or refused. **R**
 
-**I** This ordering is the whole mechanism. Any budget-driven truncation that ran in natural relevance
-order would preferentially delete counter-evidence, because counter-evidence ranks lower by
-construction. Fill-order inversion makes cherry-picking structurally impossible rather than
-policy-forbidden.
+**I** This ordering is the whole mechanism. Natural relevance order can preferentially delete
+counter-evidence, while a contextual flood can also consume the budget before `supports_min` is met.
+Reserving every mandatory minimum makes both forms of cherry-picking structurally impossible rather
+than merely policy-forbidden.
 
 ### 4.3 Shortfall → limitation → claim tier
 
@@ -488,6 +505,7 @@ A shortfall is a *first-class output*, never silence:
 
 | Shortfall | Emitted limitation (proposed code) | Effect on downstream claim (ADR-02 monotone) |
 |---|---|---|
+| `supports` slots unfilled | `RAG_QUOTA_SHORTFALL_SUPPORTING` | **abstention** — no claim is emitted; an ADR-24 `question` of kind `evidence_gap` records that minimum positive support was not retrievable |
 | `contradicts` slots unfilled | `RAG_QUOTA_SHORTFALL_CONTRADICTING` | claim tier capped at `hypothesis`; a mandatory alternative `COUNTER_EVIDENCE_NOT_RETRIEVABLE` is added; deterministic-tier rendering is refused |
 | `coverage` slots unfilled | `RAG_QUOTA_SHORTFALL_COVERAGE` | **abstention** — no claim; an ADR-24 `question` of kind `evidence_gap` is generated instead |
 | `limitation` slots unfilled | `RAG_QUOTA_SHORTFALL_LIMITATION` | claim tier lowered one step; limitation copy resolved from the (family × dimension) dictionary |
@@ -533,7 +551,7 @@ All fixtures are invented (charter fixture rule **D-charter**). Proposed fixture
 | `FX-RAG-06` twin-pack corpus | two packs built from the same synthetic store with different pack keys | cross-pack-linkage tests |
 | `FX-RAG-07` revocation corpus | `FX-RAG-01` plus a capability whose rows are individually tagged | deletion proof |
 | `FX-RAG-08` hostile corpus | malformed manifest, wrong checksum, missing `COMPLETE`, unknown schema version, injection-shaped pseudo-codes, adversarial duplicate flooding, **and a TOCTOU case: a pack whose bytes are replaced by a concurrent writer after checksum verification and before the table scan** | §7 threat mitigations, snapshot immutability |
-| `FX-RAG-09` degeneracy + scale corpus | feature dimensions that are constant, near-constant (`sd` ≤ ε), and single-observation by construction; plus an eligible set built above the working ceiling, and the same rows written in several physical orders | degenerate-dimension guard, non-finite absence, deterministic pre-cap ordering, truncation recording |
+| `FX-RAG-09` degeneracy + scale corpus | feature dimensions that are constant, near-constant (`sd` ≤ ε), and single-observation by construction; an eligible set above the working ceiling where a flat support-ordered prefix would exclude each mandatory role; a post-rank contextual flood that would consume `supports_min`; and the same rows in several physical orders | degenerate-dimension guard, non-finite absence, role-aware pre-cap reservoirs, support-minimum preservation, deterministic ordering, truncation/shortfall recording |
 
 ### 5.2 Metric definitions (operational, on the fixtures above)
 
@@ -625,6 +643,15 @@ All fixtures are invented (charter fixture rule **D-charter**). Proposed fixture
     assert **zero** writes originate from the retrieval module, including on the rejection-storm and
     hostile-pack paths where a "record the finding" reflex is most likely. Binary; a write here is a
     CI-blocking defect, not a metric.
+17. **Role-aware eligible-ceiling proof** — on `FX-RAG-09`, place qualifying rows for each mandatory
+    role below the prefix a flat `(-support_count, …)` order would admit, then flood `supports` above
+    the 50,000-row ceiling. Assert the role reservoirs retain up to 500 rows per mandatory role, the
+    union is independent of physical row order, per-role eligible/admitted counts are reported, and
+    `RAG_CANDIDATE_POOL_TRUNCATED` is emitted. Binary.
+18. **Support-minimum budget proof** — on `FX-RAG-09`, rank enough `contextualizes` rows ahead of every
+    supporting row to fill both the 500-row candidate cap and the family `total_max`. Assert
+    `supports_min` is reserved before contextual or surplus rows. Then remove one required supporting
+    row and assert `RAG_QUOTA_SHORTFALL_SUPPORTING` plus abstention, never a quota-invalid claim. Binary.
 
 ### 5.3 Reporting
 
@@ -651,8 +678,10 @@ card for `WB-C9`. A step that wins on Recall@k while losing counter-evidence rec
   the external step permanently off — the ADR-21 composer is deterministic-first and is the complete
   product. **R**
 - **Ordering constraint.** The G4 ceilings (one request, ≤ 16,000 input UTF-8 bytes, ≤ 2,000 output
-  tokens, ≤ USD 0.01 **D-charter**) apply to the *bundle*, and the §4.2 fill order guarantees that
-  shrinking a bundle to fit removes supporting evidence before counter-evidence. **R**
+  tokens, ≤ USD 0.01 **D-charter**) apply to the *bundle*, and the §4.2 fill order guarantees that shrinking a bundle removes contextual and other
+discretionary surplus before any registered role minimum. If every minimum cannot fit, retrieval
+emits the matching shortfall and lowers or refuses the claim instead of truncating required evidence.
+**R**
 - **Future pinned offline local model (composer side).** ADR-21 allows "a future local model must be
   pinned, licensed, offline, non-executing-remote-code". Introducing one is **G-RAG-3** territory:
   a bundled model binary is a new supply-chain, licence, disk, and (for embeddings) inversion surface.
@@ -672,7 +701,7 @@ card for `WB-C9`. A step that wins on Recall@k while losing counter-evidence rec
 | **Byte substitution between verification and read (TOCTOU)** | A concurrent or hostile writer — who may own the user-selected directory — replaces file contents after the checksum pass and before the DuckDB scan | The snapshot **is** the mitigation: verification and every read go through the same bytes, so there is no window to substitute into. **Verify-then-reopen-by-path is explicitly not a mitigation** — it attests to bytes nobody consumed, and the attacker need win the race only once | `FX-RAG-08` TOCTOU case, §5.2 #15 |
 | **Unknown-code smuggling** | A crafted pack carries plausible-looking but unregistered `feature_id`/`limitation_code`/`statement_code` values | Registry membership is required, not pattern-matched; unknown code ⇒ row rejected + a **transient** `RAG_FIELD_REGISTRY_REJECT` limitation returned to the caller (bounded metadata only; the reader writes nothing — §3 Rule 4a); unknown codes are **never** admitted as an `unknown` token, because that would make the corpus attacker-extensible | `FX-RAG-08` |
 | **Hostile pack driving writes into the canonical store** | A crafted pack full of invalid rows induces a reader that "records data-quality findings" to write attacker-shaped volume into the operational store | Retrieval performs **no writes at all** (§3 Rule 4a): findings are return values, persistence belongs to ingestion/pack-build. There is no write path to drive | §5.2 #16 |
-| **Index poisoning / ranking flooding** | Thousands of near-duplicate rows crafted to dominate top-*k* and starve counter-evidence | (a) filter-then-rank: ranking can only reorder the SQL-eligible set; (b) per-role quotas are filled from *independent* pools, so flooding the `supports` pool cannot consume `contradicts` slots; (c) support gates, and a **role-aware** candidate cap applied to the ranked sequence with counter-evidence pools reserved first (§1 step normative rule) — never as a pre-rank `LIMIT`, which would let flooding decide *which* rows an attacker-chosen physical order fed to the ranker, and never a flat prefix cap, which would let a support flood push qualifying counter-evidence below the cutoff; (d) duplicate collapse on the natural key before ranking | `FX-RAG-08` |
+| **Index poisoning / ranking flooding** | Thousands of near-duplicate rows crafted to dominate top-*k*, starve counter-evidence, or let contextual rows consume the positive-support budget | (a) filter-then-rank limits ranking to the SQL-eligible set; (b) the pre-rank working ceiling reserves independent reservoirs for every mandatory role before global fill, so a support-count flood cannot erase another role; (c) duplicate collapse runs on the natural key before ranking; (d) the post-rank candidate cap reserves `coverage_basis`, `limitation_basis`, `contradicts`, and `supports` minima before any contextual or surplus row; (e) any ceiling/cap binding or role shortfall is explicit, never silent | `FX-RAG-08`, `FX-RAG-09`, §5.2 #17–18 |
 | **Injection through codes** | A code value shaped like an instruction (`IGNORE_PREVIOUS_INSTRUCTIONS`) reaching a prompt | Codes are registry members, so such a value is rejected at §3. Structurally: **codes are never concatenated into prose anywhere in the local pipeline** — the copy dictionary resolves codes to text only at render time in the UI, and the bundle carries codes, not rendered sentences. The composer's statement enums are closed, and model output cannot add evidence IDs or statement codes (ADR-21) | `FX-RAG-08` + existing prompt-injection canaries |
 | **Re-identification via rare code combinations** | Ranking surfaces outliers; a unique (feature, window, coverage, limitation) tuple can identify a system or a specific event | Build-time sparse suppression (ADR-22) **plus** a result-set-level uniqueness gate (§5.2 #11); suppressed rows become quota shortfalls, not silent removals | `FX-RAG-05` |
 | **Cross-pack correlation** | Two packs of the same systems, correlated by behaviour rather than by ID | Pack-scoped alias keys (**V** canonical §6: export IDs use a new pack-scoped key); loader refuses mixed `build_id`; explicit linkage benchmark | `FX-RAG-06` |
