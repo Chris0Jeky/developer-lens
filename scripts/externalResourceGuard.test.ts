@@ -74,7 +74,7 @@ describe('dist-wide external resource guard', () => {
         <img src="data:image/png;base64,AAAA"><svg><use href="#symbol"></use></svg>
         <a href="https://example.test/source">Public source</a>`,
       'assets/site.css': `.local { background: url(../image.png); }
-        .inline { background: url(data:image/svg+xml,%3Csvg%3E%3C/svg%3E); }`,
+        .inline { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3C/svg%3E"); }`,
     })
 
     await expect(scanDirectoryForExternalResources(root)).resolves.toEqual([])
