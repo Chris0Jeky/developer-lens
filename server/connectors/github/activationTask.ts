@@ -104,7 +104,7 @@ const readBoundarySchema = strictObject({
   rangeStart: canonicalTimestamp,
   rangeEndPolicy: z.literal('freeze_at_job_start'),
   pageSize: z.number().int().min(1).max(100),
-  maximumRequests: z.number().int().min(GITHUB_CORE_MINIMUM_TWO_PROBE_REQUESTS).max(20),
+  maximumRequests: z.number().int().min(1).max(20),
   localCheckout: z.literal('forbidden'),
   localDatabase: z.literal('forbidden'),
   workingTree: z.literal('forbidden'),
@@ -224,7 +224,18 @@ const validatedTaskCardSchema = taskCardSchema.superRefine((card, context) => {
   }
 })
 
+const selectedTaskCardSchema = validatedTaskCardSchema.superRefine((card, context) => {
+  if (card.readBoundary.maximumRequests < GITHUB_CORE_MINIMUM_TWO_PROBE_REQUESTS) {
+    context.addIssue({
+      code: 'custom',
+      path: ['readBoundary', 'maximumRequests'],
+      message: 'selected task cannot fund two metadata-plus-page probes',
+    })
+  }
+})
+
 export const GithubCoreActivationTaskCardSchema = validatedTaskCardSchema
+export const SelectedGithubCoreActivationTaskCardSchema = selectedTaskCardSchema
 export type GithubCoreActivationTaskCardSchema = typeof validatedTaskCardSchema
 type DeepReadonly<T> = T extends (...args: never[]) => unknown
   ? T
@@ -252,9 +263,21 @@ function freezeDeep<T>(value: T): T {
   return value
 }
 
-/** Parse a closed activation card without echoing card values or paths in failures. */
-export function parseGithubCoreActivationTaskCard(input: unknown): GithubCoreActivationTaskCard {
-  const parsed = validatedTaskCardSchema.safeParse(input)
+function parseTaskCard(
+  schema: typeof validatedTaskCardSchema | typeof selectedTaskCardSchema,
+  input: unknown,
+): GithubCoreActivationTaskCard {
+  const parsed = schema.safeParse(input)
   if (!parsed.success) throw new GithubCoreActivationTaskCardError()
   return freezeDeep(parsed.data) as GithubCoreActivationTaskCard
+}
+
+/** Parse a closed card shape, including internally derived per-probe request partitions. */
+export function parseGithubCoreActivationTaskCard(input: unknown): GithubCoreActivationTaskCard {
+  return parseTaskCard(validatedTaskCardSchema, input)
+}
+
+/** Parse a selected task card that must fund two independent metadata-plus-page probes. */
+export function parseSelectedGithubCoreActivationTaskCard(input: unknown): GithubCoreActivationTaskCard {
+  return parseTaskCard(selectedTaskCardSchema, input)
 }
