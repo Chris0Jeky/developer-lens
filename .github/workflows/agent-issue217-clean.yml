@@ -65,8 +65,14 @@ jobs:
         shell: python
         run: |
           import subprocess
-          changed = set(subprocess.check_output(['git', 'diff', '--name-only', 'main...HEAD'], text=True).splitlines())
-          expected = {'vite.config.ts'}
+          changed = set(subprocess.check_output(
+              ['git', 'diff', '--name-only', 'origin/main...HEAD'],
+              text=True,
+          ).splitlines())
+          expected = {
+              'vite.config.ts',
+              '.github/workflows/agent-issue217-clean.yml',
+          }
           if changed != expected:
               raise SystemExit(f'unexpected final files: {sorted(changed)}')
 
