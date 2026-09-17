@@ -118,11 +118,19 @@ describe('github.core activation task card', () => {
     expect(Object.isFrozen(parsed.readBoundary)).toBe(true)
   })
 
-  it('rejects hostile extras, credentials, private visibility, and weakened budgets', () => {
+  it('rejects hostile extras, credentials, private visibility, and undersized two-probe budgets', () => {
     expectInvalid({ ...validCard(), unexpected: 'fixture' })
     expectInvalid({ ...validCard(), readBoundary: { ...validCard().readBoundary, credentialMode: 'token' } })
     expectInvalid({ ...validCard(), selectedRepository: { ...validCard().selectedRepository, expectedVisibility: 'private' } })
-    expectInvalid({ ...validCard(), readBoundary: { ...validCard().readBoundary, maximumRequests: 0 } })
+    for (const maximumRequests of [0, 1, 2, 3]) {
+      expectInvalid({ ...validCard(), readBoundary: { ...validCard().readBoundary, maximumRequests } })
+    }
+    expect(
+      parseGithubCoreActivationTaskCard({
+        ...validCard(),
+        readBoundary: { ...validCard().readBoundary, maximumRequests: 4 },
+      }).readBoundary.maximumRequests,
+    ).toBe(4)
     expectInvalid({ ...validCard(), readBoundary: { ...validCard().readBoundary, pageSize: 101 } })
   })
 
