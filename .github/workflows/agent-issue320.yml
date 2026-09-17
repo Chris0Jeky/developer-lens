@@ -151,6 +151,7 @@ jobs:
           npm run check
           npm run build:showcase
           npm run verify:context
+          git checkout -- public/social-card.png
           git diff --check
 
       - name: Assert bounded diff
