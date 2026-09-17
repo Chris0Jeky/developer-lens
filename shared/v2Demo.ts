@@ -12,13 +12,30 @@ const V2_INSIGHT_SCHEMA = z
     eyebrow: z.string(),
     title: z.string(),
     body: z.string(),
-    reflectionQuestion: z.string().optional(),
+    reflectionQuestion: z.string().min(1).max(240).optional(),
     evidence: z.array(z.string()).length(2),
     caveat: z.string(),
     confidence: z.enum(['high', 'medium', 'low']),
     score: z.number(),
   })
   .strict()
+  .superRefine((insight, context) => {
+    const hasReflectionQuestion = insight.reflectionQuestion !== undefined
+    if (insight.order === 3 && !hasReflectionQuestion) {
+      context.addIssue({
+        code: 'custom',
+        path: ['reflectionQuestion'],
+        message: 'Order 3 hypothesis insights require a reflection question',
+      })
+    }
+    if (insight.order !== 3 && hasReflectionQuestion) {
+      context.addIssue({
+        code: 'custom',
+        path: ['reflectionQuestion'],
+        message: 'Only order 3 hypothesis insights may carry a reflection question',
+      })
+    }
+  })
 
 /**
  * The public sink accepts only flat scalar/scalar-array values. Parallel arrays
