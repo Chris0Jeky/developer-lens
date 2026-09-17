@@ -88,7 +88,6 @@ jobs:
           expected = {
               'docs/analyser-program/taskdeck/tools/cards.mjs',
               'docs/analyser-program/taskdeck/developer-lens-intelligence-platform.taskdeck.json',
-              'docs/analyser-program/07_DELIVERY_ROADMAP.md',
           }
           if changed != expected:
               raise SystemExit(f'unexpected changed files: {sorted(changed)}')
@@ -98,7 +97,7 @@ jobs:
           git rm .github/workflows/agent-issue315.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/analyser-program/taskdeck/tools/cards.mjs docs/analyser-program/taskdeck/developer-lens-intelligence-platform.taskdeck.json docs/analyser-program/07_DELIVERY_ROADMAP.md
+          git add docs/analyser-program/taskdeck/tools/cards.mjs docs/analyser-program/taskdeck/developer-lens-intelligence-platform.taskdeck.json
           git diff --cached --check
           git commit -m "docs: reconcile retrieval ladder sequencing"
           git push origin HEAD:docs/issue315-retrieval-ladder-20260917
