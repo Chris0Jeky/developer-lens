@@ -33,7 +33,8 @@ Result:
 - [ ] `npm run check` passes for a code or configuration change (`npm run verify:context` and
       `git diff --check origin/main...HEAD` for a documentation-only change).
 - [ ] Documentation state is in sync if an authority file moved: `CLAUDE.md`, `AGENTS.md`,
-      `docs/data-charter.md`, `docs/source-capability-matrix.md`, `docs/OWNER_CONSTITUTION.md`,
-      `HUMAN_TODO.md`, `docs/analyser-program/CURRENT_STATE.md`.
+      `.agent-harness/governor.yaml`, `docs/agent-system/`, `docs/data-charter.md`,
+      `docs/source-capability-matrix.md`, `docs/OWNER_CONSTITUTION.md`, `HUMAN_TODO.md`,
+      `docs/analyser-program/CURRENT_STATE.md`.
 - [ ] I am proposing this contribution under **AGPL-3.0-only**, and I have read the
       contributor-agreement note in `CONTRIBUTING.md`.
