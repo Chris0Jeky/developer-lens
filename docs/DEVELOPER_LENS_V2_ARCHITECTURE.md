@@ -1588,9 +1588,11 @@ this document plus the charter and matrix, those win. Live evidence and the resu
    *Reconciled 2026-08-04:* DL-BRIDGE-01 is the **bootstrap slice** (runtime seam + privacy
    boundary); the first **analytical value slice** is DL-VALUE-01 (I.4 item 1) — the bridge alone
    does not prove the product thesis.
-5. **Source-structure roles.** The committed-tree role taxonomy is **14 closed roles** — the
-   2026-08-03 set plus `schema_definition`, `fixture_golden`, `snapshot_artifact` — enabling
-   golden/fixture and migration-ledger archaeology (ADR-05; frontier A3/A4).
+5. **Source-structure roles.** The committed-tree role taxonomy is **15 closed roles** — the
+   2026-08-03 set plus `schema_definition`, `fixture_golden`, `snapshot_artifact`, and the
+   presence-only `agent_config` role accepted 2026-08-18 by the constitution-v2
+   reconciliation — enabling golden/fixture and migration-ledger archaeology without
+   reading agent-configuration bodies (ADR-05; frontier A3/A4).
 6. **Architecture Time Machine comparability.** Snapshots key on (repo alias, ref OID, parser
    bundle version, config revision); cross-parser-major deltas are never rendered; module
    continuity/split/merge is modelled with reported confidence; and the accepted **matched-window
