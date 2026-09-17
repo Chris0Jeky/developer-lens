@@ -1,0 +1,86 @@
+name: Apply issue 313 role-taxonomy reconciliation
+
+on:
+  push:
+    branches:
+      - docs/issue313-role-taxonomy-20260917
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out branch
+        uses: actions/checkout@v4
+        with:
+          ref: docs/issue313-role-taxonomy-20260917
+          fetch-depth: 0
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+
+      - name: Reconcile stale taxonomy references
+        shell: python
+        run: |
+          from pathlib import Path
+
+          def replace_once(path: str, old: str, new: str) -> None:
+              target = Path(path)
+              text = target.read_text(encoding='utf-8')
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one match, found {count}')
+              target.write_text(text.replace(old, new), encoding='utf-8', newline='\n')
+
+          replace_once(
+              'docs/DEVELOPER_LENS_V2_ARCHITECTURE.md',
+              '''5. **Source-structure roles.** The committed-tree role taxonomy is **14 closed roles** — the
+             2026-08-03 set plus `schema_definition`, `fixture_golden`, `snapshot_artifact` — enabling
+             golden/fixture and migration-ledger archaeology (ADR-05; frontier A3/A4).''',
+              '''5. **Source-structure roles.** The committed-tree role taxonomy is **15 closed roles** — the
+             2026-08-03 set plus `schema_definition`, `fixture_golden`, `snapshot_artifact`, and the
+             presence-only `agent_config` role accepted 2026-08-18 by the constitution-v2
+             reconciliation — enabling golden/fixture and migration-ledger archaeology without
+             reading agent-configuration bodies (ADR-05; frontier A3/A4).''',
+          )
+
+          replace_once(
+              'docs/analyser-program/02_FEATURE_EVIDENCE_CATALOG.md',
+              '''- **Canonical objects** — Closed role taxonomy {build, test, docs, config, migration, api_surface,
+            ci_definition, dependency_manifest, generated, vendored, binary_asset, schema_definition,
+            fixture_golden, snapshot_artifact} (14 roles, ADR-05). Features''',
+              '''- **Canonical objects** — Closed role taxonomy {build, test, docs, config, migration, api_surface,
+            ci_definition, dependency_manifest, generated, vendored, binary_asset, schema_definition,
+            fixture_golden, snapshot_artifact, agent_config} (15 roles, ADR-05; `agent_config` is
+            presence-only under D5=PRES and does not authorize reading configuration bodies). Features''',
+          )
+
+          replace_once(
+              'docs/analyser-program/08_OPEN_QUESTIONS.md',
+              '2. **14-role taxonomy** (A4): accepted; ADR-05 amended; DL-XRAY-01 card scope updated on the board.',
+              '2. **15-role taxonomy** (A4 + constitution-v2): accepted; ADR-05 amended; DL-XRAY-01 card scope updated on the board, with `agent_config` presence-only under D5=PRES.',
+          )
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Prove context and generated taskdeck consistency
+        run: |
+          npm run verify:context
+          node docs/analyser-program/taskdeck/tools/generate.mjs --check
+          git diff --check
+
+      - name: Commit reconciled documentation
+        run: |
+          git rm .github/workflows/agent-issue313.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/DEVELOPER_LENS_V2_ARCHITECTURE.md docs/analyser-program/02_FEATURE_EVIDENCE_CATALOG.md docs/analyser-program/08_OPEN_QUESTIONS.md
+          git diff --cached --check
+          git commit -m "docs: reconcile the 15-role source taxonomy"
+          git push origin HEAD:docs/issue313-role-taxonomy-20260917
