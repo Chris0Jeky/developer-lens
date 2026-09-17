@@ -29,9 +29,7 @@ import { MetricCard } from './components/MetricCard'
 import { PulseChart } from './components/PulseChart'
 import { RepoConstellation } from './components/RepoConstellation'
 import { RepoLedger } from './components/RepoLedger'
-import { ShareStudio } from './components/ShareStudio'
 import { SignalLab } from './components/SignalLab'
-import { WrappedExperience } from './components/WrappedExperience'
 import { useDashboard } from './hooks/useDashboard'
 import {
   compactNumber,
@@ -106,11 +104,28 @@ function PullRequestRow({ pullRequest }: { pullRequest: PullRequestMetric }) {
   )
 }
 
+const ShareStudio = lazy(() =>
+  import('./components/ShareStudio').then((module) => ({ default: module.ShareStudio })),
+)
+const WrappedExperience = lazy(() =>
+  import('./components/WrappedExperience').then((module) => ({ default: module.WrappedExperience })),
+)
+
 function DashboardApp() {
   const [range, setRange] = useState<RangeKey>('6m')
+  const [wrappedLoaded, setWrappedLoaded] = useState(false)
   const [wrappedOpen, setWrappedOpen] = useState(false)
+  const [shareLoaded, setShareLoaded] = useState(false)
   const [shareContext, setShareContext] = useState<ShareContext | null>(null)
+  const openWrapped = useCallback(() => {
+    setWrappedLoaded(true)
+    setWrappedOpen(true)
+  }, [])
   const closeWrapped = useCallback(() => setWrappedOpen(false), [])
+  const openShare = useCallback((context: ShareContext) => {
+    setShareLoaded(true)
+    setShareContext(context)
+  }, [])
   const closeShare = useCallback(() => setShareContext(null), [])
   const followDashboardPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === 'touch') return
@@ -188,13 +203,13 @@ function DashboardApp() {
                 </h1>
                 <p className="hero-lede">{data.archetype.description}</p>
                 <div className="hero-actions">
-                  <button className="primary-button" onClick={() => setWrappedOpen(true)} type="button">
+                  <button className="primary-button" onClick={openWrapped} type="button">
                     <Play fill="currentColor" size={15} aria-hidden="true" />
                     Start your Wrapped
                   </button>
                   <button
                     className="share-launch"
-                    onClick={() => setShareContext({ kind: 'overview' })}
+                    onClick={() => openShare({ kind: 'overview' })}
                     type="button"
                   >
                     <Share2 size={16} aria-hidden="true" /> Share or export
@@ -223,7 +238,7 @@ function DashboardApp() {
               <button
                 aria-label={`Open Wrapped for ${data.archetype.name}`}
                 className="hero-lens"
-                onClick={() => setWrappedOpen(true)}
+                onClick={openWrapped}
                 type="button"
               >
                 <div className="hero-lens__orbit hero-lens__orbit--outer" />
@@ -501,19 +516,27 @@ function DashboardApp() {
             </a>
           </footer>
 
-          <WrappedExperience
-            data={data}
-            onClose={closeWrapped}
-            onShare={setShareContext}
-            open={wrappedOpen}
-            suspended={Boolean(shareContext)}
-          />
-          <ShareStudio
-            context={shareContext ?? { kind: 'overview' }}
-            data={data}
-            onClose={closeShare}
-            open={Boolean(shareContext)}
-          />
+          {wrappedLoaded && (
+            <Suspense fallback={null}>
+              <WrappedExperience
+                data={data}
+                onClose={closeWrapped}
+                onShare={openShare}
+                open={wrappedOpen}
+                suspended={Boolean(shareContext)}
+              />
+            </Suspense>
+          )}
+          {shareLoaded && (
+            <Suspense fallback={null}>
+              <ShareStudio
+                context={shareContext ?? { kind: 'overview' }}
+                data={data}
+                onClose={closeShare}
+                open={Boolean(shareContext)}
+              />
+            </Suspense>
+          )}
         </>
       )}
     </div>
