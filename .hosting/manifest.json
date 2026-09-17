@@ -8,7 +8,7 @@
   "gates":["Owned showcase hostname","Synthetic artifact privacy scan","Base-path and export acceptance"],
   "tasks":[
     {"id":"DL1","goal":"Prepare a static custom-origin showcase","acceptance":"Existing build:showcase and privacy checks pass with synthetic fixtures"},
-    {"id":"DL2","goal":"Preserve local and public boundaries","acceptance":"No .developer-lens data, tokens, repository URLs or local paths enter the deploy output"},
+    {"id":"DL2","goal":"Preserve local and public boundaries","acceptance":"No .developer-lens data, tokens, private or source-derived repository URLs or local paths enter the deploy output; the deliberate public source-code link remains allowed"},
     {"id":"DL3","goal":"Route follow-on work through the existing prompt library","acceptance":"No duplicate executable prompts, harness or independent contract authority is added"}
   ],
   "activation_authorized":false

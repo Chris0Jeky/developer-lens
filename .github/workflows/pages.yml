@@ -36,6 +36,9 @@ jobs:
       - name: Build and privacy-check the synthetic showcase
         run: npm run build:showcase
 
+      - name: Verify the locked Observatory artifact
+        run: node observatory/check.mjs
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v6
 
