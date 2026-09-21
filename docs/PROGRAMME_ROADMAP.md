@@ -21,9 +21,11 @@ Order (mandate release sequence):
    `COMMERCIAL_OPTION.md` (intent only, no legal claims; CLA review stays a human gate).
 2. Community scaffolding: `CONTRIBUTING.md`, Code of Conduct, issue/PR templates, Discussions,
    compact public roadmap.
-3. Lab-side release prep (harness deny/parity fixes lab #12/#13 equivalents; one maintenance PR
-   before the next lab experiment per H2) — product q-8 closed 2026-08-09; proceed under the Lab's
-   normal worktree, review, and CI gates.
+3. Lab-side release prep: seed and reconcile the Lab constitution/governor, deliver the harness
+   deny/parity fixes (lab #12/#13 equivalents), and record a cross-repository compatibility proof.
+   Those three results are prerequisites of the joint `v0.1.0` tag, not optional follow-up work.
+   Product q-8 closed 2026-08-09; proceed under the Lab's normal worktree, review, and CI gates,
+   with one maintenance PR before the next Lab experiment per H2.
 4. Dependency-alert triage (H6) both repos.
 5. Final browser/visual QA (agent proof + five-minute owner sign-off, H7).
 6. Tag `v0.1.0` both repos with synchronized changelogs; publish selected C0 JSON/HTML release
@@ -38,11 +40,13 @@ Product-owned research-input + presentation contracts (bounded selected-store ex
 consumes; product renders `IntegrationTailStudyView.v1`-style view in a lazy route + Evidence
 Drawer), KM + AFT baseline with censoring/competing outcomes/bootstrap/matched eras, dual visual
 redesign (cinematic Story vs scientific notebook Research), synthetic public path + local
-own/curated path, mandatory cross-repo compatibility CI. Non-blocking bounded design lanes:
-Research Lab hub, automatic Query/Recommendations, Taskdeck dogfood (ref = owner gate),
-future private share URL. #181/#182 semantics land alongside contract design (H1); #135 and
-#76 fold in where the Evidence Drawer/resolver/coverage registry is touched; #80's resolver
-lineage joins ride with #174.
+own/curated path, mandatory cross-repo compatibility CI. The local own/curated-data path activates
+only after #201 lands the Data Charter v2 and capability-profile revision; that revision may land
+during P1, but until it does this lane is design plus synthetic proof only. Non-blocking bounded
+design lanes: Research Lab hub, automatic Query/Recommendations, Taskdeck dogfood (ref = owner
+gate), future private share URL. #181/#182 semantics land alongside contract design (H1); #135 and
+#76 fold in where the Evidence Drawer/resolver/coverage registry is touched; #80's resolver lineage
+joins ride with #174.
 
 ## P2 — Automatic sources and real-data profiles
 
