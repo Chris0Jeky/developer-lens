@@ -260,13 +260,18 @@ including retention/deletion, release review, and an untouched final holdout.
   fixture_golden, snapshot_artifact, agent_config} (15 roles, ADR-05; `agent_config` is
   presence-only under D5=PRES and does not authorize reading configuration bodies). Features
   `DL.XRAY.LANGUAGE_SHARE.v1` (P) — byte share by controlled language vocabulary;
-  `DL.XRAY.ROLE_PRESENCE.v1` (P) — presence boolean + file count per role;
+  `DL.XRAY.ROLE_PRESENCE.v1` (P) — presence boolean + file count for the fourteen ordinary
+  roles; `agent_config` is the D5=PRES exception: one per-repository presence boolean only,
+  with no file count, cardinality, names, or configuration-body reads;
   `DL.XRAY.PACKAGE_BOUNDARY_COUNT.v1` (P) — distinct package/monorepo boundaries via
   manifest-presence classes (**filename/extension presence only — no body is read**);
   `DL.XRAY.ENUMERATION_COVERAGE.v1` (P) — enumerated / expected entries.
 - **Baseline / modelled** — Deterministic enumeration and table-driven classification. **Layer:
-  deterministic (derived), never observed** — language shares, role counts, and boundary counts are
-  products of enumeration plus the closed classification tables and carry `parser_coverage`
+  deterministic (derived), never observed** — language shares, ordinary-role counts, the
+  presence-only `agent_config` boolean, and boundary counts are products of enumeration plus the
+  closed classification tables. Agent-configuration cardinality is neither retained nor emitted;
+  the presence-only exception also applies to every baseline and comparison, not merely the UI.
+  These outputs carry `parser_coverage`
   limitations; only `GH-LANG-01`'s provider edges are an observed fact. **None
   justified** — a learned role classifier would need file names or content as features, which are
   C4/X; the extension/manifest-name tables are both sufficient and auditable.
@@ -294,7 +299,9 @@ including retention/deletion, release review, and an untouched final holdout.
   and snapshot-artifact trees for the three roles added in ADR-05; **a checkout whose `HEAD` is
   moved to an unrelated ref between two runs of the same card-bound OID**. Eval gate: identical
   output with a dirty working tree **and across checkout `HEAD` movement**; zero paths/names in any
-  sink under the adversarial canary scan; **zero manifest-body reads with only
+  sink under the adversarial canary scan; invented trees with one or several agent-configuration
+  files expose the same `agent_config: true` boolean and no configuration cardinality;
+  **zero manifest-body reads with only
   `cap.source.structure` active**. Deps: ADR-05, ADR-06 (worker), matrix `cap.source.structure`
   (**manifest bodies additionally require `cap.github.dependencies`**); cards XRAY-01/02/03.
   Rollout: opt-in activation card; rollback = revoke capability, delete summaries.
