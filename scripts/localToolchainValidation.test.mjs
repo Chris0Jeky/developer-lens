@@ -1,4 +1,11 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  chmodSync,
+  mkdirSync,
+  mkdtempSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 
@@ -29,8 +36,9 @@ function addLocalTool(root, { command, packageName }, platform = 'linux') {
   const manifest = path.join(root, 'node_modules', packageName, 'package.json')
 
   mkdirSync(path.dirname(manifest), { recursive: true })
-  writeFileSync(shim, 'local shim\n')
+  writeFileSync(shim, '#!/bin/sh\nexit 0\n', { mode: 0o755 })
   writeFileSync(manifest, JSON.stringify({ name: packageName }))
+  return { shim, manifest }
 }
 
 afterEach(() => {
@@ -101,5 +109,62 @@ describe('validateLocalToolchain', () => {
     expect(
       validateLocalToolchain({ root, platform: 'win32', tools: [tools[0]] }).ok,
     ).toBe(true)
+  })
+
+  it.skipIf(process.platform === 'win32')('rejects a non-executable POSIX shim', () => {
+    const root = createRoot()
+    const { shim } = addLocalTool(root, tools[0])
+    chmodSync(shim, 0o644)
+
+    const result = validateLocalToolchain({ root, platform: 'linux', tools: [tools[0]] })
+    expect(result.ok).toBe(false)
+    expect(result.invalidResolutions).toEqual(['tsc'])
+    expect(formatLocalToolchainFailure(result)).not.toContain(root)
+  })
+
+  it.each(['linux', 'win32'])('rejects a directory-shaped %s shim', (platform) => {
+    const root = createRoot()
+    const { shim } = addLocalTool(root, tools[0], platform)
+    rmSync(shim)
+    mkdirSync(shim)
+
+    const result = validateLocalToolchain({ root, platform, tools: [tools[0]] })
+    expect(result.ok).toBe(false)
+    expect(result.invalidResolutions).toEqual(['tsc'])
+  })
+
+  it('rejects a directory-shaped package manifest', () => {
+    const root = createRoot()
+    const { manifest } = addLocalTool(root, tools[0])
+    rmSync(manifest)
+    mkdirSync(manifest)
+
+    const result = validateLocalToolchain({ root, platform: 'linux', tools: [tools[0]] })
+    expect(result.ok).toBe(false)
+    expect(result.invalidResolutions).toEqual(['tsc'])
+  })
+
+  it.skipIf(process.platform === 'win32')('accepts an executable repository-local symlink', () => {
+    const root = createRoot()
+    const { shim, manifest } = addLocalTool(root, tools[0])
+    const target = path.join(path.dirname(manifest), 'cli')
+    writeFileSync(target, '#!/bin/sh\nexit 0\n', { mode: 0o755 })
+    rmSync(shim)
+    symlinkSync(target, shim)
+
+    expect(validateLocalToolchain({ root, platform: 'linux', tools: [tools[0]] }).ok).toBe(true)
+  })
+
+  it.skipIf(process.platform === 'win32')('rejects a non-executable symlink target', () => {
+    const root = createRoot()
+    const { shim, manifest } = addLocalTool(root, tools[0])
+    const target = path.join(path.dirname(manifest), 'cli')
+    writeFileSync(target, '#!/bin/sh\nexit 0\n', { mode: 0o644 })
+    rmSync(shim)
+    symlinkSync(target, shim)
+
+    const result = validateLocalToolchain({ root, platform: 'linux', tools: [tools[0]] })
+    expect(result.ok).toBe(false)
+    expect(result.invalidResolutions).toEqual(['tsc'])
   })
 })
