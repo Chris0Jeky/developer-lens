@@ -362,7 +362,7 @@ Verified pack snapshot (COMPLETE, checksummed, C1, pack-scoped aliases)
 Admissible row set
         │
         ▼  L1 filter — set predicate, no LIMIT
-Eligible set  (above the working ceiling: deterministic total-order prefix + truncation limitation)
+Eligible set  (above the working ceiling: mandatory-role reservoirs, then global total-order fill + truncation limitation)
         │
         ▼  rank ALL eligible rows (L1 distance | L2 BM25 | L3 vectors) → total-order ranked sequence
         │
@@ -749,7 +749,8 @@ still requires a card-bound, previewed, proving-checks-green transition. **R**
 
 **Proposed IDs introduced here** (all marked proposed; none exist in the canonical dictionaries yet):
 
-- Limitation codes: `RAG_QUOTA_SHORTFALL_CONTRADICTING`, `RAG_QUOTA_SHORTFALL_COVERAGE`,
+- Limitation codes: `RAG_QUOTA_SHORTFALL_SUPPORTING`, `RAG_QUOTA_SHORTFALL_CONTRADICTING`,
+  `RAG_QUOTA_SHORTFALL_COVERAGE`,
   `RAG_QUOTA_SHORTFALL_LIMITATION`, `RAG_CANDIDATE_POOL_TRUNCATED`, `RAG_INDEX_STALE`,
   `RAG_INDEX_ABSENT`, `RAG_SPARSE_SUPPRESSED`, `RAG_FIELD_REGISTRY_REJECT`,
   `RAG_RANKING_DIMENSION_DEGENERATE`. All are carried as **transient** `RetrievalLimitation` values
@@ -834,8 +835,10 @@ coverage semantics, benchmark, and claim grammar exist** — L2/L3 cards start i
   showing snapshot cost dominates — in which case the answer is a stronger handle or locking
   guarantee, or a content-addressed pack store, and never a return to verify-then-reopen-by-path.
 - **A-RAG-7.** Ranking the whole eligible set is affordable below the working ceiling, and above it
-  the deterministic total-order prefix is an acceptable degradation because it is *recorded*.
-  *Reason:* a recorded, reproducible truncation is auditable; an unordered one is not.
+  the two-stage role-aware admission in section 1 is an acceptable degradation because it
+  preserves mandatory-role reservoirs before global total-order filling and is *recorded*.
+  *Reason:* deterministic reservoirs prevent cross-role starvation; total and per-role
+  eligible/admitted counts make the remaining recall loss auditable. A flat prefix is not allowed.
   *Reversible by:* measured eligible-set sizes on realistic packs — a ceiling that binds routinely
   is a signal to narrow the filter through the registry, not to raise the ceiling silently.
 - **A-RAG-8.** `evidence_id` is unique within a pack (**V**), which is sufficient for the
