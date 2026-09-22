@@ -4,6 +4,8 @@ This is an evidence and continuation record, not an owner decision or capability
 
 ## Final disposition
 
+> **Status:** point-in-time record at `88c14c1`. Merges after that head — #348, #349, #345, #354, #344 — are recorded in the Addendum below; live GitHub heads take precedence over every section above it.
+
 Main reached `88c14c1a326d929bc0fcae1ebc49073a0c713ea4`. This continuation merged **#343, #351, #353 and #355**. Together with **#350, #356, #347 and #352**, already merged before resumption, eight of the original nineteen PRs have merged. Eleven original PRs remain, plus the new evidence draft #361 and regression-first follow-up #363.
 
 The uploaded archive identifies initial main `d67b3e5493b99a143a9b00a057e716888fdfc1bf`. Resumed main was `34a09f6697fe4247f458144caaedb3b7eb2c6595`; its ten changed paths were reconciled with the archive rather than overwritten. Local Node was 22 rather than required Node 24, and a bounded npm bootstrap did not establish usable repository dependencies. No local full-suite execution is claimed. Native dependency-free probes are distinguished from hosted Node 24 proof.

@@ -2765,7 +2765,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **impact:** The PR #349 scarcity-first doc batch could not be applied as multi-line splices through the editing tool.
 - **workaround:** Use single-line edits where possible; otherwise apply a byte-exact patch script with CRLF-preserving replacements and verify with `git diff`. Do not retab or renormalize endings, keeping the diff minimal under `core.autocrlf`.
 - **occurrences:** 1 occurrence in [#361](https://github.com/Chris0Jeky/developer-lens/pull/361) (this addendum session).
-- **task:** #361 addendum records it; no repository helper owns editor line-ending behavior.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the Windows-safe command/discovery boundary; #361 addendum records the occurrence.
 - **promotion:** One occurrence remains documentation debt; no repository change proposed.
 
 ### FR-102 - PowerShell `>` redirect writes UTF-16 and corrupts byte-compared probes
@@ -2776,5 +2776,5 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **impact:** One invalid red during the PR #354 regression-proof probe; no repository mutation (file restored immediately, confirmed by `git status`).
 - **workaround:** Write bytes exactly (bounded process capture plus binary write); confirm the working tree before running the probe.
 - **occurrences:** 1 occurrence in [#361](https://github.com/Chris0Jeky/developer-lens/pull/361) (this addendum session).
-- **task:** Recorded here; Windows shell redirection guidance stays with the operator.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the Windows-safe command/discovery boundary; #361 addendum records the occurrence.
 - **promotion:** One environment-specific occurrence warrants no repository runtime change.
