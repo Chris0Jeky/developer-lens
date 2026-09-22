@@ -1,4 +1,4 @@
-import { existsSync, realpathSync } from 'node:fs'
+import { accessSync, constants, existsSync, realpathSync, statSync } from 'node:fs'
 import path from 'node:path'
 
 export const DEFAULT_LOCAL_TOOLS = [
@@ -52,7 +52,12 @@ export function validateLocalToolchain({
       missingShims.push(command)
     } else {
       try {
-        if (!isWithin(nodeModulesRoot, realpath(shim))) invalidResolutions.push(command)
+        if (!isWithin(nodeModulesRoot, realpath(shim)) || !statSync(shim).isFile()) {
+          invalidResolutions.push(command)
+        } else {
+          // POSIX shells skip non-executable PATH entries; existence alone is unsafe.
+          accessSync(shim, platform === 'win32' ? constants.R_OK : constants.X_OK)
+        }
       } catch {
         invalidResolutions.push(command)
       }
@@ -63,7 +68,11 @@ export function validateLocalToolchain({
       missingPackages.push(command)
     } else {
       try {
-        if (!isWithin(nodeModulesRoot, realpath(manifest))) invalidResolutions.push(command)
+        if (!isWithin(nodeModulesRoot, realpath(manifest)) || !statSync(manifest).isFile()) {
+          invalidResolutions.push(command)
+        } else {
+          accessSync(manifest, constants.R_OK)
+        }
       } catch {
         invalidResolutions.push(command)
       }
@@ -93,7 +102,7 @@ export function formatLocalToolchainFailure(result) {
   return [
     'Local npm toolchain preflight failed.',
     `Affected tools: ${affectedTools.join(', ') || 'unknown'}.`,
-    'A required package or node_modules/.bin shim is missing or resolves outside this checkout.',
+    'A required package or node_modules/.bin shim is missing, unusable, or resolves outside this checkout.',
     'Run npm ci in this checkout before trusting npm-script failures.',
   ].join('\n')
 }
