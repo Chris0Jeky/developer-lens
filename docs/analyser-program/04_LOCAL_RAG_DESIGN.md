@@ -177,7 +177,7 @@ between that helper and L1 is the whole of `DL-RAG-01`.
    byte-identical claim in step 3 asserts and all this design needs. It does **not** by itself give
    reproducibility **across rebuilds** of the same underlying data: if `evidence_id` is assigned by
    build sequence rather than derived from row content, a rebuild can permute the tie-break and flip
-   the admitted prefix. Making cross-build replay reproducible therefore requires the pack contract
+   the admitted working set. Making cross-build replay reproducible therefore requires the pack contract
    to guarantee a **build-stable, content-derived** `evidence_id` — a requirement this design places
    on `DL-PACK-01/02`, not a property it may assume today (A-RAG-8). Where that guarantee is absent,
    cross-build comparisons must be treated as a different pack, not as a replay. **R**
@@ -233,9 +233,11 @@ between that helper and L1 is the whole of `DL-RAG-01`.
    over the registered feature subset **in registered order**, so floating-point summation is
    reproducible, and rows are compared on the accumulated value rather than re-derived per
    comparison. Same **snapshot** + same registry/feature versions + same query ⇒ **byte-identical**
-   result set (same-build scope, per step 1). That conclusion now *follows from* the stated procedure — whole eligible set ranked
-   (or a deterministic prefix of a total order taken), no unordered `LIMIT` anywhere, no non-finite
-   scalars, cap applied after ranking — instead of being asserted beside it. §5.2 #14 tests it by
+   result set (same-build scope, per step 1). That conclusion *follows from* the procedure: rank
+   the whole eligible set unless the working ceiling binds; then first admit mandatory-role
+   reservoirs and fill remaining capacity by the global total order from step 1, and rank that
+   admitted working set. No unordered `LIMIT`, no flat-prefix working-set cap, and no non-finite
+   scalars are allowed; apply the final candidate cap only after ranking. §5.2 #14 tests it by
    replay under permuted physical row order. **R**
 
 **Inputs.** Registered `feature_id`s, numeric values, units, `support_count`, coverage status enums,
