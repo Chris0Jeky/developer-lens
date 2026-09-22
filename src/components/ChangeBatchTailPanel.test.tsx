@@ -1,6 +1,7 @@
 import { act, cleanup, fireEvent, render, renderHook, screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ChangeBatchTailPanel } from './ChangeBatchTailPanel'
+import { IntegrationShapeAtlasRoute } from './IntegrationShapeAtlas'
 import { buildChangeBatchTailView } from '../../shared/changeBatchTailView'
 import { buildSyntheticChangeBatchTailView, syntheticChangeBatchInput } from '../../shared/changeBatchTailSynthetic'
 import { acceptServedChangeBatchTail, useChangeBatchTailView } from '../lib/changeBatchTailSource'
@@ -67,6 +68,18 @@ describe('ChangeBatchTailPanel', () => {
     const row = screen.getByTestId('change-batch-primary').querySelector('tr[data-stratum="s2"]') as HTMLElement
     expect(row).toHaveAttribute('data-displayed', 'false')
     expect(within(row).getByText(/withheld \(BELOW_MINIMUM_SUPPORT\)/)).toBeInTheDocument()
+  })
+})
+
+describe('Atlas route consumer', () => {
+  it('renders the second lens beneath integration shape on the existing route without a network call', async () => {
+    const fetchMock = vi.fn()
+    vi.stubGlobal('fetch', fetchMock)
+    render(<IntegrationShapeAtlasRoute />)
+    expect(screen.getByTestId('integration-shape-atlas')).toBeInTheDocument()
+    expect(await screen.findByTestId('change-batch-tail', undefined, { timeout: 10_000 })).toHaveAttribute('data-source', 'synthetic')
+    expect(screen.getByTestId('change-batch-stored-control')).toHaveAttribute('data-status', 'synthetic')
+    expect(fetchMock).not.toHaveBeenCalled()
   })
 })
 

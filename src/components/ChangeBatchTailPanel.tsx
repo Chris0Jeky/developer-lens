@@ -7,7 +7,7 @@ import {
 } from '../../shared/changeBatchTailView'
 import type { AnalyticReference } from '../../shared/findings.js'
 import { isoWeekLabel } from '../../shared/presentationGrain'
-import type { ChangeBatchTailSource } from '../lib/changeBatchTailSource'
+import { useChangeBatchTailView, type ChangeBatchTailSource } from '../lib/changeBatchTailSource'
 import './IntegrationShapeAtlas.css'
 
 /**
@@ -343,4 +343,10 @@ export function ChangeBatchTailPanel({ view, source }: { view: ChangeBatchTailVi
       />
     </article>
   )
+}
+
+/** The Atlas route's lazy section: the source hook plus the panel. Renders without a network call. */
+export function ChangeBatchTailSection() {
+  const source = useChangeBatchTailView()
+  return <ChangeBatchTailPanel view={source.view} source={source} />
 }

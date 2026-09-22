@@ -1,8 +1,6 @@
-import { Fragment, useMemo, useState } from 'react'
+import { Fragment, Suspense, lazy, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { EvidenceDrawer } from './EvidenceDrawer'
-import { ChangeBatchTailPanel } from './ChangeBatchTailPanel'
-import { useChangeBatchTailView } from '../lib/changeBatchTailSource'
 import { useIntegrationShapeEvidenceResolver } from '../lib/evidenceApiResolver'
 import {
   buildIntegrationShapePresentation,
@@ -491,13 +489,21 @@ export function IntegrationShapeAtlasPanel({ presentation }: { presentation: Int
 }
 
 /**
+ * Phase E (#174): the change-batch lens is its own lazy chunk, so the integration-shape panel
+ * renders exactly as before and the second lens arrives beneath it without delaying it.
+ */
+const ChangeBatchTailSection = lazy(() =>
+  import('./ChangeBatchTailPanel').then((module) => ({ default: module.ChangeBatchTailSection })),
+)
+
+/**
  * The route entry: computes the composition once and renders the panel, then the Phase E (#174)
  * change-batch lens beneath it. The lens renders its explicitly synthetic view unless the
  * default-off local endpoint serves a gated stored view (see `lib/changeBatchTailSource.ts`).
  */
 export function IntegrationShapeAtlasRoute() {
   const presentation = useMemo(() => buildIntegrationShapePresentation(), [])
-  const changeBatch = useChangeBatchTailView()
+
   return (
     <div className="app atlas-route" id="top">
       <div className="ambient ambient--one" aria-hidden="true" />
@@ -510,7 +516,9 @@ export function IntegrationShapeAtlasRoute() {
       </header>
       <main className="atlas-route__main">
         <IntegrationShapeAtlasPanel presentation={presentation} />
-        <ChangeBatchTailPanel view={changeBatch.view} source={changeBatch} />
+        <Suspense fallback={null}>
+          <ChangeBatchTailSection />
+        </Suspense>
       </main>
     </div>
   )
