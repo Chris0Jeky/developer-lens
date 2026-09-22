@@ -261,7 +261,7 @@ describe('minimum support abstention (blocker 5)', () => {
   })
 
   it('withholds a below-support stratum inside a presentable view and renders no number for it', () => {
-    const units = presentableUnits().filter((entry, index) => !(index % 3 === 1 && index > 3))
+    const units = presentableUnits().filter((_entry, index) => !(index % 3 === 1 && index > 3))
     const view = buildChangeBatchTailView(input(units))
     const middle = view.binnings[0].strata[1]
     expect(middle.merged).toBeLessThan(5)
