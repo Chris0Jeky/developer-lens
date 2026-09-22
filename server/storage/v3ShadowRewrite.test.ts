@@ -1,6 +1,9 @@
 import { createHash } from 'node:crypto'
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import Database from 'better-sqlite3'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it } from 'vitest'
 import { CLAIM_SCHEMA_VERSION } from '../../shared/claims.js'
 import { installV2BridgeStore } from '../api/v2/store.js'
 import { installClaimGraphStorage } from './claims.js'
@@ -8,7 +11,13 @@ import { openStorageDatabase } from './database.js'
 import { computeClaimId } from './claimId.js'
 import { installIncrementalGithubCoreStorage } from './incremental.js'
 import { createInstallationAliases } from './installationAliases.js'
-import { addUtcMonthsClamped, rewriteStorageV3Shadow, StorageV3ShadowRewriteError } from './v3ShadowRewrite.js'
+import { importV1Json } from './migrateV1.js'
+import {
+  addUtcMonthsClamped,
+  rewriteStorageV3Shadow,
+  STORAGE_V3_SHADOW_VERIFIED_SOURCE_TABLES,
+  StorageV3ShadowRewriteError,
+} from './v3ShadowRewrite.js'
 
 function sourceDb(): Database.Database {
   const db = openStorageDatabase(':memory:')
@@ -748,5 +757,98 @@ describe('B1b-ii shadow rewrite', () => {
       expect(Object.keys(result).sort()).toEqual(['completeB1b', 'copiedClaims', 'copiedLineageEvents', 'copiedScopes', 'omittedExpiredIdentities', 'omittedUnclassifiedLineageEvents', 'schemaVersion', 'selectable', 'status'].sort())
       expect(JSON.stringify(result)).not.toMatch(/provider|scope-[0-9a-f]{64}/)
     } finally { source.close(); target.close() }
+  })
+})
+
+describe('#202 v1-import key pin through the v3 shadow source preflight', () => {
+  const importKey = Buffer.alloc(32, 0x41)
+  const rawProviderId = 'invented-v1-provider'
+  const directories: string[] = []
+
+  afterEach(async () => {
+    await Promise.all(directories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })))
+  })
+
+  /** A real importV1Json target, then the collector/claim/bridge installs a v3 source carries. */
+  async function importedSource(repositories = true): Promise<string> {
+    const directory = await mkdtemp(join(tmpdir(), 'developer-lens-v3-import-pin-'))
+    directories.push(directory)
+    const sourcePath = join(directory, 'invented-v1.json')
+    const targetPath = join(directory, 'imported-v2.sqlite')
+    await writeFile(sourcePath, JSON.stringify({
+      schemaVersion: 1, range: '6m', from: '2026-01-01T00:00:00.000Z', to: '2026-06-30T23:59:59.999Z',
+      collectedAt: '2026-07-01T00:00:00.000Z', subject: { login: 'invented-person' },
+      contributionCalendar: [], contributionTotal: 0, restrictedContributions: 0,
+      repositories: repositories
+        ? [{ id: rawProviderId, nameWithOwner: 'invented-org/invented-repository', name: 'invented-repository', isPrivate: false, isArchived: false, isFork: false, languages: [], topics: [] }]
+        : [],
+      commits: repositories
+        ? [{ sha: 'invented-sha-1', repository: 'invented-org/invented-repository', occurredAt: '2026-01-02T00:00:00.000Z', source: 'github', features: { type: 'feat', isRevert: false, isFixup: false, subjectLength: 4 } }]
+        : [],
+      commitDaysByRepository: [], pullRequests: [], reviews: [], issues: [], coverage: [], warnings: [],
+    }))
+    await importV1Json({ sourcePath, targetPath, installationKey: importKey })
+    const db = openStorageDatabase(targetPath)
+    try {
+      installIncrementalGithubCoreStorage(db); installClaimGraphStorage(db); installV2BridgeStore(db)
+      db.prepare('INSERT INTO v2_store_provenance (singleton, mode, synthetic_marker, importer_version, created_at) VALUES (1, ?, ?, ?, ?)').run('synthetic', 'developer-lens.synthetic-importer.v1', '1.0.0', '2026-01-01T00:00:00.000Z')
+    } finally { db.close() }
+    return targetPath
+  }
+
+  function withSource<T>(path: string, run: (source: Database.Database, target: Database.Database) => T): T {
+    const source = openStorageDatabase(path), target = new Database(':memory:')
+    try { return run(source, target) } finally { source.close(); target.close() }
+  }
+
+  it('declares the pin as the only verified, never-copied source table', () => {
+    expect(STORAGE_V3_SHADOW_VERIFIED_SOURCE_TABLES).toEqual(['import_key_binding'])
+    expect(Object.isFrozen(STORAGE_V3_SHADOW_VERIFIED_SOURCE_TABLES)).toBe(true)
+  })
+
+  it('accepts an importV1Json-seeded source under its own key and copies no pin into the target', async () => {
+    const path = await importedSource()
+    withSource(path, (source, target) => {
+      const result = rewriteStorageV3Shadow({ sourceDb: source, targetDb: target, identityBindings: [{ rawProviderId }], installationKey: importKey, asOf: '2026-01-03T00:00:00.000Z', randomBytes: () => Buffer.alloc(32, 9) })
+      expect(result).toMatchObject({ status: 'incomplete', copiedScopes: 1 })
+      expect(target.prepare("SELECT COUNT(*) FROM sqlite_schema WHERE name = 'import_key_binding'").pluck().get()).toBe(0)
+      expect(target.prepare('SELECT COUNT(*) FROM repository_identity').pluck().get()).toBe(1)
+    })
+  })
+
+  it('refuses another key even when the pinned store has no identity rows to re-derive', async () => {
+    for (const repositories of [true, false]) {
+      const path = await importedSource(repositories)
+      withSource(path, (source, target) => {
+        const error = rewriteError(source, target, Buffer.alloc(32, 0x42), repositories ? [{ rawProviderId }] : [], '2026-01-03T00:00:00.000Z')
+        expect(error.code).toBe('IDENTITY_BINDING_MISMATCH')
+        expect(error.message).not.toMatch(/[0-9a-f]{64}/)
+        expect(target.prepare('SELECT COUNT(*) FROM sqlite_schema').pluck().get()).toBe(0)
+      })
+    }
+  })
+
+  it('still refuses a foreign extra table, an emptied, dropped, or drifted pin', async () => {
+    const mutations: Record<string, (db: Database.Database) => void> = {
+      foreignTable: (db) => db.exec('CREATE TABLE extra_source_table (value TEXT)'),
+      emptiedPin: (db) => db.exec('DELETE FROM import_key_binding'),
+      droppedPin: (db) => db.exec('DROP TABLE import_key_binding'),
+      driftedPin: (db) => {
+        const row = db.prepare('SELECT * FROM import_key_binding').get() as Record<string, unknown>
+        db.exec('DROP TABLE import_key_binding')
+        db.exec('CREATE TABLE import_key_binding (singleton INTEGER PRIMARY KEY, binding_version TEXT, installation_key_fingerprint TEXT)')
+        db.prepare('INSERT INTO import_key_binding VALUES (?, ?, ?)').run(row.singleton, row.binding_version, row.installation_key_fingerprint)
+      },
+    }
+    for (const [label, mutate] of Object.entries(mutations)) {
+      const path = await importedSource()
+      const db = openStorageDatabase(path)
+      try { mutate(db) } finally { db.close() }
+      withSource(path, (source, target) => {
+        const error = rewriteError(source, target, importKey, [{ rawProviderId }], '2026-01-03T00:00:00.000Z')
+        expect(error.code, label).toBe('SOURCE_SCHEMA_REFUSED')
+        expect(error.message, label).not.toContain('extra_source_table')
+      })
+    }
   })
 })

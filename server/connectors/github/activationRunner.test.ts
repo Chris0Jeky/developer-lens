@@ -465,6 +465,37 @@ describe('default-off github.core activation runner', () => {
     }
   })
 
+  it('confines the collection scope alias to scope_alias columns across every persisted row (#86, #202)', async () => {
+    const fixture = await cardFixture(card(5))
+    const db = database()
+    const transport = fetchFixture([
+      ...completeProbe('invented-node-a'),
+      ...completeProbe('invented-node-a'),
+    ])
+    await runWithTestGrant(runnerInput(fixture, db, transport.fetch))
+
+    const aliasDigest = fixture.scopeAlias.replace(/^repo-/, '')
+    const carriers: string[] = []
+    const tables = db
+      .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name")
+      .pluck()
+      .all() as string[]
+    for (const table of tables) {
+      for (const row of db.prepare(`SELECT * FROM ${table}`).all() as Record<string, unknown>[]) {
+        for (const [column, value] of Object.entries(row)) {
+          if (typeof value === 'string' && value.includes(aliasDigest)) carriers.push(`${table}.${column}`)
+        }
+      }
+    }
+
+    // The alias is a C2 partition value: it may sit in the dedicated scope_alias columns (and the
+    // key-derived per-page receipt aliases never repeat it), but never inside a coverage key, job,
+    // snapshot, checkpoint cursor, or any other identifier that claim-graph rows can cite.
+    expect(carriers.length).toBeGreaterThan(0)
+    expect([...new Set(carriers.map((carrier) => carrier.split('.')[1]))]).toEqual(['scope_alias'])
+    expect(count(db, 'coverage_ledger')).toBe(1)
+  })
+
   it('refuses a missing or non-registry coverage key before any fetch or write (#86)', async () => {
     const fixture = await cardFixture(card(5))
     const db = database()
@@ -679,5 +710,34 @@ describe('default-off github.core activation runner', () => {
     expect(count(db, 'coverage_ledger')).toBe(0)
     expect(count(db, 'source_snapshot')).toBe(0)
     expect(count(db, 'collection_checkpoint')).toBe(0)
+  })
+
+  it('refuses every undersized accepted-card budget before any store open or fetch (#57)', async () => {
+    const db = database()
+    for (const maximumRequests of [1, 2, 3]) {
+      const fixture = await cardFixture(card(maximumRequests))
+      const transport = fetchFixture([
+        ...completeProbe('invented-node-a'),
+        ...completeProbe('invented-node-a'),
+      ])
+      let storeOpens = 0
+      await expectRunnerFailureWithTestGrant(runnerInput(fixture, db, transport.fetch, {
+        openStore: () => { storeOpens += 1; return db },
+      }))
+      expect({ maximumRequests, storeOpens, fetches: transport.calls.length })
+        .toEqual({ maximumRequests, storeOpens: 0, fetches: 0 })
+    }
+    expect(count(db, 'collection_job')).toBe(0)
+    expect(count(db, 'coverage_ledger')).toBe(0)
+
+    // The minimum selected budget funds both metadata-plus-page probes.
+    const funded = await cardFixture(card(4))
+    const transport = fetchFixture([
+      ...completeProbe('invented-node-a'),
+      ...completeProbe('invented-node-a'),
+    ])
+    const result = await runWithTestGrant(runnerInput(funded, db, transport.fetch))
+    expect(result.requests).toMatchObject({ firstProbeRequests: 2, secondProbeRequests: 2, totalRequests: 4 })
+    expect(transport.calls).toHaveLength(4)
   })
 })

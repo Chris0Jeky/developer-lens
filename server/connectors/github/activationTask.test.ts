@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   GITHUB_CORE_ACTIVATION_TASK_CARD_ERROR_CODE,
   parseGithubCoreActivationTaskCard,
+  parseSelectedGithubCoreActivationTaskCard,
 } from './activationTask.js'
 
 const validCard = () => ({
@@ -99,7 +100,7 @@ const validCard = () => ({
 
 function expectInvalid(card: unknown): void {
   try {
-    parseGithubCoreActivationTaskCard(card)
+    parseSelectedGithubCoreActivationTaskCard(card)
     throw new Error('expected card to be rejected')
   } catch (error) {
     expect(error).toMatchObject({ code: GITHUB_CORE_ACTIVATION_TASK_CARD_ERROR_CODE })
@@ -118,11 +119,25 @@ describe('github.core activation task card', () => {
     expect(Object.isFrozen(parsed.readBoundary)).toBe(true)
   })
 
-  it('rejects hostile extras, credentials, private visibility, and weakened budgets', () => {
+  it('rejects hostile extras, credentials, private visibility, and undersized selected-task budgets', () => {
     expectInvalid({ ...validCard(), unexpected: 'fixture' })
     expectInvalid({ ...validCard(), readBoundary: { ...validCard().readBoundary, credentialMode: 'token' } })
     expectInvalid({ ...validCard(), selectedRepository: { ...validCard().selectedRepository, expectedVisibility: 'private' } })
-    expectInvalid({ ...validCard(), readBoundary: { ...validCard().readBoundary, maximumRequests: 0 } })
+    for (const maximumRequests of [0, 1, 2, 3]) {
+      expectInvalid({ ...validCard(), readBoundary: { ...validCard().readBoundary, maximumRequests } })
+    }
+    expect(
+      parseSelectedGithubCoreActivationTaskCard({
+        ...validCard(),
+        readBoundary: { ...validCard().readBoundary, maximumRequests: 4 },
+      }).readBoundary.maximumRequests,
+    ).toBe(4)
+    expect(
+      parseGithubCoreActivationTaskCard({
+        ...validCard(),
+        readBoundary: { ...validCard().readBoundary, maximumRequests: 2 },
+      }).readBoundary.maximumRequests,
+    ).toBe(2)
     expectInvalid({ ...validCard(), readBoundary: { ...validCard().readBoundary, pageSize: 101 } })
   })
 

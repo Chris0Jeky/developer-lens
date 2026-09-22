@@ -1,6 +1,23 @@
 export const SQLITE_APPLICATION_ID = 0x444c5632
 export const SQLITE_USER_VERSION = 2
 export const STORAGE_SCHEMA_VERSION = '2.0.0'
+export const IMPORT_KEY_BINDING_VERSION = 'import-key-binding.v1'
+export const IMPORT_KEY_BINDING_TABLE = 'import_key_binding' as const
+
+/**
+ * #6 installation-key continuity pin for v1-import targets. Installed only by the v1 importer inside
+ * its transaction (never by `openStorageDatabase`), so the shared v2 schema and every exact-table
+ * proof downstream stay unchanged. The single content-free row holds the SHA-256 fingerprint of the
+ * installation key that minted every repository alias in the target — the same fingerprint the
+ * task key foundation and grants already carry — never key bytes, names, or paths.
+ */
+export const IMPORT_KEY_BINDING_SQL = `
+  CREATE TABLE IF NOT EXISTS import_key_binding (
+    singleton INTEGER PRIMARY KEY NOT NULL CHECK (singleton = 1),
+    binding_version TEXT NOT NULL CHECK (binding_version = '${IMPORT_KEY_BINDING_VERSION}'),
+    installation_key_fingerprint TEXT NOT NULL CHECK (length(installation_key_fingerprint) = 64 AND installation_key_fingerprint NOT GLOB '*[^0-9a-f]*')
+  ) STRICT;
+`
 
 const OPAQUE_IDENTIFIER =
   "length(%COLUMN%) BETWEEN 1 AND 128 AND %COLUMN% NOT GLOB '*[^A-Za-z0-9:._-]*'"
