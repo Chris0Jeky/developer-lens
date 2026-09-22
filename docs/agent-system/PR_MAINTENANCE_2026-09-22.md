@@ -68,3 +68,30 @@ The temporary branch-only materializer created immutable blobs from pinned publi
 Administrative branch-protection reads were unavailable. An annotation request was rejected by the fetch allowlist; the supported workflow-job-log action supplied exact failures instead. One contents update rejected a stale blob SHA; the file was reread and reconciled before retry. Do not force overwrites or retry equivalent generic network workarounds.
 
 Use exact-head jobs, current review threads and SHA-guarded merges. Fresh findings remain blockers even with green CI. Queued, running and skipped jobs are not passing proof. Refresh this checkpoint and late-review observations before continuing.
+
+## Addendum — unattended session later 2026-09-22 (all times UTC)
+
+Merged **#348** (`ed10ed3`, closes #320), **#349** (`4c7df83`, closes #66/#69) and **#345**
+(`d12a35f`, closes #300). Main is now `d12a35f`. Post-merge main verified: both touched-seam
+suites 5/5 green, `verify:context` passes, tree clean.
+
+- #349 Round-2 batch `3a9f20a` resolved both blocking threads in text (scarcity-first
+  multiply-qualified allocation + admitted-working-set diagram arrow, proof #17 extended) and
+  answered all five inline threads (two fixed, three already-repaired). Gate passed at the fix
+  head before merge.
+- #345 reviewed inline: no blocking findings (seams default to the real implementations,
+  refusal/cleanup messages carry no paths or values, CLI redaction only echoes `name=` forms).
+  Focused suite 4/4 green locally at the head; hosted gate green at the head.
+- Local full `npm run check` on the Sep-17 PR base shows storage-v3 failures that pass
+  identically on current main (`v3SelectionProof` 6/6 green on main) — a stale-base
+  environmental red herring from pre-#351/#355 Windows-local fixes, not a PR defect. Do not
+  treat a stale-base full-suite red as a merge gate without the main-controlled comparison.
+- #354 fix batch pushed (`7e370d4`): discriminating module-evaluation test green on the lazy
+  branch and clean-red on static imports, all 10 dashboard tests + lint green, measured chunks
+  index 859.91 → 636.79 kB (gzip 255.82 → 187.77 kB) with both surfaces on demand. Evidence
+  commented on the PR; gate rerunning. #217 stays open: index still exceeds the 500 kB warning.
+
+Tooling notes: PowerShell `>` redirect writes UTF-16 and corrupted one falsification probe
+(`File appears to be binary`); byte-exact writes used instead. Multi-line exact-text edits fail
+to match on CRLF working-tree files; single-line edits plus a CRLF-preserving patch script used
+instead (see FR-101/FR-102).
