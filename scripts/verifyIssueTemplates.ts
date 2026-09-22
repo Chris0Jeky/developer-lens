@@ -16,10 +16,12 @@ async function repositoryLabels(): Promise<ReadonlySet<string> | undefined> {
     throw new Error('GITHUB_REPOSITORY is missing or invalid')
   }
   const apiBase = process.env['GITHUB_API_URL'] ?? 'https://api.github.com'
+  // Opportunistic authentication: a required token would fail the hosted gate, whose
+  // job environment does not export GITHUB_TOKEN. When a token is present (CI with the
+  // variable wired, or local runs exporting one for testing) it is used for the higher
+  // rate-limit quota; otherwise the lookup proceeds unauthenticated exactly as before.
+  // Wiring the secret into the gate workflow is a separate CI-scope follow-up, not this fix.
   const token = process.env['GITHUB_TOKEN']
-  if (!token) {
-    throw new Error('GITHUB_TOKEN is missing; refusing unauthenticated label lookup')
-  }
   const labels = new Set<string>()
 
   for (let page = 1; page <= 10; page += 1) {
@@ -28,7 +30,7 @@ async function repositoryLabels(): Promise<ReadonlySet<string> | undefined> {
       {
         headers: {
           Accept: 'application/vnd.github+json',
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
           'User-Agent': 'developer-lens-context-verifier',
           'X-GitHub-Api-Version': '2022-11-28',
         },
