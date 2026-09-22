@@ -2,7 +2,7 @@ import { readdir, readFile } from 'node:fs/promises'
 import { extname, join, relative, sep } from 'node:path'
 
 const SCANNED_EXTENSIONS = new Set(['.css', '.html', '.svg'])
-const TAG_PATTERN = /<([A-Za-z][\w:-]*)(?:\s[^<>]*?)?>/gu
+const TAG_PATTERN = /<([A-Za-z][\w:-]*)(?:\s(?:[^<>"']|"[^"]*"|'[^']*')*?)?>/gu
 const ATTRIBUTE_PATTERN = /\s(srcset|src|href|xlink:href|data|poster)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/giu
 const STYLE_ATTRIBUTE_PATTERN = /\sstyle\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/giu
 const SVG_PRESENTATION_ATTRIBUTE_PATTERN = /\s(clip-path|color-profile|cursor|fill|filter|marker(?:-start|-mid|-end)?|mask|stroke)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'=<>`]+))/giu
@@ -31,6 +31,47 @@ const RESOURCE_TAGS: Readonly<Record<string, ReadonlySet<string>>> = {
   poster: new Set(['video']),
 }
 
+const CSS_ESCAPE_PATTERN = /\\([0-9a-f]{1,6}[ \t\n\r\f]?|[\s\S])/giu
+
+/**
+ * Decode CSS escape sequences the way browsers resolve them inside stylesheets:
+ * 1-6 hex digits plus one optional whitespace terminator, or a literal next
+ * character (a line break after the backslash is a continuation and vanishes).
+ */
+function decodeCssEscapes(value: string): string {
+  return value.replace(CSS_ESCAPE_PATTERN, (_escape, body: string) => {
+    if (/^[0-9a-f]/i.test(body)) {
+      const codePoint = Number.parseInt(body, 16)
+      if (codePoint === 0 || codePoint > 0x10ffff || (codePoint >= 0xd800 && codePoint <= 0xdfff)) {
+        return '\uFFFD'
+      }
+      return String.fromCodePoint(codePoint)
+    }
+    if (body === '\n' || body === '\r' || body === '\f') return ''
+    return body
+  })
+}
+
+/**
+ * WHATWG URL tab/newline stripping plus special-scheme backslash handling,
+ * applied after markup character-reference decoding.
+ */
+function normalizeUrlValue(value: string): string {
+  const stripped = decodeMarkupCharacterReferences(value).trim().replace(/[\t\n\r]/gu, '')
+  const scheme = /^[A-Za-z][A-Za-z0-9+.-]*:/.exec(stripped)?.[0].toLowerCase()
+  if (
+    scheme === 'http:' ||
+    scheme === 'https:' ||
+    scheme === 'ws:' ||
+    scheme === 'wss:' ||
+    scheme === 'ftp:' ||
+    scheme === 'file:'
+  ) {
+    return stripped.replace(/\\/gu, '/')
+  }
+  return stripped
+}
+
 function portablePath(root: string, path: string): string {
   return relative(root, path).split(sep).join('/')
 }
@@ -49,7 +90,7 @@ function decodeMarkupCharacterReferences(value: string): string {
 }
 
 function networkUrl(value: string): string | null {
-  return NETWORK_URL_PATTERN.exec(decodeMarkupCharacterReferences(value).trim())?.[0] ?? null
+  return NETWORK_URL_PATTERN.exec(normalizeUrlValue(value))?.[0] ?? null
 }
 
 function firstSrcsetNetworkUrl(value: string): string | null {
@@ -65,7 +106,7 @@ function attributeValue(match: RegExpExecArray, firstCapture: number): string {
 }
 
 function firstCssUrlNetworkResource(value: string): string | null {
-  const decoded = decodeMarkupCharacterReferences(value)
+  const decoded = decodeCssEscapes(decodeMarkupCharacterReferences(value))
   CSS_URL_PATTERN.lastIndex = 0
   for (let match = CSS_URL_PATTERN.exec(decoded); match; match = CSS_URL_PATTERN.exec(decoded)) {
     const resource = networkUrl(attributeValue(match, 1))
@@ -75,18 +116,19 @@ function firstCssUrlNetworkResource(value: string): string | null {
 }
 
 function scanCss(relativePath: string, css: string): string[] {
+  const decoded = decodeCssEscapes(css)
   const violations: string[] = []
   const importRanges: Array<readonly [number, number]> = []
 
   CSS_IMPORT_PATTERN.lastIndex = 0
-  for (let match = CSS_IMPORT_PATTERN.exec(css); match; match = CSS_IMPORT_PATTERN.exec(css)) {
+  for (let match = CSS_IMPORT_PATTERN.exec(decoded); match; match = CSS_IMPORT_PATTERN.exec(decoded)) {
     importRanges.push([match.index, match.index + match[0].length])
     const resource = networkUrl(attributeValue(match, 1))
     if (resource) violations.push(`${relativePath}: css @import: ${resource}`)
   }
 
   CSS_URL_PATTERN.lastIndex = 0
-  for (let match = CSS_URL_PATTERN.exec(css); match; match = CSS_URL_PATTERN.exec(css)) {
+  for (let match = CSS_URL_PATTERN.exec(decoded); match; match = CSS_URL_PATTERN.exec(decoded)) {
     if (importRanges.some(([start, end]) => match.index >= start && match.index < end)) continue
     const resource = networkUrl(attributeValue(match, 1))
     if (resource) violations.push(`${relativePath}: css url(): ${resource}`)
