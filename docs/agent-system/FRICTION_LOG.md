@@ -408,7 +408,7 @@ Rules that bind entries:
   installed, so a clean checkout can be mistaken for an unverifiable lane.
 - **workaround:** Run `npm ci`, then rerun `npm run verify:context`; the install completed with
   zero audit vulnerabilities and the verifier passed.
-- **occurrences:** 9 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
+- **occurrences:** 10 recorded — 2026-08-09 (the P0.5 pre-QA reconciliation worktree), 2026-08-09
   (the DL-P09/`Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11` release-gate prerequisite),
   2026-08-09 (the release-state/worktree-preservation documentation worktree), and 2026-08-09
   (the #200 state-reconciliation worktree), plus 2026-08-10 (the PR #238/#237/Lab #62 factual
@@ -451,6 +451,13 @@ Rules that bind entries:
   bootstrap restored dependencies, after which the unchanged verifier passed. This ninth occurrence
   retains FR-012's existing preamble and is recorded by
   [Product #200 comment 5303393508](https://github.com/Chris0Jeky/developer-lens/issues/200#issuecomment-5303393508).
+
+  **2026-09-22 recurrence note:** The #361 ZIP-based worktree exactly matched initial main,
+  but lacked installed dependencies and the required Node 24 runtime. A single npm runtime
+  bootstrap attempt failed with registry DNS resolution unavailable. No foreign-tool or local
+  full-suite result was accepted; native GitHub exact-head Node 24 jobs supplied canonical proof.
+  Dependency-free local probes and generated-manifest checks remained usable. This is the tenth
+  occurrence of the same bootstrap boundary; the existing enforcement remains appropriate.
 
 ### FR-013 — full product gate exceeded a compound shell timeout
 
@@ -1879,8 +1886,8 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   without a repository mutation or evidence gap.
 - **workaround:** Inspect only the bounded existing paths relevant to the review; that follow-up
   read completed successfully.
-- **occurrences:** 2 independent occurrences — 2026-08-15 exact-head review hop and the guessed
-  absent taskdeck/README.md target.
+- **occurrences:** 3 independent occurrences — 2026-08-15 exact-head review hop, the guessed
+  absent taskdeck/README.md target, and the 2026-09-22 #361 guessed resolver filename.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the
   Windows-safe command/discovery boundary.
 - **promotion:** Promoted at the second independent occurrence: Product #222 owns the checked
@@ -1889,6 +1896,10 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 
   **2026-08-15 recurrence note:** A guessed absent `taskdeck/README.md` discovery target stopped
   the bounded read; other explicit paths completed it without mutation, as recorded by [Product #222 comment 5303704285](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303704285).
+
+  **2026-09-22 recurrence note:** A guessed resolver filename was absent during #353 review.
+  Scoped filename discovery located the existing whyResolver.ts; only that source was read.
+  The existing #222 checked-path task remains the enforcement point.
 
 ### FR-058 — continuation-skill discovery assumed an absent path
 
@@ -2195,11 +2206,17 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   no repository or GitHub mutation occurred.
 - **workaround:** Use only documented returned fields from the project helper and preserve the raw
   response as the read authority.
-- **occurrences:** 1 independent occurrence, recorded by [Product issue #222 comment 5303418489](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303418489).
+- **occurrences:** 2 independent occurrences: [Product issue #222 comment 5303418489](https://github.com/Chris0Jeky/developer-lens/issues/222#issuecomment-5303418489) and the 2026-09-22 #361 manifest-key assumption.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the bounded
   review-evidence helper contract.
-- **promotion:** One helper result-shape occurrence. Keep distinct from FR-052 count integrity and
-  FR-071's positional-argument input interface; do not promote until an independent recurrence.
+- **promotion:** The second independent occurrence proposes checked top-level shape assertions
+  in #222 helper contracts before indexing returned objects. This is a proposed enforcement task,
+  not an implemented shared helper. Keep distinct from FR-052 count integrity and FR-071.
+
+  **2026-09-22 recurrence note:** A local manifest check assumed `cards` instead of the actual
+  `seedCards` field and stopped with KeyError before publication. Reading the generator contract
+  corrected the check; the resulting 128-card manifest matched its source and published blob hash.
+  #361 records the occurrence; #222 retains the proposed shape-assertion follow-up.
 
 ### FR-073 — `rg test*` was parsed as an invalid Windows positional path
 
@@ -2716,3 +2733,48 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
   cross-repository contract proving follow-up.
 - **promotion:** One occurrence remains workaround-documented; retain the force-build rule for
   exact-head contract work and do not add a broader cache-clearing helper after one occurrence.
+
+
+### FR-099 - connector endpoint support is narrower than repository access
+
+- **first-seen:** 2026-09-22
+- **status:** `workaround-documented`
+- **symptom:** The connected GitHub app could read/write the repository and PRs, but the branch-protection read returned integration 403 and a nested check-annotation fetch returned unsupported-endpoint 400.
+- **impact:** Those endpoints could not establish protection configuration or test failure details.
+- **workaround:** No protection was changed or waived. Use the declared required job and its exact-head status, and the native workflow-job-log action for failure details; do not retry equivalent generic network routes.
+- **occurrences:** 1 bounded connector capability audit in [#361](https://github.com/Chris0Jeky/developer-lens/pull/361).
+- **task:** #361 maintenance handoff records the native read/CI/write route and the uninspected settings boundary.
+- **promotion:** One occurrence remains documentation debt; do not request broader permissions merely to bypass a read limitation.
+
+### FR-100 - interactive container execution unavailable
+
+- **first-seen:** 2026-09-22
+- **status:** `workaround-documented`
+- **symptom:** A requested interactive execution session returned StreamingExecNotEnabledContainerError.
+- **impact:** The local bootstrap command could not use that execution mode.
+- **workaround:** Use ordinary bounded synchronous container executions and preserve their exit codes.
+- **occurrences:** 1 occurrence in [#361](https://github.com/Chris0Jeky/developer-lens/pull/361).
+- **task:** #361 continuation instructions retain the supported execution mode.
+- **promotion:** One environment-specific occurrence warrants no repository runtime change.
+
+### FR-101 - multi-line exact-text edits fail to match on CRLF working-tree files
+
+- **first-seen:** 2026-09-22
+- **status:** `workaround-documented`
+- **symptom:** A multi-line exact-match file edit fails with no match on a CRLF working-tree file while single-line edits on the same file succeed.
+- **impact:** The PR #349 scarcity-first doc batch could not be applied as multi-line splices through the editing tool.
+- **workaround:** Use single-line edits where possible; otherwise apply a byte-exact patch script with CRLF-preserving replacements and verify with `git diff`. Do not retab or renormalize endings, keeping the diff minimal under `core.autocrlf`.
+- **occurrences:** 1 occurrence in [#361](https://github.com/Chris0Jeky/developer-lens/pull/361) (this addendum session).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the Windows-safe command/discovery boundary; #361 addendum records the occurrence.
+- **promotion:** One occurrence remains documentation debt; no repository change proposed.
+
+### FR-102 - PowerShell `>` redirect writes UTF-16 and corrupts byte-compared probes
+
+- **first-seen:** 2026-09-22
+- **status:** `workaround-documented`
+- **symptom:** `git show <ref>:<path> > file` wrote UTF-16, so a falsification probe errored with `File appears to be binary` instead of testing the old implementation.
+- **impact:** One invalid red during the PR #354 regression-proof probe; no repository mutation (file restored immediately, confirmed by `git status`).
+- **workaround:** Write bytes exactly (bounded process capture plus binary write); confirm the working tree before running the probe.
+- **occurrences:** 1 occurrence in [#361](https://github.com/Chris0Jeky/developer-lens/pull/361) (this addendum session).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the Windows-safe command/discovery boundary; #361 addendum records the occurrence.
+- **promotion:** One environment-specific occurrence warrants no repository runtime change.
