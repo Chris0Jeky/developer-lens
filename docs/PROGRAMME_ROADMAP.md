@@ -68,22 +68,23 @@ exists:
   NFC-canonical installation-HMAC identities before the ASCII storage boundary; raw names never
   persist; invalid identity material fails closed with source and target untouched.
 - #6: duplicate provider IDs or repository references are refused before a target opens. v1-import
-  targets pin the installation-key fingerprint (`import_key_binding`): another key or a populated
-  unpinned target is refused without mutation, rotation/recovery means a new target re-imported from
-  the untouched JSON, and a deleted task key cannot mint aliases. Key bytes never reach a target,
-  error, or log.
+  targets pin the installation-key fingerprint (`import_key_binding`): another key, or an unpinned
+  target with a row in any table, is refused without mutation. Rotation/recovery means a new target
+  re-imported from the untouched JSON, and a deleted task key cannot mint aliases. The v3 shadow
+  source preflight verifies the pin against its key and does not copy it. Key bytes never reach a
+  target, error, or log.
 - #59: key setup stages, syncs, verifies, and publishes with a no-clobber hard link; cleanup is bound
   to the invocation's own inode, the key path is never unlinked, and a link-then-crash is
-  recoverable. Windows limits (no directory fsync, `O_NOFOLLOW`, or ACL check) are documented in code.
+  recoverable. A filesystem without hard links gets a distinct content-free refusal. Windows limits
+  (no directory fsync, `O_NOFOLLOW`, or ACL check) are documented in code.
 - #57: selected cards below four requests are refused before any store open or fetch.
 - #86 re-verified at the connector: coverage keys are content-free `cov-` ids and the scope alias
   persists only in `scope_alias` columns. The synthetic-only C0 `v2_coverage_record` bridge keeps its
   broad id shape; decide that before closing #86.
 
 Still open before real activation: the #168/#177 H5 reassessment; an owner-only Windows ACL or
-secure task root (#6 follow-up); a v3 disposition for `import_key_binding` before v1-import targets
-feed the v3 shadow path (its preflight refuses them today); and the owner-activated G2 copy-based
-migration run and bounded q-5 `github.core` activation themselves.
+secure task root (#6 follow-up); and the owner-activated G2 copy-based migration run and bounded
+q-5 `github.core` activation themselves.
 
 ## P3 — Query / Auto-Luna + raw text pipeline
 
