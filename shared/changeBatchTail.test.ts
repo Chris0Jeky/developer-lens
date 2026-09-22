@@ -397,3 +397,81 @@ describe('projection: every displayed number resolves through the Evidence Drawe
     expect(view.decisions.unsupported.join(' ')).toMatch(/person/)
   })
 })
+
+describe('analytical review round (headline framing, competing outcomes, lower-bound support)', () => {
+  it('never states a censoring-inverted direction: per-stratum counts, merged-only framing, fragile means no ordering', () => {
+    const units: ChangeBatchUnit[] = []
+    // 400+ lines: 20 opened early, 5 merged after about two days, 15 still open at the end.
+    for (let index = 0; index < 20; index += 1) {
+      units.push(unit(index % 5, index < 5 ? { mergedAfterHours: 44 + index } : 'open', 600 + index))
+    }
+    // Under 50 lines: 40 opened, 38 merged with a four-day p90, 2 still open.
+    for (let index = 0; index < 40; index += 1) {
+      units.push(unit(index % 20, index < 38 ? { mergedAfterHours: 10 + (index % 10) * 9 + (index >= 30 ? 6 : 0) } : 'open', 10 + (index % 30)))
+    }
+    const view = buildChangeBatchTailView(input(units))
+    const primary = view.binnings[0]
+    const [small, , large] = primary.strata
+    expect(large).toMatchObject({ eligible: 20, merged: 5, censored: 15, competing: 0, displayed: true })
+    expect(small).toMatchObject({ eligible: 40, merged: 38, censored: 2 })
+    expect(primary.tailOrdering).toBe(-1)
+    expect(primary.lowerBoundTailOrdering).toBe(1)
+    expect(view.finding.robustness.status).toBe('fragile')
+    expect(view.finding.robustness.checks.find((check) => check.checkId === 'OPEN_AT_LOWER_BOUND')?.outcome).toBe('changed_direction')
+    const observation = view.finding.observation
+    expect(observation).not.toMatch(/shorter|longer/)
+    expect(observation).toContain('no ordering between the strata is stated')
+    expect(observation).toContain('among the 5 of its 20 opened pull requests that merged before the window end (15 still open, 0 closed without merge)')
+    expect(observation).toContain('among the 38 of its 40 opened pull requests that merged before the window end (2 still open, 0 closed without merge)')
+    expect(observation).not.toMatch(/Among 60 pull requests/)
+    acceptChangeBatchTailView(JSON.parse(JSON.stringify(view)))
+  })
+
+  it('states a direction only for a stable reading, still merged-only framed', () => {
+    const view = buildChangeBatchTailView(input(presentableUnits()))
+    expect(view.finding.robustness.status).toBe('stable')
+    expect(view.finding.observation).toContain("Among merged pull requests only, the larger stratum's tail was longer than the smaller stratum's.")
+  })
+
+  it('treats material closed-without-merge shares as a selected merged sample', () => {
+    const units = [...presentableUnits()]
+    // Large stratum: 5 merged plus 12 closed without merge inside the window, 3 more merged.
+    for (let index = 0; index < 12; index += 1) units.push(unit(index, { closedAfterHours: 20 + index }, 800 + index, 12))
+    for (let index = 0; index < 3; index += 1) units.push(unit(index + 1, { mergedAfterHours: 150 + index }, 900 + index, 12))
+    const view = buildChangeBatchTailView(input(units))
+    const large = view.binnings[0].strata[2]
+    expect(large).toMatchObject({ eligible: 20, merged: 8, competing: 12, censored: 0 })
+    const result = view.results.find((entry) => entry.resultId === large.resultId)
+    expect(result?.coverage.find((entry) => entry.dimension === 'censoring_freedom')?.value).toBe(0.4)
+    expect(view.finding.limitations).toContainEqual({ limitationCode: 'COVERAGE_SPARSE', dimension: 'censoring_freedom', copyKey: 'copy.change_batch_tail.competing_selected_sample' })
+    expect(view.finding.alternativeExplanations.map((entry) => entry.code)).toContain('SELECTED_MERGED_SAMPLE')
+    expect(view.finding.discriminatingEvidence?.distinguishes).toContain('SELECTED_MERGED_SAMPLE')
+    // Below the declared 20% threshold the limitation is not raised.
+    const quiet = buildChangeBatchTailView(input(presentableUnits()))
+    expect(quiet.finding.limitations.map((entry) => entry.copyKey)).not.toContain('copy.change_batch_tail.competing_selected_sample')
+  })
+
+  it('lets a stratum with few merges but many still-open units move the lower-bound check without displaying it', () => {
+    const units: ChangeBatchUnit[] = []
+    for (let index = 0; index < 5; index += 1) {
+      units.push(unit(index + 10, { mergedAfterHours: 60 + index * 10 }, 10 + index))   // small: p90 100h
+      units.push(unit(index + 10, { mergedAfterHours: 5 + index }, 100 + index * 10))   // middle: p90 9h
+    }
+    // Large: 3 merged, 25 still open from the first days of the window.
+    for (let index = 0; index < 3; index += 1) units.push(unit(index, { mergedAfterHours: 2 }, 700 + index))
+    for (let index = 0; index < 25; index += 1) units.push(unit(index % 3, 'open', 800 + index))
+    const analysis = analyzeChangeBatchTail(input(units))
+    const primary = analysis.binnings[0]
+    const large = primary.strata[2]
+    expect(large.display.display).toBe(false)
+    expect(large.merged).toBe(3)
+    expect(large.lowerBoundP90).not.toBeNull()
+    expect(primary.tailOrdering).toBe(-1)
+    expect(primary.lowerBoundTailOrdering).toBe(1)
+    const view = buildChangeBatchTailView(input(units))
+    const shownLarge = view.binnings[0].strata[2]
+    expect(shownLarge).toMatchObject({ displayed: false, quantiles: null, lowerBoundP90: null })
+    expect(view.finding.robustness.checks.find((check) => check.checkId === 'OPEN_AT_LOWER_BOUND')?.outcome).toBe('changed_direction')
+    expect(view.marks.some((mark) => mark.subject.stratumId === 's3' && mark.subject.binningId === 'declared_thresholds' && mark.subject.basisId === 'lines_changed' && mark.valueCategory === 'quantile')).toBe(false)
+  })
+})

@@ -61,6 +61,12 @@ export const CHANGE_BATCH_MINIMUM_SUPPORT = 5
 /** Minimum comparable pairs before the concordance is displayed. */
 export const CHANGE_BATCH_MINIMUM_COMPARABLE_PAIRS = 10
 const DECLARED_QUANTILES = [0.5, 0.75, 0.9] as const
+/**
+ * Declared materiality threshold for competing outcomes: when at least this share of a stratum's
+ * eligible units closed without merge, its merged sample is a selected subset and the reading
+ * carries a COVERAGE_SPARSE limitation on censoring_freedom (copy key competing_selected_sample).
+ */
+export const CHANGE_BATCH_MATERIAL_COMPETING_SHARE = 0.2
 
 export const CHANGE_BATCH_QUESTION =
   'How does the tail of the opened-to-merge interval differ across change-batch sizes in this window?'
@@ -607,9 +613,12 @@ function computeStratum(
   const sampleEntry: MetricCoverageEntry = exempt || sampleSize >= CHANGE_BATCH_MINIMUM_SUPPORT
     ? { dimension: 'sample', value: 1, limiting_reason: null }
     : { dimension: 'sample', value: ratio(sampleSize, CHANGE_BATCH_MINIMUM_SUPPORT), limiting_reason: 'SAMPLE_BELOW_MINIMUM' }
+  // The share of eligible units whose merge interval was fully observed inside follow-up. A close
+  // without merge ends observation without the target event, so it reduces this dimension just as
+  // right-censoring does: a stratum that is mostly closed unmerged never reads as fully observed.
   const censoringEntry: MetricCoverageEntry = {
     dimension: 'censoring_freedom',
-    value: eligible === 0 ? 1 : ratio(eligible - censored, eligible),
+    value: eligible === 0 ? 1 : ratio(eligible - censored - competing, eligible),
     limiting_reason: null,
   }
   const resultId = resultIdFor(membership.basisId, membership.binningId, membership.stratum?.stratumId ?? null)
@@ -651,7 +660,13 @@ function computeStratum(
     merged: sampleSize,
     censored,
     competing,
-    lowerBoundP90: display.display && state === 'observed' && lowerBoundQuantiles !== null
+    // Its own support gate: the lower-bound sample (merged plus censored-at-bound) must reach the
+    // minimum support, independent of the merged-only display gate, so a stratum with few merges
+    // but many still-open units still moves the OPEN_AT_LOWER_BOUND check. A withheld stratum never
+    // DISPLAYS this value (the view nulls it); it feeds the sensitivity ordering only.
+    lowerBoundP90: (state === 'observed' || state === 'censored_only')
+      && lowerBound.length >= CHANGE_BATCH_MINIMUM_SUPPORT
+      && lowerBoundQuantiles !== null
       ? lowerBoundQuantiles[lowerBoundQuantiles.length - 1].value
       : null,
   }
@@ -751,9 +766,13 @@ function sign(value: number): -1 | 0 | 1 {
   return value > 0 ? 1 : value < 0 ? -1 : 0
 }
 
-function ordering(strata: readonly ChangeBatchStratumReading[], pick: (reading: ChangeBatchStratumReading) => number | null): -1 | 0 | 1 | null {
+function ordering(
+  strata: readonly ChangeBatchStratumReading[],
+  pick: (reading: ChangeBatchStratumReading) => number | null,
+  admit: (reading: ChangeBatchStratumReading) => boolean = (reading) => reading.display.display && reading.result.state === 'observed',
+): -1 | 0 | 1 | null {
   const shown = strata
-    .map((reading) => ({ reading, value: reading.display.display && reading.result.state === 'observed' ? pick(reading) : null }))
+    .map((reading) => ({ reading, value: admit(reading) ? pick(reading) : null }))
     .filter((entry): entry is { reading: ChangeBatchStratumReading; value: number } => entry.value !== null)
   if (shown.length < 2) return null
   return sign(shown[shown.length - 1].value - shown[0].value)
@@ -804,7 +823,8 @@ export function analyzeChangeBatchTail(input: ChangeBatchTailInput): ChangeBatch
         role: basisId === 'lines_changed' && binningId === 'declared_thresholds' ? 'primary' : 'sensitivity',
         strata: readings,
         tailOrdering: ordering(readings, p90Of),
-        lowerBoundTailOrdering: ordering(readings, (reading) => reading.lowerBoundP90),
+        // The lower-bound ordering admits every stratum whose lower-bound sample met support.
+        lowerBoundTailOrdering: ordering(readings, (reading) => reading.lowerBoundP90, (reading) => reading.lowerBoundP90 !== null),
       })
     }
   }
@@ -956,11 +976,15 @@ const ALTERNATIVES: readonly AlternativeExplanation[] = [
     code: 'BATCHED_REVIEW',
     statement: 'Review sessions that land several merges together shorten the observed tail in whichever strata they touch, independent of batch size.',
   },
+  {
+    code: 'SELECTED_MERGED_SAMPLE',
+    statement: 'Larger batches may more often be closed without merge, so each merged sample is a selected subset of its stratum and the tails compare survivors rather than whole strata.',
+  },
 ]
 
 const DISCRIMINATING = {
-  statement: 'Re-reading the window once the censored pull requests resolve, stratifying within one kind of work, and collecting the ready-for-review instant would separate a size-linked tail from censoring, work mix, and draft time.',
-  distinguishes: ['CENSORING_ARTIFACT', 'WORK_TYPE_MIX', 'DRAFT_TIME_INCLUDED'],
+  statement: 'Re-reading the window once the censored pull requests resolve, comparing the closed-without-merge share across strata, stratifying within one kind of work, and collecting the ready-for-review instant would separate a size-linked tail from censoring, a selected merged sample, work mix, and draft time.',
+  distinguishes: ['CENSORING_ARTIFACT', 'SELECTED_MERGED_SAMPLE', 'WORK_TYPE_MIX', 'DRAFT_TIME_INCLUDED'],
 }
 
 function days(seconds: number): string {
@@ -1005,11 +1029,22 @@ function robustnessOf(analysis: ChangeBatchTailAnalysis): FindingRobustness {
   }
 }
 
+/** True when any primary stratum's closed-without-merge share reaches the declared threshold. */
+export function materialCompeting(analysis: ChangeBatchTailAnalysis): boolean {
+  return analysis.binnings[0]?.strata.some((reading) => {
+    const eligible = reading.result.counts.eligible
+    return eligible > 0 && reading.competing / eligible >= CHANGE_BATCH_MATERIAL_COMPETING_SHARE
+  }) ?? false
+}
+
 function limitationsOf(analysis: ChangeBatchTailAnalysis): LimitationInstance[] {
   const limitations: LimitationInstance[] = [
     { limitationCode: 'COVERAGE_UNITS_DIFFER', dimension: 'censoring_freedom', copyKey: 'copy.change_batch_tail.censored_and_competing' },
     { limitationCode: 'LINKAGE_NOT_CAUSAL', dimension: 'comparability', copyKey: 'copy.change_batch_tail.associational_only' },
   ]
+  if (materialCompeting(analysis)) {
+    limitations.push({ limitationCode: 'COVERAGE_SPARSE', dimension: 'censoring_freedom', copyKey: 'copy.change_batch_tail.competing_selected_sample' })
+  }
   const withheld = analysis.binnings.some((binning) => binning.strata.some((reading) => reading.display.reasonCode === 'BELOW_MINIMUM_SUPPORT'))
   if (withheld || analysis.abstention === 'BELOW_MINIMUM_SUPPORT' || analysis.abstention === 'TOO_FEW_DISPLAYABLE_STRATA') {
     limitations.push({ limitationCode: 'SAMPLE_TOO_SMALL', dimension: 'sample', copyKey: 'copy.change_batch_tail.stratum_withheld' })
@@ -1133,9 +1168,16 @@ export function buildChangeBatchFinding(analysis: ChangeBatchTailAnalysis, marks
   const largest = shown[shown.length - 1]
   const smallP90 = p90Of(smallest) ?? 0
   const largeP90 = p90Of(largest) ?? 0
+  const robustness = robustnessOf(analysis)
+  const clause = (reading: ChangeBatchStratumReading, p90: number): string =>
+    `the ${reading.stratum?.label} stratum's 90th-percentile opened-to-merge interval was ${days(p90)} among the ${reading.merged} of its ${reading.result.counts.eligible} opened pull requests that merged before the window end (${reading.censored} still open, ${reading.competing} closed without merge)`
+  // A merged-only quantile is framed by its own merged count and its own stratum's censored and
+  // competing counts, and no direction is stated when any sensitivity check moved the comparison.
   const relation = largeP90 > smallP90 ? 'longer than' : largeP90 < smallP90 ? 'shorter than' : 'the same as'
-  const counts = analysis.all
-  const observation = `Among ${counts.result.counts.eligible} pull requests opened in the window, the 90th-percentile opened-to-merge interval in the ${largest.stratum?.label} stratum was ${days(largeP90)}, ${relation} the ${days(smallP90)} of the ${smallest.stratum?.label} stratum; ${counts.censored} were still open at the window end and ${counts.competing} closed without merging.`
+  const direction = robustness.status === 'fragile'
+    ? 'A sensitivity check changed this comparison, so no ordering between the strata is stated.'
+    : `Among merged pull requests only, the larger stratum's tail was ${relation} the smaller stratum's.`
+  const observation = `In this window, ${clause(largest, largeP90)}; ${clause(smallest, smallP90)}. ${direction}`
   const renderedMarks: RenderedMark[] = marks.map((mark) => ({
     markId: mark.markId,
     valueCategory: mark.valueCategory,
@@ -1162,7 +1204,7 @@ export function buildChangeBatchFinding(analysis: ChangeBatchTailAnalysis, marks
     counterEvidence,
     alternativeExplanations: [...ALTERNATIVES],
     limitations: limitationsOf(analysis),
-    robustness: robustnessOf(analysis),
+    robustness,
     discriminatingEvidence: { statement: DISCRIMINATING.statement, distinguishes: [...DISCRIMINATING.distinguishes] },
     presentationEligibility: { eligible: true, reasonCode: 'PRESENTABLE', surfaces: ['atlas', 'evidence_drawer', 'api_v2'] },
     abstention: null,
