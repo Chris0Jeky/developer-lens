@@ -19,10 +19,13 @@ later pin the newly published ResearchFinding schema commit externally when they
 
 The artifact uses snake_case and contains `schema_version`, `classification`, `subject_class`,
 canonical UTC `generated_at`, `finding`, distinct baseline/candidate `methods`, `decision`, one to
-six `metrics`, optional ordered `gates`, one to eight `limitations` and `unsupported_claims`, and
-`provenance`. Every object is strict. Metric values are finite and bounded by their registered
-unit: `rate` and `ratio` are 0..1; integer `count` is 0..1,000,000; `count_per_year` is 0..10,000;
-`hours` is 0..100,000. This initial registry uses rate and count_per_year.
+six `metrics`, optional `threshold_viability`, optional ordered `gates`, one to eight `limitations`
+and `unsupported_claims`, and `provenance`. Every object is strict. Metric values are finite and
+bounded by their registered unit: `rate` and `ratio` are 0..1; integer `count` is 0..1,000,000;
+`count_per_year` is 0..10,000; `weeks` is 0..1,000,000; `hours` is 0..100,000. This registry uses
+rate, count_per_year and weeks. `threshold_viability` is `{ "baseline": boolean, "candidate":
+boolean }`, the source view's `scorecard.threshold_selection.baseline.viable` and
+`scorecard.threshold_selection.candidate.viable`.
 
 ## Closed registries
 
@@ -40,6 +43,8 @@ unit: `rate` and `ratio` are 0..1; integer `count` is 0..1,000,000; `count_per_y
 | --- | --- | --- | --- |
 | `detection_rate` | Detection rate | rate | higher |
 | `false_alerts_per_year` | False alerts per year | count_per_year | lower |
+| `median_detection_delay_weeks` | Median detection delay | weeks | lower |
+| `coverage_confound_false_alert_rate` | Coverage-confound false-alert rate | rate | lower |
 
 ### GateCode (registry order)
 
@@ -49,7 +54,7 @@ unit: `rate` and `ratio` are 0..1; integer `count` is 0..1,000,000; `count_per_y
 | `candidate_selection` | Candidate selection is viable |
 | `detection_floor` | Candidate meets detection floor |
 | `delay_budget` | Candidate meets delay budget |
-| `false_alert_improvement` | Candidate false alerts improve |
+| `false_alert_improvement` | Candidate false alerts are lower than baseline |
 | `not_worse_detection` | Candidate detection is not worse |
 | `confound_guard` | Candidate confound guard is measured |
 
@@ -76,16 +81,28 @@ metric or gate codes, and gates that leave registry order. A rejected finding re
 gate or a measured candidate metric worse than baseline under `better_when`. In v1,
 `pelt_offline` is reserved in the method registry and cannot be selected as the baseline or
 candidate because the published metrics and gates describe online comparisons; an offline finding
-requires a future schema version. Three gates are derived from the metric evidence the
-artifact itself carries, and runtime validation rejects any other value: `detection_floor` must
-equal candidate detection reaching the preregistered floor of 0.75, `false_alert_improvement`
-must equal candidate false alerts being lower than baseline, and `not_worse_detection` must equal
-candidate detection being at least baseline. When a measurement one of those rules needs is
-`unavailable`, or its metric is absent, that gate must be `null`, mirroring the source contract's
-`not_applicable`. The remaining gates -- `baseline_selection`, `candidate_selection`,
-`delay_budget` and `confound_guard` -- rest on selection viability, detection delay and confound
-measurements that v1 does not transport, so v1 cannot derive them and a consumer that needs them
-derived must read the producer's source view contract. The runtime also recomputes `bundle_hash`
+requires a future schema version. Every gate is derived from evidence the artifact itself carries,
+and runtime validation rejects any other value:
+
+- `baseline_selection` and `candidate_selection` must equal `threshold_viability.baseline` and
+  `threshold_viability.candidate`;
+- `detection_floor` must equal candidate `detection_rate` >= 0.75, the preregistered floor;
+- `delay_budget` must equal candidate `median_detection_delay_weeks` <= 8, the preregistered budget;
+- `false_alert_improvement` must equal candidate `false_alerts_per_year` < baseline;
+- `not_worse_detection` must equal candidate `detection_rate` >= baseline;
+- `confound_guard` must equal candidate `coverage_confound_false_alert_rate` <= baseline.
+
+When a measurement one of those rules needs is `unavailable`, or its metric is absent, that gate
+must be `null`, mirroring the source contract's `not_applicable`; when `threshold_viability` is
+absent, both selection gates must be `null`. The `thresholds_nonviable` limitation is admissible
+only when both selection gates are present with `passed: false`, and is required in that case.
+
+`false_alert_improvement` is deliberately weaker than the source view. The source contract scores
+its gate with a preregistered 20% rule (candidate <= 0.8 x baseline); this projection publishes
+only that the candidate's false alerts are lower than baseline, and its label says exactly that.
+Over `0.8 x baseline < candidate < baseline` the projection's gate passes where the trial's gate
+fails (for example baseline 3.0 and candidate 2.9). A consumer that needs the trial's acceptance
+verdict must read the producer's source view contract, never this gate. The runtime also recomputes `bundle_hash`
 over the canonical artifact body and rejects a mismatch; `bundle_hash` proves transport integrity
 only, and never attests that a gate verdict follows from evidence.
 
@@ -96,14 +113,14 @@ Scheme serialization after removing only `provenance.bundle_hash`. Canonicalizat
 keys by JavaScript UTF-16 code units, preserves array order, emits no whitespace, uses JSON
 string escaping and ECMAScript shortest-round-trip finite numbers, and rejects unsupported values,
 sparse arrays, non-plain objects, `toJSON`, non-finite numbers, and lone surrogates. The fixture's
-bundle hash is `sha256:d694f81a114e49d0d26ddaaea2edcbab81ccf9877eafd6f48f845a4494b5c458`.
+bundle hash is `sha256:070bf161dbd7fa5bcb858d484024de69f315550ce8692776b241899d54c4cf35`.
 
 The published fixture is synthetic and contains no repository identity, person identifier, path,
 email, handle, or date other than `generated_at`. The only permitted public URL is the literal
 Pages method-trial URL in the fixture. The complete fixture file SHA-256 (including its trailing
 newline) is:
 
-`sha256:04794949c2aab324f11b1c8c3dd0b1ad25bc6d4c41e4e08fbbfd7c6cb08b3c94`
+`sha256:64f759894e92c72931bcdc19b726dfd0264aa1ddf2da3e9b328f2f266e47b84d`
 
 JCS acceptance vector (RFC 8785 section 3.2):
 
@@ -116,6 +133,21 @@ canonical output:
 ```json
 {"literals":[null,true,false],"numbers":[333333333.3333333,1e+30,4.5,0.002,0.000001,5e-324]}
 ```
+
+## Amendments before first consumption
+
+v1 was amended in place, rather than versioned, while no consumer had pinned it:
+
+- #320: the `model_promotion` claim text became outcome-neutral.
+- #319, #321, #327: the metric registry gained `median_detection_delay_weeks` (unit `weeks`) and
+  `coverage_confound_false_alert_rate`, the optional `threshold_viability` block was added, and all
+  seven gates became derived and validated; `false_alert_improvement` was relabelled
+  "Candidate false alerts are lower than baseline" to state its weaker-than-source rule; and
+  `thresholds_nonviable` was bound to both selection gates failing. The fixture now carries the
+  source view's delay (baseline 2, candidate 1), confound (0.5, 0.5) and viability (false, false)
+  evidence; its bundle hash changed from `sha256:d694f81a...` to `sha256:070bf161...`.
+
+Any later change grows v1 only by a new schema version.
 
 Generate or check the tracked schema and fixture with:
 

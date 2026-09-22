@@ -47,7 +47,10 @@ export function createWbc1ResearchFinding(): ResearchFinding {
     metrics: [
       { key: 'detection_rate', label: METRICS.detection_rate.label, unit: 'rate', better_when: 'higher', baseline: { status: 'measured', value: 0.75 }, candidate: { status: 'measured', value: 0.75 } },
       { key: 'false_alerts_per_year', label: METRICS.false_alerts_per_year.label, unit: 'count_per_year', better_when: 'lower', baseline: { status: 'measured', value: 2.966666666666667 }, candidate: { status: 'measured', value: 4.2 } },
+      { key: 'median_detection_delay_weeks', label: METRICS.median_detection_delay_weeks.label, unit: 'weeks', better_when: 'lower', baseline: { status: 'measured', value: 2 }, candidate: { status: 'measured', value: 1 } },
+      { key: 'coverage_confound_false_alert_rate', label: METRICS.coverage_confound_false_alert_rate.label, unit: 'rate', better_when: 'lower', baseline: { status: 'measured', value: 0.5 }, candidate: { status: 'measured', value: 0.5 } },
     ],
+    threshold_viability: { baseline: false, candidate: false },
     gates: [
       { code: 'baseline_selection', label: GATES.baseline_selection, passed: false },
       { code: 'candidate_selection', label: GATES.candidate_selection, passed: false },

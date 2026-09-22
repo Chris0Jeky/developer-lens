@@ -33,7 +33,7 @@
     },
     {
       "code": "false_alert_improvement",
-      "label": "Candidate false alerts improve",
+      "label": "Candidate false alerts are lower than baseline",
       "passed": false
     },
     {
@@ -104,10 +104,38 @@
       "key": "false_alerts_per_year",
       "label": "False alerts per year",
       "unit": "count_per_year"
+    },
+    {
+      "baseline": {
+        "status": "measured",
+        "value": 2
+      },
+      "better_when": "lower",
+      "candidate": {
+        "status": "measured",
+        "value": 1
+      },
+      "key": "median_detection_delay_weeks",
+      "label": "Median detection delay",
+      "unit": "weeks"
+    },
+    {
+      "baseline": {
+        "status": "measured",
+        "value": 0.5
+      },
+      "better_when": "lower",
+      "candidate": {
+        "status": "measured",
+        "value": 0.5
+      },
+      "key": "coverage_confound_false_alert_rate",
+      "label": "Coverage-confound false-alert rate",
+      "unit": "rate"
     }
   ],
   "provenance": {
-    "bundle_hash": "sha256:d694f81a114e49d0d26ddaaea2edcbab81ccf9877eafd6f48f845a4494b5c458",
+    "bundle_hash": "sha256:070bf161dbd7fa5bcb858d484024de69f315550ce8692776b241899d54c4cf35",
     "producer": "developer-lens-lab",
     "public_url": "https://chris0jeky.github.io/developer-lens/?view=method-trial",
     "source_lab_commit": "0ef193070a9b80b81cef5a1710a1d65e0b271c15",
@@ -115,6 +143,10 @@
   },
   "schema_version": "ResearchFindingProjection.v1",
   "subject_class": "software-system",
+  "threshold_viability": {
+    "baseline": false,
+    "candidate": false
+  },
   "unsupported_claims": [
     {
       "code": "real_repository_validity",
