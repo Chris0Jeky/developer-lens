@@ -141,12 +141,18 @@ already-redacted `PortableExportPayload` (with absent optional fields dropped), 
 dashboard — so it commits to what was projected without exposing anything the payload did not.
 A commit or hash is provenance, not an identity key or promotion authority.
 
-The tracked fixture pins its provenance so it does not churn per commit: `generatedAt` is
-`2026-09-01T12:00:00Z` and the synthetic showcase is generated at that instant in UTC;
-`producerCommit` is `d05533bbe17b3db524f9d404ef6c4a95a482e4bd`, the Developer Lens main commit
-whose synthetic showcase generator the fixture is projected from (not a self-reference). Consumers
-pin the commit that publishes this fixture externally. A CLI export names `git rev-parse HEAD` and
-its own `generatedAt`.
+`producerCommit` means different things in the tracked fixture and in a CLI export:
+
+- **Tracked fixture:** `producerCommit` is the fixed **showcase-generator anchor**
+  `d05533bbe17b3db524f9d404ef6c4a95a482e4bd`, the Developer Lens main commit whose synthetic
+  showcase generator the fixture is projected from. It is **not** the commit that publishes the
+  fixture (a file cannot name its own commit), and it does not change when later commits touch the
+  repository, so the fixture does not churn. `generatedAt` is likewise pinned to
+  `2026-09-01T12:00:00Z`, and the showcase is generated at that instant in UTC. Consumers pin the
+  publishing commit themselves, outside the artifact.
+- **CLI export (`npm run export:profile`):** `producerCommit` is the live `git rev-parse HEAD`
+  of the checkout that ran the export, and `generatedAt` is the dashboard's own generation time.
+  The export refuses if HEAD cannot be resolved to a 40-hex commit.
 
 Fixture hash vectors:
 
