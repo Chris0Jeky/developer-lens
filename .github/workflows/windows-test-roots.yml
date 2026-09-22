@@ -1,0 +1,49 @@
+name: Windows test-root proof
+
+on:
+  pull_request:
+    paths:
+      - '.github/workflows/windows-test-roots.yml'
+      - 'scripts/canonicalTestTempEnvironment*'
+      - 'server/storage/v3ArtifactCatalogue*'
+      - 'vitest.config.ts'
+      - 'package.json'
+      - 'package-lock.json'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-test-roots:
+    name: Prove native Windows test roots
+    runs-on: windows-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - name: Install dependencies
+        run: npm ci
+      - name: Start fixtures through the available short-path alias
+        shell: pwsh
+        run: |
+          $probe = Join-Path $env:RUNNER_TEMP 'Developer Lens canonical path probe'
+          New-Item -ItemType Directory -Path $probe -Force | Out-Null
+          $short = (cmd /d /c "for %I in (`"$probe`") do @echo %~sI").Trim()
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($short)) {
+            throw 'TEST_TEMP_ALIAS_PROBE_FAILED'
+          }
+          if ($short -eq $probe) {
+            Write-Output '8.3 alias unavailable; running native canonical-root proof with the long path.'
+          } else {
+            Write-Output '8.3 alias available; Vitest must normalize it before fixture startup.'
+          }
+          "TEMP=$short" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+          "TMP=$short" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
+      - name: Prove runner initialization and real artifact fixtures
+        run: npm test -- scripts/canonicalTestTempEnvironment.test.ts server/storage/v3ArtifactCatalogue.test.ts
