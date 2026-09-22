@@ -13,6 +13,9 @@ import { createPublicShowcaseDashboard } from '../scripts/exportDemo.js'
 import { createPortableExportPayload } from '../src/lib/portableExportPayload.js'
 import {
   apportionThousandths,
+  disambiguateLabels,
+  momentumScore,
+  truncateText,
   createPublicLensProjection,
   createPublicLensProjectionFromDashboard,
 } from '../src/lib/publicLensProjection.js'
@@ -285,8 +288,64 @@ describe('PublicLensProjection.v1 projection rules', () => {
     payload.repositories = Array.from({ length: 20 }, (_, index) => ({ ...payload.repositories[index % payload.repositories.length], label: `synthetic-${index}`, attentionShare: Math.round(((index + 1) / 210) * 1_000) / 1_000 }))
     const projection = project(payload)
     expect(projection.repositories).toHaveLength(12)
-    expect(projection.repositories[0].label).toBe('synthetic-19')
-    expect(projection.repositories.reduce((sum, repository) => sum + repository.attentionShare, 0)).toBeLessThanOrEqual(1.0001)
+    expect(projection.repositories.map((repository) => repository.label)).toEqual(Array.from({ length: 12 }, (_, index) => `synthetic-${19 - index}`))
+    // Apportioned over the exported twelve, so the published invariant (sum exactly 1) holds.
+    const sum = projection.repositories.reduce((total, repository) => total + repository.attentionShare, 0)
+    expect(Math.abs(sum - 1)).toBeLessThan(1e-9)
+    const top = 20 / (9 + 10 + 11 + 12 + 13 + 14 + 15 + 16 + 17 + 18 + 19 + 20)
+    expect(projection.repositories[0].attentionShare).toBeCloseTo(top, 2)
+  })
+
+  it.each([
+    [1, 0],
+    [2, 0.333],
+    [0.5, -0.333],
+    [3, 0.5],
+    [10, 0.818],
+    [21, 0.909],
+    [0, -1],
+  ])('maps a late/early momentum ratio of %d to the score %d', (ratio, score) => {
+    expect(momentumScore(ratio)).toBe(score)
+  })
+
+  it('exports a stable 1x repository at momentum 0 and a doubled one at +1/3, not ratio / 100', () => {
+    const payload = basePayload()
+    payload.repositories = [
+      { ...payload.repositories[0], label: 'synthetic-steady', attentionShare: 0.5, momentum: 1 },
+      { ...payload.repositories[1], label: 'synthetic-rising', attentionShare: 0.3, momentum: 2 },
+      { ...payload.repositories[2], label: 'synthetic-fading', attentionShare: 0.2, momentum: 0.5 },
+    ]
+    expect(project(payload).repositories.map((repository) => [repository.label, repository.momentum])).toEqual([
+      ['synthetic-steady', 0],
+      ['synthetic-rising', 0.333],
+      ['synthetic-fading', -0.333],
+    ])
+  })
+
+  it('keeps the analytics ratio through the portable payload instead of rounding it to an integer', () => {
+    const dashboard = showcaseDashboard()
+    dashboard.repositories = dashboard.repositories.map((repository, index) => ({ ...repository, momentum: [1.4, 0.6, 1][index % 3] }))
+    const payload = createPortableExportPayload(dashboard, { artifact: 'dashboard', aliasSeed: 'x', repositoryRedaction: 'private-aliases' })
+    expect(payload.repositories.slice(0, 3).map((repository) => repository.momentum)).toEqual([1.4, 0.6, 1])
+  })
+
+  it('de-duplicates labels that collide after 40-character truncation, deterministically', () => {
+    const payload = basePayload()
+    const prefix = 'synthetic-shared-prefix-for-a-very-long-'
+    payload.repositories = [
+      { ...payload.repositories[0], label: `${prefix}alpha`, attentionShare: 0.4 },
+      { ...payload.repositories[1], label: `${prefix}beta`, attentionShare: 0.35 },
+      { ...payload.repositories[2], label: `${prefix}gamma`, attentionShare: 0.25 },
+    ]
+    const labels = project(payload).repositories.map((repository) => repository.label)
+    expect(labels).toEqual([prefix.slice(0, 40), `${prefix.slice(0, 36)} (2)`, `${prefix.slice(0, 36)} (3)`])
+    expect(labels.every((label) => label.length <= 40)).toBe(true)
+    expect(project(payload).repositories.map((repository) => repository.label)).toEqual(labels)
+    expect(disambiguateLabels(['a', 'a', 'a (2)', 'a'])).toEqual(['a', 'a (2)', 'a (2) (2)', 'a (3)'])
+  })
+
+  it('truncates without splitting a surrogate pair', () => {
+    expect(truncateText(`${'x'.repeat(39)}😀tail`, 40)).toBe('x'.repeat(39))
   })
 
   it('exports delivery only when the median and open-work count are both available', () => {
@@ -378,6 +437,10 @@ describe('PublicLensProjection.v1 README', () => {
       expect(coverageScorePercentCandidates({ complete, partial, unavailable, total })).toEqual(admitted)
     }
     expect(vectorRows.length).toBeGreaterThanOrEqual(5)
+    const momentumStart = readme.indexOf('## Repository momentum')
+    const momentumRows = readme.slice(momentumStart, readme.indexOf('\n## ', momentumStart + 5)).split('\n').filter((line) => /^\| -?\d/.test(line)).map((line) => line.slice(1, -1).split('|').map((cell) => Number(cell.trim())))
+    expect(momentumRows.length).toBeGreaterThanOrEqual(5)
+    for (const [ratio, score] of momentumRows) expect(momentumScore(ratio), `ratio ${ratio}`).toBe(score)
     const fixtureText = (await readFile(fixturePath, 'utf8')).replaceAll('\r\n', '\n')
     const fixture = JSON.parse(fixtureText) as PublicLensProjection
     expect(readme).toContain(`\`${lensFixtureSha256(fixtureText)}\``)

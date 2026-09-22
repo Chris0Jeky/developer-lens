@@ -22,9 +22,9 @@ import {
  * `PortableExportPayload` → `PublicLensProjection.v1`.
  *
  * A projection, not a re-computation: every value is read from the already-redacted portable
- * payload, rescaled where the contract uses a different unit (DNA `0..100` → `0..1`, momentum
- * `-100..100` → `-1..1`), and bounded. The only inputs from outside the payload are the ones the
- * payload does not carry: `generatedAt`, the free-text warnings (exported as registry codes only),
+ * payload, rescaled where the contract uses a different unit (DNA `0..100` → `0..1`, the
+ * late/early momentum ratio → a symmetric `-1..1` score), and bounded. The only inputs from
+ * outside the payload are the ones it does not carry: `generatedAt`, the free-text warnings (exported as registry codes only),
  * the open-work count behind the optional `delivery` block, and provenance.
  */
 
@@ -97,27 +97,74 @@ function projectThemes(themes: PortableExportPayload['themes']): PublicLensProje
     .sort((left, right) => right.share - left.share || THEME_KEYS.indexOf(left.key) - THEME_KEYS.indexOf(right.key))
 }
 
+/**
+ * Late/early activity ratio → symmetric momentum score in `-1..1`:
+ * `score = (ratio - 1) / (ratio + 1)`, rounded to three decimals. An even ratio (`1`) scores `0`,
+ * `r` and `1 / r` score as exact opposites (`2` → `0.333`, `0.5` → `-0.333`), growth approaches
+ * `1` and fading approaches `-1` without a clamp. A non-finite or negative ratio scores `0`.
+ */
+export function momentumScore(ratio: number): number {
+  if (!Number.isFinite(ratio) || ratio < 0) return 0
+  const score = Math.round(((ratio - 1) / (ratio + 1)) * 1_000) / 1_000
+  return score === 0 ? 0 : score
+}
+
+/** Truncate to at most `max` UTF-16 units without splitting a surrogate pair, then trim the end. */
+export function truncateText(value: string, max: number): string {
+  let result = ''
+  for (const character of value) {
+    if (result.length + character.length > max) break
+    result += character
+  }
+  return result.trimEnd()
+}
+
+/**
+ * Labels are unique in the contract. A label that repeats an earlier one (two repositories that
+ * share a display name, or share a 40-character prefix after truncation) gets the smallest free
+ * ordinal suffix ` (2)`, ` (3)`, … in output order, with the base truncated so the result still
+ * fits 40 characters. The first occurrence keeps its label unchanged.
+ */
+export function disambiguateLabels(labels: readonly string[], max = 40): string[] {
+  const used = new Set<string>()
+  return labels.map((label) => {
+    let candidate = label
+    for (let ordinal = 2; used.has(candidate); ordinal += 1) {
+      const suffix = ` (${ordinal})`
+      candidate = `${truncateText(label, max - suffix.length)}${suffix}`
+    }
+    used.add(candidate)
+    return candidate
+  })
+}
+
 function projectRepositories(
   repositories: PortableExportPayload['repositories'],
 ): PublicLensProjection['repositories'] {
-  const shares = apportionThousandths(repositories.map((repository) => repository.attentionShare))
-  return repositories
-    .map((repository, index) => ({ repository, index, share: shares[index] }))
-    .sort((left, right) => right.share - left.share || left.index - right.index)
+  // Select the largest repositories first, then apportion across exactly the exported set, so
+  // `attentionShare` is relative to the exported repositories and always sums to 1 (or 0).
+  const selected = repositories
+    .map((repository, index) => ({ repository, index }))
+    .sort((left, right) => right.repository.attentionShare - left.repository.attentionShare || left.index - right.index)
     .slice(0, LENS_PROJECTION_REPOSITORY_LIMIT)
-    .map(({ repository, share }) => {
-      const language = repository.primaryLanguage.trim()
-      return {
-        label: repository.label.slice(0, 40).trimEnd(),
-        disclosure: repository.disclosure,
-        ...(language && language !== 'Not detected' ? { primaryLanguage: language.slice(0, 32).trimEnd() } : {}),
-        attentionShare: share,
-        activeWeeks: Math.round(clamp(repository.activeWeeks, 0, 1_000_000)),
-        momentum: clamp(Math.round(repository.momentum) / 100, -1, 1),
-        mergedPullRequests: Math.round(clamp(repository.mergedPullRequests, 0, 1_000_000)),
-        reviews: Math.round(clamp(repository.reviews, 0, 1_000_000)),
-      }
-    })
+  const shares = apportionThousandths(selected.map(({ repository }) => repository.attentionShare))
+  const ordered = selected
+    .map((entry, position) => ({ ...entry, share: shares[position] }))
+    .sort((left, right) => right.share - left.share || left.index - right.index)
+  const labels = disambiguateLabels(ordered.map(({ repository }) => truncateText(repository.label, 40)))
+  return ordered.map(({ repository, share }, position) => {
+    const language = truncateText(repository.primaryLanguage.trim(), 32)
+    return {
+      label: labels[position],
+      disclosure: repository.disclosure,
+      ...(language && language !== 'Not detected' ? { primaryLanguage: language } : {}),
+      attentionShare: share,
+      activeWeeks: Math.round(clamp(repository.activeWeeks, 0, 1_000_000)),
+      momentum: momentumScore(repository.momentum),
+      mergedPullRequests: Math.round(clamp(repository.mergedPullRequests, 0, 1_000_000)),
+      reviews: Math.round(clamp(repository.reviews, 0, 1_000_000)),
+    }
+  })
 }
 
 function projectNarratives(narratives: PortableExportPayload['narratives']): PublicLensProjection['narratives'] {

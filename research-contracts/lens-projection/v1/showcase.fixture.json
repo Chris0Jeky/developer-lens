@@ -72,11 +72,11 @@
   ],
   "privacyNote": "Synthetic showcase · no personal GitHub data",
   "provenance": {
-    "inputHash": "sha256:9beca7c86edce77871e4384da14253324862e8abf36cf41d3bbee71afa8be039",
+    "inputHash": "sha256:ce1151426b16a1b99a2143662c4b383edf777b641fad9a12f36d4db397a228b2",
     "producer": "developer-lens",
     "producerCommit": "d05533bbe17b3db524f9d404ef6c4a95a482e4bd",
     "producerVersion": "0.0.0",
-    "projectionHash": "sha256:56dd5c3e6d93c0879bc1f058fbbaa058aa14df60596cb6afd9f1e9f0cc90ba7a",
+    "projectionHash": "sha256:a97f47a7c76ee3bf0c4c44ec6730a88c6a0e47b2de95155c3f358ec920e5a9b3",
     "showcaseUrl": "https://chris0jeky.github.io/developer-lens/"
   },
   "range": "12m",
@@ -88,7 +88,7 @@
       "disclosure": "synthetic",
       "label": "relay-api",
       "mergedPullRequests": 6,
-      "momentum": 0.01,
+      "momentum": 0.065,
       "primaryLanguage": "Kotlin",
       "reviews": 9
     },
@@ -98,7 +98,7 @@
       "disclosure": "synthetic",
       "label": "docs-atlas",
       "mergedPullRequests": 6,
-      "momentum": 0.01,
+      "momentum": 0.015,
       "primaryLanguage": "MDX",
       "reviews": 9
     },
@@ -108,7 +108,7 @@
       "disclosure": "synthetic",
       "label": "quiet-infra",
       "mergedPullRequests": 6,
-      "momentum": 0.01,
+      "momentum": -0.075,
       "primaryLanguage": "PowerShell",
       "reviews": 9
     },
@@ -128,7 +128,7 @@
       "disclosure": "synthetic",
       "label": "prism-core",
       "mergedPullRequests": 0,
-      "momentum": 0.01,
+      "momentum": -0.266,
       "primaryLanguage": "TypeScript",
       "reviews": 9
     },
@@ -138,7 +138,7 @@
       "disclosure": "synthetic",
       "label": "orbit-cli",
       "mergedPullRequests": 6,
-      "momentum": 0.01,
+      "momentum": -0.015,
       "primaryLanguage": "Rust",
       "reviews": 9
     },
@@ -148,7 +148,7 @@
       "disclosure": "synthetic",
       "label": "release-weaver",
       "mergedPullRequests": 6,
-      "momentum": 0.01,
+      "momentum": -0.124,
       "primaryLanguage": "Go",
       "reviews": 9
     },
@@ -158,7 +158,7 @@
       "disclosure": "synthetic",
       "label": "signal-garden",
       "mergedPullRequests": 6,
-      "momentum": 0.01,
+      "momentum": 0.038,
       "primaryLanguage": "Python",
       "reviews": 9
     }
