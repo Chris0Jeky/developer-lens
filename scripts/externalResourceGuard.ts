@@ -31,12 +31,13 @@ const RESOURCE_TAGS: Readonly<Record<string, ReadonlySet<string>>> = {
   poster: new Set(['video']),
 }
 
-const CSS_ESCAPE_PATTERN = /\\([0-9a-f]{1,6}[ \t\n\r\f]?|[\s\S])/giu
+const CSS_ESCAPE_PATTERN = /\\([0-9a-f]{1,6}(?:\r\n|[ \t\n\r\f])?|[\s\S])/giu
 
 /**
  * Decode CSS escape sequences the way browsers resolve them inside stylesheets:
- * 1-6 hex digits plus one optional whitespace terminator, or a literal next
- * character (a line break after the backslash is a continuation and vanishes).
+ * 1-6 hex digits plus one optional whitespace terminator (a CRLF pair counts
+ * as one, matching CSS input preprocessing), or a literal next character
+ * (a line break after the backslash is a continuation and vanishes).
  */
 function decodeCssEscapes(value: string): string {
   return value.replace(CSS_ESCAPE_PATTERN, (_escape, body: string) => {

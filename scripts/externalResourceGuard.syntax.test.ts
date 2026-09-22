@@ -25,6 +25,9 @@ const cases = [
   ['quoted angle bracket', 'index.html', '<img alt="a > b" src="https://cdn.example.test/image.png">'],
   ['CSS escaped quote inside url()', 'site.css', String.raw`.remote { background: url("https://cdn.example.test/x\22 suffix"); }`],
   ['scheme-relative backslashes', 'index.html', String.raw`<img src="\\cdn.example.test\image.png">`],
+  ['CRLF-terminated function escape', 'site.css', '.remote { background: u\\72\r\nl(https://cdn.example.test/image.png); }'],
+  ['CRLF-terminated import escape', 'site.css', '@\\69\r\nmport "https://cdn.example.test/site.css";'],
+  ['CRLF-terminated scheme escape', 'site.css', '.remote { background: url(\\68\r\nttps://cdn.example.test/image.png); }'],
 ] as const
 
 describe('external resource browser-syntax regressions', () => {
