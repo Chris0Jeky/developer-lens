@@ -1,0 +1,25 @@
+{
+  "schemaVersion": "DeveloperLensIssueManifestIndex.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "materializedSchemaVersion": "DeveloperLensIssueManifest.v1",
+  "collectionKey": "issues",
+  "totalCount": 52,
+  "parts": [
+    {
+      "path": "issue-manifest.part-01.json",
+      "count": 13
+    },
+    {
+      "path": "issue-manifest.part-02.json",
+      "count": 13
+    },
+    {
+      "path": "issue-manifest.part-03.json",
+      "count": 13
+    },
+    {
+      "path": "issue-manifest.part-04.json",
+      "count": 13
+    }
+  ]
+}

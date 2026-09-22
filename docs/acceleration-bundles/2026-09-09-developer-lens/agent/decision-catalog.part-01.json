@@ -1,0 +1,185 @@
+{
+  "schemaVersion": "DeveloperLensDecisionCatalogPart.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "part": 1,
+  "totalParts": 4,
+  "decisions": [
+    {
+      "id": "REL-01",
+      "area": "Release",
+      "title": "Release shape",
+      "context": "The constitution and #200 require Product and Lab to release together; neither repository has a release yet.",
+      "recommendation": "Keep the joint v0.1.0 release. Do not reopen product-only versus joint-release strategy now.",
+      "options": [
+        {
+          "id": "joint",
+          "label": "Joint Product + Lab v0.1.0",
+          "description": "Preserves the governed Product/Lab story and existing owner decision.",
+          "recommended": true
+        },
+        {
+          "id": "product-only",
+          "label": "Product-only v0.1.0",
+          "description": "Faster, but supersedes an explicit decision and weakens the research-companion narrative.",
+          "recommended": false
+        },
+        {
+          "id": "defer",
+          "label": "Defer both until #174",
+          "description": "Polishes first, but contradicts the release programme and delays learning.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "REL-02",
+      "area": "Release",
+      "title": "Open security dependency PR #323",
+      "context": "The only open Product PR is a mergeable Dependabot security update with the hosted proving gate green.",
+      "recommendation": "Re-run or confirm exact-head CI, inspect the lockfile-only diff, then merge before cutting release artifacts.",
+      "options": [
+        {
+          "id": "merge",
+          "label": "Merge after exact-head recheck",
+          "description": "Closes known high-severity transitive parser advisories before release.",
+          "recommended": true
+        },
+        {
+          "id": "hold",
+          "label": "Hold until release branch",
+          "description": "Avoids a moving base, but ships a known security update later than necessary.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "REL-03",
+      "area": "Release",
+      "title": "Final Product visual sign-off",
+      "context": "Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) is the sole current tag-blocking owner action; Lab visual sign-off is already complete.",
+      "recommendation": "Use one bounded proof packet: desktop full page, above fold, 390×844 mobile, 30–60 second scroll video, checksums and exact commit.",
+      "options": [
+        {
+          "id": "approve-packet",
+          "label": "Review and approve bounded packet",
+          "description": "Closes the only release-blocking human gate without reopening design.",
+          "recommended": true
+        },
+        {
+          "id": "request-polish",
+          "label": "Request one bounded polish pass",
+          "description": "Use only for concrete visible defects; cap at one pass.",
+          "recommended": false
+        },
+        {
+          "id": "rethink-ui",
+          "label": "Reopen visual direction",
+          "description": "High delay and scope risk; inappropriate for v0.1 unless the experience is unusable.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "PRD-01",
+      "area": "Product",
+      "title": "Post-release order",
+      "context": "#304 has an external consumer and a narrow contract; #174 is the flagship value vertical.",
+      "recommendation": "Ship #304 immediately after release, then make #174 the dominant product lane.",
+      "options": [
+        {
+          "id": "304-then-174",
+          "label": "#304 then #174",
+          "description": "Unblocks CommitAtlas quickly and then returns focus to core product value.",
+          "recommended": true
+        },
+        {
+          "id": "174-first",
+          "label": "#174 before #304",
+          "description": "Maximizes internal value, but leaves a bounded cross-repo consumer waiting.",
+          "recommended": false
+        },
+        {
+          "id": "parallel",
+          "label": "Run both in parallel",
+          "description": "Feasible only with strict file ownership and no shared-contract overlap.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "PRD-02",
+      "area": "Portfolio",
+      "title": "GitHub milestone model",
+      "context": "All 52 open issues currently lack milestones, so the GitHub issue list does not convey execution order.",
+      "recommendation": "Create four outcome milestones plus a research backlog: v0.1 Release, v0.2 Evidence Flagship, v0.3 Safe Activation, v0.4 Query & Distribution, Research/Later.",
+      "options": [
+        {
+          "id": "outcome-milestones",
+          "label": "Outcome milestones",
+          "description": "Makes GitHub itself answer what belongs together and why.",
+          "recommended": true
+        },
+        {
+          "id": "keep-files-only",
+          "label": "Keep roadmap only in files",
+          "description": "Avoids GitHub administration but keeps portfolio state fragmented.",
+          "recommended": false
+        },
+        {
+          "id": "date-sprints",
+          "label": "Time-boxed sprint milestones",
+          "description": "Simple, but less stable for solo development with uncertain research work.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "GOV-01",
+      "area": "Governance",
+      "title": "Governance expansion budget",
+      "context": "The repository has a mature governor, prompt OS, context verifier, implementation ledger and friction log. New governance now has diminishing returns.",
+      "recommendation": "Freeze new permanent governance mechanisms for two product waves. Allow only fixes that remove a demonstrated repeated failure or replace an older mechanism.",
+      "options": [
+        {
+          "id": "freeze",
+          "label": "Two-wave governance freeze",
+          "description": "Redirects effort toward user-visible value while retaining existing safety controls.",
+          "recommended": true
+        },
+        {
+          "id": "maintain",
+          "label": "Continue opportunistic governance",
+          "description": "May improve rigor but perpetuates control-plane expansion.",
+          "recommended": false
+        }
+      ]
+    },
+    {
+      "id": "PRD-03",
+      "area": "Product",
+      "title": "Story-mode identity language",
+      "context": "The README still foregrounds Developer DNA, archetypes and rhythms, while the constitution is explicitly system-first and cautious about person scoring.",
+      "recommendation": "Keep current language as a clearly labelled personal/legacy Story mode for v0.1; move new surfaces toward Work Shape or System Signature.",
+      "options": [
+        {
+          "id": "separate",
+          "label": "Separate Story and System language",
+          "description": "Preserves charm without contaminating evidence-oriented product claims.",
+          "recommended": true
+        },
+        {
+          "id": "keep",
+          "label": "Keep Developer DNA everywhere",
+          "description": "Memorable, but increasingly clashes with the product's evidentiary posture.",
+          "recommended": false
+        },
+        {
+          "id": "remove",
+          "label": "Remove identity language immediately",
+          "description": "Maximally rigorous, but throws away a distinctive retrospective experience before user learning.",
+          "recommended": false
+        }
+      ]
+    }
+  ]
+}

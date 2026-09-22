@@ -127,7 +127,7 @@ value slice (DL-VALUE-01) is evaluated; no further speculative scouting occurs b
 
 1. **ADR-01 stability key** (C-03 finding): accepted; amended into ADR-01. Claim history groups by
    (`statement_code`, `method_id@version`, `window`, `scope_alias`, `schema_version`).
-2. **14-role taxonomy** (A4): accepted; ADR-05 amended; DL-XRAY-01 card scope updated on the board.
+2. **15-role taxonomy** (A4 + constitution-v2): accepted; ADR-05 amended; DL-XRAY-01 card scope updated on the board, with `agent_config` presence-only under D5=PRES.
 3. **Matched-window middle case** (C-08): accepted; ADR-07 amended.
 4. **Banded structural exports** (Scout A cross-cutting fingerprinting risk): accepted as a
    cross-cutting pack rule; ADR-22 amended; DL-PACK-05 card scope updated on the board.
