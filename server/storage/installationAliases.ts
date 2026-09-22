@@ -1,9 +1,14 @@
 import { createHmac } from 'node:crypto'
 
-export class InstallationKeyError extends Error {
-  public readonly code: 'INSTALLATION_KEY_REQUIRED' | 'INSTALLATION_KEY_TOO_SHORT'
+export type InstallationKeyErrorCode =
+  | 'INSTALLATION_KEY_REQUIRED'
+  | 'INSTALLATION_KEY_TOO_SHORT'
+  | 'INSTALLATION_KEY_INVALID'
 
-  constructor(code: 'INSTALLATION_KEY_REQUIRED' | 'INSTALLATION_KEY_TOO_SHORT') {
+export class InstallationKeyError extends Error {
+  public readonly code: InstallationKeyErrorCode
+
+  constructor(code: InstallationKeyErrorCode) {
     super(code)
     this.name = 'InstallationKeyError'
     this.code = code

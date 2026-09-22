@@ -1,13 +1,18 @@
 import { createHash, createHmac } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
-import { afterEach, describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { openStorageDatabase, runStorageChecks } from './database.js'
 import { importV1Json, parseV1Dataset, selectStorageReader, storageV2Enabled } from './migrateV1.js'
-import { SQLITE_APPLICATION_ID, SQLITE_USER_VERSION } from './schema.js'
+import { IMPORT_KEY_BINDING_SQL, SQLITE_APPLICATION_ID, SQLITE_USER_VERSION } from './schema.js'
+import {
+  loadTaskInstallationKey,
+  setupTaskInstallationKey,
+  taskInstallationKeyTestSeams,
+} from './taskInstallationKey.js'
 
 const tempDirectories: string[] = []
 const INSTALLATION_KEY = Buffer.from('synthetic-installation-key-material-0123456789', 'utf8')
@@ -250,14 +255,14 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     unknownCoverage.coverage[0]!.id = 'unknown-source'
     const duplicateCoverage = inventedV1Fixture()
     duplicateCoverage.coverage.push({ ...duplicateCoverage.coverage[0]! })
-    const unsafeLocalIdentifier = inventedV1Fixture()
-    unsafeLocalIdentifier.repositories[0]!.id = 'local:owner/repository name'
+    const unstableLocalIdentifier = inventedV1Fixture()
+    unstableLocalIdentifier.repositories[0]!.id = 'local:owner/repository\u0000name'
 
     expect(() => parseV1Dataset(JSON.stringify(whitespaceIdentifier))).toThrow('V1_VALIDATION_FAILED')
     expect(() => parseV1Dataset(JSON.stringify(unknownState))).toThrow('V1_VALIDATION_FAILED')
     expect(() => parseV1Dataset(JSON.stringify(unknownCoverage))).toThrow('V1_VALIDATION_FAILED')
     expect(() => parseV1Dataset(JSON.stringify(duplicateCoverage))).toThrow('V1_VALIDATION_FAILED')
-    expect(() => parseV1Dataset(JSON.stringify(unsafeLocalIdentifier))).toThrow('V1_VALIDATION_FAILED')
+    expect(() => parseV1Dataset(JSON.stringify(unstableLocalIdentifier))).toThrow('V1_VALIDATION_FAILED')
 
     const { target } = await fixturePaths()
     const db = openStorageDatabase(target)
@@ -473,5 +478,360 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     await expect(selectStorageReader(migrationOptions(source, target, { enabled: true, failAt: 'after-repository-upsert' }))).resolves.toEqual({ reader: 'legacy-json', code: 'storage-import-failed' })
     expect(databaseDigest(target)).toBe(before)
     await expect(readFile(source)).resolves.toEqual(replacementBytes)
+  })
+})
+
+const REPOSITORY_PROVIDER_DOMAIN = 'developer-lens/repository-provider/v1'
+
+function sha256(value: Buffer | string): string {
+  return createHash('sha256').update(value).digest('hex')
+}
+
+function textCells(path: string): string[] {
+  const db = new Database(path, { readonly: true })
+  try {
+    const tables = db
+      .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name")
+      .pluck()
+      .all() as string[]
+    return tables.flatMap((table) => (db.prepare(`SELECT * FROM ${table}`).all() as Record<string, unknown>[])
+      .flatMap((row) => Object.values(row).filter((value): value is string => typeof value === 'string')))
+  } finally {
+    db.close()
+  }
+}
+
+function tableNames(path: string): string[] {
+  const db = new Database(path, { readonly: true })
+  try {
+    return db
+      .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name")
+      .pluck()
+      .all() as string[]
+  } finally {
+    db.close()
+  }
+}
+
+function bindingFingerprint(path: string): string | undefined {
+  if (!tableNames(path).includes('import_key_binding')) return undefined
+  const db = new Database(path, { readonly: true })
+  try {
+    return db.prepare('SELECT installation_key_fingerprint FROM import_key_binding').pluck().get() as string | undefined
+  } finally {
+    db.close()
+  }
+}
+
+function providerIds(path: string): string[] {
+  const db = openStorageDatabase(path)
+  try {
+    return db.prepare('SELECT provider_id FROM repository_identity ORDER BY provider_id').pluck().all() as string[]
+  } finally {
+    db.close()
+  }
+}
+
+/** Invented collector-shaped local repositories: fallback basenames and remote-derived names. */
+const LOCAL_NAME_DOMAIN = [
+  // Fallback basename with spaces and Latin diacritics.
+  { nameWithOwner: 'My Project Ünïcode', name: 'My Project Ünïcode' },
+  // SSH-remote-derived owner/name with spaces and diacritics.
+  { nameWithOwner: 'Équipe/Dépôt Données', name: 'Dépôt Données' },
+  // URL-remote-derived: URL.pathname keeps the space percent-encoded.
+  { nameWithOwner: 'owner/my%20repo', name: 'my%20repo' },
+  // Non-Latin script plus an astral-plane code point.
+  { nameWithOwner: 'チーム/リポジトリ 🚀', name: 'リポジトリ 🚀' },
+] as const
+
+function localNameFixture(names: readonly { nameWithOwner: string; name: string }[] = LOCAL_NAME_DOMAIN) {
+  const fixture = inventedV1Fixture()
+  const template = fixture.repositories[0]!
+  const commitTemplate = fixture.commits[0]!
+  fixture.repositories = names.map(({ nameWithOwner, name }) => ({
+    ...template,
+    // The collector's own id rule: `local:${nameWithOwner.toLowerCase()}`.
+    id: `local:${nameWithOwner.toLowerCase()}`,
+    nameWithOwner,
+    name,
+  }))
+  fixture.commits = names.map(({ nameWithOwner }, index) => ({
+    ...commitTemplate,
+    sha: `invented-local-sha-${index}`,
+    repository: nameWithOwner,
+    source: 'local-git',
+  }))
+  fixture.commitDaysByRepository = names.map(({ nameWithOwner }) => ({ repository: nameWithOwner, date: '2026-01-02', count: 1 }))
+  fixture.pullRequests = []
+  fixture.reviews = []
+  fixture.issues = []
+  fixture.coverage = [{ id: 'local-git', label: 'Invented local label', status: 'complete', detail: 'Invented', itemCount: names.length }]
+  return fixture
+}
+
+describe('#5 full local collector repository-name domain', () => {
+  it('accepts fallback basenames and remote-derived names with spaces and Unicode without persisting them', async () => {
+    const { source, target } = await fixturePaths()
+    const fixture = localNameFixture()
+    const sourceBytes = Buffer.from(JSON.stringify(fixture), 'utf8')
+    await writeFile(source, sourceBytes)
+
+    await expect(selectStorageReader(migrationOptions(source, target, { enabled: true }))).resolves.toMatchObject({ reader: 'sqlite-v2' })
+
+    const db = openStorageDatabase(target)
+    const commitProviders = db
+      .prepare('SELECT sha, repository_provider_id FROM commit_observation ORDER BY sha')
+      .all() as Array<{ sha: string; repository_provider_id: string }>
+    const identities = db.prepare('SELECT provider_id, analytical_key FROM repository_identity').all() as Array<{ provider_id: string; analytical_key: string }>
+    db.close()
+
+    expect(identities).toHaveLength(LOCAL_NAME_DOMAIN.length)
+    for (const identity of identities) {
+      expect(identity.provider_id).toMatch(/^repo-[a-f0-9]{64}$/)
+      expect(identity.analytical_key).toMatch(/^repo-[a-f0-9]{64}$/)
+    }
+    // The canonical identity is the installation HMAC of the canonical local id, and every
+    // commit resolves to exactly its own repository's identity.
+    expect(commitProviders).toEqual(fixture.repositories.map((repository, index) => ({
+      sha: `invented-local-sha-${index}`,
+      repository_provider_id: expectedAlias(INSTALLATION_KEY, REPOSITORY_PROVIDER_DOMAIN, repository.id.normalize('NFC')),
+    })))
+
+    const forbidden = [
+      ...fixture.repositories.flatMap((repository) => [repository.id, repository.nameWithOwner, repository.name]),
+      'Ünïcode', 'ünïcode', 'Dépôt', 'dépôt', 'Équipe', 'リポジトリ', 'チーム', '🚀', '%20', 'My Project', 'local:',
+    ]
+    const cells = textCells(target)
+    const fileBytes = await readFile(target)
+    for (const value of forbidden) {
+      expect(cells.some((cell) => cell.includes(value))).toBe(false)
+      expect(fileBytes.includes(Buffer.from(value, 'utf8'))).toBe(false)
+    }
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
+  it('treats NFC and NFD spellings as one canonical identity and refuses them as duplicates', async () => {
+    const { source, target } = await fixturePaths()
+    const composed = 'Café Übung/Dépôt'.normalize('NFC')
+    const decomposed = composed.normalize('NFD')
+    expect(decomposed).not.toBe(composed)
+
+    const mixed = localNameFixture([{ nameWithOwner: composed, name: 'Dépôt' }])
+    mixed.repositories[0]!.id = `local:${decomposed.toLowerCase()}`
+    mixed.commits[0]!.repository = decomposed
+    await writeFile(source, JSON.stringify(mixed))
+    await importV1Json(migrationOptions(source, target))
+    expect(providerIds(target)).toEqual([
+      expectedAlias(INSTALLATION_KEY, REPOSITORY_PROVIDER_DOMAIN, `local:${composed.toLowerCase()}`),
+    ])
+
+    const duplicateIds = localNameFixture([
+      { nameWithOwner: composed, name: 'first' },
+      { nameWithOwner: 'invented-second', name: 'second' },
+    ])
+    duplicateIds.repositories[1]!.id = `local:${decomposed.toLowerCase()}`
+    const duplicateNames = localNameFixture([
+      { nameWithOwner: composed, name: 'first' },
+      { nameWithOwner: decomposed, name: 'second' },
+    ])
+    duplicateNames.repositories[1]!.id = 'local:invented-distinct-id'
+    for (const invalid of [duplicateIds, duplicateNames]) {
+      expect(() => parseV1Dataset(JSON.stringify(invalid))).toThrow('V1_VALIDATION_FAILED')
+    }
+  })
+
+  it('fails closed on invalid local identity material without touching the source or the target', async () => {
+    const { directory, source, target } = await fixturePaths()
+    await writeFile(source, JSON.stringify(localNameFixture()))
+    await importV1Json(migrationOptions(source, target))
+    const before = databaseDigest(target)
+    const fingerprintBefore = bindingFingerprint(target)
+    const freshTarget = join(directory, 'never-created.sqlite')
+
+    const mutations: Array<(fixture: ReturnType<typeof localNameFixture>) => void> = [
+      (fixture) => { fixture.repositories[0]!.id = 'local:' },
+      (fixture) => { fixture.repositories[0]!.id = 'local:bell\u0007name' },
+      (fixture) => { fixture.repositories[0]!.id = 'local:lone\uD800surrogate' },
+      (fixture) => { fixture.repositories[0]!.id = `local:${'x'.repeat(1025)}` },
+      (fixture) => {
+        fixture.repositories[0]!.nameWithOwner = 'nul\u0000name'
+        fixture.commits[0]!.repository = 'nul\u0000name'
+        fixture.commitDaysByRepository[0]!.repository = 'nul\u0000name'
+      },
+      (fixture) => { fixture.commits[0]!.repository = 'unknown repository ü' },
+    ]
+    for (const mutate of mutations) {
+      const invalid = localNameFixture()
+      mutate(invalid)
+      const invalidBytes = Buffer.from(JSON.stringify(invalid), 'utf8')
+      await writeFile(source, invalidBytes)
+      for (const path of [target, freshTarget]) {
+        await expect(selectStorageReader(migrationOptions(source, path, { enabled: true }))).resolves.toEqual({ reader: 'legacy-json', code: 'v1-validation-failed' })
+      }
+      await expect(readFile(source)).resolves.toEqual(invalidBytes)
+      expect(databaseDigest(target)).toBe(before)
+      expect(bindingFingerprint(target)).toBe(fingerprintBefore)
+      expect(existsSync(freshTarget)).toBe(false)
+    }
+  })
+})
+
+describe('#6 duplicate identities and installation-key continuity', () => {
+  it('rejects duplicate raw provider IDs and duplicate repository references before any target is opened', async () => {
+    const { directory, source, target } = await fixturePaths()
+    await importV1Json(migrationOptions(source, target))
+    const before = databaseDigest(target)
+    // A missing parent directory would surface as an import failure if the target were opened.
+    const unopenable = join(directory, 'missing-parent', 'storage-v2.sqlite')
+
+    const duplicateIds = inventedV1Fixture()
+    duplicateIds.repositories.push({ ...duplicateIds.repositories[0]!, nameWithOwner: 'invented-org/second-repository', name: 'second-repository' })
+    const duplicateReferences = inventedV1Fixture()
+    duplicateReferences.repositories.push({ ...duplicateReferences.repositories[0]!, id: 'repo-provider-202' })
+    const duplicateLocalIds = localNameFixture([
+      { nameWithOwner: 'Invented Local', name: 'Invented Local' },
+      { nameWithOwner: 'invented other', name: 'invented other' },
+    ])
+    duplicateLocalIds.repositories[1]!.id = duplicateLocalIds.repositories[0]!.id
+
+    for (const invalid of [duplicateIds, duplicateReferences, duplicateLocalIds]) {
+      const invalidBytes = Buffer.from(JSON.stringify(invalid), 'utf8')
+      await writeFile(source, invalidBytes)
+      expect(() => parseV1Dataset(invalidBytes.toString('utf8'))).toThrow('V1_VALIDATION_FAILED')
+      for (const path of [target, unopenable]) {
+        await expect(selectStorageReader(migrationOptions(source, path, { enabled: true }))).resolves.toEqual({ reader: 'legacy-json', code: 'v1-validation-failed' })
+      }
+      await expect(readFile(source)).resolves.toEqual(invalidBytes)
+      expect(databaseDigest(target)).toBe(before)
+    }
+    expect(existsSync(join(directory, 'missing-parent'))).toBe(false)
+  })
+
+  it('pins the installation-key fingerprint and refuses a different key without mutating the target', async () => {
+    const { source, target, sourceBytes } = await fixturePaths()
+    const otherKey = Buffer.from('synthetic-installation-key-material-abcdefgh', 'utf8')
+    const first = await importV1Json(migrationOptions(source, target))
+    const before = databaseDigest(target)
+    expect(bindingFingerprint(target)).toBe(sha256(INSTALLATION_KEY))
+
+    const refused = await importV1Json({ sourcePath: source, targetPath: target, installationKey: otherKey }).catch((error: unknown) => error)
+    expect(refused).toMatchObject({ name: 'ImportKeyBindingError', code: 'STORAGE_KEY_MISMATCH', message: 'STORAGE_KEY_MISMATCH' })
+    for (const secret of [sha256(INSTALLATION_KEY), sha256(otherKey), INSTALLATION_KEY.toString('hex'), otherKey.toString('hex')]) {
+      expect(JSON.stringify(refused)).not.toContain(secret)
+      expect(String(refused)).not.toContain(secret)
+    }
+    await expect(selectStorageReader({ sourcePath: source, targetPath: target, installationKey: otherKey, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-key-mismatch' })
+    expect(databaseDigest(target)).toBe(before)
+    expect(bindingFingerprint(target)).toBe(sha256(INSTALLATION_KEY))
+
+    // The pinned key still replays to the identical state after the refusals.
+    await expect(importV1Json(migrationOptions(source, target))).resolves.toMatchObject({ checksum: first.checksum })
+    const fileBytes = await readFile(target)
+    for (const secret of [INSTALLATION_KEY, Buffer.from(INSTALLATION_KEY.toString('hex')), Buffer.from(INSTALLATION_KEY.toString('base64'))]) {
+      expect(fileBytes.includes(secret)).toBe(false)
+    }
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
+  it('never adopts a populated unpinned target, but pins an empty v2 target on first import', async () => {
+    const { directory, source, target, sourceBytes } = await fixturePaths()
+    const seeded = openStorageDatabase(target)
+    seeded.prepare('INSERT INTO repository_identity (provider_id, analytical_key, is_private, is_archived, is_fork) VALUES (?, ?, 0, 0, 0)').run(`repo-${'a'.repeat(64)}`, `repo-${'b'.repeat(64)}`)
+    seeded.close()
+    const before = databaseDigest(target)
+
+    await expect(selectStorageReader(migrationOptions(source, target, { enabled: true }))).resolves.toEqual({ reader: 'legacy-json', code: 'storage-key-unbound' })
+    expect(databaseDigest(target)).toBe(before)
+    expect(tableNames(target)).not.toContain('import_key_binding')
+
+    const emptyPin = join(directory, 'empty-pin.sqlite')
+    const emptyPinDb = openStorageDatabase(emptyPin)
+    emptyPinDb.exec(IMPORT_KEY_BINDING_SQL)
+    emptyPinDb.prepare('INSERT INTO repository_identity (provider_id, analytical_key, is_private, is_archived, is_fork) VALUES (?, ?, 0, 0, 0)').run(`repo-${'c'.repeat(64)}`, `repo-${'d'.repeat(64)}`)
+    emptyPinDb.close()
+    await expect(selectStorageReader(migrationOptions(source, emptyPin, { enabled: true }))).resolves.toEqual({ reader: 'legacy-json', code: 'storage-key-unbound' })
+    expect(providerIds(emptyPin)).toEqual([`repo-${'c'.repeat(64)}`])
+
+    const empty = join(directory, 'empty-v2.sqlite')
+    openStorageDatabase(empty).close()
+    await expect(selectStorageReader(migrationOptions(source, empty, { enabled: true }))).resolves.toMatchObject({ reader: 'sqlite-v2' })
+    expect(bindingFingerprint(empty)).toBe(sha256(INSTALLATION_KEY))
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
+  it('rolls back a first-time key pin when the import fails after binding', async () => {
+    const { directory, source, target, sourceBytes } = await fixturePaths()
+    const empty = join(directory, 'empty-v2.sqlite')
+    openStorageDatabase(empty).close()
+
+    await expect(importV1Json(migrationOptions(source, empty, { failAt: 'after-key-binding' }))).rejects.toThrow('INJECTED_FAILURE')
+    expect(tableNames(empty)).not.toContain('import_key_binding')
+    await expect(importV1Json(migrationOptions(source, target, { failAt: 'after-key-binding' }))).rejects.toThrow('INJECTED_FAILURE')
+    expect(existsSync(target)).toBe(false)
+
+    // The rolled-back pin never blocks a later key: the empty target is still adoptable.
+    const otherKey = Buffer.from('synthetic-installation-key-material-abcdefgh', 'utf8')
+    await importV1Json({ sourcePath: source, targetPath: empty, installationKey: otherKey })
+    expect(bindingFingerprint(empty)).toBe(sha256(otherKey))
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
+  it('binds a task-owned key across reload, refuses rotation and deleted keys, and recovers only into a new target', async () => {
+    const { directory, source, target, sourceBytes } = await fixturePaths()
+    const workspaceRoot = await mkdtemp(join(tmpdir(), 'developer-lens-import-key-'))
+    tempDirectories.push(workspaceRoot)
+    const taskDirectory = (taskId: string) => join(workspaceRoot, '.developer-lens', 'activation', taskId)
+    for (const taskId of ['import-key-task-a', 'import-key-task-b']) await mkdir(taskDirectory(taskId), { recursive: true })
+    const consoleSpies = (['log', 'info', 'warn', 'error', 'debug'] as const).map((method) => vi.spyOn(console, method))
+    const keyBytes = Buffer.alloc(32, 0x3c)
+    try {
+      // Creation: the key foundation owns the bytes; the importer only ever sees the opaque handle.
+      const created = await taskInstallationKeyTestSeams.setupWithRandomBytes(
+        { workspaceRoot, taskId: 'import-key-task-a' },
+        () => Buffer.from(keyBytes),
+      )
+      expect(created.fingerprint).toBe(sha256(keyBytes))
+      const first = await importV1Json({ sourcePath: source, targetPath: target, installationKeyHandle: created })
+      expect(bindingFingerprint(target)).toBe(created.fingerprint)
+
+      // Continuity: a fresh load from storage replays to the identical canonical state.
+      const reloaded = await loadTaskInstallationKey({ workspaceRoot, taskId: 'import-key-task-a' })
+      await expect(importV1Json({ sourcePath: source, targetPath: target, installationKeyHandle: reloaded })).resolves.toMatchObject({ checksum: first.checksum })
+      const pinned = databaseDigest(target)
+
+      // Rotation is never in place: a different task key is refused against the pinned target.
+      const rotated = await setupTaskInstallationKey({ workspaceRoot, taskId: 'import-key-task-b' })
+      await expect(selectStorageReader({ sourcePath: source, targetPath: target, installationKeyHandle: rotated, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-key-mismatch' })
+      expect(databaseDigest(target)).toBe(pinned)
+
+      // Recovery is an explicit new target re-imported from the untouched source: a deliberate,
+      // visible discontinuity with disjoint aliases, never a silent rekey of the old target.
+      const recoveredTarget = join(directory, 'storage-v2-rotated.sqlite')
+      await importV1Json({ sourcePath: source, targetPath: recoveredTarget, installationKeyHandle: rotated })
+      expect(bindingFingerprint(recoveredTarget)).toBe(rotated.fingerprint)
+      const oldIds = new Set(providerIds(target))
+      expect(providerIds(recoveredTarget).some((providerId) => oldIds.has(providerId))).toBe(false)
+
+      // Ambiguous or forged key material is invalid, never silently preferred.
+      await expect(selectStorageReader({ sourcePath: source, targetPath: target, installationKey: Buffer.from(keyBytes), installationKeyHandle: reloaded, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-key-invalid' })
+      await expect(selectStorageReader({ sourcePath: source, targetPath: target, installationKeyHandle: Object.freeze({ ...reloaded }), enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-key-invalid' })
+
+      // Deletion: once the task key is removed, neither a reload nor a cached handle can import.
+      await rm(taskDirectory('import-key-task-a'), { recursive: true, force: true })
+      await expect(loadTaskInstallationKey({ workspaceRoot, taskId: 'import-key-task-a' })).rejects.toMatchObject({ code: 'INVALID_TASK_INSTALLATION_KEY' })
+      await expect(selectStorageReader({ sourcePath: source, targetPath: target, installationKeyHandle: reloaded, enabled: true })).resolves.toEqual({ reader: 'legacy-json', code: 'storage-key-invalid' })
+      expect(databaseDigest(target)).toBe(pinned)
+
+      for (const path of [target, recoveredTarget]) {
+        const bytes = await readFile(path)
+        for (const secret of [keyBytes, Buffer.from(keyBytes.toString('hex')), Buffer.from(keyBytes.toString('base64'))]) {
+          expect(bytes.includes(secret)).toBe(false)
+        }
+      }
+      for (const spy of consoleSpies) expect(spy).not.toHaveBeenCalled()
+      await expect(readFile(source)).resolves.toEqual(sourceBytes)
+    } finally {
+      for (const spy of consoleSpies) spy.mockRestore()
+    }
   })
 })

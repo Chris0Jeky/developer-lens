@@ -1,19 +1,46 @@
-import { createHash, randomUUID } from 'node:crypto'
+import { createHash, randomUUID, timingSafeEqual } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { readFile, rename, unlink } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { z } from 'zod'
 import { openStorageDatabase, runStorageChecks, StorageDatabaseError } from './database.js'
 import { createInstallationAliases, InstallationKeyError, type InstallationAliases } from './installationAliases.js'
-import { STORAGE_SCHEMA_VERSION } from './schema.js'
+import { IMPORT_KEY_BINDING_SQL, IMPORT_KEY_BINDING_VERSION, STORAGE_SCHEMA_VERSION } from './schema.js'
+import {
+  assertTaskInstallationKeyHandleCurrent,
+  type TaskInstallationKeyHandle,
+} from './taskInstallationKey.js'
 
 export { InstallationKeyError } from './installationAliases.js'
 
 const dateTime = z.string().datetime({ offset: true })
 const opaqueIdentifier = z.string().min(1).max(128).regex(/^[A-Za-z0-9:._-]+$/)
-const repositoryReference = z.string().min(1).max(256).regex(/^[A-Za-z0-9:._/-]+$/)
-const localRepositoryIdentifier = z.string().min(1).max(262).regex(/^local:[A-Za-z0-9:._/-]+$/)
-const repositoryProviderIdentifier = z.union([opaqueIdentifier, localRepositoryIdentifier])
+/**
+ * #5: the local collector emits fallback basenames and remote-derived names that may carry spaces
+ * or Unicode. Those raw names are accepted here only as in-memory reference keys: they are resolved
+ * to installation-HMAC identities before the ASCII storage boundary and never persisted. Control
+ * characters and lone surrogates are refused because they cannot be a stable canonical identity.
+ */
+const LOCAL_NAME_MAX_LENGTH = 1024
+const UNSTABLE_NAME_CHARACTER = /[\p{Cc}\p{Cs}]/u
+const localRepositoryName = z
+  .string()
+  .min(1)
+  .max(LOCAL_NAME_MAX_LENGTH)
+  .refine((value) => !UNSTABLE_NAME_CHARACTER.test(value))
+const repositoryReference = localRepositoryName
+const LOCAL_REPOSITORY_PREFIX = 'local:'
+const localRepositoryIdentifier = z
+  .string()
+  .max(LOCAL_REPOSITORY_PREFIX.length + LOCAL_NAME_MAX_LENGTH)
+  .refine((value) => value.startsWith(LOCAL_REPOSITORY_PREFIX)
+    && localRepositoryName.safeParse(value.slice(LOCAL_REPOSITORY_PREFIX.length)).success)
+// A `local:` id is judged only by the local rules: `local:` alone must not pass as an opaque id.
+const repositoryProviderIdentifier = z.string().refine((value) => (
+  value.startsWith(LOCAL_REPOSITORY_PREFIX)
+    ? localRepositoryIdentifier.safeParse(value).success
+    : opaqueIdentifier.safeParse(value).success
+))
 const featureType = z.enum([
   'feat',
   'fix',
@@ -106,12 +133,32 @@ export class V1ValidationError extends Error {
   }
 }
 
-export type MigrationFailurePoint = 'after-repository-upsert'
+export type ImportKeyBindingErrorCode = 'STORAGE_KEY_MISMATCH' | 'STORAGE_KEY_UNBOUND'
+
+/**
+ * #6: a target pinned to one installation key refuses every other key instead of silently rekeying
+ * all repository aliases, and a populated target without a pin is never adopted. Content-free: the
+ * error never carries a fingerprint, a path, or key bytes.
+ */
+export class ImportKeyBindingError extends Error {
+  public readonly code: ImportKeyBindingErrorCode
+
+  constructor(code: ImportKeyBindingErrorCode) {
+    super(code)
+    this.name = 'ImportKeyBindingError'
+    this.code = code
+  }
+}
+
+export type MigrationFailurePoint = 'after-key-binding' | 'after-repository-upsert'
 
 export interface ImportV1Options {
   sourcePath: string
   targetPath: string
+  /** Raw installation key material for invented fixtures; mutually exclusive with the handle. */
   installationKey?: Buffer
+  /** Opaque task-owned key handle; its key bytes never leave `taskInstallationKey.ts`. */
+  installationKeyHandle?: TaskInstallationKeyHandle
   failAt?: MigrationFailurePoint
 }
 
@@ -125,6 +172,8 @@ export type StorageFailureCode =
   | 'storage-disabled'
   | 'storage-key-missing'
   | 'storage-key-invalid'
+  | 'storage-key-mismatch'
+  | 'storage-key-unbound'
   | 'source-read-failed'
   | 'v1-validation-failed'
   | 'storage-target-mismatch'
@@ -147,8 +196,28 @@ export function parseV1Dataset(source: string): V1Dataset {
   return parsed.data
 }
 
+/**
+ * One canonical form per identity: the same collector name emitted in NFC and in NFD (a macOS
+ * basename, say) is one repository, never two. NFC leaves every ASCII identifier unchanged, so
+ * existing opaque and ASCII local aliases are stable.
+ */
+function canonicalIdentity(value: string): string {
+  return value.normalize('NFC')
+}
+
 function validateReferences(dataset: V1Dataset): void {
-  const repositoryNames = new Set(dataset.repositories.map((repository) => repository.nameWithOwner))
+  // #6: duplicate provider IDs or duplicate repository references would collapse distinct
+  // repositories through the reference map and the provider upsert, so refuse them before any
+  // target is opened.
+  const repositoryIds = new Set<string>()
+  const repositoryNames = new Set<string>()
+  for (const repository of dataset.repositories) {
+    const id = canonicalIdentity(repository.id)
+    const name = canonicalIdentity(repository.nameWithOwner)
+    if (repositoryIds.has(id) || repositoryNames.has(name)) throw new V1ValidationError()
+    repositoryIds.add(id)
+    repositoryNames.add(name)
+  }
   const references = [
     ...dataset.commits.map((commit) => commit.repository),
     ...dataset.commitDaysByRepository.map((event) => event.repository),
@@ -156,7 +225,7 @@ function validateReferences(dataset: V1Dataset): void {
     ...dataset.reviews.map((event) => event.repository),
     ...dataset.issues.map((event) => event.repository),
   ]
-  if (references.some((repository) => !repositoryNames.has(repository))) {
+  if (references.some((repository) => !repositoryNames.has(canonicalIdentity(repository)))) {
     throw new V1ValidationError()
   }
   const coverageIds = dataset.coverage.map((coverage) => coverage.id)
@@ -226,6 +295,165 @@ function aggregateCoverage(coverageRecords: V1Dataset['coverage']): MappedCovera
   return [...byCapability.values()]
 }
 
+interface CanonicalRepository {
+  readonly providerId: string
+  readonly analyticalKey: string
+  readonly isPrivate: number
+  readonly isArchived: number
+  readonly isFork: number
+}
+
+interface CanonicalCommit {
+  readonly repositoryProviderId: string
+  readonly sha: string
+  readonly occurredAt: string
+  readonly source: 'github' | 'local-git'
+  readonly additions: number | null
+  readonly deletions: number | null
+  readonly files: number | null
+  readonly parentCount: number | null
+  readonly featureType: string
+  readonly isRevert: number
+  readonly isFixup: number
+  readonly messageLength: number
+}
+
+interface CanonicalPullRequest {
+  readonly providerId: string
+  readonly repositoryProviderId: string
+  readonly number: number
+  readonly createdAt: string
+  readonly mergedAt: string | null
+  readonly closedAt: string | null
+  readonly state: 'OPEN' | 'CLOSED' | 'MERGED'
+  readonly isDraft: number
+  readonly additions: number | null
+  readonly deletions: number | null
+  readonly changedFiles: number | null
+  readonly comments: number
+  readonly reviews: number
+}
+
+interface CanonicalEvent {
+  readonly providerId: string
+  readonly repositoryProviderId: string
+  readonly occurredAt: string
+  readonly kind: 'review' | 'issue'
+}
+
+/** Everything the storage transaction may write; by construction it holds no repository name. */
+interface CanonicalV1Import {
+  readonly repositories: readonly CanonicalRepository[]
+  readonly commits: readonly CanonicalCommit[]
+  readonly pullRequests: readonly CanonicalPullRequest[]
+  readonly events: readonly CanonicalEvent[]
+  readonly coverage: readonly MappedCoverage[]
+}
+
+/**
+ * The isolated local identity boundary (#5/#6). Raw provider IDs and repository names enter here
+ * and leave only as installation-HMAC identities that satisfy the ASCII storage alphabet. The
+ * result is an explicit field allowlist, so the storage transaction cannot persist a raw name,
+ * title, or URL even by mistake. Distinct inputs that would share an alias fail closed.
+ */
+function bindCanonicalImport(dataset: V1Dataset, aliases: InstallationAliases): CanonicalV1Import {
+  const providerIdByReference = new Map<string, string>()
+  const providerIds = new Set<string>()
+  const analyticalKeys = new Set<string>()
+  const repositories = dataset.repositories.map((repository): CanonicalRepository => {
+    const canonicalId = canonicalIdentity(repository.id)
+    const providerId = aliases.repositoryProviderId(canonicalId)
+    const analyticalKey = aliases.repositoryAnalyticalKey(canonicalId)
+    if (providerIds.has(providerId) || analyticalKeys.has(analyticalKey)) throw new V1ValidationError()
+    providerIds.add(providerId)
+    analyticalKeys.add(analyticalKey)
+    providerIdByReference.set(canonicalIdentity(repository.nameWithOwner), providerId)
+    return {
+      providerId,
+      analyticalKey,
+      isPrivate: Number(repository.isPrivate),
+      isArchived: Number(repository.isArchived),
+      isFork: Number(repository.isFork),
+    }
+  })
+  const resolve = (reference: string): string => {
+    const providerId = providerIdByReference.get(canonicalIdentity(reference))
+    if (providerId === undefined) throw new V1ValidationError()
+    return providerId
+  }
+  return {
+    repositories,
+    commits: dataset.commits.map((commit): CanonicalCommit => ({
+      repositoryProviderId: resolve(commit.repository),
+      sha: commit.sha,
+      occurredAt: commit.occurredAt,
+      source: commit.source,
+      additions: commit.additions ?? null,
+      deletions: commit.deletions ?? null,
+      files: commit.files ?? null,
+      parentCount: commit.parentCount ?? null,
+      featureType: commit.features.type,
+      isRevert: Number(commit.features.isRevert),
+      isFixup: Number(commit.features.isFixup),
+      messageLength: commit.features.subjectLength,
+    })),
+    pullRequests: dataset.pullRequests.map((pullRequest): CanonicalPullRequest => ({
+      providerId: pullRequest.id,
+      repositoryProviderId: resolve(pullRequest.repository),
+      number: pullRequest.number,
+      createdAt: pullRequest.createdAt,
+      mergedAt: pullRequest.mergedAt ?? null,
+      closedAt: pullRequest.closedAt ?? null,
+      state: pullRequest.state,
+      isDraft: Number(pullRequest.isDraft),
+      additions: pullRequest.additions ?? null,
+      deletions: pullRequest.deletions ?? null,
+      changedFiles: pullRequest.changedFiles ?? null,
+      comments: pullRequest.comments,
+      reviews: pullRequest.reviews,
+    })),
+    events: [
+      ...dataset.reviews.map((event): CanonicalEvent => ({
+        providerId: event.id,
+        repositoryProviderId: resolve(event.repository),
+        occurredAt: event.occurredAt,
+        kind: 'review',
+      })),
+      ...dataset.issues.map((event): CanonicalEvent => ({
+        providerId: event.id,
+        repositoryProviderId: resolve(event.repository),
+        occurredAt: event.occurredAt,
+        kind: 'issue',
+      })),
+    ],
+    coverage: aggregateCoverage(dataset.coverage),
+  }
+}
+
+interface ImportKeyMaterial {
+  readonly aliases: InstallationAliases
+  /** SHA-256 of the installation key: the same fingerprint the task key foundation reports. */
+  readonly fingerprint: string
+}
+
+function resolveImportKeyMaterial(options: ImportV1Options): ImportKeyMaterial {
+  const handle = options.installationKeyHandle
+  if (handle !== undefined) {
+    if (options.installationKey !== undefined) throw new InstallationKeyError('INSTALLATION_KEY_INVALID')
+    try {
+      // A genuine handle whose key file still exists and still holds the same bytes: a deleted
+      // or replaced task key can never mint aliases for a later import.
+      assertTaskInstallationKeyHandleCurrent(handle)
+    } catch {
+      throw new InstallationKeyError('INSTALLATION_KEY_INVALID')
+    }
+    return { aliases: handle.aliases, fingerprint: handle.fingerprint }
+  }
+  const aliases = createInstallationAliases(options.installationKey)
+  const fingerprint = createHash('sha256').update(options.installationKey as Buffer).digest('hex')
+  return { aliases, fingerprint }
+}
+
 function digest(value: string | Buffer): string {
   return createHash('sha256').update(value).digest('hex')
 }
@@ -235,6 +463,57 @@ function assertStorageChecks(db: ReturnType<typeof openStorageDatabase>): void {
   if (checks.integrity !== 'ok' || checks.quick !== 'ok' || checks.foreignKeys.length !== 0) {
     throw new Error('STORAGE_CHECK_FAILED')
   }
+}
+
+const IMPORTED_TABLES = [
+  'import_run',
+  'repository_identity',
+  'commit_observation',
+  'pull_request_fact',
+  'coverage_observation',
+  'dated_event_observation',
+] as const
+
+function fingerprintsMatch(stored: unknown, expected: string): boolean {
+  if (typeof stored !== 'string' || !/^[0-9a-f]{64}$/.test(stored)) return false
+  return timingSafeEqual(Buffer.from(stored, 'ascii'), Buffer.from(expected, 'ascii'))
+}
+
+/**
+ * #6 key continuity. Runs inside the import transaction, before any analytical row is deleted:
+ * a pinned target accepts only the key that minted its aliases; an unpinned target is adopted only
+ * while it holds no imported row, and a populated unpinned target is refused because its aliases
+ * cannot be attributed to any key. Rotation is never in place: a new key needs a new target.
+ */
+function bindTargetToInstallationKey(db: ReturnType<typeof openStorageDatabase>, fingerprint: string): void {
+  const hasBindingTable = db
+    .prepare("SELECT 1 FROM sqlite_schema WHERE type = 'table' AND name = 'import_key_binding'")
+    .get() !== undefined
+  if (hasBindingTable) {
+    const rows = db
+      .prepare('SELECT singleton, binding_version, installation_key_fingerprint FROM import_key_binding')
+      .all() as Array<{ singleton: unknown; binding_version: unknown; installation_key_fingerprint: unknown }>
+    const [row] = rows
+    if (rows.length === 1 && row !== undefined) {
+      if (row.singleton !== 1 || row.binding_version !== IMPORT_KEY_BINDING_VERSION) {
+        throw new ImportKeyBindingError('STORAGE_KEY_UNBOUND')
+      }
+      if (!fingerprintsMatch(row.installation_key_fingerprint, fingerprint)) {
+        throw new ImportKeyBindingError('STORAGE_KEY_MISMATCH')
+      }
+      return
+    }
+    if (rows.length !== 0) throw new ImportKeyBindingError('STORAGE_KEY_UNBOUND')
+  }
+  for (const table of IMPORTED_TABLES) {
+    if (Number(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get()) !== 0) {
+      throw new ImportKeyBindingError('STORAGE_KEY_UNBOUND')
+    }
+  }
+  db.exec(IMPORT_KEY_BINDING_SQL)
+  db.prepare(
+    'INSERT INTO import_key_binding (singleton, binding_version, installation_key_fingerprint) VALUES (1, ?, ?)',
+  ).run(IMPORT_KEY_BINDING_VERSION, fingerprint)
 }
 
 function canonicalState(db: ReturnType<typeof openStorageDatabase>): string {
@@ -257,18 +536,16 @@ function canonicalState(db: ReturnType<typeof openStorageDatabase>): string {
 
 function importIntoDatabase(
   db: ReturnType<typeof openStorageDatabase>,
-  dataset: V1Dataset,
+  canonical: CanonicalV1Import,
   sourceChecksum: string,
-  aliases: InstallationAliases,
+  keyFingerprint: string,
   failAt?: MigrationFailurePoint,
 ): ImportProof {
-  const repositoryProviderIds = new Map(
-    dataset.repositories.map((repository) => [
-      repository.nameWithOwner,
-      aliases.repositoryProviderId(repository.id),
-    ]),
-  )
   const transaction = db.transaction(() => {
+    assertStorageChecks(db)
+    bindTargetToInstallationKey(db, keyFingerprint)
+    if (failAt === 'after-key-binding') throw new Error('INJECTED_FAILURE')
+
     const insertRun = db.prepare(
       'INSERT INTO import_run (source_checksum, schema_version) VALUES (?, ?) ON CONFLICT(source_checksum) DO UPDATE SET schema_version = excluded.schema_version',
     )
@@ -288,7 +565,6 @@ function importIntoDatabase(
       'INSERT INTO dated_event_observation (provider_id, repository_provider_id, occurred_at, event_kind) VALUES (?, ?, ?, ?) ON CONFLICT(provider_id) DO UPDATE SET repository_provider_id = excluded.repository_provider_id, occurred_at = excluded.occurred_at, event_kind = excluded.event_kind',
     )
 
-    assertStorageChecks(db)
     db.exec(`
       DELETE FROM dated_event_observation;
       DELETE FROM pull_request_fact;
@@ -298,22 +574,20 @@ function importIntoDatabase(
       DELETE FROM import_run;
     `)
     insertRun.run(sourceChecksum, STORAGE_SCHEMA_VERSION)
-    for (const repository of dataset.repositories) {
-      const providerId = aliases.repositoryProviderId(repository.id)
-      insertRepository.run(providerId, aliases.repositoryAnalyticalKey(repository.id), Number(repository.isPrivate), Number(repository.isArchived), Number(repository.isFork))
+    for (const repository of canonical.repositories) {
+      insertRepository.run(repository.providerId, repository.analyticalKey, repository.isPrivate, repository.isArchived, repository.isFork)
     }
     if (failAt === 'after-repository-upsert') throw new Error('INJECTED_FAILURE')
-    for (const commit of dataset.commits) {
-      insertCommit.run(repositoryProviderIds.get(commit.repository), commit.sha, commit.occurredAt, commit.source, commit.additions ?? null, commit.deletions ?? null, commit.files ?? null, commit.parentCount ?? null, commit.features.type, Number(commit.features.isRevert), Number(commit.features.isFixup), commit.features.subjectLength)
+    for (const commit of canonical.commits) {
+      insertCommit.run(commit.repositoryProviderId, commit.sha, commit.occurredAt, commit.source, commit.additions, commit.deletions, commit.files, commit.parentCount, commit.featureType, commit.isRevert, commit.isFixup, commit.messageLength)
     }
-    for (const pullRequest of dataset.pullRequests) {
-      insertPullRequest.run(pullRequest.id, repositoryProviderIds.get(pullRequest.repository), pullRequest.number, pullRequest.createdAt, pullRequest.mergedAt ?? null, pullRequest.closedAt ?? null, pullRequest.state, Number(pullRequest.isDraft), pullRequest.additions ?? null, pullRequest.deletions ?? null, pullRequest.changedFiles ?? null, pullRequest.comments, pullRequest.reviews)
+    for (const pullRequest of canonical.pullRequests) {
+      insertPullRequest.run(pullRequest.providerId, pullRequest.repositoryProviderId, pullRequest.number, pullRequest.createdAt, pullRequest.mergedAt, pullRequest.closedAt, pullRequest.state, pullRequest.isDraft, pullRequest.additions, pullRequest.deletions, pullRequest.changedFiles, pullRequest.comments, pullRequest.reviews)
     }
-    for (const mapped of aggregateCoverage(dataset.coverage)) {
+    for (const mapped of canonical.coverage) {
       insertCoverage.run(mapped.capabilityId, mapped.status, mapped.limitationCode, mapped.observedUnits)
     }
-    for (const event of dataset.reviews) insertEvent.run(event.id, repositoryProviderIds.get(event.repository), event.occurredAt, 'review')
-    for (const event of dataset.issues) insertEvent.run(event.id, repositoryProviderIds.get(event.repository), event.occurredAt, 'issue')
+    for (const event of canonical.events) insertEvent.run(event.providerId, event.repositoryProviderId, event.occurredAt, event.kind)
     assertStorageChecks(db)
   })
   transaction()
@@ -321,9 +595,10 @@ function importIntoDatabase(
 }
 
 export async function importV1Json(options: ImportV1Options): Promise<ImportProof> {
-  const aliases = createInstallationAliases(options.installationKey)
+  const keyMaterial = resolveImportKeyMaterial(options)
   const source = await readFile(options.sourcePath)
-  const dataset = parseV1Dataset(source.toString('utf8'))
+  // Every validation and identity derivation completes before any target is opened or created.
+  const canonical = bindCanonicalImport(parseV1Dataset(source.toString('utf8')), keyMaterial.aliases)
   const sourceChecksum = digest(source)
   const existingTarget = existsSync(options.targetPath)
   const workingPath = existingTarget
@@ -332,7 +607,7 @@ export async function importV1Json(options: ImportV1Options): Promise<ImportProo
   let db: ReturnType<typeof openStorageDatabase> | undefined
   try {
     db = openStorageDatabase(workingPath)
-    const result = importIntoDatabase(db, dataset, sourceChecksum, aliases, options.failAt)
+    const result = importIntoDatabase(db, canonical, sourceChecksum, keyMaterial.fingerprint, options.failAt)
     db.close()
     db = undefined
     if (!existingTarget) await rename(workingPath, options.targetPath)
@@ -360,6 +635,12 @@ export async function selectStorageReader(
       return {
         reader: 'legacy-json',
         code: error.code === 'INSTALLATION_KEY_REQUIRED' ? 'storage-key-missing' : 'storage-key-invalid',
+      }
+    }
+    if (error instanceof ImportKeyBindingError) {
+      return {
+        reader: 'legacy-json',
+        code: error.code === 'STORAGE_KEY_MISMATCH' ? 'storage-key-mismatch' : 'storage-key-unbound',
       }
     }
     if (error instanceof V1ValidationError) return { reader: 'legacy-json', code: 'v1-validation-failed' }

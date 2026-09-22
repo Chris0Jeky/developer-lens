@@ -392,6 +392,18 @@ export function assertTaskInstallationKeyContinuity(handle: TaskInstallationKeyH
   assertCurrentKeyFileMatches(HANDLE_KEYS.get(handle) ?? invalidKey())
 }
 
+/**
+ * Prove that a handle was issued by this module and that its task key file still exists with the
+ * same bytes. Integrity only: it never grants backup continuity authority. A deleted, replaced, or
+ * rotated key therefore stops a cached handle from minting aliases for any later write.
+ */
+export function assertTaskInstallationKeyHandleCurrent(handle: TaskInstallationKeyHandle): void {
+  if (!handle || typeof handle !== 'object') invalidKey()
+  const record = HANDLE_KEYS.get(handle) ?? invalidKey()
+  if (handle.fingerprint !== createHash('sha256').update(record.key).digest('hex')) invalidKey()
+  assertCurrentKeyFileMatches(record)
+}
+
 /** Prove that an opaque handle was loaded from this exact canonical task directory. */
 export function assertTaskInstallationKeyTaskDirectory(
   handle: TaskInstallationKeyHandle,
