@@ -29,20 +29,26 @@ jobs:
           cache: npm
       - name: Install dependencies
         run: npm ci
-      - name: Start fixtures through the available short-path alias
+      - name: Require a genuine short-path alias before proving normalization
         shell: pwsh
         run: |
-          $probe = Join-Path $env:RUNNER_TEMP 'Developer Lens canonical path probe'
+          $profileData = [System.Environment]::GetFolderPath('LocalApplicationData')
+          if ([string]::IsNullOrWhiteSpace($profileData)) {
+            throw 'TEST_TEMP_PROFILE_UNAVAILABLE'
+          }
+          # The hosted work volume may disable 8.3 aliases. Use an isolated folder
+          # on the profile volume without changing any machine or volume policy.
+          $name = 'Developer Lens canonical path probe ' + [guid]::NewGuid().ToString('N')
+          $probe = Join-Path (Join-Path $profileData 'Temp') $name
           New-Item -ItemType Directory -Path $probe -Force | Out-Null
           $short = (cmd /d /c "for %I in (`"$probe`") do @echo %~sI").Trim()
-          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($short)) {
-            throw 'TEST_TEMP_ALIAS_PROBE_FAILED'
+          if ($LASTEXITCODE -ne 0 -or [string]::IsNullOrWhiteSpace($short) -or $short -eq $probe) {
+            throw 'TEST_TEMP_SHORT_ALIAS_UNAVAILABLE'
           }
-          if ($short -eq $probe) {
-            Write-Output '8.3 alias unavailable; running native canonical-root proof with the long path.'
-          } else {
-            Write-Output '8.3 alias available; Vitest must normalize it before fixture startup.'
-          }
+          $env:TEMP = $short
+          $env:TMP = $short
+          node --input-type=module -e "import { realpathSync } from 'node:fs'; import { tmpdir } from 'node:os'; if (tmpdir() === realpathSync.native(tmpdir())) throw new Error('TEST_TEMP_ALIAS_ALREADY_CANONICAL'); console.log('Confirmed noncanonical temporary root before Vitest initialization.');"
+          if ($LASTEXITCODE -ne 0) { throw 'TEST_TEMP_ALIAS_PROBE_FAILED' }
           "TEMP=$short" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
           "TMP=$short" | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
       - name: Prove runner initialization and real artifact fixtures
