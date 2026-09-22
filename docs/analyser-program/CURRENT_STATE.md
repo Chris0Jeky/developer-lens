@@ -40,9 +40,13 @@ blockers: >-
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) remains the sole tag-blocking owner gate. Real
   migration and collection are already owner-approved within
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5;
-  their activation still requires #202's remaining implementation preconditions, and the stored
-  Phase E endpoint requires #375/#376. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 items are deferred and nonblocking. No
+  their activation still requires #202's remaining implementation preconditions plus a bounded,
+  reviewed activation task card whose parser, transport, projection, storage, rollback, deletion
+  and exact-head checks pass before any capability leaves `never_authorized`. The stored Phase E
+  endpoint requires #375/#376. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 items are deferred and nonblocking for the tag,
+  except that Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(f) still owner-gates package-registry
+  credentials. No
   tag, release, package publication, or public publication is authorized before
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
 last_verified_checks: >-
@@ -106,8 +110,8 @@ authority_and_boundary:
 exact_resume_point: >-
   Product main `b4b82535237e0ccbcbe37d4d101e668aafad4e54`, with zero open pull requests. Choose the
   next slice from next_value_slice after refreshing live Git/GitHub. Stored-path activation of
-  Phase E requires #375 and #376 first; real migration or collection requires #202's remainder
-  within the approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
+  Phase E requires #375 and #376 first; real migration or collection requires #202's remainder and
+  a bounded, reviewed activation task card within the approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5 boundaries. Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818
   at 54217ff: Product #298 owns re-creating that slice after
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). Until that owner action, no tag, release,
