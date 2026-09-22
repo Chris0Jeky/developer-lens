@@ -261,8 +261,9 @@ including retention/deletion, release review, and an untouched final holdout.
   presence-only under D5=PRES and does not authorize reading configuration bodies). Features
   `DL.XRAY.LANGUAGE_SHARE.v1` (P) — byte share by controlled language vocabulary;
   `DL.XRAY.ROLE_PRESENCE.v1` (P) — presence boolean + file count for the fourteen ordinary
-  roles; `agent_config` is the D5=PRES exception: one per-repository presence boolean only,
-  with no file count, cardinality, names, or configuration-body reads;
+  roles; `agent_config` is the D5=PRES exception: one point-in-time, per-repository presence
+  boolean only, displayed as a separate non-comparative annotation, with no file count,
+  cardinality, names, or configuration-body reads;
   `DL.XRAY.PACKAGE_BOUNDARY_COUNT.v1` (P) — distinct package/monorepo boundaries via
   manifest-presence classes (**filename/extension presence only — no body is read**);
   `DL.XRAY.ENUMERATION_COVERAGE.v1` (P) — enumerated / expected entries.
@@ -270,7 +271,10 @@ including retention/deletion, release review, and an untouched final holdout.
   deterministic (derived), never observed** — language shares, ordinary-role counts, the
   presence-only `agent_config` boolean, and boundary counts are products of enumeration plus the
   closed classification tables. Agent-configuration cardinality is neither retained nor emitted;
-  the presence-only exception also applies to every baseline and comparison, not merely the UI.
+  `agent_config` is excluded from every baseline/comparison aggregate, historical series,
+  temporal delta, and portfolio comparison, not merely hidden in their UI. It cannot enter
+  CAT-STR-03 or `DL.TIME.ERA_DIFF.v1`; adoption inference and timing remain blocked by
+  `DL-Q-AGENTCFG-TIMING`. Only the current per-repository annotation is authorized by D5=PRES.
   These outputs carry `parser_coverage`
   limitations; only `GH-LANG-01`'s provider edges are an observed fact. **None
   justified** — a learned role classifier would need file names or content as features, which are
@@ -293,7 +297,9 @@ including retention/deletion, release review, and an untouched final holdout.
   parses exist only inside the separately-consented dependency capability (CAT-FBK-03); worker
   time/memory/output caps; no network, no lazy fetch.
 - **UI / corpus / eval / deps / rollout** — UI: **Evidence Atlas** (system overview card) and
-  **Architecture Time Machine** (composition strip). Corpus: monorepo with three packages; a
+  **Architecture Time Machine** (ordinary-role composition strip only; never `agent_config`).
+  The agent-configuration annotation is point-in-time and per-repository in Evidence Atlas only.
+  Corpus: monorepo with three packages; a
   generated-heavy repository; vendored directory; binary and symlink entries; NUL-safe unusual
   names; an empty tree; a repository whose only test evidence is generated; schema, golden-fixture,
   and snapshot-artifact trees for the three roles added in ADR-05; **a checkout whose `HEAD` is
@@ -301,6 +307,8 @@ including retention/deletion, release review, and an untouched final holdout.
   output with a dirty working tree **and across checkout `HEAD` movement**; zero paths/names in any
   sink under the adversarial canary scan; invented trees with one or several agent-configuration
   files expose the same `agent_config: true` boolean and no configuration cardinality;
+  snapshots that differ only in agent-configuration presence produce identical temporal and
+  portfolio aggregates, with neither presence values nor change markers admitted to those outputs;
   **zero manifest-body reads with only
   `cap.source.structure` active**. Deps: ADR-05, ADR-06 (worker), matrix `cap.source.structure`
   (**manifest bodies additionally require `cap.github.dependencies`**); cards XRAY-01/02/03.
@@ -363,7 +371,8 @@ including retention/deletion, release review, and an untouched final holdout.
 - **Q / decision** — *"How did this system's shape change, and is that the system changing or my
   instrument changing?"* Supports deciding **whether an architectural narrative is real** before
   building a story or a refactor plan on it.
-- **Sources / fields** — Composed, not collected: CAT-STR-01 composition, CAT-STR-02 graph and API
+- **Sources / fields** — Composed, not collected: CAT-STR-01 ordinary composition aggregates
+  (**excluding `agent_config` entirely under D5=PRES / `DL-Q-AGENTCFG-TIMING`**), CAT-STR-02 graph and API
   counts, CAT-FBK-01/02 policy and CI aggregates, CAT-FBK-03 dependency aggregates — all keyed to
   the **same card-bound immutable ref OID** (never a mutable ref). Snapshot key: (repository alias,
   ref OID, `parser_bundle_version`, config revision) (ADR-07).
