@@ -17,6 +17,8 @@ export type MethodCode = keyof typeof METHODS
 export const METRICS = {
   detection_rate: { label: 'Detection rate', unit: 'rate', better_when: 'higher' },
   false_alerts_per_year: { label: 'False alerts per year', unit: 'count_per_year', better_when: 'lower' },
+  median_detection_delay_weeks: { label: 'Median detection delay', unit: 'weeks', better_when: 'lower' },
+  coverage_confound_false_alert_rate: { label: 'Coverage-confound false-alert rate', unit: 'rate', better_when: 'lower' },
 } as const
 export type MetricCode = keyof typeof METRICS
 
@@ -25,33 +27,34 @@ export const GATES = {
   candidate_selection: 'Candidate selection is viable',
   detection_floor: 'Candidate meets detection floor',
   delay_budget: 'Candidate meets delay budget',
-  false_alert_improvement: 'Candidate false alerts improve',
+  false_alert_improvement: 'Candidate false alerts are lower than baseline',
   not_worse_detection: 'Candidate detection is not worse',
   confound_guard: 'Candidate confound guard is measured',
 } as const
 export type GateCode = keyof typeof GATES
 
-// The preregistered candidate detection floor, hand-copied from the inline literal in the pinned
-// source contract's `CANDIDATE_DETECTION_FLOOR` rule (`shared/methodTrialView.ts`, `candidate >=
-// 0.75`), which is not exported. Nothing binds the two, so a change there does not fail here.
-// v1 pins the value so an exported `detection_floor` verdict is derivable from the detection
-// evidence the projection carries.
+// Preregistered candidate constants, hand-copied from inline literals in the pinned source
+// contract's scored gates (`shared/methodTrialView.ts`: `candidate >= 0.75` for the detection
+// floor, `candidate <= 8` for the delay budget), which are not exported. Nothing binds the two, so
+// a change there does not fail here. v1 pins the values so the exported verdicts are derivable
+// from the evidence the projection carries.
 export const RESEARCH_FINDING_DETECTION_FLOOR = 0.75 as const
+export const RESEARCH_FINDING_DELAY_BUDGET_WEEKS = 8 as const
 
-// Gates the projection can derive from its own metric evidence, in the shape of the source
-// contract's scored gates. `requiresBaseline` marks a rule that needs the baseline measurement
-// too; when a required measurement is unavailable or its metric is absent, the gate must be null,
-// exactly as the source contract derives `not_applicable`.
+// Every registry gate is derived from evidence the artifact itself carries, and validation rejects
+// any other value. The two selection gates equal `threshold_viability.baseline` and
+// `threshold_viability.candidate`, mirroring the source contract's
+// `scorecard.threshold_selection.*.viable`; when `threshold_viability` is absent they must be
+// null. The metric-scored gates below follow the source contract's scored-gate table:
+// `requiresBaseline` marks a rule that needs the baseline measurement too, and when a required
+// measurement is unavailable or its metric is absent the gate must be null, exactly as the source
+// contract derives `not_applicable`.
 //
-// Two rules match the source contract exactly; one deliberately does not. `false_alert_improvement`
-// here means any improvement (`candidate < baseline`), while the source contract applies a
-// preregistered 20% rule (`candidate <= baseline * 0.8`), so the two disagree over the interval
-// `0.8 * baseline < candidate < baseline`. That predates this table and is tracked separately;
-// the README states the rule this contract actually enforces.
-//
-// The remaining registry gates (`baseline_selection`, `candidate_selection`, `delay_budget`,
-// `confound_guard`) rest on selection viability, detection delay and confound evidence that v1
-// does not transport, so they cannot be derived here; see the README's stated derivation scope.
+// Four scored rules match the source contract exactly; one deliberately does not.
+// `false_alert_improvement` here means any improvement (`candidate < baseline`) and its label says
+// so, while the source contract applies a preregistered 20% rule (`candidate <= baseline * 0.8`).
+// The two disagree over `0.8 * baseline < candidate < baseline`, so this gate is a weaker,
+// self-describing claim than the trial's acceptance verdict; the README states the divergence.
 const DERIVED_GATES: ReadonlyArray<{
   code: GateCode
   metric: MetricCode
@@ -59,8 +62,14 @@ const DERIVED_GATES: ReadonlyArray<{
   evaluate: (baseline: number, candidate: number) => boolean
 }> = [
   { code: 'detection_floor', metric: 'detection_rate', requiresBaseline: false, evaluate: (_baseline, candidate) => candidate >= RESEARCH_FINDING_DETECTION_FLOOR },
+  { code: 'delay_budget', metric: 'median_detection_delay_weeks', requiresBaseline: false, evaluate: (_baseline, candidate) => candidate <= RESEARCH_FINDING_DELAY_BUDGET_WEEKS },
   { code: 'false_alert_improvement', metric: 'false_alerts_per_year', requiresBaseline: true, evaluate: (baseline, candidate) => candidate < baseline },
   { code: 'not_worse_detection', metric: 'detection_rate', requiresBaseline: true, evaluate: (baseline, candidate) => candidate >= baseline },
+  { code: 'confound_guard', metric: 'coverage_confound_false_alert_rate', requiresBaseline: true, evaluate: (baseline, candidate) => candidate <= baseline },
+]
+const SELECTION_GATES: ReadonlyArray<{ code: GateCode, side: 'baseline' | 'candidate' }> = [
+  { code: 'baseline_selection', side: 'baseline' },
+  { code: 'candidate_selection', side: 'candidate' },
 ]
 
 export const LIMITATIONS = {
@@ -97,6 +106,8 @@ const method = z.discriminatedUnion('method_code', [
   z.strictObject({ method_code: z.literal('pelt_offline'), display_name: z.literal(METHODS.pelt_offline) }),
 ])
 const unavailable = z.strictObject({ status: z.literal('unavailable') })
+const measuredRate = z.union([z.strictObject({ status: z.literal('measured'), value: z.number().finite().min(0).max(1) }), unavailable])
+const measuredWeeks = z.union([z.strictObject({ status: z.literal('measured'), value: z.number().finite().min(0).max(1_000_000) }), unavailable])
 const metric = z.discriminatedUnion('key', [
   z.strictObject({
     key: z.literal('detection_rate'), label: z.literal(METRICS.detection_rate.label), unit: z.literal('rate'),
@@ -107,6 +118,14 @@ const metric = z.discriminatedUnion('key', [
     key: z.literal('false_alerts_per_year'), label: z.literal(METRICS.false_alerts_per_year.label), unit: z.literal('count_per_year'),
     better_when: z.literal('lower'), baseline: z.union([z.strictObject({ status: z.literal('measured'), value: z.number().finite().min(0).max(10_000) }), unavailable]),
     candidate: z.union([z.strictObject({ status: z.literal('measured'), value: z.number().finite().min(0).max(10_000) }), unavailable]),
+  }),
+  z.strictObject({
+    key: z.literal('median_detection_delay_weeks'), label: z.literal(METRICS.median_detection_delay_weeks.label), unit: z.literal('weeks'),
+    better_when: z.literal('lower'), baseline: measuredWeeks, candidate: measuredWeeks,
+  }),
+  z.strictObject({
+    key: z.literal('coverage_confound_false_alert_rate'), label: z.literal(METRICS.coverage_confound_false_alert_rate.label), unit: z.literal('rate'),
+    better_when: z.literal('lower'), baseline: measuredRate, candidate: measuredRate,
   }),
 ])
 const gate = z.discriminatedUnion('code', [
@@ -140,6 +159,7 @@ const ResearchFindingContentSchema = z.strictObject({
   methods: z.strictObject({ baseline: method, candidate: method }),
   decision: z.strictObject({ outcome: z.enum(['reject', 'revise_once', 'benchmarked']), retained_fallback: methodCode.nullable(), summary: boundedText }),
   metrics: z.array(metric).min(1).max(6),
+  threshold_viability: z.strictObject({ baseline: z.boolean(), candidate: z.boolean() }).optional(),
   gates: z.array(gate).max(8).optional(),
   limitations: z.array(limitation).min(1).max(8),
   unsupported_claims: z.array(unsupportedClaim).min(1).max(8),
@@ -177,6 +197,25 @@ const ResearchFindingContentSchema = z.strictObject({
       ctx.addIssue({ code: 'custom', path: ['gates', gateIndex, 'passed'], message: expected === null ? `${rule.code} must be null when its supporting measurement is unavailable` : `${rule.code} must derive from the projected metric evidence` })
     }
   }
+  for (const rule of SELECTION_GATES) {
+    const gateIndex = value.gates?.findIndex((item) => item.code === rule.code) ?? -1
+    if (gateIndex < 0 || !value.gates) continue
+    const expected = value.threshold_viability ? value.threshold_viability[rule.side] : null
+    if (value.gates[gateIndex].passed !== expected) {
+      ctx.addIssue({ code: 'custom', path: ['gates', gateIndex, 'passed'], message: expected === null ? `${rule.code} must be null when threshold_viability is absent` : `${rule.code} must derive from the projected threshold viability` })
+    }
+  }
+  // `thresholds_nonviable` states that both selections are nonviable, so it is admissible exactly
+  // when the evidence says so, and required in that case. The evidence is `threshold_viability`
+  // when present (independent of whether the selection gates are exported); only without it do the
+  // selection gate values decide, and those must then be null, so the limitation is inadmissible.
+  const selectionGateFailed = (code: GateCode) => value.gates?.some((item) => item.code === code && item.passed === false) ?? false
+  const bothSelectionsNonviable = value.threshold_viability
+    ? !value.threshold_viability.baseline && !value.threshold_viability.candidate
+    : selectionGateFailed('baseline_selection') && selectionGateFailed('candidate_selection')
+  const nonviableIndex = limitationCodes.indexOf('thresholds_nonviable')
+  if (nonviableIndex >= 0 && !bothSelectionsNonviable) ctx.addIssue({ code: 'custom', path: ['limitations', nonviableIndex], message: 'thresholds_nonviable requires both selections to be nonviable' })
+  if (nonviableIndex < 0 && bothSelectionsNonviable) ctx.addIssue({ code: 'custom', path: ['limitations'], message: 'thresholds_nonviable is required when both selections are nonviable' })
   if (value.decision.outcome === 'reject') {
     if (value.decision.retained_fallback !== value.methods.baseline.method_code) ctx.addIssue({ code: 'custom', path: ['decision', 'retained_fallback'], message: 'reject must retain the baseline method' })
     if (!worse && !failedGate) ctx.addIssue({ code: 'custom', path: ['decision'], message: 'reject requires worse measured metric or failed gate' })
