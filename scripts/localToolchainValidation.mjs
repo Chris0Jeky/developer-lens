@@ -1,4 +1,4 @@
-import { accessSync, constants, existsSync, realpathSync, statSync } from 'node:fs'
+import { accessSync, closeSync, constants, existsSync, fstatSync, openSync, realpathSync, statSync } from 'node:fs'
 import path from 'node:path'
 
 export const DEFAULT_LOCAL_TOOLS = [
@@ -17,14 +17,39 @@ function isWithin(parent, candidate) {
   )
 }
 
-function shimCandidates(root, command, platform) {
+const DEFAULT_WINDOWS_EXTENSIONS = ['.com', '.exe', '.bat', '.cmd']
+
+function shimCandidates(root, command, platform, pathExt) {
   const binDirectory = path.join(root, 'node_modules', '.bin')
-  if (platform === 'win32') {
-    return ['.cmd', '.exe', '.bat', ''].map((extension) =>
-      path.join(binDirectory, `${command}${extension}`),
-    )
+  if (platform !== 'win32') {
+    const candidates = [path.join(binDirectory, command)]
+    return { selectable: candidates, inspect: candidates }
   }
-  return [path.join(binDirectory, command)]
+  const extensions = pathExt.split(';').map((value) => value.trim().toLowerCase()).filter(Boolean)
+  if (extensions.length === 0 || extensions.some((value) => !/^\.[a-z0-9]+$/.test(value))) {
+    throw new Error('Invalid command-extension configuration')
+  }
+  const candidates = (values) => [...new Set(values)].map((extension) =>
+    path.join(binDirectory, `${command}${extension}`),
+  )
+  return {
+    selectable: candidates(extensions),
+    // Validate every possible sibling, not the first .cmd: lookup can prefer another extension.
+    inspect: candidates([...DEFAULT_WINDOWS_EXTENSIONS, ...extensions]),
+  }
+}
+
+function isUsableFile(file, nodeModulesRoot, realpath, executable) {
+  if (!isWithin(nodeModulesRoot, realpath(file)) || !statSync(file).isFile()) return false
+  // Opening checks Windows ACLs, unlike access(R_OK). Never consume the file's contents.
+  const descriptor = openSync(file, 'r')
+  try {
+    if (!fstatSync(descriptor).isFile()) return false
+    if (executable) accessSync(file, constants.X_OK)
+    return true
+  } finally {
+    closeSync(descriptor)
+  }
 }
 
 function uniqueInToolOrder(values) {
@@ -34,6 +59,7 @@ function uniqueInToolOrder(values) {
 export function validateLocalToolchain({
   root,
   platform = process.platform,
+  pathExt = process.env.PATHEXT ?? DEFAULT_WINDOWS_EXTENSIONS.join(';'),
   tools = DEFAULT_LOCAL_TOOLS,
   pathExists = existsSync,
   realpath = realpathSync,
@@ -47,20 +73,16 @@ export function validateLocalToolchain({
   const invalidResolutions = []
 
   for (const { command, packageName } of tools) {
-    const shim = shimCandidates(repositoryRoot, command, platform).find(pathExists)
-    if (!shim) {
-      missingShims.push(command)
-    } else {
-      try {
-        if (!isWithin(nodeModulesRoot, realpath(shim)) || !statSync(shim).isFile()) {
+    try {
+      const candidates = shimCandidates(repositoryRoot, command, platform, pathExt)
+      if (!candidates.selectable.some(pathExists)) missingShims.push(command)
+      for (const shim of candidates.inspect.filter(pathExists)) {
+        if (!isUsableFile(shim, nodeModulesRoot, realpath, platform !== 'win32')) {
           invalidResolutions.push(command)
-        } else {
-          // POSIX shells skip non-executable PATH entries; existence alone is unsafe.
-          accessSync(shim, platform === 'win32' ? constants.R_OK : constants.X_OK)
         }
-      } catch {
-        invalidResolutions.push(command)
       }
+    } catch {
+      invalidResolutions.push(command)
     }
 
     const manifest = path.join(nodeModulesRoot, packageName, 'package.json')
@@ -68,10 +90,8 @@ export function validateLocalToolchain({
       missingPackages.push(command)
     } else {
       try {
-        if (!isWithin(nodeModulesRoot, realpath(manifest)) || !statSync(manifest).isFile()) {
+        if (!isUsableFile(manifest, nodeModulesRoot, realpath, false)) {
           invalidResolutions.push(command)
-        } else {
-          accessSync(manifest, constants.R_OK)
         }
       } catch {
         invalidResolutions.push(command)
