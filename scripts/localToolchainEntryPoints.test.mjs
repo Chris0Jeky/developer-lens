@@ -4,7 +4,8 @@ import path from 'node:path'
 import { afterEach, describe, expect, it } from 'vitest'
 import { validateLocalToolchain, formatLocalToolchainFailure } from './localToolchainValidation.mjs'
 
-const { scripts } = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'))
+// npm invokes these scripts from the package root; Vitest may transform import.meta.url.
+const { scripts } = JSON.parse(readFileSync(path.resolve('package.json'), 'utf8'))
 const guardedCommands = /(?:^|&&\s*)(?:tsx|tsc|vite|vitest|oxlint)(?:\s|$)/
 const entrypoints = Object.entries(scripts).filter(([, command]) => guardedCommands.test(command))
 const roots = []
