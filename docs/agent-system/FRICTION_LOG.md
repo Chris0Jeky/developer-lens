@@ -989,6 +989,8 @@ Rules that bind entries:
   and [PR #274 review comment 3790412576](https://github.com/Chris0Jeky/developer-lens/pull/274#discussion_r3790412576).
   The canonical promoted explicit-scalar boundary now counts this as FR-026's eleventh occurrence.
 
+  **2026-09-22 issue #246 fold note:** The FR-039 malformed-GraphQL episode stays counted under canonical FR-022's quoted/native-argument mechanism, not here: its predicate is quoting, not object expansion. FR-039's promotion already records that FR-026 applies only where its explicit-scalar object-expansion predicate is present. No FR-026 count changes.
+
 ### FR-027 — stale multi-entry patch context failed closed
 
 - **first-seen:** 2026-08-10
