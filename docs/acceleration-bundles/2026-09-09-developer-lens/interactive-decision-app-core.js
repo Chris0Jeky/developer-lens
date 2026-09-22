@@ -1,6 +1,18 @@
 const DATA = window.DEVELOPER_LENS_DECK_DATA
-const KEY = 'developer-lens-decision-deck-v1'
 const recommended = Object.fromEntries(DATA.decisions.map(d => [d.id, d.options.find(o=>o.recommended)?.id ?? null]))
+// Persisted choices are bound to the exact catalogue and snapshot they were made against: a changed
+// decision set, option set, recommendation, or snapshot yields a different key, so a stale
+// confirmation can never be restored against different content.
+function fingerprint(value){
+  let h = 0x811c9dc5
+  const text = JSON.stringify(value)
+  for (let i = 0; i < text.length; i++) { h ^= text.charCodeAt(i); h = Math.imul(h, 0x01000193) >>> 0 }
+  return h.toString(16).padStart(8, '0')
+}
+const KEY = 'developer-lens-decision-deck-v2-' + fingerprint({
+  decisions: DATA.decisions.map(d => [d.id, d.options.map(o => [o.id, !!o.recommended])]),
+  snapshot: DATA.snapshot
+})
 let state = loadState()
 
 function initialState(){
@@ -11,7 +23,16 @@ function initialState(){
 function loadState(){
   try{
     const parsed = JSON.parse(localStorage.getItem(KEY))
-    return parsed && typeof parsed==='object' ? {...initialState(),...parsed} : initialState()
+    const base = initialState()
+    if (!parsed || typeof parsed !== 'object') return base
+    for (const d of DATA.decisions) {
+      const saved = parsed[d.id]
+      if (!saved || typeof saved !== 'object') continue
+      const validSelection = saved.selected === null || d.options.some(o => o.id === saved.selected)
+      if (!validSelection) continue
+      base[d.id] = {...base[d.id], ...saved}
+    }
+    return base
   }catch{return initialState()}
 }
 function save(){ localStorage.setItem(KEY,JSON.stringify(state)); updateProgress(); updateHandoff() }

@@ -61,7 +61,7 @@ Create or update, as appropriate:
 1. `DL-ACC-00` — reconcile current state.
 2. `DL-ACC-01` — inspect/re-prove/merge the security dependency update if still open and authorized.
 3. `DL-ACC-02` — prepare the bounded v0.1 Product visual proof packet.
-4. Stop at q-10(c) if owner approval is absent.
+4. Stop at Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) if owner approval is absent.
 5. In parallel only where file ownership is disjoint, prepare #304 and the ResearchFinding issue grouping without publishing or changing v1 semantics.
 
 ## Completion report

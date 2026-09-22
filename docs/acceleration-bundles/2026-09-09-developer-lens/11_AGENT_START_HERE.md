@@ -90,7 +90,7 @@ Stop before:
 - public non-C0 output;
 - remote model transmission;
 - remote telemetry;
-- release tag without q-10(c);
+- release tag without Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c);
 - Taskdeck write without exact reviewed integration authority;
 - individual ranking/person inference;
 - changing published v1 contract meaning without versioning.
