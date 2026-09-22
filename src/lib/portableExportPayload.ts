@@ -48,6 +48,7 @@ export interface PortableRepository {
   issues: number
   activeWeeks: number
   engagement: number
+  /** Late/early activity ratio from analytics (`1` = even), 0..100 at two decimals; not a percent. */
   momentum: number
   attentionShare: number
 }
@@ -347,7 +348,9 @@ function repositoryLabels(
       issues: integer(repository.issues),
       activeWeeks: integer(repository.activeWeeks),
       engagement: Math.round(finite(repository.engagement) * 10) / 10,
-      momentum: Math.max(-100, Math.min(100, Math.round(repository.momentum))),
+      // `RepositoryMetric.momentum` is the second-half/first-half activity ratio. Integer rounding
+      // collapsed every ratio from 0.5 to 1.49 into 1, so keep two decimals.
+      momentum: Math.min(100, Math.round(finite(repository.momentum) * 100) / 100),
       attentionShare:
         totalEngagement > 0
           ? Math.round((finite(repository.engagement) / totalEngagement) * 1_000) / 1_000
@@ -521,7 +524,9 @@ export function createPortableExportPayload(
       data.summary.medianMergeHours === undefined
         ? null
         : Math.round(finite(data.summary.medianMergeHours) * 10) / 10,
-    coverageScore: percentage(data.meta.coverageScore),
+    // `DashboardMeta.coverageScore` is already an integer percent (analytics stores
+    // `Math.round(ratio * 100)`); treating it as a 0..1 ratio clamped every score >= 1% to 100.
+    coverageScore: Math.min(100, integer(data.meta.coverageScore)),
   }
   const weeks = data.weekly.map((week, index) => ({
     label: `Week ${String(index + 1).padStart(2, '0')}`,

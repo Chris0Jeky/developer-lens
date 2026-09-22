@@ -22,6 +22,10 @@ dist-ssr
 # export is derived from private data. Never commit this directory.
 /artifacts/
 
+# Headless PublicLensProjection export output (npm run export:profile). A local projection is the
+# owner's C1 export: never commit it here and never publish it to Pages.
+/profile-export/
+
 # Governor runtime cache — never authority. Losing it must not make the repo unresumable.
 .agent-harness/runtime/
 

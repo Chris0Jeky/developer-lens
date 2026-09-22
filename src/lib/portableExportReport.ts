@@ -127,7 +127,7 @@ function repositoryLedger(payload: PortableExportPayload): string {
             <div><dt>Reviews</dt><dd>${formatNumber(repository.reviews)}</dd></div>
             <div><dt>Issues</dt><dd>${formatNumber(repository.issues)}</dd></div>
             <div><dt>Active weeks</dt><dd>${formatNumber(repository.activeWeeks)}</dd></div>
-            <div><dt>Momentum</dt><dd>${repository.momentum > 0 ? '+' : ''}${repository.momentum}%</dd></div>
+            <div><dt>Momentum</dt><dd>${repository.momentum}× late / early</dd></div>
           </dl>
         </details>`,
     )

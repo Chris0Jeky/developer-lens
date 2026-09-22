@@ -3,12 +3,16 @@ import { join, resolve } from 'node:path'
 import type { DashboardData, RangeKey } from '../shared/types.js'
 import { buildShareCardSvg } from '../src/lib/shareCardMarkup.js'
 import { createPortableExportPayload } from '../src/lib/portableExportPayload.js'
+import { createPublicLensProjectionFromDashboard } from '../src/lib/publicLensProjection.js'
+import { PublicLensProjectionSchema } from '../shared/lensProjection.js'
+import { stableJson } from '../shared/researchFinding.js'
 import { buildPortableExperienceReport } from '../src/lib/portableExportReport.js'
 import { createShareCaption, createSharePayload } from '../src/lib/sharePayload.js'
 import { buildStandaloneReport } from '../src/lib/standaloneReport.js'
 import {
   createPrivacyControlDashboard,
   createForbiddenPatterns,
+  forbiddenPatternViolations,
   portablePayloadBoundaryViolations,
   renderedPortableBoundaryViolations,
   renderedShareBoundaryViolations,
@@ -127,7 +131,40 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
       )
     }
   }
+
+  // PublicLensProjection.v1 is not emitted into Pages, but the C0 projection the showcase data
+  // yields must satisfy the same public boundary as every other artifact derived from it.
+  const { projection } = createPublicLensProjectionFromDashboard(dashboard, {
+    aliasSeed: `synthetic-showcase-${range}`,
+    repositoryRedaction: 'private-aliases',
+    producerCommit: '0'.repeat(40),
+    producerVersion: '0.0.0',
+  })
+  assertLensProjectionIsPublic(`${range} lens projection`, projection)
 }
+
+function assertLensProjectionIsPublic(where: string, value: unknown): void {
+  const projection = PublicLensProjectionSchema.parse(value)
+  assert(
+    projection.dataClass === 'C0' &&
+      projection.scope === 'public-demo' &&
+      projection.repositoryRedaction === 'synthetic' &&
+      projection.repositories.every(
+        (repository) =>
+          repository.disclosure === 'synthetic' && isApprovedShowcaseRepositoryName(repository.label),
+      ),
+    `${where}: not a canonical C0 synthetic showcase projection`,
+  )
+  assertNoViolations(forbiddenPatternViolations(where, stableJson(projection), forbiddenPatterns))
+}
+
+// The tracked C0 fixture consumers vendor is held to the same boundary.
+assertLensProjectionIsPublic(
+  'lens-projection showcase fixture',
+  JSON.parse(
+    await readFile(resolve('research-contracts', 'lens-projection', 'v1', 'showcase.fixture.json'), 'utf8'),
+  ),
+)
 
 const socialCard = await readFile(join(dist, 'social-card.png'))
 assert(
@@ -141,5 +178,5 @@ assertNoViolations((await scanDirectoryForForbiddenPatterns(dist, forbiddenPatte
 assertNoViolations(await scanDirectoryForExternalResources(dist))
 
 console.log(
-  'Verified synthetic identities, export boundaries, social card dimensions, secret/path patterns, and external-resource isolation in showcase output.',
+  'Verified synthetic identities, export boundaries, the C0 lens projection and fixture, social card dimensions, secret/path patterns, and external-resource isolation in showcase output.',
 )

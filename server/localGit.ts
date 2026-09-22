@@ -8,6 +8,7 @@ import type {
   RawCommit,
   RawRepository,
 } from '../shared/types.js'
+import { COLLECTION_WARNINGS } from './collectionWarnings.js'
 import { classifyCommit } from './github.js'
 
 const execFileAsync = promisify(execFile)
@@ -189,9 +190,7 @@ export async function collectLocalGit(
         detail:
           'Explicit roots were provided, but no author email identity was configured. Set git user.email or DEV_LENS_GIT_EMAILS.',
       },
-      warnings: [
-        'Local Git enrichment was skipped because no unambiguous author email identity was configured.',
-      ],
+      warnings: [COLLECTION_WARNINGS.localGitIdentityMissing()],
     }
   }
 
@@ -246,9 +245,7 @@ export async function collectLocalGit(
         })),
       )
     } catch {
-      warnings.push(
-        `${basename(repositoryPath)} could not be read; it was excluded from local enrichment.`,
-      )
+      warnings.push(COLLECTION_WARNINGS.localRepositoryUnreadable(basename(repositoryPath)))
     }
   }
 

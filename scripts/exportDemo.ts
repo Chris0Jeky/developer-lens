@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { DashboardData, RangeKey } from '../shared/types.js'
 import { analyzeDataset } from '../server/analytics.js'
+import { COLLECTION_WARNINGS } from '../server/collectionWarnings.js'
 import { createDemoDataset } from '../server/demo.js'
 
 const outputDirectory = resolve('public', 'data')
@@ -14,8 +15,8 @@ export const SHOWCASE_RANGES: readonly RangeKey[] = Object.freeze(['6m', '12m'] 
  * The single constructor for the publishable synthetic dashboard. `scripts/exportArtifacts.ts`
  * imports it so the headless export and the hosted showcase can never describe different data.
  */
-export function createPublicShowcaseDashboard(range: RangeKey): DashboardData {
-  const dashboard = analyzeDataset(createDemoDataset(range))
+export function createPublicShowcaseDashboard(range: RangeKey, now?: Date): DashboardData {
+  const dashboard = analyzeDataset(createDemoDataset(range, now))
   dashboard.meta.privacy = 'public-demo'
   dashboard.meta.subject = {
     login: 'synthetic-builder',
@@ -37,9 +38,7 @@ export function createPublicShowcaseDashboard(range: RangeKey): DashboardData {
       detail: 'Authenticated GitHub data and local Git history are intentionally excluded.',
     },
   ]
-  dashboard.meta.warnings = [
-    'This hosted showcase demonstrates the analytical engine; its statistics do not describe a person.',
-  ]
+  dashboard.meta.warnings = [COLLECTION_WARNINGS.hostedShowcase()]
   return dashboard
 }
 

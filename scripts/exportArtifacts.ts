@@ -68,6 +68,7 @@ export type ArtifactKind =
   | 'standalone-report'
   | 'portable-experience'
   | 'dashboard-data'
+  | 'lens-projection'
   | 'manifest'
 
 export interface ExportedArtifact {
@@ -115,11 +116,11 @@ export class ArtifactExportError extends Error {
   }
 }
 
-interface PendingArtifact extends ExportedArtifact {
+export interface PendingArtifact extends ExportedArtifact {
   content: string
 }
 
-function pending(
+export function pending(
   file: string,
   kind: ArtifactKind,
   range: RangeKey | null,
@@ -246,7 +247,7 @@ function buildRangeArtifacts(
  * folder — makes the run refuse instead, because the alternative is deleting a file this command
  * never owned.
  */
-interface OutputDirectoryPlan {
+export interface OutputDirectoryPlan {
   existed: boolean
   replaceable: string[]
 }
@@ -279,7 +280,7 @@ async function readPriorManifestFiles(directory: string): Promise<ReadonlySet<st
   return files
 }
 
-async function planOutputDirectory(directory: string): Promise<OutputDirectoryPlan> {
+export async function planOutputDirectory(directory: string): Promise<OutputDirectoryPlan> {
   let entries: Dirent[]
   try {
     entries = await readdir(directory, { withFileTypes: true })
@@ -388,6 +389,69 @@ export async function exportArtifacts(
     throw new ArtifactExportError('refused: no ranges were selected, so nothing would be written')
   }
 
+  const scope = scopes.has('redacted-local') ? 'redacted-local' : 'public-demo'
+  const written = await writeExportSet({
+    outputDirectory,
+    plan,
+    artifacts,
+    violations,
+    patterns,
+    manifest: {
+      source: options.source,
+      scope,
+      ranges: [...options.ranges],
+      repositoryRedaction: options.repositoryRedaction,
+    },
+    postWriteScanner: options.postWriteScanner,
+    removeFile: options.removeFile,
+  })
+
+  return {
+    source: options.source,
+    scope,
+    outputDirectory,
+    artifacts: written.artifacts,
+    privacyScan: {
+      patternCount: patterns.length,
+      filesScanned: written.filesScanned,
+      status: 'passed',
+    },
+  }
+}
+
+export interface ExportManifestHeader {
+  source: string
+  scope: 'public-demo' | 'redacted-local'
+  ranges: RangeKey[]
+  repositoryRedaction: string
+}
+
+export interface ExportSetRequest {
+  /** Already resolved, and planned with `planOutputDirectory` before any input was read. */
+  outputDirectory: string
+  plan: OutputDirectoryPlan
+  artifacts: PendingArtifact[]
+  /** Structural boundary violations the caller collected while building `artifacts`. */
+  violations: string[]
+  patterns: readonly ForbiddenPattern[]
+  manifest: ExportManifestHeader
+  postWriteScanner?: typeof scanDirectoryForForbiddenPatterns
+  removeFile?: (path: string) => Promise<void>
+}
+
+/**
+ * The export sink every headless exporter shares: fail closed on any collected or pattern
+ * violation before a byte is written, write a manifest naming exactly the files written, replace
+ * only a previous manifest's own files, then rescan what landed and remove it all again if the
+ * post-write scan trips.
+ */
+export async function writeExportSet(
+  request: ExportSetRequest,
+): Promise<{ artifacts: ExportedArtifact[]; filesScanned: number }> {
+  const { outputDirectory, plan, patterns } = request
+  const artifacts = [...request.artifacts]
+  const violations = [...request.violations]
+
   // Fail closed before a single byte reaches the disk.
   for (const artifact of artifacts) {
     violations.push(...forbiddenPatternViolations(artifact.file, artifact.content, patterns))
@@ -396,13 +460,9 @@ export async function exportArtifacts(
     throw new ArtifactExportError(`privacy scan failed: ${violations.join('; ')}`)
   }
 
-  const scope = scopes.has('redacted-local') ? 'redacted-local' : 'public-demo'
   const manifest = {
     schemaVersion: 1,
-    source: options.source,
-    scope,
-    ranges: [...options.ranges],
-    repositoryRedaction: options.repositoryRedaction,
+    ...request.manifest,
     privacyScan: {
       scanner: 'scripts/exportPrivacyGuards.ts',
       patternCount: patterns.length,
@@ -430,7 +490,7 @@ export async function exportArtifacts(
   const replacementCleanup = await removeFiles(
     outputDirectory,
     plan.replaceable,
-    options.removeFile,
+    request.removeFile,
   )
   if (replacementCleanup.failed > 0) {
     throw new ArtifactExportError('refused: previous export cleanup incomplete')
@@ -442,13 +502,13 @@ export async function exportArtifacts(
   }
 
   // Second pass over what actually landed, using the same scanner the showcase build runs.
-  const postWriteScanner = options.postWriteScanner ?? scanDirectoryForForbiddenPatterns
+  const postWriteScanner = request.postWriteScanner ?? scanDirectoryForForbiddenPatterns
   const scan = await postWriteScanner(outputDirectory, patterns)
   if (scan.violations.length > 0) {
     const cleanup = await removeFiles(
       outputDirectory,
       artifacts.map((artifact) => artifact.file),
-      options.removeFile,
+      request.removeFile,
     )
     let cleanupFailures = cleanup.failed
     if (!plan.existed) {
@@ -465,19 +525,12 @@ export async function exportArtifacts(
   }
 
   return {
-    source: options.source,
-    scope,
-    outputDirectory,
     artifacts: artifacts.map(({ file, kind, range, bytes }) => ({ file, kind, range, bytes })),
-    privacyScan: {
-      patternCount: patterns.length,
-      filesScanned: scan.filesScanned,
-      status: 'passed',
-    },
+    filesScanned: scan.filesScanned,
   }
 }
 
-async function loadLocalDashboard(range: RangeKey): Promise<DashboardData> {
+export async function loadLocalDashboard(range: RangeKey): Promise<DashboardData> {
   try {
     return JSON.parse(await readFile(dashboardPath(range), 'utf8')) as DashboardData
   } catch (error) {

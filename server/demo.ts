@@ -1,4 +1,5 @@
 import { addDays, formatISO, subMonths } from 'date-fns'
+import { COLLECTION_WARNINGS } from './collectionWarnings.js'
 import type { RangeKey, RawDataset } from '../shared/types.js'
 import { classifyCommit } from './github.js'
 
@@ -66,9 +67,9 @@ const DEMO_REPOSITORIES = [
   },
 ] as const
 
-export function createDemoDataset(range: RangeKey): RawDataset {
+export function createDemoDataset(range: RangeKey, now: Date = new Date()): RawDataset {
   const months = range === '6m' ? 6 : 12
-  const toDate = new Date()
+  const toDate = new Date(now.getTime())
   const fromDate = subMonths(toDate, months)
   const from = formatISO(fromDate)
   const to = formatISO(toDate)
@@ -155,7 +156,7 @@ export function createDemoDataset(range: RangeKey): RawDataset {
     range,
     from,
     to,
-    collectedAt: new Date().toISOString(),
+    collectedAt: now.toISOString(),
     subject: {
       login: 'demo-builder',
       name: 'Your development story',
@@ -209,6 +210,6 @@ export function createDemoDataset(range: RangeKey): RawDataset {
         detail: 'Demo mode does not inspect the filesystem.',
       },
     ],
-    warnings: ['This is illustrative data. Run npm run collect to reveal your own development story.'],
+    warnings: [COLLECTION_WARNINGS.demoIllustrativeData()],
   }
 }
