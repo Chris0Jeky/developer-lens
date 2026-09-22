@@ -75,6 +75,13 @@ export function validateLocalToolchain({
   for (const { command, packageName } of tools) {
     try {
       const candidates = shimCandidates(repositoryRoot, command, platform, pathExt)
+      if (platform === 'win32' && candidates.inspect.some((candidate) =>
+        pathExists(path.join(repositoryRoot, path.basename(candidate))),
+      )) {
+        // cmd.exe can search the current package directory before PATH. Reject
+        // root-level shadows even when a valid local .bin shim also exists.
+        invalidResolutions.push(command)
+      }
       if (!candidates.selectable.some(pathExists)) missingShims.push(command)
       for (const shim of candidates.inspect.filter(pathExists)) {
         if (!isUsableFile(shim, nodeModulesRoot, realpath, platform !== 'win32')) {
