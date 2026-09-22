@@ -451,8 +451,10 @@ function resolveImportKeyMaterial(options: ImportV1Options): ImportKeyMaterial {
     }
     return { aliases: handle.aliases, fingerprint: handle.fingerprint }
   }
-  const aliases = createInstallationAliases(options.installationKey)
-  const fingerprint = createHash('sha256').update(options.installationKey as Buffer).digest('hex')
+  // Read the key once: the aliases and the recorded pin must derive from the same bytes.
+  const installationKey = options.installationKey
+  const aliases = createInstallationAliases(installationKey)
+  const fingerprint = createHash('sha256').update(installationKey as Buffer).digest('hex')
   return { aliases, fingerprint }
 }
 
