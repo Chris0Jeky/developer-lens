@@ -1,19 +1,8 @@
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import fs, { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { syncBuiltinESMExports } from 'node:module'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { afterEach, describe, expect, it, vi } from 'vitest'
-
-const deniedReads = vi.hoisted(() => new Set())
-vi.mock('node:fs', async (importOriginal) => {
-  const actual = await importOriginal()
-  return {
-    ...actual,
-    openSync: (...args) => {
-      if (deniedReads.has(args[0])) throw new Error(`private ACL denial: ${args[0]}`)
-      return actual.openSync(...args)
-    },
-  }
-})
+import { afterEach, describe, expect, it } from 'vitest'
 
 import { formatLocalToolchainFailure, validateLocalToolchain } from './localToolchainValidation.mjs'
 
@@ -36,7 +25,6 @@ function validate(root, extensions = pathExt) {
   return validateLocalToolchain({ root, platform: 'win32', tools, pathExt: extensions })
 }
 afterEach(() => {
-  deniedReads.clear()
   for (const root of roots.splice(0)) rmSync(root, { recursive: true, force: true })
 })
 
@@ -69,12 +57,31 @@ describe('Windows local toolchain admission', () => {
 
   it.each(['shim', 'manifest'])('rejects a metadata-visible but read-denied %s without disclosing its path', (entry) => {
     const files = fixture()
-    deniedReads.add(files[entry])
-    const result = validate(files.root)
-    expect(result.ok).toBe(false)
-    expect(result.invalidResolutions).toEqual(['tsc'])
-    const diagnostic = formatLocalToolchainFailure(result)
-    expect(diagnostic).not.toContain(files.root)
-    expect(diagnostic).not.toContain('ACL denial')
+    expect(validate(files.root).ok).toBe(true)
+    const originalOpen = fs.openSync
+    let deniedAttempts = 0
+    // The Node-only .mjs preflight can be imported natively. Update the built-in
+    // ESM binding as well as the fs object, rather than mocking only Vitest's view.
+    fs.openSync = (...args) => {
+      if (args[0] === files[entry]) {
+        deniedAttempts += 1
+        throw new Error(`private ACL denial: ${args[0]}`)
+      }
+      return originalOpen(...args)
+    }
+    syncBuiltinESMExports()
+    try {
+      const result = validate(files.root)
+      expect(deniedAttempts).toBeGreaterThan(0)
+      expect(result.ok).toBe(false)
+      expect(result.invalidResolutions).toEqual(['tsc'])
+      const diagnostic = formatLocalToolchainFailure(result)
+      expect(diagnostic).not.toContain(files.root)
+      expect(diagnostic).not.toContain('ACL denial')
+    } finally {
+      fs.openSync = originalOpen
+      syncBuiltinESMExports()
+    }
+    expect(validate(files.root).ok).toBe(true)
   })
 })
