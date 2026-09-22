@@ -204,8 +204,8 @@ describe('project context validation', () => {
 
   it('escapes control characters in metadata-derived tracked-path diagnostics', () => {
     const controlPath =
-      'docs/control' + String.fromCharCode(10, 13, 27, 133, 0x2028, 0x2029, 0x202A, 0x202E, 0x2066, 0x2069, 92) + 'segment.md'
-    const escapedPath = 'docs/control\\u000A\\u000D\\u001B\\u0085\\u2028\\u2029\\u202A\\u202E\\u2066\\u2069\\\\segment.md'
+      'docs/control' + String.fromCharCode(10, 13, 27, 133, 0x061C, 0x200E, 0x200F, 0x2028, 0x2029, 0x202A, 0x202E, 0x2066, 0x2069, 92) + 'segment.md'
+    const escapedPath = 'docs/control\\u000A\\u000D\\u001B\\u0085\\u061C\\u200E\\u200F\\u2028\\u2029\\u202A\\u202E\\u2066\\u2069\\\\segment.md'
     const homePath = ['C:', 'Users', 'FixtureUser', 'workspace'].join('/')
     const messages = [
       ...validateTrackedTextForWindowsUserHomePaths(
@@ -232,7 +232,7 @@ describe('project context validation', () => {
     ])
     for (const message of messages) {
       // oxlint-disable-next-line no-control-regex -- control ranges are intentionally asserted
-      expect(message).not.toMatch(/[\u0000-\u001F\u007F-\u009F\u2028\u2029\u202A-\u202E\u2066-\u2069]/)
+      expect(message).not.toMatch(/[\u0000-\u001F\u007F-\u009F\u061C\u200E\u200F\u2028\u2029\u202A-\u202E\u2066-\u2069]/)
     }
   })
 

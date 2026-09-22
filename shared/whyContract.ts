@@ -1,10 +1,12 @@
 import { z } from 'zod'
 import { CAPABILITY_REGISTRY } from './capabilities.js'
 import {
+  CLAIM_EDGE_ROLES,
   CLAIM_EDGE_ROLE_TARGET_KIND,
   ClaimEdgeRoleSchema,
   ClaimEdgeTargetKindSchema,
 } from './claims.js'
+import { CoverageRecordSchema } from './coverage.js'
 import type { AnalyticReference } from './findings.js'
 import type {
   WhyCapabilityNode,
@@ -90,6 +92,21 @@ export const WHY_WALK_TERMINATIONS = [
 ] as const
 export type WhyWalkTermination = typeof WHY_WALK_TERMINATIONS[number]
 
+const WHY_MISSING_LINK_TARGET_KIND = {
+  CYCLE_DETECTED: 'claim',
+  DEPTH_LIMIT_REACHED: 'claim',
+  MALFORMED_EDGE: 'edge',
+  MISSING_CAPABILITY_BINDING: 'collection_job',
+  MISSING_CLAIM: 'claim',
+  MISSING_COVERAGE: 'coverage',
+  MISSING_EVIDENCE: 'evidence',
+  MISSING_SCOPE: 'scope',
+  SCOPE_ALIAS_CLEARED: 'scope',
+  TOMBSTONED_CLAIM: 'claim',
+  TOMBSTONED_EVIDENCE: 'evidence',
+  UNREGISTERED_CAPABILITY: 'capability',
+} as const satisfies Record<WhyMissingLinkReason, WhyTargetKind>
+
 export const WhyCoverageKeySchema = z.strictObject({
   rangeStart: z.string(),
   jobId: z.string(),
@@ -110,6 +127,14 @@ export const WhyMissingLinkSchema = z.strictObject({
   targetId: z.string().nullable(),
   coverageKey: WhyCoverageKeySchema.nullable(),
   lineage: z.array(WhyLineageEventSchema),
+}).superRefine((link, context) => {
+  if (WHY_MISSING_LINK_TARGET_KIND[link.reason] !== link.targetKind) {
+    context.addIssue({
+      code: 'custom',
+      path: ['targetKind'],
+      message: 'missing-link target kind disagrees with its reason',
+    })
+  }
 }) satisfies z.ZodType<WhyMissingLink>
 
 /**
@@ -160,6 +185,47 @@ export const WhyCoverageNodeSchema = z.strictObject({
   saturationReason: z.string().nullable(),
   observedAt: z.string(),
   job: z.discriminatedUnion('kind', [WhyCollectionJobNodeSchema, WhyMissingLinkSchema]),
+}).superRefine((node, context) => {
+  const capabilityId = node.job.kind === 'collection_job' && node.job.capability.kind === 'capability'
+    ? node.job.capability.capabilityId
+    : CAPABILITY_REGISTRY[0].id
+  const coverage = CoverageRecordSchema.safeParse({
+    coverageId: 'why-contract-projection',
+    capabilityId,
+    scopeAlias: 'why-contract-projection',
+    rangeStart: node.coverageKey.rangeStart,
+    rangeEnd: node.rangeEnd,
+    status: node.status,
+    expectedUnits: node.expectedUnits,
+    observedUnits: node.observedUnits,
+    omittedUnits: node.omittedUnits,
+    ...(node.saturationReason === null ? {} : { saturationReason: node.saturationReason }),
+    retryable: node.retryable,
+    observedAt: node.observedAt,
+    limitationCode: node.limitationCode,
+  })
+  if (!coverage.success) {
+    for (const issue of coverage.error.issues) {
+      context.addIssue({
+        code: 'custom',
+        path: issue.path,
+        message: `coverage record invariant: ${issue.message}`,
+      })
+    }
+  }
+
+  const projectedJobId = node.job.kind === 'collection_job'
+    ? node.job.jobId
+    : node.job.targetKind === 'collection_job'
+      ? node.job.targetId
+      : null
+  if (projectedJobId !== node.coverageKey.jobId) {
+    context.addIssue({
+      code: 'custom',
+      path: ['job'],
+      message: 'coverage job does not name the coverage key job id',
+    })
+  }
 }) satisfies z.ZodType<WhyCoverageNode>
 
 export const WhyEvidenceNodeSchema = z.strictObject({
@@ -266,6 +332,18 @@ export const WhyEdgeGroupSchema = z.strictObject({
   }
 }) satisfies z.ZodType<WhyEdgeGroup>
 
+const WhyEdgeGroupsSchema = z.array(WhyEdgeGroupSchema).superRefine((groups, context) => {
+  for (const role of CLAIM_EDGE_ROLES) {
+    const occurrences = groups.filter((group) => group.role === role).length
+    if (occurrences !== 1) {
+      context.addIssue({
+        code: 'custom',
+        message: `edge role ${role} must occur exactly once`,
+      })
+    }
+  }
+})
+
 export const WhyLimitationSchema = z.strictObject({
   kind: z.literal('limitation'),
   limitationCode: z.string(),
@@ -300,12 +378,48 @@ export const WhyExplanationTreeSchema = z.strictObject({
   element: WhyElementRefSchema.nullable(),
   claim: WhyClaimNodeSchema,
   scope: z.union([WhyScopeNodeSchema, WhyMissingLinkSchema]),
-  edges: z.array(WhyEdgeGroupSchema),
+  edges: WhyEdgeGroupsSchema,
   limitations: z.array(WhyLimitationSchema),
   lineage: z.array(WhyLineageEventSchema),
   supersession: WhyWalkSchema,
   ancestry: WhyWalkSchema,
   unresolvedEdges: z.array(WhyMissingLinkSchema),
+}).superRefine((tree, context) => {
+  const projectedScopeId = tree.scope.kind === 'scope'
+    ? tree.scope.scopeId
+    : tree.scope.targetKind === 'scope' && tree.scope.reason === 'MISSING_SCOPE'
+      ? tree.scope.targetId
+      : null
+  if (projectedScopeId !== tree.claim.scopeId) {
+    context.addIssue({
+      code: 'custom',
+      path: ['scope'],
+      message: 'explanation scope does not name the root claim scope',
+    })
+  }
+  if (tree.supersession.relation !== 'supersession') {
+    context.addIssue({
+      code: 'custom',
+      path: ['supersession', 'relation'],
+      message: 'supersession slot must carry the supersession walk',
+    })
+  }
+  if (tree.ancestry.relation !== 'derives_from_ancestry') {
+    context.addIssue({
+      code: 'custom',
+      path: ['ancestry', 'relation'],
+      message: 'ancestry slot must carry the derives-from ancestry walk',
+    })
+  }
+  for (const [index, event] of tree.lineage.entries()) {
+    if (event.subjectId !== tree.claim.claimId) {
+      context.addIssue({
+        code: 'custom',
+        path: ['lineage', index, 'subjectId'],
+        message: 'root lineage event does not name the root claim',
+      })
+    }
+  }
 }) satisfies z.ZodType<WhyExplanationTree>
 
 export const WhyUnresolvableSchema = z.strictObject({
@@ -314,6 +428,25 @@ export const WhyUnresolvableSchema = z.strictObject({
   reason: z.enum(WHY_UNRESOLVABLE_REASONS),
   claimId: z.string().nullable(),
   lineage: z.array(WhyLineageEventSchema),
+}).superRefine((projection, context) => {
+  const requiresNullClaimId = projection.reason === 'INVALID_REQUEST'
+    || projection.reason === 'MALFORMED_CLAIM_ID'
+  if (requiresNullClaimId !== (projection.claimId === null)) {
+    context.addIssue({
+      code: 'custom',
+      path: ['claimId'],
+      message: 'unresolvable claim id disagrees with its reason',
+    })
+  }
+  for (const [index, event] of projection.lineage.entries()) {
+    if (projection.claimId === null || event.subjectId !== projection.claimId) {
+      context.addIssue({
+        code: 'custom',
+        path: ['lineage', index, 'subjectId'],
+        message: 'unresolvable lineage event does not name its claim',
+      })
+    }
+  }
 }) satisfies z.ZodType<WhyUnresolvable>
 
 /** The union the drawer renders — exactly `IntegrationShapeEvidenceResolution`. */
