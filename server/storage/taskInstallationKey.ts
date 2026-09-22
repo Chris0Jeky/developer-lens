@@ -8,8 +8,8 @@ import {
   readSync,
   type BigIntStats,
 } from 'node:fs'
-import { lstat, open, realpath, type FileHandle } from 'node:fs/promises'
-import { isAbsolute, join, relative, resolve } from 'node:path'
+import { link, lstat, open, readdir, realpath, unlink, type FileHandle } from 'node:fs/promises'
+import { basename, isAbsolute, join, relative, resolve } from 'node:path'
 import {
   createInstallationAliases,
   type InstallationAliases,
@@ -27,7 +27,10 @@ const INSTALLATION_KEY_SIZE = 32n
 const INSTALLATION_KEY_FILE = 'installation-key.bin'
 const NON_BLOCKING_FLAG = constants.O_NONBLOCK ?? 0
 const NO_FOLLOW_FLAG = constants.O_NOFOLLOW ?? 0
+const DIRECTORY_FLAG = constants.O_DIRECTORY ?? 0
 const RESTRICTIVE_FILE_MODE = 0o600
+/** Task-owned staging names: one random, never-reused name per setup invocation (#59). */
+const STAGING_NAME_PATTERN = /^\.installation-key\.bin\.[0-9a-f]{32}\.staging$/
 
 /**
  * Default-off continuity foundation only.
@@ -107,7 +110,29 @@ type InternalHooks = Readonly<{
 
 type RandomBytesSource = (size: number) => Buffer
 
+/** Fault-injection checkpoints of the staged setup protocol (#59); production passes none. */
+export type TaskInstallationKeySetupCheckpoint =
+  | 'after-staging-open'
+  | 'after-partial-write'
+  | 'after-sync'
+  | 'after-verify'
+  | 'after-close'
+  | 'before-publish'
+  | 'after-publish'
+  | 'after-staging-unlink'
+  | 'after-directory-sync'
+
+type SetupFaults = Readonly<{
+  checkpoint?: (
+    name: TaskInstallationKeySetupCheckpoint,
+    paths: Readonly<{ stagingPath: string; keyPath: string }>,
+  ) => void | Promise<void>
+  /** Simulates a close that reports failure after the descriptor was released. */
+  closeFails?: boolean
+}>
+
 const NO_HOOKS: InternalHooks = Object.freeze({})
+const NO_FAULTS: SetupFaults = Object.freeze({})
 
 function invalidKey(): never {
   throw new TaskInstallationKeyError()
@@ -308,26 +333,91 @@ async function assertHandleMatchesPath(
   handle: FileHandle,
   path: CanonicalKeyPath,
   expectedSize: bigint,
+  filePath: string = path.keyPath,
 ): Promise<BigIntStats> {
   await assertDirectoryIdentities(path)
   const [handleStats, pathStats, canonicalPath] = await Promise.all([
     handle.stat({ bigint: true }),
-    lstat(path.keyPath, { bigint: true }),
-    realpath(path.keyPath),
+    lstat(filePath, { bigint: true }),
+    realpath(filePath),
   ])
   assertRegularKeyFile(handleStats, expectedSize)
   assertRegularKeyFile(pathStats, expectedSize)
-  if (canonicalPath !== path.keyPath || !portableIdentityMatches(handleStats, pathStats)) invalidKey()
+  if (canonicalPath !== filePath || !portableIdentityMatches(handleStats, pathStats)) invalidKey()
   await assertDirectoryIdentities(path)
   return handleStats
 }
 
-async function writeExactly(handle: FileHandle, bytes: Buffer): Promise<void> {
+async function writeExactly(handle: FileHandle, bytes: Buffer, position = 0): Promise<void> {
   let offset = 0
   while (offset < bytes.length) {
-    const result = await handle.write(bytes, offset, bytes.length - offset, offset)
+    const result = await handle.write(bytes, offset, bytes.length - offset, position + offset)
     if (result.bytesWritten === 0) invalidKey()
     offset += result.bytesWritten
+  }
+}
+
+function assertPortableIdentityAvailable(identity: PortableIdentity): void {
+  if (identity.dev === 0n && identity.ino === 0n) invalidKey()
+}
+
+/**
+ * Prove that one confined name is still exactly the file this module created: regular, not a link,
+ * the expected size and link count, owner-only on POSIX, and the same portable identity.
+ */
+async function assertPathHoldsIdentity(
+  path: CanonicalKeyPath,
+  filePath: string,
+  identity: PortableIdentity,
+  expectedLinks: bigint,
+): Promise<BigIntStats> {
+  await assertDirectoryIdentities(path)
+  const [stats, canonicalPath] = await Promise.all([
+    lstat(filePath, { bigint: true }),
+    realpath(filePath),
+  ])
+  if (!stats.isFile() || stats.isSymbolicLink() || stats.size !== INSTALLATION_KEY_SIZE
+    || stats.nlink !== expectedLinks || canonicalPath !== filePath
+    || !portableIdentityMatches(stats, identity)) invalidKey()
+  if (process.platform !== 'win32' && (stats.mode & 0o077n) !== 0n) invalidKey()
+  await assertDirectoryIdentities(path)
+  return stats
+}
+
+/**
+ * Remove one task-owned name only while it still names `identity`. Returns false, leaving the
+ * name untouched, when it now names anything else. Node exposes no unlink-by-descriptor, so this is
+ * check-then-act: it is only ever applied to a random staging name reserved by this module, never
+ * to the key path, so a lost race can at worst remove a foreign file squatting on that reserved
+ * name — never the published key.
+ */
+async function unlinkNameIfIdentity(filePath: string, identity: PortableIdentity): Promise<boolean> {
+  let stats: BigIntStats
+  try {
+    stats = await lstat(filePath, { bigint: true })
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') return true
+    throw error
+  }
+  if (!stats.isFile() || stats.isSymbolicLink() || !portableIdentityMatches(stats, identity)) return false
+  await unlink(filePath)
+  return true
+}
+
+/**
+ * Make a directory-entry change durable where the platform allows it. Windows cannot open a
+ * directory for fsync through Node (EPERM), so publication there relies on NTFS metadata journaling;
+ * that limitation is documented rather than emulated.
+ */
+async function syncTaskDirectory(directory: DirectoryIdentity): Promise<void> {
+  if (process.platform === 'win32') return
+  const handle = await open(directory.path, constants.O_RDONLY | DIRECTORY_FLAG | NO_FOLLOW_FLAG)
+  try {
+    const stats = await handle.stat({ bigint: true })
+    if (!stats.isDirectory() || !portableIdentityMatches(stats, directory)) invalidKey()
+    await handle.sync()
+  } finally {
+    await handle.close()
   }
 }
 
@@ -437,18 +527,43 @@ export function bindTaskInstallationKeyBody(
 
 export const bindTaskInstallationKeyHandle = bindTaskInstallationKeyBody
 
+/**
+ * #59 staged, task-owned creation. The key is written to a random staging name reserved for this
+ * invocation, synced, read back, and closed; only then is it published with a no-clobber hard link
+ * (`link` fails with EEXIST, so an existing or raced key is never overwritten). The staging name is
+ * removed only while it still names the exact file this invocation created, and the key path is
+ * never unlinked on any path. A failure before publication therefore leaves no key and lets a retry
+ * start clean; a failure after publication leaves one complete, verified key that `load` reads
+ * (and `recoverTaskInstallationKeyPublication` finishes if a crash left the staging link behind).
+ *
+ * Limits, stated rather than emulated: Node has no unlink-by-descriptor and no atomic
+ * check-and-link, so identity checks around `link`/`unlink` are check-then-act. A same-principal
+ * writer racing inside that window can at worst get a swapped staging file linked under the key
+ * name, which the post-link identity check refuses and every reader rejects (two links), or have its
+ * own file removed from our reserved random staging name; the key path is never unlinked. Windows
+ * adds three gaps: no directory fsync (Node returns EPERM, so entry durability relies on NTFS
+ * journaling), no `O_NOFOLLOW` (symlinks are refused through lstat/realpath checks instead), and no
+ * POSIX mode bits (an owner-only ACL is not verified; the #6 follow-up keeps that as an activation
+ * precondition). File identity is volume serial plus file index; a zero identity fails closed.
+ */
 async function setupTaskInstallationKeyCore(
   input: TaskInstallationKeySetupInput,
   randomBytesSource: RandomBytesSource,
-  hooks: InternalHooks,
+  faults: SetupFaults,
 ): Promise<TaskInstallationKeyHandle> {
   let generated: Buffer | undefined
   let key: Buffer | undefined
   let verification: Buffer | undefined
-  let snapshot: Buffer | undefined
+  let staging: FileHandle | undefined
+  let stagingPath: string | undefined
+  let stagingIdentity: PortableIdentity | undefined
+  let stagingRemoved = false
+  let taskDirectory: DirectoryIdentity | undefined
+  let published = false
   try {
     const closedInput = snapshotClosedInput(input, false)
     const path = await resolveCanonicalKeyPath(closedInput)
+    taskDirectory = path.directories.at(-1) ?? invalidKey()
     await assertKeyPathMissing(path)
 
     const candidate = randomBytesSource(INSTALLATION_KEY_BYTES)
@@ -457,48 +572,150 @@ async function setupTaskInstallationKeyCore(
     if (generated.length !== INSTALLATION_KEY_BYTES) invalidKey()
     key = Buffer.from(generated)
 
-    if (hooks.beforeOpen) await hooks.beforeOpen()
+    const stagingName = `.${INSTALLATION_KEY_FILE}.${randomBytes(16).toString('hex')}.staging`
+    const ownedStagingPath = join(taskDirectory.path, stagingName)
+    if (!STAGING_NAME_PATTERN.test(stagingName)
+      || relative(taskDirectory.path, ownedStagingPath) !== stagingName
+      || basename(ownedStagingPath) !== stagingName) invalidKey()
+    const paths = Object.freeze({ stagingPath: ownedStagingPath, keyPath: path.keyPath })
+    const checkpoint = async (name: TaskInstallationKeySetupCheckpoint): Promise<void> => {
+      if (faults.checkpoint) await faults.checkpoint(name, paths)
+    }
+
     await assertDirectoryIdentities(path)
-    const handle = await open(
-      path.keyPath,
-      constants.O_RDWR |
-        constants.O_CREAT |
-        constants.O_EXCL |
-        NON_BLOCKING_FLAG |
-        NO_FOLLOW_FLAG,
+    staging = await open(
+      ownedStagingPath,
+      constants.O_RDWR | constants.O_CREAT | constants.O_EXCL | NON_BLOCKING_FLAG | NO_FOLLOW_FLAG,
       RESTRICTIVE_FILE_MODE,
     )
-    try {
-      if (hooks.afterOpen) await hooks.afterOpen()
-      const created = await assertHandleMatchesPath(handle, path, 0n)
-      if (process.platform !== 'win32') await handle.chmod(RESTRICTIVE_FILE_MODE)
-      const writable = await assertHandleMatchesPath(handle, path, 0n)
-      if (!portableIdentityMatches(created, writable)) invalidKey()
+    stagingPath = ownedStagingPath
+    const opened = await staging.stat({ bigint: true })
+    assertPortableIdentityAvailable(opened)
+    // Every later cleanup decision is bound to this exact identity, captured from our descriptor.
+    stagingIdentity = Object.freeze({ dev: opened.dev, ino: opened.ino })
+    await checkpoint('after-staging-open')
 
-      await writeExactly(handle, key)
-      await handle.sync()
-      const written = await assertHandleMatchesPath(handle, path, INSTALLATION_KEY_SIZE)
-      if (!portableIdentityMatches(created, written)) invalidKey()
+    const created = await assertHandleMatchesPath(staging, path, 0n, ownedStagingPath)
+    if (!portableIdentityMatches(created, stagingIdentity)) invalidKey()
+    if (process.platform !== 'win32') await staging.chmod(RESTRICTIVE_FILE_MODE)
 
-      verification = await readExactKey(handle)
-      const verified = await assertHandleMatchesPath(handle, path, INSTALLATION_KEY_SIZE)
-      if (!stableFileStateMatches(written, verified) || !timingSafeEqual(key, verification)) {
-        invalidKey()
-      }
-      snapshot = Buffer.from(verification)
-    } finally {
-      await handle.close()
-    }
-    if (snapshot === undefined) invalidKey()
-    return createOpaqueHandle(path, snapshot, undefined, true)
-  } catch (error) {
-    if (error instanceof TaskInstallationKeyError) throw error
+    const half = INSTALLATION_KEY_BYTES / 2
+    await writeExactly(staging, key.subarray(0, half), 0)
+    await checkpoint('after-partial-write')
+    await writeExactly(staging, key.subarray(half), half)
+    await staging.sync()
+    await checkpoint('after-sync')
+
+    const written = await assertHandleMatchesPath(staging, path, INSTALLATION_KEY_SIZE, ownedStagingPath)
+    verification = await readExactKey(staging)
+    const verified = await assertHandleMatchesPath(staging, path, INSTALLATION_KEY_SIZE, ownedStagingPath)
+    if (!portableIdentityMatches(written, stagingIdentity)
+      || !stableFileStateMatches(written, verified)
+      || !timingSafeEqual(key, verification)) invalidKey()
+    await checkpoint('after-verify')
+
+    const closing = staging
+    staging = undefined
+    await closing.close()
+    if (faults.closeFails) invalidKey()
+    await checkpoint('after-close')
+
+    // Publication: a complete, synced, verified, closed file gains the key name without clobbering.
+    await assertKeyPathMissing(path)
+    await assertPathHoldsIdentity(path, ownedStagingPath, stagingIdentity, 1n)
+    await checkpoint('before-publish')
+    await link(ownedStagingPath, path.keyPath)
+    published = true
+    await checkpoint('after-publish')
+    await assertPathHoldsIdentity(path, path.keyPath, stagingIdentity, 2n)
+
+    if (!await unlinkNameIfIdentity(ownedStagingPath, stagingIdentity)) invalidKey()
+    stagingRemoved = true
+    await checkpoint('after-staging-unlink')
+    await assertPathHoldsIdentity(path, path.keyPath, stagingIdentity, 1n)
+    await syncTaskDirectory(taskDirectory)
+    await checkpoint('after-directory-sync')
+
+    // End to end: the published name reads back as exactly the generated bytes.
+    assertCurrentKeyFileMatches(Object.freeze({ key, keyPath: path.keyPath, taskDirectory }))
+    await assertPathHoldsIdentity(path, path.keyPath, stagingIdentity, 1n)
+    return createOpaqueHandle(path, key, undefined, true)
+  } catch {
+    await abandonIncompleteCreation({
+      staging,
+      stagingPath: stagingRemoved ? undefined : stagingPath,
+      stagingIdentity,
+      taskDirectory: published ? taskDirectory : undefined,
+    })
     return invalidKey()
   } finally {
     generated?.fill(0)
     key?.fill(0)
     verification?.fill(0)
-    snapshot?.fill(0)
+  }
+}
+
+/**
+ * Best-effort, identity-bound cleanup of one failed invocation. It closes the owned descriptor,
+ * removes the staging name only while it still names the file this invocation created, and re-syncs
+ * the directory after a publication. It never unlinks the key path and never throws, so the caller
+ * always reports the same content-free error.
+ */
+async function abandonIncompleteCreation(owned: Readonly<{
+  staging: FileHandle | undefined
+  stagingPath: string | undefined
+  stagingIdentity: PortableIdentity | undefined
+  taskDirectory: DirectoryIdentity | undefined
+}>): Promise<void> {
+  if (owned.staging) {
+    try { await owned.staging.close() } catch { /* the descriptor is released either way */ }
+  }
+  if (owned.stagingPath !== undefined && owned.stagingIdentity !== undefined) {
+    try { await unlinkNameIfIdentity(owned.stagingPath, owned.stagingIdentity) } catch { /* left for task-root deletion */ }
+  }
+  if (owned.taskDirectory !== undefined) {
+    try { await syncTaskDirectory(owned.taskDirectory) } catch { /* durability stays best-effort */ }
+  }
+}
+
+/**
+ * Finish a publication that a crash interrupted between the no-clobber link and the staging unlink
+ * (the key then has a second link, which every reader refuses). Only a task-owned staging name that
+ * is provably a second link of the published key file is removed, so the key bytes stay reachable
+ * through the key path throughout; the key path itself is never touched. Unpublished staging debris
+ * is not provably this invocation's and stays inert until task-root deletion. Recovery grants no
+ * continuity authority: callers load the key and verify its fingerprint against a reviewed value.
+ */
+async function recoverTaskInstallationKeyPublicationCore(input: TaskInstallationKeySetupInput): Promise<void> {
+  try {
+    const closedInput = snapshotClosedInput(input, false)
+    const path = await resolveCanonicalKeyPath(closedInput)
+    const taskDirectory = path.directories.at(-1) ?? invalidKey()
+    let published: BigIntStats
+    try {
+      published = await lstat(path.keyPath, { bigint: true })
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') return
+      throw error
+    }
+    if (!published.isFile() || published.isSymbolicLink() || published.size !== INSTALLATION_KEY_SIZE) invalidKey()
+    assertPortableIdentityAvailable(published)
+    const identity = Object.freeze({ dev: published.dev, ino: published.ino })
+    if (published.nlink !== 1n) {
+      for (const name of await readdir(taskDirectory.path)) {
+        if (!STAGING_NAME_PATTERN.test(name)) continue
+        const candidate = join(taskDirectory.path, name)
+        if (relative(taskDirectory.path, candidate) !== name) invalidKey()
+        const stats = await lstat(candidate, { bigint: true })
+        if (!portableIdentityMatches(stats, identity)) continue
+        await unlinkNameIfIdentity(candidate, identity)
+      }
+      await syncTaskDirectory(taskDirectory)
+    }
+    await assertPathHoldsIdentity(path, path.keyPath, identity, 1n)
+  } catch (error) {
+    if (error instanceof TaskInstallationKeyError) throw error
+    invalidKey()
   }
 }
 
@@ -563,7 +780,18 @@ async function loadTaskInstallationKeyCore(
 export function setupTaskInstallationKey(
   input: TaskInstallationKeySetupInput,
 ): Promise<TaskInstallationKeyHandle> {
-  return setupTaskInstallationKeyCore(input, randomBytes, NO_HOOKS)
+  return setupTaskInstallationKeyCore(input, randomBytes, NO_FAULTS)
+}
+
+/**
+ * Complete a key publication interrupted after its no-clobber link (#59). Resolves when no key is
+ * published (a fresh setup may run) or when exactly one complete key name remains; never creates,
+ * rotates, or unlinks the key, and never grants continuity authority.
+ */
+export function recoverTaskInstallationKeyPublication(
+  input: TaskInstallationKeySetupInput,
+): Promise<void> {
+  return recoverTaskInstallationKeyPublicationCore(input)
 }
 
 /**
@@ -594,8 +822,16 @@ export const taskInstallationKeyTestSeams = Object.freeze({
     input: TaskInstallationKeySetupInput,
     source: RandomBytesSource,
   ): Promise<TaskInstallationKeyHandle> {
-    return setupTaskInstallationKeyCore(input, source, NO_HOOKS)
+    return setupTaskInstallationKeyCore(input, source, NO_FAULTS)
   },
+  setupWithFaults(
+    input: TaskInstallationKeySetupInput,
+    source: RandomBytesSource,
+    faults: SetupFaults,
+  ): Promise<TaskInstallationKeyHandle> {
+    return setupTaskInstallationKeyCore(input, source, faults)
+  },
+  stagingNamePattern: STAGING_NAME_PATTERN,
   loadWithHooks(
     input: TaskInstallationKeyLoadInput,
     hooks: InternalHooks,

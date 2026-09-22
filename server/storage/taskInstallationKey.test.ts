@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
+import { existsSync } from 'node:fs'
 import { stat } from 'node:fs/promises'
 import {
+  lstat,
   mkdir,
   link,
   mkdtemp,
@@ -12,7 +14,7 @@ import {
   writeFile,
 } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join, sep } from 'node:path'
+import { basename, dirname, join, sep } from 'node:path'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { GithubCoreActivationGrant } from '../connectors/github/activationGrant.js'
 
@@ -36,10 +38,12 @@ import {
   bindTaskInstallationKeyBody,
   loadTaskInstallationKey,
   loadTaskInstallationKeyForGithubCoreGrant,
+  recoverTaskInstallationKeyPublication,
   setupTaskInstallationKey,
   TASK_INSTALLATION_KEY_ERROR_CODE,
   taskInstallationKeyTestSeams,
   type TaskInstallationKeyLoadInput,
+  type TaskInstallationKeySetupCheckpoint,
 } from './taskInstallationKey.js'
 
 const TASK_ID = 'fixture-key-01'
@@ -451,5 +455,215 @@ describe('task-owned installation-key continuity', () => {
       { dev: 7n, ino: unsafeNumericIdentity },
       { dev: 7n, ino: unsafeNumericIdentity + 1n },
     )).toBe(false)
+  })
+})
+
+type SetupCheckpoint = TaskInstallationKeySetupCheckpoint
+type CheckpointPaths = Readonly<{ stagingPath: string; keyPath: string }>
+
+const PRE_PUBLICATION_CHECKPOINTS: readonly SetupCheckpoint[] = [
+  'after-staging-open',
+  'after-partial-write',
+  'after-sync',
+  'after-verify',
+  'after-close',
+  'before-publish',
+]
+const POST_PUBLICATION_CHECKPOINTS: readonly SetupCheckpoint[] = [
+  'after-publish',
+  'after-staging-unlink',
+  'after-directory-sync',
+]
+
+function sha256(value: Buffer): string {
+  return createHash('sha256').update(value).digest('hex')
+}
+
+async function stagingEntries(root: string): Promise<string[]> {
+  return (await readdir(keyDirectory(root)))
+    .filter((name) => taskInstallationKeyTestSeams.stagingNamePattern.test(name))
+}
+
+function failAt(target: SetupCheckpoint, before?: (paths: CheckpointPaths) => Promise<void>) {
+  return {
+    checkpoint: async (name: SetupCheckpoint, paths: CheckpointPaths) => {
+      if (name !== target) return
+      if (before) await before(paths)
+      throw new Error(`INJECTED_${name}_${KEY.toString('hex')}`)
+    },
+  }
+}
+
+describe('#59 task-owned incomplete-creation recovery', () => {
+  it('publishes through a confined, task-owned staging name and leaves exactly one key link', async () => {
+    const root = await fixtureRoot()
+    const seen: Array<{ name: SetupCheckpoint; stagingPath: string; keyPath: string }> = []
+    const created = await taskInstallationKeyTestSeams.setupWithFaults(
+      { workspaceRoot: root, taskId: TASK_ID },
+      () => Buffer.from(KEY),
+      { checkpoint: (name, paths) => { seen.push({ name, ...paths }) } },
+    )
+
+    expect(seen.map(({ name }) => name)).toEqual([...PRE_PUBLICATION_CHECKPOINTS, ...POST_PUBLICATION_CHECKPOINTS])
+    const stagingPaths = new Set(seen.map(({ stagingPath }) => stagingPath))
+    expect(stagingPaths.size).toBe(1)
+    const [stagingPath] = [...stagingPaths]
+    expect(dirname(stagingPath!)).toBe(keyDirectory(root))
+    expect(basename(stagingPath!)).toMatch(taskInstallationKeyTestSeams.stagingNamePattern)
+    expect(seen.every(({ keyPath: path }) => path === keyPath(root))).toBe(true)
+
+    expect(await readdir(keyDirectory(root))).toEqual(['installation-key.bin'])
+    expect((await lstat(keyPath(root), { bigint: true })).nlink).toBe(1n)
+    expect(await readFile(keyPath(root))).toEqual(KEY)
+    expect(created.fingerprint).toBe(sha256(KEY))
+  })
+
+  it('fails closed before publication at every checkpoint, zeroes owned bytes, and a retry starts clean', async () => {
+    const cases: Array<Readonly<{ label: string; faults: Parameters<typeof taskInstallationKeyTestSeams.setupWithFaults>[2] }>> = [
+      ...PRE_PUBLICATION_CHECKPOINTS.map((name) => ({ label: name, faults: failAt(name) })),
+      { label: 'close reports failure', faults: { closeFails: true } },
+    ]
+    for (const { label, faults } of cases) {
+      const root = await fixtureRoot()
+      const generated = Buffer.from(KEY)
+      await expectInvalid(
+        taskInstallationKeyTestSeams.setupWithFaults({ workspaceRoot: root, taskId: TASK_ID }, () => generated, faults),
+        [KEY.toString('hex'), sha256(KEY), root, label],
+      )
+      expect(generated, label).toEqual(Buffer.alloc(32))
+      expect(existsSync(keyPath(root)), label).toBe(false)
+      expect(await stagingEntries(root), label).toEqual([])
+
+      const retried = await setupWithKey(root, OTHER_KEY)
+      expect(retried.fingerprint, label).toBe(sha256(OTHER_KEY))
+      expect(await readFile(keyPath(root))).toEqual(OTHER_KEY)
+      expect(await readdir(keyDirectory(root))).toEqual(['installation-key.bin'])
+    }
+  }, 60_000)
+
+  it('refuses a staging file whose bytes change before read-back verification', async () => {
+    const root = await fixtureRoot()
+    await expectInvalid(taskInstallationKeyTestSeams.setupWithFaults(
+      { workspaceRoot: root, taskId: TASK_ID },
+      () => Buffer.from(KEY),
+      {
+        checkpoint: async (name, paths) => {
+          if (name === 'after-sync') await writeFile(paths.stagingPath, OTHER_KEY)
+        },
+      },
+    ), [KEY.toString('hex'), OTHER_KEY.toString('hex')])
+    expect(existsSync(keyPath(root))).toBe(false)
+    expect(await stagingEntries(root)).toEqual([])
+  })
+
+  it('never publishes or deletes a replacement found at the staging name before the identity check', async () => {
+    const root = await fixtureRoot()
+    let foreignPath = ''
+    await expectInvalid(taskInstallationKeyTestSeams.setupWithFaults(
+      { workspaceRoot: root, taskId: TASK_ID },
+      () => Buffer.from(KEY),
+      {
+        checkpoint: async (name, paths) => {
+          if (name !== 'after-close') return
+          foreignPath = paths.stagingPath
+          await rename(paths.stagingPath, join(keyDirectory(root), 'moved-own-staging.bin'))
+          await writeFile(paths.stagingPath, OTHER_KEY, { mode: 0o600 })
+        },
+      },
+    ))
+    expect(existsSync(keyPath(root))).toBe(false)
+    // The replacement is not this invocation's file, so it is left exactly as found.
+    expect(await readFile(foreignPath)).toEqual(OTHER_KEY)
+  })
+
+  it('fails closed without unlinking the key path when the staging name is swapped inside the link window', async () => {
+    const root = await fixtureRoot()
+    await expectInvalid(taskInstallationKeyTestSeams.setupWithFaults(
+      { workspaceRoot: root, taskId: TASK_ID },
+      () => Buffer.from(KEY),
+      {
+        checkpoint: async (name, paths) => {
+          if (name !== 'before-publish') return
+          await rename(paths.stagingPath, join(keyDirectory(root), 'moved-own-staging.bin'))
+          await writeFile(paths.stagingPath, OTHER_KEY, { mode: 0o600 })
+        },
+      },
+    ))
+    // Check-then-link is not atomic in Node, so the swapped file may gain the key name; it is never
+    // accepted (post-link identity check) and never unlinked, and every reader refuses it.
+    expect(await readFile(keyPath(root))).toEqual(OTHER_KEY)
+    await expectInvalid(loadTaskInstallationKey({ workspaceRoot: root, taskId: TASK_ID }))
+  })
+
+  it('never overwrites a key raced into place before publication and removes only its own staging file', async () => {
+    const root = await fixtureRoot()
+    await expectInvalid(taskInstallationKeyTestSeams.setupWithFaults(
+      { workspaceRoot: root, taskId: TASK_ID },
+      () => Buffer.from(KEY),
+      {
+        checkpoint: async (name) => {
+          if (name === 'before-publish') await writeFile(keyPath(root), OTHER_KEY, { mode: 0o600, flag: 'wx' })
+        },
+      },
+    ))
+    expect(await readFile(keyPath(root))).toEqual(OTHER_KEY)
+    expect(await stagingEntries(root)).toEqual([])
+    const raced = await loadTaskInstallationKey({ workspaceRoot: root, taskId: TASK_ID })
+    expect(raced.fingerprint).toBe(sha256(OTHER_KEY))
+  })
+
+  it('leaves one complete verified key after a post-publication failure and never re-creates it', async () => {
+    for (const name of POST_PUBLICATION_CHECKPOINTS) {
+      const root = await fixtureRoot()
+      const generated = Buffer.from(KEY)
+      await expectInvalid(
+        taskInstallationKeyTestSeams.setupWithFaults({ workspaceRoot: root, taskId: TASK_ID }, () => generated, failAt(name)),
+        [KEY.toString('hex'), sha256(KEY)],
+      )
+      expect(generated, name).toEqual(Buffer.alloc(32))
+      expect(await readdir(keyDirectory(root)), name).toEqual(['installation-key.bin'])
+      expect(await readFile(keyPath(root)), name).toEqual(KEY)
+
+      // Retry never overwrites; the caller recovers the fingerprint through an ordinary load.
+      await expectInvalid(setupWithKey(root, OTHER_KEY))
+      await expect(recoverTaskInstallationKeyPublication({ workspaceRoot: root, taskId: TASK_ID })).resolves.toBeUndefined()
+      const loaded = await loadTaskInstallationKey({ workspaceRoot: root, taskId: TASK_ID })
+      expect(loaded.fingerprint, name).toBe(sha256(KEY))
+    }
+  }, 60_000)
+
+  it('recovers a publication interrupted between the link and the staging unlink, touching nothing else', async () => {
+    const root = await fixtureRoot()
+    await setupWithKey(root)
+    // A crash after the no-clobber link leaves the staging name as a second link of the key.
+    const interrupted = join(keyDirectory(root), `.installation-key.bin.${'ab'.repeat(16)}.staging`)
+    await link(keyPath(root), interrupted)
+    // Unpublished debris from an older crashed invocation is not provably ours.
+    const debris = join(keyDirectory(root), `.installation-key.bin.${'cd'.repeat(16)}.staging`)
+    await writeFile(debris, OTHER_KEY.subarray(0, 16), { mode: 0o600 })
+    await expectInvalid(loadTaskInstallationKey({ workspaceRoot: root, taskId: TASK_ID }))
+
+    await recoverTaskInstallationKeyPublication({ workspaceRoot: root, taskId: TASK_ID })
+    expect(existsSync(interrupted)).toBe(false)
+    expect(await readFile(debris)).toEqual(OTHER_KEY.subarray(0, 16))
+    expect((await lstat(keyPath(root), { bigint: true })).nlink).toBe(1n)
+    const loaded = await loadTaskInstallationKey({ workspaceRoot: root, taskId: TASK_ID, expectedFingerprint: sha256(KEY) })
+    expect(loaded.fingerprint).toBe(sha256(KEY))
+    // Recovery never creates a key and is a no-op once exactly one link remains.
+    await recoverTaskInstallationKeyPublication({ workspaceRoot: root, taskId: TASK_ID })
+    expect(await readFile(keyPath(root))).toEqual(KEY)
+  })
+
+  it('refuses to recover a key with a foreign alternate link and never creates a missing key', async () => {
+    const root = await fixtureRoot()
+    await expect(recoverTaskInstallationKeyPublication({ workspaceRoot: root, taskId: TASK_ID })).resolves.toBeUndefined()
+    expect(existsSync(keyPath(root))).toBe(false)
+
+    await setupWithKey(root)
+    const foreignLink = join(keyDirectory(root), 'not-a-staging-name.bin')
+    await link(keyPath(root), foreignLink)
+    await expectInvalid(recoverTaskInstallationKeyPublication({ workspaceRoot: root, taskId: TASK_ID }), [root])
+    expect(await readFile(keyPath(root))).toEqual(KEY)
+    expect(await readFile(foreignLink)).toEqual(KEY)
   })
 })
