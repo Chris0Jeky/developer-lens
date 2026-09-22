@@ -15,6 +15,7 @@ import {
   scanDirectoryForForbiddenPatterns,
   sharePayloadBoundaryViolations,
 } from './exportPrivacyGuards.js'
+import { scanDirectoryForExternalResources } from './externalResourceGuard.js'
 import {
   APPROVED_SHOWCASE_REPOSITORY_NAMES,
   isApprovedShowcaseRepositoryIdentity,
@@ -137,7 +138,8 @@ assert(socialCard.readUInt32BE(16) === 1200, 'social card width is not 1200px')
 assert(socialCard.readUInt32BE(20) === 630, 'social card height is not 630px')
 
 assertNoViolations((await scanDirectoryForForbiddenPatterns(dist, forbiddenPatterns)).violations)
+assertNoViolations(await scanDirectoryForExternalResources(dist))
 
 console.log(
-  'Verified synthetic identities, summary and full-experience export boundaries, social card dimensions, and secret/path patterns in showcase output.',
+  'Verified synthetic identities, export boundaries, social card dimensions, secret/path patterns, and external-resource isolation in showcase output.',
 )
