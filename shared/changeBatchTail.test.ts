@@ -206,6 +206,26 @@ describe('cohort, censoring and competing outcomes', () => {
 })
 
 describe('coverage derived from the ledger (blocker 2)', () => {
+  it('abstains as a coverage gap, never a quiet window, when nothing is placeable under limited coverage', () => {
+    const expired = [unit(2, { mergedAfterHours: 3 }, 10), unit(4, 'open', 200)].map((entry) => ({ ...entry, retention: 'expired' as const }))
+    const view = buildChangeBatchTailView(input(expired))
+    expect(view.results[0].state).toBe('unavailable')
+    expect(view.abstention).toMatchObject({ reasonCode: 'EMPTY_UNDER_LIMITED_COVERAGE', floorCode: 'COVERAGE_FLOOR', dimension: 'eligibility', limitingReason: 'DELETED' })
+    expect(view.abstention?.reasonCode).not.toBe('EMPTY_ELIGIBLE_COHORT')
+    acceptChangeBatchTailView(JSON.parse(JSON.stringify(view)))
+    // A genuinely quiet, completely observed window stays a typed empty cohort.
+    const quiet = buildChangeBatchTailView(input([unit(-5, 'open', 10)]))
+    expect(quiet.results[0].state).toBe('empty_eligible_cohort')
+    expect(quiet.abstention?.reasonCode).toBe('EMPTY_ELIGIBLE_COHORT')
+  })
+
+  it('measures eligibility over the window candidates, not every stored row of the scope', () => {
+    const outside = Array.from({ length: 200 }, (_, index) => unit(-60 - index, { mergedAfterHours: 5 }, 10))
+    const inWindowExpired = [unit(3, 'open', 10), unit(4, 'open', 10)].map((entry) => ({ ...entry, retention: 'expired' as const }))
+    const coverage = analyzeChangeBatchTail(input([...presentableUnits(), ...inWindowExpired, ...outside])).coverage
+    expect(coverage.eligibility).toEqual({ dimension: 'eligibility', value: 0.8823, limiting_reason: 'DELETED' })
+  })
+
   it('never accepts partial-overlap coverage as complete', () => {
     const partial = coverageRow({ rangeStart: '2026-05-25T00:00:00.000Z', rangeEnd: '2026-06-15T00:00:00.000Z', observedAt: '2026-06-15T00:00:00.000Z' })
     const view = buildChangeBatchTailView(input(presentableUnits(), [partial]))

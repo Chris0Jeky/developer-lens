@@ -491,7 +491,10 @@ export function deriveWindowCoverage(input: ChangeBatchTailInput, classified: re
 
   const undecidable = classified.filter((entry) =>
     entry.exclusion === 'MISSING_OPEN_TIMESTAMP' || entry.exclusion === 'RETENTION_EXPIRED' || entry.exclusion === 'LIFECYCLE_INCONSISTENT').length
-  const eligibilityValue = ratio(classified.length - undecidable, classified.length)
+  // The denominator is the window's CANDIDATE set: rows placed outside the window say nothing
+  // about how well this window's cohort could be decided, so they neither dilute nor inflate it.
+  const candidates = classified.filter((entry) => entry.exclusion !== 'OPENED_OUTSIDE_WINDOW').length
+  const eligibilityValue = ratio(candidates - undecidable, candidates)
   const retentionLoss = classified.some((entry) => entry.exclusion === 'MISSING_OPEN_TIMESTAMP' || entry.exclusion === 'RETENTION_EXPIRED')
 
   const vouchingRows = input.coverage.filter((row) => rowVouches(row).vouches && row.rangeStart !== null)
@@ -728,6 +731,7 @@ export interface ChangeBatchBinningReading {
 export type ChangeBatchAbstentionReason =
   | 'WINDOW_COVERAGE_INCOMPLETE'
   | 'EMPTY_ELIGIBLE_COHORT'
+  | 'EMPTY_UNDER_LIMITED_COVERAGE'
   | 'ALL_ELIGIBLE_EVENTS_CENSORED'
   | 'BELOW_MINIMUM_SUPPORT'
   | 'TOO_FEW_DISPLAYABLE_STRATA'
@@ -809,7 +813,9 @@ export function analyzeChangeBatchTail(input: ChangeBatchTailInput): ChangeBatch
   const displayableStrata = primary.strata.filter((reading) => reading.display.display && reading.result.state === 'observed').length
   let abstention: ChangeBatchAbstentionReason | null = null
   if (all.result.state === 'truncated') abstention = 'WINDOW_COVERAGE_INCOMPLETE'
-  else if (all.result.state === 'empty_eligible_cohort' || all.result.state === 'unavailable') abstention = 'EMPTY_ELIGIBLE_COHORT'
+  else if (all.result.state === 'empty_eligible_cohort') abstention = 'EMPTY_ELIGIBLE_COHORT'
+  // "Nothing eligible" under limited coverage is "could not look", never a quiet window.
+  else if (all.result.state === 'unavailable') abstention = 'EMPTY_UNDER_LIMITED_COVERAGE'
   else if (all.result.state === 'censored_only') abstention = 'ALL_ELIGIBLE_EVENTS_CENSORED'
   else if (all.display.reasonCode === 'BELOW_MINIMUM_SUPPORT') abstention = 'BELOW_MINIMUM_SUPPORT'
   else if (!all.display.display) abstention = 'COHORT_NOT_DISPLAYABLE'
@@ -1041,7 +1047,12 @@ function metricResultReferences(analysis: ChangeBatchTailAnalysis): Finding['met
   return references
 }
 
-const ABSTENTION_COPY: Readonly<Record<ChangeBatchAbstentionReason, { floorCode: string; dimension: 'completeness' | 'sample'; statement: string }>> = {
+const ABSTENTION_COPY: Readonly<Record<ChangeBatchAbstentionReason, { floorCode: string; dimension: 'completeness' | 'sample' | 'limited_window_dimension'; statement: string }>> = {
+  EMPTY_UNDER_LIMITED_COVERAGE: {
+    floorCode: 'COVERAGE_FLOOR',
+    dimension: 'limited_window_dimension',
+    statement: 'No placeable pull request remains in the window, but the window was not observed completely, so this is withheld as a coverage gap rather than read as a quiet window.',
+  },
   WINDOW_COVERAGE_INCOMPLETE: {
     floorCode: 'COVERAGE_FLOOR',
     dimension: 'completeness',
@@ -1090,9 +1101,14 @@ export function buildChangeBatchFinding(analysis: ChangeBatchTailAnalysis, marks
   const coverageEvidence = { kind: 'observation' as const, evidenceId: evidenceIdFor('all', 'all', null, 'coverage') }
   if (analysis.abstention !== null) {
     const copy = ABSTENTION_COPY[analysis.abstention]
+    const limited = [analysis.coverage.completeness, analysis.coverage.eligibility, analysis.coverage.permission, analysis.coverage.freshness]
+      .find((entry) => entry.limiting_reason !== null)
+    const dimension = copy.dimension === 'limited_window_dimension' ? (limited?.dimension ?? 'completeness') : copy.dimension
     const limitingReason: CoverageLimitingReason = copy.dimension === 'completeness'
       ? analysis.coverage.completeness.limiting_reason ?? 'UNAVAILABLE'
-      : 'SAMPLE_BELOW_MINIMUM'
+      : copy.dimension === 'limited_window_dimension'
+        ? limited?.limiting_reason ?? 'UNAVAILABLE'
+        : 'SAMPLE_BELOW_MINIMUM'
     return {
       ...base,
       findingId: 'change_batch_tail_abstention',
@@ -1107,7 +1123,7 @@ export function buildChangeBatchFinding(analysis: ChangeBatchTailAnalysis, marks
       robustness: { status: 'not-tested', checks: [] },
       discriminatingEvidence: null,
       presentationEligibility: { eligible: true, reasonCode: 'PRESENTABLE_AS_ABSTENTION', surfaces: ['atlas', 'evidence_drawer', 'api_v2'] },
-      abstention: { floorCode: copy.floorCode, dimension: copy.dimension, limitingReason, statement: copy.statement, fallbackFindingId: null },
+      abstention: { floorCode: copy.floorCode, dimension, limitingReason, statement: copy.statement, fallbackFindingId: null },
     }
   }
 

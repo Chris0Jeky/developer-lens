@@ -48,7 +48,7 @@ import type {
 
 /**
  * Phase E (#174) — the change-batch lens PresentationView, its Evidence Drawer resolver, and the
- * acceptance gate both the API and the browser run before anything renders.
+ * acceptance gate the API runs before serving and the browser runs on every served body.
  *
  * The view is presentation-shaped by construction: aggregate counts and quantiles, coverage rows
  * named by ordinal labels (`coverage-1`, `job-1`) at ISO-week grain, lineage at its stored week,

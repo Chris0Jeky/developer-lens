@@ -15,7 +15,8 @@ import { buildSyntheticChangeBatchTailView } from '../../shared/changeBatchTailS
  * selected v3 store was deliberately wired, so "not served" is the ordinary answer.
  *
  * A served body replaces the synthetic view only when it passes `acceptChangeBatchTailView` — the
- * same gate the server ran — AND declares the stored source. What renders is the PARSED view, so
+ * same gate the server ran — AND declares the stored source. The bundled synthetic view is not
+ * re-gated at render time; `shared/changeBatchTail.test.ts` proves it passes the same gate. What renders is the PARSED view, so
  * a stale or squatting local process can do nothing but be ignored.
  */
 export const CHANGE_BATCH_REQUEST_TIMEOUT_MS = 1_500
