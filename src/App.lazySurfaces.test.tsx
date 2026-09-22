@@ -5,6 +5,11 @@ import { analyzeDataset } from '../server/analytics'
 import { createDemoDataset } from '../server/demo'
 import App from './App'
 
+// ShareStudio and WrappedExperience are React.lazy surfaces (#354): their first open waits on a
+// dynamic import that Vitest transforms on demand, which can exceed findBy*'s 1 s default on a
+// loaded machine. Lookups that wait on a lazy surface's first render get an explicit budget.
+const LAZY_SURFACE = { timeout: 8_000 }
+
 const evaluated = vi.hoisted(() => [] as string[])
 
 vi.mock('./components/ShareStudio', async (importOriginal) => {
@@ -26,7 +31,7 @@ describe('deferred dashboard surfaces stay unevaluated until interaction', () =>
     window.history.replaceState({}, '', '/')
   })
 
-  it('evaluates neither optional module initially, Share after Share opens, Wrapped after its launcher', async () => {
+  it('evaluates neither optional module initially, Share after Share opens, Wrapped after its launcher', { timeout: 30_000 }, async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -41,12 +46,12 @@ describe('deferred dashboard surfaces stay unevaluated until interaction', () =>
     expect(evaluated).toEqual([])
 
     await user.click(screen.getByRole('button', { name: /share or export/i }))
-    await screen.findByRole('dialog', { name: /turn the lens into something/i })
+    await screen.findByRole('dialog', { name: /turn the lens into something/i }, LAZY_SURFACE)
     expect(evaluated).toEqual(['ShareStudio'])
 
     await user.keyboard('{Escape}')
     await user.click(screen.getByRole('button', { name: /start your wrapped/i }))
-    await screen.findByRole('dialog', { name: /developer lens wrapped/i })
+    await screen.findByRole('dialog', { name: /developer lens wrapped/i }, LAZY_SURFACE)
     expect(evaluated).toEqual(['ShareStudio', 'WrappedExperience'])
   })
 })

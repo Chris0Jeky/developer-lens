@@ -7,6 +7,11 @@ import { payloadForSink } from '../shared/privacy'
 import { V2_DEMO_INSIGHTS, V2_DEMO_PAYLOAD, V2_DEMO_REGISTRATION } from '../shared/v2Demo'
 import App from './App'
 
+// ShareStudio and WrappedExperience are React.lazy surfaces (#354): their first open waits on a
+// dynamic import that Vitest transforms on demand, which can exceed findBy*'s 1 s default on a
+// loaded machine. Lookups that wait on a lazy surface's first render get an explicit budget.
+const LAZY_SURFACE = { timeout: 8_000 }
+
 const demo = analyzeDataset(createDemoDataset('6m'))
 const publicDemo = {
   ...demo,
@@ -20,7 +25,7 @@ describe('Developer Lens app', () => {
     window.history.replaceState({}, '', '/')
   })
 
-  it('renders the dashboard and opens the immersive Wrapped story', async () => {
+  it('renders the dashboard and opens the immersive Wrapped story', { timeout: 30_000 }, async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -36,7 +41,7 @@ describe('Developer Lens app', () => {
     const wrappedTrigger = screen.getByRole('button', { name: /start your wrapped/i })
     await user.click(wrappedTrigger)
     expect(
-      await screen.findByRole('dialog', { name: /developer lens wrapped/i }),
+      await screen.findByRole('dialog', { name: /developer lens wrapped/i }, LAZY_SURFACE),
     ).toBeInTheDocument()
     expect(
       await screen.findByRole('heading', { name: /you didn’t just write code/i }),
@@ -68,7 +73,7 @@ describe('Developer Lens app', () => {
     )
   })
 
-  it('shares the active Wrapped chapter without losing story position', async () => {
+  it('shares the active Wrapped chapter without losing story position', { timeout: 30_000 }, async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue({
@@ -81,12 +86,12 @@ describe('Developer Lens app', () => {
     await screen.findByText('Your development trail,')
 
     await user.click(screen.getByRole('button', { name: /start your wrapped/i }))
-    await screen.findByRole('dialog', { name: /developer lens wrapped/i })
+    await screen.findByRole('dialog', { name: /developer lens wrapped/i }, LAZY_SURFACE)
     await user.keyboard('{ArrowRight}')
     await user.click(await screen.findByRole('button', { name: /share chapter 2/i }))
 
     expect(
-      await screen.findByRole('dialog', { name: /turn the lens into something/i }),
+      await screen.findByRole('dialog', { name: /turn the lens into something/i }, LAZY_SURFACE),
     ).toBeInTheDocument()
     await user.keyboard('{Escape}')
     await waitFor(() =>
