@@ -711,4 +711,33 @@ describe('default-off github.core activation runner', () => {
     expect(count(db, 'source_snapshot')).toBe(0)
     expect(count(db, 'collection_checkpoint')).toBe(0)
   })
+
+  it('refuses every undersized accepted-card budget before any store open or fetch (#57)', async () => {
+    const db = database()
+    for (const maximumRequests of [1, 2, 3]) {
+      const fixture = await cardFixture(card(maximumRequests))
+      const transport = fetchFixture([
+        ...completeProbe('invented-node-a'),
+        ...completeProbe('invented-node-a'),
+      ])
+      let storeOpens = 0
+      await expectRunnerFailureWithTestGrant(runnerInput(fixture, db, transport.fetch, {
+        openStore: () => { storeOpens += 1; return db },
+      }))
+      expect({ maximumRequests, storeOpens, fetches: transport.calls.length })
+        .toEqual({ maximumRequests, storeOpens: 0, fetches: 0 })
+    }
+    expect(count(db, 'collection_job')).toBe(0)
+    expect(count(db, 'coverage_ledger')).toBe(0)
+
+    // The minimum selected budget funds both metadata-plus-page probes.
+    const funded = await cardFixture(card(4))
+    const transport = fetchFixture([
+      ...completeProbe('invented-node-a'),
+      ...completeProbe('invented-node-a'),
+    ])
+    const result = await runWithTestGrant(runnerInput(funded, db, transport.fetch))
+    expect(result.requests).toMatchObject({ firstProbeRequests: 2, secondProbeRequests: 2, totalRequests: 4 })
+    expect(transport.calls).toHaveLength(4)
+  })
 })
