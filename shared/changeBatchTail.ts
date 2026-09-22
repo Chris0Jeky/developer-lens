@@ -1004,7 +1004,7 @@ function limitationsOf(analysis: ChangeBatchTailAnalysis): LimitationInstance[] 
     { limitationCode: 'COVERAGE_UNITS_DIFFER', dimension: 'censoring_freedom', copyKey: 'copy.change_batch_tail.censored_and_competing' },
     { limitationCode: 'LINKAGE_NOT_CAUSAL', dimension: 'comparability', copyKey: 'copy.change_batch_tail.associational_only' },
   ]
-  const withheld = analysis.binnings.some((binning) => binning.strata.some((reading) => !reading.display.display))
+  const withheld = analysis.binnings.some((binning) => binning.strata.some((reading) => reading.display.reasonCode === 'BELOW_MINIMUM_SUPPORT'))
   if (withheld || analysis.abstention === 'BELOW_MINIMUM_SUPPORT' || analysis.abstention === 'TOO_FEW_DISPLAYABLE_STRATA') {
     limitations.push({ limitationCode: 'SAMPLE_TOO_SMALL', dimension: 'sample', copyKey: 'copy.change_batch_tail.stratum_withheld' })
   }
