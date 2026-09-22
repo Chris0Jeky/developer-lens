@@ -1559,6 +1559,121 @@ export const METRIC_REGISTRY: readonly MetricDefinition[] = [
     },
     supersession: { supersededBy: null, supersededAt: null, reasonCode: 'COHORT_CONDITIONED_ON_TERMINAL_EVENT' },
   }),
+  /**
+   * Phase E (#174) — the change-batch lens over STORED observations. Deliberately a separate
+   * metric from `pull_request.integration_interval`: the storage-v3 `pull_request_fact` row
+   * records no ready-for-review instant, so the only interval it can support starts at OPENING.
+   * Labelling this opened-to-merge interval as the became-ready integration interval would be the
+   * wrong-construct error `COHORT_START_EVENT_CORRECTED` already retired once; the name says what
+   * it measures, and a prohibited interpretation says what it is not.
+   */
+  defineMetric({
+    metricId: 'pull_request.opened_to_merge_interval_by_change_stratum',
+    version: '1.0.0',
+    status: 'active',
+    label: 'Opened-to-merge interval within one change-size stratum',
+    questionAnswered: 'Among pull requests opened inside the window whose change size falls in one declared stratum, how long did they take from opening to merge?',
+    analyticalSubject: 'pull_request_cohort',
+    unit: 'seconds',
+    semanticCategory: 'lifecycle_duration',
+    windowSemantics: 'half_open_utc_window',
+    clockSource: 'injected_as_of',
+    requiredCapabilities: ['github.core'],
+    requiredFields: [
+      { fieldPath: 'pullRequest.createdAt', dataClass: 'C1', nullable: false },
+      { fieldPath: 'pullRequest.mergedAt', dataClass: 'C1', nullable: true },
+      { fieldPath: 'pullRequest.closedAt', dataClass: 'C1', nullable: true },
+      { fieldPath: 'pullRequest.additions', dataClass: 'C1', nullable: true },
+      { fieldPath: 'pullRequest.deletions', dataClass: 'C1', nullable: true },
+      { fieldPath: 'pullRequest.changedFiles', dataClass: 'C1', nullable: true },
+    ],
+    eligibility: {
+      cohortId: 'pull_request.opened_in_window_by_change_stratum',
+      statement: 'Pull requests whose opening timestamp falls inside the half-open window and whose declared change-size basis places them in the result stratum, whether or not they have since merged. Membership never depends on the merge or on the close.',
+      inclusionRules: [
+        { ruleCode: 'OPENED_IN_WINDOW', statement: 'The opening timestamp falls inside the half-open window.' },
+        { ruleCode: 'IN_CHANGE_STRATUM', statement: 'The change-size basis named by the result places the pull request inside the result stratum.' },
+      ],
+      exclusionRules: [
+        { ruleCode: 'OPENED_OUTSIDE_WINDOW', statement: 'The opening timestamp falls outside the half-open window, so the unit belongs to another window.' },
+        { ruleCode: 'MISSING_OPEN_TIMESTAMP', statement: 'No opening timestamp is recorded or it was cleared at its retention boundary, so the cohort entry point cannot be placed.' },
+        { ruleCode: 'RETENTION_EXPIRED', statement: 'The row passed its retention boundary at the injected asOf, so its timestamps may not be read even though a sweep has not yet cleared them.' },
+        { ruleCode: 'LIFECYCLE_INCONSISTENT', statement: 'The recorded state and timestamps contradict each other, such as a merge before the opening, so no interval is derived.' },
+        { ruleCode: 'SIZE_BASIS_MISSING', statement: 'The change-size basis the result is stratified on is not recorded, so the unit cannot be placed in any stratum.' },
+        { ruleCode: 'OTHER_SIZE_STRATUM', statement: 'The unit is eligible for the window but its change size places it in a different stratum of the same basis.' },
+      ],
+    },
+    event: {
+      eventCode: 'PULL_REQUEST_MERGED',
+      statement: 'The merge event recorded by the forge. It is the terminal event of the interval and never a cohort condition.',
+      censoringRule: 'right_censor_at_window_end',
+      censoringStatement: 'An eligible pull request with no merge and no close before the window end is right-censored at the boundary and counted in the censored total, never dropped and never treated as merged. A close without merge BEFORE the window end is a competing terminal outcome: it stays eligible, leaves the merged-duration sample, and is never censored. A close or merge after the window end is outside the observation period and is censored at the boundary.',
+    },
+    missingness: {
+      policy: 'exclude_from_eligible_cohort',
+      truncationPolicy: 'abstain_when_truncated',
+      statement: 'A pull request whose opening timestamp or change-size basis cannot be read leaves the cohort under a named exclusion reason; nothing is imputed. The ready-for-review instant is not recorded in stored observations, so no ready-based interval is derived or substituted.',
+    },
+    formula: {
+      kind: 'duration_quantiles',
+      procedureId: 'pull_request.opened_to_merge_stratum_quantiles_v1',
+      startEventCode: 'PULL_REQUEST_OPENED',
+      endEventCode: 'PULL_REQUEST_MERGED',
+      quantiles: [0.5, 0.75, 0.9],
+    },
+    supportGates: {
+      minimumEligible: 5,
+      appliesTo: 'display_eligibility',
+      emptyCohortExempt: true,
+      belowGateBehaviour: 'suppress_display',
+    },
+    comparisonRequirements: {
+      requiresMatchedWindow: false,
+      minimumMatchedFraction: 0,
+      incomparableOutcome: 'explicit_no_comparison',
+      emptyCohortOutcome: 'explicit_empty_outcome',
+    },
+    sensitivityVariants: [
+      {
+        variantId: 'CHANGED_FILES_BASIS',
+        statement: 'Recompute the strata on the number of changed files instead of lines added plus deleted.',
+        parameterChange: 'Replace the additions-plus-deletions basis with the changed-files basis and its own declared thresholds.',
+      },
+      {
+        variantId: 'VALUE_THIRDS_BINS',
+        statement: 'Recompute with data-derived value thirds instead of the declared fixed thresholds, keeping tied sizes in one stratum.',
+        parameterChange: 'Replace the fixed stratum thresholds with lower, middle and upper thirds of the observed basis values.',
+      },
+      {
+        variantId: 'OPEN_AT_LOWER_BOUND',
+        statement: 'Recompute with each right-censored unit added at its observed lower bound instead of omitted from the distribution.',
+        parameterChange: 'Add each censored unit at the window end minus its opening timestamp rather than restricting the sample to merged units.',
+      },
+    ],
+    knownConfounders: [
+      { code: 'DRAFT_TIME_INCLUDED', statement: 'The interval starts at opening, so any time a pull request spent as a draft is inside it.' },
+      { code: 'WINDOW_LENGTH', statement: 'Follow-up ends at the window end, so the observable tail is bounded by the window and late openings are censored sooner.' },
+      { code: 'WORK_TYPE_MIX', statement: 'Change size travels with the kind of work, so a stratum difference can reflect what was proposed rather than how it moved.' },
+      { code: 'BATCHED_REVIEW', statement: 'Batched review sessions cluster merges and shorten the observed tail in whichever strata they touch.' },
+    ],
+    prohibitedInterpretations: [
+      { code: 'NOT_PERSON_MEASURE', statement: 'This is a property of a pull-request cohort and must never be read as a measure of any individual person or their productivity.' },
+      { code: 'NOT_CAUSAL', statement: 'A longer tail in a larger stratum does not establish that change size produced the delay.' },
+      { code: 'NOT_READY_TO_MERGE', statement: 'This interval starts at opening, not at ready-for-review, and must never be presented as the ready-to-merge integration interval.' },
+      { code: 'NOT_TARGET', statement: 'No stratum boundary or quantile is a size limit, target, or threshold for anyone.' },
+      { code: 'NOT_COMPLETED_CASES_ONLY', statement: 'The distribution covers merged units only; the censored and competing counts are part of the reading and must be shown beside it.' },
+    ],
+    coverageDimensions: ['permission', 'completeness', 'eligibility', 'freshness', 'censoring_freedom', 'sample'],
+    fixtureClasses: ['eligibility', 'missingness', 'censoring', 'boundary_dates', 'empty_eligible_cohort', 'truncation', 'sensitivity_variant', 'counterexample'],
+    renderPolicy: {
+      surfaces: ['atlas', 'evidence_drawer', 'api_v2'],
+      requiresDefinitionCard: true,
+      requiresProhibitedInterpretations: true,
+      exportSinks: ['api', 'frontend'],
+      maximumDataClass: 'C1',
+    },
+    supersession: { supersededBy: null, supersededAt: null, reasonCode: null },
+  }),
 ]
 
 export function formatMetricReference(reference: MetricReference): string {

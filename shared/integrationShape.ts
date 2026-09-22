@@ -3,6 +3,7 @@ import {
   conformsToGolden,
   constructSignature,
   nearestRankQuantile,
+  syntheticCompleteIntervalCoverage,
   type IntervalWindowSpec,
   type PullRequestLifecycle,
 } from './conformance.js'
@@ -134,6 +135,14 @@ export const LOW_SUPPORT_CURRENT_LIFECYCLES: readonly PullRequestLifecycle[] = [
 
 const DECLARED_QUANTILES = [0.5, 0.75, 0.9] as const
 
+/**
+ * Phase E (#174): the coverage vector is an explicit input, not a hidden constant inside the
+ * procedure. This public showcase composition is invented end to end, so it passes the SYNTHETIC
+ * complete vector by name; the stored-observation path derives its vector from the selected v3
+ * store's coverage ledger instead (`server/storage/v3ObservationBridge.ts`).
+ */
+export const INTEGRATION_SHAPE_COVERAGE_SOURCE = 'synthetic_complete' as const
+
 function windowSpec(window: HalfOpenWindow, resultId: string): IntervalWindowSpec {
   return {
     windowStart: window.start,
@@ -141,6 +150,7 @@ function windowSpec(window: HalfOpenWindow, resultId: string): IntervalWindowSpe
     asOf: INTEGRATION_SHAPE_AS_OF,
     scopeAlias: INTEGRATION_SHAPE_SCOPE_ALIAS,
     resultId,
+    coverage: syntheticCompleteIntervalCoverage(),
   }
 }
 
