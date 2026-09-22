@@ -521,7 +521,9 @@ export function createPortableExportPayload(
       data.summary.medianMergeHours === undefined
         ? null
         : Math.round(finite(data.summary.medianMergeHours) * 10) / 10,
-    coverageScore: percentage(data.meta.coverageScore),
+    // `DashboardMeta.coverageScore` is already an integer percent (analytics stores
+    // `Math.round(ratio * 100)`); treating it as a 0..1 ratio clamped every score >= 1% to 100.
+    coverageScore: Math.min(100, integer(data.meta.coverageScore)),
   }
   const weeks = data.weekly.map((week, index) => ({
     label: `Week ${String(index + 1).padStart(2, '0')}`,
