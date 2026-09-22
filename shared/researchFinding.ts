@@ -206,12 +206,16 @@ const ResearchFindingContentSchema = z.strictObject({
     }
   }
   // `thresholds_nonviable` states that both selections are nonviable, so it is admissible exactly
-  // when both selection gates are present and failed, and required in that case.
+  // when the evidence says so, and required in that case. The evidence is `threshold_viability`
+  // when present (independent of whether the selection gates are exported); only without it do the
+  // selection gate values decide, and those must then be null, so the limitation is inadmissible.
   const selectionGateFailed = (code: GateCode) => value.gates?.some((item) => item.code === code && item.passed === false) ?? false
-  const bothSelectionsFailed = selectionGateFailed('baseline_selection') && selectionGateFailed('candidate_selection')
+  const bothSelectionsNonviable = value.threshold_viability
+    ? !value.threshold_viability.baseline && !value.threshold_viability.candidate
+    : selectionGateFailed('baseline_selection') && selectionGateFailed('candidate_selection')
   const nonviableIndex = limitationCodes.indexOf('thresholds_nonviable')
-  if (nonviableIndex >= 0 && !bothSelectionsFailed) ctx.addIssue({ code: 'custom', path: ['limitations', nonviableIndex], message: 'thresholds_nonviable requires both selection gates to have failed' })
-  if (nonviableIndex < 0 && bothSelectionsFailed) ctx.addIssue({ code: 'custom', path: ['limitations'], message: 'thresholds_nonviable is required when both selection gates have failed' })
+  if (nonviableIndex >= 0 && !bothSelectionsNonviable) ctx.addIssue({ code: 'custom', path: ['limitations', nonviableIndex], message: 'thresholds_nonviable requires both selections to be nonviable' })
+  if (nonviableIndex < 0 && bothSelectionsNonviable) ctx.addIssue({ code: 'custom', path: ['limitations'], message: 'thresholds_nonviable is required when both selections are nonviable' })
   if (value.decision.outcome === 'reject') {
     if (value.decision.retained_fallback !== value.methods.baseline.method_code) ctx.addIssue({ code: 'custom', path: ['decision', 'retained_fallback'], message: 'reject must retain the baseline method' })
     if (!worse && !failedGate) ctx.addIssue({ code: 'custom', path: ['decision'], message: 'reject requires worse measured metric or failed gate' })

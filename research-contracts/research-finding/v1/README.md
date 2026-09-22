@@ -95,7 +95,9 @@ and runtime validation rejects any other value:
 When a measurement one of those rules needs is `unavailable`, or its metric is absent, that gate
 must be `null`, mirroring the source contract's `not_applicable`; when `threshold_viability` is
 absent, both selection gates must be `null`. The `thresholds_nonviable` limitation is admissible
-only when both selection gates are present with `passed: false`, and is required in that case.
+only when both selections are nonviable, and is required in that case. Nonviability is read from
+`threshold_viability` when present, whether or not the selection gates are exported; without that
+block it would need both selection gates at `passed: false`, which the null rule above forbids.
 
 `false_alert_improvement` is deliberately weaker than the source view. The source contract scores
 its gate with a preregistered 20% rule (candidate <= 0.8 x baseline); this projection publishes
@@ -143,7 +145,7 @@ v1 was amended in place, rather than versioned, while no consumer had pinned it:
   `coverage_confound_false_alert_rate`, the optional `threshold_viability` block was added, and all
   seven gates became derived and validated; `false_alert_improvement` was relabelled
   "Candidate false alerts are lower than baseline" to state its weaker-than-source rule; and
-  `thresholds_nonviable` was bound to both selection gates failing. The fixture now carries the
+  `thresholds_nonviable` was bound to both selections being nonviable. The fixture now carries the
   source view's delay (baseline 2, candidate 1), confound (0.5, 0.5) and viability (false, false)
   evidence; its bundle hash changed from `sha256:d694f81a...` to `sha256:070bf161...`.
 

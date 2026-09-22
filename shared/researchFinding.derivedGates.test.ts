@@ -122,10 +122,10 @@ describe('ResearchFindingProjection.v1 derived gates (#319, #321, #327)', () => 
     expect(ResearchFindingSchema.safeParse(reseal(noViability)).success).toBe(true)
   })
 
-  it('binds thresholds_nonviable to both selection gates failing, in both directions', async () => {
+  it('binds thresholds_nonviable to both selections being nonviable, in both directions', async () => {
     const fixture = await readFixture()
-    const requires = /thresholds_nonviable requires both selection gates to have failed/
-    const required = /thresholds_nonviable is required when both selection gates have failed/
+    const requires = /thresholds_nonviable requires both selections to be nonviable/
+    const required = /thresholds_nonviable is required when both selections are nonviable/
 
     const oneViable = structuredClone(fixture)
     oneViable.threshold_viability.candidate = true
@@ -140,9 +140,37 @@ describe('ResearchFindingProjection.v1 derived gates (#319, #321, #327)', () => 
     gateOf(bothViable, 'candidate_selection').passed = true
     expect(issues(reseal(bothViable)).join('\n')).toMatch(requires)
 
-    const noGates = structuredClone(fixture)
-    delete noGates.gates
-    expect(issues(reseal(noGates)).join('\n')).toMatch(requires)
+    // Viability evidence decides even when the selection gates are not exported.
+    const withoutSelectionGates = (finding: Record<string, any>) => {
+      finding.gates = finding.gates.filter((gate: any) => !['baseline_selection', 'candidate_selection'].includes(gate.code))
+    }
+    for (const [label, strip] of [
+      ['no gates', (finding: Record<string, any>) => { delete finding.gates }],
+      ['selection gates omitted', withoutSelectionGates],
+    ] as const) {
+      const nonviableKept = structuredClone(fixture)
+      strip(nonviableKept)
+      expect(ResearchFindingSchema.safeParse(reseal(nonviableKept)).success, `${label}: nonviable with limitation`).toBe(true)
+
+      const nonviableDropped = structuredClone(fixture)
+      strip(nonviableDropped)
+      nonviableDropped.limitations = nonviableDropped.limitations.filter((item: any) => item.code !== 'thresholds_nonviable')
+      expect(issues(reseal(nonviableDropped)).join('\n'), `${label}: nonviable without limitation`).toMatch(required)
+
+      const viableKept = structuredClone(fixture)
+      strip(viableKept)
+      viableKept.threshold_viability = { baseline: true, candidate: false }
+      expect(issues(reseal(viableKept)).join('\n'), `${label}: viable with limitation`).toMatch(requires)
+      viableKept.limitations = viableKept.limitations.filter((item: any) => item.code !== 'thresholds_nonviable')
+      expect(ResearchFindingSchema.safeParse(reseal(viableKept)).success, `${label}: viable without limitation`).toBe(true)
+    }
+
+    // Without viability evidence the selection gates must be null, so the limitation is inadmissible.
+    const noEvidence = structuredClone(fixture)
+    delete noEvidence.threshold_viability
+    gateOf(noEvidence, 'baseline_selection').passed = null
+    gateOf(noEvidence, 'candidate_selection').passed = null
+    expect(issues(reseal(noEvidence)).join('\n')).toMatch(requires)
 
     const missing = structuredClone(fixture)
     missing.limitations = missing.limitations.filter((item: any) => item.code !== 'thresholds_nonviable')
