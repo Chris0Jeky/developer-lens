@@ -112,6 +112,22 @@ type RevocationReplayCommitter = (
   lease: StorageV3WriterLease,
 ) => StorageV3RevocationReplayState
 
+/**
+ * Every `sqlite-v3` selection this module returned after the full selected-store proof
+ * (receipt, backup, cleanup, revocation replay, read-only reopen). A reader shaped like a
+ * selection but built anywhere else — for example a handle opened on an arbitrary
+ * schema-valid SQLite path — is not in this set, so consumers such as the Phase E
+ * stored-observation bridge can refuse it without importing the store opener themselves.
+ */
+const PROVEN_SELECTED_READERS = new WeakSet<object>()
+
+export type StorageV3SelectedReader = Extract<StorageV3ReaderSelection, { reader: 'sqlite-v3' }>
+
+/** True only for a `sqlite-v3` selection object returned by this module's proof path. */
+export function isProvenStorageV3SelectedReader(value: unknown): value is StorageV3SelectedReader {
+  return typeof value === 'object' && value !== null && PROVEN_SELECTED_READERS.has(value)
+}
+
 const fallback = (code: StorageV3ReaderSelectionCode): StorageV3ReaderSelection =>
   Object.freeze({ reader: 'legacy-json' as const, code })
 
@@ -414,7 +430,9 @@ function selectStorageV3ReaderInternal(
         lease,
       )
       assertStorageV3RevocationReplayApplied(readerDb, revocations)
-      return Object.freeze({ reader: 'sqlite-v3' as const, db: readerDb, selection: durableSelection })
+      const proven = Object.freeze({ reader: 'sqlite-v3' as const, db: readerDb, selection: durableSelection })
+      PROVEN_SELECTED_READERS.add(proven)
+      return proven
     })
     openedDb = undefined
     return selected

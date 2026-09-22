@@ -1046,3 +1046,40 @@ describe('fixture-class census', () => {
     }
   })
 })
+
+describe('Phase E (#174): the interval procedure takes coverage as an explicit input', () => {
+  const lifecycles: PullRequestLifecycle[] = [1, 2, 3, 4, 5, 6].map((day) => ({
+    opaqueId: `p${day}`,
+    createdAt: `2026-06-0${day}T00:00:00.000Z`,
+    readyForReviewAt: null,
+    mergedAt: `2026-06-${String(day + 10).padStart(2, '0')}T00:00:00.000Z`,
+    closedAt: null,
+  }))
+  const spec: IntervalWindowSpec = {
+    windowStart: '2026-06-01T00:00:00.000Z',
+    windowEnd: '2026-06-29T00:00:00.000Z',
+    asOf: '2026-06-29T00:00:00.000Z',
+    scopeAlias: 'scope-phase-e-conformance',
+    resultId: 'phase-e-coverage-input',
+  }
+
+  it('never reads a partially covered window as complete: limited completeness is a typed truncated row', () => {
+    const partial = getMetricDefinition('pull_request.integration_interval@1.1.0').coverageDimensions.map((dimension) =>
+      dimension === 'completeness'
+        ? { dimension, value: 0.5, limiting_reason: 'UNAVAILABLE' as const }
+        : { dimension, value: 1, limiting_reason: null })
+    const result = computeIntegrationIntervalResult(lifecycles, { ...spec, coverage: partial }, 'becameReady')
+    expect(result.state).toBe('truncated')
+    expect(result.value).toEqual({ kind: 'no_value', reasonCode: 'WINDOW_COVERAGE_INCOMPLETE' })
+    expect(result.coverage.find((entry) => entry.dimension === 'completeness')).toEqual({ dimension: 'completeness', value: 0.5, limiting_reason: 'UNAVAILABLE' })
+    const exposable = assertExposableMetricResult(result, 'api')
+    expect(exposable.displayEligibility.display).toBe(true)
+    expect(exposable.displayEligibility.reasonCode).toBe('TRUNCATED_WITH_LIMITATION')
+  })
+
+  it('reports the supplied vector verbatim on a fully covered window', () => {
+    const result = computeIntegrationIntervalResult(lifecycles, spec, 'becameReady')
+    expect(result.state).toBe('observed')
+    expect(result.coverage.every((entry) => entry.value === 1 && entry.limiting_reason === null)).toBe(true)
+  })
+})

@@ -13,6 +13,7 @@ import {
   V2CoverageResponseSchema,
 } from './contract.js'
 import { V2Error, v2ErrorBody } from './errors.js'
+import { registerChangeBatchTailRoute, type ChangeBatchTailStoredSource } from './changeBatchTail.js'
 import { registerEvidenceRoutes } from './evidence.js'
 import { assertV2Request } from './guard.js'
 import { readSyntheticCoverageStore } from './store.js'
@@ -25,7 +26,15 @@ import { readSyntheticCoverageStore } from './store.js'
  * endpoints are read-only: `capabilities` reports registry lifecycle state and
  * performs no transition, and `coverage` serves only a synthetic-marked store.
  */
-export function createV2Router(config: V2RuntimeConfig): express.Router {
+export interface V2RouterOptions {
+  /**
+   * Phase E (#174) stored source for the change-batch lens. Absent by default and never supplied
+   * by `createV2RouterForLaunch`, so the stored route is default-off in every launched service.
+   */
+  readonly changeBatchTailSource?: ChangeBatchTailStoredSource
+}
+
+export function createV2Router(config: V2RuntimeConfig, options: V2RouterOptions = {}): express.Router {
   const router = express.Router()
 
   router.use((_request, response, next) => {
@@ -91,6 +100,9 @@ export function createV2Router(config: V2RuntimeConfig): express.Router {
   // DL-VALUE-01: the minimal evidence endpoint. Native-dependency free and presentation-safe; it
   // inherits the guard middleware registered above.
   registerEvidenceRoutes(router)
+
+  // Phase E (#174): the change-batch lens. Answers V2_NOT_FOUND unless a stored source was wired.
+  registerChangeBatchTailRoute(router, options.changeBatchTailSource)
 
   router.use((_request, _response, next) => {
     next(new V2Error('V2_NOT_FOUND'))

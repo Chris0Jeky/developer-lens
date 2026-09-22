@@ -3,6 +3,7 @@ import {
   formatMetricReference,
   getMetricDefinition,
   type MetricCoverageDimension,
+  type MetricCoverageEntry,
   type MetricResult,
 } from './metrics.js'
 
@@ -55,6 +56,14 @@ export interface IntervalWindowSpec {
   readonly asOf: string
   readonly scopeAlias: string
   readonly resultId: string
+  /**
+   * The metric-specific coverage vector the result reports (Phase E, #174). Omitted ONLY by the
+   * invented conformance fixtures, which then receive `syntheticCompleteIntervalCoverage()` — an
+   * explicitly synthetic vector, never a default for observed data. A stored-observation caller
+   * passes the vector it derived from the selected store's coverage ledger, and a vector whose
+   * completeness is limited turns the result into a typed `truncated` row instead of an observed one.
+   */
+  readonly coverage?: readonly MetricCoverageEntry[]
 }
 
 /**
@@ -105,8 +114,12 @@ function cohortEntry(lifecycle: PullRequestLifecycle, construct: CohortEntryCons
   return lifecycle.readyForReviewAt ?? lifecycle.createdAt
 }
 
-/** The full metric-specific coverage vector for the interval metric, complete on every dimension. */
-function completeIntervalCoverage(): Array<{ dimension: MetricCoverageDimension; value: number; limiting_reason: null }> {
+/**
+ * The SYNTHETIC coverage vector: complete on every dimension the interval metric declares. It is
+ * true only of invented fixtures, which are complete by construction; observed data must bring its
+ * own derived vector through `IntervalWindowSpec.coverage` (Phase E, #174).
+ */
+export function syntheticCompleteIntervalCoverage(): Array<{ dimension: MetricCoverageDimension; value: number; limiting_reason: null }> {
   const declared = getMetricDefinition(INTEGRATION_INTERVAL_REFERENCE).coverageDimensions
   return declared.map((dimension) => ({ dimension, value: 1, limiting_reason: null }))
 }
@@ -128,6 +141,9 @@ export function computeIntegrationIntervalResult(
   construct: CohortEntryConstruct,
 ): MetricResult {
   const windowEndMs = epochMs(spec.windowEnd)
+  const coverage = spec.coverage ?? syntheticCompleteIntervalCoverage()
+  const completeness = coverage.find((entry) => entry.dimension === 'completeness')
+  const windowFullyCovered = completeness !== undefined && completeness.value === 1 && completeness.limiting_reason === null
 
   let eligible = 0
   let censored = 0
@@ -175,7 +191,7 @@ export function computeIntegrationIntervalResult(
     scopeAlias: spec.scopeAlias,
     window: { start: spec.windowStart, end: spec.windowEnd },
     asOf: spec.asOf,
-    coverage: completeIntervalCoverage(),
+    coverage: coverage.map((entry) => ({ ...entry })),
     evidenceIds: [] as string[],
     calculation: {
       procedureId: INTEGRATION_INTERVAL_PROCEDURE,
@@ -183,6 +199,19 @@ export function computeIntegrationIntervalResult(
       engineVersion: '1.0.0',
     },
     sensitivity: [] as unknown[],
+  }
+
+  if (!windowFullyCovered) {
+    // Partial coverage is never read as complete: the counts are what was seen, and no
+    // distribution is offered for a window the ledger does not vouch for end to end.
+    return MetricResultSchema.parse({
+      ...base,
+      resultId: spec.resultId,
+      state: 'truncated',
+      stateReasonCode: 'WINDOW_COVERAGE_INCOMPLETE',
+      counts: { eligible, censored, excluded },
+      value: { kind: 'no_value', reasonCode: 'WINDOW_COVERAGE_INCOMPLETE' },
+    })
   }
 
   if (eligible === 0) {
