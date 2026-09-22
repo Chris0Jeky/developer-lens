@@ -153,12 +153,18 @@ between that helper and L1 is the whole of `DL-RAG-01`.
    eligible set exceeds a preregistered working ceiling (**R** 50,000 rows) beyond which ranking
    every row is impractical, the reader does **not** take a flat global prefix. Before distance
    ranking it assigns each eligible row one closed §4 evidence role using the same deterministic
-   family registry and the fixed priority `coverage_basis → limitation_basis → contradicts →
-   supports → contextualizes` for any multiply-qualified row.
+   family registry. Assignment is scarcity-first, not fixed-priority: single-role rows occupy
+   their own role's reservoir first; each multiply-qualified row, taken in total pre-cap key
+   order, is assigned to the qualifying mandatory role currently holding the fewest rows (ties
+   broken by the fixed role order `coverage_basis → limitation_basis → contradicts →
+   supports`), skipping reservoirs already at 500. A fixed greedy priority would let
+   coverage-only alternatives starve `supports` — every dual-qualified row landing in coverage
+   while coverage-only rows exist — manufacturing a `RAG_QUOTA_SHORTFALL_SUPPORTING` abstention
+   despite sufficient eligible support; scarcity-first preserves every feasible minimum. **R**
 
    The ceiling is populated in two deterministic stages. First, each mandatory role
    (`coverage_basis`, `limitation_basis`, `contradicts`, and `supports`) receives a reservoir of up
-   to the post-rank candidate cap (**R** 500) from that role, ordered by the total pre-cap key
+   to the post-rank candidate cap (**R** 500) of rows assigned to that role, ordered by the total pre-cap key
    `(-support_count, window_start, feature_id, scope_alias, evidence_id)` ascending. The reservoirs
    are unioned and deduplicated by `evidence_id`. Second, every remaining ceiling slot is filled
    from all not-yet-admitted rows by the same total key; `contextualizes` has no reserved share
@@ -366,7 +372,7 @@ Admissible row set
         ▼  L1 filter — set predicate, no LIMIT
 Eligible set  (above the working ceiling: mandatory-role reservoirs, then global total-order fill + truncation limitation)
         │
-        ▼  rank ALL eligible rows (L1 distance | L2 BM25 | L3 vectors) → total-order ranked sequence
+        ▼  rank the admitted working set (L1 distance | L2 BM25 | L3 vectors) → total-order ranked sequence
         │
         ▼  §4 mandatory quota pools RESERVED per role from the ranked sequence
         │     (coverage_basis / limitation_basis / contradicts / supports minima filled FIRST —
@@ -649,7 +655,9 @@ All fixtures are invented (charter fixture rule **D-charter**). Proposed fixture
     role below the prefix a flat `(-support_count, …)` order would admit, then flood `supports` above
     the 50,000-row ceiling. Assert the role reservoirs retain up to 500 rows per mandatory role, the
     union is independent of physical row order, per-role eligible/admitted counts are reported, and
-    `RAG_CANDIDATE_POOL_TRUNCATED` is emitted. Binary.
+    `RAG_CANDIDATE_POOL_TRUNCATED` is emitted. Also assert the scarcity-first case: coverage-only
+    rows plus dual coverage/support rows admit an identical working set under permuted physical
+    row order with the support reservoir non-empty. Binary.
 18. **Support-minimum budget proof** — on `FX-RAG-09`, rank enough `contextualizes` rows ahead of every
     supporting row to fill both the 500-row candidate cap and the family `total_max`. Assert
     `supports_min` is reserved before contextual or surplus rows. Then remove one required supporting
