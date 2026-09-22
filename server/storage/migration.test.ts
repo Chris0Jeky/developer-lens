@@ -5,7 +5,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { installClaimGraphStorage } from './claims.js'
 import { openStorageDatabase, runStorageChecks } from './database.js'
+import { installIncrementalGithubCoreStorage } from './incremental.js'
 import { importV1Json, parseV1Dataset, selectStorageReader, storageV2Enabled } from './migrateV1.js'
 import { IMPORT_KEY_BINDING_SQL, SQLITE_APPLICATION_ID, SQLITE_USER_VERSION } from './schema.js'
 import {
@@ -61,8 +63,9 @@ function inventedV1Fixture() {
   }
 }
 
+/** Read-only: a digest must never run schema installation or pragmas against the target it proves. */
 function databaseDigest(path: string): string {
-  const db = openStorageDatabase(path)
+  const db = new Database(path, { readonly: true, fileMustExist: true })
   const rows = [
     'import_run',
     'repository_identity',
@@ -513,6 +516,25 @@ function tableNames(path: string): string[] {
   }
 }
 
+/** Every row of every table plus the full schema catalog, read-only. */
+function wholeStoreDigest(path: string): string {
+  const db = new Database(path, { readonly: true, fileMustExist: true })
+  try {
+    const catalog = db.prepare("SELECT type, name, tbl_name, sql FROM sqlite_schema ORDER BY type, name").all()
+    const rows = tableNamesOf(db).map((table) => db.prepare(`SELECT * FROM "${table}" ORDER BY 1`).all())
+    return createHash('sha256').update(JSON.stringify({ catalog, rows })).digest('hex')
+  } finally {
+    db.close()
+  }
+}
+
+function tableNamesOf(db: Database.Database): string[] {
+  return db
+    .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name")
+    .pluck()
+    .all() as string[]
+}
+
 function bindingFingerprint(path: string): string | undefined {
   if (!tableNames(path).includes('import_key_binding')) return undefined
   const db = new Database(path, { readonly: true })
@@ -524,7 +546,7 @@ function bindingFingerprint(path: string): string | undefined {
 }
 
 function providerIds(path: string): string[] {
-  const db = openStorageDatabase(path)
+  const db = new Database(path, { readonly: true, fileMustExist: true })
   try {
     return db.prepare('SELECT provider_id FROM repository_identity ORDER BY provider_id').pluck().all() as string[]
   } finally {
@@ -756,6 +778,37 @@ describe('#6 duplicate identities and installation-key continuity', () => {
     openStorageDatabase(empty).close()
     await expect(selectStorageReader(migrationOptions(source, empty, { enabled: true }))).resolves.toMatchObject({ reader: 'sqlite-v2' })
     expect(bindingFingerprint(empty)).toBe(sha256(INSTALLATION_KEY))
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
+  it('never adopts an unpinned store whose collector or claim-graph tables hold key-derived aliases', async () => {
+    const { directory, source, sourceBytes } = await fixturePaths()
+    const scopeAlias = `repo-${'e'.repeat(64)}`
+    const seeds: Record<string, (db: ReturnType<typeof openStorageDatabase>) => void> = {
+      collector: (db) => {
+        installIncrementalGithubCoreStorage(db)
+        db.prepare('INSERT INTO collection_job (job_id, storage_contract_version, payload_hash, capability_id, scope_alias, query_version, source_api_version, consent_revision, range_start, range_end, observed_at, started_at, completed_at, status) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)')
+          .run('invented-job', '2.2.0', 'a'.repeat(64), 'github.core', scopeAlias, 'github.core.v1', '2026-03-10', 'consent-v1', '2026-01-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', '2026-02-01T00:00:00.000Z', 'complete')
+      },
+      claimGraph: (db) => {
+        installIncrementalGithubCoreStorage(db)
+        installClaimGraphStorage(db)
+        db.prepare('INSERT INTO claim_scope (scope_id, scope_alias, linked_at) VALUES (?, ?, ?)')
+          .run(`scope-${'f'.repeat(64)}`, scopeAlias, '2026-01-01T00:00:00.000Z')
+      },
+    }
+    for (const [label, seed] of Object.entries(seeds)) {
+      const target = join(directory, `${label}.sqlite`)
+      const db = openStorageDatabase(target)
+      try { seed(db) } finally { db.close() }
+      const before = wholeStoreDigest(target)
+
+      await expect(selectStorageReader(migrationOptions(source, target, { enabled: true })), label).resolves.toEqual({ reader: 'legacy-json', code: 'storage-key-unbound' })
+      // Logical identity of every table and the schema; the header change counter is not compared
+      // because the shared openStorageDatabase re-asserts its pragmas on every open.
+      expect(wholeStoreDigest(target), label).toBe(before)
+      expect(tableNames(target), label).not.toContain('import_key_binding')
+    }
     await expect(readFile(source)).resolves.toEqual(sourceBytes)
   })
 

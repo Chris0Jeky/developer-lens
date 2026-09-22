@@ -351,10 +351,12 @@ interface CanonicalV1Import {
 }
 
 /**
- * The isolated local identity boundary (#5/#6). Raw provider IDs and repository names enter here
- * and leave only as installation-HMAC identities that satisfy the ASCII storage alphabet. The
- * result is an explicit field allowlist, so the storage transaction cannot persist a raw name,
- * title, or URL even by mistake. Distinct inputs that would share an alias fail closed.
+ * The isolated local identity boundary (#5/#6). Raw repository provider IDs and repository names
+ * enter here and leave only as installation-HMAC identities that satisfy the ASCII storage
+ * alphabet. The result is an explicit field allowlist, so the storage transaction receives no
+ * repository name, title, or URL field at all. Scope of the claim: pull-request and event provider
+ * IDs and commit SHAs still pass through unaliased, as before, as opaque ASCII C2 identifiers
+ * validated by the opaque alphabet. Distinct repositories that would share an alias fail closed.
  */
 function bindCanonicalImport(dataset: V1Dataset, aliases: InstallationAliases): CanonicalV1Import {
   const providerIdByReference = new Map<string, string>()
@@ -465,14 +467,21 @@ function assertStorageChecks(db: ReturnType<typeof openStorageDatabase>): void {
   }
 }
 
-const IMPORTED_TABLES = [
-  'import_run',
-  'repository_identity',
-  'commit_observation',
-  'pull_request_fact',
-  'coverage_observation',
-  'dated_event_observation',
-] as const
+function quotedIdentifier(name: string): string {
+  return `"${name.replaceAll('"', '""')}"`
+}
+
+/**
+ * Every user table in the target, read from the live schema rather than a hand list, so a store
+ * that also carries collector, claim-graph, or bridge tables (all holding key-derived aliases) is
+ * covered by the adoption rule without this module knowing their names.
+ */
+function targetTableNames(db: ReturnType<typeof openStorageDatabase>): string[] {
+  return db
+    .prepare("SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name")
+    .pluck()
+    .all() as string[]
+}
 
 function fingerprintsMatch(stored: unknown, expected: string): boolean {
   if (typeof stored !== 'string' || !/^[0-9a-f]{64}$/.test(stored)) return false
@@ -482,8 +491,9 @@ function fingerprintsMatch(stored: unknown, expected: string): boolean {
 /**
  * #6 key continuity. Runs inside the import transaction, before any analytical row is deleted:
  * a pinned target accepts only the key that minted its aliases; an unpinned target is adopted only
- * while it holds no imported row, and a populated unpinned target is refused because its aliases
- * cannot be attributed to any key. Rotation is never in place: a new key needs a new target.
+ * while every one of its tables is empty, and an unpinned target holding any row is refused because
+ * its aliases cannot be attributed to any key. Rotation is never in place: a new key needs a new
+ * target.
  */
 function bindTargetToInstallationKey(db: ReturnType<typeof openStorageDatabase>, fingerprint: string): void {
   const hasBindingTable = db
@@ -505,8 +515,8 @@ function bindTargetToInstallationKey(db: ReturnType<typeof openStorageDatabase>,
     }
     if (rows.length !== 0) throw new ImportKeyBindingError('STORAGE_KEY_UNBOUND')
   }
-  for (const table of IMPORTED_TABLES) {
-    if (Number(db.prepare(`SELECT COUNT(*) FROM ${table}`).pluck().get()) !== 0) {
+  for (const table of targetTableNames(db)) {
+    if (db.prepare(`SELECT 1 FROM ${quotedIdentifier(table)} LIMIT 1`).get() !== undefined) {
       throw new ImportKeyBindingError('STORAGE_KEY_UNBOUND')
     }
   }
