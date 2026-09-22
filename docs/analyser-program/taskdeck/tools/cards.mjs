@@ -336,7 +336,7 @@ export const CARDS = [
   outcome: 'Ephemeral ls-tree enumeration in the isolated worker yields C1 composition (languages, roles, monorepo boundary count) with enumeration/parser coverage recorded.',
   deps: 'DL-XRAY-01, DL-ATLAS-01', unlock: 'taxonomy + worker sandbox merged',
   paths: 'server/connectors/sourceStructure/composition.ts; worker glue; tests',
-  authority: 'G2+G3 standing; immutable selected refs only; runtime default-off until activation card', prohibited: 'No working tree, no submodule recursion without consent, no file-content reads AT ALL under cap.source.structure alone (filename/extension/presence classification only; manifest-body parsing belongs to the dependency-capability cards), no paths/names persisted',
+  authority: 'G2+G3 standing; immutable selected refs only; runtime default-off until activation card', prohibited: 'No working tree, no submodule recursion without consent, no file-content reads AT ALL under cap.source.structure alone (filename/extension/presence classification only; manifest-body parsing belongs to the dependency-capability cards), no paths/names persisted, agent_config emitted as a presence boolean only with no count (D5=PRES)',
   behavior: 'ls-tree -r -z --long streaming; C4 paths destroyed in-process; boundary classes from manifest presence.',
   accept: 'Dirty-working-tree fixture yields identical output to clean (committed tree only); crash on one file degrades parser_coverage without fabrication.',
   prove: 'npm test -- server/connectors/sourceStructure/composition.test.ts',

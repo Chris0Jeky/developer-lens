@@ -445,7 +445,8 @@ config revision) and stores the **committed-tree facts** — graph + composition
 derived from that immutable ref. Snapshot composition **excludes `agent_config` entirely**
 (D5=PRES; ADR-05): its presence is neither stored in a snapshot nor diffed across snapshots, eras,
 or portfolios, so snapshots differing only in agent-configuration presence or its timing yield
-identical aggregates and era diffs until `DL-Q-AGENTCFG-TIMING` is decided. **Provider observations are not snapshot content (corrected
+identical aggregates and era diffs until `DL-Q-AGENTCFG-TIMING` is decided and a reviewed
+capability/matrix change lands. **Provider observations are not snapshot content (corrected
 2026-08-04 review round):** rulesets, CI runs, dependency state, and deployment state are mutable
 observation-time resources that generally cannot be reconstructed "from" a historical ref; they
 are keyed by their **observed coverage windows** plus connector provenance, never by ref OID.
