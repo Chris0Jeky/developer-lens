@@ -2780,3 +2780,36 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** 1 occurrence in [#361](https://github.com/Chris0Jeky/developer-lens/pull/361) (this addendum session).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns the Windows-safe command/discovery boundary; #361 addendum records the occurrence.
 - **promotion:** One environment-specific occurrence warrants no repository runtime change.
+
+### FR-103 - a JavaScript replacement string containing `$`` spliced a contract README
+
+- **first-seen:** 2026-09-22
+- **status:** `resolved`
+- **symptom:** A worker's scripted README edit passed replacement text containing `` $` `` to `String.prototype.replace`. That token inserts the text preceding the match, so the contract README gained a duplicated header mid-bullet and its alias regex lost its `$` anchor.
+- **impact:** The published `lens-projection/v1/README.md` was corrupted on the PR branch, and CI stayed green because the README test only matched substrings. A scoped review caught it before merge.
+- **workaround:** Use a replacer function (`(m) => text`) or `replaceAll` with escaped `$$` whenever the replacement is literal text.
+- **occurrences:** 1 occurrence in [#367](https://github.com/Chris0Jeky/developer-lens/pull/367).
+- **task:** Resolved in #367 (`5a75709`). The README test now fails on a duplicated title or section or an unanchored alias pattern.
+- **promotion:** The structural test is the enforcement layer; no further change.
+
+### FR-104 - lazy React surfaces exceeded the 1 s `findBy*` default under parallel-lane load
+
+- **first-seen:** 2026-09-22
+- **status:** `resolved`
+- **symptom:** With several worker lanes running `npm ci` and test suites concurrently, `npm run check` failed `src/App.test.tsx` Wrapped-share and Atlas-route tests intermittently. The failures were either the dialog/testid lookup or the whole-test timeout, and each file passed in isolation.
+- **impact:** Three red local full-suite runs across the #217, #304 and #202 lanes, which risked being dismissed as unrelated flake.
+- **workaround:** None needed after the fix. `React.lazy` surfaces (#354) and routes use an explicit `LAZY_SURFACE` wait budget.
+- **occurrences:** 3 occurrences on 2026-09-22; related to [FR-097](#fr-097--hosted-merged-main-gate-went-red-on-a-strict-5s-test-timeout-skipping-the-pages-deploy).
+- **task:** Resolved in [#366](https://github.com/Chris0Jeky/developer-lens/pull/366) and [#370](https://github.com/Chris0Jeky/developer-lens/pull/370).
+- **promotion:** The shared constant in `App.test.tsx` is the enforcement layer; new lazy surfaces should reuse it.
+
+### FR-105 - `verify:context` checks committed blobs and does not run without `npm ci`
+
+- **first-seen:** 2026-09-22
+- **status:** `workaround-documented`
+- **symptom:** In a fresh worktree without `node_modules`, `npm run verify:context` printed only "Run npm ci in this checkout before trusting npm-script failures." It verified nothing, and the line is easy to misread as done. After `npm ci`, its tracked-text scan kept reporting an already-edited working-tree file until the fix was committed, because it reads committed blobs.
+- **impact:** A state-sync commit briefly carried a local path that the scan would have caught. It was caught before a PR was opened, and the branch was collapsed to one clean commit.
+- **workaround:** Run `npm ci` first in every fresh worktree, as CLAUDE.md already says. Re-run `verify:context` after committing, and treat the npm-ci hint line as a non-run.
+- **occurrences:** 1 occurrence in the 2026-09-22 state-sync hop.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe governor maintenance helpers and can make the non-run exit non-zero.
+- **promotion:** One occurrence; recorded as documentation debt.

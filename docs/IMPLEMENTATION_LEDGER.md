@@ -5559,3 +5559,70 @@ once and resolved: #322 (repaired), the `CURRENT_STATE.md` `next_selection` word
 
 **Not verified.** The exact-head hosted `Prove the pull request` run at the final head, and any
 Node other than the one on this Windows box.
+
+## 2026-09-22 — Hardest-first wave: Phase E, #202 readiness, two producer contracts, open-PR backlog
+
+**Changed (merged to main, each by merge commit at an exact green head).**
+
+- **Phase E #174 (#373).** A stored-observation bridge (`server/storage/v3ObservationBridge.ts`) reading only through a `selectStorageV3Reader`-returned reader, plus the change-batch size versus integration-tail lens:
+  - opened-to-merge by stratum;
+  - readiness `not_recorded`, never substituted by `createdAt`;
+  - merged, competing-closed and right-censored outcomes within a half-open window;
+  - lines and files bases, with threshold and thirds bins;
+  - nearest-rank quantiles and a lower-bound variant;
+  - Harrell's C;
+  - minimum support of 5;
+  - a default-off API and a lazy Atlas panel with Evidence Drawer marks.
+
+  Each of the six prior-prototype blockers has a named test. It closes #174 and supersedes #359; #80 stays open.
+- **#202 readiness (#372).** It closes #5, #6, #59 and #57 as one slice:
+  - canonical local identity before the ASCII boundary;
+  - duplicate-identity refusal;
+  - an installation-key pin (`import_key_binding`) verified in the v3 shadow source preflight, which refuses a dropped, emptied or drifted pin;
+  - staged no-clobber key publication with incomplete-creation recovery;
+  - distinct `UNSUPPORTED_FILESYSTEM` and `LINK_REFUSED` codes;
+  - zero-fetch refusal of undersized budgets.
+
+  #86 is re-verified but not closed. It supersedes #340.
+- **PublicLensProjection.v1 (#367, closes #304).**
+  - Schema, C0 fixture and README, with `coverage.scorePercent` as an integer 0..100 and momentum as `(r−1)/(r+1)`.
+  - Shares are apportioned over the ≤12 exported repositories, with a closed 8-code warning registry whose vectors derive from the producers' shared builders (`server/collectionWarnings.ts`).
+  - `npm run export:profile` writes through the shared `writeExportSet` sink.
+  - Fixed along the way: the portable payload's coverage score was treated as 0..1 (any score of 1% or more exported as 100%), and its momentum ratio was rounded to an integer.
+  - Announced on CommitAtlas #111.
+- **ResearchFinding v1 pre-consumption amendment (#369, closes #319, #321, #327).** All seven gates are derived from transported evidence, `false_alert_improvement` is relabelled, and `thresholds_nonviable` follows the viability evidence. New bundle hash `sha256:070bf161…`. Announced on CommitAtlas #111 and Lab #97.
+- **#217 (#365).** Vendor chunk families on top of #354, a blocking 500 kB chunk budget, and a fixed `app-*` asset name, so public asset names no longer carry the checkout directory name. It supersedes #357.
+- **Test timing (#366, #370).** Lazy dialogs and lazy routes get explicit `findBy*` budgets. Two loaded `npm run check` runs had failed on the 1 s default.
+- **#313 (#346).** The `agent_config` presence-only exception is carried into the architecture matrix, ADR-05, ADR-07 and the XRAY-01/02 and TIME-01 cards.
+- **#328.** Deck persistence is keyed to a full-catalogue fingerprint, restored status is validated, and the agent entrypoints are qualified.
+- **#360** is closed as superseded; main is a strict superset of it.
+
+**Verified.**
+- Every non-documentation PR had one fresh-context adversarial review and a scoped review of its fix diff. #373 also had the analytical-validity review #174 requires.
+- Review HIGHs found and fixed:
+  - the #328 fingerprint omitted wording;
+  - #372's v3 exact-table break;
+  - the #367 README splice, caused by a `$`` ` replacement pattern and now structurally guarded;
+  - #373's inverted headline;
+  - #373's `censoring_freedom` redefinition.
+- Codex's momentum P1 on #367 was fixed.
+- Each exact-head hosted `Prove the pull request` run succeeded before merge.
+- `npm run check` at #373's final head passed 112 files (1716 passed, 13 skipped). `npm run test:demo:v2` passed 9/9, and `npm run build:showcase` passed on the export- and UI-touching branches.
+
+**Not verified.**
+- Browser/visual QA of the new Atlas panel and the split bundle.
+- POSIX-specific key-publication behaviour beyond the hosted Linux gate.
+- Stored-path activation, which is unwired by design.
+- Consumer-side validation in CommitAtlas and Lab.
+
+**Tracked, not fixed (non-blocking under law 2a).**
+- #368: lens-projection label and anchor LOWs.
+- #371: `confound_guard` label.
+- #374: coverage end display.
+- #375: an abstaining cohort result serves below-support quantiles.
+- #376: five Codex P2s on the stored path.
+- #375 and #376 are required before the stored endpoint is wired.
+
+**Worktrees.** 21 merged or pushed-and-clean worktrees were removed with plain `git worktree remove`. The remaining ones hold local-only commits or dirty files and are left for owner review: the `dl-luna-*` and `dl-fable-*` LIFE-03 and Phase E experiments, `developer-lens-method-trial-view`, `developer-lens-release-version-20260818` (#298), `developer-lens-researchpack`, `developer-lens-final-state-after-lab61`, `developer-lens-browser-evidence-reconcile-20260815`, and one stray detached worktree outside the Git directory.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains the sole tag-blocking owner action. Nothing here infers or closes it.
