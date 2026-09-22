@@ -37,10 +37,12 @@ next_value_slice: >-
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c), and the release-prep slice is re-created from
   scratch only after that gate (#298).
 blockers: >-
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) remains the sole tag-blocking owner gate. The
-  real migration or collection activation stays behind the q-1/q-5 scope plus #202's remaining
-  preconditions, and the stored Phase E endpoint behind #375/#376. The other
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and ::q-10 items are deferred and nonblocking. No
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) remains the sole tag-blocking owner gate. Real
+  migration and collection are already owner-approved within
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5;
+  their activation still requires #202's remaining implementation preconditions, and the stored
+  Phase E endpoint requires #375/#376. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 items are deferred and nonblocking. No
   tag, release, package publication, or public publication is authorized before
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
 last_verified_checks: >-
@@ -104,8 +106,9 @@ authority_and_boundary:
 exact_resume_point: >-
   Product main `b4b82535237e0ccbcbe37d4d101e668aafad4e54`, with zero open pull requests. Choose the
   next slice from next_value_slice after refreshing live Git/GitHub. Stored-path activation of
-  Phase E requires #375 and #376 first; real migration or collection requires #202's remainder and
-  the owner-gated q-1/q-5 scope. Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818
+  Phase E requires #375 and #376 first; real migration or collection requires #202's remainder
+  within the approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5 boundaries. Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818
   at 54217ff: Product #298 owns re-creating that slice after
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). Until that owner action, no tag, release,
   package publication, or public publication is authorized.
