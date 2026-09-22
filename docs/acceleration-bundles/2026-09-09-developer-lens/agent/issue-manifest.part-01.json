@@ -1,0 +1,165 @@
+{
+  "schemaVersion": "DeveloperLensIssueManifestPart.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "part": 1,
+  "totalParts": 4,
+  "issues": [
+    {
+      "number": 5,
+      "title": "Accept the full local collector repository-name domain in v1 migration",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [
+        "#202"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/5",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 6,
+      "title": "Reject duplicate repository identities and pin installation-key continuity before real migration",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "high",
+      "dependencies": [
+        "#202"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/6",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 41,
+      "title": "Harden C1 ancient-year range arithmetic",
+      "cluster": "platform-hardening",
+      "proposedMilestone": "later",
+      "proposedHorizon": "later",
+      "severity": "low",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/41",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 55,
+      "title": "Harden reflection-question layer semantics and small-copy readability",
+      "cluster": "ux-hardening",
+      "proposedMilestone": "later",
+      "proposedHorizon": "later",
+      "severity": "low",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/55",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 57,
+      "title": "Reject undersized two-probe request budgets before runtime binding",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [
+        "#202"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/57",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 59,
+      "title": "Define recovery for failed installation-key creation",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [
+        "#202"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/59",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 66,
+      "title": "RAG eligible-set ceiling (50k pre-rank prefix) is role-blind and support-ordered",
+      "cluster": "frozen-research",
+      "proposedMilestone": "research-later",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/66",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 68,
+      "title": "Frozen WB: FDR governance — tier-selected BH/BY, online-FDR first-test accounting, preallocated-BH decision point",
+      "cluster": "frozen-research",
+      "proposedMilestone": "research-later",
+      "proposedHorizon": "later",
+      "severity": "high",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/68",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 69,
+      "title": "Frozen DL-RAG-01: reserve supports_min quota before contextualizes rows consume the candidate budget",
+      "cluster": "frozen-research",
+      "proposedMilestone": "research-later",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/69",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 76,
+      "title": "DL-SPINE-05 registry finishing: source_diversity clamp decision + producer-absence limiting codes",
+      "cluster": "product-evidence",
+      "proposedMilestone": "v0.2-evidence-flagship",
+      "proposedHorizon": "next",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/76",
+      "recommendedDisposition": "schedule-next"
+    },
+    {
+      "number": 80,
+      "title": "DL-LIFE-02: claim-graph deletion seam — NO ACTION FKs abort scope erasure; scope binding; C2 retention sweeper",
+      "cluster": "product-evidence",
+      "proposedMilestone": "v0.2-evidence-flagship",
+      "proposedHorizon": "next",
+      "severity": "high",
+      "dependencies": [
+        "#174"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/80",
+      "recommendedDisposition": "schedule-next"
+    },
+    {
+      "number": 86,
+      "title": "coverage_id embeds the collection scope_alias and now travels inside C1 claim-graph identifiers — re-mint content-free before real collection",
+      "cluster": "activation-storage",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "high",
+      "dependencies": [
+        "#202"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/86",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 135,
+      "title": "Evidence resolve contract: residual semantic-coherence refinements",
+      "cluster": "product-evidence",
+      "proposedMilestone": "v0.2-evidence-flagship",
+      "proposedHorizon": "next",
+      "severity": "medium",
+      "dependencies": [
+        "#174"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/135",
+      "recommendedDisposition": "schedule-next"
+    }
+  ]
+}
