@@ -7,9 +7,10 @@ import { payloadForSink } from '../shared/privacy'
 import { V2_DEMO_INSIGHTS, V2_DEMO_PAYLOAD, V2_DEMO_REGISTRATION } from '../shared/v2Demo'
 import App from './App'
 
-// ShareStudio and WrappedExperience are React.lazy surfaces (#354): their first open waits on a
-// dynamic import that Vitest transforms on demand, which can exceed findBy*'s 1 s default on a
-// loaded machine. Lookups that wait on a lazy surface's first render get an explicit budget.
+// ShareStudio, WrappedExperience (#354) and the Atlas, Method Trial and V2 demo routes are
+// React.lazy surfaces: their first render waits on a dynamic import that Vitest transforms on
+// demand, which can exceed findBy*'s 1 s default on a loaded machine. Lookups that wait on a lazy
+// surface's first render get an explicit budget.
 const LAZY_SURFACE = { timeout: 8_000 }
 
 const demo = analyzeDataset(createDemoDataset('6m'))
@@ -172,24 +173,24 @@ describe('Developer Lens app', () => {
     expect(within(surfaces).queryByRole('link', { name: /coverage cockpit/i })).not.toBeInTheDocument()
   })
 
-  it('renders the Atlas route with a way back to the dashboard', async () => {
+  it('renders the Atlas route with a way back to the dashboard', { timeout: 30_000 }, async () => {
     vi.stubGlobal('fetch', vi.fn())
     window.history.replaceState({}, '', '/?view=integration-shape')
 
     render(<App />)
 
-    expect(await screen.findByTestId('integration-shape-atlas')).toBeInTheDocument()
+    expect(await screen.findByTestId('integration-shape-atlas', {}, LAZY_SURFACE)).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /integration shape/i })).toHaveAttribute('href', '?')
   })
 
-  it('renders the lazy offline Method Trial route without fetching or disturbing the dashboard fallback', async () => {
+  it('renders the lazy offline Method Trial route without fetching or disturbing the dashboard fallback', { timeout: 30_000 }, async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     window.history.replaceState({}, '', '/?view=method-trial')
 
     render(<App />)
 
-    expect(await screen.findByTestId('method-trial-panel')).toBeInTheDocument()
+    expect(await screen.findByTestId('method-trial-panel', {}, LAZY_SURFACE)).toBeInTheDocument()
     expect(screen.getByText('Method trial · C0 invented evidence')).toBeInTheDocument()
     expect(screen.getByText('REJECTED')).toBeInTheDocument()
     expect(screen.getAllByTestId('method-trial-timeline')).toHaveLength(3)
@@ -197,7 +198,7 @@ describe('Developer Lens app', () => {
     expect(fetchMock).not.toHaveBeenCalled()
   })
 
-  it('renders the offline V2 story, filters every evidence level, and never fetches', async () => {
+  it('renders the offline V2 story, filters every evidence level, and never fetches', { timeout: 30_000 }, async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)
     window.history.replaceState({}, '', '/?demo=v2')
@@ -205,7 +206,7 @@ describe('Developer Lens app', () => {
 
     render(<App />)
 
-    expect(await screen.findByText(/invented c0 story/i)).toBeInTheDocument()
+    expect(await screen.findByText(/invented c0 story/i, {}, LAZY_SURFACE)).toBeInTheDocument()
     expect(screen.getAllByText(/no account, repository, or local-history input/i)).toHaveLength(2)
     expect(screen.getByRole('heading', { name: /short, repeatable waves/i })).toBeInTheDocument()
     expect(screen.getByRole('heading', { name: /small batches keep/i })).toBeInTheDocument()
