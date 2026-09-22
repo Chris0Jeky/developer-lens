@@ -541,6 +541,30 @@ describe('#59 task-owned incomplete-creation recovery', () => {
     }
   }, 60_000)
 
+  it('reports a filesystem without hard links distinctly, content-free, and publishes nothing', async () => {
+    for (const [linkErrorCode, expectedCode] of [
+      ['EPERM', 'TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM'],
+      ['ENOTSUP', 'TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM'],
+      ['EXDEV', 'TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM'],
+      ['EIO', TASK_INSTALLATION_KEY_ERROR_CODE],
+    ] as const) {
+      const root = await fixtureRoot()
+      const generated = Buffer.from(KEY)
+      const error = await taskInstallationKeyTestSeams.setupWithFaults(
+        { workspaceRoot: root, taskId: TASK_ID },
+        () => generated,
+        { linkErrorCode },
+      ).catch((caught: unknown) => caught)
+      expect(error).toMatchObject({ name: 'TaskInstallationKeyError', code: expectedCode, message: expectedCode })
+      for (const value of [KEY.toString('hex'), sha256(KEY), root, 'INJECTED_LINK_FAILURE']) {
+        expect(JSON.stringify(error)).not.toContain(value)
+        expect(String(error)).not.toContain(value)
+      }
+      expect(generated).toEqual(Buffer.alloc(32))
+      expect(await readdir(keyDirectory(root))).toEqual([])
+    }
+  })
+
   it('refuses a staging file whose bytes change before read-back verification', async () => {
     const root = await fixtureRoot()
     await expectInvalid(taskInstallationKeyTestSeams.setupWithFaults(

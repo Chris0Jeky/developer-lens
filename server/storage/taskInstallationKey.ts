@@ -21,6 +21,18 @@ import {
 } from '../connectors/github/activationGrant.js'
 
 export const TASK_INSTALLATION_KEY_ERROR_CODE = 'INVALID_TASK_INSTALLATION_KEY' as const
+/**
+ * Setup publishes by no-clobber hard link. A task root on a filesystem without hard links (some
+ * FAT/exFAT, network, or container mounts) cannot host a key; this distinct content-free code lets a
+ * caller report that instead of a generic invalid-key refusal. Nothing is published in that case.
+ */
+export const TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE =
+  'TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM' as const
+export type TaskInstallationKeyErrorCode =
+  | typeof TASK_INSTALLATION_KEY_ERROR_CODE
+  | typeof TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE
+/** errno values meaning "this filesystem cannot create the hard link", not "the path is taken". */
+const HARD_LINK_UNSUPPORTED_ERRNOS = new Set(['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'EXDEV', 'ENOSYS'])
 
 const INSTALLATION_KEY_BYTES = 32
 const INSTALLATION_KEY_SIZE = 32n
@@ -40,11 +52,12 @@ const STAGING_NAME_PATTERN = /^\.installation-key\.bin\.[0-9a-f]{32}\.staging$/
  * source grant; there is still no production grant issuer or backup caller.
  */
 export class TaskInstallationKeyError extends Error {
-  readonly code = TASK_INSTALLATION_KEY_ERROR_CODE
+  readonly code: TaskInstallationKeyErrorCode
 
-  constructor() {
-    super(TASK_INSTALLATION_KEY_ERROR_CODE)
+  constructor(code: TaskInstallationKeyErrorCode = TASK_INSTALLATION_KEY_ERROR_CODE) {
+    super(code)
     this.name = 'TaskInstallationKeyError'
+    this.code = code
   }
 }
 
@@ -129,6 +142,8 @@ type SetupFaults = Readonly<{
   ) => void | Promise<void>
   /** Simulates a close that reports failure after the descriptor was released. */
   closeFails?: boolean
+  /** Simulates `link()` failing with this errno instead of publishing. */
+  linkErrorCode?: string
 }>
 
 const NO_HOOKS: InternalHooks = Object.freeze({})
@@ -545,6 +560,9 @@ export const bindTaskInstallationKeyHandle = bindTaskInstallationKeyBody
  * journaling), no `O_NOFOLLOW` (symlinks are refused through lstat/realpath checks instead), and no
  * POSIX mode bits (an owner-only ACL is not verified; the #6 follow-up keeps that as an activation
  * precondition). File identity is volume serial plus file index; a zero identity fails closed.
+ * Publication requires hard-link support in the task root's filesystem: where `link` reports
+ * EPERM/ENOTSUP/EOPNOTSUPP/EXDEV/ENOSYS, setup publishes nothing and refuses with the distinct
+ * content-free TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM code.
  */
 async function setupTaskInstallationKeyCore(
   input: TaskInstallationKeySetupInput,
@@ -624,7 +642,18 @@ async function setupTaskInstallationKeyCore(
     await assertKeyPathMissing(path)
     await assertPathHoldsIdentity(path, ownedStagingPath, stagingIdentity, 1n)
     await checkpoint('before-publish')
-    await link(ownedStagingPath, path.keyPath)
+    try {
+      if (faults.linkErrorCode !== undefined) {
+        throw Object.assign(new Error('INJECTED_LINK_FAILURE'), { code: faults.linkErrorCode })
+      }
+      await link(ownedStagingPath, path.keyPath)
+    } catch (error) {
+      const errno = (error as NodeJS.ErrnoException).code
+      if (errno !== undefined && HARD_LINK_UNSUPPORTED_ERRNOS.has(errno)) {
+        throw new TaskInstallationKeyError(TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE)
+      }
+      throw error
+    }
     published = true
     await checkpoint('after-publish')
     await assertPathHoldsIdentity(path, path.keyPath, stagingIdentity, 2n)
@@ -640,14 +669,18 @@ async function setupTaskInstallationKeyCore(
     assertCurrentKeyFileMatches(Object.freeze({ key, keyPath: path.keyPath, taskDirectory }))
     await assertPathHoldsIdentity(path, path.keyPath, stagingIdentity, 1n)
     return createOpaqueHandle(path, key, undefined, true)
-  } catch {
+  } catch (error) {
+    const refusal = error instanceof TaskInstallationKeyError
+      && error.code === TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE
+      ? new TaskInstallationKeyError(TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE)
+      : new TaskInstallationKeyError()
     await abandonIncompleteCreation({
       staging,
       stagingPath: stagingRemoved ? undefined : stagingPath,
       stagingIdentity,
       taskDirectory: published ? taskDirectory : undefined,
     })
-    return invalidKey()
+    throw refusal
   } finally {
     generated?.fill(0)
     key?.fill(0)
