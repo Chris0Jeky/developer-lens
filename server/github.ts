@@ -7,6 +7,7 @@ import type {
   RawPullRequest,
   RawRepository,
 } from '../shared/types.js'
+import { COLLECTION_WARNINGS } from './collectionWarnings.js'
 import { ghJson, graphql, runGh } from './gh.js'
 
 interface GraphPageInfo {
@@ -708,9 +709,7 @@ export async function collectGithub(
     (item) => {
       setRepository(repositories, toRepository(item.repository))
       if (item.contributions.pageInfo.hasNextPage) {
-        warnings.push(
-          `${item.repository.nameWithOwner}: GitHub grouped more than 100 active commit days; per-repository commit fetching is used for detail.`,
-        )
+        warnings.push(COLLECTION_WARNINGS.commitDaysGrouped(item.repository.nameWithOwner))
       }
       return item.contributions.nodes.map((node) => ({
         repository: item.repository.nameWithOwner,
@@ -796,9 +795,7 @@ export async function collectGithub(
     combinedPullRequestNodes.set(node.id, node)
   }
   if (searchedPullRequests.truncated) {
-    warnings.push(
-      `GitHub search capped authored pull-request detail at 1,000 results; contribution totals retain the larger public count.`,
-    )
+    warnings.push(COLLECTION_WARNINGS.authoredPullRequestSearchCapped())
   }
 
   const pullRequests: RawPullRequest[] = [...combinedPullRequestNodes.values()].map((pr) => {
@@ -836,7 +833,7 @@ export async function collectGithub(
     if (pullRequest.reviews.pageInfo.hasNextPage) {
       privateSearchPartial = true
       warnings.push(
-        `${pullRequest.repository.nameWithOwner}#${pullRequest.number}: only the first 100 review records were inspected.`,
+        COLLECTION_WARNINGS.reviewRecordsTruncated(pullRequest.repository.nameWithOwner, pullRequest.number),
       )
     }
     for (const review of pullRequest.reviews.nodes) {
@@ -856,9 +853,7 @@ export async function collectGithub(
     }
   }
   if (searchedReviews.truncated) {
-    warnings.push(
-      'GitHub search capped reviewed pull requests at 1,000; private review coverage may be partial.',
-    )
+    warnings.push(COLLECTION_WARNINGS.reviewedPullRequestSearchCapped())
   }
   const reviews = dedupeDatedEvents(reviewEvents)
 
@@ -880,9 +875,7 @@ export async function collectGithub(
     })
   }
   if (searchedIssues.truncated) {
-    warnings.push(
-      'GitHub search capped authored issue detail at 1,000; contribution totals retain the larger public count.',
-    )
+    warnings.push(COLLECTION_WARNINGS.authoredIssueSearchCapped())
   }
   const issues = [...issuesById.values()]
 
@@ -933,9 +926,7 @@ export async function collectGithub(
   }
 
   if (failedCommitRepositories > 0) {
-    warnings.push(
-      `${failedCommitRepositories} repositories could not be queried for detailed authored commits. Contribution totals remain available.`,
-    )
+    warnings.push(COLLECTION_WARNINGS.commitDetailQueryFailed(failedCommitRepositories))
   }
   coverage.push({
     id: 'github-commits',
@@ -978,9 +969,7 @@ export async function collectGithub(
     }
   }
   if (failedLineStats > 0) {
-    warnings.push(
-      `${failedLineStats} repositories could not be queried for authored line statistics.`,
-    )
+    warnings.push(COLLECTION_WARNINGS.lineStatisticsQueryFailed(failedLineStats))
   }
   coverage.push({
     id: 'github-line-changes',
@@ -1026,9 +1015,7 @@ export async function collectGithub(
   })
 
   if (collection.restrictedContributionsCount > 0) {
-    warnings.push(
-      `${collection.restrictedContributionsCount} contributions are restricted by GitHub privacy rules and cannot be attributed to repositories.`,
-    )
+    warnings.push(COLLECTION_WARNINGS.restrictedContributions(collection.restrictedContributionsCount))
   }
 
   return {

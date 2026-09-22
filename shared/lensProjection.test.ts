@@ -25,10 +25,12 @@ import {
   coverageScorePercentCandidates,
   coverageWarningCode,
   mapCoverageWarnings,
+  type CoverageWarningCode,
   type PublicLensProjection,
 } from './lensProjection.js'
 import { stableJson } from './researchFinding.js'
 import type { DashboardData } from './types.js'
+import { COLLECTION_WARNINGS, type CollectionWarningTemplate } from '../server/collectionWarnings.js'
 
 const root = resolve('research-contracts', 'lens-projection', 'v1')
 const fixturePath = resolve(root, 'showcase.fixture.json')
@@ -304,22 +306,46 @@ describe('PublicLensProjection.v1 projection rules', () => {
 })
 
 describe('CoverageWarningCode mapping', () => {
-  it.each([
-    ['This hosted showcase demonstrates the analytical engine; its statistics do not describe a person.', 'synthetic_showcase'],
-    ['This is illustrative data. Run npm run collect to reveal your own development story.', 'synthetic_showcase'],
-    ['invented-owner/invented-repo: GitHub grouped more than 100 active commit days; per-repository commit fetching is used for detail.', 'commit_detail_partial'],
-    ['3 repositories could not be queried for detailed authored commits. Contribution totals remain available.', 'commit_detail_partial'],
-    ['GitHub search capped authored pull-request detail at 1,000 results; contribution totals retain the larger public count.', 'search_detail_capped'],
-    ['GitHub search capped authored issue detail at 1,000; contribution totals retain the larger public count.', 'search_detail_capped'],
-    ['invented-owner/invented-repo#12: only the first 100 review records were inspected.', 'review_detail_partial'],
-    ['GitHub search capped reviewed pull requests at 1,000; private review coverage may be partial.', 'review_detail_partial'],
-    ['2 repositories could not be queried for authored line statistics.', 'line_changes_partial'],
-    ['14 contributions are restricted by GitHub privacy rules and cannot be attributed to repositories.', 'private_activity_aggregated'],
-    ['Local Git enrichment was skipped because no unambiguous author email identity was configured.', 'local_git_partial'],
-    ['invented-private-repo could not be read; it was excluded from local enrichment.', 'local_git_partial'],
-    ['A future warning nobody has registered yet about invented-private-repo.', 'unrecognized_warning'],
-  ])('maps %j to %s', (warning, code) => {
-    expect(coverageWarningCode(warning)).toBe(code)
+  // Every producer template, rendered through the builder the producer itself calls. The Record
+  // type makes this table exhaustive: a new template without an expected code fails to compile.
+  const EXPECTED_CODES: Record<CollectionWarningTemplate, Exclude<CoverageWarningCode, 'unrecognized_warning'>> = {
+    commitDaysGrouped: 'commit_detail_partial',
+    authoredPullRequestSearchCapped: 'search_detail_capped',
+    reviewRecordsTruncated: 'review_detail_partial',
+    reviewedPullRequestSearchCapped: 'review_detail_partial',
+    authoredIssueSearchCapped: 'search_detail_capped',
+    commitDetailQueryFailed: 'commit_detail_partial',
+    lineStatisticsQueryFailed: 'line_changes_partial',
+    restrictedContributions: 'private_activity_aggregated',
+    localGitIdentityMissing: 'local_git_partial',
+    localRepositoryUnreadable: 'local_git_partial',
+    demoIllustrativeData: 'synthetic_showcase',
+    hostedShowcase: 'synthetic_showcase',
+  }
+  const render = (template: CollectionWarningTemplate): string => {
+    const build = COLLECTION_WARNINGS[template] as (...args: Array<string | number>) => string
+    return build(...Array.from({ length: build.length }, (_, index) => (index % 2 === 0 ? 'invented-owner/invented-repo' : 7)))
+  }
+
+  it.each(Object.keys(EXPECTED_CODES) as CollectionWarningTemplate[])('maps the producer template %s to its registry code', (template) => {
+    expect(coverageWarningCode(render(template))).toBe(EXPECTED_CODES[template])
+  })
+
+  it('maps an unregistered warning to unrecognized_warning', () => {
+    expect(coverageWarningCode('A future warning nobody has registered yet about invented-private-repo.')).toBe('unrecognized_warning')
+  })
+
+  it('finds no inline warning text in the producers', async () => {
+    const producers = ['server/github.ts', 'server/localGit.ts', 'server/demo.ts', 'scripts/exportDemo.ts']
+    for (const producer of producers) {
+      const source = await readFile(resolve(producer), 'utf8')
+      // The first token after `warnings.push(` or `warnings: [` / `warnings = [`, across newlines.
+      const sites = [...source.matchAll(/warnings(?:\.push\(|\s*[:=]\s*\[)\s*([^\s(]+)/g)].map((match) => match[1])
+      for (const site of sites) {
+        expect(site.startsWith('COLLECTION_WARNINGS.') || site.startsWith(']'), `${producer}: ${site}`).toBe(true)
+      }
+      if (producer !== 'server/demo.ts' && producer !== 'scripts/exportDemo.ts') expect(sites.length, producer).toBeGreaterThan(0)
+    }
   })
 
   it('de-duplicates into registry order and never copies warning text', () => {

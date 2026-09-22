@@ -1,4 +1,5 @@
 import { addDays, formatISO, subMonths } from 'date-fns'
+import { COLLECTION_WARNINGS } from './collectionWarnings.js'
 import type { RangeKey, RawDataset } from '../shared/types.js'
 import { classifyCommit } from './github.js'
 
@@ -209,6 +210,6 @@ export function createDemoDataset(range: RangeKey, now: Date = new Date()): RawD
         detail: 'Demo mode does not inspect the filesystem.',
       },
     ],
-    warnings: ['This is illustrative data. Run npm run collect to reveal your own development story.'],
+    warnings: [COLLECTION_WARNINGS.demoIllustrativeData()],
   }
 }

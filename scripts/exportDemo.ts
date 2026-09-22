@@ -3,6 +3,7 @@ import { resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { DashboardData, RangeKey } from '../shared/types.js'
 import { analyzeDataset } from '../server/analytics.js'
+import { COLLECTION_WARNINGS } from '../server/collectionWarnings.js'
 import { createDemoDataset } from '../server/demo.js'
 
 const outputDirectory = resolve('public', 'data')
@@ -37,9 +38,7 @@ export function createPublicShowcaseDashboard(range: RangeKey, now?: Date): Dash
       detail: 'Authenticated GitHub data and local Git history are intentionally excluded.',
     },
   ]
-  dashboard.meta.warnings = [
-    'This hosted showcase demonstrates the analytical engine; its statistics do not describe a person.',
-  ]
+  dashboard.meta.warnings = [COLLECTION_WARNINGS.hostedShowcase()]
   return dashboard
 }
 
