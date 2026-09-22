@@ -87,7 +87,10 @@ export function validateIssueTemplateFrontmatter(
   knownLabels?: ReadonlySet<string>,
 ): string[] {
   const extracted = frontmatterSource(path, source)
-  if (!extracted.body) return extracted.violations
+  if (extracted.body === undefined) return extracted.violations
+  if (extracted.body.trim().length === 0) {
+    return [...extracted.violations, `${path} YAML frontmatter must not be empty`]
+  }
 
   const parsed = parseYaml(extracted.body, `${path} frontmatter is not valid YAML`)
   if (parsed.violations.length > 0) return parsed.violations

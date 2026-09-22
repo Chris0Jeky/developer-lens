@@ -16,6 +16,10 @@ async function repositoryLabels(): Promise<ReadonlySet<string> | undefined> {
     throw new Error('GITHUB_REPOSITORY is missing or invalid')
   }
   const apiBase = process.env['GITHUB_API_URL'] ?? 'https://api.github.com'
+  const token = process.env['GITHUB_TOKEN']
+  if (!token) {
+    throw new Error('GITHUB_TOKEN is missing; refusing unauthenticated label lookup')
+  }
   const labels = new Set<string>()
 
   for (let page = 1; page <= 10; page += 1) {
@@ -24,6 +28,7 @@ async function repositoryLabels(): Promise<ReadonlySet<string> | undefined> {
       {
         headers: {
           Accept: 'application/vnd.github+json',
+          Authorization: `Bearer ${token}`,
           'User-Agent': 'developer-lens-context-verifier',
           'X-GitHub-Api-Version': '2022-11-28',
         },

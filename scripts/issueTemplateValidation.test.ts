@@ -76,4 +76,21 @@ describe('GitHub issue-template YAML validation', () => {
       ),
     ).toContain('feature_request.md references missing repository label: missing-label')
   })
+
+  it('rejects present-but-empty frontmatter instead of passing silently', () => {
+    const empty = '---\n---\n\n## Fixture\n'
+    expect(validateIssueTemplateFrontmatter('bug_report.md', empty)).toEqual(
+      expect.arrayContaining(['bug_report.md YAML frontmatter must not be empty']),
+    )
+
+    const blank = '---\n   \n---\n\n## Fixture\n'
+    expect(validateIssueTemplateFrontmatter('bug_report.md', blank)).toContain(
+      'bug_report.md YAML frontmatter must not be empty',
+    )
+
+    const missing = '## Fixture\n'
+    expect(validateIssueTemplateFrontmatter('bug_report.md', missing)).toContain(
+      'bug_report.md must start with YAML frontmatter',
+    )
+  })
 })
