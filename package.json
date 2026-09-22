@@ -12,6 +12,7 @@
     "analyze": "node scripts/verifyLocalToolchain.mjs && tsx scripts/analyze.ts",
     "export:demo": "node scripts/verifyLocalToolchain.mjs && tsx scripts/exportDemo.ts",
     "export:artifacts": "node scripts/verifyLocalToolchain.mjs && tsx scripts/exportArtifacts.ts",
+    "export:profile": "node scripts/verifyLocalToolchain.mjs && tsx scripts/exportProfile.ts",
     "seed:v2": "node scripts/verifyLocalToolchain.mjs && tsx server/api/v2/syntheticImporter.ts",
     "store:lifecycle": "node scripts/verifyLocalToolchain.mjs && tsx scripts/storeLifecycle.ts",
     "render:social": "node scripts/verifyLocalToolchain.mjs && tsx scripts/renderSocialCard.ts",
@@ -21,6 +22,8 @@
     "check:method-trial-view": "node scripts/verifyLocalToolchain.mjs && tsx scripts/generateMethodTrialView.ts --check",
     "generate:research-finding": "node scripts/verifyLocalToolchain.mjs && tsx scripts/generateResearchFinding.ts",
     "check:research-finding": "node scripts/verifyLocalToolchain.mjs && tsx scripts/generateResearchFinding.ts --check",
+    "generate:lens-projection": "node scripts/verifyLocalToolchain.mjs && tsx scripts/generateLensProjection.ts",
+    "check:lens-projection": "node scripts/verifyLocalToolchain.mjs && tsx scripts/generateLensProjection.ts --check",
     "verify:toolchain": "node scripts/verifyLocalToolchain.mjs",
     "build": "npm run verify:toolchain && tsc -b && vite build && npm run verify:no-secrets",
     "build:showcase": "npm run verify:toolchain && npm run export:demo && npm run render:social && tsc -b && vite build --base=/developer-lens/ --mode showcase && npm run verify:showcase",
@@ -32,7 +35,7 @@
     "verify:context": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyGovernorPolicy.ts && tsx scripts/verifyCurrentStateFenceContract.ts && tsx scripts/verifyIssueTemplates.ts && tsx scripts/verifyProjectContext.ts",
     "verify:no-secrets": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyNoSecretsInDist.ts",
     "verify:showcase": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyShowcase.ts",
-    "check": "npm run verify:toolchain && npm run lint && npm run verify:context && npm run check:research-pack && npm run check:method-trial-view && npm run check:research-finding && npm run test && npm run build"
+    "check": "npm run verify:toolchain && npm run lint && npm run verify:context && npm run check:research-pack && npm run check:method-trial-view && npm run check:research-finding && npm run check:lens-projection && npm run test && npm run build"
   },
   "dependencies": {
     "@duckdb/node-api": "1.5.5-r.3",
