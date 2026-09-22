@@ -380,7 +380,12 @@ the presence-only `agent_config` role was accepted 2026-08-18 from the constitut
 reconciliation — they make golden/fixture-anchored contract surfaces, migration-ledger archaeology,
 and configuration presence observable), package/monorepo boundary count via manifest-presence
 classes, and
-parser/enumeration coverage. Paths, names, file lists are
+parser/enumeration coverage. **`agent_config` exception (D5=PRES):** it emits one point-in-time,
+per-repository presence boolean and nothing else — no file count or other configuration
+cardinality, no names, no body reads — and it is excluded from every baseline, historical series,
+temporal delta, ADR-07 snapshot, and portfolio comparison while adoption timing stays behind
+`DL-Q-AGENTCFG-TIMING`. Invented trees with one or several agent-configuration files must yield the
+same output. Paths, names, file lists are
 C4 and destroyed. Boundaries (corrected 2026-08-04 review round): no working tree, no submodule
 recursion without its own consent, and **no file-body reads of any kind under
 `cap.source.structure` alone** — role sniffing uses closed extension/manifest-**name** tables
@@ -437,7 +442,11 @@ naive cross-version comparison would manufacture "architecture drift" from parse
 
 **Decision.** A **snapshot** is keyed by (repository alias, ref OID, `parser_bundle_version`,
 config revision) and stores the **committed-tree facts** — graph + composition + API-surface —
-derived from that immutable ref. **Provider observations are not snapshot content (corrected
+derived from that immutable ref. Snapshot composition **excludes `agent_config` entirely**
+(D5=PRES; ADR-05): its presence is neither stored in a snapshot nor diffed across snapshots, eras,
+or portfolios, so snapshots differing only in agent-configuration presence or its timing yield
+identical aggregates and era diffs until `DL-Q-AGENTCFG-TIMING` is decided and a reviewed
+capability/matrix change lands. **Provider observations are not snapshot content (corrected
 2026-08-04 review round):** rulesets, CI runs, dependency state, and deployment state are mutable
 observation-time resources that generally cannot be reconstructed "from" a historical ref; they
 are keyed by their **observed coverage windows** plus connector provenance, never by ref OID.
