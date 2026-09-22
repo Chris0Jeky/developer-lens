@@ -1,4 +1,4 @@
-import { createHash, randomBytes as cryptoRandomBytes } from 'node:crypto'
+import { createHash, randomBytes as cryptoRandomBytes, timingSafeEqual } from 'node:crypto'
 import Database from 'better-sqlite3'
 import {
   CLAIM_ID_MATERIAL_VERSION,
@@ -30,7 +30,13 @@ import {
   installIncrementalGithubCoreStorage,
 } from './incremental.js'
 import { createInstallationAliases } from './installationAliases.js'
-import { SQLITE_APPLICATION_ID, SQLITE_USER_VERSION } from './schema.js'
+import {
+  IMPORT_KEY_BINDING_SQL,
+  IMPORT_KEY_BINDING_TABLE,
+  IMPORT_KEY_BINDING_VERSION,
+  SQLITE_APPLICATION_ID,
+  SQLITE_USER_VERSION,
+} from './schema.js'
 import {
   installStorageV3ShadowSchema,
   STORAGE_V3_SHADOW_MIGRATED_TABLES,
@@ -220,19 +226,46 @@ function readSchemaCatalog(db: Database.Database, catalog = 'sqlite_schema'): st
     .map((row) => [row.type, row.name, row.tbl_name, normalizeSchemaSql(row.sql)].join('|'))
 }
 
-function expectedSourceCatalog(): string[] {
+/**
+ * Source-only bookkeeping tables (#202/#6): allowed beside the migrated tables, verified, and never
+ * copied. `import_key_binding` pins the installation-key fingerprint that minted a v1-import
+ * target's repository aliases. The v3 target carries no equivalent pin; continuity is instead
+ * carried by re-deriving every identity row under the supplied key and requiring byte equality, so
+ * the pin is checked here (including for stores with no identity rows yet) and then dropped.
+ */
+export const STORAGE_V3_SHADOW_VERIFIED_SOURCE_TABLES = Object.freeze([IMPORT_KEY_BINDING_TABLE] as const)
+
+function expectedSourceCatalog(withImportKeyBinding: boolean): string[] {
   const reference = openStorageDatabase(':memory:')
   try {
     installIncrementalGithubCoreStorage(reference)
     installClaimGraphStorage(reference)
     installV2BridgeStore(reference)
+    if (withImportKeyBinding) reference.exec(IMPORT_KEY_BINDING_SQL)
     return readSchemaCatalog(reference)
   } finally {
     reference.close()
   }
 }
 
-function preflightSource(db: Database.Database): void {
+/** A present pin must be the single well-formed row for exactly the supplied installation key. */
+function assertImportKeyBinding(db: Database.Database, installationKey: Buffer): void {
+  const rows = db
+    .prepare(`SELECT singleton, binding_version, installation_key_fingerprint FROM ${IMPORT_KEY_BINDING_TABLE}`)
+    .all() as Array<{ singleton: unknown; binding_version: unknown; installation_key_fingerprint: unknown }>
+  const [row] = rows
+  if (rows.length !== 1 || row === undefined || row.singleton !== 1
+    || row.binding_version !== IMPORT_KEY_BINDING_VERSION
+    || typeof row.installation_key_fingerprint !== 'string'
+    || !/^[0-9a-f]{64}$/.test(row.installation_key_fingerprint)) {
+    fail('SOURCE_SCHEMA_REFUSED')
+  }
+  const expected = Buffer.from(createHash('sha256').update(installationKey).digest('hex'), 'ascii')
+  const stored = Buffer.from(row!.installation_key_fingerprint as string, 'ascii')
+  if (!timingSafeEqual(stored, expected)) fail('IDENTITY_BINDING_MISMATCH')
+}
+
+function preflightSource(db: Database.Database, installationKey: Buffer): void {
   try {
     const applicationId = Number(db.prepare('PRAGMA application_id').pluck().get())
     const userVersion = Number(db.prepare('PRAGMA user_version').pluck().get())
@@ -243,8 +276,10 @@ function preflightSource(db: Database.Database): void {
     const actualTables = db.prepare(
       "SELECT name FROM sqlite_schema WHERE type = 'table' AND name NOT GLOB 'sqlite_*' ORDER BY name",
     ).pluck().all() as string[]
+    const hasImportKeyBinding = actualTables.includes(IMPORT_KEY_BINDING_TABLE)
+    const migratedTables = actualTables.filter((name) => name !== IMPORT_KEY_BINDING_TABLE)
     const expectedTables = [...STORAGE_V3_SHADOW_MIGRATED_TABLES].sort()
-    if (JSON.stringify(actualTables) !== JSON.stringify(expectedTables)) {
+    if (JSON.stringify(migratedTables) !== JSON.stringify(expectedTables)) {
       fail('SOURCE_SCHEMA_REFUSED')
     }
     if (readSchemaCatalog(db, 'sqlite_temp_schema').length > 0) {
@@ -253,19 +288,20 @@ function preflightSource(db: Database.Database): void {
 
     assertIncrementalGithubCoreStorageSchema(db)
     assertClaimGraphStorageSchema(db)
-    if (JSON.stringify(readSchemaCatalog(db)) !== JSON.stringify(expectedSourceCatalog())) {
+    if (JSON.stringify(readSchemaCatalog(db)) !== JSON.stringify(expectedSourceCatalog(hasImportKeyBinding))) {
       fail('SOURCE_SCHEMA_REFUSED')
     }
+    if (hasImportKeyBinding) assertImportKeyBinding(db, installationKey)
   } catch (error) {
     if (error instanceof StorageV3ShadowRewriteError) throw error
     fail('SOURCE_SCHEMA_REFUSED')
   }
 }
 
-function readSourceImage(db: Database.Database): SourceImage {
+function readSourceImage(db: Database.Database, installationKey: Buffer): SourceImage {
   try {
     return db.transaction((): SourceImage => {
-      preflightSource(db)
+      preflightSource(db, installationKey)
       let provenance: Provenance
       let bridgeCoverage: CoverageRecord[]
       try {
@@ -539,7 +575,7 @@ export function rewriteStorageV3Shadow(
       fail('TARGET_REFUSED')
     }
     const asOf = parseTime(options.asOf)
-    source = readSourceImage(options.sourceDb)
+    source = readSourceImage(options.sourceDb, options.installationKey)
     const sourceImage = source
     preflightTarget(options.targetDb)
 

@@ -2,6 +2,7 @@ export const SQLITE_APPLICATION_ID = 0x444c5632
 export const SQLITE_USER_VERSION = 2
 export const STORAGE_SCHEMA_VERSION = '2.0.0'
 export const IMPORT_KEY_BINDING_VERSION = 'import-key-binding.v1'
+export const IMPORT_KEY_BINDING_TABLE = 'import_key_binding' as const
 
 /**
  * #6 installation-key continuity pin for v1-import targets. Installed only by the v1 importer inside
