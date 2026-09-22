@@ -111,6 +111,9 @@ export function gateChangeBatchTailView(candidate: ChangeBatchTailView, forbidde
         const display = displayById.get(stratum.resultId)
         // Minimum-support abstention: a stratum is rendered with numbers only when the registry's
         // display gate says so; below-gate and truncated strata carry no quantile at all.
+        // A withheld stratum is served with counts only: no result, no quantile, no lower bound.
+        const withheldCleanly = display === undefined && !stratum.displayed && stratum.quantiles === null && stratum.lowerBoundP90 === null
+        if (withheldCleanly) continue
         if (display === undefined || (stratum.displayed && !display.display) || (!stratum.displayed && stratum.quantiles !== null)) {
           throw new ChangeBatchTailGateError('a stratum renders numbers its display gate withholds')
         }

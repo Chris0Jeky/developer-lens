@@ -12,7 +12,10 @@ import {
   resolveChangeBatchTailReference,
   type ChangeBatchTailView,
 } from '../../../shared/changeBatchTailView.js'
+import { analyzeChangeBatchTail } from '../../../shared/changeBatchTail.js'
+import { readStoredObservations } from '../../storage/v3ObservationBridge.js'
 import {
+  toChangeBatchInput,
   composeStoredChangeBatchTailView,
   composeSyntheticChangeBatchTailView,
   gateChangeBatchTailView,
@@ -273,10 +276,62 @@ describe('Phase E change-batch lens endpoint (#174)', { timeout: 60_000 }, () =>
       tampered.results = tampered.results.map((result) => result.resultId === stratum.resultId
         ? { ...result, value: { kind: 'quantiles', sampleSize: 3, quantiles: result.value.kind === 'quantiles' ? result.value.quantiles : null }, coverage: result.coverage.map((entry) => entry.dimension === 'sample' ? { dimension: 'sample', value: 0.6, limiting_reason: 'SAMPLE_BELOW_MINIMUM' } : entry) }
         : result)
-      expect(() => gateChangeBatchTailView(tampered)).toThrow(/display gate/)
+      expect(() => gateChangeBatchTailView(tampered)).toThrow(/serving gate|display gate/)
     } finally {
       selection.db.close()
     }
     expect(composeSyntheticChangeBatchTailView().source.kind).toBe('synthetic')
+  })
+
+  it('never serializes a quantile of a stratum withheld below minimum support (API-body canary)', async () => {
+    const base = presentablePullRequests().filter((row) => !row.tag.startsWith('middle-'))
+    const seed: InventedStoreSeed = {
+      pullRequests: [
+        ...base,
+        opened('mid-a', 6, { mergeHours: 41.37 }, 150, 5),
+        opened('mid-b', 7, { mergeHours: 53.71 }, 180, 5),
+        opened('mid-c', 8, { mergeHours: 67.13 }, 210, 5),
+        opened('mid-open-a', 9, {}, 160, 5),
+        opened('mid-open-b', 10, {}, 170, 5),
+        opened('mid-open-c', 11, {}, 190, 5),
+      ],
+      coverage: [COMPLETE],
+    }
+    const store = await storeWith(seed)
+    const selection = store.select()
+    if (selection.reader !== 'sqlite-v3') throw new Error('not selected')
+    const withheldValues: number[] = []
+    // The same pull request may legitimately set a quantile of a DISPLAYED stratum in another
+    // basis or binning; such values are served on their own merits and are not withheld leaks.
+    const servedElsewhere = new Set<number>()
+    try {
+      const read = readStoredObservations(selection, REQUEST)
+      if (read.status !== 'read') throw new Error(read.code)
+      const analysis = analyzeChangeBatchTail(toChangeBatchInput(read.observation))
+      const quantileValues = (reading: typeof analysis.all): number[] => [reading.result.value, ...reading.result.sensitivity.map((entry) => entry.value)]
+        .flatMap((value) => (value.kind === 'quantiles' && value.quantiles ? value.quantiles.map((entry) => entry.value) : []))
+      for (const value of quantileValues(analysis.all)) servedElsewhere.add(value)
+      for (const binning of analysis.binnings) {
+        for (const reading of binning.strata.filter((entry) => entry.display.display)) for (const value of quantileValues(reading)) servedElsewhere.add(value)
+      }
+      for (const binning of analysis.binnings) {
+        for (const reading of binning.strata.filter((entry) => !entry.display.display)) {
+          const values = [reading.result.value, ...reading.result.sensitivity.map((entry) => entry.value)]
+          for (const value of values) if (value.kind === 'quantiles' && value.quantiles) withheldValues.push(...value.quantiles.map((entry) => entry.value))
+          if (reading.lowerBoundP90 !== null) withheldValues.push(reading.lowerBoundP90)
+        }
+      }
+    } finally {
+      selection.db.close()
+    }
+    const leakCandidates = [...new Set(withheldValues)].filter((value) => !servedElsewhere.has(value))
+    expect(leakCandidates.length).toBeGreaterThanOrEqual(3)
+    const response = await get(app(sourceFor(store))).expect(200)
+    const view = acceptChangeBatchTailView(response.body.view)
+    expect(view.binnings[0].strata[1]).toMatchObject({ displayed: false, merged: 3, quantiles: null, lowerBoundP90: null })
+    const body = JSON.stringify(response.body)
+    for (const value of leakCandidates) {
+      expect(body, String(value)).not.toMatch(new RegExp(`[:\\[,]${value}[,}\\]]`))
+    }
   })
 })

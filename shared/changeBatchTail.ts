@@ -613,12 +613,12 @@ function computeStratum(
   const sampleEntry: MetricCoverageEntry = exempt || sampleSize >= CHANGE_BATCH_MINIMUM_SUPPORT
     ? { dimension: 'sample', value: 1, limiting_reason: null }
     : { dimension: 'sample', value: ratio(sampleSize, CHANGE_BATCH_MINIMUM_SUPPORT), limiting_reason: 'SAMPLE_BELOW_MINIMUM' }
-  // The share of eligible units whose merge interval was fully observed inside follow-up. A close
-  // without merge ends observation without the target event, so it reduces this dimension just as
-  // right-censoring does: a stratum that is mostly closed unmerged never reads as fully observed.
+  // `censoring_freedom` is registered as "1 = no censoring in the window" (shared/coverage.ts), so
+  // it counts right-censored units only. A material closed-without-merge share is disclosed
+  // separately (SELECTED_MERGED_SAMPLE alternative + COVERAGE_SPARSE limitation), never folded here.
   const censoringEntry: MetricCoverageEntry = {
     dimension: 'censoring_freedom',
-    value: eligible === 0 ? 1 : ratio(eligible - censored - competing, eligible),
+    value: eligible === 0 ? 1 : ratio(eligible - censored, eligible),
     limiting_reason: null,
   }
   const resultId = resultIdFor(membership.basisId, membership.binningId, membership.stratum?.stratumId ?? null)
@@ -999,6 +999,25 @@ function robustnessOf(analysis: ChangeBatchTailAnalysis): FindingRobustness {
     if (candidate === 0 || primary.tailOrdering === 0) return 'changed_magnitude'
     return 'changed_direction'
   }
+  /**
+   * OPEN_AT_LOWER_BOUND compares the lower bounds of the SAME endpoint pair the primary ordering
+   * compared (the first and last displayed strata), so it can only read `held` after testing that
+   * pair. A withheld stratum whose lower-bound sample met support may additionally reverse the
+   * wider lower-bound ordering; that can only push the check to `changed_direction`, never to `held`.
+   */
+  const displayed = primary.strata.filter((reading) => reading.display.display && reading.result.state === 'observed')
+  const first = displayed[0]
+  const last = displayed[displayed.length - 1]
+  const pairLowerBound: -1 | 0 | 1 | null = displayed.length >= 2 && first.lowerBoundP90 !== null && last.lowerBoundP90 !== null
+    ? sign(last.lowerBoundP90 - first.lowerBoundP90)
+    : null
+  const lowerBoundOutcome = ((): 'held' | 'changed_magnitude' | 'changed_direction' | 'not_applicable' => {
+    const paired = outcome(pairLowerBound)
+    const widened = primary.lowerBoundTailOrdering
+    if (paired !== 'not_applicable' && widened !== null && widened !== 0 && primary.tailOrdering !== null
+      && primary.tailOrdering !== 0 && widened !== primary.tailOrdering) return 'changed_direction'
+    return paired
+  })()
   const filesDeclared = analysis.binnings.find((entry) => entry.basisId === 'changed_files' && entry.binningId === 'declared_thresholds')
   const linesThirds = analysis.binnings.find((entry) => entry.basisId === 'lines_changed' && entry.binningId === 'value_thirds')
   const checks = [
@@ -1017,7 +1036,7 @@ function robustnessOf(analysis: ChangeBatchTailAnalysis): FindingRobustness {
     {
       checkId: 'OPEN_AT_LOWER_BOUND',
       statement: 'Recomputed with still-open pull requests added at their observed lower bound and compared the direction of the same 90th-percentile difference.',
-      outcome: outcome(primary.lowerBoundTailOrdering),
+      outcome: lowerBoundOutcome,
       sensitivityVariantId: 'OPEN_AT_LOWER_BOUND',
     },
   ] as const
@@ -1074,7 +1093,8 @@ function metricResultReferences(analysis: ChangeBatchTailAnalysis): Finding['met
   ]
   if (analysis.abstention === null) {
     for (const binning of analysis.binnings) {
-      for (const reading of binning.strata) {
+      // A stratum withheld by its display gate is not served as a result at all (blocker 5).
+      for (const reading of binning.strata.filter((entry) => entry.display.display)) {
         references.push({ metricId: CHANGE_BATCH_TAIL_METRIC.metricId, metricVersion: CHANGE_BATCH_TAIL_METRIC.version, resultId: reading.result.resultId, role: 'supporting' })
       }
     }

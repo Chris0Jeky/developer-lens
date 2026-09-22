@@ -442,7 +442,8 @@ describe('analytical review round (headline framing, competing outcomes, lower-b
     const large = view.binnings[0].strata[2]
     expect(large).toMatchObject({ eligible: 20, merged: 8, competing: 12, censored: 0 })
     const result = view.results.find((entry) => entry.resultId === large.resultId)
-    expect(result?.coverage.find((entry) => entry.dimension === 'censoring_freedom')?.value).toBe(0.4)
+    // censoring_freedom stays "1 = no censoring": competing closes are disclosed by the limitation, not folded in.
+    expect(result?.coverage.find((entry) => entry.dimension === 'censoring_freedom')).toEqual({ dimension: 'censoring_freedom', value: 1, limiting_reason: null })
     expect(view.finding.limitations).toContainEqual({ limitationCode: 'COVERAGE_SPARSE', dimension: 'censoring_freedom', copyKey: 'copy.change_batch_tail.competing_selected_sample' })
     expect(view.finding.alternativeExplanations.map((entry) => entry.code)).toContain('SELECTED_MERGED_SAMPLE')
     expect(view.finding.discriminatingEvidence?.distinguishes).toContain('SELECTED_MERGED_SAMPLE')
@@ -473,5 +474,42 @@ describe('analytical review round (headline framing, competing outcomes, lower-b
     expect(shownLarge).toMatchObject({ displayed: false, quantiles: null, lowerBoundP90: null })
     expect(view.finding.robustness.checks.find((check) => check.checkId === 'OPEN_AT_LOWER_BOUND')?.outcome).toBe('changed_direction')
     expect(view.marks.some((mark) => mark.subject.stratumId === 's3' && mark.subject.binningId === 'declared_thresholds' && mark.subject.basisId === 'lines_changed' && mark.valueCategory === 'quantile')).toBe(false)
+  })
+
+  it('tests the displayed endpoint pair for OPEN_AT_LOWER_BOUND even when a withheld stratum sits at an index extreme', () => {
+    const units: ChangeBatchUnit[] = []
+    for (let index = 0; index < 5; index += 1) {
+      units.push(unit(index + 3, { mergedAfterHours: 10 + index }, 10 + index))        // small: merged p90 14h
+      units.push(unit(index + 3, { mergedAfterHours: 50 + index * 10 }, 100 + index * 10)) // middle: merged p90 90h
+    }
+    // Small also has long-open work, so its lower bound (~25 d) exceeds middle's (90 h): the displayed pair reverses.
+    for (let index = 0; index < 10; index += 1) units.push(unit(2, 'open', 20 + index))
+    // Large is withheld (3 merged) but supported at the lower bound, opened earliest (~27 d).
+    for (let index = 0; index < 3; index += 1) units.push(unit(0, { mergedAfterHours: 2 }, 700 + index))
+    for (let index = 0; index < 25; index += 1) units.push(unit(0, 'open', 800 + index))
+    const analysis = analyzeChangeBatchTail(input(units))
+    const primary = analysis.binnings[0]
+    expect(primary.strata[2].display.display).toBe(false)
+    expect(primary.strata[2].lowerBoundP90).not.toBeNull()
+    expect(primary.tailOrdering).toBe(1)
+    // The widened lower-bound ordering (large vs small) alone would read `held` ...
+    expect(primary.lowerBoundTailOrdering).toBe(1)
+    // ... but the displayed pair (middle vs small) reverses, so the check must not read held.
+    const view = buildChangeBatchTailView(input(units))
+    expect(view.finding.robustness.checks.find((check) => check.checkId === 'OPEN_AT_LOWER_BOUND')?.outcome).toBe('changed_direction')
+    expect(view.finding.robustness.status).toBe('fragile')
+  })
+
+  it('serves no result, quantile or lower bound for a stratum its display gate withholds', () => {
+    const units = presentableUnits().filter((_entry, index) => !(index % 3 === 1 && index > 3))
+    const analysis = analyzeChangeBatchTail(input(units))
+    const withheld = analysis.binnings[0].strata[1]
+    expect(withheld.display.display).toBe(false)
+    const view = buildChangeBatchTailView(input(units))
+    expect(view.results.map((result) => result.resultId)).not.toContain(withheld.result.resultId)
+    expect(view.finding.metricResults.map((reference) => reference.resultId)).not.toContain(withheld.result.resultId)
+    const tampered = JSON.parse(JSON.stringify(view))
+    tampered.results.push(withheld.result)
+    expect(() => acceptChangeBatchTailView(tampered)).toThrow(/display gate withholds/)
   })
 })

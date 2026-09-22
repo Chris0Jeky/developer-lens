@@ -24,7 +24,7 @@ import {
   type ChangeBatchTailInput,
 } from './changeBatchTail.js'
 import { FindingSchema, validateFinding, type AnalyticReference, type Finding } from './findings.js'
-import { MetricResultSchema, validateMetricResult, type MetricResult } from './metrics.js'
+import { evaluateDisplayEligibility, MetricResultSchema, validateMetricResult, type MetricResult } from './metrics.js'
 import {
   WhyCoverageNodeSchema,
   WhyMissingLinkSchema,
@@ -295,7 +295,9 @@ export function buildChangeBatchTailView(input: ChangeBatchTailInput): ChangeBat
   const finding = buildChangeBatchFinding(analysis, marks)
   const abstained = analysis.abstention !== null
   const results: MetricResult[] = [analysis.all.result]
-  if (!abstained) for (const binning of analysis.binnings) for (const reading of binning.strata) results.push(reading.result)
+  // Only strata that pass their display gate are served as results; a withheld stratum serves its
+  // counts in the stratum row and no quantile anywhere (blocker 5).
+  if (!abstained) for (const binning of analysis.binnings) for (const reading of binning.strata) if (reading.display.display) results.push(reading.result)
   return {
     viewVersion: CHANGE_BATCH_TAIL_VIEW_VERSION,
     lensId: CHANGE_BATCH_TAIL_METHOD_ID,
@@ -600,6 +602,13 @@ export function acceptChangeBatchTailView(candidate: unknown): ChangeBatchTailVi
     for (const result of view.results) validateMetricResult(result)
   } catch {
     throw new ChangeBatchTailViewError('view carries a finding or metric result the registry rejects')
+  }
+  for (const result of view.results) {
+    if (result.resultId === finding.sampleSummary.resultId) continue
+    const { definition } = validateMetricResult(result)
+    if (!evaluateDisplayEligibility(definition, result).display) {
+      throw new ChangeBatchTailViewError('view serves a supporting result its display gate withholds')
+    }
   }
   const resultIds = new Set(view.results.map((result) => result.resultId))
   if (!finding.metricResults.every((reference) => resultIds.has(reference.resultId))) {
