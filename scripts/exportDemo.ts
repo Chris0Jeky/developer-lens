@@ -14,8 +14,8 @@ export const SHOWCASE_RANGES: readonly RangeKey[] = Object.freeze(['6m', '12m'] 
  * The single constructor for the publishable synthetic dashboard. `scripts/exportArtifacts.ts`
  * imports it so the headless export and the hosted showcase can never describe different data.
  */
-export function createPublicShowcaseDashboard(range: RangeKey): DashboardData {
-  const dashboard = analyzeDataset(createDemoDataset(range))
+export function createPublicShowcaseDashboard(range: RangeKey, now?: Date): DashboardData {
+  const dashboard = analyzeDataset(createDemoDataset(range, now))
   dashboard.meta.privacy = 'public-demo'
   dashboard.meta.subject = {
     login: 'synthetic-builder',

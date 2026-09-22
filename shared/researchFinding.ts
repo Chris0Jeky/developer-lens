@@ -247,8 +247,8 @@ export function computeResearchFindingBundleHash(value: Omit<ResearchFinding, 'p
 // RFC 5321 address literals, and symbol-domain addresses. Any `@` followed by a non-separator is
 // therefore denied conservatively; over-matching is the safe direction at this public boundary.
 // The explicit email branch remains as documentation and defense in depth for ordinary addresses.
-const DENIED_TOKEN = /(?:@[^\s@]|[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.\p{L}{2,}|(?:[A-Za-z]:\\|\/|\\)[^\s"']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b)/u
-const DATE_TOKEN = /\b\d{4}-\d{2}-\d{2}\b/
+export const DENIED_TOKEN = /(?:@[^\s@]|[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.\p{L}{2,}|(?:[A-Za-z]:\\|\/|\\)[^\s"']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b)/u
+export const DATE_TOKEN = /\b\d{4}-\d{2}-\d{2}\b/
 
 export function researchFindingPrivacyViolations(value: unknown): string[] {
   const violations: string[] = []

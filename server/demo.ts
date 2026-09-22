@@ -66,9 +66,9 @@ const DEMO_REPOSITORIES = [
   },
 ] as const
 
-export function createDemoDataset(range: RangeKey): RawDataset {
+export function createDemoDataset(range: RangeKey, now: Date = new Date()): RawDataset {
   const months = range === '6m' ? 6 : 12
-  const toDate = new Date()
+  const toDate = new Date(now.getTime())
   const fromDate = subMonths(toDate, months)
   const from = formatISO(fromDate)
   const to = formatISO(toDate)
@@ -155,7 +155,7 @@ export function createDemoDataset(range: RangeKey): RawDataset {
     range,
     from,
     to,
-    collectedAt: new Date().toISOString(),
+    collectedAt: now.toISOString(),
     subject: {
       login: 'demo-builder',
       name: 'Your development story',
