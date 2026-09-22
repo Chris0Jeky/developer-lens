@@ -65,6 +65,11 @@ jobs:
         # the hosted gate before issue #193. --check regenerates in memory and compares only.
         run: npm run check:method-trial-view
 
+      - name: Check the PublicLensProjection.v1 schema and C0 fixture for drift
+        # Consumers vendor this fixture at a pinned commit (issue #304); --check regenerates the
+        # schema and fixture in memory under a pinned clock and UTC zone and compares only.
+        run: npm run check:lens-projection
+
       - name: Lint
         run: npm run lint
 

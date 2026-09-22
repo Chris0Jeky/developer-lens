@@ -146,6 +146,15 @@ A local export refuses unless the operator supplies `--source local --acknowledg
 
 The public URL always opens the separate synthetic showcase. Developer Lens does not create a hosted URL for a private dashboard.
 
+### Profile projection
+
+```powershell
+npm run export:profile
+npm run export:profile -- --source local --acknowledge-redaction --range 12m
+```
+
+`export:profile` writes one `PublicLensProjection.v1` file (`lens-profile.v1.json`) plus a manifest into the gitignored `profile-export/` directory, through the same scans and manifest-scoped replacement as `export:artifacts`. The default `--source showcase` is C0 synthetic data. `--source local` produces the owner's C1 `redacted-local` projection: it refuses without `--acknowledge-redaction`, defaults to `--repository-redaction private-aliases` (`all-aliases` is available), and is never published to Pages or committed as a fixture. The schema, C0 fixture, coverage-score scale and warning-code registry are in [`research-contracts/lens-projection/v1/`](research-contracts/lens-projection/v1/README.md).
+
 ## Analysis pipeline
 
 1. **Collection** — authenticated repository enumeration, contribution connections, commit history, GitHub search enrichment, and optional local Git refs.
@@ -185,7 +194,7 @@ Read [PRODUCT_DIRECTION.md](docs/PRODUCT_DIRECTION.md), [ROADMAP.md](ROADMAP.md)
 - Pulseboard may observe the synthetic public showcase only through a separately reviewed content-free adapter; it does not receive private/local analysis.
 - Taskdeck integration remains a reviewed proposal/activation path rather than ambient task creation.
 
-The `DeveloperLensMethodTrialSummary.v1` and `ResearchFindingProjection.v1` contracts demonstrate this producer-first model: the product defines semantic acceptance; producers satisfy it; consumers validate the pinned artifact.
+The `DeveloperLensMethodTrialSummary.v1`, `ResearchFindingProjection.v1` and `PublicLensProjection.v1` contracts demonstrate this producer-first model: the product defines semantic acceptance; producers satisfy it; consumers validate the pinned artifact.
 
 ## Verification
 
