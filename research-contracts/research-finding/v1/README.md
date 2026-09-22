@@ -68,7 +68,7 @@ unit: `rate` and `ratio` are 0..1; integer `count` is 0..1,000,000; `count_per_y
 | --- | --- |
 | `real_repository_validity` | This result does not establish validity on real repositories. |
 | `person_level_inference` | No person-level inference is supported or attempted. |
-| `model_promotion` | This rejected trial cannot promote a model. |
+| `model_promotion` | This trial does not promote a model. |
 | `online_pelt_performance` | Offline PELT markers do not establish online performance. |
 
 Each code has exactly the displayed text. Runtime validation rejects a changed pairing, repeated
@@ -96,14 +96,14 @@ Scheme serialization after removing only `provenance.bundle_hash`. Canonicalizat
 keys by JavaScript UTF-16 code units, preserves array order, emits no whitespace, uses JSON
 string escaping and ECMAScript shortest-round-trip finite numbers, and rejects unsupported values,
 sparse arrays, non-plain objects, `toJSON`, non-finite numbers, and lone surrogates. The fixture's
-bundle hash is `sha256:700110c41bd24e7e9a8a991238ad8390878818ac7ee9a18464cf3c84f2562d6d`.
+bundle hash is `sha256:d694f81a114e49d0d26ddaaea2edcbab81ccf9877eafd6f48f845a4494b5c458`.
 
 The published fixture is synthetic and contains no repository identity, person identifier, path,
 email, handle, or date other than `generated_at`. The only permitted public URL is the literal
 Pages method-trial URL in the fixture. The complete fixture file SHA-256 (including its trailing
 newline) is:
 
-`sha256:8c21e6b832c88ce525362c7f64f77af6d861cead9c143635e033ee9fe4e0ce20`
+`sha256:04794949c2aab324f11b1c8c3dd0b1ad25bc6d4c41e4e08fbbfd7c6cb08b3c94`
 
 JCS acceptance vector (RFC 8785 section 3.2):
 

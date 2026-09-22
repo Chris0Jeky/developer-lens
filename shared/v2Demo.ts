@@ -3,6 +3,10 @@ import { payloadForSink, registerPublicPayload } from './privacy.js'
 import type { Insight } from './types.js'
 
 const INSIGHT_COUNT = 3
+const REFLECTION_QUESTION_SCHEMA = z.string().min(1).max(240).refine(
+  (question) => question.trim().length > 0,
+  { message: 'Reflection question must contain non-whitespace text' },
+)
 
 const V2_INSIGHT_SCHEMA = z
   .object({
@@ -12,13 +16,30 @@ const V2_INSIGHT_SCHEMA = z
     eyebrow: z.string(),
     title: z.string(),
     body: z.string(),
-    reflectionQuestion: z.string().optional(),
+    reflectionQuestion: REFLECTION_QUESTION_SCHEMA.optional(),
     evidence: z.array(z.string()).length(2),
     caveat: z.string(),
     confidence: z.enum(['high', 'medium', 'low']),
     score: z.number(),
   })
   .strict()
+  .superRefine((insight, context) => {
+    const hasReflectionQuestion = insight.reflectionQuestion !== undefined
+    if (insight.order === 3 && !hasReflectionQuestion) {
+      context.addIssue({
+        code: 'custom',
+        path: ['reflectionQuestion'],
+        message: 'Order 3 hypothesis insights require a reflection question',
+      })
+    }
+    if (insight.order !== 3 && hasReflectionQuestion) {
+      context.addIssue({
+        code: 'custom',
+        path: ['reflectionQuestion'],
+        message: 'Only order 3 hypothesis insights may carry a reflection question',
+      })
+    }
+  })
 
 /**
  * The public sink accepts only flat scalar/scalar-array values. Parallel arrays
@@ -39,7 +60,7 @@ export const V2_DEMO_PAYLOAD_SCHEMA = z
     insightReflectionQuestions: z.tuple([
       z.literal(''),
       z.literal(''),
-      z.string().min(1).max(240),
+      REFLECTION_QUESTION_SCHEMA,
     ]),
     insightEvidenceOne: z.array(z.string()).length(INSIGHT_COUNT),
     insightEvidenceTwo: z.array(z.string()).length(INSIGHT_COUNT),

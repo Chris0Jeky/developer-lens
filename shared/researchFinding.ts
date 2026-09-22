@@ -74,7 +74,7 @@ export type LimitationCode = keyof typeof LIMITATIONS
 export const UNSUPPORTED_CLAIMS = {
   real_repository_validity: 'This result does not establish validity on real repositories.',
   person_level_inference: 'No person-level inference is supported or attempted.',
-  model_promotion: 'This rejected trial cannot promote a model.',
+  model_promotion: 'This trial does not promote a model.',
   online_pelt_performance: 'Offline PELT markers do not establish online performance.',
 } as const
 export type UnsupportedClaimCode = keyof typeof UNSUPPORTED_CLAIMS
@@ -147,6 +147,9 @@ const ResearchFindingContentSchema = z.strictObject({
 }).superRefine((value, ctx) => {
   if (value.methods.baseline.method_code === value.methods.candidate.method_code) ctx.addIssue({ code: 'custom', path: ['methods'], message: 'baseline and candidate methods must be distinct' })
   if (value.methods.baseline.method_code === 'pelt_offline' || value.methods.candidate.method_code === 'pelt_offline') ctx.addIssue({ code: 'custom', path: ['methods'], message: 'pelt_offline is reserved for a future offline metric schema' })
+  if (!/\S/u.test(value.finding.title)) ctx.addIssue({ code: 'custom', path: ['finding', 'title'], message: 'finding title must contain a non-whitespace character' })
+  if (!/\S/u.test(value.finding.question)) ctx.addIssue({ code: 'custom', path: ['finding', 'question'], message: 'finding question must contain a non-whitespace character' })
+  if (!/\S/u.test(value.decision.summary)) ctx.addIssue({ code: 'custom', path: ['decision', 'summary'], message: 'decision summary must contain a non-whitespace character' })
   const metricKeys = value.metrics.map((item) => item.key)
   if (new Set(metricKeys).size !== metricKeys.length) ctx.addIssue({ code: 'custom', path: ['metrics'], message: 'metric keys must be unique' })
   if (value.gates) {
@@ -180,7 +183,14 @@ const ResearchFindingContentSchema = z.strictObject({
   } else if (value.decision.retained_fallback !== null) ctx.addIssue({ code: 'custom', path: ['decision', 'retained_fallback'], message: 'non-reject decisions cannot retain a fallback' })
 })
 export const ResearchFindingSchema = ResearchFindingContentSchema.superRefine((value, ctx) => {
-  if (value.provenance.bundle_hash !== computeResearchFindingBundleHash(value)) ctx.addIssue({ code: 'custom', path: ['provenance', 'bundle_hash'], message: 'bundle_hash does not match the canonical artifact body' })
+  let expectedHash: string
+  try {
+    expectedHash = computeResearchFindingBundleHash(value)
+  } catch {
+    ctx.addIssue({ code: 'custom', path: ['provenance', 'bundle_hash'], message: 'artifact body is not valid canonical JSON' })
+    return
+  }
+  if (value.provenance.bundle_hash !== expectedHash) ctx.addIssue({ code: 'custom', path: ['provenance', 'bundle_hash'], message: 'bundle_hash does not match the canonical artifact body' })
 })
 export { ResearchFindingContentSchema }
 export type ResearchFinding = z.infer<typeof ResearchFindingSchema>
@@ -232,14 +242,12 @@ export function computeResearchFindingBundleHash(value: Omit<ResearchFinding, 'p
   return `sha256:${createHash('sha256').update(canonicalizeJson(body), 'utf8').digest('hex')}`
 }
 
-// The handle and email branches are Unicode-aware under the `u` flag. Two identifier forms have
-// already slipped past ASCII-only branches here: GitHub handles may start with a digit
-// (@1 / @123 / @0xdeadbeef), and an email whose domain begins with a non-ASCII character
-// (me@éxample.com, δοκιμή@παράδειγμα.δοκιμή) matched no branch at all (#322). The email branch
-// deliberately carries no `\b` anchors: JavaScript keeps `\b` ASCII-defined even under `u`, so a
-// word boundary never fires beside a non-ASCII run. The handle branch also admits a leading
-// underscore (@_name is valid on several platforms). Over-matching is the safe direction here.
-const DENIED_TOKEN = /(?:@[\p{L}\p{N}_][\p{L}\p{N}_-]{0,38}|[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.\p{L}{2,}|(?:[A-Za-z]:\\|\/|\\)[^\s"']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b)/u
+// The handle and email branches are Unicode-aware under the `u` flag. Several identifier forms
+// have already slipped past narrower branches: digit/underscore-leading handles, non-ASCII domains,
+// RFC 5321 address literals, and symbol-domain addresses. Any `@` followed by a non-separator is
+// therefore denied conservatively; over-matching is the safe direction at this public boundary.
+// The explicit email branch remains as documentation and defense in depth for ordinary addresses.
+const DENIED_TOKEN = /(?:@[^\s@]|[\p{L}\p{N}._%+-]+@[\p{L}\p{N}.-]+\.\p{L}{2,}|(?:[A-Za-z]:\\|\/|\\)[^\s"']+|\b[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+\b)/u
 const DATE_TOKEN = /\b\d{4}-\d{2}-\d{2}\b/
 
 export function researchFindingPrivacyViolations(value: unknown): string[] {

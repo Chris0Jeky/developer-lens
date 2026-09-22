@@ -2,4 +2,5 @@ research-contracts/research-pack/v1/*.json text eol=lf
 research-contracts/method-trial-view/v1/*.json text eol=lf
 research-contracts/method-trial-summary/v1/*.json text eol=lf
 research-contracts/research-finding/v1/*.json text eol=lf
+research-contracts/**/*.md text eol=lf
 public/observatory.js text eol=lf

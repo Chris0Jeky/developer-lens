@@ -1,104 +1,89 @@
 # Developer Lens
 
-Developer Lens turns an authenticated GitHub history into a private, local-first development retrospective. It combines an interactive dashboard with a nine-part Wrapped story, then moves from observable counts to deterministic patterns and explicitly labelled hypotheses.
+**A private, local-first development retrospective for understanding how a body of work evolved.**
 
-It is designed for a question that ordinary contribution graphs cannot answer: **what kind of development system did this body of work become?**
+Developer Lens combines authenticated GitHub history with explicitly selected local Git roots, then turns observable activity into deterministic patterns, evidence walks, and clearly labelled hypotheses. It asks a question ordinary contribution graphs cannot answer:
 
-**[Explore the live synthetic showcase](https://chris0jeky.github.io/developer-lens/)** · no account or private-repository data is present in the hosted artifact.
+> **What kind of development system did this body of work become?**
+
+[Explore the live synthetic showcase](https://chris0jeky.github.io/developer-lens/) ·
+[Product direction](docs/PRODUCT_DIRECTION.md) ·
+[Roadmap](ROADMAP.md) ·
+[Data charter](docs/data-charter.md) ·
+[Showcase walkthrough](docs/SHOWCASE_DEMO.md)
+
+The public site contains invented synthetic projects and events only. It cannot connect to a GitHub account and does not contain a private dashboard, local export, credential, or repository history.
+
+## Product thesis
+
+Developer Lens is not a productivity score, performance monitor, employee-ranking system, or hosted analytics service. It is an evidence-governed retrospective for a developer or team that wants to inspect attention, integration, rhythm, delivery, coverage, and change patterns without pretending those signals measure human worth.
+
+The product keeps four layers separate:
+
+1. **Observed evidence** — what an authenticated source or explicitly selected local repository actually exposed.
+2. **Derived patterns** — deterministic calculations over those observations.
+3. **Hypotheses** — higher-order interpretations with confidence, limitations, counter-evidence, and a question that could change the interpretation.
+4. **Operator decisions** — explicit human choices about sources, capabilities, publication, models, and what to do next.
+
+Missing, censored, stale, restricted, refused, or failed evidence is never silently converted to zero.
 
 ## What it shows
 
-- Six-month and twelve-month views of commits, pull requests, merges, reviews, issues, active days, streaks, languages, and repository concentration.
-- A selectable project constellation sized by attention, pull-request flow, or continuity, including private repositories available to the authenticated GitHub CLI.
-- Development rhythm, burst periods, cross-repository waves, delivery loops, emerging projects, and quiet craft such as tests, docs, refactors, and fixes.
-- A six-axis development DNA and a plain-language builder archetype.
-- A deterministic Signal Lab for integration predictability, change-batch shape, coordination regularity, feedback surface, cadence concentration, and portfolio transitions.
-- Observed facts, derived patterns, and higher-order hypotheses kept visually and semantically distinct; the hypothesis closes with a question about what evidence could change the interpretation, never a score or prescribed action.
-- Evidence trails, confidence labels, coverage limitations, and a local-only privacy boundary on every analytical layer.
-- A share studio for social cards, platform-ready post copy, native share sheets, and self-contained HTML reports.
-- Hover, focus, and touch inspectors for activity days, language weighting, repository bubbles, headline metrics, and chart context.
-- An explorable Wrapped story with swipe navigation, a chapter map, per-chapter deeper reads, and chapter-specific sharing.
-- Authored line-change totals in Wrapped, with additions and deletions kept distinct from code-only or productivity claims.
+- six- and twelve-month activity views across commits, pull requests, merges, reviews, issues, active days, streaks, languages, and repository concentration;
+- a selectable project constellation sized by attention, pull-request flow, or continuity;
+- development rhythm, burst periods, cross-repository waves, delivery loops, emerging projects, and quiet craft such as tests, docs, refactors, and fixes;
+- six-axis development DNA and a plain-language builder archetype;
+- deterministic Signal Lab views for integration predictability, change-batch shape, coordination regularity, feedback surface, cadence concentration, and portfolio transitions;
+- evidence drawers, confidence, source coverage, limitations, missingness, and counter-hypotheses;
+- an interactive dashboard and nine-part Wrapped narrative with deeper reads and chapter-specific sharing;
+- a V2 coverage cockpit, Integration Shape Atlas, and frozen Method Trial worked example;
+- a Share Studio and headless exporter for cards, captions, compact reports, and self-contained portable experiences.
 
-The deterministic engine in `server/analytics.ts` is the durable product: the initial narrative was shaped with an LLM-assisted analysis pass, then generalized into thresholds and cross-signal rules that can rerun without sending data to an LLM.
+The durable analytical engine is deterministic. The original narrative was informed by an LLM-assisted analysis pass, then generalized into rerunnable thresholds and cross-signal rules. Optional future model assistance remains subordinate to the evidence model and deterministic fallback.
 
 ## Public showcase versus private lens
 
-The GitHub Pages site is built from eight invented repositories and deterministic synthetic events. Its deployment job regenerates that data, verifies every subject and repository uses a synthetic identity, rejects repository and pull-request URLs, and scans the built artifact for credential and local-path patterns before upload.
-
-The hosted site cannot connect to a GitHub account. Private analysis is a separate local runtime:
-
-| Surface | Data | Network boundary |
+| Surface | Data | Boundary |
 | --- | --- | --- |
-| Public showcase | Deterministic synthetic events only | Static GitHub Pages files |
-| Local lens | Your authenticated public and private GitHub activity, plus explicitly selected local Git roots | API bound to `127.0.0.1` |
+| Public showcase | Invented C0 synthetic repositories and events | Static GitHub Pages artifact |
+| Local lens | Authenticated public/private GitHub activity plus explicitly selected local Git roots | API bound to `127.0.0.1` |
+| Portable export | Pre-redacted aggregate view selected and acknowledged by the operator | Self-contained local file |
+| CommitAtlas projection | Small product-owned schema, explicitly reviewed for publication | Owner-gated tracked public artifact, never ambient sync |
+| Developer Lens Lab | Separate research environment and method qualification | No automatic promotion into the product |
 
-This split keeps the full interface publicly explorable without making a personal dataset part of the repository, frontend bundle, or Pages artifact.
+The showcase build regenerates its synthetic data, verifies synthetic identities, rejects repository/PR URLs, and scans the built artifact for credentials and local paths before deployment.
 
-## Sharing and export
+The authenticated collector remains local. There is no hosted service holding private history. Hosting-compatibility metadata and the Observatory adapter apply only to the synthetic showcase; the adapter’s endpoint is empty, so collection, consent storage, timers, and requests remain inactive until a separate reviewed activation.
 
-The public showcase can share its canonical URL immediately. Its social preview, downloadable
-1200 × 630 card, captions, compact report, full dashboard, and complete nine-chapter Wrapped are
-generated from synthetic aggregates only.
+## Current product surfaces
 
-The local lens uses a stricter route. Opening Share Studio does not upload anything, and every
-export action stays disabled until you review and acknowledge a redacted preview. The exporter is
-allowlist-based and has two deliberately separate paths:
+### Retrospective dashboard and Wrapped
 
-- Cards, captions, and compact reports receive six aggregate counts and fixed copy.
-- Portable full experiences receive aggregate rhythm, repository, language, delivery, theme, DNA,
-  coverage, and fixed narrative fields through a separate versioned schema. They never serialize
-  the live dashboard, its DOM, its raw insight prose, or the private source dataset.
+The primary interface moves from high-level activity to project structure, integration behavior, development rhythm, themes, DNA, archetype, and evidence-backed narrative. Every analytical statement can carry its source trail and limitations.
 
-A portable export can contain the full seven-section dashboard or all nine Wrapped chapters in one
-self-contained, offline HTML file. It uses relative week labels instead of dates, removes identity,
-URLs, descriptions, topics, pull-request titles, source warnings, paths, and raw events, and creates
-a fresh alias map before rendering. By default, public repository names remain visible while private
-names become aliases such as `Project Aurora`; the stronger option aliases every repository name.
-Changing the artifact or redaction choice requires reviewing the export boundary again.
+### V2 evidence cockpit
 
-The generated PNG and HTML files stay on your device until you deliberately download, copy, or send
-them through the operating system share sheet. Where a browser cannot share HTML files directly,
-Developer Lens downloads the complete file instead. Aliases reduce direct identification but are
-not an anonymity guarantee: distinctive aggregate activity can still be recognisable.
+The V2 path makes coverage and privacy first-class. It uses a local API with exact Host/Origin/fetch-metadata boundaries and a separate synthetic store. It does not turn localhost into a security boundary against other trusted local processes; it closes the browser drive-by surface it declares.
 
-Developer Lens does not provide a hosted URL for a private dashboard. The public link always opens
-the separate synthetic showcase, so it cannot be mistaken for a published version of local data.
+### Integration Shape Atlas
 
-### Headless export
+A deterministic comparative finding shows one matched-window integration question end to end: distribution, tail behavior, counts, limitations, and clickable evidence walks. The hosted version uses invented C1 composition only.
 
-The same artifacts can be produced without a browser. The share, caption, report, and portable
-builders are pure functions, so a command can render them directly:
+### Method Trial
 
-```powershell
-npm run export:artifacts
-```
+The frozen synthetic Method Trial records a candidate method that matched the baseline’s detection rate but produced more false alerts, so the candidate was rejected and the deterministic baseline retained. It demonstrates how the product should present a negative research result without converting “benchmarked” into “shipped.”
 
-With no flags this writes the synthetic showcase set — an overview card, one card per Wrapped
-chapter, all three caption tones, the compact report, the portable dashboard, the portable Wrapped,
-and the dashboard JSON for both ranges — into the gitignored `artifacts/` directory, alongside an
-`export-manifest.json`. Everything it writes is invented C0 data and safe to publish. Use
-`--out <dir>` for another location and `--range 6m` to narrow the run.
+### Share Studio and headless export
 
-A local export uses the same acknowledgement boundary as Share Studio. `--source local` refuses
-unless `--acknowledge-redaction` is also present, defaults to aliasing every repository name rather
-than only private ones, and never writes the local dashboard record, because the export sink in
-[`docs/data-charter.md`](docs/data-charter.md) accepts only a pre-redacted view. Nothing reaches the
-disk until the artifacts pass the same privacy scan the showcase build runs, and the written
-directory is scanned again afterwards; any hit deletes what this command wrote and fails it.
+Cards, captions, reports, portable dashboards, and portable Wrapped files are generated from allowlisted aggregate schemas, not by serializing the live DOM or raw dataset.
 
-Rerunning over the same `--out` replaces that export in place. It only ever removes files the
-previous `export-manifest.json` names: a directory holding anything else — a note left beside an
-export, an unrelated download, a manifest copied into a populated folder — is refused rather than
-cleared. The manifest is an allowlist of file names, not of authorship, so a file you wrote
-yourself under a name the previous export used is still replaced. Keep anything you want to edit
-and keep outside the export directory.
+Local export requires an explicit redaction acknowledgement. The stronger CLI default aliases every repository name. Files are built in memory, scanned before writing, scanned again after writing, and removed if a privacy guard fails. Aliases reduce identification risk but are not an anonymity guarantee.
 
 ## Private by construction
 
-Developer Lens uses your existing `gh` authentication but never reads or persists the token. The API binds to `127.0.0.1`, and collected data stays in the gitignored `.developer-lens/` directory.
+Developer Lens uses the existing `gh` authentication session but never reads or persists the token. Local data stays under the gitignored `.developer-lens/` directory.
 
-The collector deliberately does not retain:
+The collector does not retain:
 
 - repository file contents or diffs;
 - issue or pull-request bodies;
@@ -106,13 +91,15 @@ The collector deliberately does not retain:
 - raw commit subjects;
 - Git credentials or tokens.
 
-Pull-request titles and repository names are retained in the local dataset because they power the activity stream and project views. Do not publish `.developer-lens/`, screenshots, or exported browser data without reviewing them first.
+Repository names and pull-request titles may remain in the private local dataset because they power project and activity views. Do not publish `.developer-lens/`, raw screenshots, or browser exports without reviewing them.
 
-Local Git history is opt-in. Only roots supplied with `--local-root` or `DEV_LENS_LOCAL_ROOTS` are scanned, and only aggregated commit features are written. The scanner never searches the machine by default.
+Local Git history is opt-in. Only roots supplied through `--local-root` or `DEV_LENS_LOCAL_ROOTS` are scanned, and only aggregate commit features are written. Developer Lens never searches the machine for repositories by default. Local attribution uses configured email identities, not ambiguous author-name matching.
 
-## Run it
+The source/capability system is designed around explicit purpose, data class, consent, retention, deletion, sink, budget, and refusal behavior. “Available in code” does not mean active.
 
-Prerequisites: Node.js 20+, Git, and an authenticated [GitHub CLI](https://cli.github.com/) session with access to the private repositories you want included.
+## Run the private local lens
+
+Requirements: Node.js 20+, Git, and an authenticated GitHub CLI session with access to the repositories you want included.
 
 ```powershell
 npm install
@@ -121,135 +108,84 @@ npm run collect -- --local-root "C:\path\to\repos"
 npm run dev
 ```
 
-Open <http://127.0.0.1:5173>. The web port is pinned, so a busy 5173 makes Vite refuse to start
-rather than move to 5174 — a moved port is not on the V2 Host allowlist and every `/api/v2` request
-would fail closed for a reason that looks nothing like a port collision. The API stays on
-`http://127.0.0.1:4141` (set `DEVELOPER_LENS_PORT` to move it; the dev proxy follows), and Vite
-proxies `/api` during development.
+Open `http://127.0.0.1:5173`.
 
-### Try the offline V2 demo
+- The web port is pinned; if 5173 is busy, Vite fails rather than silently moving outside the V2 Host allowlist.
+- The API defaults to `http://127.0.0.1:4141`; `DEVELOPER_LENS_PORT` can move it and the development proxy follows.
+- With no private dataset, the UI falls back to a clearly labelled synthetic demo rather than presenting synthetic evidence as real.
 
-The repeatable synthetic journey needs no API server, GitHub authentication, account, repository, or local-history data:
+By default, collection produces six- and twelve-month lenses. Pass `--range 6m` to narrow a run. Multiple local roots may be repeated or set through `DEV_LENS_LOCAL_ROOTS` as documented in `.env.example`.
+
+## Explore without private data
+
+Run the offline V2 demo:
 
 ```powershell
 npm run dev:web
 ```
 
-Open <http://127.0.0.1:5173/?demo=v2>. To run its focused smoke coverage without starting a server:
+Open `http://127.0.0.1:5173/?demo=v2`.
+
+Other deterministic routes:
+
+- `/?view=cockpit-v2` — V2 coverage and privacy cockpit after `npm run seed:v2`;
+- `/?view=integration-shape` — invented comparative integration finding;
+- `/?view=method-trial` — frozen candidate-versus-baseline decision story.
+
+The Integration Shape and Method Trial routes also work in the hosted synthetic showcase. They require no API, account, local data, Lab process, or generated private artifact.
+
+## Export deliberately
 
 ```powershell
-npm run test:demo:v2
+npm run export:artifacts
 ```
 
-### Try the V2 coverage cockpit
+With no flags, the command writes a complete synthetic showcase set into the gitignored `artifacts/` directory: overview/chapter cards, caption tones, report, portable dashboard, portable Wrapped, dashboard JSON, and a manifest for both ranges.
 
-Run `npm run seed:v2` to write the invented coverage fixtures into
-`.developer-lens-synthetic/` (a gitignored directory kept separate from the private
-`.developer-lens/` runtime data), start `npm run dev`, and open
-<http://127.0.0.1:5173/?view=cockpit-v2>.
+A local export refuses unless the operator supplies `--source local --acknowledge-redaction`. It defaults to aliasing every repository name and never writes the raw local dashboard record. Re-running an export removes only files named by its previous manifest and refuses to clear an unrelated populated directory.
 
-The browser needs no token. The cockpit fetches `/api/v2` same-origin and the API authenticates it
-on the exact Host allowlist plus the browser's own `Sec-Fetch-*` metadata, which a page on another
-origin cannot forge. Nothing credential-shaped is read from `import.meta.env`, so nothing can be
-inlined into a bundle.
+The public URL always opens the separate synthetic showcase. Developer Lens does not create a hosted URL for a private dashboard.
 
-A **non-browser** caller (curl, a script) can either send a bearer — export
-`DEVELOPER_LENS_V2_TOKEN` (32-256 characters from `[A-Za-z0-9._-]`) before starting the server,
-then send `Authorization: Bearer <that value>` **plus an allowlisted `Origin` header** (the guard
-rejects a metadata-free request with no Origin before it reads any credential) — or simply set
-the three same-origin `Sec-Fetch-*` headers itself; the two channels are deliberately equivalent.
-A working example against the API's own origin:
+## Analysis pipeline
 
-```bash
-curl -H "Sec-Fetch-Site: same-origin" -H "Sec-Fetch-Mode: cors" -H "Sec-Fetch-Dest: empty" http://127.0.0.1:4141/api/v2/coverage
-```
+1. **Collection** — authenticated repository enumeration, contribution connections, commit history, GitHub search enrichment, and optional local Git refs.
+2. **Normalization** — repository/SHA deduplication, calendars, weekly series, language shares, delivery timings, line-change totals, and effective-repository concentration.
+3. **Inference** — deterministic cross-signal rules emitting evidence, confidence, limitation, and counter-hypothesis.
+4. **Presentation** — local API, dashboard, Wrapped, evidence drawers, and reviewed exports without embedding private data in the frontend bundle.
 
-Neither channel is a defence against a process already on your machine, and none is claimed:
-what the Host/Origin allowlists and the fetch-metadata proof defend is the browser drive-by
-surface, where a page on another origin cannot forge those headers. The API binds to `127.0.0.1`
-and serves only the synthetic store.
+GitHub imposes real visibility limits: search caps, grouped or omitted restricted activity, nested pagination, deleted/force-pushed history, and default-branch-only statistics. Developer Lens lowers coverage and displays the exact warning when a source edge is encountered.
 
-### Try the Integration Shape Atlas
+Line totals are additions and deletions observed through authenticated weekly contributor statistics. They include code, tests, docs, configuration, and generated files; they are not code-only output or productivity.
 
-<http://127.0.0.1:5173/?view=integration-shape> renders one deterministic comparative finding end to
-end — the question, the matched-window comparison, the distribution and its tail, every honest
-count, and the limitations — where every analytic number is a button that opens the Evidence Drawer
-on its complete evidence walk. It needs no API and no data: the facts are the invented C1
-composition in `shared/integrationShape.ts`, so it works on the hosted showcase too. Both this route
-and the cockpit are linked from the dashboard's *Coverage & privacy* section.
+## Direction
 
-### Try the Method Trial
+### Now: release the truthful baseline
 
-<http://127.0.0.1:5173/?view=method-trial> tells the complete synthetic WB-C1 decision story: the
-Gaussian BOCPD candidate matched the rolling median/MAD baseline's `0.75` detection rate, but raised
-false alerts from `2.966666666666667` to `4.2` per year, so the candidate was rejected and the
-deterministic baseline remained. The route is lazy, fixture-driven, and offline-capable. It needs no
-API, lab process, Python environment, GitHub account, or generated `.dllab` directory, and the
-committed C0 fixture is checked against both the normative product runtime semantics and its
-generated structural transport schema. The standalone schema is not semantic acceptance on its
-own; producers must also enforce the runtime-equivalent cross-field rules before publication.
+The first tagged baseline is built from the existing synthetic showcase, V2 cockpit, frozen Method Trial, local retrospective, export boundary, licensing, and release evidence. The repository currently has no public GitHub release; owner-controlled tag/publication gates remain authoritative.
 
-The route is also available in the
-[hosted synthetic showcase](https://chris0jeky.github.io/developer-lens/?view=method-trial) and from
-the dashboard's *Coverage & privacy* section. For the prepared 5-8 minute Method Trial walkthrough,
-with the earlier 3-5 minute V2 story retained as a fallback, use the
-[`showcase demo runbook`](docs/SHOWCASE_DEMO.md). It gives the exact routes, decision-focused talk
-track, boundary to state aloud, reproducibility checks, and claims that must not be presented as
-live.
+### Next: one integrated evidence vertical
 
-By default, `collect` produces both the six-month and twelve-month lenses. To refresh only one range:
+The first deeper vertical asks how long integration work takes to land and what the tail looks like. It combines survival analysis, censoring, competing outcomes, matched eras, uncertainty, evidence walks, and counter-hypotheses. A synthetic route can be public; local analysis stays local.
 
-```powershell
-npm run collect -- --range 6m --local-root "C:\path\to\repos"
-```
+### Then: explicit capability profiles
 
-Multiple roots can be supplied repeatedly or through the semicolon-separated environment variable documented in `.env.example`:
+Actions, Deployments, and Source Structure can form a core opt-in profile for selected repositories. Dependencies, security aggregates, discussions, text-rich inspection, model assistance, team mode, and external sinks remain separate capabilities with their own consent, budget, retention, deletion, and refusal rules.
 
-```powershell
-npm run collect -- --local-root "C:\work" --local-root "D:\projects"
-```
+### Later: recommendations and packaging
 
-Local attribution uses `git config --global user.email` only—never an ambiguous author-name match. If you have used additional email identities, list them explicitly in `DEV_LENS_GIT_EMAILS` as shown in `.env.example`.
+Deterministic local recommendations come first and trigger only when the analysis materially changes. Optional model-generated hypotheses remain labelled, bounded by cost/authority, and backed by deterministic operation. Packaging may later include Lab distribution, a thin `gh` launcher, CLI, and desktop shell; none is claimed today.
 
-To run the built application locally:
+Read [PRODUCT_DIRECTION.md](docs/PRODUCT_DIRECTION.md), [ROADMAP.md](ROADMAP.md), and [PROGRAMME_ROADMAP.md](docs/PROGRAMME_ROADMAP.md).
 
-```powershell
-npm run build
-npm start
-```
+## Cross-project contracts
 
-When no private dataset exists, the UI intentionally falls back to a clearly labelled synthetic demo rather than failing or silently pretending that demo data is real.
+- Developer Lens owns analysis semantics and redaction.
+- Developer Lens Lab owns method research and qualification; it cannot emit “ship” as a research decision.
+- CommitAtlas consumes only pinned, product-owned, public-compatible projections and never fetches the private lens.
+- Pulseboard may observe the synthetic public showcase only through a separately reviewed content-free adapter; it does not receive private/local analysis.
+- Taskdeck integration remains a reviewed proposal/activation path rather than ambient task creation.
 
-To build exactly the privacy-checked artifact used by GitHub Pages:
-
-```powershell
-npm run build:showcase
-```
-
-The generated JSON stays ignored and is rebuilt during deployment.
-
-## Analysis model
-
-The pipeline has four layers:
-
-GitHub line totals use authenticated contributor additions and deletions from weekly statistics for default-branch commits. Boundary weeks are included, and the metric covers changed lines across code, tests, docs, configuration, and generated files.
-
-1. **Collection** — contribution connections, authenticated repository enumeration, per-repository commit history, GitHub search enrichment, and optional local Git refs.
-2. **Normalization** — exact repository-and-SHA commit deduplication, activity calendars, weekly series, language shares, delivery timings, and effective-repository concentration.
-3. **Inference** — deterministic rules combine independent signals into observed, derived, and hypothesis-level insights. Every rule emits evidence, confidence, and a limitation.
-4. **Presentation** — the local API serves the dashboard and Wrapped narrative without embedding the private dataset in the frontend bundle.
-
-GitHub has important visibility limits. Search endpoints cap some result sets at 1,000, contribution connections can group or omit restricted activity, review depth can exceed nested pagination, and deleted or force-pushed history may no longer be observable. Developer Lens lowers its source-coverage score and shows the exact warning when one of those edges is encountered.
-
-This is a reflection on attention and integration patterns—not a productivity score, quality judgment, or measure of human value.
-
-## License
-
-Copyright (C) 2026 Cristian Tcaci. Developer Lens is licensed under
-[GNU AGPL v3.0 only](LICENSE) (`AGPL-3.0-only`).
-
-For commercial conversations, see [COMMERCIAL_OPTION.md](COMMERCIAL_OPTION.md). It states intent
-only and does not set commercial terms.
+The `DeveloperLensMethodTrialSummary.v1` and `ResearchFindingProjection.v1` contracts demonstrate this producer-first model: the product defines semantic acceptance; producers satisfy it; consumers validate the pinned artifact.
 
 ## Verification
 
@@ -258,75 +194,25 @@ npm run check
 npm run build:showcase
 ```
 
-`check` runs Oxlint, the analytics/API/UI test suite, TypeScript project builds, and the production Vite build. `build:showcase` additionally exports both synthetic ranges, builds with the GitHub Pages base path, verifies the public-data identity boundary, and scans the artifact for secret and local-path patterns. The API tests also prove localhost-only binding behavior and that demo fallback remains explicit.
+`check` runs Oxlint, analytics/API/UI tests, TypeScript builds, and the production build. `build:showcase` exports synthetic ranges, builds for GitHub Pages, verifies the public identity boundary, and scans for secrets and local paths. External tags are rejected for the separately generated portable report; the repository does not yet claim a dist-wide external-resource scan for the complete showcase artifact.
 
-## Continuing development
+For continued development, start with [CLAUDE.md](CLAUDE.md); [AGENTS.md](AGENTS.md) is the Codex adapter. The analyser programme’s `CURRENT_STATE.md` is the live resume artifact. `HUMAN_TODO.md` is the only source for owner decisions.
 
-Start with [`CLAUDE.md`](CLAUDE.md) (the shared canon; [`AGENTS.md`](AGENTS.md) is the Codex
-adapter), then invoke the tracked continuation skill for your runtime —
-[`$developer-lens-continuation`](.agents/skills/developer-lens-continuation/SKILL.md) for Codex or
-[`developer-lens-continuation`](.claude/skills/developer-lens-continuation/SKILL.md) for Claude. Those
-surfaces tell a fresh agent how to refresh live state and route information without reading every
-historical document.
+## Documentation map
 
-Owner decisions live only in [`HUMAN_TODO.md`](HUMAN_TODO.md). G1/G2 are approved and G3 has
-standing approval within the named capability boundaries; runtime activation still needs a bounded,
-tested task. G4 is approved only for the default-off OpenAI `gpt-5.6-luna` contract in the data
-charter; `cap.external.model` remains `never_authorized`. The request builder and HTTP adapter are
-published but uncalled, so external-model transmission stays absent until a separately reviewed
-activation task binds the card, payload preview, credential, and one-call wrapper.
+- [Product direction](docs/PRODUCT_DIRECTION.md)
+- [Roadmap](ROADMAP.md)
+- [Programme roadmap](docs/PROGRAMME_ROADMAP.md)
+- [Owner constitution](docs/OWNER_CONSTITUTION.md)
+- [Data charter](docs/data-charter.md)
+- [Source/capability matrix](docs/source-capability-matrix.md)
+- [V2 architecture](docs/DEVELOPER_LENS_V2_ARCHITECTURE.md)
+- [Current analyser state](docs/analyser-program/CURRENT_STATE.md)
+- [Implementation ledger](docs/IMPLEMENTATION_LEDGER.md)
+- [Showcase demo](docs/SHOWCASE_DEMO.md)
 
-The durable document roles are deliberately separate:
+## License
 
-- [`docs/data-charter.md`](docs/data-charter.md) — product/data boundary, classes, retention,
-  migration, deletion, and sinks.
-- [`docs/source-capability-matrix.md`](docs/source-capability-matrix.md) — source-specific purpose,
-  consent, class, retention, deletion, and refusal behavior.
-- [`docs/DEVELOPER_LENS_V2_ARCHITECTURE.md`](docs/DEVELOPER_LENS_V2_ARCHITECTURE.md) — stable design
-  and phase dependencies.
-- [`docs/analyser-program/CURRENT_STATE.md`](docs/analyser-program/CURRENT_STATE.md) — live state
-  and the exact resume point (the single resume artifact).
-- [`docs/IMPLEMENTATION_LEDGER.md`](docs/IMPLEMENTATION_LEDGER.md) — historical evidence archive
-  (per-slice proofs, run IDs, residual risks).
-- [`docs/SHOWCASE_DEMO.md`](docs/SHOWCASE_DEMO.md) — the concise synthetic-demo talk track,
-  verification commands, and honest claim boundary.
-- [`docs/POST_DEMO_HARDENING.md`](docs/POST_DEMO_HARDENING.md) — deferred security, privacy,
-  resilience, and distribution work.
-- [`docs/analyser-program/`](docs/analyser-program/00_PRODUCT_BRIEF.md) — the 2026-08-04
-  intelligence-platform planning programme (non-authoritative proposal space): product brief,
-  ADRs, catalogs, delivery roadmap, and the Taskdeck starter pack. Accepted stable deltas live in
-  the architecture document's Appendix I.
-- [`docs/OVERNIGHT_EXECUTION_PROMPT.md`](docs/OVERNIGHT_EXECUTION_PROMPT.md) — a copy-ready Sol
-  Ultra dynamic-swarm launcher that saturates useful Luna lanes and replenishes them without
-  becoming a competing policy/state file.
-- [`docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md`](docs/SOL_ULTRA_DEEP_DISCOVERY_PROMPT.md) — historical
-  research input only; do not use it as live continuation authority.
+Copyright (C) 2026 Cristian Tcaci. Developer Lens is licensed under [GNU AGPL v3.0 only](LICENSE) (`AGPL-3.0-only`).
 
-Validate this context map, internal links, instruction budget, skill metadata, and gate-state parity
-with:
-
-```powershell
-npm run verify:context
-```
-
-## Code map
-
-- `scripts/collect.ts` — collection orchestration and private dataset writes.
-- `scripts/exportDemo.ts` — deterministic public showcase generation.
-- `scripts/exportArtifacts.ts` — headless share/report/portable export with a gated local lane.
-- `scripts/exportPrivacyGuards.ts` — the forbidden-pattern scanner and export boundary assertions
-  shared by the showcase verifier and the headless exporter.
-- `scripts/verifyShowcase.ts` — structural privacy assertions and artifact scanning.
-- `server/github.ts` — authenticated GitHub ingestion.
-- `server/localGit.ts` — explicitly scoped local Git enrichment.
-- `server/storage/` — V2 SQLite contracts and synthetic importer proof, plus the storage-v3
-  shadow migration/sweep engine, deletion planner, and installation-key seam (tested, not yet on
-  any production path — see `docs/analyser-program/CURRENT_STATE.md`).
-- `server/connectors/`, `server/externalModel/` — the bounded github.core and external-model
-  activation foundations (default-off; no production caller).
-- `server/analysisPack/` — deterministic C1 Parquet pack/replay foundation (no production caller).
-- `server/analytics.ts` — deterministic statistics, classifications, and higher-order rules.
-- `server/index.ts` — localhost-only API and production host.
-- `src/` — responsive dashboard, Wrapped experience, and offline V2 demo.
-- `shared/` — raw/presentation plus privacy, capability, coverage, and provenance contracts.
-- `.github/workflows/pages.yml` — full gate, privacy-checked showcase build, and Pages deployment.
+For commercial conversations, see [COMMERCIAL_OPTION.md](COMMERCIAL_OPTION.md). It states intent only and does not establish commercial terms.

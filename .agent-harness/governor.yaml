@@ -9,7 +9,7 @@ owner_policy:
   received: '2026-08-08'
   focus_weights: { research: 7, story_product: 5, distribution: 3, community: 2, realdata_standalone: 0 }
   locked_red_lines: [missingness-honesty, deterministic-fallback, model-output-labelling,
-                     secret-prohibition, private-output-locality]
+                     secret-prohibition, private-output-locality, raw-input-non-execution]
 authority_files:
   tier: .agent-harness/tier.json
   human_actions: HUMAN_TODO.md

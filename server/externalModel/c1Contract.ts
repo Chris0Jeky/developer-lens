@@ -132,18 +132,12 @@ export const C1RangeSchema = z.object({
   }
   if (start === null || end === null) return
   const startDate = new Date(start)
-  const maximumEnd = Date.UTC(
-    startDate.getUTCFullYear() + 3,
-    startDate.getUTCMonth(),
-    Math.min(
-      startDate.getUTCDate(),
-      new Date(Date.UTC(startDate.getUTCFullYear() + 3, startDate.getUTCMonth() + 1, 0)).getUTCDate(),
-    ),
-    startDate.getUTCHours(),
-    startDate.getUTCMinutes(),
-    startDate.getUTCSeconds(),
-    startDate.getUTCMilliseconds(),
-  )
+  const maximumEndDate = new Date(start)
+  maximumEndDate.setUTCFullYear(startDate.getUTCFullYear() + 3)
+  if (maximumEndDate.getUTCMonth() !== startDate.getUTCMonth()) {
+    maximumEndDate.setUTCDate(0)
+  }
+  const maximumEnd = maximumEndDate.getTime()
   if (end > maximumEnd) {
     context.addIssue({ code: 'custom', path: ['end'], message: 'range_too_large' })
   }
