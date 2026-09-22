@@ -387,7 +387,7 @@ export const WhyExplanationTreeSchema = z.strictObject({
 }).superRefine((tree, context) => {
   const projectedScopeId = tree.scope.kind === 'scope'
     ? tree.scope.scopeId
-    : tree.scope.targetKind === 'scope'
+    : tree.scope.targetKind === 'scope' && tree.scope.reason === 'MISSING_SCOPE'
       ? tree.scope.targetId
       : null
   if (projectedScopeId !== tree.claim.scopeId) {
@@ -437,6 +437,15 @@ export const WhyUnresolvableSchema = z.strictObject({
       path: ['claimId'],
       message: 'unresolvable claim id disagrees with its reason',
     })
+  }
+  for (const [index, event] of projection.lineage.entries()) {
+    if (projection.claimId === null || event.subjectId !== projection.claimId) {
+      context.addIssue({
+        code: 'custom',
+        path: ['lineage', index, 'subjectId'],
+        message: 'unresolvable lineage event does not name its claim',
+      })
+    }
   }
 }) satisfies z.ZodType<WhyUnresolvable>
 
