@@ -291,7 +291,14 @@ function preflightSource(db: Database.Database, installationKey: Buffer): void {
     if (JSON.stringify(readSchemaCatalog(db)) !== JSON.stringify(expectedSourceCatalog(hasImportKeyBinding))) {
       fail('SOURCE_SCHEMA_REFUSED')
     }
-    if (hasImportKeyBinding) assertImportKeyBinding(db, installationKey)
+    if (hasImportKeyBinding) {
+      assertImportKeyBinding(db, installationKey)
+    } else if (Number(db.prepare('SELECT COUNT(*) FROM import_run').pluck().get()) > 0) {
+      // Only the v1 importer writes import_run, and it always pins the key in the same
+      // transaction; an import-run store without its pin has had the pin removed, so its
+      // provenance cannot be tied to this installation key.
+      fail('SOURCE_SCHEMA_REFUSED')
+    }
   } catch (error) {
     if (error instanceof StorageV3ShadowRewriteError) throw error
     fail('SOURCE_SCHEMA_REFUSED')

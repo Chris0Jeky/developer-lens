@@ -28,11 +28,21 @@ export const TASK_INSTALLATION_KEY_ERROR_CODE = 'INVALID_TASK_INSTALLATION_KEY' 
  */
 export const TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE =
   'TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM' as const
+/**
+ * `link` was refused for a reason the errno cannot attribute: EPERM covers both a filesystem without
+ * hard links and an ordinary permission/ACL/lock refusal, and EXDEV inside one task directory means
+ * the two names resolved to different volumes (a mount or path swap), not a capability fact. Nothing
+ * is published; the caller must investigate rather than assume an unsupported filesystem.
+ */
+export const TASK_INSTALLATION_KEY_LINK_REFUSED_CODE = 'TASK_INSTALLATION_KEY_LINK_REFUSED' as const
 export type TaskInstallationKeyErrorCode =
   | typeof TASK_INSTALLATION_KEY_ERROR_CODE
   | typeof TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE
-/** errno values meaning "this filesystem cannot create the hard link", not "the path is taken". */
-const HARD_LINK_UNSUPPORTED_ERRNOS = new Set(['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'EXDEV', 'ENOSYS'])
+  | typeof TASK_INSTALLATION_KEY_LINK_REFUSED_CODE
+/** errno values that do mean "this filesystem cannot create the hard link". */
+const HARD_LINK_UNSUPPORTED_ERRNOS = new Set(['ENOTSUP', 'EOPNOTSUPP', 'ENOSYS'])
+/** errno values where `link` was refused but the cause is ambiguous; see LINK_REFUSED above. */
+const HARD_LINK_REFUSED_ERRNOS = new Set(['EPERM', 'EXDEV'])
 
 const INSTALLATION_KEY_BYTES = 32
 const INSTALLATION_KEY_SIZE = 32n
@@ -561,8 +571,9 @@ export const bindTaskInstallationKeyHandle = bindTaskInstallationKeyBody
  * POSIX mode bits (an owner-only ACL is not verified; the #6 follow-up keeps that as an activation
  * precondition). File identity is volume serial plus file index; a zero identity fails closed.
  * Publication requires hard-link support in the task root's filesystem: where `link` reports
- * EPERM/ENOTSUP/EOPNOTSUPP/EXDEV/ENOSYS, setup publishes nothing and refuses with the distinct
- * content-free TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM code.
+ * ENOTSUP/EOPNOTSUPP/ENOSYS, setup publishes nothing and refuses with the distinct content-free
+ * TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM code; EPERM/EXDEV refuse with
+ * TASK_INSTALLATION_KEY_LINK_REFUSED because those errnos do not prove the capability is absent.
  */
 async function setupTaskInstallationKeyCore(
   input: TaskInstallationKeySetupInput,
@@ -652,6 +663,9 @@ async function setupTaskInstallationKeyCore(
       if (errno !== undefined && HARD_LINK_UNSUPPORTED_ERRNOS.has(errno)) {
         throw new TaskInstallationKeyError(TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE)
       }
+      if (errno !== undefined && HARD_LINK_REFUSED_ERRNOS.has(errno)) {
+        throw new TaskInstallationKeyError(TASK_INSTALLATION_KEY_LINK_REFUSED_CODE)
+      }
       throw error
     }
     published = true
@@ -671,8 +685,9 @@ async function setupTaskInstallationKeyCore(
     return createOpaqueHandle(path, key, undefined, true)
   } catch (error) {
     const refusal = error instanceof TaskInstallationKeyError
-      && error.code === TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE
-      ? new TaskInstallationKeyError(TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE)
+      && (error.code === TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM_CODE
+        || error.code === TASK_INSTALLATION_KEY_LINK_REFUSED_CODE)
+      ? new TaskInstallationKeyError(error.code)
       : new TaskInstallationKeyError()
     await abandonIncompleteCreation({
       staging,

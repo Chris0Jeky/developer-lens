@@ -828,10 +828,11 @@ describe('#202 v1-import key pin through the v3 shadow source preflight', () => 
     }
   })
 
-  it('still refuses a foreign extra table, an emptied pin, and a pin with drifted DDL', async () => {
+  it('still refuses a foreign extra table, an emptied, dropped, or drifted pin', async () => {
     const mutations: Record<string, (db: Database.Database) => void> = {
       foreignTable: (db) => db.exec('CREATE TABLE extra_source_table (value TEXT)'),
       emptiedPin: (db) => db.exec('DELETE FROM import_key_binding'),
+      droppedPin: (db) => db.exec('DROP TABLE import_key_binding'),
       driftedPin: (db) => {
         const row = db.prepare('SELECT * FROM import_key_binding').get() as Record<string, unknown>
         db.exec('DROP TABLE import_key_binding')

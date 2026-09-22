@@ -541,11 +541,13 @@ describe('#59 task-owned incomplete-creation recovery', () => {
     }
   }, 60_000)
 
-  it('reports a filesystem without hard links distinctly, content-free, and publishes nothing', async () => {
+  it('reports a filesystem without hard links, or an ambiguous link refusal, distinctly and content-free, publishing nothing', async () => {
     for (const [linkErrorCode, expectedCode] of [
-      ['EPERM', 'TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM'],
       ['ENOTSUP', 'TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM'],
-      ['EXDEV', 'TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM'],
+      ['EOPNOTSUPP', 'TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM'],
+      ['ENOSYS', 'TASK_INSTALLATION_KEY_UNSUPPORTED_FILESYSTEM'],
+      ['EPERM', 'TASK_INSTALLATION_KEY_LINK_REFUSED'],
+      ['EXDEV', 'TASK_INSTALLATION_KEY_LINK_REFUSED'],
       ['EIO', TASK_INSTALLATION_KEY_ERROR_CODE],
     ] as const) {
       const root = await fixtureRoot()
