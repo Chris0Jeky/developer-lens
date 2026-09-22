@@ -1,0 +1,155 @@
+{
+  "schemaVersion": "DeveloperLensIssueManifestPart.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "part": 3,
+  "totalParts": 4,
+  "issues": [
+    {
+      "number": 205,
+      "title": "Distribution ladder: gh launcher, npm CLI, casual-bootstrap desktop shell",
+      "cluster": "future-product",
+      "proposedMilestone": "v0.4-query-distribution",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [
+        "#200"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/205",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 207,
+      "title": "verify:context: parse governor.yaml as YAML instead of key-spelling checks",
+      "cluster": "governance-context",
+      "proposedMilestone": "maintenance",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/207",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 208,
+      "title": "Governor follow-ups from Codex #206 sweep: release-prompt authority reads, post-merge sweep window, dl-reviewer invariant lenses, P1 real-data gating note",
+      "cluster": "governance-context",
+      "proposedMilestone": "maintenance",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/208",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 216,
+      "title": "Prompt OS post-review hardening (non-blocking)",
+      "cluster": "governance-context",
+      "proposedMilestone": "maintenance",
+      "proposedHorizon": "later",
+      "severity": "low",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/216",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 217,
+      "title": "Investigate browser node:crypto externalization and oversized main chunk warnings",
+      "cluster": "platform-hardening",
+      "proposedMilestone": "v0.2-evidence-flagship",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/217",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 221,
+      "title": "Reconcile merged-branch cleanup with the branch-deletion rule",
+      "cluster": "release-truth",
+      "proposedMilestone": "v0.1-release",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/221",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 222,
+      "title": "Add Windows-safe governor maintenance helpers for recurrent proof and cleanup checks",
+      "cluster": "platform-hardening",
+      "proposedMilestone": "maintenance",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/222",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 243,
+      "title": "Count every root-level Markdown fence in current-state validation",
+      "cluster": "governance-context",
+      "proposedMilestone": "maintenance",
+      "proposedHorizon": "later",
+      "severity": "low",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/243",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 246,
+      "title": "Friction log: fold recurring frictions into occurrence updates on existing entries",
+      "cluster": "governance-context",
+      "proposedMilestone": "maintenance",
+      "proposedHorizon": "later",
+      "severity": "low",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/246",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 257,
+      "title": "Harden residual tracked-text guard compatibility",
+      "cluster": "platform-hardening",
+      "proposedMilestone": "maintenance",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/257",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 293,
+      "title": "FR-050 root cause: Windows 8.3 short-path TMP breaks storage-v3 artifact-root identity checks",
+      "cluster": "platform-hardening",
+      "proposedMilestone": "v0.2-evidence-flagship",
+      "proposedHorizon": "later",
+      "severity": "high",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/293",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 294,
+      "title": "Empty local node_modules/.bin let a foreign repository's tsc run npm run build and produce a false red",
+      "cluster": "platform-hardening",
+      "proposedMilestone": "v0.2-evidence-flagship",
+      "proposedHorizon": "later",
+      "severity": "high",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/294",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 298,
+      "title": "v0.1.0 release-prep branch release/prepare-product-v0.1.0-20260818 (54217ff) is unrecoverable",
+      "cluster": "release-truth",
+      "proposedMilestone": "v0.1-release",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [
+        "#200"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/298",
+      "recommendedDisposition": "park-with-trigger"
+    }
+  ]
+}

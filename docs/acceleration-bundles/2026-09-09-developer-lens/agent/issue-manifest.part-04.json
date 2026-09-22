@@ -1,0 +1,155 @@
+{
+  "schemaVersion": "DeveloperLensIssueManifestPart.v1",
+  "generatedAt": "2026-09-09T00:00:00Z",
+  "part": 4,
+  "totalParts": 4,
+  "issues": [
+    {
+      "number": 300,
+      "title": "Headless export: untested post-write cleanup branch and two low-severity argument/IO edges",
+      "cluster": "platform-hardening",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/300",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 304,
+      "title": "Publish PublicLensProjection.v1: schema, C0 fixture, registries, and export-profile",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "candidate-now",
+      "severity": "critical",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/304",
+      "recommendedDisposition": "promote-after-release"
+    },
+    {
+      "number": 313,
+      "title": "Reconcile remaining 14-role taxonomy references",
+      "cluster": "governance-context",
+      "proposedMilestone": "maintenance",
+      "proposedHorizon": "later",
+      "severity": "low",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/313",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 315,
+      "title": "Reconcile retrieval-ladder sequencing and rung-2 acceptance",
+      "cluster": "frozen-research",
+      "proposedMilestone": "research-later",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/315",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 317,
+      "title": "Finish Gate B register and curated capability consistency",
+      "cluster": "governance-context",
+      "proposedMilestone": "v0.3-safe-activation",
+      "proposedHorizon": "later",
+      "severity": "medium",
+      "dependencies": [
+        "#201"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/317",
+      "recommendedDisposition": "park-with-trigger"
+    },
+    {
+      "number": 318,
+      "title": "researchFinding README registry test fails on Windows checkouts (CRLF)",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "candidate-now",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/318",
+      "recommendedDisposition": "promote-after-release"
+    },
+    {
+      "number": 319,
+      "title": "ResearchFinding v1 cannot derive four of its seven exported gates",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "candidate-now",
+      "severity": "high",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/319",
+      "recommendedDisposition": "promote-after-release"
+    },
+    {
+      "number": 320,
+      "title": "model_promotion claim text is reject-specific but admissible on every outcome",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "candidate-now",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/320",
+      "recommendedDisposition": "promote-after-release"
+    },
+    {
+      "number": 321,
+      "title": "ResearchFinding v1 and MethodTrialView v1 disagree on false_alert_improvement",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "candidate-now",
+      "severity": "high",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/321",
+      "recommendedDisposition": "promote-after-release"
+    },
+    {
+      "number": 324,
+      "title": "safeParse throws on lone surrogates instead of reporting a validation issue",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "candidate-now",
+      "severity": "high",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/324",
+      "recommendedDisposition": "promote-after-release"
+    },
+    {
+      "number": 325,
+      "title": "DENIED_TOKEN misses RFC 5321 address literals and emoji-domain emails",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "candidate-now",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/325",
+      "recommendedDisposition": "promote-after-release"
+    },
+    {
+      "number": 326,
+      "title": "ResearchFinding: whitespace-only finding prose passes min(1)",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "candidate-now",
+      "severity": "medium",
+      "dependencies": [],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/326",
+      "recommendedDisposition": "promote-after-release"
+    },
+    {
+      "number": 327,
+      "title": "ResearchFinding: thresholds_nonviable limitation admitted alongside passing selection gates",
+      "cluster": "contract-system",
+      "proposedMilestone": "v0.2-contracts",
+      "proposedHorizon": "candidate-now",
+      "severity": "high",
+      "dependencies": [
+        "#319"
+      ],
+      "url": "https://github.com/Chris0Jeky/developer-lens/issues/327",
+      "recommendedDisposition": "promote-after-release"
+    }
+  ]
+}
