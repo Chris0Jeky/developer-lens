@@ -146,3 +146,8 @@
   .atlas-panel { background: rgba(255, 255, 255, 0.82); border-color: rgba(0, 0, 0, 0.08); }
   .atlas-stage p, .atlas-stage h4 { color: #1c2333; }
 }
+
+/* Phase E (#174): the change-batch lens sits beneath the integration-shape panel. */
+.atlas-route__main > .atlas-panel + .atlas-panel {
+  margin-top: 2rem;
+}
