@@ -53,13 +53,15 @@ function decodeCssEscapes(value: string): string {
 }
 
 /**
- * WHATWG URL tab/newline stripping plus special-scheme backslash handling,
- * applied after markup character-reference decoding.
+ * WHATWG URL tab/newline stripping plus backslash handling for special schemes
+ * and scheme-relative references, applied after markup character-reference
+ * decoding. Non-special schemes keep backslashes literal, as browsers do.
  */
 function normalizeUrlValue(value: string): string {
   const stripped = decodeMarkupCharacterReferences(value).trim().replace(/[\t\n\r]/gu, '')
   const scheme = /^[A-Za-z][A-Za-z0-9+.-]*:/.exec(stripped)?.[0].toLowerCase()
   if (
+    !scheme ||
     scheme === 'http:' ||
     scheme === 'https:' ||
     scheme === 'ws:' ||
@@ -115,25 +117,34 @@ function firstCssUrlNetworkResource(value: string): string | null {
   return null
 }
 
-function scanCss(relativePath: string, css: string): string[] {
-  const decoded = decodeCssEscapes(css)
-  const violations: string[] = []
+function scanCssText(relativePath: string, text: string, violations: string[]): void {
   const importRanges: Array<readonly [number, number]> = []
 
   CSS_IMPORT_PATTERN.lastIndex = 0
-  for (let match = CSS_IMPORT_PATTERN.exec(decoded); match; match = CSS_IMPORT_PATTERN.exec(decoded)) {
+  for (let match = CSS_IMPORT_PATTERN.exec(text); match; match = CSS_IMPORT_PATTERN.exec(text)) {
     importRanges.push([match.index, match.index + match[0].length])
     const resource = networkUrl(attributeValue(match, 1))
     if (resource) violations.push(`${relativePath}: css @import: ${resource}`)
   }
 
   CSS_URL_PATTERN.lastIndex = 0
-  for (let match = CSS_URL_PATTERN.exec(decoded); match; match = CSS_URL_PATTERN.exec(decoded)) {
+  for (let match = CSS_URL_PATTERN.exec(text); match; match = CSS_URL_PATTERN.exec(text)) {
     if (importRanges.some(([start, end]) => match.index >= start && match.index < end)) continue
     const resource = networkUrl(attributeValue(match, 1))
     if (resource) violations.push(`${relativePath}: css url(): ${resource}`)
   }
 
+}
+
+function scanCss(relativePath: string, css: string): string[] {
+  const violations: string[] = []
+  // Raw and escape-decoded passes are complementary: the raw pass keeps quoted
+  // values with escapes intact (an escaped quote stays inside its string, so the
+  // URL still matches), while the decoded pass exposes evasions hidden in
+  // identifiers and schemes (u\72l(), @\69mport, \68 ttps). Browsers agree with
+  // at least one of the two views on every input, so their union cannot miss.
+  scanCssText(relativePath, css, violations)
+  scanCssText(relativePath, decodeCssEscapes(css), violations)
   return violations
 }
 

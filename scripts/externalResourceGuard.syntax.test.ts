@@ -23,6 +23,8 @@ const cases = [
   ['URL tab normalization', 'index.html', '<img src="ht&#x09;tps://cdn.example.test/image.png">'],
   ['special URL backslashes', 'index.html', String.raw`<img src="https:\\cdn.example.test\image.png">`],
   ['quoted angle bracket', 'index.html', '<img alt="a > b" src="https://cdn.example.test/image.png">'],
+  ['CSS escaped quote inside url()', 'site.css', String.raw`.remote { background: url("https://cdn.example.test/x\22 suffix"); }`],
+  ['scheme-relative backslashes', 'index.html', String.raw`<img src="\\cdn.example.test\image.png">`],
 ] as const
 
 describe('external resource browser-syntax regressions', () => {
