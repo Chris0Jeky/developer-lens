@@ -431,6 +431,11 @@ describe('PublicLensProjection.v1 README', () => {
       return readme.slice(start, end < 0 ? undefined : end)
     }
     const rows = (text: string) => text.split('\n').filter((line) => /^\| `?[^-\s|]/.test(line) && !/^\| (?:code|complete) \|/.test(line)).map((line) => line.slice(1, -1).split('|').map((cell) => cell.trim().replace(/^`|`$/g, '')))
+    // Structure: one title and one of each top-level section, so a spliced or duplicated block fails.
+    expect(readme.match(/^# /gm) ?? []).toHaveLength(1)
+    const topSections = readme.match(/^## .+$/gm) ?? []
+    expect(new Set(topSections).size).toBe(topSections.length)
+    expect(readme).toContain('label matches `^Project [A-Z][a-z]+(?: [1-9][0-9]{0,2})?$`.')
     expect(rows(section('CoverageWarningCode'))).toEqual(Object.entries(COVERAGE_WARNINGS))
     const vectorRows = rows(section('Coverage score vectors')).map(([complete, partial, unavailable, total, admitted]) => [Number(complete), Number(partial), Number(unavailable), Number(total), admitted.split(',').map((value) => Number(value.trim()))])
     for (const [complete, partial, unavailable, total, admitted] of vectorRows as Array<[number, number, number, number, number[]]>) {

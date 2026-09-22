@@ -46,52 +46,7 @@ Field names are camelCase and follow `PortableExportPayload`. Bounds:
 - `repositories`: ≤ 12, ordered by `attentionShare` descending, labels unique. When more than 12
   are observed, the 12 with the largest payload attention share are kept (ties by source order)
   and `summary.repositories` still reports the full count. `label` ≤ 40; a
-  `private-alias` or `masked-alias` label matches `^Project [A-Z][a-z]+(?: [1-9][0-9]{0,2})?# PublicLensProjection.v1
-
-This is the producer-owned, strict `PublicLensProjection.v1` contract: a narrowed projection of
-Developer Lens's `PortableExportPayload` for profile rendering (CommitAtlas). `schema.json` is
-structural transport validation generated from the runtime contract; consumers must also run the
-semantic, `projectionHash` and privacy rules in
-[`shared/lensProjection.ts`](../../../shared/lensProjection.ts) (`PublicLensProjectionSchema`),
-which this README states in full. Every object rejects unknown properties, every code is a closed
-enum, and v1 grows only by a new schema version.
-
-`showcase.fixture.json` is C0 invented data, produced by the real projection function
-(`src/lib/publicLensProjection.ts`) from the synthetic showcase. It is the only fixture; an
-owner's real projection is never a fixture anywhere.
-
-## Data class and producer command
-
-`dataClass` is the data charter's single C-axis. `C0` ⇔ `scope: "public-demo"` ⇔
-`repositoryRedaction: "synthetic"`, and every repository `disclosure` is `synthetic`. `C1` ⇔
-`scope: "redacted-local"`; `private-aliases` admits only `public-name` and `private-alias`
-disclosures, `all-aliases` only `masked-alias`. C2 and above cannot be expressed.
-
-```text
-npm run export:profile                                   # C0 showcase (default)
-npm run export:profile -- --source local --acknowledge-redaction [--range 6m|12m]
-                          [--repository-redaction private-aliases|all-aliases] [--out <dir>]
-```
-
-The command writes `lens-profile.v1.json` plus an `export-manifest.json` through the same Export
-sink as `npm run export:artifacts`: the full contract and a differential canary check run in
-memory, the forbidden-pattern scan runs before and after the write, the written file is re-read
-and re-validated, and a rerun replaces only files its previous manifest names. A local export
-defaults to `private-aliases` and refuses without `--acknowledge-redaction`. The public Pages sink
-is C0-only: the C1 projection is the owner's export and is never a Pages artifact or a fixture.
-
-## Shape and semantics
-
-Field names are camelCase and follow `PortableExportPayload`. Bounds:
-
-- `generatedAt`: canonical UTC seconds, `YYYY-MM-DDTHH:MM:SSZ` (no fractional seconds); the only
-  admitted absolute date. `range` is `6m` or `12m`; `rangeLabel` ≤ 40, relative wording.
-- `summary`: integer `commits`, `mergedPullRequests`, `reviews`, `issues`, `activeDays`,
-  `activeWeeks`, `repositories`, each `0..1,000,000`.
-- `dna`: exactly six entries in the fixed order `focus`, `shipping`, `collaboration`,
-  `consistency`, `breadth`, `stewardship`; `value` is `0..1` (the payload's `0..100` ÷ 100).
-- `archetype`: `name` ≤ 40, `description` ≤ 160.
-.
+  `private-alias` or `masked-alias` label matches `^Project [A-Z][a-z]+(?: [1-9][0-9]{0,2})?$`.
   Labels are truncated to 40 UTF-16 units without splitting a character; a label that repeats an
   earlier one (a shared display name or a shared 40-character prefix) gets the smallest free
   ordinal suffix ` (2)`, ` (3)`, … in output order, its base shortened so the result still fits
