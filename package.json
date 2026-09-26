@@ -25,7 +25,7 @@
     "generate:lens-projection": "node scripts/verifyLocalToolchain.mjs && tsx scripts/generateLensProjection.ts",
     "check:lens-projection": "node scripts/verifyLocalToolchain.mjs && tsx scripts/generateLensProjection.ts --check",
     "verify:toolchain": "node scripts/verifyLocalToolchain.mjs",
-    "build": "npm run verify:toolchain && tsc -b && vite build && npm run verify:no-secrets",
+    "build": "npm run verify:toolchain && tsc -b && vite build && npm run verify:no-secrets && npm run verify:uninstrumented",
     "build:showcase": "npm run verify:toolchain && npm run export:demo && npm run render:social && tsc -b && vite build --base=/developer-lens/ --mode showcase && npm run verify:showcase",
     "start": "node scripts/verifyLocalToolchain.mjs && tsx server/index.ts --production",
     "lint": "node scripts/verifyLocalToolchain.mjs && oxlint .",
@@ -34,6 +34,7 @@
     "test:watch": "node scripts/verifyLocalToolchain.mjs && vitest",
     "verify:context": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyGovernorPolicy.ts && tsx scripts/verifyCurrentStateFenceContract.ts && tsx scripts/verifyIssueTemplates.ts && tsx scripts/verifyProjectContext.ts",
     "verify:no-secrets": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyNoSecretsInDist.ts",
+    "verify:uninstrumented": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyUninstrumentedBuild.ts",
     "verify:showcase": "node scripts/verifyLocalToolchain.mjs && tsx scripts/verifyShowcase.ts",
     "check": "npm run verify:toolchain && npm run lint && npm run verify:context && npm run check:research-pack && npm run check:method-trial-view && npm run check:research-finding && npm run check:lens-projection && npm run test && npm run build"
   },
