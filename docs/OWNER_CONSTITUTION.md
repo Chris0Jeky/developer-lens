@@ -117,7 +117,15 @@ umbrella brand is a later owner choice (N6).
   human/legal gate before substantial external code. Distribution order: source-run → Lab
   `uvx`/PyPI → thin `gh` launcher → npm CLI → casual-bootstrap desktop shell (O3).
 - **Telemetry (O6):** local operational diagnostics first; provider-neutral remote interface
-  disabled by default, opt-in, no raw content, destination is an owner choice.
+  disabled by default, opt-in, no raw content, destination is an owner choice. **Amended
+  2026-09-26 (owner decision, closes HUMAN_TODO q-10(e)):** the synthetic public showcase alone
+  follows Pulseboard `observatory/docs/USAGE_PLAN.md` version 2 (owner decisions
+  Chris0Jeky/Pulseboard::HUMAN_TODO.md::q-13, q-20, q-21): usage counts on; diagnostics and
+  journeys on outside the EEA and after OK in the EEA; the Beta bar and opt-out; GPC/DNT honoured.
+  Every non-showcase build (local, private, dev) and every local dataset, share artifact and
+  portable export stays telemetry-free: the SDK plugin in `vite.config.ts` runs only for
+  `--mode showcase` builds, `npm run verify:uninstrumented` checks the normal `npm run build`
+  output, and `verify:showcase` checks share and portable exports.
 - Full phase sequence, issue dispositions, and release checklist:
   [docs/PROGRAMME_ROADMAP.md](PROGRAMME_ROADMAP.md).
 
@@ -205,7 +213,7 @@ M1=SURV(provisional)  M2=KMAFT  M3=MANY  M4=BOOT  M5=RAW(+poisoning guardrails)
 M6=HYP(direction: ALERT/FORECAST/ACTION later)  M7=MULTI(+significance recommender)
 M8=FORCE  M9=LADDER(non-conservative, all three lanes continuously)  M10=DESC
 O1=AGPL  O2=V01  O3=SOURCE+GH+NPM+UVX+DESKTOP(staged)  O4=RELEASE
-O5=CONTRIB+COC+TEMPL+DISC+ROAD  O6=OPTIN+LOCAL  O7=PORT(→LOCALPRO/CONSULT intent)
+O5=CONTRIB+COC+TEMPL+DISC+ROAD  O6=OPTIN+LOCAL(showcase=PULSEBOARD-V2 2026-09-26)  O7=PORT(→LOCALPRO/CONSULT intent)
 O8=CLOSED  O9=SPLIT
 A1=FULL  A2=BATCH(blend)  A3=15  A4=OPEN  A5=SLT(Fable5=Sol, Opus5-low=Luna, Opus5-high=Terra) CODEX(Luna=W1/W2:PAVED-DIRECTLY-VERIFIABLE; Terra|Sol=JUDGMENT-HEAVY|APPROVED-W3; coordinator=ARCHITECTURE|CONTRACTS|METHODOLOGY|FINAL)
 A6=BRANCH(all three modes)  A7=CI  A8=STATE  A9=CURRENT  A10=TWO

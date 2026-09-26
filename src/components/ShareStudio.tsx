@@ -31,6 +31,7 @@ import {
   type RepositoryRedaction,
 } from '../lib/portableExportPayload'
 import { buildPortableExperienceReport } from '../lib/portableExportReport'
+import { showcaseShareRequested, type ShareChannel } from '../lib/showcaseUsage'
 
 interface ShareStudioProps {
   context: ShareContext
@@ -88,6 +89,11 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
   const caption = useMemo(() => createShareCaption(payload, tone), [payload, tone])
   const publicDemo = payload.scope === 'public-demo'
   const exportAllowed = publicDemo || confirmed
+  // Records only which share control was used (a closed enum), never what was shared.
+  const requested = (channel: ShareChannel, action: () => unknown) => () => {
+    if (exportAllowed || channel === 'link') showcaseShareRequested(publicDemo, channel, context.kind)
+    void action()
+  }
   const portablePayload = useMemo(
     () => createPortableExportPayload(data, {
       aliasSeed,
@@ -400,16 +406,16 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
             </label>
 
             <div className="share-actions">
-              <button className="share-action share-action--primary" disabled={!exportAllowed} onClick={handleNativeShare} type="button">
+              <button className="share-action share-action--primary" disabled={!exportAllowed} onClick={requested('native', handleNativeShare)} type="button">
                 <Send size={17} aria-hidden="true" /> Share externally
               </button>
-              <button className="share-action" disabled={!exportAllowed} onClick={handleCopy} type="button">
+              <button className="share-action" disabled={!exportAllowed} onClick={requested('copy', handleCopy)} type="button">
                 <Clipboard size={17} aria-hidden="true" /> Copy post
               </button>
-              <button className="share-action" disabled={!exportAllowed} onClick={handleDownloadImage} type="button">
+              <button className="share-action" disabled={!exportAllowed} onClick={requested('image', handleDownloadImage)} type="button">
                 <ImageIcon size={17} aria-hidden="true" /> Download image
               </button>
-              <button className="share-action" disabled={!exportAllowed} onClick={handleDownloadReport} type="button">
+              <button className="share-action" disabled={!exportAllowed} onClick={requested('report', handleDownloadReport)} type="button">
                 <FileText size={17} aria-hidden="true" /> Export summary
               </button>
             </div>
@@ -485,10 +491,10 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
               </details>
 
               <div className="share-full__actions">
-                <button className="share-action share-action--primary" disabled={!exportAllowed} onClick={handleSharePortable} type="button">
+                <button className="share-action share-action--primary" disabled={!exportAllowed} onClick={requested('portable-share', handleSharePortable)} type="button">
                   <Share2 size={17} aria-hidden="true" /> Share full experience
                 </button>
-                <button className="share-action" disabled={!exportAllowed} onClick={handleDownloadPortable} type="button">
+                <button className="share-action" disabled={!exportAllowed} onClick={requested('portable-download', handleDownloadPortable)} type="button">
                   <Download size={17} aria-hidden="true" /> Download full file
                 </button>
               </div>
@@ -499,7 +505,7 @@ export function ShareStudio({ context, data, onClose, open }: ShareStudioProps) 
                 <a href={PUBLIC_SHOWCASE_URL} rel="noreferrer" target="_blank">
                   <ExternalLink size={15} aria-hidden="true" /> Open public link
                 </a>
-                <button onClick={handleCopyLink} type="button">
+                <button onClick={requested('link', handleCopyLink)} type="button">
                   <Share2 size={15} aria-hidden="true" /> Copy link
                 </button>
               </div>

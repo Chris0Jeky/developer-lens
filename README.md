@@ -53,7 +53,18 @@ The durable analytical engine is deterministic. The original narrative was infor
 
 The showcase build regenerates its synthetic data, verifies synthetic identities, rejects repository/PR URLs, and scans the built artifact for credentials and local paths before deployment.
 
-The authenticated collector remains local. There is no hosted service holding private history. Hosting-compatibility metadata and the Observatory adapter apply only to the synthetic showcase; the adapter’s endpoint is empty, so collection, consent storage, timers, and requests remain inactive until a separate reviewed activation.
+The authenticated collector remains local. There is no hosted service holding private history. Hosting-compatibility metadata and usage measurement apply only to the synthetic showcase.
+
+### Usage measurement on the public showcase
+
+The public showcase at chris0jeky.github.io/developer-lens loads the Pulseboard SDK (a first-party beta usage measurement shared by the owner's public sites). Local and private builds, your own datasets, share artifacts and portable exports never load it, and the build checks prove that ([observatory/README.md](observatory/README.md)).
+
+- A one-line **Beta** bar at the top of the page names what is collected, with **Choose** and **OK**. Once you choose, it collapses to a small Beta button that reopens the switches.
+- Three categories: **Usage counts** (daily aggregate counts of pages and events, with coarse context such as device class, referral category and country), **Diagnostics** (page-speed timings, JavaScript error summaries, visible time and scroll depth) and **Journeys and product data** (a random id for one browser tab and the ordered showcase events: which view opened, which share control was used, never what was shared).
+- Outside the EEA all three are on by default, and you can turn any of them off. In the EEA, or when the region is unknown, only usage counts are on until you click OK, and nothing is stored on your device before then.
+- Global Privacy Control or Do Not Track turns everything off, silently.
+- No names, e-mail addresses, IP addresses, page URLs or content from any dataset are sent. The showcase data is synthetic.
+- Detailed data (diagnostics and journeys) is kept for 90 days; aggregate counts are currently kept for 14 days.
 
 ## Current product surfaces
 
@@ -191,7 +202,7 @@ Read [PRODUCT_DIRECTION.md](docs/PRODUCT_DIRECTION.md), [ROADMAP.md](ROADMAP.md)
 - Developer Lens owns analysis semantics and redaction.
 - Developer Lens Lab owns method research and qualification; it cannot emit “ship” as a research decision.
 - CommitAtlas consumes only pinned, product-owned, public-compatible projections and never fetches the private lens.
-- Pulseboard may observe the synthetic public showcase only through a separately reviewed content-free adapter; it does not receive private/local analysis.
+- Pulseboard measures usage of the synthetic public showcase only, through the locked SDK artifact the showcase build emits; it never receives private/local analysis, datasets or exports.
 - Taskdeck integration remains a reviewed proposal/activation path rather than ambient task creation.
 
 The `DeveloperLensMethodTrialSummary.v1`, `ResearchFindingProjection.v1` and `PublicLensProjection.v1` contracts demonstrate this producer-first model: the product defines semantic acceptance; producers satisfy it; consumers validate the pinned artifact.
