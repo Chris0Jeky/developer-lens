@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import { defineConfig, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
@@ -54,6 +56,55 @@ function enforceClientChunkBudget(): Plugin {
 }
 
 /**
+ * Pulseboard SDK v3 is emitted into the PUBLIC SYNTHETIC SHOWCASE build only (`--mode showcase`).
+ *
+ * The artifact lives in `observatory/`, not `public/`, because Vite copies `public/` into every
+ * build: a local or private build must contain no copy of the script, no tag loading it and no
+ * collector origin (`scripts/verifyUninstrumentedBuild.ts` proves that after `npm run build`).
+ * For the showcase build the plugin re-checks the artifact against `observatory.lock.json`, emits
+ * it as `pulseboard.js`, and injects the deferred tag plus the empty bar placeholder.
+ */
+export const PULSEBOARD_SDK_SOURCE = 'observatory/pulseboard.js'
+export const PULSEBOARD_SDK_FILE = 'pulseboard.js'
+
+function pulseboardShowcaseOnly(mode: string): Plugin | null {
+  if (mode !== 'showcase') return null
+  let base = '/'
+  return {
+    name: 'developer-lens-pulseboard-showcase-only',
+    apply: 'build',
+    configResolved(config) {
+      base = config.base
+    },
+    transformIndexHtml() {
+      return [
+        {
+          tag: 'div',
+          attrs: { 'data-pulseboard-bar': true, style: 'min-height:2.5rem' },
+          injectTo: 'body-prepend',
+        },
+        {
+          tag: 'script',
+          attrs: { defer: true, src: `${base}${PULSEBOARD_SDK_FILE}` },
+          injectTo: 'head',
+        },
+      ]
+    },
+    generateBundle() {
+      const lock = JSON.parse(readFileSync('observatory.lock.json', 'utf8')) as {
+        installs: Record<string, { sha256: string }>
+      }
+      const source = readFileSync(PULSEBOARD_SDK_SOURCE)
+      const sha256 = createHash('sha256').update(source).digest('hex')
+      if (lock.installs[PULSEBOARD_SDK_SOURCE]?.sha256 !== sha256) {
+        this.error(`${PULSEBOARD_SDK_SOURCE} does not match observatory.lock.json`)
+      }
+      this.emitFile({ type: 'asset', fileName: PULSEBOARD_SDK_FILE, source })
+    },
+  }
+}
+
+/**
  * The dev server port is pinned and the proxy target follows the API's own port resolution (#78).
  *
  * Without `strictPort`, an occupied 5173 silently moves the web app to 5174 — whose Host and
@@ -71,8 +122,8 @@ function apiPort(): number {
 }
 
 // https://vite.dev/config/
-export default defineConfig({
-  plugins: [react(), enforceClientChunkBudget()],
+export default defineConfig(({ mode }) => ({
+  plugins: [react(), enforceClientChunkBudget(), pulseboardShowcaseOnly(mode)],
   build: {
     chunkSizeWarningLimit: CLIENT_CHUNK_BUDGET_BYTES / 1000,
     rolldownOptions: {
@@ -127,4 +178,4 @@ export default defineConfig({
       '/api': `http://127.0.0.1:${apiPort()}`,
     },
   },
-})
+}))
