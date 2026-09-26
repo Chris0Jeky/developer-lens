@@ -62,7 +62,8 @@ function enforceClientChunkBudget(): Plugin {
  * build: a local or private build must contain no copy of the script, no tag loading it and no
  * collector origin (`scripts/verifyUninstrumentedBuild.ts` proves that after `npm run build`).
  * For the showcase build the plugin re-checks the artifact against `observatory.lock.json`, emits
- * it as `pulseboard.js`, and injects the deferred tag plus the empty bar placeholder.
+ * it as `pulseboard.js`, and injects the deferred tag, the empty bar placeholder and the landing
+ * route (`<html data-pulseboard-route="home">`, SDK 3.1).
  */
 export const PULSEBOARD_SDK_SOURCE = 'observatory/pulseboard.js'
 export const PULSEBOARD_SDK_FILE = 'pulseboard.js'
@@ -76,8 +77,12 @@ function pulseboardShowcaseOnly(mode: string): Plugin | null {
     configResolved(config) {
       base = config.base
     },
-    transformIndexHtml() {
-      return [
+    transformIndexHtml(html) {
+      // Every showcase page lands on the dashboard (`home`); Wrapped and Share Studio are overlays
+      // that call `route()` themselves (src/lib/showcaseUsage.ts).
+      const withRoute = html.replace(/<html\b/u, '<html data-pulseboard-route="home"')
+      if (withRoute === html) throw new Error('index.html has no <html> element for data-pulseboard-route')
+      return { html: withRoute, tags: [
         {
           tag: 'div',
           attrs: { 'data-pulseboard-bar': true, style: 'min-height:2.5rem' },
@@ -88,7 +93,7 @@ function pulseboardShowcaseOnly(mode: string): Plugin | null {
           attrs: { defer: true, src: `${base}${PULSEBOARD_SDK_FILE}` },
           injectTo: 'head',
         },
-      ]
+      ] }
     },
     generateBundle() {
       const lock = JSON.parse(readFileSync('observatory.lock.json', 'utf8')) as {

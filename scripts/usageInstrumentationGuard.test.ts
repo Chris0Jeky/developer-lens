@@ -65,6 +65,6 @@ describe('local/private build instrumentation guard', () => {
     const output = execFileSync(process.execPath, [resolve('observatory', 'check.mjs')], {
       encoding: 'utf8',
     })
-    expect(output).toContain('Pulseboard SDK 3.0.0 artifact')
+    expect(output).toContain('Pulseboard SDK 3.1.0 artifact')
   })
 })

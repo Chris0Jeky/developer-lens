@@ -192,6 +192,10 @@ assert(
   /<body>\s*<div data-pulseboard-bar style="min-height:2\.5rem"><\/div>/u.test(showcaseIndex),
   'showcase index.html must open <body> with the empty Pulseboard bar placeholder',
 )
+assert(
+  /<html\b[^>]*\sdata-pulseboard-route="home"[^>]*>/u.test(showcaseIndex),
+  'showcase index.html must declare its landing route with <html data-pulseboard-route="home">',
+)
 const observatoryLock = JSON.parse(await readFile(resolve('observatory.lock.json'), 'utf8')) as {
   installs: Record<string, { sha256: string }>
 }
