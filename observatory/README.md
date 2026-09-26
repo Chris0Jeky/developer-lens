@@ -1,7 +1,7 @@
-# Pulseboard SDK v3.1 (public synthetic showcase only)
+# Pulseboard SDK v3.2 (public synthetic showcase only)
 
 Source: `Chris0Jeky/Pulseboard` `observatory/adapters/build-sdk.mjs`, built for project `developer-lens`
-from Pulseboard `main` at `5b53836` (SDK 3.1.0, issue Chris0Jeky/Pulseboard#105). The artifact is
+from Pulseboard `main` at `3a882cc` (SDK 3.2.0, issue Chris0Jeky/Pulseboard#105). The artifact is
 `observatory/pulseboard.js`; `observatory.lock.json` pins its SHA-256.
 
 ## Where it runs
@@ -39,7 +39,7 @@ blocked or throws.
 
 ## Check and rebuild
 
-- `node observatory/check.mjs` verifies the lock hash, the `pulseboard-sdk 3.1.0` header, the collector
+- `node observatory/check.mjs` verifies the lock hash, the `pulseboard-sdk 3.2.0` header, the collector
   origin `https://pulseboard-observatory.commit-atlas.workers.dev`, the registered routes and events,
   no server constants, no network before mount, and inertness off-origin. `npm test` runs it too.
 - Rebuild from a Pulseboard checkout:
