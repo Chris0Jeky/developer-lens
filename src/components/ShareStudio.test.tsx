@@ -74,6 +74,35 @@ describe('ShareStudio', () => {
     expect(screen.getByText(/public showcase link copied/i)).toBeInTheDocument()
   })
 
+  it('keeps sharing when the showcase SDK throws, and reports only the share channel', async () => {
+    vi.stubEnv('MODE', 'showcase')
+    const track = vi.fn(() => {
+      throw new Error('blocked by an extension')
+    })
+    vi.stubGlobal('Pulseboard', { route: vi.fn(), track })
+    const user = userEvent.setup()
+    const writeText = vi.fn().mockResolvedValue(undefined)
+    Object.defineProperty(window.navigator, 'clipboard', {
+      configurable: true,
+      value: { writeText },
+    })
+    render(
+      <ShareStudio
+        context={{ kind: 'overview' }}
+        data={{ ...dashboard, meta: { ...dashboard.meta, privacy: 'public-demo' as const } }}
+        onClose={() => undefined}
+        open
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: /copy post/i }))
+
+    expect(track).toHaveBeenCalledWith('share.requested', { channel: 'copy', context: 'overview' })
+    expect(writeText).toHaveBeenCalledTimes(1)
+    expect(screen.getByText(/post copy copied/i)).toBeInTheDocument()
+    vi.unstubAllEnvs()
+  })
+
   it('shares the selected full experience as an explicit local file when supported', async () => {
     const user = userEvent.setup()
     const share = vi.fn().mockResolvedValue(undefined)
