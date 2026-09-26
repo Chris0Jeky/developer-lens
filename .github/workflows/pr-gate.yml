@@ -81,3 +81,7 @@ jobs:
 
       - name: Build and privacy-check the synthetic showcase
         run: npm run build:showcase
+
+      - name: Verify the locked Pulseboard SDK artifact
+        # Same check pages.yml runs before upload, so a lock or artifact drift fails the PR, not the deploy.
+        run: node observatory/check.mjs

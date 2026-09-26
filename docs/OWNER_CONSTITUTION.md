@@ -123,8 +123,9 @@ umbrella brand is a later owner choice (N6).
   Chris0Jeky/Pulseboard::HUMAN_TODO.md::q-13, q-20, q-21): usage counts on; diagnostics and
   journeys on outside the EEA and after OK in the EEA; the Beta bar and opt-out; GPC/DNT honoured.
   Every non-showcase build (local, private, dev) and every local dataset, share artifact and
-  portable export stays telemetry-free, verified by `npm run verify:uninstrumented` at the end of
-  `npm run build` and by `verify:showcase` for share and portable exports.
+  portable export stays telemetry-free: the SDK plugin in `vite.config.ts` runs only for
+  `--mode showcase` builds, `npm run verify:uninstrumented` checks the normal `npm run build`
+  output, and `verify:showcase` checks share and portable exports.
 - Full phase sequence, issue dispositions, and release checklist:
   [docs/PROGRAMME_ROADMAP.md](PROGRAMME_ROADMAP.md).
 
