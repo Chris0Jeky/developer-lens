@@ -5,7 +5,7 @@
   "installs": {
     "observatory/pulseboard.js": {
       "project": "developer-lens",
-      "sha256": "23064c327ff9ac732ad9bf0e989f1aea2b277dc30089be9eda62c6359718137b",
+      "sha256": "05b679f0d187b732ed6b1cb79ec89309cbaf5c3b96dd0fa95cd60791d263ca55",
       "release": "unattributed",
       "served_as": "pulseboard.js",
       "builds": ["showcase"]
