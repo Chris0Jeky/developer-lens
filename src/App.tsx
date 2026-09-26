@@ -38,6 +38,7 @@ import {
   percentage,
 } from './lib/format'
 import type { ShareContext } from './lib/sharePayload'
+import { showcaseRoute, showcaseStoryOpened } from './lib/showcaseUsage'
 
 function RangeSwitch({ range, onChange }: { range: RangeKey; onChange: (range: RangeKey) => void }) {
   return (
@@ -117,22 +118,35 @@ function DashboardApp() {
   const [wrappedOpen, setWrappedOpen] = useState(false)
   const [shareLoaded, setShareLoaded] = useState(false)
   const [shareContext, setShareContext] = useState<ShareContext | null>(null)
+  const { data, error, loading } = useDashboard(range)
+  // Showcase usage events fire only for the synthetic public-demo dataset (src/lib/showcaseUsage.ts).
+  const publicDemoData = data?.meta.privacy === 'public-demo'
   const openWrapped = useCallback(() => {
     setWrappedLoaded(true)
     setWrappedOpen(true)
-  }, [])
-  const closeWrapped = useCallback(() => setWrappedOpen(false), [])
-  const openShare = useCallback((context: ShareContext) => {
-    setShareLoaded(true)
-    setShareContext(context)
-  }, [])
-  const closeShare = useCallback(() => setShareContext(null), [])
+    showcaseStoryOpened(publicDemoData, range)
+  }, [publicDemoData, range])
+  const closeWrapped = useCallback(() => {
+    setWrappedOpen(false)
+    showcaseRoute(publicDemoData, 'home')
+  }, [publicDemoData])
+  const openShare = useCallback(
+    (context: ShareContext) => {
+      setShareLoaded(true)
+      setShareContext(context)
+      showcaseRoute(publicDemoData, 'share')
+    },
+    [publicDemoData],
+  )
+  const closeShare = useCallback(() => {
+    setShareContext(null)
+    showcaseRoute(publicDemoData, wrappedOpen ? 'story' : 'home')
+  }, [publicDemoData, wrappedOpen])
   const followDashboardPointer = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
     if (event.pointerType === 'touch') return
     event.currentTarget.style.setProperty('--spotlight-x', `${event.clientX}px`)
     event.currentTarget.style.setProperty('--spotlight-y', `${event.clientY}px`)
   }, [])
-  const { data, error, loading } = useDashboard(range)
   const publicShowcase =
     data?.meta.privacy === 'public-demo' || import.meta.env.VITE_STATIC_DEMO === 'true'
 

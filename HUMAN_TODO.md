@@ -175,7 +175,11 @@ publication route remains active.
   external umbrella brand (N6, later); (c) final five-minute screenshot/video aesthetic sign-off per
   release (H7/T3) — this one BLOCKS each release tag (roadmap P0.5 step 5 precedes the v0.1.0
   tag); (d) choose the Taskdeck immutable ref when the dogfood card activates (T2,
-  after #174); (e) choose any remote telemetry destination and approve its privacy notice (O6);
+  after #174); (e) CLOSED 2026-09-26 — was "choose any remote telemetry destination and approve
+  its privacy notice (O6)"; owner decision "Pulseboard default-on" for the synthetic public
+  showcase only (Pulseboard USAGE_PLAN v2; Pulseboard q-13/q-20/q-21; O6 amended in the
+  constitution; given in chat to the coordinating session and relayed to the implementing PR,
+  #378); local/private builds stay telemetry-free;
   (f) supply/approve npm/PyPI/packaging credentials when distribution reaches those rungs (O3);
   (g) approve any future stable individual-ranking product mode (constitution §2.1 gate);
   (h) approve private hosted URL architecture/provider later (U6). Agents may prepare options for

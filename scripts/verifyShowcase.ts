@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
 import type { DashboardData, RangeKey } from '../shared/types.js'
@@ -20,6 +21,7 @@ import {
   sharePayloadBoundaryViolations,
 } from './exportPrivacyGuards.js'
 import { scanDirectoryForExternalResources } from './externalResourceGuard.js'
+import { usageInstrumentationViolations } from './usageInstrumentationGuard.js'
 import {
   APPROVED_SHOWCASE_REPOSITORY_NAMES,
   isApprovedShowcaseRepositoryIdentity,
@@ -83,6 +85,7 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
   assert(sharePayload.scope === 'public-demo', `${range}: share scope is not public-demo`)
   assertNoViolations(sharePayloadBoundaryViolations(range, sharePayload, shareControlPayload))
   assertNoViolations(renderedShareBoundaryViolations(range, shareOutput))
+  assertNoViolations(usageInstrumentationViolations(`${range} share output`, shareOutput))
 
   for (const artifact of ['dashboard', 'wrapped'] as const) {
     const portablePayload = createPortableExportPayload(dashboard, {
@@ -124,6 +127,9 @@ for (const range of ['6m', '12m'] as RangeKey[]) {
       ),
     )
     assertNoViolations(renderedPortableBoundaryViolations(`${range} portable ${artifact}`, portableOutput))
+    assertNoViolations(
+      usageInstrumentationViolations(`${range} portable ${artifact}`, portableOutput),
+    )
     if (artifact === 'wrapped') {
       assert(
         portableOutput.includes('data-chapter="9"'),
@@ -174,9 +180,35 @@ assert(
 assert(socialCard.readUInt32BE(16) === 1200, 'social card width is not 1200px')
 assert(socialCard.readUInt32BE(20) === 630, 'social card height is not 630px')
 
+// Pulseboard SDK v3 belongs to this synthetic showcase build only: exactly one deferred same-origin
+// tag, the empty bar placeholder as the first body child, and the byte-identical locked artifact.
+const showcaseIndex = await readFile(join(dist, 'index.html'), 'utf8')
+const sdkTags = showcaseIndex.match(/<script\b[^>]*pulseboard[^>]*>/giu) ?? []
+assert(
+  sdkTags.length === 1 && /\sdefer\b/u.test(sdkTags[0]) && /\ssrc="\/developer-lens\/pulseboard\.js"/u.test(sdkTags[0]),
+  `showcase index.html must load /developer-lens/pulseboard.js exactly once with defer: ${sdkTags.join(' ')}`,
+)
+assert(
+  /<body>\s*<div data-pulseboard-bar style="min-height:2\.5rem"><\/div>/u.test(showcaseIndex),
+  'showcase index.html must open <body> with the empty Pulseboard bar placeholder',
+)
+assert(
+  /<html\b[^>]*\sdata-pulseboard-route="home"[^>]*>/u.test(showcaseIndex),
+  'showcase index.html must declare its landing route with <html data-pulseboard-route="home">',
+)
+const observatoryLock = JSON.parse(await readFile(resolve('observatory.lock.json'), 'utf8')) as {
+  installs: Record<string, { sha256: string }>
+}
+const emittedSdk = await readFile(join(dist, 'pulseboard.js'))
+assert(
+  createHash('sha256').update(emittedSdk).digest('hex') ===
+    observatoryLock.installs['observatory/pulseboard.js']?.sha256,
+  'dist/pulseboard.js is not the locked Pulseboard SDK artifact',
+)
+
 assertNoViolations((await scanDirectoryForForbiddenPatterns(dist, forbiddenPatterns)).violations)
 assertNoViolations(await scanDirectoryForExternalResources(dist))
 
 console.log(
-  'Verified synthetic identities, export boundaries, the C0 lens projection and fixture, social card dimensions, secret/path patterns, and external-resource isolation in showcase output.',
+  'Verified synthetic identities, export boundaries, the showcase-only Pulseboard SDK install, the C0 lens projection and fixture, social card dimensions, secret/path patterns, and external-resource isolation in showcase output.',
 )
