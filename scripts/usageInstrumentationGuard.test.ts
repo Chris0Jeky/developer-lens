@@ -1,4 +1,5 @@
 import { execFileSync } from 'node:child_process'
+import { readFileSync } from 'node:fs'
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
@@ -65,6 +66,7 @@ describe('local/private build instrumentation guard', () => {
     const output = execFileSync(process.execPath, [resolve('observatory', 'check.mjs')], {
       encoding: 'utf8',
     })
-    expect(output).toContain('Pulseboard SDK 3.2.0 artifact')
+    const lock = JSON.parse(readFileSync(resolve('observatory.lock.json'), 'utf8')) as { sdk: string }
+    expect(output).toContain(`Pulseboard SDK ${lock.sdk} artifact`)
   })
 })

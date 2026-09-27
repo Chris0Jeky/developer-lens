@@ -11,7 +11,10 @@ export const SHOWCASE_ORIGIN = 'https://chris0jeky.github.io';
 
 const root = new URL('../', import.meta.url);
 const lock = JSON.parse(readFileSync(new URL('observatory.lock.json', root), 'utf8'));
-assert.equal(lock.sdk, '3.2.0', 'The lock must name SDK 3.2.0');
+// The SDK version comes from the lock, so an SDK update that rewrites the lock needs no edit here.
+const SDK_VERSION = lock.sdk;
+assert.match(String(SDK_VERSION), /^\d+\.\d+\.\d+$/, 'The lock must name the SDK version as plain semver');
+const SDK_VERSION_RE = SDK_VERSION.replaceAll('.', '\\.');
 const entries = Object.entries(lock.installs ?? {});
 assert.equal(entries.length, 1, 'The lock records exactly one installed artifact');
 const [target, entry] = entries[0];
@@ -21,7 +24,7 @@ assert.equal(entry.project, 'developer-lens');
 const code = readFileSync(new URL(target, root), 'utf8');
 assert.equal(createHash('sha256').update(code).digest('hex'), entry.sha256, `${target} does not match the lock`);
 assert.ok(!code.includes('\r'), 'The artifact must stay LF-only');
-assert.match(code, /^\/\* SPDX-License-Identifier: GPL-3\.0-only\n \* pulseboard-sdk 3.2.0 for developer-lens\. /, 'Header must name pulseboard-sdk 3.2.0 for developer-lens');
+assert.match(code, new RegExp('^/\\* SPDX-License-Identifier: GPL-3\\.0-only\\n \\* pulseboard-sdk ' + SDK_VERSION_RE + ' for developer-lens\\. '), `Header must name pulseboard-sdk ${SDK_VERSION} for developer-lens`);
 assert.ok(!/MAX_BYTES|MAX_BATCH/.test(code), 'Server-only constants must not be published');
 
 const config = JSON.parse(/^const config = (\{.*\});$/m.exec(code)?.[1] ?? 'null');
@@ -65,7 +68,7 @@ vm.createContext(live.context);
 vm.runInContext(code, live.context);
 const api = live.context.Pulseboard;
 assert.ok(api && Object.isFrozen(api), 'window.Pulseboard must be defined and frozen');
-assert.equal(api.version, '3.2.0');
+assert.equal(api.version, SDK_VERSION);
 assert.deepEqual(Object.keys(api), ['version', 'route', 'count', 'track', 'consent']);
 assert.ok(live.listeners.includes('document:DOMContentLoaded'), 'The SDK must wait for the DOM before mounting');
 assert.deepEqual(live.network, [], 'No network call may happen before mount');
@@ -78,4 +81,4 @@ assert.equal(local.context.Pulseboard.route('story'), false);
 assert.equal(local.context.Pulseboard.track('share.requested', { channel: 'copy' }), false);
 assert.deepEqual(local.network, [], 'An off-origin page must make no network call');
 
-console.log('Pulseboard SDK 3.2.0 artifact: lock hash, header, collector origin, registered vocabulary, pre-mount silence and off-origin inertness verified.');
+console.log(`Pulseboard SDK ${SDK_VERSION} artifact: lock hash, header, collector origin, registered vocabulary, pre-mount silence and off-origin inertness verified.`);
