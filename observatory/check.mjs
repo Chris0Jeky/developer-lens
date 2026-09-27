@@ -11,9 +11,10 @@ export const SHOWCASE_ORIGIN = 'https://chris0jeky.github.io';
 
 const root = new URL('../', import.meta.url);
 const lock = JSON.parse(readFileSync(new URL('observatory.lock.json', root), 'utf8'));
-// The SDK version comes from the lock, so an SDK update that rewrites the lock needs no edit here.
+// The SDK version comes from the lock, so a minor or patch SDK update that rewrites the lock needs no edit
+// here; a new major must be adopted deliberately.
 const SDK_VERSION = lock.sdk;
-assert.match(String(SDK_VERSION), /^\d+\.\d+\.\d+$/, 'The lock must name the SDK version as plain semver');
+assert.match(String(SDK_VERSION), /^3\.\d+\.\d+$/, 'The lock must name an SDK 3.x.y version; a new major needs a reviewed checker change');
 const SDK_VERSION_RE = SDK_VERSION.replaceAll('.', '\\.');
 const entries = Object.entries(lock.installs ?? {});
 assert.equal(entries.length, 1, 'The lock records exactly one installed artifact');
