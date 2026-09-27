@@ -1,14 +1,16 @@
 {
   "version": "0.2.0",
-  "sdk": "3.2.0",
+  "sdk": "3.3.0",
   "source": "Chris0Jeky/Pulseboard:observatory",
   "installs": {
     "observatory/pulseboard.js": {
       "project": "developer-lens",
-      "sha256": "7fda0f7083c8705c5e23e06170c7b9b2cc934b07a0208c6d2c130b433ccb816d",
+      "sha256": "a1989a54bd59cb7b660e717bca035ce4d7318b5c4ce6c224369a8a25c154eeb0",
       "release": "unattributed",
       "served_as": "pulseboard.js",
-      "builds": ["showcase"]
+      "builds": [
+        "showcase"
+      ]
     }
   }
 }
