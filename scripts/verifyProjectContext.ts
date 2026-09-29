@@ -164,7 +164,7 @@ if (failures.length === 0) {
     const settingsText = JSON.stringify(settings)
     if (settingsText.includes('bypassPermissions')) {
       failures.push(
-        '.claude/settings.json must not commit bypassPermissions; it belongs in gitignored .claude/settings.local.json',
+        '.claude/settings.json must not commit bypassPermissions; bypass comes only from user settings or a launch flag (a project or local defaultMode of bypass is ignored)',
       )
     }
     const permissions = settings['permissions'] as Record<string, unknown> | undefined

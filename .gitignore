@@ -41,7 +41,7 @@ public/data/dashboard-*.json
 # Test and coverage output.
 coverage/
 
-# Machine-local Claude trust settings. Never commit; bypassPermissions lives only here.
+# Machine-local Claude settings. Never commit. Bypass comes only from user settings or a launch flag.
 .claude/settings.local.json
 
 # Editor directories and files
