@@ -18,8 +18,8 @@ Rules:
    `public/data/`, `dist/`, credentials, browser profiles, caches, or real/private inputs.
    Needing them is a finding to report, not an obstacle to work around. Missing or refused
    evidence is explicit coverage, never zero.
-3. While `HUMAN_TODO.md` q-8 stays open, all write work and merges in the sibling
-   `developer-lens-lab` checkout are human-gated. Read it only if the mission names it.
+3. Read the sibling `developer-lens-lab` checkout only if the mission names it; its own
+   authority and human-action file govern any work there.
 4. Label every statement as verified tracked-file fact / repository-recorded claim / inference /
    owner decision / recommendation. Never promote one to another, and never present a recorded
    claim as live truth.

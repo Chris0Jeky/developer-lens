@@ -92,7 +92,8 @@ On Windows use PowerShell and quote paths; prefer explicit Vitest paths over she
   non-overlapping paths. Subagents can move HEAD — pin git state in prompts, re-verify after each.
 - Keep volatile SHAs, PR/check state and next-slice evidence in the implementation ledger, not this
   file. Route owner decisions and genuinely open owner gates to `HUMAN_TODO.md`.
-- `bypassPermissions` lives only in gitignored `.claude/settings.local.json`, never committed.
+- Bypass mode comes only from user settings or a launch flag; a project or local `defaultMode` of
+  bypass is ignored (global laws, "Claude Code runtime facts"), and a committed one is never added.
 - `docs/agent-system/PROMPT_LIBRARY.md` is the only executable prompt surface; cite human actions
   as `<owner>/<repo>::HUMAN_TODO.md::q-N`, and log friction to `FRICTION_LOG.md` in the same hop.
 - Close under changed / verified / NOT verified / failures / docs-state sync / residual risk /
