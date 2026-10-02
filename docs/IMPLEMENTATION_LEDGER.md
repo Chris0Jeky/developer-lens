@@ -5646,10 +5646,17 @@ or PublicLensProjection contract is changed.
 focused files, 92 passed. Failing-first run: six expected failures, 192 passed. After the fix:
 four focused files, 198 passed. `npm run lint` and `tsc -b` passed.
 
-**Not verified yet.** Required `npm run check` and `npm run build:showcase` await the coordinating
-session's test slot. Independent adversarial review is in progress. No hosted, Linux, browser,
-real-data or activation acceptance is claimed. The launch router still answers 404 for the stored
-endpoint. #376 remains a separate pre-activation hardening slice.
+**Qualification.** Draft [#385](https://github.com/Chris0Jeky/developer-lens/pull/385) has head
+`68ed29f27b75c15eeb1554ff91f207682b0f89a6`. Local `npm run build:showcase` passed at that head.
+The [hosted proving gate](https://github.com/Chris0Jeky/developer-lens/actions/runs/37057024884/job/111004120303)
+passed on its generated merge ref: 117 files, 1845 tests passed, three conditional skips
+(Windows temporary-storage and unsupported-directory-durability checks, plus opt-in scale).
+Context, planning/fixture drift, lint, build, showcase privacy and locked SDK checks passed there.
+Local Windows `npm run check` passed at the same exact head: 117 files, 1835 passed, 13 existing
+POSIX/opt-in skips. It includes the separate ResearchFinding drift command omitted by the hosted
+workflow. Local runs used the repository's two-worker cap, with suites/builds executed serially.
+No browser, real-data or activation acceptance is inferred. The launch router still answers 404
+for the stored endpoint.
 
 **Failures/workarounds.** Expected regression failures above; sandbox clone/Git ownership
 friction is recorded as FR-106. No owner decision or capability was changed.
@@ -5667,3 +5674,57 @@ gate permits absence furniture. A second failing-first test reproduced that case
 explicitly rejects numeric sensitivity on every no-value cohort, independent of its state; the
 four focused files now pass 200 tests. Both review findings are addressed without an activation
 or a broader contract rewrite.
+
+## 2026-10-02 - stored-path pre-activation hardening (#376)
+
+**Bounded task.** Branch `fix/stored-change-batch-preactivation`, based on #385's
+`68ed29f27b75c15eeb1554ff91f207682b0f89a6`. Own conformance, change-batch coverage/basis analysis,
+the selected-store bridge and invented fixture/tests. Fix all five #376 findings before activation.
+No source, capability, telemetry, model, credential or service is activated. Rollback is a revert
+of this slice. Review/merge order: #385 first, then this follow-up retargeted to main; no merge is
+performed by this delegated session.
+
+**Changed.** Required-vector limitations produce typed `unavailable/WINDOW_COVERAGE_LIMITED`
+absence while preserving the supplied coverage vector; its zero measured counts mean no cohort
+is established, not zero source activity. Incomplete completeness retains the existing truncated
+shape. The bridge suppresses alias linkage at `alias_expires_at <= asOf`, without relying on a
+sweep. A coverage row collected after `asOf` cannot vouch. Each size basis has its own eligibility
+ratio over in-window candidates, with explicit finding limitations; unrelated outside-window
+rows do not affect the ratio. Revision counts use only rows vouching for overlapping ranges.
+
+**Verified.** Failing-first run: 14 expected failures and 86 passed in three files. After the fix,
+five focused files (conformance, analysis, bridge, API and panel consumer): 119 passed. Lint and
+TypeScript passed. `npm run build:showcase` passed, including synthetic/export/privacy boundaries.
+Planning artifact drift check passed (128 cards; three existing near-limit description warnings),
+and the locked Pulseboard SDK artifact check passed. Independent fresh-context review found no
+blocking defect and passed 11 additional invented assertions at the changed boundaries.
+Context verification and all four ResearchPack, MethodTrialView, ResearchFinding and lens-projection
+drift checks also passed. Draft [#387](https://github.com/Chris0Jeky/developer-lens/pull/387) contains
+implementation commit `30f58d7ad8116be615a64a267a60e56f92f026d3`; subsequent edits record evidence only.
+
+**Previous full qualification.** Local Windows `npm run check` passed at #387's original head
+`1d2f56c0f6f935fa144af6d18e097dd932e52978`: 117 files, 1852 passed, 13 existing POSIX/opt-in skips;
+lint, context, all four fixture drift checks, TypeScript, build and privacy checks passed.
+Retargeted/final-head qualification is recorded in the PR's Proof section. The original stacked
+base triggered no hosted run because the workflow targets main. Linux-specific acceptance,
+browser/visual QA, real-data activation and hostile-writer integrity
+are not inferred. The `observedAt` guard does not provide a historical database snapshot of mutable
+facts, job/snapshot state or lineage. The stored endpoint remains unwired.
+
+**Residual follow-up.** [#386](https://github.com/Chris0Jeky/developer-lens/issues/386) records a
+separately reproduced acceptance gap: an invented API body with primary eligible count 29,
+finding summary 36 and rendered cohort 40 is accepted. It is an integrity follow-up, not a live
+disclosure. No exported ResearchFinding, MethodTrialView, ResearchPack or PublicLensProjection
+contract changed. Existing `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6` decisions and
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` release gate remain unchanged.
+
+**Merge follow-up.** The owner authorized review, fixes, safe merge and the established synthetic
+deployment on 2026-10-02. #385 merged as `cbee0c432a2e4b5f3615448d48df689949fcc7c9` after its
+exact-head local proofs and fresh hosted run `37070749054` passed. Its late documentation finding
+is corrected here: the original full Windows check and completed review are no longer described
+as pending. Two fresh integrated read-only reviews at #390's original `bee38fb` found no blocking
+code defect. Retarget #387, #389 and #390 to main in that order and requalify after each integration.
+The existing C0-only Pages workflow is permitted by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4`;
+release tags remain blocked by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and the stored
+endpoint remains unwired. Previous successful Pages run `36516768140` at main `9704118` is the
+pre-campaign rollback baseline; rollback uses a reviewed revert and the same verified workflow.

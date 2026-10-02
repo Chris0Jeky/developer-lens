@@ -252,12 +252,14 @@ export function readStoredObservations(
     ) return refused('STORE_PROVENANCE_NOT_SYNTHETIC')
 
     const scopeRow = db.prepare(
-      'SELECT scope_alias IS NOT NULL AS has_alias, linked_at FROM claim_scope WHERE scope_id = ?',
-    ).get(request.scopeId) as { has_alias: number; linked_at: string | null } | undefined
+      'SELECT scope_alias IS NOT NULL AS has_alias, linked_at, alias_expires_at FROM claim_scope WHERE scope_id = ?',
+    ).get(request.scopeId) as { has_alias: number; linked_at: string | null; alias_expires_at: string | null } | undefined
     if (scopeRow === undefined) return refused('UNKNOWN_SCOPE')
 
     const forbidden = new Set<string>([request.scopeId])
     if (scopeRow.linked_at !== null) forbidden.add(scopeRow.linked_at)
+    if (scopeRow.alias_expires_at !== null) forbidden.add(scopeRow.alias_expires_at)
+    const hasAlias = scopeRow.has_alias === 1 && retentionOf(scopeRow.alias_expires_at, false, request.asOf) === 'live'
 
     const facts = db.prepare(
       `SELECT fact_id, number, created_at, merged_at, closed_at, c2_expires_at, state, is_draft,
@@ -380,7 +382,7 @@ export function readStoredObservations(
           window: Object.freeze({ start: request.window.start, end: request.window.end }),
           asOf: request.asOf,
         }),
-        scope: Object.freeze({ hasAlias: scopeRow.has_alias === 1, linkedAt: scopeRow.linked_at }),
+        scope: Object.freeze({ hasAlias, linkedAt: hasAlias ? scopeRow.linked_at : null }),
         capabilityId: 'github.core' as const,
         pullRequests: Object.freeze(pullRequests),
         coverage: Object.freeze(coverage),

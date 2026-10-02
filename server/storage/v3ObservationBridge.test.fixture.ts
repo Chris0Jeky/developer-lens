@@ -85,6 +85,7 @@ export interface FixtureLineage {
 }
 
 export interface InventedStoreSeed {
+  readonly aliasExpiresAt?: string | null
   readonly provenance?: 'synthetic' | 'activation_card' | 'absent'
   readonly pullRequests?: readonly FixturePullRequest[]
   readonly coverage?: readonly FixtureCoverage[]
@@ -237,7 +238,7 @@ export async function createInventedSelectedStore(
   try {
     installStorageV3ShadowSchema(db)
     db.prepare('INSERT INTO claim_scope (scope_id, scope_alias, linked_at, alias_expires_at) VALUES (?, ?, ?, ?)')
-      .run(FIXTURE_SCOPE, 'invented-alias-phase-e', '2026-05-06T09:15:27.123Z', '2027-06-06T09:15:27.123Z')
+      .run(FIXTURE_SCOPE, 'invented-alias-phase-e', '2026-05-06T09:15:27.123Z', seed.aliasExpiresAt === undefined ? '2027-06-06T09:15:27.123Z' : seed.aliasExpiresAt)
     db.prepare('INSERT INTO claim_scope (scope_id) VALUES (?)').run(FIXTURE_OTHER_SCOPE)
     seedRows(db, seed)
     const key = await taskInstallationKeyTestSeams.setupWithRandomBytes(

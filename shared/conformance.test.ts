@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   CONFORMANCE_CONTRACT_VERSION,
   computeIntegrationIntervalResult,
+  syntheticCompleteIntervalCoverage,
   conformsToGolden,
   constructSignature,
   nearestRankQuantile,
@@ -21,6 +22,7 @@ import {
   type MetricResult,
 } from './metrics.js'
 import { BLENDED_SCALAR_DEFINITION_FIXTURE } from './metricFixtures.js'
+import { limitingReasonsFor } from './coverage.js'
 import { FindingContractError, FindingSchema, validateFinding } from './findings.js'
 import {
   ComparisonContractError,
@@ -210,6 +212,22 @@ const N1_RATIONALE_VERBATIM =
   'an empty eligible cohort under complete coverage is a COMPLETE observation of zero; a null would read as unmeasurable when sampling was fully realized'
 
 describe('empty eligible cohorts (#67) and the #82 N1 sample=1 ruling', () => {
+  it.each(syntheticCompleteIntervalCoverage().filter((entry) => entry.dimension !== 'completeness'))(
+    'returns typed absence for limited $dimension without inventing a completeness gap', ({ dimension }) => {
+      const coverage = syntheticCompleteIntervalCoverage().map((entry) => entry.dimension === dimension
+        ? { ...entry, value: 0.5, limiting_reason: limitingReasonsFor(dimension)[0] }
+        : entry)
+      for (const lifecycles of [[], LIFECYCLES]) {
+        const result = computeIntegrationIntervalResult(lifecycles, { ...JULY, coverage }, 'becameReady')
+        expect(result.state).toBe('unavailable')
+        expect(result.stateReasonCode).toBe('WINDOW_COVERAGE_LIMITED')
+        expect(result.value).toEqual({ kind: 'no_value', reasonCode: 'WINDOW_COVERAGE_LIMITED' })
+        expect(result.coverage).toEqual(coverage)
+        expect(() => validateMetricResult(result)).not.toThrow()
+      }
+    },
+  )
+
   it('a fully covered quiet window is a typed empty-cohort observation, not a gap', () => {
     const empty = compute('becameReady', SEPTEMBER)
     const { result } = validateMetricResult(empty)

@@ -62,6 +62,7 @@ export interface IntervalWindowSpec {
    * explicitly synthetic vector, never a default for observed data. A stored-observation caller
    * passes the vector it derived from the selected store's coverage ledger, and a vector whose
    * completeness is limited turns the result into a typed `truncated` row instead of an observed one.
+   * Other limited required dimensions produce typed absence, never a complete observed cohort.
    */
   readonly coverage?: readonly MetricCoverageEntry[]
 }
@@ -144,6 +145,8 @@ export function computeIntegrationIntervalResult(
   const coverage = spec.coverage ?? syntheticCompleteIntervalCoverage()
   const completeness = coverage.find((entry) => entry.dimension === 'completeness')
   const windowFullyCovered = completeness !== undefined && completeness.value === 1 && completeness.limiting_reason === null
+  const requiredDimensionsComplete = getMetricDefinition(INTEGRATION_INTERVAL_REFERENCE).coverageDimensions.every((dimension) =>
+    coverage.some((entry) => entry.dimension === dimension && entry.value === 1 && entry.limiting_reason === null))
 
   let eligible = 0
   let censored = 0
@@ -211,6 +214,19 @@ export function computeIntegrationIntervalResult(
       stateReasonCode: 'WINDOW_COVERAGE_INCOMPLETE',
       counts: { eligible, censored, excluded },
       value: { kind: 'no_value', reasonCode: 'WINDOW_COVERAGE_INCOMPLETE' },
+    })
+  }
+
+  if (!requiredDimensionsComplete) {
+    // Complete time coverage alone cannot establish a cohort. The unavailable state's zero
+    // measured counts mean no eligible cohort is established, never zero source activity.
+    return MetricResultSchema.parse({
+      ...base,
+      resultId: spec.resultId,
+      state: 'unavailable',
+      stateReasonCode: 'WINDOW_COVERAGE_LIMITED',
+      counts: { eligible: 0, censored: 0, excluded: [] },
+      value: { kind: 'no_value', reasonCode: 'WINDOW_COVERAGE_LIMITED' },
     })
   }
 
