@@ -366,6 +366,11 @@ describe('FindingSampleSummary invariants', () => {
     expect(summaryAccepts('observed', 0, 0)).toBe(false)
   })
 
+  it('requires a withheld result to retain a non-empty measured cohort', () => {
+    expect(summaryAccepts('withheld', 5, 2)).toBe(true)
+    expect(summaryAccepts('withheld', 0, 0)).toBe(false)
+  })
+
   it('requires a censored-only result to have every eligible unit censored', () => {
     expect(summaryAccepts('censored_only', 4, 4)).toBe(true)
     expect(summaryAccepts('censored_only', 4, 2)).toBe(false)

@@ -351,7 +351,7 @@ describe('DL-METRIC-01 typed empty-cohort observations (issue #67)', () => {
 
   it('keeps the empty state distinguishable from unavailable, truncated, censored and failed coverage', () => {
     expect([...METRIC_RESULT_STATES]).toEqual([
-      'observed', 'empty_eligible_cohort', 'censored_only', 'truncated', 'unavailable', 'coverage_failed',
+      'observed', 'withheld', 'empty_eligible_cohort', 'censored_only', 'truncated', 'unavailable', 'coverage_failed',
     ])
     const states = [
       EMPTY_ELIGIBLE_COHORT_COUNT_RESULT,
@@ -371,6 +371,27 @@ describe('DL-METRIC-01 typed empty-cohort observations (issue #67)', () => {
       kind: 'no_value',
       reasonCode: 'CAPABILITY_NEVER_AUTHORIZED',
     })
+  })
+
+  it('represents a measured below-support cohort with counts and no distribution', () => {
+    const observed = validateMetricResult(LOW_SUPPORT_OBSERVED_RESULT).result
+    const withheld = {
+      ...observed,
+      state: 'withheld',
+      stateReasonCode: 'BELOW_MINIMUM_SUPPORT',
+      value: { kind: 'no_value', reasonCode: 'BELOW_MINIMUM_SUPPORT' },
+      coverage: observed.coverage.map((entry) => entry.dimension === 'sample'
+        ? { ...entry, value: 0.6, limiting_reason: 'SAMPLE_BELOW_MINIMUM' }
+        : entry),
+    }
+    const parsed = validateMetricResult(withheld)
+    expect(parsed.result.counts.eligible).toBe(3)
+    expect(evaluateDisplayEligibility(parsed.definition, parsed.result)).toMatchObject({ display: false, reasonCode: 'BELOW_MINIMUM_SUPPORT' })
+    expect(MetricResultSchema.safeParse({ ...withheld, value: observed.value }).success).toBe(false)
+    expect(MetricResultSchema.safeParse({ ...withheld, counts: { eligible: 0, censored: 0, excluded: [] } }).success).toBe(false)
+    expect(MetricResultSchema.safeParse({ ...withheld, coverage: observed.coverage }).success).toBe(false)
+    expect(MetricResultSchema.safeParse({ ...withheld, stateReasonCode: 'OBSERVED' }).success).toBe(false)
+    expect(MetricResultSchema.safeParse({ ...withheld, sensitivity: [{ variantId: 'OPEN_TREATED_AS_CENSORED', state: 'observed', value: observed.value }] }).success).toBe(false)
   })
 
   it('refuses an observed zero under truncation, where zero cannot be told from "could not look"', () => {

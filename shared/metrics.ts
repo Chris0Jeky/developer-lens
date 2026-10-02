@@ -759,6 +759,8 @@ export type MetricDefinition = z.infer<typeof MetricDefinitionSchema>
  */
 export const METRIC_RESULT_STATES = [
   'observed',
+  // A measured cohort retained for provenance, with its numeric value suppressed by support.
+  'withheld',
   'empty_eligible_cohort',
   'censored_only',
   'truncated',
@@ -853,6 +855,12 @@ function checkValueAgainstState(
   }
 
   switch (state) {
+    case 'withheld': {
+      if (value.kind !== 'no_value' || value.reasonCode !== 'BELOW_MINIMUM_SUPPORT') {
+        context.addIssue({ code: 'custom', message: 'A withheld result carries no_value with BELOW_MINIMUM_SUPPORT', path })
+      }
+      break
+    }
     case 'observed': {
       if (value.kind === 'no_value') {
         context.addIssue({ code: 'custom', message: 'An observed result carries a value', path })
@@ -1017,6 +1025,9 @@ export const MetricResultSchema = z
     checkValueAgainstState(result.state, result.value, ['value'], context)
     result.sensitivity.forEach((entry, index) => {
       checkValueAgainstState(entry.state, entry.value, ['sensitivity', index, 'value'], context)
+      if (result.state === 'withheld' && entry.value.kind !== 'no_value') {
+        context.addIssue({ code: 'custom', message: 'A withheld result cannot transport numeric sensitivity values', path: ['sensitivity', index, 'value'] })
+      }
     })
 
     if (result.value.kind === 'count' && result.value.observedCount > 0 && result.counts.eligible === 0) {
@@ -1043,6 +1054,16 @@ export const MetricResultSchema = z
     }
 
     switch (result.state) {
+      case 'withheld': {
+        if (result.counts.eligible === 0 || asOf < windowEnd) {
+          context.addIssue({ code: 'custom', message: 'A withheld result retains a non-empty measured cohort in a completed window', path: ['counts'] })
+        }
+        const sample = result.coverage.find((entry) => entry.dimension === 'sample')
+        if (result.stateReasonCode !== 'BELOW_MINIMUM_SUPPORT' || sample?.limiting_reason !== 'SAMPLE_BELOW_MINIMUM' || sample.value === null || sample.value >= 1) {
+          context.addIssue({ code: 'custom', message: 'A withheld result names below-minimum sample support', path: ['coverage'] })
+        }
+        break
+      }
       case 'observed': {
         if (result.counts.eligible === 0) {
           context.addIssue({ code: 'custom', message: 'An observed result has a non-empty eligible cohort; use empty_eligible_cohort', path: ['counts', 'eligible'] })
@@ -1921,6 +1942,8 @@ export function evaluateDisplayEligibility(
   result: MetricResult,
 ): MetricDisplayEligibility {
   switch (result.state) {
+    case 'withheld':
+      return { display: false, reasonCode: 'BELOW_MINIMUM_SUPPORT', belowGateBehaviour: definition.supportGates.belowGateBehaviour }
     case 'empty_eligible_cohort':
       return { display: true, reasonCode: 'EMPTY_ELIGIBLE_COHORT_EXEMPT', belowGateBehaviour: null }
     case 'observed': {

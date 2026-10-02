@@ -221,6 +221,10 @@ describe('Phase E change-batch lens endpoint (#174)', { timeout: 60_000 }, () =>
     expect(view.abstention).toMatchObject({ reasonCode: 'BELOW_MINIMUM_SUPPORT', limitingReason: 'SAMPLE_BELOW_MINIMUM' })
     expect(view.finding.marks).toEqual([])
     expect(view.binnings).toEqual([])
+    expect(view.results[0].value).toEqual({ kind: 'no_value', reasonCode: 'BELOW_MINIMUM_SUPPORT' })
+    expect(view.results[0].sensitivity).toEqual([])
+    expect(view.finding.sampleSummary).toMatchObject({ state: 'withheld', counts: { eligible: 5, censored: 1 } })
+    expect(JSON.stringify(view)).not.toContain('"kind":"quantiles"')
   })
 
   it('links tombstone and retention-expiry lineage to the rows it names, content-free', async () => {
