@@ -44,7 +44,7 @@ import type { LimitationInstance } from './claims.js'
  */
 export const CHANGE_BATCH_TAIL_METHOD_ID = 'change_batch_tail' as const
 export const CHANGE_BATCH_TAIL_METHOD_VERSION = '1.0.0' as const
-export const CHANGE_BATCH_TAIL_VIEW_VERSION = '1.0.0' as const
+export const CHANGE_BATCH_TAIL_VIEW_VERSION = '1.1.0' as const
 export const CHANGE_BATCH_TAIL_QUESTION_ID = 'q_change_batch_tail' as const
 export const CHANGE_BATCH_TAIL_METRIC = {
   metricId: 'pull_request.opened_to_merge_interval_by_change_stratum',

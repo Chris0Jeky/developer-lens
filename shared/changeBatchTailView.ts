@@ -91,6 +91,14 @@ const BinningId = z.enum(['declared_thresholds', 'value_thirds'])
 const StratumId = z.enum(['s1', 's2', 's3'])
 const CoverageStatus = z.enum(['complete', 'truncated', 'failed', 'restricted'])
 
+const OutcomeCountsSchema = z.strictObject({
+  resultId: z.string().regex(/^cbt\.(?:all|[a-z_]+\.[a-z_]+\.s[123])$/),
+  eligible: Count,
+  merged: Count,
+  censored: Count,
+  competing: Count,
+})
+
 const MarkSchema = z.strictObject({
   markId: z.string().regex(/^m\.[A-Za-z0-9._:-]{1,120}$/),
   claimId: z.string().regex(/^cl_[0-9a-f]{64}$/),
@@ -206,12 +214,14 @@ export const ChangeBatchTailViewSchema = z.strictObject({
   }),
   binnings: z.array(BinningViewSchema),
   concordance: z.array(ConcordanceSchema),
+  outcomeCounts: z.array(OutcomeCountsSchema).min(1).max(13),
   results: z.array(MetricResultSchema).min(1),
   finding: FindingSchema,
   marks: z.array(MarkSchema),
 })
 
 export type ChangeBatchTailView = z.infer<typeof ChangeBatchTailViewSchema>
+type OutcomeCounts = ChangeBatchTailView['outcomeCounts'][number]
 
 /* ------------------------------------------------------------------------------------------ *
  * View construction
@@ -366,6 +376,15 @@ export function buildChangeBatchTailView(input: ChangeBatchTailInput): ChangeBat
           strata: binning.strata.map(stratumView),
         })),
     concordance: abstained ? [] : analysis.concordance.map((entry) => ({ ...entry })),
+    // A count-only measured record includes omitted strata without transporting their values.
+    outcomeCounts: [analysis.all, ...(abstained ? [] : analysis.binnings.flatMap((binning) => binning.strata))]
+      .map((reading) => ({
+        resultId: reading.result.resultId,
+        eligible: reading.result.counts.eligible,
+        merged: reading.merged,
+        censored: reading.censored,
+        competing: reading.competing,
+      })),
     results,
     finding,
     marks: marks.map((mark) => ({ ...mark, subject: { ...mark.subject } })),
@@ -606,8 +625,39 @@ function countsAgree(left: MetricResult['counts'], right: MetricResult['counts']
     && left.excluded.every((entry) => rightExclusions.get(entry.reasonCode) === entry.count)
 }
 
-/** Bind table rows to their measured results; omitted below-support rows retain absence furniture. */
-function assertStrataAgree(view: ChangeBatchTailView, resultsById: ReadonlyMap<string, MetricResult>): void {
+function outcomesAgree(left: OutcomeCounts | ChangeBatchTailView['cohort'], right: OutcomeCounts): boolean {
+  return left.eligible === right.eligible && left.merged === right.merged
+    && left.censored === right.censored && left.competing === right.competing
+}
+
+/** Bind the count-only measured ledger without requiring an omitted numeric distribution. */
+function measuredOutcomeCounts(view: ChangeBatchTailView): ReadonlyMap<string, OutcomeCounts> {
+  const countsById = new Map(view.outcomeCounts.map((entry) => [entry.resultId, entry]))
+  const expected = new Set(['cbt.all', ...view.binnings.flatMap((binning) => binning.strata.map((row) => row.resultId))])
+  if (countsById.size !== view.outcomeCounts.length || countsById.size !== expected.size
+    || [...expected].some((id) => !countsById.has(id))) {
+    throw new ChangeBatchTailViewError('measured outcome counts must uniquely cover the cohort and rendered stratum rows')
+  }
+  for (const entry of countsById.values()) {
+    if (entry.eligible !== entry.merged + entry.censored + entry.competing) {
+      throw new ChangeBatchTailViewError('measured outcome counts do not partition the eligible cohort or stratum')
+    }
+  }
+  if (!outcomesAgree(view.cohort, countsById.get('cbt.all')!)) {
+    throw new ChangeBatchTailViewError('rendered cohort outcome counts contradict its measured record')
+  }
+  for (const result of view.results) {
+    const entry = countsById.get(result.resultId)
+    if (entry === undefined || result.counts.eligible !== entry.eligible || result.counts.censored !== entry.censored
+      || (result.value.kind === 'quantiles' && result.value.sampleSize !== entry.merged)) {
+      throw new ChangeBatchTailViewError('cohort or stratum outcome counts contradict a carried metric result')
+    }
+  }
+  return countsById
+}
+
+/** Bind table rows to measured counts and results, including omitted below-support furniture. */
+function assertStrataAgree(view: ChangeBatchTailView, resultsById: ReadonlyMap<string, MetricResult>, countsById: ReadonlyMap<string, OutcomeCounts>): void {
   const binnings = new Set<string>()
   for (const binning of view.binnings) {
     const binningKey = `${binning.basisId}.${binning.binningId}`
@@ -622,6 +672,10 @@ function assertStrataAgree(view: ChangeBatchTailView, resultsById: ReadonlyMap<s
       }
       if (row.eligible !== row.merged + row.censored + row.competing) {
         throw new ChangeBatchTailViewError('rendered stratum outcomes do not account for every eligible unit')
+      }
+      const measured = countsById.get(row.resultId)
+      if (measured === undefined || !outcomesAgree(row, measured)) {
+        throw new ChangeBatchTailViewError('rendered stratum outcome counts contradict its measured record')
       }
       const result = resultsById.get(row.resultId)
       if (result === undefined) {
@@ -757,7 +811,7 @@ export function acceptChangeBatchTailView(candidate: unknown): ChangeBatchTailVi
   if (view.cohort.draftsStillOpen > view.cohort.censored) {
     throw new ChangeBatchTailViewError('rendered open drafts exceed the censored cohort')
   }
-  assertStrataAgree(view, resultsById)
+  assertStrataAgree(view, resultsById, measuredOutcomeCounts(view))
   if ((finding.layer === 'abstention') !== (view.state === 'abstained')) {
     throw new ChangeBatchTailViewError('view state contradicts the finding layer')
   }

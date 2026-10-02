@@ -305,6 +305,85 @@ describe('served stratum consistency (#388)', () => {
   })
 })
 
+describe('measured outcome-count binding', () => {
+  function omittedView(): ChangeBatchTailView {
+    return JSON.parse(JSON.stringify(buildChangeBatchTailView(input([
+      ...presentableUnits().filter((_row, index) => !(index % 3 === 1 && index > 3)),
+      unit(2, { closedAfterHours: 4 }, 150, 4), unit(3, { closedAfterHours: 5 }, 150, 4),
+    ]))))
+  }
+
+  it.each(['eligible/censored inflation', 'merged/competing exchange'])('rejects omitted-row %s despite valid outcome partition', (change) => {
+    const view = omittedView()
+    const row = view.binnings[0].strata[1]
+    expect(view.results.some((result) => result.resultId === row.resultId)).toBe(false)
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    if (change === 'eligible/censored inflation') { row.eligible += 1; row.censored += 1 }
+    else { row.merged += 1; row.competing -= 1 }
+    expect(row.eligible).toBe(row.merged + row.censored + row.competing)
+    expect(row.merged).toBeLessThan(5)
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/outcome counts/)
+  })
+
+  it('binds withheld cohort merged and competing counts without numeric values', () => {
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(input([
+      unit(2, { mergedAfterHours: 12 }, 20), unit(3, { closedAfterHours: 4 }, 20),
+    ])))) as ChangeBatchTailView
+    expect(view.results[0].value.kind).toBe('no_value')
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    view.cohort.merged += 1
+    view.cohort.competing -= 1
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/outcome counts/)
+  })
+
+  const ledgerCases: Array<[string, (view: ChangeBatchTailView) => void]> = [
+    ['missing cohort', (view) => { view.outcomeCounts = view.outcomeCounts.filter((entry) => entry.resultId !== 'cbt.all') }],
+    ['missing omitted stratum', (view) => { view.outcomeCounts = view.outcomeCounts.filter((entry) => entry.resultId !== view.binnings[0].strata[1].resultId) }],
+    ['duplicate identity', (view) => { view.outcomeCounts[1] = { ...view.outcomeCounts[0] } }],
+    ['foreign identity', (view) => { view.outcomeCounts[1].resultId = 'cbt.lines_changed.foreign.s1' }],
+    ['invalid partition', (view) => { view.outcomeCounts[0].merged += 1 }],
+    ['independent stratum count inflation', (view) => {
+      const entry = view.outcomeCounts.find((entry) => entry.resultId === view.binnings[0].strata[1].resultId)!
+      entry.eligible += 1; entry.censored += 1
+    }],
+    ['unrecorded carried result', (view) => { view.results.push({ ...view.results[0], resultId: 'cbt.unrendered' }) }],
+  ]
+  it.each(ledgerCases)('rejects %s in the measured count ledger', (_label, mutate) => {
+    const view = omittedView()
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    mutate(view)
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/outcome counts/)
+  })
+
+  it('requires the new count-only wire shape and rejects old bodies', () => {
+    const view = omittedView()
+    expect(view.viewVersion).toBe('1.1.0')
+    const oldShape: Record<string, unknown> = { ...view }
+    delete oldShape.outcomeCounts
+    expect(() => acceptChangeBatchTailView(oldShape)).toThrow(/view schema/)
+    expect(() => acceptChangeBatchTailView({ ...view, viewVersion: '1.0.0' })).toThrow(/view schema/)
+  })
+
+  it('retains measured counts for typed absence and accepts reordered ledger entries', () => {
+    const fixtures = [
+      input([unit(2, { mergedAfterHours: 12 }, 20), unit(3, { closedAfterHours: 4 }, 20)]),
+      input(presentableUnits(), [coverageRow({ rangeEnd: '2026-06-15T00:00:00.000Z' })]),
+      input([]), input([unit(2, 'open', 20)]),
+      input(presentableUnits().map((row) => ({ ...row, changedFiles: null }))),
+    ]
+    for (const fixture of fixtures) {
+      const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(fixture))) as ChangeBatchTailView
+      const all = analyzeChangeBatchTail(fixture).all
+      expect(view.outcomeCounts[0]).toEqual({ resultId: 'cbt.all', eligible: all.result.counts.eligible, merged: all.merged, censored: all.censored, competing: all.competing })
+      view.outcomeCounts.reverse()
+      expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+      for (const binning of view.binnings) for (const row of binning.strata) {
+        if (!row.displayed) expect(row).toMatchObject({ quantiles: null, lowerBoundP90: null })
+      }
+    }
+  })
+})
+
 describe('construct: an opened-to-merge interval, never labelled as ready-to-merge (blocker 1)', () => {
   it('computes and names the opened-to-merge construct with readiness explicitly unrecorded', () => {
     const view = buildChangeBatchTailView(input(presentableUnits()))

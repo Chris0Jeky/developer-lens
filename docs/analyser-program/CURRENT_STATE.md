@@ -28,8 +28,11 @@ active_slice: >-
   showcase and hosted proving; SDK 3.3.1 from #391 is preserved. #385's ledger thread is resolved.
   #389 now fixes the review's primary-role swap using canonical cbt.all and full metric/scope/window
   identity: eight failing-first regressions, then 83 focused tests passed; review added equivalent
-  timestamp spelling support with one failing-first positive case. Qualify its new head,
-  then #390's omitted-row count-reference correction; the PR Proof sections carry exact-head evidence.
+  timestamp spelling support with one failing-first positive case. Exact head abe2100 passed 1881
+  Windows tests (13 existing skips), showcase, hosted proving and scoped independent review.
+  #390 adds a required count-only outcome ledger to local view revision 1.1.0, binding omitted-row
+  and typed-absence counts without withheld quantiles: five failing-first regressions, then 130
+  focused tests passed. Its PR Proof section carries final exact-head qualification.
   One writer per isolated checkout,
   one suite/build and one test worker.
   #390's original bee38fb passed 1904 Windows tests (13 existing skips), showcase and 107 focused
@@ -39,8 +42,8 @@ active_slice: >-
 next_value_slice: >-
   Complete exact-head qualification and safe integration of #389/#390, then verify the final
   main's Pages deployment and public synthetic smoke. #389 and #390 address the already reproduced
-  #386/#388 consistency findings. Broader primary metadata identity and historical/hostile-writer
-  integrity remain separate scope. Other choices after this campaign include
+  #386/#388 consistency findings. Historical/hostile-writer integrity remains separate scope.
+  Other choices after this campaign include
   #202's remainder:
   the #86 `v2_coverage_record` id-shape decision, the #168/#177 H5 reassessment, and a Windows
   owner-only ACL / secure task-root check for the installation key. (3) #80's scope-unbound C1

@@ -398,4 +398,21 @@ describe('Phase E change-batch lens endpoint (#174)', { timeout: 60_000 }, () =>
       expect(body, String(value)).not.toMatch(new RegExp(`[:\\[,]${value}[,}\\]]`))
     }
   })
+
+  it('refuses invented omitted-row counts even when their outcome partition is valid', async () => {
+    const store = await storeWith({
+      pullRequests: [
+        ...presentablePullRequests().filter((row) => !row.tag.startsWith('middle-')),
+        opened('middle-limited', 6, { mergeHours: 12 }, 150, 5),
+      ],
+      coverage: [COMPLETE],
+    })
+    const response = await get(app(sourceFor(store))).expect(200)
+    const view = JSON.parse(JSON.stringify(response.body.view)) as ChangeBatchTailView
+    const row = view.binnings[0].strata[1]
+    expect(view.results.some((result) => result.resultId === row.resultId)).toBe(false)
+    row.eligible += 1
+    row.censored += 1
+    expect(() => gateChangeBatchTailView(view)).toThrow(/serving gate/)
+  })
 })

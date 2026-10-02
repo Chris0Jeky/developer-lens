@@ -5794,8 +5794,8 @@ generic metric or exported Lab contract changed here.
 display furniture, merged sample sizes, quantiles and lower-bound values to their carried metric
 results. Preserve legitimately omitted below-support/unavailable rows and keyed-entry ordering.
 Synthetic fixtures only; rollback is a revert of this slice. Draft review order is #385, #387,
-#389, then this follow-up, retargeting each stacked base after its prerequisite lands. No merge,
-deployment, activation, owner-decision change or exported Lab contract change is selected.
+#389, then this follow-up. The owner subsequently authorized safe integration and the established
+synthetic Pages deployment; activation and exported Lab contract changes remain outside this slice.
 
 **Changed.** The shared server/browser gate checks unique binning/stratum identities, fixed
 result IDs, registered states, eligible outcome partitions and the served metric/scope/window
@@ -5815,8 +5815,27 @@ exact head and final full-check qualification. One suite/build at a time and one
 required for this shared-PC qualification; the environment workaround is recorded as FR-107.
 
 **Not inferred.** This proves consistency of served representations, not omitted source data or
-historical/hostile-writer storage integrity. A broader audit of primary metric-reference and
-cohort metadata identity is separate scope. No browser automation, real history, protected data,
+historical/hostile-writer storage integrity. #389's later review correction pins primary identity.
+The original draft exercised no browser automation, real history, protected data,
 private projection, external model, telemetry, credentials, collection or stored endpoint
 activation is exercised. The endpoint remains unwired, and
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains the release hold.
+
+**Omitted-count review correction.** The review showed that increasing eligible/censored together
+or exchanging merged/competing counts preserved the old omitted-row checks. Five failing-first
+shared/API/browser regressions reproduced it (116 passed). The local view now requires a strict
+count-only `outcomeCounts` ledger generated directly from all-cohort and rendered-stratum analysis,
+including rows whose numeric result is omitted. Unique keys must exactly cover `cbt.all` and the
+rendered rows; outcome partitions, all four cohort/row counts, and carried eligible/censored/sample
+sizes must agree. Omitted results, quantiles and lower bounds remain absent. This binds served
+representations; it does not establish hostile-writer ground truth.
+
+Only `CHANGE_BATCH_TAIL_VIEW_VERSION` changes to `1.1.0` for the required wire field. Old bodies
+fail closed to the synthetic fallback. Metric, method, finding, API-envelope and exported Lab
+versions stay fixed. Expanded focused coverage passed all 130 tests, including missing/duplicate/
+foreign ledger keys, independent record drift, unrecorded results, typed-absence measured counts
+and order independence. The first green run rejected all malicious bodies but one old assertion
+expected singular stratum wording; matching the new diagnostic preserved rejection behavior.
+#389's integrated `abe21002037f33318aaeb0039c69ba82ea46de7e` passed full Windows qualification
+(117 files, 1881 passed, 13 existing skips), showcase and hosted run `37076231216`. Fresh #390
+qualification, independent fix review, merge and final Pages receipts belong in its PR Proof section.
