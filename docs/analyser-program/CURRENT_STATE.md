@@ -5,7 +5,7 @@ observations and must be refreshed before action; `docs/IMPLEMENTATION_LEDGER.md
 completed-slice evidence and history.
 
 ```yaml
-updated: '2026-09-23'
+updated: '2026-10-02'
 state_observed_at: '2026-09-22T23:25:00Z'
 work_class: 'W3 product slices and producer-owned cross-repository contracts'
 active_wave: 'P0.5 v0.1.0 release programme — Product issue #200 (owner-gated); Phase E and #202 readiness advancing'
@@ -16,18 +16,18 @@ observation_semantics: >-
 product_main: 'b4b82535237e0ccbcbe37d4d101e668aafad4e54'
 lab_main: '551c518d0281419d3a009b4c0a56b0ed026011c3'
 active_slice: >-
-  None in flight. Product has zero open pull requests at the observation. The 2026-09-22 session
-  merged: #346 (15-role taxonomy; agent_config presence-only exception carried into ADR-05/ADR-07
-  and the XRAY/TIME cards; closes #313), #365 (client chunk families plus a blocking 500 kB budget;
-  closes #217), #328 (acceleration bundle, deck persistence fingerprinted), #366 and #370
-  (lazy-surface test waits), #369 (ResearchFinding v1 pre-consumption amendment deriving all seven
-  gates; closes #319, #321, #327), #367 (PublicLensProjection.v1 and `export:profile`; closes
-  #304), #372 (#202 readiness slice; closes #5, #6, #59, #57), and #373 (Phase E stored-observation
-  bridge and change-batch integration-tail lens; closes #174). Drafts #340, #357, #359 and #360 are
-  closed as superseded.
+  2026-10-02 task: main was refreshed at 9704118b578f2901a18b29753a3b6f7a945572e5.
+  Draft #385 owns #375 on fix/change-batch-withheld-quantiles (68ed29f): typed withholding of
+  cohort values plus sensitivity/tampering checks; 200 focused tests passed. The companion
+  fix/stored-change-batch-preactivation branch owns all five #376 findings; 119 focused tests,
+  lint, TypeScript, showcase/privacy build and independent review passed. Full check awaits a
+  coordinated test slot. One writer per isolated task checkout; no real data or activation.
+  Review/merge order is #385 then the companion retargeted to main. No merge or deployment is
+  authorized in this delegated task. The September remote snapshots above remain dated history.
 next_value_slice: >-
-  Pick by value from these agent-executable slices. (1) Phase E stored-path hardening #376 and #375,
-  the preconditions before the stored change-batch endpoint can ever be wired. (2) #202's remainder:
+  Finish exact-head qualification of the #375/#376 drafts before activation selection. Then #386's
+  served cohort/result/summary consistency is a bounded integrity follow-up. Other choices include
+  #202's remainder:
   the #86 `v2_coverage_record` id-shape decision, the #168/#177 H5 reassessment, and a Windows
   owner-only ACL / secure task-root check for the installation key. (3) #80's scope-unbound C1
   expiry and resolver lineage join. (4) #201 Data Charter v2. (5) The low-risk trackers #368, #371
@@ -108,8 +108,10 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  Product main `b4b82535237e0ccbcbe37d4d101e668aafad4e54`, with zero open pull requests. Choose the
-  next slice from next_value_slice after refreshing live Git/GitHub. Stored-path activation of
+  Refresh draft #385 and the fix/stored-change-batch-preactivation companion, their heads and
+  checks. Both are synthetic-only pre-activation fixes; main was observed at 9704118 on 2026-10-02.
+  Complete full checks in the coordinating session's slot and retain drafts for owner review.
+  Stored-path activation of
   Phase E requires #375 and #376 first; real migration or collection requires #202's remainder and
   a bounded, reviewed activation task card within the approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5 boundaries. Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818

@@ -227,6 +227,33 @@ describe('Phase E change-batch lens endpoint (#174)', { timeout: 60_000 }, () =>
     expect(JSON.stringify(view)).not.toContain('"kind":"quantiles"')
   })
 
+  it('serves historical absence with expired linkage and future coverage excluded', async () => {
+    const store = await storeWith({
+      aliasExpiresAt: AS_OF,
+      pullRequests: presentablePullRequests(),
+      coverage: [{ ...COMPLETE, observedAt: '2026-06-30T00:00:00.001Z' }],
+    })
+    const view = acceptChangeBatchTailView((await get(app(sourceFor(store))).expect(200)).body.view)
+    expect(view.scope).toEqual({ hasAlias: false, linkedWeek: null })
+    expect(view.abstention?.reasonCode).toBe('WINDOW_COVERAGE_INCOMPLETE')
+    expect(view.coverage.rows[0]).toMatchObject({ vouches: false, notVouchingReason: 'UNAVAILABLE' })
+    expect(JSON.stringify(view.results)).not.toContain('"kind":"quantiles"')
+  })
+
+  it('serves the selected lines subset with its own eligibility limitation', async () => {
+    const store = await storeWith({
+      pullRequests: [...presentablePullRequests(), { ...opened('missing-lines', 20, { mergeHours: 12 }, 100, 5), additions: null }],
+      coverage: [COMPLETE],
+    })
+    const view = acceptChangeBatchTailView((await get(app(sourceFor(store))).expect(200)).body.view)
+    expect(view.state).toBe('presentable')
+    const lines = view.results.find((result) => result.resultId === 'cbt.lines_changed.declared_thresholds.s1')
+    const files = view.results.find((result) => result.resultId === 'cbt.changed_files.declared_thresholds.s1')
+    expect(lines?.coverage.find((entry) => entry.dimension === 'eligibility')).toEqual({ dimension: 'eligibility', value: 0.9523, limiting_reason: 'ELIGIBILITY_RULE_UNRESOLVED' })
+    expect(files?.coverage.find((entry) => entry.dimension === 'eligibility')?.value).toBe(1)
+    expect(view.finding.limitations.map((entry) => entry.copyKey)).toContain('copy.change_batch_tail.size_basis_missing')
+  })
+
   it('links tombstone and retention-expiry lineage to the rows it names, content-free', async () => {
     const lineage: FixtureLineage[] = [
       { subjectKind: 'coverage', subjectId: fixtureKey('cov', 'expired'), eventKind: 'c2_retention_expired', eventWeek: '2026-W22', operationTag: 'exp-cov' },

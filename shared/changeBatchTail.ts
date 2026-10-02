@@ -394,7 +394,7 @@ const GAP_REASON_PRIORITY: readonly CoverageLimitingReason[] = [
   'UNAVAILABLE',
 ]
 
-function rowVouches(row: ChangeBatchCoverageRow): { vouches: boolean; reason: CoverageLimitingReason | null } {
+function rowVouches(row: ChangeBatchCoverageRow, asOf: string): { vouches: boolean; reason: CoverageLimitingReason | null } {
   if (row.retention !== 'live' || row.rangeStart === null || row.rangeEnd === null) return { vouches: false, reason: 'DELETED' }
   if (row.status === 'restricted' || row.jobStatus === 'restricted') return { vouches: false, reason: 'RESTRICTED' }
   if (row.status === 'failed' || row.jobStatus === 'failed') return { vouches: false, reason: 'FAILED' }
@@ -409,6 +409,8 @@ function rowVouches(row: ChangeBatchCoverageRow): { vouches: boolean; reason: Co
     || row.observedAt === null
     // A row observed before its own range ended cannot vouch for the part it never saw.
     || ms(row.observedAt) < ms(row.rangeEnd)
+    // A later collection cannot establish what was known at a historical request boundary.
+    || ms(row.observedAt) > ms(asOf)
   ) return { vouches: false, reason: 'UNAVAILABLE' }
   return { vouches: true, reason: null }
 }
@@ -454,7 +456,7 @@ export function deriveWindowCoverage(input: ChangeBatchTailInput, classified: re
   const restricted: Array<readonly [number, number]> = []
   const gapReasons = new Set<CoverageLimitingReason>()
   const rows: ChangeBatchCoverageRowView[] = input.coverage.map((row) => {
-    const { vouches, reason } = rowVouches(row)
+    const { vouches, reason } = rowVouches(row, input.asOf)
     let overlapsWindow: boolean | null = null
     let rangeStartWeek: string | null = null
     let rangeEndWeek: string | null = null
@@ -503,7 +505,7 @@ export function deriveWindowCoverage(input: ChangeBatchTailInput, classified: re
   const eligibilityValue = ratio(candidates - undecidable, candidates)
   const retentionLoss = classified.some((entry) => entry.exclusion === 'MISSING_OPEN_TIMESTAMP' || entry.exclusion === 'RETENTION_EXPIRED')
 
-  const vouchingRows = input.coverage.filter((row) => rowVouches(row).vouches && row.rangeStart !== null)
+  const vouchingRows = input.coverage.filter((_row, index) => rows[index].vouches)
   return {
     permission: { dimension: 'permission', value: permissionValue, limiting_reason: permissionValue === 1 ? null : 'RESTRICTED' },
     completeness: { dimension: 'completeness', value: completenessValue, limiting_reason: gapReason },
@@ -536,6 +538,17 @@ export interface ChangeBatchStratumReading {
   readonly competing: number
   /** p90 with censored units added at their observed lower bound; null when withheld. */
   readonly lowerBoundP90: number | null
+}
+
+function basisEligibility(classified: readonly ClassifiedUnit[], basisId: ChangeBatchBasisId, windowEligibility: MetricCoverageEntry): MetricCoverageEntry {
+  const candidates = classified.filter((entry) => entry.exclusion !== 'OPENED_OUTSIDE_WINDOW')
+  const eligible = candidates.filter((entry) => entry.exclusion === null && basisValue(entry.unit, basisId) !== null).length
+  const value = ratio(eligible, candidates.length)
+  return {
+    dimension: 'eligibility',
+    value,
+    limiting_reason: value === 1 ? null : windowEligibility.limiting_reason === 'DELETED' ? 'DELETED' : 'ELIGIBILITY_RULE_UNRESOLVED',
+  }
 }
 
 function quantilesOf(values: readonly number[]): Array<{ quantile: number; value: number }> | null {
@@ -794,6 +807,7 @@ export function analyzeChangeBatchTail(input: ChangeBatchTailInput): ChangeBatch
 
   const binnings: ChangeBatchBinningReading[] = []
   for (const basisId of ['lines_changed', 'changed_files'] as const) {
+    const coverageForBasis = { ...coverage, eligibility: basisEligibility(classified, basisId, coverage.eligibility) }
     for (const binningId of ['declared_thresholds', 'value_thirds'] as const) {
       let strata: readonly ChangeBatchStratumSpec[]
       let stratumOf: (unit: ChangeBatchUnit) => 's1' | 's2' | 's3' | null
@@ -816,7 +830,7 @@ export function analyzeChangeBatchTail(input: ChangeBatchTailInput): ChangeBatch
           return value === null ? null : thirds.assign(value)
         }
       }
-      const readings = strata.map((stratum) => computeStratum(input, classified, coverage, { basisId, binningId, stratum, stratumOf }))
+      const readings = strata.map((stratum) => computeStratum(input, classified, coverageForBasis, { basisId, binningId, stratum, stratumOf }))
       binnings.push({
         basisId,
         binningId,
@@ -1073,6 +1087,9 @@ function limitationsOf(analysis: ChangeBatchTailAnalysis): LimitationInstance[] 
   }
   if (analysis.coverage.eligibility.value !== 1) {
     limitations.push({ limitationCode: 'COVERAGE_INCOMPLETE', dimension: 'eligibility', copyKey: 'copy.change_batch_tail.rows_unplaceable' })
+  }
+  if (analysis.binnings.some((binning) => binning.strata.some((reading) => reading.result.counts.excluded.some((entry) => entry.reasonCode === 'SIZE_BASIS_MISSING')))) {
+    limitations.push({ limitationCode: 'COVERAGE_INCOMPLETE', dimension: 'eligibility', copyKey: 'copy.change_batch_tail.size_basis_missing' })
   }
   if (analysis.coverage.permission.value !== 1) {
     limitations.push({ limitationCode: 'COVERAGE_RESTRICTED', dimension: 'permission', copyKey: 'copy.change_batch_tail.restricted_stretch' })

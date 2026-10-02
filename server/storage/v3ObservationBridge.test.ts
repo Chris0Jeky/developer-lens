@@ -34,6 +34,16 @@ async function selectedReader(seed: Parameters<typeof createInventedSelectedStor
 }
 
 describe('Phase E stored-observation bridge (#174)', { timeout: 30_000 }, () => {
+  it.each([
+    ['2026-06-30T23:59:59.999Z', false],
+    [AS_OF, false],
+    ['2026-07-01T00:00:00.001Z', true],
+  ] as const)('evaluates alias expiry %s at the request asOf without a retention sweep', async (aliasExpiresAt, hasAlias) => {
+    const result = readStoredObservations(await selectedReader({ aliasExpiresAt }), REQUEST)
+    if (result.status !== 'read') throw new Error(result.code)
+    expect(result.observation.scope).toEqual({ hasAlias, linkedAt: hasAlias ? '2026-05-06T09:15:27.123Z' : null })
+  })
+
   it('reads pull_request_fact, coverage and lineage through a proven selected reader only', async () => {
     const reader = await selectedReader({
       pullRequests: [

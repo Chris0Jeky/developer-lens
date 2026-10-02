@@ -342,6 +342,73 @@ describe('minimum support abstention (blocker 5)', () => {
   })
 })
 
+describe('pre-activation coverage and basis hardening (#376)', () => {
+  it('does not vouch with evidence collected after a historical asOf', () => {
+    const future = coverageRow({ observedAt: '2026-06-29T00:00:00.001Z' })
+    const view = buildChangeBatchTailView(input(presentableUnits(), [future]))
+    expect(view.abstention?.reasonCode).toBe('WINDOW_COVERAGE_INCOMPLETE')
+    expect(view.coverage.rows[0]).toMatchObject({ vouches: false, notVouchingReason: 'UNAVAILABLE' })
+    expect(view.results[0].value.kind).toBe('no_value')
+    expect(analyzeChangeBatchTail(input(presentableUnits(), [coverageRow()])).coverage.completeness.value).toBe(1)
+    acceptChangeBatchTailView(view)
+  })
+
+  it('does not use a future row to complete the second half of a historical window', () => {
+    const halves = [
+      coverageRow({ rangeEnd: '2026-06-15T00:00:00.000Z', observedAt: '2026-06-15T00:00:00.000Z' }),
+      coverageRow({ label: 'coverage-2', rangeStart: '2026-06-15T00:00:00.000Z', observedAt: '2026-07-01T00:00:00.000Z' }),
+    ]
+    const analysis = analyzeChangeBatchTail(input(presentableUnits(), halves))
+    expect(analysis.coverage.completeness.value).toBe(0.5)
+    expect(analysis.coverage.rows.map((row) => row.vouches)).toEqual([true, false])
+  })
+
+  it('counts only overlapping vouching revisions and preserves real in-window revision changes', () => {
+    const outside = coverageRow({ label: 'coverage-2', consentLabel: 'consent-2', instrumentLabel: 'instrument-2', rangeStart: '2026-05-04T00:00:00.000Z', rangeEnd: WINDOW.start })
+    const view = buildChangeBatchTailView(input(presentableUnits(), [coverageRow(), outside]))
+    expect(view.coverage).toMatchObject({ consentRevisions: 1, instrumentRevisions: 1 })
+    expect(view.finding.limitations.map((entry) => entry.limitationCode)).not.toContain('OBSERVABILITY_CHANGED')
+    const changed = buildChangeBatchTailView(input(presentableUnits(), [coverageRow(), { ...outside, rangeStart: WINDOW.start, rangeEnd: WINDOW.end }]))
+    expect(changed.coverage).toMatchObject({ consentRevisions: 2, instrumentRevisions: 2 })
+    expect(changed.finding.limitations.map((entry) => entry.limitationCode)).toContain('OBSERVABILITY_CHANGED')
+  })
+
+  it.each(['lines_changed', 'changed_files'] as const)('reduces eligibility only for the missing %s basis', (basis) => {
+    const missing = unit(18, { mergedAfterHours: 30 }, 100, 4,
+      basis === 'lines_changed' ? { additions: null } : { changedFiles: null })
+    const units = [...presentableUnits(), missing]
+    const outside = Array.from({ length: 200 }, () => ({ ...missing, createdAt: at(-3), mergedAt: at(-2), closedAt: at(-2) }))
+    for (const cohort of [units, [...units, ...outside]]) {
+      const analysis = analyzeChangeBatchTail(input(cohort))
+      expect(analysis.coverage.eligibility.value).toBe(1)
+      for (const binning of analysis.binnings) for (const reading of binning.strata) {
+        expect(reading.result.coverage.find((entry) => entry.dimension === 'eligibility')).toEqual({
+          dimension: 'eligibility', value: binning.basisId === basis ? 0.9375 : 1,
+          limiting_reason: binning.basisId === basis ? 'ELIGIBILITY_RULE_UNRESOLVED' : null,
+        })
+      }
+      const view = buildChangeBatchTailView(input(cohort))
+      expect(view.finding.limitations).toContainEqual({ limitationCode: 'COVERAGE_INCOMPLETE', dimension: 'eligibility', copyKey: 'copy.change_batch_tail.size_basis_missing' })
+      acceptChangeBatchTailView(view)
+    }
+  })
+
+  it('does not call a basis with all missing values an observed empty cohort', () => {
+    const units = presentableUnits().map((entry) => ({ ...entry, changedFiles: null }))
+    const analysis = analyzeChangeBatchTail(input(units))
+    for (const binning of analysis.binnings.filter((entry) => entry.basisId === 'changed_files')) {
+      for (const reading of binning.strata) {
+        expect(reading.result.state).toBe('unavailable')
+        expect(reading.result.stateReasonCode).toBe('EMPTY_UNDER_LIMITED_COVERAGE')
+      }
+    }
+    const view = buildChangeBatchTailView(input(units))
+    expect(view.state).toBe('presentable')
+    expect(view.finding.robustness.checks.find((entry) => entry.checkId === 'CHANGED_FILES_BASIS')?.outcome).toBe('not_applicable')
+    acceptChangeBatchTailView(view)
+  })
+})
+
 describe('sensitivity, rank measure and alternatives', () => {
   it('computes a censoring-aware Harrell concordance by hand', () => {
     const units = [

@@ -5667,3 +5667,39 @@ gate permits absence furniture. A second failing-first test reproduced that case
 explicitly rejects numeric sensitivity on every no-value cohort, independent of its state; the
 four focused files now pass 200 tests. Both review findings are addressed without an activation
 or a broader contract rewrite.
+
+## 2026-10-02 - stored-path pre-activation hardening (#376)
+
+**Bounded task.** Branch `fix/stored-change-batch-preactivation`, based on #385's
+`68ed29f27b75c15eeb1554ff91f207682b0f89a6`. Own conformance, change-batch coverage/basis analysis,
+the selected-store bridge and invented fixture/tests. Fix all five #376 findings before activation.
+No source, capability, telemetry, model, credential or service is activated. Rollback is a revert
+of this slice. Review/merge order: #385 first, then this follow-up retargeted to main; no merge is
+performed by this delegated session.
+
+**Changed.** Required-vector limitations produce typed `unavailable/WINDOW_COVERAGE_LIMITED`
+absence while preserving the supplied coverage vector; its zero measured counts mean no cohort
+is established, not zero source activity. Incomplete completeness retains the existing truncated
+shape. The bridge suppresses alias linkage at `alias_expires_at <= asOf`, without relying on a
+sweep. A coverage row collected after `asOf` cannot vouch. Each size basis has its own eligibility
+ratio over in-window candidates, with explicit finding limitations; unrelated outside-window
+rows do not affect the ratio. Revision counts use only rows vouching for overlapping ranges.
+
+**Verified.** Failing-first run: 14 expected failures and 86 passed in three files. After the fix,
+five focused files (conformance, analysis, bridge, API and panel consumer): 119 passed. Lint and
+TypeScript passed. `npm run build:showcase` passed, including synthetic/export/privacy boundaries.
+Planning artifact drift check passed (128 cards; three existing near-limit description warnings),
+and the locked Pulseboard SDK artifact check passed. Independent fresh-context review found no
+blocking defect and passed 11 additional invented assertions at the changed boundaries.
+
+**Not verified yet.** Full `npm run check` awaits the coordinating session's test slot. Hosted
+CI, Linux-specific acceptance, browser/visual QA, real-data activation and hostile-writer integrity
+are not inferred. The `observedAt` guard does not provide a historical database snapshot of mutable
+facts, job/snapshot state or lineage. The stored endpoint remains unwired.
+
+**Residual follow-up.** [#386](https://github.com/Chris0Jeky/developer-lens/issues/386) records a
+separately reproduced acceptance gap: an invented API body with primary eligible count 29,
+finding summary 36 and rendered cohort 40 is accepted. It is an integrity follow-up, not a live
+disclosure. No exported ResearchFinding, MethodTrialView, ResearchPack or PublicLensProjection
+contract changed. Existing `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6` decisions and
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` release gate remain unchanged.
