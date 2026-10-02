@@ -323,6 +323,19 @@ describe('Phase E change-batch lens endpoint (#174)', { timeout: 60_000 }, () =>
     expect(() => gateChangeBatchTailView(view)).toThrow(/serving gate/)
   })
 
+  it('refuses an API body whose primary cohort is redirected to a stratum', async () => {
+    const store = await storeWith({ pullRequests: presentablePullRequests(), coverage: [COMPLETE] })
+    const response = await get(app(sourceFor(store))).expect(200)
+    const view = JSON.parse(JSON.stringify(response.body.view)) as ChangeBatchTailView
+    const row = view.binnings[0].strata[0]
+    const result = view.results.find((entry) => entry.resultId === row.resultId)!
+    for (const reference of view.finding.metricResults) reference.role = reference.resultId === row.resultId ? 'primary' : 'supporting'
+    view.finding.sampleSummary = { resultId: result.resultId, state: result.state, counts: result.counts }
+    view.finding.coverage = result.coverage
+    view.cohort = { eligible: row.eligible, merged: row.merged, censored: row.censored, competing: row.competing, excluded: result.counts.excluded, draftsStillOpen: 0 }
+    expect(() => gateChangeBatchTailView(view)).toThrow(/serving gate/)
+  })
+
   it('never serializes a quantile of a stratum withheld below minimum support (API-body canary)', async () => {
     const base = presentablePullRequests().filter((row) => !row.tag.startsWith('middle-'))
     const seed: InventedStoreSeed = {

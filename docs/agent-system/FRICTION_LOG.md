@@ -2846,3 +2846,14 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** 1 occurrence, [#385 review](https://github.com/Chris0Jeky/developer-lens/pull/385#discussion_r4170241663).
 - **task:** #387 owns the documentation correction; the existing review/merge protocol owns the separate-sweep decision requirement.
 - **promotion:** Use the separate orchestration boundary for the remaining merges; no product runtime change is needed.
+
+### FR-110 - the PC reconnect interrupted an exact-head qualification
+
+- **first-seen:** 2026-10-02
+- **status:** `workaround-documented`
+- **symptom:** The serial #387 integrated check stopped during the PC connection loss. Its partial log recorded one restore-test timing failure, but no final test summary or build receipt; after reconnect its worker was gone.
+- **impact:** That run could not establish exact-head acceptance. The failure's cause was not inferred from the disconnect alone.
+- **workaround:** Inspect own worker, log and exact head before resuming; do not duplicate an active run. Re-run the failing case, then the whole serial one-worker check at the unchanged head. The isolated case passed and the complete retry passed 1852 tests with 13 existing skips, plus build/privacy checks; showcase passed afterward.
+- **occurrences:** 1 occurrence during #387 qualification at `47a98e2`.
+- **task:** Existing resource coordination and exact-head proving govern recovery; this is execution evidence, not a product fix or a silently passed interrupted run.
+- **promotion:** Keep bounded one-worker recovery and concrete final receipts; no timeout or machine configuration change was needed.

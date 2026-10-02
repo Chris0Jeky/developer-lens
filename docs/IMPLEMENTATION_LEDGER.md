@@ -5735,8 +5735,8 @@ pre-campaign rollback baseline; rollback uses a reviewed revert and the same ver
 `1d2f56c0f6f935fa144af6d18e097dd932e52978`. Resolve an unambiguous primary result, bind its
 finding summary and coverage to the measured state/vector/counts, and bind rendered cohort counts
 and outcome accounting to that same result. Preserve typed absence and keyed-entry ordering.
-Revert this slice for rollback. Review order is #385, #387, then this follow-up, retargeting each
-stacked draft after its prerequisite lands; this session performs no merges or activation.
+Revert this slice for rollback. Original draft order was #385, #387, then this follow-up; the
+owner subsequently authorized safe merges and the established synthetic Pages deployment.
 
 **Changed.** The shared server/browser acceptance gate rejects duplicate result IDs, drifted
 summary state/counts or coverage, contradictory rendered cohort counts/exclusions, outcomes that
@@ -5763,3 +5763,19 @@ activation, deployment, merge or owner-decision change occurs. The q-10(c) relea
 separate invented probe: both gates accept rendered stratum eligible 21 beside its served metric
 result's eligible 10. The primary cohort/summary still agree. This is a presentation-integrity
 follow-up, not a live disclosure; no activation was needed to reproduce it.
+
+**Review and integration follow-up.** #387 merged as `76a659efe6d7246c6ae3e2f868f355367c22f239`
+after exact-head `47a98e2adf7fc7f821cbc842aaba60d0272409ac` passed the recovered serial Windows
+check (117 files, 1852 passed, 13 existing skips), showcase build and hosted run `37072423879`.
+The independently merged SDK 3.3.1 update (#391) is preserved. The earlier reconnect-interrupted
+run recorded one restore-test failure and no final summary; it remains failed/incomplete evidence.
+That case passed alone after reconnect and the complete retry passed without a source change.
+
+The #389 review found that swapping primary/supporting roles and redirecting summary, coverage
+and cohort to a stratum passed the old agreement checks. Eight failing-first regressions reproduced
+this (75 passed); all 83 focused shared/API/browser tests now pass. The gate pins `cbt.all`, its
+primary reference and summary, scope/window/asOf, and every finding reference's full metric identity
+before granting typed no-value furniture. Reordered references/results remain accepted. Fresh
+exact-head full/showcase/hosted qualification and scoped independent review are recorded in the PR
+Proof section before merge. #390 separately owns counts for omitted strata; no analytical method,
+generic metric or exported Lab contract changed here.
