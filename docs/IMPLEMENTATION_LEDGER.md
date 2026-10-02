@@ -5702,10 +5702,11 @@ Context verification and all four ResearchPack, MethodTrialView, ResearchFinding
 drift checks also passed. Draft [#387](https://github.com/Chris0Jeky/developer-lens/pull/387) contains
 implementation commit `30f58d7ad8116be615a64a267a60e56f92f026d3`; subsequent edits record evidence only.
 
-**Full qualification.** Local Windows `npm run check` passed at draft #387's exact head
+**Previous full qualification.** Local Windows `npm run check` passed at #387's original head
 `1d2f56c0f6f935fa144af6d18e097dd932e52978`: 117 files, 1852 passed, 13 existing POSIX/opt-in skips;
 lint, context, all four fixture drift checks, TypeScript, build and privacy checks passed.
-Hosted CI has no run for the stacked base because the workflow targets main. Linux-specific acceptance,
+Retargeted/final-head qualification is recorded in the PR's Proof section. The original stacked
+base triggered no hosted run because the workflow targets main. Linux-specific acceptance,
 browser/visual QA, real-data activation and hostile-writer integrity
 are not inferred. The `observedAt` guard does not provide a historical database snapshot of mutable
 facts, job/snapshot state or lineage. The stored endpoint remains unwired.
@@ -5716,6 +5717,17 @@ finding summary 36 and rendered cohort 40 is accepted. It is an integrity follow
 disclosure. No exported ResearchFinding, MethodTrialView, ResearchPack or PublicLensProjection
 contract changed. Existing `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6` decisions and
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` release gate remain unchanged.
+
+**Merge follow-up.** The owner authorized review, fixes, safe merge and the established synthetic
+deployment on 2026-10-02. #385 merged as `cbee0c432a2e4b5f3615448d48df689949fcc7c9` after its
+exact-head local proofs and fresh hosted run `37070749054` passed. Its late documentation finding
+is corrected here: the original full Windows check and completed review are no longer described
+as pending. Two fresh integrated read-only reviews at #390's original `bee38fb` found no blocking
+code defect. Retarget #387, #389 and #390 to main in that order and requalify after each integration.
+The existing C0-only Pages workflow is permitted by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4`;
+release tags remain blocked by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and the stored
+endpoint remains unwired. Previous successful Pages run `36516768140` at main `9704118` is the
+pre-campaign rollback baseline; rollback uses a reviewed revert and the same verified workflow.
 
 ## 2026-10-02 - served cohort consistency (#386)
 
