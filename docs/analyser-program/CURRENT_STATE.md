@@ -27,7 +27,8 @@ active_slice: >-
   #387 merged as 76a659e after exact-head 47a98e2 passed 1852 Windows tests (13 existing skips),
   showcase and hosted proving; SDK 3.3.1 from #391 is preserved. #385's ledger thread is resolved.
   #389 now fixes the review's primary-role swap using canonical cbt.all and full metric/scope/window
-  identity: eight failing-first regressions, then 83 focused tests passed. Qualify its new head,
+  identity: eight failing-first regressions, then 83 focused tests passed; review added equivalent
+  timestamp spelling support with one failing-first positive case. Qualify its new head,
   then #390's omitted-row count-reference correction; the PR Proof sections carry exact-head evidence.
   One writer per isolated checkout,
   one suite/build and one test worker.

@@ -184,6 +184,14 @@ describe('served cohort consistency (#386)', () => {
       expect(() => acceptChangeBatchTailView(view)).not.toThrow()
     }
   })
+
+  it('accepts equivalent primary timestamp spellings', () => {
+    const view = served()
+    const primary = view.results.find((result) => result.resultId === 'cbt.all')!
+    primary.window = { start: '2026-06-01T00:00:00+00:00', end: '2026-06-29T00:00:00+00:00' }
+    primary.asOf = '2026-06-29T00:00:00+00:00'
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+  })
 })
 
 describe('construct: an opened-to-merge interval, never labelled as ready-to-merge (blocker 1)', () => {

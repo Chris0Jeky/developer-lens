@@ -5775,7 +5775,9 @@ The #389 review found that swapping primary/supporting roles and redirecting sum
 and cohort to a stratum passed the old agreement checks. Eight failing-first regressions reproduced
 this (75 passed); all 83 focused shared/API/browser tests now pass. The gate pins `cbt.all`, its
 primary reference and summary, scope/window/asOf, and every finding reference's full metric identity
-before granting typed no-value furniture. Reordered references/results remain accepted. Fresh
+before granting typed no-value furniture. Reordered references/results remain accepted. Scoped
+independent review found no blocking gap and added equivalent-instant timestamp spelling support
+with a failing-first positive case; comparisons use instants rather than serialized spellings. Fresh
 exact-head full/showcase/hosted qualification and scoped independent review are recorded in the PR
 Proof section before merge. #390 separately owns counts for omitted strata; no analytical method,
 generic metric or exported Lab contract changed here.

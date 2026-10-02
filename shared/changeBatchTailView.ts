@@ -630,8 +630,8 @@ export function acceptChangeBatchTailView(candidate: unknown): ChangeBatchTailVi
   const primaryReference = finding.metricResults.find((reference) => reference.role === 'primary')
   if (primary === undefined || primaryReference?.resultId !== 'cbt.all'
     || finding.sampleSummary.resultId !== 'cbt.all' || finding.scopeId !== view.scopeSurrogate
-    || primary.scopeAlias !== view.scopeSurrogate || primary.window.start !== view.window.start
-    || primary.window.end !== view.window.end || primary.asOf !== view.asOf) {
+    || primary.scopeAlias !== view.scopeSurrogate || Date.parse(primary.window.start) !== Date.parse(view.window.start)
+    || Date.parse(primary.window.end) !== Date.parse(view.window.end) || Date.parse(primary.asOf) !== Date.parse(view.asOf)) {
     throw new ChangeBatchTailViewError('view primary identity must describe the canonical whole cohort')
   }
   if (!finding.metricResults.every((reference) => {
