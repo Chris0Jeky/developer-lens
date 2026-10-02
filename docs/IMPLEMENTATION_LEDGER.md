@@ -5646,10 +5646,16 @@ or PublicLensProjection contract is changed.
 focused files, 92 passed. Failing-first run: six expected failures, 192 passed. After the fix:
 four focused files, 198 passed. `npm run lint` and `tsc -b` passed.
 
-**Not verified yet.** Required `npm run check` and `npm run build:showcase` await the coordinating
-session's test slot. Independent adversarial review is in progress. No hosted, Linux, browser,
-real-data or activation acceptance is claimed. The launch router still answers 404 for the stored
-endpoint. #376 remains a separate pre-activation hardening slice.
+**Qualification.** Draft [#385](https://github.com/Chris0Jeky/developer-lens/pull/385) has head
+`68ed29f27b75c15eeb1554ff91f207682b0f89a6`. Local `npm run build:showcase` passed at that head.
+The [hosted proving gate](https://github.com/Chris0Jeky/developer-lens/actions/runs/37057024884/job/111004120303)
+passed on its generated merge ref: 117 files, 1845 tests passed, three conditional skips
+(Windows temporary-storage and unsupported-directory-durability checks, plus opt-in scale).
+Context, planning/fixture drift, lint, build, showcase privacy and locked SDK checks passed there.
+The exact local `npm run check` still awaits the coordinating session's test slot. The hosted
+workflow omits the separate ResearchFinding drift command; that check passed locally on the
+companion containing the same #375 changes. No local full Windows suite, browser, real-data or
+activation acceptance is inferred. The launch router still answers 404 for the stored endpoint.
 
 **Failures/workarounds.** Expected regression failures above; sandbox clone/Git ownership
 friction is recorded as FR-106. No owner decision or capability was changed.
@@ -5691,9 +5697,13 @@ TypeScript passed. `npm run build:showcase` passed, including synthetic/export/p
 Planning artifact drift check passed (128 cards; three existing near-limit description warnings),
 and the locked Pulseboard SDK artifact check passed. Independent fresh-context review found no
 blocking defect and passed 11 additional invented assertions at the changed boundaries.
+Context verification and all four ResearchPack, MethodTrialView, ResearchFinding and lens-projection
+drift checks also passed. Draft [#387](https://github.com/Chris0Jeky/developer-lens/pull/387) contains
+implementation commit `30f58d7ad8116be615a64a267a60e56f92f026d3`; subsequent edits record evidence only.
 
 **Not verified yet.** Full `npm run check` awaits the coordinating session's test slot. Hosted
-CI, Linux-specific acceptance, browser/visual QA, real-data activation and hostile-writer integrity
+CI has no run for the stacked base because the workflow targets main. Linux-specific acceptance,
+browser/visual QA, real-data activation and hostile-writer integrity
 are not inferred. The `observedAt` guard does not provide a historical database snapshot of mutable
 facts, job/snapshot state or lineage. The stored endpoint remains unwired.
 

@@ -19,10 +19,11 @@ active_slice: >-
   2026-10-02 task: main was refreshed at 9704118b578f2901a18b29753a3b6f7a945572e5.
   Draft #385 owns #375 on fix/change-batch-withheld-quantiles (68ed29f): typed withholding of
   cohort values plus sensitivity/tampering checks; 200 focused tests passed. The companion
-  fix/stored-change-batch-preactivation branch owns all five #376 findings; 119 focused tests,
-  lint, TypeScript, showcase/privacy build and independent review passed. Full check awaits a
+  draft #387 on fix/stored-change-batch-preactivation owns all five #376 findings; 119 focused
+  tests, lint, TypeScript, context, fixture drift, showcase/privacy build and independent review
+  passed. #385's hosted gate passed (1845 tests, three conditional skips). Local full check awaits a
   coordinated test slot. One writer per isolated task checkout; no real data or activation.
-  Review/merge order is #385 then the companion retargeted to main. No merge or deployment is
+  Review/merge order is #385 then #387 retargeted to main. No merge or deployment is
   authorized in this delegated task. The September remote snapshots above remain dated history.
 next_value_slice: >-
   Finish exact-head qualification of the #375/#376 drafts before activation selection. Then #386's
@@ -108,7 +109,7 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  Refresh draft #385 and the fix/stored-change-batch-preactivation companion, their heads and
+  Refresh drafts #385 and #387, their heads and
   checks. Both are synthetic-only pre-activation fixes; main was observed at 9704118 on 2026-10-02.
   Complete full checks in the coordinating session's slot and retain drafts for owner review.
   Stored-path activation of
