@@ -5751,8 +5751,13 @@ Independent fresh-context review of the four code/test files found no blocking d
 read-only without another Node/test/build process.
 The first post-fix API assertion expected the internal detail, while the wrapper intentionally
 normalizes errors; correcting it to the public serving-gate error preserved the failing-first
-rejection evidence. Final full-check qualification and exact head are recorded in the draft PR's
-Proof section; refresh it before action.
+rejection evidence. Draft [#389](https://github.com/Chris0Jeky/developer-lens/pull/389) has exact head
+`92f8f26bca8fd04e62af1f3eb65069e256f126ba`. Local Windows `npm run check` passed at that head:
+117 files, 1872 passed, 13 existing POSIX/opt-in skips; lint, context, all four fixture drift checks,
+TypeScript, build and privacy checks passed. `npm run build:showcase` passed at the same head.
+The initial two-worker attempt was deliberately stopped under shared-PC memory pressure, with
+no product test failure, then the full check completed with one worker (FR-107). No hosted run
+is triggered by the stacked base; no Linux or separate browser acceptance is inferred.
 
 **Not inferred.** This binds served representations, not mutable storage to an historical snapshot
 or hostile-writer ground truth. It does not cross-bind every stratum presentation row. No browser
@@ -5781,3 +5786,56 @@ with a failing-first positive case; comparisons use instants rather than seriali
 exact-head full/showcase/hosted qualification and scoped independent review are recorded in the PR
 Proof section before merge. #390 separately owns counts for omitted strata; no analytical method,
 generic metric or exported Lab contract changed here.
+
+## 2026-10-02 - served stratum consistency (#388)
+
+**Bounded task.** Branch `fix/change-batch-stratum-consistency`, based on draft #389's
+`92f8f26bca8fd04e62af1f3eb65069e256f126ba`. Bind rendered stratum identities, states, counts,
+display furniture, merged sample sizes, quantiles and lower-bound values to their carried metric
+results. Preserve legitimately omitted below-support/unavailable rows and keyed-entry ordering.
+Synthetic fixtures only; rollback is a revert of this slice. Draft review order is #385, #387,
+#389, then this follow-up. The owner subsequently authorized safe integration and the established
+synthetic Pages deployment; activation and exported Lab contract changes remain outside this slice.
+
+**Changed.** The shared server/browser gate checks unique binning/stratum identities, fixed
+result IDs, registered states, eligible outcome partitions and the served metric/scope/window
+identity. Carried results determine state, eligible/censored counts, merged distribution sample,
+display reason, keyed quantile values and supported lower-bound p90. Omitted measured rows remain
+below support without numerical furniture; measured typed-absence rows cannot lose their result.
+Parsed displayed quantiles are normalized to the fixed table headings without changing the raw
+wire body. Analytical procedure and definition versions remain unchanged.
+
+**Verified.** Failing-first shared/API/browser-consumer run: 29 expected failures, 76 passed.
+Independent fresh-context review identified a truncated omitted-row support bypass; two added
+tests reproduced it with both a support-met reason and a truncation reason. The gate now rejects
+that omission. Legitimate truncated cohort views retain their existing empty binning list.
+The final three focused files passed all 107 tests. The scoped final independent review found
+no remaining blocker and performed no runtime tests. This draft's Proof section records its
+exact head and final full-check qualification. One suite/build at a time and one test worker are
+required for this shared-PC qualification; the environment workaround is recorded as FR-107.
+
+**Not inferred.** This proves consistency of served representations, not omitted source data or
+historical/hostile-writer storage integrity. #389's later review correction pins primary identity.
+The original draft exercised no browser automation, real history, protected data,
+private projection, external model, telemetry, credentials, collection or stored endpoint
+activation is exercised. The endpoint remains unwired, and
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains the release hold.
+
+**Omitted-count review correction.** The review showed that increasing eligible/censored together
+or exchanging merged/competing counts preserved the old omitted-row checks. Five failing-first
+shared/API/browser regressions reproduced it (116 passed). The local view now requires a strict
+count-only `outcomeCounts` ledger generated directly from all-cohort and rendered-stratum analysis,
+including rows whose numeric result is omitted. Unique keys must exactly cover `cbt.all` and the
+rendered rows; outcome partitions, all four cohort/row counts, and carried eligible/censored/sample
+sizes must agree. Omitted results, quantiles and lower bounds remain absent. This binds served
+representations; it does not establish hostile-writer ground truth.
+
+Only `CHANGE_BATCH_TAIL_VIEW_VERSION` changes to `1.1.0` for the required wire field. Old bodies
+fail closed to the synthetic fallback. Metric, method, finding, API-envelope and exported Lab
+versions stay fixed. Expanded focused coverage passed all 130 tests, including missing/duplicate/
+foreign ledger keys, independent record drift, unrecorded results, typed-absence measured counts
+and order independence. The first green run rejected all malicious bodies but one old assertion
+expected singular stratum wording; matching the new diagnostic preserved rejection behavior.
+#389's integrated `abe21002037f33318aaeb0039c69ba82ea46de7e` passed full Windows qualification
+(117 files, 1881 passed, 13 existing skips), showcase and hosted run `37076231216`. Fresh #390
+qualification, independent fix review, merge and final Pages receipts belong in its PR Proof section.

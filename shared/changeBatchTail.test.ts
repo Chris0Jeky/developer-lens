@@ -194,6 +194,196 @@ describe('served cohort consistency (#386)', () => {
   })
 })
 
+describe('served stratum consistency (#388)', () => {
+  function served(): ChangeBatchTailView {
+    return JSON.parse(JSON.stringify(buildSyntheticChangeBatchTailView()))
+  }
+  function shown(view: ChangeBatchTailView) {
+    const row = view.binnings[0].strata.find((entry) => entry.displayed)
+    if (!row) throw new Error('fixture must include a displayed stratum')
+    return row
+  }
+  const cases: Array<[string, (view: ChangeBatchTailView) => void]> = [
+    ['eligible count', (view) => { shown(view).eligible += 11 }],
+    ['censored count', (view) => { shown(view).censored += 1 }],
+    ['merged count', (view) => { shown(view).merged += 1 }],
+    ['competing count', (view) => { shown(view).competing += 1 }],
+    ['merged sample with unchanged partition', (view) => { shown(view).merged -= 1; shown(view).competing += 1 }],
+    ['result state', (view) => { shown(view).state = 'censored_only' }],
+    ['unregistered state', (view) => { shown(view).state = 'invented_state' }],
+    ['display reason', (view) => { shown(view).displayReasonCode = 'BELOW_MINIMUM_SUPPORT' }],
+    ['hidden displayed distribution', (view) => { shown(view).displayed = false }],
+    ['missing displayed quantiles', (view) => { shown(view).quantiles = null }],
+    ['quantile seconds', (view) => { shown(view).quantiles![0].seconds += 123 }],
+    ['quantile level', (view) => { shown(view).quantiles![0].quantile = 0.6 }],
+    ['missing quantile', (view) => { shown(view).quantiles!.pop() }],
+    ['duplicate quantile', (view) => { shown(view).quantiles!.push({ ...shown(view).quantiles![0] }) }],
+    ['lower bound', (view) => { shown(view).lowerBoundP90! += 123 }],
+    ['missing supported lower bound', (view) => { shown(view).lowerBoundP90 = null }],
+    ['other stratum result', (view) => { shown(view).resultId = view.binnings[0].strata[1].resultId }],
+    ['result window', (view) => {
+      view.results.find((entry) => entry.resultId === shown(view).resultId)!.window.start = '2026-05-25T00:00:00.000Z'
+    }],
+    ['result scope', (view) => {
+      view.results.find((entry) => entry.resultId === shown(view).resultId)!.scopeAlias = 'lens-scope-bbbbbbbbbbbbbbbbbbbbbbbb'
+    }],
+    ['duplicate binning', (view) => { view.binnings.push(structuredClone(view.binnings[0])) }],
+  ]
+  it.each(cases)('rejects contradictory %s in a wire body', (_label, mutate) => {
+    const view = served()
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    mutate(view)
+    expect(() => validateFinding(view.finding)).not.toThrow()
+    for (const result of view.results) expect(() => validateMetricResult(result)).not.toThrow()
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/stratum|binning/)
+  })
+
+  it('accepts reordered keyed data and returns quantiles in the table heading order', () => {
+    const view = served()
+    view.binnings.reverse()
+    view.results.reverse()
+    view.finding.coverage.reverse()
+    for (const binning of view.binnings) {
+      binning.strata.reverse()
+      for (const row of binning.strata) row.quantiles?.reverse()
+    }
+    const accepted = acceptChangeBatchTailView(view)
+    expect(view.binnings[0].strata.find((row) => row.displayed)?.quantiles?.map((entry) => entry.quantile))
+      .toEqual([0.9, 0.75, 0.5])
+    for (const binning of accepted.binnings) for (const row of binning.strata) {
+      if (row.displayed) expect(row.quantiles?.map((entry) => entry.quantile)).toEqual([0.5, 0.75, 0.9])
+    }
+  })
+
+  it('preserves served empty/censored-only states and omitted below-support/unavailable rows', () => {
+    const fixtures = [
+      input(presentableUnits().filter((_row, index) => index % 3 !== 2)),
+      input([...presentableUnits().filter((_row, index) => index % 3 !== 2), ...Array.from({ length: 5 }, (_, index) => unit(index, 'open', 900))]),
+      input(presentableUnits().filter((_row, index) => !(index % 3 === 1 && index > 3))),
+      input(presentableUnits().map((row) => ({ ...row, changedFiles: null }))),
+      input([unit(2, { mergedAfterHours: 13 }, 20)]),
+      input(presentableUnits(), [coverageRow({ rangeEnd: '2026-06-15T00:00:00.000Z' })]),
+    ]
+    const views = fixtures.map((fixture) => JSON.parse(JSON.stringify(buildChangeBatchTailView(fixture))) as ChangeBatchTailView)
+    const states = views.flatMap((view) => view.binnings.flatMap((binning) => binning.strata.map((row) => row.state)))
+    expect(states).toEqual(expect.arrayContaining(['empty_eligible_cohort', 'censored_only', 'observed', 'unavailable']))
+    for (const view of views) expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+  })
+
+  it('rejects invented numbers and impossible outcome accounting in an omitted below-support row', () => {
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(input(
+      presentableUnits().filter((_row, index) => !(index % 3 === 1 && index > 3)),
+    )))) as ChangeBatchTailView
+    const row = view.binnings[0].strata[1]
+    expect(view.results.some((result) => result.resultId === row.resultId)).toBe(false)
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    row.eligible += 1
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/stratum/)
+  })
+
+  it('rejects a numeric lower bound smuggled into omitted below-support furniture', () => {
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(input(
+      presentableUnits().filter((_row, index) => !(index % 3 === 1 && index > 3)),
+    )))) as ChangeBatchTailView
+    view.binnings[0].strata[1].lowerBoundP90 = 123
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/stratum/)
+  })
+
+  it.each(['SUPPORT_GATE_MET', 'TRUNCATION_ABSTAINED'])('rejects an omitted supported row relabelled truncated with %s', (reason) => {
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(input(
+      presentableUnits().filter((_row, index) => !(index % 3 === 1 && index > 3)),
+    )))) as ChangeBatchTailView
+    const row = view.binnings[0].strata[1]
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    row.state = 'truncated'
+    row.displayReasonCode = reason
+    row.merged = 5
+    row.eligible = row.merged + row.censored + row.competing
+    expect(() => validateFinding(view.finding)).not.toThrow()
+    for (const result of view.results) expect(() => validateMetricResult(result)).not.toThrow()
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/stratum/)
+  })
+})
+
+describe('measured outcome-count binding', () => {
+  function omittedView(): ChangeBatchTailView {
+    return JSON.parse(JSON.stringify(buildChangeBatchTailView(input([
+      ...presentableUnits().filter((_row, index) => !(index % 3 === 1 && index > 3)),
+      unit(2, { closedAfterHours: 4 }, 150, 4), unit(3, { closedAfterHours: 5 }, 150, 4),
+    ]))))
+  }
+
+  it.each(['eligible/censored inflation', 'merged/competing exchange'])('rejects omitted-row %s despite valid outcome partition', (change) => {
+    const view = omittedView()
+    const row = view.binnings[0].strata[1]
+    expect(view.results.some((result) => result.resultId === row.resultId)).toBe(false)
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    if (change === 'eligible/censored inflation') { row.eligible += 1; row.censored += 1 }
+    else { row.merged += 1; row.competing -= 1 }
+    expect(row.eligible).toBe(row.merged + row.censored + row.competing)
+    expect(row.merged).toBeLessThan(5)
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/outcome counts/)
+  })
+
+  it('binds withheld cohort merged and competing counts without numeric values', () => {
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(input([
+      unit(2, { mergedAfterHours: 12 }, 20), unit(3, { closedAfterHours: 4 }, 20),
+    ])))) as ChangeBatchTailView
+    expect(view.results[0].value.kind).toBe('no_value')
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    view.cohort.merged += 1
+    view.cohort.competing -= 1
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/outcome counts/)
+  })
+
+  const ledgerCases: Array<[string, (view: ChangeBatchTailView) => void]> = [
+    ['missing cohort', (view) => { view.outcomeCounts = view.outcomeCounts.filter((entry) => entry.resultId !== 'cbt.all') }],
+    ['missing omitted stratum', (view) => { view.outcomeCounts = view.outcomeCounts.filter((entry) => entry.resultId !== view.binnings[0].strata[1].resultId) }],
+    ['duplicate identity', (view) => { view.outcomeCounts[1] = { ...view.outcomeCounts[0] } }],
+    ['foreign identity', (view) => { view.outcomeCounts[1].resultId = 'cbt.lines_changed.foreign.s1' }],
+    ['invalid partition', (view) => { view.outcomeCounts[0].merged += 1 }],
+    ['independent stratum count inflation', (view) => {
+      const entry = view.outcomeCounts.find((entry) => entry.resultId === view.binnings[0].strata[1].resultId)!
+      entry.eligible += 1; entry.censored += 1
+    }],
+    ['unrecorded carried result', (view) => { view.results.push({ ...view.results[0], resultId: 'cbt.unrendered' }) }],
+  ]
+  it.each(ledgerCases)('rejects %s in the measured count ledger', (_label, mutate) => {
+    const view = omittedView()
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    mutate(view)
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/outcome counts/)
+  })
+
+  it('requires the new count-only wire shape and rejects old bodies', () => {
+    const view = omittedView()
+    expect(view.viewVersion).toBe('1.1.0')
+    const oldShape: Record<string, unknown> = { ...view }
+    delete oldShape.outcomeCounts
+    expect(() => acceptChangeBatchTailView(oldShape)).toThrow(/view schema/)
+    expect(() => acceptChangeBatchTailView({ ...view, viewVersion: '1.0.0' })).toThrow(/view schema/)
+  })
+
+  it('retains measured counts for typed absence and accepts reordered ledger entries', () => {
+    const fixtures = [
+      input([unit(2, { mergedAfterHours: 12 }, 20), unit(3, { closedAfterHours: 4 }, 20)]),
+      input(presentableUnits(), [coverageRow({ rangeEnd: '2026-06-15T00:00:00.000Z' })]),
+      input([]), input([unit(2, 'open', 20)]),
+      input(presentableUnits().map((row) => ({ ...row, changedFiles: null }))),
+    ]
+    for (const fixture of fixtures) {
+      const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(fixture))) as ChangeBatchTailView
+      const all = analyzeChangeBatchTail(fixture).all
+      expect(view.outcomeCounts[0]).toEqual({ resultId: 'cbt.all', eligible: all.result.counts.eligible, merged: all.merged, censored: all.censored, competing: all.competing })
+      view.outcomeCounts.reverse()
+      expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+      for (const binning of view.binnings) for (const row of binning.strata) {
+        if (!row.displayed) expect(row).toMatchObject({ quantiles: null, lowerBoundP90: null })
+      }
+    }
+  })
+})
+
 describe('construct: an opened-to-merge interval, never labelled as ready-to-merge (blocker 1)', () => {
   it('computes and names the opened-to-merge construct with readiness explicitly unrecorded', () => {
     const view = buildChangeBatchTailView(input(presentableUnits()))

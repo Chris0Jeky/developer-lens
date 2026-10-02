@@ -108,6 +108,23 @@ describe('change-batch view source', () => {
     expect(source.result.current.view.source.kind).toBe('synthetic')
   })
 
+  it.each(['counts', 'quantiles', 'lower-bound'] as const)('retains the synthetic view for contradictory stratum %s (#388)', async (field) => {
+    const stored = JSON.parse(JSON.stringify(buildChangeBatchTailView({
+      ...syntheticChangeBatchInput(), source: { kind: 'selected_v3_store' },
+    })))
+    const row = stored.binnings[0].strata.find((entry: { displayed: boolean }) => entry.displayed)
+    if (field === 'counts') row.eligible += 11
+    if (field === 'quantiles') row.quantiles[0].seconds += 123
+    if (field === 'lower-bound') row.lowerBoundP90 += 123
+    const body = { apiContractVersion: '1.0.0', view: stored }
+    expect(acceptServedChangeBatchTail(body)).toBeNull()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })))
+    const source = renderHook(() => useChangeBatchTailView())
+    act(() => source.result.current.requestStored())
+    await waitFor(() => expect(source.result.current.status).toBe('not_served'))
+    expect(source.result.current.view.source.kind).toBe('synthetic')
+  })
+
   it('keeps the synthetic view when a served primary cohort is redirected to a stratum', async () => {
     const view = JSON.parse(JSON.stringify(buildChangeBatchTailView({
       ...syntheticChangeBatchInput(), source: { kind: 'selected_v3_store' },
@@ -141,5 +158,22 @@ describe('change-batch view source', () => {
     act(() => on.result.current.requestStored())
     await waitFor(() => expect(on.result.current.view.source.kind).toBe('selected_v3_store'))
     expect(on.result.current.status).toBe('stored')
+  })
+
+  it('retains the synthetic view for invented counts on an omitted below-support row', async () => {
+    const base = syntheticChangeBatchInput()
+    const units = base.units.filter((unit) => !((unit.additions ?? 0) + (unit.deletions ?? 0) >= 50 && (unit.additions ?? 0) + (unit.deletions ?? 0) < 400 && unit.mergedAt !== null && Date.parse(unit.createdAt ?? '') > Date.parse('2026-06-05T00:00:00.000Z')))
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView({ ...base, units, source: { kind: 'selected_v3_store' } })))
+    const row = view.binnings[0].strata[1]
+    expect(view.results.some((result: { resultId: string }) => result.resultId === row.resultId)).toBe(false)
+    row.eligible += 1
+    row.censored += 1
+    const body = { apiContractVersion: '1.0.0', view }
+    expect(acceptServedChangeBatchTail(body)).toBeNull()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })))
+    const source = renderHook(() => useChangeBatchTailView())
+    act(() => source.result.current.requestStored())
+    await waitFor(() => expect(source.result.current.status).toBe('not_served'))
+    expect(source.result.current.view.source.kind).toBe('synthetic')
   })
 })
