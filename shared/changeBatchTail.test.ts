@@ -311,6 +311,18 @@ describe('minimum support abstention (blocker 5)', () => {
     expect(() => acceptChangeBatchTailView(tampered)).toThrow(/display gate withholds/)
   })
 
+  it('rejects numeric sensitivity on a no-value cohort relabelled as censored-only', () => {
+    const fixture = input([unit(1, { mergedAfterHours: 13 }, 10)])
+    const tampered = structuredClone(buildChangeBatchTailView(fixture))
+    const cohort = tampered.results[0]
+    cohort.state = 'censored_only'
+    cohort.stateReasonCode = 'ALL_ELIGIBLE_EVENTS_CENSORED'
+    cohort.counts.censored = cohort.counts.eligible
+    cohort.value = { kind: 'no_value', reasonCode: 'ALL_ELIGIBLE_EVENTS_CENSORED' }
+    cohort.sensitivity = analyzeChangeBatchTail(fixture).all.result.sensitivity
+    expect(() => acceptChangeBatchTailView(tampered)).toThrow(/numeric sensitivity/)
+  })
+
   it('withholds a below-support stratum inside a presentable view and renders no number for it', () => {
     const units = presentableUnits().filter((_entry, index) => !(index % 3 === 1 && index > 3))
     const view = buildChangeBatchTailView(input(units))

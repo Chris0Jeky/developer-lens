@@ -5661,3 +5661,9 @@ a tampered no-value cohort relabelled `truncated` could still carry numeric sens
 One failing-first test reproduced it; the cohort exemption now also requires every sensitivity to
 carry no value. Context verification passed after propagating the task-scoped Git trust exception
 to verifier subprocesses (FR-106).
+
+The scoped review replay found the same sensitivity bypass through `censored_only`, whose display
+gate permits absence furniture. A second failing-first test reproduced that case. The final gate
+explicitly rejects numeric sensitivity on every no-value cohort, independent of its state; the
+four focused files now pass 200 tests. Both review findings are addressed without an activation
+or a broader contract rewrite.
