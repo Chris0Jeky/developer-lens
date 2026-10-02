@@ -5728,3 +5728,56 @@ The existing C0-only Pages workflow is permitted by `Chris0Jeky/developer-lens::
 release tags remain blocked by `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` and the stored
 endpoint remains unwired. Previous successful Pages run `36516768140` at main `9704118` is the
 pre-campaign rollback baseline; rollback uses a reviewed revert and the same verified workflow.
+
+## 2026-10-02 - served cohort consistency (#386)
+
+**Bounded task.** Branch `fix/change-batch-cohort-consistency`, based on draft #387's
+`1d2f56c0f6f935fa144af6d18e097dd932e52978`. Resolve an unambiguous primary result, bind its
+finding summary and coverage to the measured state/vector/counts, and bind rendered cohort counts
+and outcome accounting to that same result. Preserve typed absence and keyed-entry ordering.
+Revert this slice for rollback. Original draft order was #385, #387, then this follow-up; the
+owner subsequently authorized safe merges and the established synthetic Pages deployment.
+
+**Changed.** The shared server/browser acceptance gate rejects duplicate result IDs, drifted
+summary state/counts or coverage, contradictory rendered cohort counts/exclusions, outcomes that
+do not partition the eligible cohort, merged counts that disagree with the distribution sample,
+and open drafts outside the censored subset. Comparisons use exclusion codes and dimension keys,
+not array order. The six observed/withheld/censored-only/truncated/empty/unavailable fixtures
+still pass; no shared exported Lab surface or analytical version changes.
+
+**Verified.** Failing-first invented wire bodies: 18 expected failures, 57 passed across shared,
+API and browser-consumer tests. After the fix, all 75 tests passed. Lint and TypeScript passed.
+Independent fresh-context review of the four code/test files found no blocking defects; it ran
+read-only without another Node/test/build process.
+The first post-fix API assertion expected the internal detail, while the wrapper intentionally
+normalizes errors; correcting it to the public serving-gate error preserved the failing-first
+rejection evidence. Final full-check qualification and exact head are recorded in the draft PR's
+Proof section; refresh it before action.
+
+**Not inferred.** This binds served representations, not mutable storage to an historical snapshot
+or hostile-writer ground truth. It does not cross-bind every stratum presentation row. No browser
+automation, protected/real data, external model, telemetry, credentials, collection, endpoint
+activation, deployment, merge or owner-decision change occurs. The q-10(c) release hold remains.
+
+**Residual follow-up.** [#388](https://github.com/Chris0Jeky/developer-lens/issues/388) records a
+separate invented probe: both gates accept rendered stratum eligible 21 beside its served metric
+result's eligible 10. The primary cohort/summary still agree. This is a presentation-integrity
+follow-up, not a live disclosure; no activation was needed to reproduce it.
+
+**Review and integration follow-up.** #387 merged as `76a659efe6d7246c6ae3e2f868f355367c22f239`
+after exact-head `47a98e2adf7fc7f821cbc842aaba60d0272409ac` passed the recovered serial Windows
+check (117 files, 1852 passed, 13 existing skips), showcase build and hosted run `37072423879`.
+The independently merged SDK 3.3.1 update (#391) is preserved. The earlier reconnect-interrupted
+run recorded one restore-test failure and no final summary; it remains failed/incomplete evidence.
+That case passed alone after reconnect and the complete retry passed without a source change.
+
+The #389 review found that swapping primary/supporting roles and redirecting summary, coverage
+and cohort to a stratum passed the old agreement checks. Eight failing-first regressions reproduced
+this (75 passed); all 83 focused shared/API/browser tests now pass. The gate pins `cbt.all`, its
+primary reference and summary, scope/window/asOf, and every finding reference's full metric identity
+before granting typed no-value furniture. Reordered references/results remain accepted. Scoped
+independent review found no blocking gap and added equivalent-instant timestamp spelling support
+with a failing-first positive case; comparisons use instants rather than serialized spellings. Fresh
+exact-head full/showcase/hosted qualification and scoped independent review are recorded in the PR
+Proof section before merge. #390 separately owns counts for omitted strata; no analytical method,
+generic metric or exported Lab contract changed here.

@@ -24,12 +24,18 @@ active_slice: >-
   passed. Original exact-head Windows full checks passed for #385 (1835 tests) and #387 (1852 tests),
   each with 13 existing skips. #385's fresh hosted gate passed and it merged as cbee0c4.
   The owner now authorizes review/fixes/safe merges and the established synthetic Pages deployment.
-  Retarget and requalify #387, #389 and #390 against main in that order; their current Proof sections
-  carry exact-head evidence. One writer per isolated checkout, one suite/build and one test worker.
+  #387 merged as 76a659e after exact-head 47a98e2 passed 1852 Windows tests (13 existing skips),
+  showcase and hosted proving; SDK 3.3.1 from #391 is preserved. #385's ledger thread is resolved.
+  #389 now fixes the review's primary-role swap using canonical cbt.all and full metric/scope/window
+  identity: eight failing-first regressions, then 83 focused tests passed; review added equivalent
+  timestamp spelling support with one failing-first positive case. Qualify its new head,
+  then #390's omitted-row count-reference correction; the PR Proof sections carry exact-head evidence.
+  One writer per isolated checkout,
+  one suite/build and one test worker.
   No real data, endpoint activation, release tag or owner-hold override is selected.
   The September remote snapshots above remain dated history.
 next_value_slice: >-
-  Complete exact-head qualification and safe integration of #387/#389/#390, then verify the final
+  Complete exact-head qualification and safe integration of #389/#390, then verify the final
   main's Pages deployment and public synthetic smoke. #389 and #390 address the already reproduced
   #386/#388 consistency findings. Other choices after this campaign include
   #202's remainder:
@@ -103,7 +109,7 @@ release_readiness:
     exact-head gates.
   prohibited_until_then: >-
     No tag, release, package publication or owner decision is inferred from this state. Only the
-    existing verified C0 showcase follows the standing q-4 publication route.
+    existing verified C0 showcase follows Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4.
 
 authority_and_boundary:
   owner_policy: 'docs/OWNER_CONSTITUTION.md'

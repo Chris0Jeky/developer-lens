@@ -13,6 +13,7 @@ import {
   assertChangeBatchTailViewPresentationSafe,
   buildChangeBatchTailView,
   resolveChangeBatchTailReference,
+  type ChangeBatchTailView,
 } from './changeBatchTailView.js'
 import { buildSyntheticChangeBatchTailView } from './changeBatchTailSynthetic.js'
 import { getMetricDefinition, validateMetricResult } from './metrics.js'
@@ -98,6 +99,100 @@ function presentableUnits(): ChangeBatchUnit[] {
   }
   return units
 }
+
+describe('served cohort consistency (#386)', () => {
+  function served(): ChangeBatchTailView {
+    // Wire bodies do not preserve the producer's shared object references.
+    return JSON.parse(JSON.stringify(buildChangeBatchTailView(input([
+      ...presentableUnits(), unit(2, { closedAfterHours: 4 }, 20), unit(-2, 'open', 20),
+    ]))))
+  }
+
+  const cases: Array<[string, (view: ChangeBatchTailView) => void, RegExp]> = [
+    ['primary scope', (view) => { view.results[0].scopeAlias = 'lens-scope-ffffffffffffffffffffffff' }, /primary identity/],
+    ['primary window', (view) => { view.results[0].window.start = '2026-06-08T00:00:00.000Z' }, /primary identity/],
+    ['primary as-of', (view) => { view.results[0].asOf = '2026-07-06T00:00:00.000Z' }, /primary identity/],
+    ['finding scope', (view) => { view.finding.scopeId = 'lens-scope-ffffffffffffffffffffffff' }, /primary identity/],
+    ['supporting metric identity', (view) => { view.finding.metricResults[1].metricId = 'pull_request.integration_interval' }, /metric reference/],
+    ['summary eligible', (view) => { view.finding.sampleSummary.counts.eligible += 7 }, /sample summary/],
+    ['summary censored', (view) => { view.finding.sampleSummary.counts.censored += 1 }, /sample summary/],
+    ['summary exclusions', (view) => { view.finding.sampleSummary.counts.excluded[0].count += 1 }, /sample summary/],
+    ['summary state', (view) => { view.finding.sampleSummary.state = 'withheld' }, /sample summary/],
+    ['rendered eligible', (view) => { view.cohort.eligible += 11 }, /cohort counts/],
+    ['rendered censored', (view) => { view.cohort.censored += 1 }, /cohort counts/],
+    ['rendered exclusions', (view) => { view.cohort.excluded[0].count += 1 }, /cohort counts/],
+    ['repeated exclusion code', (view) => { view.cohort.excluded.push({ ...view.cohort.excluded[0] }) }, /cohort counts/],
+    ['merged accounting', (view) => { view.cohort.merged += 1 }, /cohort outcomes/],
+    ['competing accounting', (view) => { view.cohort.competing += 1 }, /cohort outcomes/],
+    ['merged sample', (view) => { view.cohort.merged += 1; view.cohort.competing -= 1 }, /merged sample/],
+    ['open drafts', (view) => { view.cohort.draftsStillOpen = view.cohort.censored + 1 }, /open drafts/],
+    ['coverage value', (view) => { view.finding.coverage[0].value = 0.5 }, /finding coverage/],
+    ['coverage reason', (view) => { view.finding.coverage[0].limiting_reason = 'RESTRICTED' }, /finding coverage/],
+    ['missing coverage dimension', (view) => { view.finding.coverage.pop() }, /finding coverage/],
+    ['duplicate result ID', (view) => { view.results.push(structuredClone(view.results[0])) }, /result IDs/],
+  ]
+
+  it('rejects a stratum relabelled as the primary cohort', () => {
+    const view = served()
+    const row = view.binnings[0].strata[0]
+    const result = view.results.find((entry) => entry.resultId === row.resultId)!
+    for (const reference of view.finding.metricResults) reference.role = reference.resultId === row.resultId ? 'primary' : 'supporting'
+    view.finding.sampleSummary = { resultId: result.resultId, state: result.state, counts: result.counts }
+    view.finding.coverage = result.coverage
+    view.cohort = { eligible: row.eligible, merged: row.merged, censored: row.censored, competing: row.competing, excluded: result.counts.excluded, draftsStillOpen: 0 }
+    expect(() => validateFinding(view.finding)).not.toThrow()
+    for (const carried of view.results) expect(() => validateMetricResult(carried)).not.toThrow()
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/primary identity/)
+  })
+  it.each(cases)('rejects contradictory %s in a wire body', (_label, mutate, message) => {
+    const view = served()
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    mutate(view)
+    // Each component remains independently valid; this regression targets the missing binding.
+    expect(() => validateFinding(view.finding)).not.toThrow()
+    for (const result of view.results) expect(() => validateMetricResult(result)).not.toThrow()
+    expect(() => acceptChangeBatchTailView(view)).toThrow(message)
+  })
+
+  it('accepts reordered keyed counts and coverage without depending on array order', () => {
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(input([
+      ...presentableUnits(), unit(-2, 'open', 20), { ...unit(3, 'open', 30), retention: 'expired' },
+    ], [coverageRow({ rangeEnd: '2026-06-15T00:00:00.000Z' })])))) as ChangeBatchTailView
+    expect(view.results[0].state).toBe('truncated')
+    expect(view.cohort.excluded).toHaveLength(2)
+    view.finding.sampleSummary.counts.excluded.reverse()
+    view.cohort.excluded.reverse()
+    view.finding.coverage.reverse()
+    view.finding.metricResults.reverse()
+    view.results.reverse()
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+  })
+
+  it('preserves valid measured and typed-absence cohort furniture', () => {
+    const fixtures = [
+      input(presentableUnits()),
+      input([unit(2, { mergedAfterHours: 13 }, 20)]),
+      input([unit(2, 'open', 20)]),
+      input(presentableUnits(), [coverageRow({ rangeEnd: '2026-06-15T00:00:00.000Z' })]),
+      input([]),
+      input([{ ...unit(2, 'open', 20), retention: 'expired' }]),
+    ]
+    expect(fixtures.map((fixture) => buildChangeBatchTailView(fixture).results[0].state))
+      .toEqual(['observed', 'withheld', 'censored_only', 'truncated', 'empty_eligible_cohort', 'unavailable'])
+    for (const fixture of fixtures) {
+      const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(fixture)))
+      expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    }
+  })
+
+  it('accepts equivalent primary timestamp spellings', () => {
+    const view = served()
+    const primary = view.results.find((result) => result.resultId === 'cbt.all')!
+    primary.window = { start: '2026-06-01T00:00:00+00:00', end: '2026-06-29T00:00:00+00:00' }
+    primary.asOf = '2026-06-29T00:00:00+00:00'
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+  })
+})
 
 describe('construct: an opened-to-merge interval, never labelled as ready-to-merge (blocker 1)', () => {
   it('computes and names the opened-to-merge construct with readiness explicitly unrecorded', () => {
