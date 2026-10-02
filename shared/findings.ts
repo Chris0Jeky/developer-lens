@@ -293,9 +293,10 @@ export const FindingSampleSummarySchema = z
     // completed-window checks) have nothing to constrain here.
     const { eligible, censored } = summary.counts
     switch (summary.state) {
+      case 'withheld':
       case 'observed': {
         if (eligible === 0) {
-          context.addIssue({ code: 'custom', message: 'An observed result has a non-empty eligible cohort', path: ['counts', 'eligible'] })
+          context.addIssue({ code: 'custom', message: 'An observed or withheld result has a non-empty eligible cohort', path: ['counts', 'eligible'] })
         }
         break
       }

@@ -294,7 +294,17 @@ export function buildChangeBatchTailView(input: ChangeBatchTailInput): ChangeBat
   const marks = buildChangeBatchMarks(analysis)
   const finding = buildChangeBatchFinding(analysis, marks)
   const abstained = analysis.abstention !== null
-  const results: MetricResult[] = [analysis.all.result]
+  const cohortResult: MetricResult = analysis.all.display.reasonCode === 'BELOW_MINIMUM_SUPPORT'
+    ? MetricResultSchema.parse({
+        ...analysis.all.result,
+        state: 'withheld',
+        stateReasonCode: 'BELOW_MINIMUM_SUPPORT',
+        value: { kind: 'no_value', reasonCode: 'BELOW_MINIMUM_SUPPORT' },
+        sensitivity: [],
+      })
+    : analysis.all.result
+  finding.sampleSummary = { resultId: cohortResult.resultId, state: cohortResult.state, counts: cohortResult.counts }
+  const results: MetricResult[] = [cohortResult]
   // Only strata that pass their display gate are served as results; a withheld stratum serves its
   // counts in the stratum row and no quantile anywhere (blocker 5).
   if (!abstained) for (const binning of analysis.binnings) for (const reading of binning.strata) if (reading.display.display) results.push(reading.result)
@@ -604,8 +614,15 @@ export function acceptChangeBatchTailView(candidate: unknown): ChangeBatchTailVi
     throw new ChangeBatchTailViewError('view carries a finding or metric result the registry rejects')
   }
   for (const result of view.results) {
-    if (result.resultId === finding.sampleSummary.resultId) continue
     const { definition } = validateMetricResult(result)
+    // The cohort may retain a typed no-value row for counts and provenance. It has no exemption
+    // for numeric values: even an abstaining view must not transport a below-support distribution.
+    if (result.resultId === finding.sampleSummary.resultId && result.value.kind === 'no_value') {
+      if (result.sensitivity.some((entry) => entry.value.kind !== 'no_value')) {
+        throw new ChangeBatchTailViewError('view serves numeric sensitivity its cohort display gate withholds')
+      }
+      continue
+    }
     if (!evaluateDisplayEligibility(definition, result).display) {
       throw new ChangeBatchTailViewError('view serves a supporting result its display gate withholds')
     }

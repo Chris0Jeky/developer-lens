@@ -5626,3 +5626,44 @@ Node other than the one on this Windows box.
 **Worktrees.** 21 merged or pushed-and-clean worktrees were removed with plain `git worktree remove`. The remaining ones hold local-only commits or dirty files and are left for owner review: the `dl-luna-*` and `dl-fable-*` LIFE-03 and Phase E experiments, `developer-lens-method-trial-view`, `developer-lens-release-version-20260818` (#298), `developer-lens-researchpack`, `developer-lens-final-state-after-lab61`, `developer-lens-browser-evidence-reconcile-20260815`, and one stray detached worktree outside the Git directory.
 
 **Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains the sole tag-blocking owner action. Nothing here infers or closes it.
+
+## 2026-10-02 - below-support cohort transport (#375)
+
+**Bounded task.** Base `9704118b578f2901a18b29753a3b6f7a945572e5`; branch
+`fix/change-batch-withheld-quantiles`. Own the metric result state, finding sample summary,
+change-batch view projection/acceptance, and regression tests. Synthetic fixtures only. Acceptance:
+a below-support cohort preserves measured counts and provenance, but transports neither ordinary
+nor sensitivity quantiles; restoring its distribution to an abstaining view is rejected. Reverting
+this branch is the rollback. Definition versions and the analytical procedure remain unchanged.
+
+**Changed.** Added a typed `withheld`/`no_value` result with explicit below-support coverage,
+mirrored its non-empty counts invariant in finding summaries, and removed the cohort's numeric
+display-gate exemption. Internal sensitivity analysis remains available; the served withheld
+result carries no sensitivity values. No exported ResearchFinding, MethodTrialView, ResearchPack,
+or PublicLensProjection contract is changed.
+
+**Verified.** Node 24.13.1; fresh locked `npm ci` using the existing npm cache. Baseline: four
+focused files, 92 passed. Failing-first run: six expected failures, 192 passed. After the fix:
+four focused files, 198 passed. `npm run lint` and `tsc -b` passed.
+
+**Not verified yet.** Required `npm run check` and `npm run build:showcase` await the coordinating
+session's test slot. Independent adversarial review is in progress. No hosted, Linux, browser,
+real-data or activation acceptance is claimed. The launch router still answers 404 for the stored
+endpoint. #376 remains a separate pre-activation hardening slice.
+
+**Failures/workarounds.** Expected regression failures above; sandbox clone/Git ownership
+friction is recorded as FR-106. No owner decision or capability was changed.
+
+**Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` still blocks release tags.
+
+**Independent review follow-up.** The fresh-context review reproduced a second acceptance path:
+a tampered no-value cohort relabelled `truncated` could still carry numeric sensitivity values.
+One failing-first test reproduced it; the cohort exemption now also requires every sensitivity to
+carry no value. Context verification passed after propagating the task-scoped Git trust exception
+to verifier subprocesses (FR-106).
+
+The scoped review replay found the same sensitivity bypass through `censored_only`, whose display
+gate permits absence furniture. A second failing-first test reproduced that case. The final gate
+explicitly rejects numeric sensitivity on every no-value cohort, independent of its state; the
+four focused files now pass 200 tests. Both review findings are addressed without an activation
+or a broader contract rewrite.

@@ -278,6 +278,49 @@ describe('minimum support abstention (blocker 5)', () => {
     expect(view.binnings).toEqual([])
     expect(view.concordance).toEqual([])
     expect(validateFinding(view.finding).layer).toBe('abstention')
+    expect(view.results[0]).toMatchObject({
+      state: 'withheld',
+      stateReasonCode: 'BELOW_MINIMUM_SUPPORT',
+      counts: { eligible: 5, censored: 1 },
+      value: { kind: 'no_value', reasonCode: 'BELOW_MINIMUM_SUPPORT' },
+      sensitivity: [],
+    })
+    expect(view.finding.sampleSummary.state).toBe('withheld')
+    expect(JSON.stringify(view)).not.toContain('"kind":"quantiles"')
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+  })
+
+  it('rejects a below-support cohort distribution restored to an abstaining view', () => {
+    const fixture = input([unit(1, { mergedAfterHours: 13 }, 10)])
+    const view = buildChangeBatchTailView(fixture)
+    const tampered = structuredClone(view)
+    tampered.results[0] = analyzeChangeBatchTail(fixture).all.result
+    expect(() => acceptChangeBatchTailView(tampered)).toThrow(/display gate withholds/)
+  })
+
+  it('rejects numeric sensitivity on a no-value cohort relabelled as truncated', () => {
+    const fixture = input([unit(1, { mergedAfterHours: 13 }, 10)])
+    const tampered = structuredClone(buildChangeBatchTailView(fixture))
+    const cohort = tampered.results[0]
+    cohort.state = 'truncated'
+    cohort.stateReasonCode = 'WINDOW_COVERAGE_INCOMPLETE'
+    cohort.coverage = cohort.coverage.map((entry) => entry.dimension === 'completeness'
+      ? { ...entry, value: 0.5, limiting_reason: 'SATURATION_CAP_REACHED' }
+      : entry)
+    cohort.sensitivity = analyzeChangeBatchTail(fixture).all.result.sensitivity
+    expect(() => acceptChangeBatchTailView(tampered)).toThrow(/display gate withholds/)
+  })
+
+  it('rejects numeric sensitivity on a no-value cohort relabelled as censored-only', () => {
+    const fixture = input([unit(1, { mergedAfterHours: 13 }, 10)])
+    const tampered = structuredClone(buildChangeBatchTailView(fixture))
+    const cohort = tampered.results[0]
+    cohort.state = 'censored_only'
+    cohort.stateReasonCode = 'ALL_ELIGIBLE_EVENTS_CENSORED'
+    cohort.counts.censored = cohort.counts.eligible
+    cohort.value = { kind: 'no_value', reasonCode: 'ALL_ELIGIBLE_EVENTS_CENSORED' }
+    cohort.sensitivity = analyzeChangeBatchTail(fixture).all.result.sensitivity
+    expect(() => acceptChangeBatchTailView(tampered)).toThrow(/numeric sensitivity/)
   })
 
   it('withholds a below-support stratum inside a presentable view and renders no number for it', () => {
