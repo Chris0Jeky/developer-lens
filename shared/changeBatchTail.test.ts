@@ -109,6 +109,11 @@ describe('served cohort consistency (#386)', () => {
   }
 
   const cases: Array<[string, (view: ChangeBatchTailView) => void, RegExp]> = [
+    ['primary scope', (view) => { view.results[0].scopeAlias = 'lens-scope-ffffffffffffffffffffffff' }, /primary identity/],
+    ['primary window', (view) => { view.results[0].window.start = '2026-06-08T00:00:00.000Z' }, /primary identity/],
+    ['primary as-of', (view) => { view.results[0].asOf = '2026-07-06T00:00:00.000Z' }, /primary identity/],
+    ['finding scope', (view) => { view.finding.scopeId = 'lens-scope-ffffffffffffffffffffffff' }, /primary identity/],
+    ['supporting metric identity', (view) => { view.finding.metricResults[1].metricId = 'pull_request.integration_interval' }, /metric reference/],
     ['summary eligible', (view) => { view.finding.sampleSummary.counts.eligible += 7 }, /sample summary/],
     ['summary censored', (view) => { view.finding.sampleSummary.counts.censored += 1 }, /sample summary/],
     ['summary exclusions', (view) => { view.finding.sampleSummary.counts.excluded[0].count += 1 }, /sample summary/],
@@ -126,6 +131,19 @@ describe('served cohort consistency (#386)', () => {
     ['missing coverage dimension', (view) => { view.finding.coverage.pop() }, /finding coverage/],
     ['duplicate result ID', (view) => { view.results.push(structuredClone(view.results[0])) }, /result IDs/],
   ]
+
+  it('rejects a stratum relabelled as the primary cohort', () => {
+    const view = served()
+    const row = view.binnings[0].strata[0]
+    const result = view.results.find((entry) => entry.resultId === row.resultId)!
+    for (const reference of view.finding.metricResults) reference.role = reference.resultId === row.resultId ? 'primary' : 'supporting'
+    view.finding.sampleSummary = { resultId: result.resultId, state: result.state, counts: result.counts }
+    view.finding.coverage = result.coverage
+    view.cohort = { eligible: row.eligible, merged: row.merged, censored: row.censored, competing: row.competing, excluded: result.counts.excluded, draftsStillOpen: 0 }
+    expect(() => validateFinding(view.finding)).not.toThrow()
+    for (const carried of view.results) expect(() => validateMetricResult(carried)).not.toThrow()
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/primary identity/)
+  })
   it.each(cases)('rejects contradictory %s in a wire body', (_label, mutate, message) => {
     const view = served()
     expect(() => acceptChangeBatchTailView(view)).not.toThrow()
@@ -145,6 +163,8 @@ describe('served cohort consistency (#386)', () => {
     view.finding.sampleSummary.counts.excluded.reverse()
     view.cohort.excluded.reverse()
     view.finding.coverage.reverse()
+    view.finding.metricResults.reverse()
+    view.results.reverse()
     expect(() => acceptChangeBatchTailView(view)).not.toThrow()
   })
 
@@ -163,6 +183,14 @@ describe('served cohort consistency (#386)', () => {
       const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(fixture)))
       expect(() => acceptChangeBatchTailView(view)).not.toThrow()
     }
+  })
+
+  it('accepts equivalent primary timestamp spellings', () => {
+    const view = served()
+    const primary = view.results.find((result) => result.resultId === 'cbt.all')!
+    primary.window = { start: '2026-06-01T00:00:00+00:00', end: '2026-06-29T00:00:00+00:00' }
+    primary.asOf = '2026-06-29T00:00:00+00:00'
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
   })
 })
 
