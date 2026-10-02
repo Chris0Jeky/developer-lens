@@ -5652,10 +5652,11 @@ The [hosted proving gate](https://github.com/Chris0Jeky/developer-lens/actions/r
 passed on its generated merge ref: 117 files, 1845 tests passed, three conditional skips
 (Windows temporary-storage and unsupported-directory-durability checks, plus opt-in scale).
 Context, planning/fixture drift, lint, build, showcase privacy and locked SDK checks passed there.
-The exact local `npm run check` still awaits the coordinating session's test slot. The hosted
-workflow omits the separate ResearchFinding drift command; that check passed locally on the
-companion containing the same #375 changes. No local full Windows suite, browser, real-data or
-activation acceptance is inferred. The launch router still answers 404 for the stored endpoint.
+Local Windows `npm run check` passed at the same exact head: 117 files, 1835 passed, 13 existing
+POSIX/opt-in skips. It includes the separate ResearchFinding drift command omitted by the hosted
+workflow. Local runs used the repository's two-worker cap, with suites/builds executed serially.
+No browser, real-data or activation acceptance is inferred. The launch router still answers 404
+for the stored endpoint.
 
 **Failures/workarounds.** Expected regression failures above; sandbox clone/Git ownership
 friction is recorded as FR-106. No owner decision or capability was changed.
@@ -5701,8 +5702,10 @@ Context verification and all four ResearchPack, MethodTrialView, ResearchFinding
 drift checks also passed. Draft [#387](https://github.com/Chris0Jeky/developer-lens/pull/387) contains
 implementation commit `30f58d7ad8116be615a64a267a60e56f92f026d3`; subsequent edits record evidence only.
 
-**Not verified yet.** Full `npm run check` awaits the coordinating session's test slot. Hosted
-CI has no run for the stacked base because the workflow targets main. Linux-specific acceptance,
+**Full qualification.** Local Windows `npm run check` passed at draft #387's exact head
+`1d2f56c0f6f935fa144af6d18e097dd932e52978`: 117 files, 1852 passed, 13 existing POSIX/opt-in skips;
+lint, context, all four fixture drift checks, TypeScript, build and privacy checks passed.
+Hosted CI has no run for the stacked base because the workflow targets main. Linux-specific acceptance,
 browser/visual QA, real-data activation and hostile-writer integrity
 are not inferred. The `observedAt` guard does not provide a historical database snapshot of mutable
 facts, job/snapshot state or lineage. The stored endpoint remains unwired.
@@ -5713,3 +5716,38 @@ finding summary 36 and rendered cohort 40 is accepted. It is an integrity follow
 disclosure. No exported ResearchFinding, MethodTrialView, ResearchPack or PublicLensProjection
 contract changed. Existing `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6` decisions and
 `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` release gate remain unchanged.
+
+## 2026-10-02 - served cohort consistency (#386)
+
+**Bounded task.** Branch `fix/change-batch-cohort-consistency`, based on draft #387's
+`1d2f56c0f6f935fa144af6d18e097dd932e52978`. Resolve an unambiguous primary result, bind its
+finding summary and coverage to the measured state/vector/counts, and bind rendered cohort counts
+and outcome accounting to that same result. Preserve typed absence and keyed-entry ordering.
+Revert this slice for rollback. Review order is #385, #387, then this follow-up, retargeting each
+stacked draft after its prerequisite lands; this session performs no merges or activation.
+
+**Changed.** The shared server/browser acceptance gate rejects duplicate result IDs, drifted
+summary state/counts or coverage, contradictory rendered cohort counts/exclusions, outcomes that
+do not partition the eligible cohort, merged counts that disagree with the distribution sample,
+and open drafts outside the censored subset. Comparisons use exclusion codes and dimension keys,
+not array order. The six observed/withheld/censored-only/truncated/empty/unavailable fixtures
+still pass; no shared exported Lab surface or analytical version changes.
+
+**Verified.** Failing-first invented wire bodies: 18 expected failures, 57 passed across shared,
+API and browser-consumer tests. After the fix, all 75 tests passed. Lint and TypeScript passed.
+Independent fresh-context review of the four code/test files found no blocking defects; it ran
+read-only without another Node/test/build process.
+The first post-fix API assertion expected the internal detail, while the wrapper intentionally
+normalizes errors; correcting it to the public serving-gate error preserved the failing-first
+rejection evidence. Final full-check qualification and exact head are recorded in the draft PR's
+Proof section; refresh it before action.
+
+**Not inferred.** This binds served representations, not mutable storage to an historical snapshot
+or hostile-writer ground truth. It does not cross-bind every stratum presentation row. No browser
+automation, protected/real data, external model, telemetry, credentials, collection, endpoint
+activation, deployment, merge or owner-decision change occurs. The q-10(c) release hold remains.
+
+**Residual follow-up.** [#388](https://github.com/Chris0Jeky/developer-lens/issues/388) records a
+separate invented probe: both gates accept rendered stratum eligible 21 beside its served metric
+result's eligible 10. The primary cohort/summary still agree. This is a presentation-integrity
+follow-up, not a live disclosure; no activation was needed to reproduce it.

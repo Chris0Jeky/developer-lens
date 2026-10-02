@@ -596,6 +596,14 @@ export function assertChangeBatchTailViewPresentationSafe(view: unknown, extraFo
   }
 }
 
+function countsAgree(left: MetricResult['counts'], right: MetricResult['counts']): boolean {
+  const rightExclusions = new Map(right.excluded.map((entry) => [entry.reasonCode, entry.count]))
+  return left.eligible === right.eligible && left.censored === right.censored
+    && left.excluded.length === right.excluded.length
+    && new Set(left.excluded.map((entry) => entry.reasonCode)).size === left.excluded.length
+    && left.excluded.every((entry) => rightExclusions.get(entry.reasonCode) === entry.count)
+}
+
 /**
  * Parse and prove a view: strict schema, registry validation of every metric result, the finding
  * contract, finding↔view mark agreement, and a contract-valid drawer resolution that ANSWERS every
@@ -627,9 +635,36 @@ export function acceptChangeBatchTailView(candidate: unknown): ChangeBatchTailVi
       throw new ChangeBatchTailViewError('view serves a supporting result its display gate withholds')
     }
   }
-  const resultIds = new Set(view.results.map((result) => result.resultId))
-  if (!finding.metricResults.every((reference) => resultIds.has(reference.resultId))) {
+  const resultsById = new Map(view.results.map((result) => [result.resultId, result]))
+  if (resultsById.size !== view.results.length) {
+    throw new ChangeBatchTailViewError('view result IDs must be unique')
+  }
+  if (!finding.metricResults.every((reference) => resultsById.has(reference.resultId))) {
     throw new ChangeBatchTailViewError('finding names a metric result the view does not carry')
+  }
+  const primary = resultsById.get(finding.sampleSummary.resultId)
+  if (primary === undefined || finding.sampleSummary.state !== primary.state
+    || !countsAgree(finding.sampleSummary.counts, primary.counts)) {
+    throw new ChangeBatchTailViewError('finding sample summary contradicts its primary metric result')
+  }
+  const primaryCoverage = new Map(primary.coverage.map((entry) => [entry.dimension, entry]))
+  if (finding.coverage.length !== primary.coverage.length || finding.coverage.some((entry) => {
+    const measured = primaryCoverage.get(entry.dimension)
+    return measured === undefined || entry.value !== measured.value || entry.limiting_reason !== measured.limiting_reason
+  })) {
+    throw new ChangeBatchTailViewError('finding coverage contradicts its primary metric result')
+  }
+  if (!countsAgree(view.cohort, primary.counts)) {
+    throw new ChangeBatchTailViewError('rendered cohort counts contradict the primary metric result')
+  }
+  if (view.cohort.eligible !== view.cohort.merged + view.cohort.censored + view.cohort.competing) {
+    throw new ChangeBatchTailViewError('rendered cohort outcomes do not account for every eligible unit')
+  }
+  if (primary.value.kind === 'quantiles' && primary.value.sampleSize !== view.cohort.merged) {
+    throw new ChangeBatchTailViewError('rendered cohort merged sample contradicts the primary distribution')
+  }
+  if (view.cohort.draftsStillOpen > view.cohort.censored) {
+    throw new ChangeBatchTailViewError('rendered open drafts exceed the censored cohort')
   }
   if ((finding.layer === 'abstention') !== (view.state === 'abstained')) {
     throw new ChangeBatchTailViewError('view state contradicts the finding layer')

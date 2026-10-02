@@ -13,6 +13,7 @@ import {
   assertChangeBatchTailViewPresentationSafe,
   buildChangeBatchTailView,
   resolveChangeBatchTailReference,
+  type ChangeBatchTailView,
 } from './changeBatchTailView.js'
 import { buildSyntheticChangeBatchTailView } from './changeBatchTailSynthetic.js'
 import { getMetricDefinition, validateMetricResult } from './metrics.js'
@@ -98,6 +99,72 @@ function presentableUnits(): ChangeBatchUnit[] {
   }
   return units
 }
+
+describe('served cohort consistency (#386)', () => {
+  function served(): ChangeBatchTailView {
+    // Wire bodies do not preserve the producer's shared object references.
+    return JSON.parse(JSON.stringify(buildChangeBatchTailView(input([
+      ...presentableUnits(), unit(2, { closedAfterHours: 4 }, 20), unit(-2, 'open', 20),
+    ]))))
+  }
+
+  const cases: Array<[string, (view: ChangeBatchTailView) => void, RegExp]> = [
+    ['summary eligible', (view) => { view.finding.sampleSummary.counts.eligible += 7 }, /sample summary/],
+    ['summary censored', (view) => { view.finding.sampleSummary.counts.censored += 1 }, /sample summary/],
+    ['summary exclusions', (view) => { view.finding.sampleSummary.counts.excluded[0].count += 1 }, /sample summary/],
+    ['summary state', (view) => { view.finding.sampleSummary.state = 'withheld' }, /sample summary/],
+    ['rendered eligible', (view) => { view.cohort.eligible += 11 }, /cohort counts/],
+    ['rendered censored', (view) => { view.cohort.censored += 1 }, /cohort counts/],
+    ['rendered exclusions', (view) => { view.cohort.excluded[0].count += 1 }, /cohort counts/],
+    ['repeated exclusion code', (view) => { view.cohort.excluded.push({ ...view.cohort.excluded[0] }) }, /cohort counts/],
+    ['merged accounting', (view) => { view.cohort.merged += 1 }, /cohort outcomes/],
+    ['competing accounting', (view) => { view.cohort.competing += 1 }, /cohort outcomes/],
+    ['merged sample', (view) => { view.cohort.merged += 1; view.cohort.competing -= 1 }, /merged sample/],
+    ['open drafts', (view) => { view.cohort.draftsStillOpen = view.cohort.censored + 1 }, /open drafts/],
+    ['coverage value', (view) => { view.finding.coverage[0].value = 0.5 }, /finding coverage/],
+    ['coverage reason', (view) => { view.finding.coverage[0].limiting_reason = 'RESTRICTED' }, /finding coverage/],
+    ['missing coverage dimension', (view) => { view.finding.coverage.pop() }, /finding coverage/],
+    ['duplicate result ID', (view) => { view.results.push(structuredClone(view.results[0])) }, /result IDs/],
+  ]
+  it.each(cases)('rejects contradictory %s in a wire body', (_label, mutate, message) => {
+    const view = served()
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    mutate(view)
+    // Each component remains independently valid; this regression targets the missing binding.
+    expect(() => validateFinding(view.finding)).not.toThrow()
+    for (const result of view.results) expect(() => validateMetricResult(result)).not.toThrow()
+    expect(() => acceptChangeBatchTailView(view)).toThrow(message)
+  })
+
+  it('accepts reordered keyed counts and coverage without depending on array order', () => {
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(input([
+      ...presentableUnits(), unit(-2, 'open', 20), { ...unit(3, 'open', 30), retention: 'expired' },
+    ], [coverageRow({ rangeEnd: '2026-06-15T00:00:00.000Z' })])))) as ChangeBatchTailView
+    expect(view.results[0].state).toBe('truncated')
+    expect(view.cohort.excluded).toHaveLength(2)
+    view.finding.sampleSummary.counts.excluded.reverse()
+    view.cohort.excluded.reverse()
+    view.finding.coverage.reverse()
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+  })
+
+  it('preserves valid measured and typed-absence cohort furniture', () => {
+    const fixtures = [
+      input(presentableUnits()),
+      input([unit(2, { mergedAfterHours: 13 }, 20)]),
+      input([unit(2, 'open', 20)]),
+      input(presentableUnits(), [coverageRow({ rangeEnd: '2026-06-15T00:00:00.000Z' })]),
+      input([]),
+      input([{ ...unit(2, 'open', 20), retention: 'expired' }]),
+    ]
+    expect(fixtures.map((fixture) => buildChangeBatchTailView(fixture).results[0].state))
+      .toEqual(['observed', 'withheld', 'censored_only', 'truncated', 'empty_eligible_cohort', 'unavailable'])
+    for (const fixture of fixtures) {
+      const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(fixture)))
+      expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    }
+  })
+})
 
 describe('construct: an opened-to-merge interval, never labelled as ready-to-merge (blocker 1)', () => {
   it('computes and names the opened-to-merge construct with readiness explicitly unrecorded', () => {

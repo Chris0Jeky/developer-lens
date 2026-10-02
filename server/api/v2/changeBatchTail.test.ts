@@ -314,6 +314,15 @@ describe('Phase E change-batch lens endpoint (#174)', { timeout: 60_000 }, () =>
     expect(composeSyntheticChangeBatchTailView().source.kind).toBe('synthetic')
   })
 
+  it('rejects contradictory counts in a composed API body before serving (#386)', async () => {
+    const store = await storeWith({ pullRequests: presentablePullRequests(), coverage: [COMPLETE] })
+    const response = await get(app(sourceFor(store))).expect(200)
+    const view = JSON.parse(JSON.stringify(response.body.view)) as ChangeBatchTailView
+    view.finding.sampleSummary.counts.eligible += 7
+    view.cohort.eligible += 11
+    expect(() => gateChangeBatchTailView(view)).toThrow(/serving gate/)
+  })
+
   it('never serializes a quantile of a stratum withheld below minimum support (API-body canary)', async () => {
     const base = presentablePullRequests().filter((row) => !row.tag.startsWith('middle-'))
     const seed: InventedStoreSeed = {

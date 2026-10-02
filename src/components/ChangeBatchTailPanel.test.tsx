@@ -93,6 +93,21 @@ describe('change-batch view source', () => {
     expect(acceptServedChangeBatchTail({ apiContractVersion: '1.0.0', view: { ...stored, question: `job-${'b'.repeat(64)}` } })).toBeNull()
   })
 
+  it('keeps the synthetic view when a served body contradicts its primary counts (#386)', async () => {
+    const stored = JSON.parse(JSON.stringify(buildChangeBatchTailView({
+      ...syntheticChangeBatchInput(), source: { kind: 'selected_v3_store' },
+    })))
+    stored.finding.sampleSummary.counts.eligible += 7
+    stored.cohort.eligible += 11
+    const body = { apiContractVersion: '1.0.0', view: stored }
+    expect(acceptServedChangeBatchTail(body)).toBeNull()
+    vi.stubGlobal('fetch', vi.fn(async () => new Response(JSON.stringify(body), { status: 200 })))
+    const source = renderHook(() => useChangeBatchTailView())
+    act(() => source.result.current.requestStored())
+    await waitFor(() => expect(source.result.current.status).toBe('not_served'))
+    expect(source.result.current.view.source.kind).toBe('synthetic')
+  })
+
   it('never fetches on render, keeps the synthetic view on a default-off 404, and swaps in a served stored view on request', async () => {
     vi.stubGlobal('fetch', vi.fn(async () => new Response('{"error":{"code":"V2_NOT_FOUND"}}', { status: 404 })))
     const off = renderHook(() => useChangeBatchTailView())

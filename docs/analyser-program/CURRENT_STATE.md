@@ -21,14 +21,19 @@ active_slice: >-
   cohort values plus sensitivity/tampering checks; 200 focused tests passed. The companion
   draft #387 on fix/stored-change-batch-preactivation owns all five #376 findings; 119 focused
   tests, lint, TypeScript, context, fixture drift, showcase/privacy build and independent review
-  passed. #385's hosted gate passed (1845 tests, three conditional skips). Local full check awaits a
-  coordinated test slot. One writer per isolated task checkout; no real data or activation.
-  Review/merge order is #385 then #387 retargeted to main. No merge or deployment is
+  passed. Full Windows checks passed at #385's 68ed29f (1835 tests) and #387's 1d2f56c (1852 tests),
+  each with 13 POSIX/opt-in skips and at most two workers. #385's hosted gate also passed (1845
+  tests, three conditional skips); the stacked #387 base triggers no hosted run.
+  fix/change-batch-cohort-consistency owns #386's served summary/cohort/primary-result binding;
+  75 focused tests, lint, TypeScript and independent review passed. Its final qualification belongs in the draft PR's
+  Proof section. One writer per isolated task checkout; no real data or activation.
+  Review/merge order is #385, #387, then the #386 follow-up, retargeting each stacked base to main.
+  No merge or deployment is
   authorized in this delegated task. The September remote snapshots above remain dated history.
 next_value_slice: >-
-  Finish exact-head qualification of the #375/#376 drafts before activation selection. Then #386's
-  served cohort/result/summary consistency is a bounded integrity follow-up. Other choices include
-  #202's remainder:
+  Review the #375/#376/#386 draft chain and refresh exact-head proving results before activation
+  selection. #388's rendered stratum/result consistency is the next bounded integrity follow-up.
+  Other choices include #202's remainder:
   the #86 `v2_coverage_record` id-shape decision, the #168/#177 H5 reassessment, and a Windows
   owner-only ACL / secure task-root check for the installation key. (3) #80's scope-unbound C1
   expiry and resolver lineage join. (4) #201 Data Charter v2. (5) The low-risk trackers #368, #371
@@ -109,9 +114,10 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  Refresh drafts #385 and #387, their heads and
+  Refresh drafts #385, #387 and the fix/change-batch-cohort-consistency follow-up, their heads and
   checks. Both are synthetic-only pre-activation fixes; main was observed at 9704118 on 2026-10-02.
-  Complete full checks in the coordinating session's slot and retain drafts for owner review.
+  Full Windows checks passed for #385/#387; refresh the follow-up's proof and retain all drafts
+  for owner review. Only one suite/build runs at a time, with at most two test workers.
   Stored-path activation of
   Phase E requires #375 and #376 first; real migration or collection requires #202's remainder and
   a bounded, reviewed activation task card within the approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
