@@ -298,6 +298,19 @@ describe('minimum support abstention (blocker 5)', () => {
     expect(() => acceptChangeBatchTailView(tampered)).toThrow(/display gate withholds/)
   })
 
+  it('rejects numeric sensitivity on a no-value cohort relabelled as truncated', () => {
+    const fixture = input([unit(1, { mergedAfterHours: 13 }, 10)])
+    const tampered = structuredClone(buildChangeBatchTailView(fixture))
+    const cohort = tampered.results[0]
+    cohort.state = 'truncated'
+    cohort.stateReasonCode = 'WINDOW_COVERAGE_INCOMPLETE'
+    cohort.coverage = cohort.coverage.map((entry) => entry.dimension === 'completeness'
+      ? { ...entry, value: 0.5, limiting_reason: 'SATURATION_CAP_REACHED' }
+      : entry)
+    cohort.sensitivity = analyzeChangeBatchTail(fixture).all.result.sensitivity
+    expect(() => acceptChangeBatchTailView(tampered)).toThrow(/display gate withholds/)
+  })
+
   it('withholds a below-support stratum inside a presentable view and renders no number for it', () => {
     const units = presentableUnits().filter((_entry, index) => !(index % 3 === 1 && index > 3))
     const view = buildChangeBatchTailView(input(units))

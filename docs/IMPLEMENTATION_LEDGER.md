@@ -5655,3 +5655,9 @@ endpoint. #376 remains a separate pre-activation hardening slice.
 friction is recorded as FR-106. No owner decision or capability was changed.
 
 **Human actions.** `Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` still blocks release tags.
+
+**Independent review follow-up.** The fresh-context review reproduced a second acceptance path:
+a tampered no-value cohort relabelled `truncated` could still carry numeric sensitivity values.
+One failing-first test reproduced it; the cohort exemption now also requires every sensitivity to
+carry no value. Context verification passed after propagating the task-scoped Git trust exception
+to verifier subprocesses (FR-106).

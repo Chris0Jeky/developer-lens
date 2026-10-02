@@ -2820,7 +2820,7 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **status:** `workaround-documented`
 - **symptom:** The sandbox could not reach GitHub to clone; the authorized host clone succeeded, then sandbox Git refused the checkout as dubious ownership.
 - **impact:** Initial Git inspection and branch creation could not run under the sandbox identity.
-- **workaround:** Use the authorized host route for clone/install/push and a command-scoped `safe.directory` exception for this task's exact checkout; do not change global Git trust.
+- **workaround:** Use the authorized host route for clone/install/push and a command-scoped `safe.directory` exception for this task's exact checkout; propagate it through `GIT_CONFIG_COUNT` for Git spawned by npm verifiers. Do not change global Git trust.
 - **occurrences:** 1 occurrence during [#375](https://github.com/Chris0Jeky/developer-lens/issues/375).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe maintenance and discovery; this is task-environment friction, not a product defect.
 - **promotion:** Retain the bounded workaround; no repository runtime or machine configuration change is needed.

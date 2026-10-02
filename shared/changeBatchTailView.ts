@@ -617,7 +617,8 @@ export function acceptChangeBatchTailView(candidate: unknown): ChangeBatchTailVi
     const { definition } = validateMetricResult(result)
     // The cohort may retain a typed no-value row for counts and provenance. It has no exemption
     // for numeric values: even an abstaining view must not transport a below-support distribution.
-    if (result.resultId === finding.sampleSummary.resultId && result.value.kind === 'no_value') continue
+    if (result.resultId === finding.sampleSummary.resultId && result.value.kind === 'no_value'
+      && result.sensitivity.every((entry) => entry.value.kind === 'no_value')) continue
     if (!evaluateDisplayEligibility(definition, result).display) {
       throw new ChangeBatchTailViewError('view serves a supporting result its display gate withholds')
     }
