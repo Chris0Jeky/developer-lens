@@ -166,6 +166,117 @@ describe('served cohort consistency (#386)', () => {
   })
 })
 
+describe('served stratum consistency (#388)', () => {
+  function served(): ChangeBatchTailView {
+    return JSON.parse(JSON.stringify(buildSyntheticChangeBatchTailView()))
+  }
+  function shown(view: ChangeBatchTailView) {
+    const row = view.binnings[0].strata.find((entry) => entry.displayed)
+    if (!row) throw new Error('fixture must include a displayed stratum')
+    return row
+  }
+  const cases: Array<[string, (view: ChangeBatchTailView) => void]> = [
+    ['eligible count', (view) => { shown(view).eligible += 11 }],
+    ['censored count', (view) => { shown(view).censored += 1 }],
+    ['merged count', (view) => { shown(view).merged += 1 }],
+    ['competing count', (view) => { shown(view).competing += 1 }],
+    ['merged sample with unchanged partition', (view) => { shown(view).merged -= 1; shown(view).competing += 1 }],
+    ['result state', (view) => { shown(view).state = 'censored_only' }],
+    ['unregistered state', (view) => { shown(view).state = 'invented_state' }],
+    ['display reason', (view) => { shown(view).displayReasonCode = 'BELOW_MINIMUM_SUPPORT' }],
+    ['hidden displayed distribution', (view) => { shown(view).displayed = false }],
+    ['missing displayed quantiles', (view) => { shown(view).quantiles = null }],
+    ['quantile seconds', (view) => { shown(view).quantiles![0].seconds += 123 }],
+    ['quantile level', (view) => { shown(view).quantiles![0].quantile = 0.6 }],
+    ['missing quantile', (view) => { shown(view).quantiles!.pop() }],
+    ['duplicate quantile', (view) => { shown(view).quantiles!.push({ ...shown(view).quantiles![0] }) }],
+    ['lower bound', (view) => { shown(view).lowerBoundP90! += 123 }],
+    ['missing supported lower bound', (view) => { shown(view).lowerBoundP90 = null }],
+    ['other stratum result', (view) => { shown(view).resultId = view.binnings[0].strata[1].resultId }],
+    ['result window', (view) => {
+      view.results.find((entry) => entry.resultId === shown(view).resultId)!.window.start = '2026-05-25T00:00:00.000Z'
+    }],
+    ['result scope', (view) => {
+      view.results.find((entry) => entry.resultId === shown(view).resultId)!.scopeAlias = 'lens-scope-bbbbbbbbbbbbbbbbbbbbbbbb'
+    }],
+    ['duplicate binning', (view) => { view.binnings.push(structuredClone(view.binnings[0])) }],
+  ]
+  it.each(cases)('rejects contradictory %s in a wire body', (_label, mutate) => {
+    const view = served()
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    mutate(view)
+    expect(() => validateFinding(view.finding)).not.toThrow()
+    for (const result of view.results) expect(() => validateMetricResult(result)).not.toThrow()
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/stratum|binning/)
+  })
+
+  it('accepts reordered keyed data and returns quantiles in the table heading order', () => {
+    const view = served()
+    view.binnings.reverse()
+    view.results.reverse()
+    view.finding.coverage.reverse()
+    for (const binning of view.binnings) {
+      binning.strata.reverse()
+      for (const row of binning.strata) row.quantiles?.reverse()
+    }
+    const accepted = acceptChangeBatchTailView(view)
+    expect(view.binnings[0].strata.find((row) => row.displayed)?.quantiles?.map((entry) => entry.quantile))
+      .toEqual([0.9, 0.75, 0.5])
+    for (const binning of accepted.binnings) for (const row of binning.strata) {
+      if (row.displayed) expect(row.quantiles?.map((entry) => entry.quantile)).toEqual([0.5, 0.75, 0.9])
+    }
+  })
+
+  it('preserves served empty/censored-only states and omitted below-support/unavailable rows', () => {
+    const fixtures = [
+      input(presentableUnits().filter((_row, index) => index % 3 !== 2)),
+      input([...presentableUnits().filter((_row, index) => index % 3 !== 2), ...Array.from({ length: 5 }, (_, index) => unit(index, 'open', 900))]),
+      input(presentableUnits().filter((_row, index) => !(index % 3 === 1 && index > 3))),
+      input(presentableUnits().map((row) => ({ ...row, changedFiles: null }))),
+      input([unit(2, { mergedAfterHours: 13 }, 20)]),
+      input(presentableUnits(), [coverageRow({ rangeEnd: '2026-06-15T00:00:00.000Z' })]),
+    ]
+    const views = fixtures.map((fixture) => JSON.parse(JSON.stringify(buildChangeBatchTailView(fixture))) as ChangeBatchTailView)
+    const states = views.flatMap((view) => view.binnings.flatMap((binning) => binning.strata.map((row) => row.state)))
+    expect(states).toEqual(expect.arrayContaining(['empty_eligible_cohort', 'censored_only', 'observed', 'unavailable']))
+    for (const view of views) expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+  })
+
+  it('rejects invented numbers and impossible outcome accounting in an omitted below-support row', () => {
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(input(
+      presentableUnits().filter((_row, index) => !(index % 3 === 1 && index > 3)),
+    )))) as ChangeBatchTailView
+    const row = view.binnings[0].strata[1]
+    expect(view.results.some((result) => result.resultId === row.resultId)).toBe(false)
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    row.eligible += 1
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/stratum/)
+  })
+
+  it('rejects a numeric lower bound smuggled into omitted below-support furniture', () => {
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(input(
+      presentableUnits().filter((_row, index) => !(index % 3 === 1 && index > 3)),
+    )))) as ChangeBatchTailView
+    view.binnings[0].strata[1].lowerBoundP90 = 123
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/stratum/)
+  })
+
+  it.each(['SUPPORT_GATE_MET', 'TRUNCATION_ABSTAINED'])('rejects an omitted supported row relabelled truncated with %s', (reason) => {
+    const view = JSON.parse(JSON.stringify(buildChangeBatchTailView(input(
+      presentableUnits().filter((_row, index) => !(index % 3 === 1 && index > 3)),
+    )))) as ChangeBatchTailView
+    const row = view.binnings[0].strata[1]
+    expect(() => acceptChangeBatchTailView(view)).not.toThrow()
+    row.state = 'truncated'
+    row.displayReasonCode = reason
+    row.merged = 5
+    row.eligible = row.merged + row.censored + row.competing
+    expect(() => validateFinding(view.finding)).not.toThrow()
+    for (const result of view.results) expect(() => validateMetricResult(result)).not.toThrow()
+    expect(() => acceptChangeBatchTailView(view)).toThrow(/stratum/)
+  })
+})
+
 describe('construct: an opened-to-merge interval, never labelled as ready-to-merge (blocker 1)', () => {
   it('computes and names the opened-to-merge construct with readiness explicitly unrecorded', () => {
     const view = buildChangeBatchTailView(input(presentableUnits()))

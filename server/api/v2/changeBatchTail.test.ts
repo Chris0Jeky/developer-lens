@@ -323,6 +323,17 @@ describe('Phase E change-batch lens endpoint (#174)', { timeout: 60_000 }, () =>
     expect(() => gateChangeBatchTailView(view)).toThrow(/serving gate/)
   })
 
+  it.each(['counts', 'quantiles', 'lower-bound'] as const)('rejects contradictory stratum %s before serving (#388)', async (field) => {
+    const store = await storeWith({ pullRequests: presentablePullRequests(), coverage: [COMPLETE] })
+    const response = await get(app(sourceFor(store))).expect(200)
+    const view = JSON.parse(JSON.stringify(response.body.view)) as ChangeBatchTailView
+    const row = view.binnings[0].strata.find((entry) => entry.displayed)!
+    if (field === 'counts') row.eligible += 11
+    if (field === 'quantiles') row.quantiles![0].seconds += 123
+    if (field === 'lower-bound') row.lowerBoundP90! += 123
+    expect(() => gateChangeBatchTailView(view)).toThrow(/serving gate/)
+  })
+
   it('never serializes a quantile of a stratum withheld below minimum support (API-body canary)', async () => {
     const base = presentablePullRequests().filter((row) => !row.tag.startsWith('middle-'))
     const seed: InventedStoreSeed = {

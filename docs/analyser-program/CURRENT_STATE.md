@@ -24,15 +24,19 @@ active_slice: >-
   passed. Full Windows checks passed at #385's 68ed29f (1835 tests) and #387's 1d2f56c (1852 tests),
   each with 13 POSIX/opt-in skips and at most two workers. #385's hosted gate also passed (1845
   tests, three conditional skips); the stacked #387 base triggers no hosted run.
-  fix/change-batch-cohort-consistency owns #386's served summary/cohort/primary-result binding;
-  75 focused tests, lint, TypeScript and independent review passed. Its final qualification belongs in the draft PR's
-  Proof section. One writer per isolated task checkout; no real data or activation.
-  Review/merge order is #385, #387, then the #386 follow-up, retargeting each stacked base to main.
+  Draft #389 on fix/change-batch-cohort-consistency owns #386's served summary/cohort/primary-result
+  binding. Full Windows check passed at 92f8f26 (1872 tests, 13 skips), with one worker; showcase and
+  independent review passed. fix/change-batch-stratum-consistency owns #388's served stratum/result
+  binding, absent-row support furniture and keyed quantile normalization. Its final focused/full
+  qualification and exact head belong in its draft PR's Proof section. One writer per isolated task
+  checkout; no real data or activation. Review/merge order is #385, #387, #389, then the #388 follow-up,
+  retargeting each stacked base to main.
   No merge or deployment is
   authorized in this delegated task. The September remote snapshots above remain dated history.
 next_value_slice: >-
-  Review the #375/#376/#386 draft chain and refresh exact-head proving results before activation
-  selection. #388's rendered stratum/result consistency is the next bounded integrity follow-up.
+  Review the #375/#376/#386/#388 draft chain and refresh exact-head proving results before selecting
+  further work. A broader audit of primary metric-reference/cohort metadata identity is separate
+  scope; omitted source data and historical snapshot integrity are not proved by these gates.
   Other choices include #202's remainder:
   the #86 `v2_coverage_record` id-shape decision, the #168/#177 H5 reassessment, and a Windows
   owner-only ACL / secure task-root check for the installation key. (3) #80's scope-unbound C1
@@ -114,10 +118,11 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  Refresh drafts #385, #387 and the fix/change-batch-cohort-consistency follow-up, their heads and
-  checks. Both are synthetic-only pre-activation fixes; main was observed at 9704118 on 2026-10-02.
-  Full Windows checks passed for #385/#387; refresh the follow-up's proof and retain all drafts
-  for owner review. Only one suite/build runs at a time, with at most two test workers.
+  Refresh drafts #385, #387, #389 and the fix/change-batch-stratum-consistency follow-up, their heads
+  and checks. All are synthetic-only pre-activation fixes; main was observed at 9704118 on 2026-10-02.
+  Full Windows checks passed for #385/#387/#389; refresh the follow-up's proof and retain all drafts
+  for owner review. Only one suite/build runs at a time, with one test worker for the current
+  shared-PC qualification (FR-107).
   Stored-path activation of
   Phase E requires #375 and #376 first; real migration or collection requires #202's remainder and
   a bounded, reviewed activation task card within the approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and

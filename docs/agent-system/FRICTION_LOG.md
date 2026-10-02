@@ -2824,3 +2824,14 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** 1 occurrence during [#375](https://github.com/Chris0Jeky/developer-lens/issues/375).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe maintenance and discovery; this is task-environment friction, not a product defect.
 - **promotion:** Retain the bounded workaround; no repository runtime or machine configuration change is needed.
+
+### FR-107 - shared-PC memory pressure required serial one-worker qualification
+
+- **first-seen:** 2026-10-02
+- **status:** `workaround-documented`
+- **symptom:** During the #386 full-check attempt with two test workers, free physical memory fell to about 2 GB and sustained page-ins approached 10 MB/s. The task connection also interrupted during the subsequent proof; the existing process and log remained available after reconnection.
+- **impact:** The first attempt was deliberately interrupted before completion, without a product test failure. Qualification needed a lower resource budget and continuity checks before claiming an exact-head result.
+- **workaround:** Run only one suite/build at a time, using a temporary task-local Node preload outside the checkout to cap Vitest at one worker. Sample shared-PC memory and stop the task's own run if pressure returns. After connection loss, verify the existing process, committed head and log before continuing; do not duplicate an active run. No global configuration or repository worker setting changed.
+- **occurrences:** 1 resource-pressure episode during [#389](https://github.com/Chris0Jeky/developer-lens/pull/389); the one-worker full check completed with 1872 passed and 13 existing skips. The same bounded budget is retained for [#388](https://github.com/Chris0Jeky/developer-lens/issues/388).
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe maintenance; this is shared execution-environment friction, not a product defect or new runtime requirement.
+- **promotion:** One occurrence; retain the task-scoped workaround and resource stop condition without a machine-wide or product change.

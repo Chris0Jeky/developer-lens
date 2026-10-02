@@ -5739,8 +5739,13 @@ Independent fresh-context review of the four code/test files found no blocking d
 read-only without another Node/test/build process.
 The first post-fix API assertion expected the internal detail, while the wrapper intentionally
 normalizes errors; correcting it to the public serving-gate error preserved the failing-first
-rejection evidence. Final full-check qualification and exact head are recorded in the draft PR's
-Proof section; refresh it before action.
+rejection evidence. Draft [#389](https://github.com/Chris0Jeky/developer-lens/pull/389) has exact head
+`92f8f26bca8fd04e62af1f3eb65069e256f126ba`. Local Windows `npm run check` passed at that head:
+117 files, 1872 passed, 13 existing POSIX/opt-in skips; lint, context, all four fixture drift checks,
+TypeScript, build and privacy checks passed. `npm run build:showcase` passed at the same head.
+The initial two-worker attempt was deliberately stopped under shared-PC memory pressure, with
+no product test failure, then the full check completed with one worker (FR-107). No hosted run
+is triggered by the stacked base; no Linux or separate browser acceptance is inferred.
 
 **Not inferred.** This binds served representations, not mutable storage to an historical snapshot
 or hostile-writer ground truth. It does not cross-bind every stratum presentation row. No browser
@@ -5751,3 +5756,37 @@ activation, deployment, merge or owner-decision change occurs. The q-10(c) relea
 separate invented probe: both gates accept rendered stratum eligible 21 beside its served metric
 result's eligible 10. The primary cohort/summary still agree. This is a presentation-integrity
 follow-up, not a live disclosure; no activation was needed to reproduce it.
+
+## 2026-10-02 - served stratum consistency (#388)
+
+**Bounded task.** Branch `fix/change-batch-stratum-consistency`, based on draft #389's
+`92f8f26bca8fd04e62af1f3eb65069e256f126ba`. Bind rendered stratum identities, states, counts,
+display furniture, merged sample sizes, quantiles and lower-bound values to their carried metric
+results. Preserve legitimately omitted below-support/unavailable rows and keyed-entry ordering.
+Synthetic fixtures only; rollback is a revert of this slice. Draft review order is #385, #387,
+#389, then this follow-up, retargeting each stacked base after its prerequisite lands. No merge,
+deployment, activation, owner-decision change or exported Lab contract change is selected.
+
+**Changed.** The shared server/browser gate checks unique binning/stratum identities, fixed
+result IDs, registered states, eligible outcome partitions and the served metric/scope/window
+identity. Carried results determine state, eligible/censored counts, merged distribution sample,
+display reason, keyed quantile values and supported lower-bound p90. Omitted measured rows remain
+below support without numerical furniture; measured typed-absence rows cannot lose their result.
+Parsed displayed quantiles are normalized to the fixed table headings without changing the raw
+wire body. Analytical procedure and definition versions remain unchanged.
+
+**Verified.** Failing-first shared/API/browser-consumer run: 29 expected failures, 76 passed.
+Independent fresh-context review identified a truncated omitted-row support bypass; two added
+tests reproduced it with both a support-met reason and a truncation reason. The gate now rejects
+that omission. Legitimate truncated cohort views retain their existing empty binning list.
+The final three focused files passed all 107 tests. The scoped final independent review found
+no remaining blocker and performed no runtime tests. This draft's Proof section records its
+exact head and final full-check qualification. One suite/build at a time and one test worker are
+required for this shared-PC qualification; the environment workaround is recorded as FR-107.
+
+**Not inferred.** This proves consistency of served representations, not omitted source data or
+historical/hostile-writer storage integrity. A broader audit of primary metric-reference and
+cohort metadata identity is separate scope. No browser automation, real history, protected data,
+private projection, external model, telemetry, credentials, collection or stored endpoint
+activation is exercised. The endpoint remains unwired, and
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)` remains the release hold.
