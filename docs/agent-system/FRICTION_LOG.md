@@ -2824,3 +2824,25 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** 1 occurrence during [#375](https://github.com/Chris0Jeky/developer-lens/issues/375).
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns Windows-safe maintenance and discovery; this is task-environment friction, not a product defect.
 - **promotion:** Retain the bounded workaround; no repository runtime or machine configuration change is needed.
+
+### FR-108 - workflow lookup returned an empty result for an existing deployment
+
+- **first-seen:** 2026-10-02
+- **status:** `workaround-documented`
+- **symptom:** The connected commit-workflow lookup returned no runs for main, while an authorized direct read of the existing Pages workflow returned successful run `36516768140` at the same commit.
+- **impact:** Treating the empty result as authoritative would lose the deployment and rollback receipt.
+- **workaround:** Read structured connector results, cross-check unexpected empty workflow results through the existing read-only GitHub CLI, and retain concrete run/job/commit receipts. No credential or persistent access change was made.
+- **occurrences:** 1 occurrence during the #385/#387 merge follow-up.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns maintenance/discovery; this is tool evidence friction, not a product failure or a passed check.
+- **promotion:** Keep the bounded evidence cross-check; do not infer a missing run from one connector response.
+
+### FR-109 - a pre-merge sweep continued before a late review finding was triaged
+
+- **first-seen:** 2026-10-02
+- **status:** `workaround-documented`
+- **symptom:** The pre-merge sweep returned a new P2 on #385's stale qualification prose, but the same orchestration cell continued to its authorized merge before the lead inspected that finding.
+- **impact:** #385 landed before that documentation finding was explicitly triaged. Its exact-head code/local/hosted gates had passed; the remaining stack corrects the stale proof text.
+- **workaround:** End the read-only sweep cell, inspect every finding, and make the merge call in a separate cell only after triage. Correct the ledger in #387 and resolve the thread after the correction lands.
+- **occurrences:** 1 occurrence, [#385 review](https://github.com/Chris0Jeky/developer-lens/pull/385#discussion_r4170241663).
+- **task:** #387 owns the documentation correction; the existing review/merge protocol owns the separate-sweep decision requirement.
+- **promotion:** Use the separate orchestration boundary for the remaining merges; no product runtime change is needed.

@@ -17,17 +17,21 @@ product_main: 'b4b82535237e0ccbcbe37d4d101e668aafad4e54'
 lab_main: '551c518d0281419d3a009b4c0a56b0ed026011c3'
 active_slice: >-
   2026-10-02 task: main was refreshed at 9704118b578f2901a18b29753a3b6f7a945572e5.
-  Draft #385 owns #375 on fix/change-batch-withheld-quantiles (68ed29f): typed withholding of
+  #385 owns #375 on fix/change-batch-withheld-quantiles (68ed29f): typed withholding of
   cohort values plus sensitivity/tampering checks; 200 focused tests passed. The companion
   draft #387 on fix/stored-change-batch-preactivation owns all five #376 findings; 119 focused
   tests, lint, TypeScript, context, fixture drift, showcase/privacy build and independent review
-  passed. #385's hosted gate passed (1845 tests, three conditional skips). Local full check awaits a
-  coordinated test slot. One writer per isolated task checkout; no real data or activation.
-  Review/merge order is #385 then #387 retargeted to main. No merge or deployment is
-  authorized in this delegated task. The September remote snapshots above remain dated history.
+  passed. Original exact-head Windows full checks passed for #385 (1835 tests) and #387 (1852 tests),
+  each with 13 existing skips. #385's fresh hosted gate passed and it merged as cbee0c4.
+  The owner now authorizes review/fixes/safe merges and the established synthetic Pages deployment.
+  Retarget and requalify #387, #389 and #390 against main in that order; their current Proof sections
+  carry exact-head evidence. One writer per isolated checkout, one suite/build and one test worker.
+  No real data, endpoint activation, release tag or owner-hold override is selected.
+  The September remote snapshots above remain dated history.
 next_value_slice: >-
-  Finish exact-head qualification of the #375/#376 drafts before activation selection. Then #386's
-  served cohort/result/summary consistency is a bounded integrity follow-up. Other choices include
+  Complete exact-head qualification and safe integration of #387/#389/#390, then verify the final
+  main's Pages deployment and public synthetic smoke. #389 and #390 address the already reproduced
+  #386/#388 consistency findings. Other choices after this campaign include
   #202's remainder:
   the #86 `v2_coverage_record` id-shape decision, the #168/#177 H5 reassessment, and a Windows
   owner-only ACL / secure task-root check for the installation key. (3) #80's scope-unbound C1
@@ -48,8 +52,9 @@ blockers: >-
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 items are deferred and nonblocking for the tag,
   except that Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(f) still owner-gates package-registry
   credentials. No
-  tag, release, package publication, or public publication is authorized before
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
+  tag, release or package publication is authorized before
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). Existing verified synthetic Pages publication
+  remains permitted by Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4.
 last_verified_checks: >-
   Each merged PR's exact-head `Prove the pull request` run succeeded before merge (#367 also passed
   `Prove native Windows test roots`), and main's `Deploy public showcase` runs succeeded through
@@ -77,7 +82,7 @@ operational_resume:
     producer contracts.
   next_selection: >-
     See next_value_slice. Prefer #376/#375 or #202's remainder when advancing towards activation,
-    and #201 when advancing the charter. Do not tag or publish before
+    and #201 when advancing the charter. Do not tag or publish a release/package before
     Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
 
 lab_delivery:
@@ -97,8 +102,8 @@ release_readiness:
     C0-publication mechanics after Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c), under normal
     exact-head gates.
   prohibited_until_then: >-
-    No tag, release, package publication, C0 publication, or owner decision is inferred from this
-    state.
+    No tag, release, package publication or owner decision is inferred from this state. Only the
+    existing verified C0 showcase follows the standing q-4 publication route.
 
 authority_and_boundary:
   owner_policy: 'docs/OWNER_CONSTITUTION.md'
@@ -109,14 +114,17 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  Refresh drafts #385 and #387, their heads and
-  checks. Both are synthetic-only pre-activation fixes; main was observed at 9704118 on 2026-10-02.
-  Complete full checks in the coordinating session's slot and retain drafts for owner review.
+  #385 merged as cbee0c4 after exact-head local/hosted proof. Refresh #387/#389/#390 heads, reviews
+  and checks, retarget to main in dependency order and requalify before each authorized merge.
+  All are synthetic-only fixes; the owner authorized safe merge and the existing verified Pages
+  deployment on 2026-10-02. Verify the final deployed commit and public C0 smoke, retaining the
+  previous verified main 9704118 as the rollback baseline. Run one suite/build and one test worker.
   Stored-path activation of
   Phase E requires #375 and #376 first; real migration or collection requires #202's remainder and
   a bounded, reviewed activation task card within the approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5 boundaries. Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818
   at 54217ff: Product #298 owns re-creating that slice after
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). Until that owner action, no tag, release,
-  package publication, or public publication is authorized.
+  package publication is authorized. Existing verified synthetic Pages publication remains
+  permitted by Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4.
 ```
