@@ -8,6 +8,8 @@ import { extname, join, resolve, sep } from 'node:path'
 import { pathToFileURL } from 'node:url'
 import { setTimeout as delay } from 'node:timers/promises'
 import { requirePointerTarget, requirePointerEvents } from './atlasPointerContract.mjs'
+import { matchesAtlasDrawer } from './atlasDrawerContract.mjs'
+import { finishPointerReceipt } from './atlasPointerReceipt.mjs'
 
 /** Process-private CDP transport; never attaches to a user's existing browser/profile. */
 export async function openBrowser(executable = process.env.CHROME_PATH || 'google-chrome') {
@@ -105,6 +107,21 @@ export function targetSnapshot(selector) {
     viewportWidth: innerWidth, viewportHeight: innerHeight }
 }
 
+/** Capture only rendered public evidence identities; never serialize arbitrary page text. */
+export function drawerSnapshot() {
+  const dialogs = document.querySelectorAll('[data-testid="evidence-drawer"]')
+  const dialog = dialogs[0]
+  if (!dialog) return { count: 0 }
+  const box = dialog.getBoundingClientRect()
+  const style = getComputedStyle(dialog)
+  return { count: dialogs.length, visible: box.width > 0 && box.height > 0 &&
+    style.visibility !== 'hidden' && style.display !== 'none' && style.opacity !== '0',
+    referenceKind: dialog.getAttribute('data-reference-kind'),
+    heading: dialog.querySelector('h2')?.textContent?.trim(),
+    supports: [...dialog.querySelectorAll('[data-testid="edge-group-supports"] .evidence-drawer__toggle')]
+      .map((element) => /^evidence ([A-Za-z0-9_.]+) · observed$/.exec(element.textContent.trim())?.[1] ?? null) }
+}
+
 async function pageSession(browser, origin, width) {
   const { targetId } = await browser.send('Target.createTarget', { url: 'about:blank' })
   const { sessionId } = await browser.send('Target.attachToTarget', { targetId, flatten: true })
@@ -167,7 +184,6 @@ export async function runSmoke(directory = 'dist') {
             const first = await snapshot()
             receipt.traces.push({ column, phase: 'before', ...first })
             const point = requirePointerTarget(first)
-            const statement = await page.evaluate(`document.querySelector(${JSON.stringify(selector)}).getAttribute('aria-label').split(' Value ')[0]`)
             await page.evaluate('window.__pointerEvents = []')
             for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) {
               const before = await snapshot()
@@ -182,14 +198,17 @@ export async function runSmoke(directory = 'dist') {
             receipt.traces.push({ column, events })
             requirePointerEvents(events, point.mark)
             receipt.phase = `drawer-column-${column}`
-            await page.poll(`(() => { const dialog = document.querySelector('[data-testid="evidence-drawer"]'); return dialog && dialog.getBoundingClientRect().width > 0 && dialog.textContent.includes(${JSON.stringify(statement)}); })()`)
+            try {
+              await page.poll(`(${matchesAtlasDrawer.toString()})((${drawerSnapshot.toString()})(), ${JSON.stringify(point.mark)})`)
+            } finally {
+              receipt.traces.push({ column, drawer: await page.evaluate(`(${drawerSnapshot.toString()})()`) })
+            }
             await page.send('Input.dispatchKeyEvent', { type: 'keyDown', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
             await page.send('Input.dispatchKeyEvent', { type: 'keyUp', key: 'Escape', code: 'Escape', windowsVirtualKeyCode: 27 })
             await page.poll(`document.querySelector('[data-testid="evidence-drawer"]') === null`)
           }
           receipt.phase = 'complete'
-          receipt.status = 'passed'
-        } finally { console.log(JSON.stringify(receipt)); await page.close() }
+        } finally { await finishPointerReceipt(receipt, page.close) }
       }
     }
     return receipts
