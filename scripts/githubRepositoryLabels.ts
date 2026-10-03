@@ -7,7 +7,7 @@ export interface LabelLookupDependencies {
 }
 
 const MAX_PAGES = 10
-const MAX_ATTEMPTS = 3
+const MAX_ATTEMPTS = 2
 const REQUEST_TIMEOUT_MS = 10_000
 const TOTAL_WAIT_BUDGET_MS = 180_000
 
@@ -17,7 +17,7 @@ function seconds(value: string | null): number | null {
   return value !== null && /^\d+$/.test(value.trim()) ? Number(value.trim()) : null
 }
 
-function rateLimitDelay(response: Response, message: unknown, attempt: number, now: number): number | null {
+function rateLimitDelay(response: Response, message: unknown, now: number): number | null | 'unknown-primary-reset' {
   if (response.status !== 403 && response.status !== 429) return null
   const retryAfter = seconds(response.headers.get('retry-after'))
   const exhausted = response.headers.get('x-ratelimit-remaining')?.trim() === '0'
@@ -28,6 +28,8 @@ function rateLimitDelay(response: Response, message: unknown, attempt: number, n
   if (response.status !== 429 && !exhausted && retryAfter === null && !declared) return null
 
   const reset = exhausted ? seconds(response.headers.get('x-ratelimit-reset')) : null
+  // An exhausted primary window cannot inherit the secondary-limit fallback.
+  if (exhausted && reset === null) return 'unknown-primary-reset'
   const resetDelay = reset === null ? null : Math.max(0, reset * 1000 - now)
   const instructed = [retryAfter === null ? null : retryAfter * 1000, resetDelay]
     .filter((value): value is number => value !== null)
@@ -35,7 +37,7 @@ function rateLimitDelay(response: Response, message: unknown, attempt: number, n
   // Honor the later of both headers when supplied; never cap a server-directed delay.
   return instructed.length > 0
     ? Math.max(1000, ...instructed)
-    : 60_000 * 2 ** (attempt - 1)
+    : 60_000
 }
 
 /** Hosted-only, live label proof. No cache, fallback label list, permission change or token requirement. */
@@ -84,7 +86,7 @@ export async function repositoryLabels(
           signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         })
       } catch {
-        await retry(1000 * 2 ** (attempt - 1), `GitHub labels transport failure (${context})`, attempt)
+        await retry(1000, `GitHub labels transport failure (${context})`, attempt)
         continue
       }
 
@@ -95,8 +97,11 @@ export async function repositoryLabels(
           const payload: unknown = await response.json()
           if (payload !== null && typeof payload === 'object' && 'message' in payload) message = payload.message
         } catch { /* Non-JSON error responses carry no additional rate-limit evidence. */ }
-        const delay = rateLimitDelay(response, message, attempt, now())
+        const delay = rateLimitDelay(response, message, now())
         const failed = `GitHub labels request failed (HTTP ${response.status}; ${context})`
+        if (delay === 'unknown-primary-reset') {
+          throw new Error(`${failed}; primary rate-limit reset is unavailable. Check the server response before rerunning; no automatic retry was made.`)
+        }
         if (delay !== null) {
           await retry(delay, `${failed}; rate limited`, attempt)
           continue
