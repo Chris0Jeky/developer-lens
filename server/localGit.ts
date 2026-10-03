@@ -1,8 +1,7 @@
 import { execFile } from 'node:child_process'
-import { access } from 'node:fs/promises'
-import { basename, dirname, join, normalize, resolve } from 'node:path'
+import { basename, normalize } from 'node:path'
 import { promisify } from 'node:util'
-import fg from 'fast-glob'
+import { discoverLocalGitCandidates } from './localGitDiscovery.js'
 import type {
   CoverageSource,
   RawCommit,
@@ -37,15 +36,6 @@ interface ParsedCommit {
   additions: number
   deletions: number
   files: number
-}
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await access(path)
-    return true
-  } catch {
-    return false
-  }
 }
 
 async function git(cwd: string, args: string[]): Promise<string> {
@@ -110,36 +100,12 @@ function parseGitLog(output: string): ParsedCommit[] {
   return commits
 }
 
-async function discoverRepositories(roots: string[]): Promise<string[]> {
-  const candidates = new Set<string>()
-
-  for (const rootInput of roots) {
-    const root = resolve(rootInput)
-    if (!(await exists(root))) continue
-    if (await exists(join(root, '.git'))) candidates.add(root)
-
-    const matches = await fg('**/.git', {
-      cwd: root,
-      absolute: true,
-      dot: true,
-      onlyFiles: false,
-      followSymbolicLinks: false,
-      deep: 6,
-      suppressErrors: true,
-      ignore: [
-        '**/node_modules/**',
-        '**/.venv/**',
-        '**/vendor/**',
-        '**/.cache/**',
-        '**/dist/**',
-        '**/build/**',
-      ],
-    })
-    for (const match of matches) candidates.add(dirname(match))
-  }
+async function discoverRepositories(roots: string[]): Promise<{ repositories: string[]; failedLocations: number }> {
+  const discovery = await discoverLocalGitCandidates(roots)
+  let failedLocations = discovery.failedLocations
 
   const repositories = new Map<string, string>()
-  for (const candidate of candidates) {
+  for (const candidate of discovery.candidates) {
     try {
       const topLevel = await git(candidate, ['rev-parse', '--show-toplevel'])
       const commonDirectory = await git(candidate, [
@@ -149,11 +115,12 @@ async function discoverRepositories(roots: string[]): Promise<string[]> {
       ])
       repositories.set(normalize(commonDirectory).toLowerCase(), topLevel)
     } catch {
-      // A stale or inaccessible .git marker is ignored and reported by count.
+      // Preserve incomplete discovery without retaining paths or exception text.
+      failedLocations++
     }
   }
 
-  return [...repositories.values()]
+  return { repositories: [...repositories.values()], failedLocations }
 }
 
 export async function collectLocalGit(
@@ -194,7 +161,7 @@ export async function collectLocalGit(
     }
   }
 
-  const repositories = await discoverRepositories(roots)
+  const { repositories, failedLocations } = await discoverRepositories(roots)
   const rawRepositories: RawRepository[] = []
   const commits: RawCommit[] = []
   const warnings: string[] = []
@@ -256,12 +223,12 @@ export async function collectLocalGit(
       id: 'local-git',
       label: 'Local Git enrichment',
       status:
-        warnings.length === 0
+        warnings.length === 0 && failedLocations === 0
           ? 'complete'
           : commits.length > 0
             ? 'partial'
             : 'unavailable',
-      detail: `${repositories.length} explicitly selected repositories inspected; only aggregate commit features are retained.`,
+      detail: `${repositories.length} explicitly selected repositories inspected within the no-symlink, six-level discovery scope; only aggregate commit features are retained.${failedLocations > 0 ? ` ${failedLocations} discovery check(s) failed; discovery is incomplete.` : ''}`,
       itemCount: commits.length,
     },
     warnings,
