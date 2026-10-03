@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'vitest'
-import { toSurvivalRow, type PullRequestObservation } from '../docs/acceleration-bundles/2026-09-09-developer-lens/snippets/integration-tail-method'
+import { toSurvivalRow, type PullRequestObservation } from '../docs/acceleration-bundles/2026-09-09-developer-lens/snippets/integration-tail-method.js'
 
 const hour = 3_600_000
 const observation: PullRequestObservation = {
