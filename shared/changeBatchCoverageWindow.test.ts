@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'vitest'
 import { deriveWindowCoverage, type ChangeBatchTailInput } from './changeBatchTail.js'
+import { acceptChangeBatchTailView, buildChangeBatchTailView } from './changeBatchTailView.js'
 
 const start = '2026-06-03T12:00:00.000Z'
 const end = '2026-06-26T12:00:00.000Z'
@@ -37,8 +38,8 @@ describe('coverage display stays inside the selected window (#374)', () => {
       start: '2026-06-03T12:00:00+00:00', end: '2026-06-26T12:00:00+00:00',
     })
     const coverage = deriveWindowCoverage(input, [])
-    assert.equal(coverage.rows[0].rangeStartWeek, start)
-    assert.equal(coverage.rows[0].rangeEndWeek, end)
+    assert.equal(coverage.rows[0].rangeStartWeek, input.window.start)
+    assert.equal(coverage.rows[0].rangeEndWeek, input.window.end)
     assert.equal(coverage.completeness.value, 1)
   })
   it('retains week grain for interior row boundaries', () => {
@@ -68,4 +69,20 @@ describe('coverage display stays inside the selected window (#374)', () => {
     assert.equal(coverage.rows[0].rangeEndWeek, window.end)
     assert.equal(coverage.completeness.value, 1)
   })
+})
+
+describe('coverage view acceptance at caller-spelled boundaries', () => {
+  for (const window of [
+    { start: '2026-06-03T12:00:00+00:00', end: '2026-06-26T12:00:00+00:00' },
+    { start: '2026-06-03T12:00:00Z', end: '2026-06-05T12:00:00Z' },
+    { start: '2026-06-01T00:00:00.000Z', end: '2026-06-29T00:00:00.000Z' },
+  ]) {
+    it(`round-trips the produced view for ${window.start} to ${window.end}`, () => {
+      const input = fixture('2026-06-01T00:00:00.000Z', '2026-06-29T00:00:00.000Z', window)
+      const view = buildChangeBatchTailView(input)
+      assert.equal(view.coverage.rows[0].rangeStartWeek, window.start)
+      assert.equal(view.coverage.rows[0].rangeEndWeek, window.end)
+      assert.doesNotThrow(() => acceptChangeBatchTailView(JSON.parse(JSON.stringify(view))))
+    })
+  }
 })
