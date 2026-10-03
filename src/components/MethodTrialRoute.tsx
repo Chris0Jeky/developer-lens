@@ -83,9 +83,10 @@ function selectNotablePoints(points: readonly TimelinePoint[]): {
       point.planted_marker !== 'none' ||
       point.confound_marker !== 'none' ||
       point.pelt_marker.boundary
-    if (!isNotable) return
-    const isDistinctTransition = index === 0 || pointStateTuple(point) !== pointStateTuple(points[index - 1])
-    if (isDistinctTransition || point.pelt_marker.boundary) {
+    // Retain return-to-ordinary transitions as well as missing/marked run onsets.
+    const isDistinctTransition = index > 0 && pointStateTuple(point) !== pointStateTuple(points[index - 1])
+    if (!isNotable && !isDistinctTransition) return
+    if (index === 0 || isDistinctTransition || point.pelt_marker.boundary) {
       visible.push(point)
     } else {
       collapsedCount += 1
