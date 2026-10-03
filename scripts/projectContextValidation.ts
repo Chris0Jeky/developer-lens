@@ -306,6 +306,10 @@ export function validateTrackedTextForWindowsUserHomePaths(
       errors.push('protected Git-tracked path is not allowed')
       continue
     }
+    if (containsWindowsUserHomePath(path)) {
+      errors.push('Git-tracked pathname contains a Windows user-home path')
+      continue
+    }
     eligiblePaths.push(path)
   }
   if (eligiblePaths.length === 0) {
@@ -342,7 +346,9 @@ export function validateTrackedTextForWindowsUserHomePaths(
     errors.push('unable to re-enumerate Git-tracked paths')
     return errors
   }
-  const finalEligiblePaths = finalPaths.filter((path) => !isProtectedTrackedPath(path))
+  const finalEligiblePaths = finalPaths.filter(
+    (path) => !isProtectedTrackedPath(path) && !containsWindowsUserHomePath(path),
+  )
   if (
     !pathsMatchExactly(paths, finalPaths) ||
     !pathsMatchExactly(eligiblePaths, finalEligiblePaths)
