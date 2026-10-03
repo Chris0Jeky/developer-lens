@@ -5904,3 +5904,37 @@ Proof section owns fresh exact-head full/hosted gates and final public deploymen
 **Friction.** FR-112 records the insufficient initial DOM smoke and the preview base-path mismatch;
 the corrected preview explicitly matches the showcase's `/developer-lens/` base. No real history,
 protected data, stored endpoint activation, model generation or new service installation occurred.
+
+
+## 2026-10-03 - final Atlas integration receipts and handoff
+
+#394 merged as `8d7fbe1ecd8fb95260b197d8f82d79ad38264078`; #393 is closed. Exact qualified head
+`a5c10417863e7b615def80667e85ee8527edad24` passed full Windows proving: 117 files, 1928 tests,
+13 existing skips, serial one worker, 328.65s. Fresh showcase, privacy, SDK, Taskdeck (128 cards;
+three existing near-limit warnings) and diff checks passed. Independent source/docs review found
+no blocker. GitHub Codex completed its exact-head review without findings; a clean pre-merge
+read/triage sweep at 00:18:08 UTC preceded a separate merge call. Required hosted
+[run 37081178298](https://github.com/Chris0Jeky/developer-lens/actions/runs/37081178298/job/111081823067)
+passed, including 117 Linux files, 1938 tests, 3 existing skips (137.53s). Actual merge and qualified
+source trees both equal `f454864e316aa6ba1f2a221b2c9babd5b21ae6b2`; SDK #391's blobs are preserved.
+
+[Pages run 37081503804](https://github.com/Chris0Jeky/developer-lens/actions/runs/37081503804)
+succeeded on the first attempt at `8d7fbe1`; build job `111082823921` passed full proving/showcase/
+SDK checks and deploy job `111083537553` completed at 00:22:03 UTC. Corrected public synthetic
+smoke passed at widths 1280 and 390: all five table regions are named/focusable; ArrowRight moved
+all three overflowing narrow tables; actual pointer clicks reached p90 and lower-bound controls
+and opened visible matching evidence; Escape closed each drawer. Three strata rendered with no
+root overflow or stored control. GPU was disabled and collector requests were blocked.
+
+The first public smoke assertion failed after polling stopped on the first dialog node. The
+corrected harness waits for the complete required predicate (visible drawer and matching evidence)
+and then passed with unchanged application/deployment. The first attempt remains failed; its
+precise transient state was not captured, so no application or network cause is inferred. FR-112
+records this qualification limitation. Screenshots and structured synthetic results remain task
+artifacts; no physical-device, owner aesthetic or telemetry acceptance is inferred.
+
+This documentation-only follow-up reconciles operational state with the completed five-PR campaign
+and records the smoke workaround in the same handoff. It does not claim another Windows full run
+at its documentation head. Its own context/diff/hosted checks and the beyond-delay #394 review
+sweep belong in its PR Proof section. Existing #384 (Undici dependency qualification) and #392
+(opaque hosted label lookup) remain next scope; no unrelated dependency/credential change was made.

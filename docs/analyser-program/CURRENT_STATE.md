@@ -28,17 +28,19 @@ active_slice: >-
   attempt 1's label-lookup HTTP 403 remains recorded in #392 and FR-111, without inferred cause.
   Public synthetic pointer smoke passed at 1280; the stronger 390-width check found clipped
   quantile controls (#393). The earlier DOM click did not prove narrow pointer reachability.
-  The 2026-10-03 follow-up adds five named keyboard-focusable horizontal table regions, preserving
-  prose and native table semantics. One failing-first route regression and 32 focused tests
-  passed; corrected local showcase/browser proof and final exact-head full/hosted/deployment
-  receipts belong in its PR Proof section. Collector requests were blocked; no physical-device
-  or telemetry acceptance is inferred. Campaign PR Proof sections retain full heads and receipts.
+  #394 fixes #393 with five named keyboard-focusable horizontal table regions; it merged as
+  8d7fbe1ecd8fb95260b197d8f82d79ad38264078. Qualified head a5c1041 passed 1928 Windows tests
+  (13 existing skips), 1938 hosted Linux tests (3 existing skips), showcase/privacy/SDK checks,
+  32 focused tests and independent/exact-head Codex review. Its merge tree equals the qualified
+  tree. Pages run 37081503804 successfully deployed 8d7fbe1; actual public 1280/390 pointer and
+  narrow ArrowRight scrolling passed with collector requests blocked. The initial public drawer
+  assertion failed; corrected smoke waits for visible matching evidence (FR-112). No physical-device
+  or telemetry acceptance is inferred. PR Proof sections retain exact heads, failures and receipts.
   The owner authorized these safe merges and established C0 Pages publication; no real history,
   protected/private data, endpoint activation, release tag or owner-hold override was selected.
   The September remote snapshots above remain dated history.
 next_value_slice: >-
-  Finish #393 narrow-table exact-head qualification, hosted review and C0 deployment/public pointer
-  acceptance; its PR Proof section owns those final receipts. Then existing Dependabot #384 (Undici 7.30.0) needs current-main integration and locked-dependency
+  #393 is closed via merged/deployed #394. Existing Dependabot #384 (Undici 7.30.0) needs current-main integration and locked-dependency
   qualification; its earlier hosted proving passed, but it was not duplicated or merged by this
   campaign. #392 owns opaque/transient hosted label-lookup recovery. Historical/hostile-writer
   integrity remains separate scope. Other choices include #202's remainder:
@@ -69,7 +71,9 @@ last_verified_checks: >-
   October campaign proofs are in active_slice and the PR Proof sections; final code head 8fc2ef2
   passed 117 Windows files, 1927 tests and 13 existing skips; showcase and hosted proving passed.
   Code merge 8893aa8 passed the full Pages gate and deployment on unchanged-head attempt 2.
-  The remaining statements here are the dated September observation:
+  Follow-up a5c1041 passed 117 Windows files/1928 tests/13 existing skips; hosted Linux passed
+  1938 tests/3 existing skips. Code merge 8d7fbe1 passed Pages run 37081503804 and public
+  1280/390 pointer plus narrow keyboard-scroll acceptance. The remaining statements here are the dated September observation:
   Each merged PR's exact-head `Prove the pull request` run succeeded before merge (#367 also passed
   `Prove native Windows test roots`), and main's `Deploy public showcase` runs succeeded through
   `3a8c34e`; the run for `b4b8253` was in progress at the observation. Local Windows proofs:
@@ -108,9 +112,10 @@ release_readiness:
   lab_q11: 'CLOSED: Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 is recorded signed off.'
   browser_visual_qa: >-
     Earlier invented C0 Method Trial proof remains historical. The Phase E Atlas has synthetic
-    desktop pointer proof at deployed 8893aa8; narrow pointer clipping is #393. Its corrected local
-    showcase passed 1280/390 pointer and keyboard-scroll checks with collector requests blocked;
-    final public receipts belong in the follow-up PR Proof section. This is interaction evidence,
+    desktop pointer proof at deployed 8893aa8; #393's narrow clipping is fixed in #394. Corrected
+    local and public 1280/390 pointer and narrow keyboard-scroll checks passed at deployed 8d7fbe1
+    with collector requests blocked. The PR Proof section retains failed/successful receipts.
+    This is interaction evidence,
     not physical-device acceptance or the owner aesthetic sign-off under q-10(c).
   remaining_owner_gate: >-
     Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) — five-minute Product aesthetic sign-off.
@@ -131,15 +136,16 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  #385/#387/#389/#390 merged and code merge 8893aa8 deployed via Pages run 37078520171 attempt 2.
-  Finish #393: refresh its exact head/reviews/checks, run the required full/showcase gates serially
-  with one test worker, merge only after fresh review sweep and green required proving, then verify
-  the final Pages commit and actual public 1280/390 pointer plus ArrowRight scrolling. The owner
-  authorized safe merges and existing synthetic Pages publication on 2026-10-02. Retain failed
-  label-lookup and narrow-pointer receipts (#392/#393, FR-111/FR-112). Next use existing #384 and
-  #392, without duplicate work. Rollback by reviewed campaign/UI reverts preserving SDK #391.
-  Stored Phase E remains unwired: #375/#376 landed, but activation still requires #202's remainder;
-  real migration or collection requires
+  #385/#387/#389/#390/#394 merged; latest code merge 8d7fbe1 deployed via successful Pages run
+  37081503804. #375/#376/#386/#388/#393 are closed. Exact source heads, full gates, failed attempts,
+  public pointer/keyboard receipts and delayed review sweeps belong in the respective PR Proof
+  sections; refresh live Git/GitHub before action. Documentation-only handoff proving is separate
+  from a5c1041's Windows full run. Next use existing dependency PR #384 and diagnostics issue #392,
+  without duplicate work. Run one suite/build and one test worker after resource coordination.
+  The owner authorized safe merges and existing synthetic Pages publication on 2026-10-02;
+  rollback by reviewed campaign/UI reverts preserving SDK #391. Stored Phase E remains unwired:
+  #375/#376 landed, but activation still requires #202's remainder; real migration or collection
+  requires
   a bounded, reviewed activation task card within the approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5 boundaries. Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818
   at 54217ff: Product #298 owns re-creating that slice after
