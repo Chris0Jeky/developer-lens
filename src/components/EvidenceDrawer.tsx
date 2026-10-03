@@ -647,9 +647,9 @@ export function EvidenceDrawer({
   useEffect(() => {
     if (!open) return
     const invoker = document.activeElement as HTMLElement | null
-    closeRef.current?.focus()
+    closeRef.current?.focus({ preventScroll: true })
     return () => {
-      invoker?.focus?.()
+      invoker?.focus?.({ preventScroll: true })
     }
   }, [open])
 
