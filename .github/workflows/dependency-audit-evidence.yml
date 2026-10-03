@@ -1,0 +1,47 @@
+name: Dependency audit evidence
+
+# Report collection only: a green job does not accept or dismiss vulnerability findings.
+# Existing required PR/build/privacy gates remain unchanged. No package installation,
+# lifecycle scripts, token export, dependency mutation, or permission expansion is used.
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - package.json
+      - package-lock.json
+      - scripts/npmAuditEvidence.mjs
+      - scripts/npmAuditEvidence.test.mjs
+      - .github/workflows/dependency-audit-evidence.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  report:
+    name: Collect dependency audit evidence (not acceptance)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Check out the reviewed input
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - name: Set up the proving runtime
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          package-manager-cache: false
+      - name: Collect and validate the non-mutating audit report
+        shell: bash
+        run: |
+          git rev-parse HEAD
+          sha256sum package-lock.json
+          set +e
+          timeout 60s npm audit --package-lock-only --include=dev --json --ignore-scripts --fetch-retries=0 --fetch-timeout=10000 > "$RUNNER_TEMP/npm-audit-evidence.json"
+          audit_status=$?
+          set -e
+          echo "npm audit exit status: $audit_status"
+          node scripts/npmAuditEvidence.mjs "$RUNNER_TEMP/npm-audit-evidence.json" "$audit_status"
+          git diff --exit-code -- package.json package-lock.json
