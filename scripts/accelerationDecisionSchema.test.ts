@@ -19,6 +19,13 @@ describe('acceleration decision export confirmation boundary', () => {
   it('rejects confirmed status without explicit owner confirmation', () => {
     assert.equal(validate(document('confirmed', 'option-a', false)), false)
   })
+  it('rejects owner-confirmed flags on every advisory status', () => {
+    for (const status of ['proposed-default', 'changed-unconfirmed', 'deferred']) {
+      for (const selection of [null, 'option-a']) {
+        assert.equal(validate(document(status, selection, true)), false)
+      }
+    }
+  })
   it('accepts an explicitly confirmed selection', () => {
     assert.equal(validate(document('confirmed', 'option-a', true)), true)
   })

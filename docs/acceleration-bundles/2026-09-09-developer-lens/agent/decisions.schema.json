@@ -100,6 +100,13 @@
                   "const": true
                 }
               }
+            },
+            "else": {
+              "properties": {
+                "confirmedByOwner": {
+                  "const": false
+                }
+              }
             }
           }
         ]

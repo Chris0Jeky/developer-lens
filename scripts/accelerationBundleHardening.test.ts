@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { cpSync, linkSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs'
+import { cpSync, existsSync, linkSync, mkdirSync, mkdtempSync, readFileSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, it } from 'vitest'
@@ -110,8 +110,28 @@ describe('acceleration manifest source protection', () => {
         }
         const result = materialize(agent, output)
         assert.notEqual(result.status, 0)
-        assert.match(result.stderr, /output target.*source index|output target.*symlink/)
+        assert.match(result.stderr, /output target.*source input|output target.*symlink/)
         names.forEach((name, index) => assert.deepEqual(readFileSync(join(agent, name)), before[index]))
+      })
+    })
+  }
+  for (const stem of ['decision-catalog', 'issue-manifest']) {
+    it(`protects every ${stem} part from output hard-link aliases before any write`, () => {
+      withAgent((root, agent) => {
+        const index = JSON.parse(readFileSync(join(agent, `${stem}.json`), 'utf8'))
+        for (const [partIndex, part] of index.parts.entries()) {
+          const output = join(root, `output-${partIndex}`)
+          mkdirSync(output)
+          const source = join(agent, part.path)
+          const before = readFileSync(source)
+          // Put the alias at the second target so preflight must stop the first write too.
+          linkSync(source, join(output, 'issue-manifest.json'))
+          const result = materialize(agent, output)
+          assert.notEqual(result.status, 0)
+          assert.match(result.stderr, /output target.*source (?:index|input)/)
+          assert.deepEqual(readFileSync(source), before)
+          assert.equal(existsSync(join(output, 'decision-catalog.json')), false)
+        }
       })
     })
   }
