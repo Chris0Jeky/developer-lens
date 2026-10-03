@@ -37,7 +37,8 @@ active_slice: >-
   protected/private data, endpoint activation, release tag or owner-hold override was selected.
   The September remote snapshots above remain dated history.
 next_value_slice: >-
-  Existing Dependabot #384 (Undici 7.30.0) needs current-main integration and locked-dependency
+  Finish #393 narrow-table exact-head qualification, hosted review and C0 deployment/public pointer
+  acceptance; its PR Proof section owns those final receipts. Then existing Dependabot #384 (Undici 7.30.0) needs current-main integration and locked-dependency
   qualification; its earlier hosted proving passed, but it was not duplicated or merged by this
   campaign. #392 owns opaque/transient hosted label-lookup recovery. Historical/hostile-writer
   integrity remains separate scope. Other choices include #202's remainder:
@@ -94,8 +95,8 @@ operational_resume:
     may now consume the amended ResearchFinding v1. CommitAtlas #145 and #154 may consume their
     producer contracts.
   next_selection: >-
-    See next_value_slice. Prefer #376/#375 or #202's remainder when advancing towards activation,
-    and #201 when advancing the charter. Do not tag or publish a release/package before
+    See next_value_slice. #375/#376 fixes landed; #202's remainder still governs activation.
+    Prefer #201 when advancing the charter. Do not tag or publish a release/package before
     Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
 
 lab_delivery:
@@ -106,8 +107,11 @@ lab_delivery:
 release_readiness:
   lab_q11: 'CLOSED: Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 is recorded signed off.'
   browser_visual_qa: >-
-    VERIFIED earlier for the tracked invented C0 Method Trial at desktop and 390px. The new Phase E
-    Atlas panel and the 2026-09-22 chunk split have not had a separate browser/visual pass.
+    Earlier invented C0 Method Trial proof remains historical. The Phase E Atlas has synthetic
+    desktop pointer proof at deployed 8893aa8; narrow pointer clipping is #393. Its corrected local
+    showcase passed 1280/390 pointer and keyboard-scroll checks with collector requests blocked;
+    final public receipts belong in the follow-up PR Proof section. This is interaction evidence,
+    not physical-device acceptance or the owner aesthetic sign-off under q-10(c).
   remaining_owner_gate: >-
     Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) — five-minute Product aesthetic sign-off.
   release_actor_after_owner_gate: >-
@@ -127,13 +131,15 @@ authority_and_boundary:
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  #385 merged as cbee0c4 after exact-head local/hosted proof. Refresh #387/#389/#390 heads, reviews
-  and checks, retarget to main in dependency order and requalify before each authorized merge.
-  All are synthetic-only fixes; the owner authorized safe merge and the existing verified Pages
-  deployment on 2026-10-02. Verify the final deployed commit and public C0 smoke, retaining the
-  previous verified main 9704118 as the rollback baseline. Run one suite/build and one test worker.
-  Stored-path activation of
-  Phase E requires #375 and #376 first; real migration or collection requires #202's remainder and
+  #385/#387/#389/#390 merged and code merge 8893aa8 deployed via Pages run 37078520171 attempt 2.
+  Finish #393: refresh its exact head/reviews/checks, run the required full/showcase gates serially
+  with one test worker, merge only after fresh review sweep and green required proving, then verify
+  the final Pages commit and actual public 1280/390 pointer plus ArrowRight scrolling. The owner
+  authorized safe merges and existing synthetic Pages publication on 2026-10-02. Retain failed
+  label-lookup and narrow-pointer receipts (#392/#393, FR-111/FR-112). Next use existing #384 and
+  #392, without duplicate work. Rollback by reviewed campaign/UI reverts preserving SDK #391.
+  Stored Phase E remains unwired: #375/#376 landed, but activation still requires #202's remainder;
+  real migration or collection requires
   a bounded, reviewed activation task card within the approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5 boundaries. Do NOT attempt to refresh release/prepare-product-v0.1.0-20260818
   at 54217ff: Product #298 owns re-creating that slice after
