@@ -5,7 +5,7 @@ import { pathToFileURL } from 'node:url'
 const isRecord = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
 const isCount = (value) => Number.isSafeInteger(value) && value >= 0
 
-/** Collection success is not a security disposition or a clean-audit claim. */
+/** Requires npm --audit-level=info. Collection is not a security disposition. */
 export function validateAuditEvidence(report, auditExitCode) {
   if (![0, 1].includes(auditExitCode) || !isRecord(report) || Object.hasOwn(report, 'error')) {
     throw new Error('Audit evidence is unavailable')
@@ -19,8 +19,17 @@ export function validateAuditEvidence(report, auditExitCode) {
     throw new Error('Audit vulnerability counts are invalid')
   }
   const total = severities.reduce((sum, severity) => sum + counts[severity], 0)
-  const hasEntries = Object.keys(report.vulnerabilities).length > 0
-  if (total !== counts.total || (total > 0) !== hasEntries || auditExitCode !== (total > 0 ? 1 : 0)) {
+  const entries = Object.values(report.vulnerabilities)
+  const observedCounts = Object.fromEntries(severities.map((severity) => [severity, 0]))
+  for (const entry of entries) {
+    if (!isRecord(entry) || !severities.includes(entry.severity)) {
+      throw new Error('Audit vulnerability entry is invalid')
+    }
+    observedCounts[entry.severity] += 1
+  }
+  if (total !== counts.total || entries.length !== total ||
+      severities.some((severity) => observedCounts[severity] !== counts[severity]) ||
+      auditExitCode !== (total > 0 ? 1 : 0)) {
     throw new Error('Audit report and exit status disagree')
   }
   return { auditExitCode, vulnerabilityCount: total, report }

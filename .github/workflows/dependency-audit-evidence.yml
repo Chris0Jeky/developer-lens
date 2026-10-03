@@ -12,6 +12,7 @@ on:
       - package-lock.json
       - scripts/npmAuditEvidence.mjs
       - scripts/npmAuditEvidence.test.mjs
+      - scripts/npmAuditConsistency.test.mjs
       - .github/workflows/dependency-audit-evidence.yml
   workflow_dispatch:
 
@@ -39,7 +40,7 @@ jobs:
           git rev-parse HEAD
           sha256sum package-lock.json
           set +e
-          timeout 60s npm audit --package-lock-only --include=dev --json --ignore-scripts --fetch-retries=0 --fetch-timeout=10000 > "$RUNNER_TEMP/npm-audit-evidence.json"
+          timeout 60s npm audit --audit-level=info --package-lock-only --include=dev --json --ignore-scripts --fetch-retries=0 --fetch-timeout=10000 > "$RUNNER_TEMP/npm-audit-evidence.json"
           audit_status=$?
           set -e
           echo "npm audit exit status: $audit_status"
