@@ -5926,8 +5926,8 @@ all three overflowing narrow tables; actual pointer clicks reached p90 and lower
 and opened visible matching evidence; Escape closed each drawer. Three strata rendered with no
 root overflow or stored control. GPU was disabled and collector requests were blocked.
 
-The first public smoke assertion failed after polling stopped on the first dialog node. The
-corrected harness waits for the complete required predicate (visible drawer and matching evidence)
+The first public smoke assertion failed; that harness stopped polling at the first dialog node
+when one appeared. The corrected harness waits for the complete required predicate (visible drawer and matching evidence)
 and then passed with unchanged application/deployment. The first attempt remains failed; its
 precise transient state was not captured, so no application or network cause is inferred. FR-112
 records this qualification limitation. Screenshots and structured synthetic results remain task
