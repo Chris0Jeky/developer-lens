@@ -76,7 +76,40 @@
           "notes": {
             "type": "string"
           }
-        }
+        },
+        "allOf": [
+          {
+            "if": {
+              "required": [
+                "status"
+              ],
+              "properties": {
+                "status": {
+                  "const": "confirmed"
+                }
+              }
+            },
+            "then": {
+              "properties": {
+                "selectedOptionId": {
+                  "type": "string",
+                  "minLength": 1,
+                  "pattern": "\\S"
+                },
+                "confirmedByOwner": {
+                  "const": true
+                }
+              }
+            },
+            "else": {
+              "properties": {
+                "confirmedByOwner": {
+                  "const": false
+                }
+              }
+            }
+          }
+        ]
       }
     }
   }

@@ -31,7 +31,9 @@ export const RESEARCH_RULES = {
     evaluate: (v) => {
       const baseline = v['baseline.false_alerts_per_year']
       const candidate = v['candidate.false_alerts_per_year']
-      if (baseline == null || candidate == null) return 'not_applicable'
+      // Relative reduction is undefined at a zero baseline, not a 20% improvement.
+      if (baseline == null || candidate == null || !Number.isFinite(baseline) ||
+          !Number.isFinite(candidate) || baseline <= 0 || candidate < 0) return 'not_applicable'
       return candidate <= baseline * 0.8 ? 'pass' : 'fail'
     },
   },
