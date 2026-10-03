@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, it } from 'vitest'
 import { validateAuditEvidence } from './npmAuditEvidence.mjs'
 
@@ -44,7 +45,7 @@ describe('npm audit map consistency and threshold (#402 review)', () => {
     assert.throws(() => validateAuditEvidence(report(['info']), 0))
   })
   it('pins the hosted audit threshold rather than inheriting npm configuration', () => {
-    const workflow = readFileSync(new URL('../.github/workflows/dependency-audit-evidence.yml', import.meta.url), 'utf8')
+    const workflow = readFileSync(resolve('.github/workflows/dependency-audit-evidence.yml'), 'utf8')
     const command = workflow.split('\n').find((line) => line.includes('timeout 60s npm audit '))
     assert.ok(command)
     assert.match(command, /(?:^|\s)--audit-level=info(?:\s|$)/)

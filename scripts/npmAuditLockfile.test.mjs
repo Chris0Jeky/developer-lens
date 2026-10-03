@@ -3,10 +3,10 @@ import { execFileSync, spawnSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { join, resolve } from 'node:path'
 import { describe, it } from 'vitest'
 
-const workflow = readFileSync(new URL('../.github/workflows/dependency-audit-evidence.yml', import.meta.url), 'utf8')
+const workflow = readFileSync(resolve('.github/workflows/dependency-audit-evidence.yml'), 'utf8')
 const runBlock = workflow.split('        run: |\n')[1]
 assert.ok(runBlock, 'Expected the audit workflow shell step')
 const command = runBlock.split('\n').map((line) => line.replace(/^          /, '')).join('\n')
@@ -16,7 +16,7 @@ function runAudit(files, mutation = '') {
   try {
     mkdirSync(join(root, 'scripts'))
     mkdirSync(join(root, 'bin'))
-    copyFileSync(new URL('./npmAuditEvidence.mjs', import.meta.url), join(root, 'scripts/npmAuditEvidence.mjs'))
+    copyFileSync(resolve('scripts/npmAuditEvidence.mjs'), join(root, 'scripts/npmAuditEvidence.mjs'))
     writeFileSync(join(root, 'package.json'), '{"name":"invented-audit-fixture","private":true}\n')
     for (const [name, content] of Object.entries(files)) writeFileSync(join(root, name), content)
     execFileSync('git', ['init', '-q', root])
