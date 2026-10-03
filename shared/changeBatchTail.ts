@@ -444,8 +444,14 @@ function weekClip(instant: string, window: { start: string; end: string }, side:
   const clipped = side === 'start'
     ? new Date(Math.max(ms(instant), ms(window.start))).toISOString()
     : new Date(Math.min(ms(instant), ms(window.end))).toISOString()
-  if (clipped === window.start || clipped === window.end) return clipped
-  return side === 'start' ? floorToWeek(clipped) : ceilToWeek(clipped)
+  const rounded = side === 'start' ? floorToWeek(clipped) : ceilToWeek(clipped)
+  // Week grain must not enlarge the selected window. Compare instants, not spellings:
+  // window boundaries may use equivalent ISO offsets without canonical milliseconds.
+  const bounded = Math.min(ms(window.end), Math.max(ms(window.start), ms(rounded)))
+  // The presentation guard recognizes caller bounds verbatim, including ISO offsets.
+  if (bounded === ms(window.start)) return window.start
+  if (bounded === ms(window.end)) return window.end
+  return new Date(bounded).toISOString()
 }
 
 export function deriveWindowCoverage(input: ChangeBatchTailInput, classified: readonly ClassifiedUnit[]): ChangeBatchWindowCoverage {
