@@ -10,6 +10,7 @@ import { setTimeout as delay } from 'node:timers/promises'
 import { requirePointerTarget, requirePointerEvents } from './atlasPointerContract.mjs'
 import { matchesAtlasDrawer } from './atlasDrawerContract.mjs'
 import { finishPointerReceipt } from './atlasPointerReceipt.mjs'
+import { waitForStablePointerTarget } from './atlasPointerReadiness.mjs'
 
 /** Process-private CDP transport; never attaches to a user's existing browser/profile. */
 export async function openBrowser(executable = process.env.CHROME_PATH || 'google-chrome') {
@@ -104,7 +105,7 @@ export function targetSnapshot(selector) {
   return { count: matches.length, connected: element.isConnected, disabled: element.disabled,
     mark: element.getAttribute('data-mark-id'), hit: document.elementFromPoint(x, y)?.closest('button')?.getAttribute('data-mark-id') ?? null,
     x, y, left: box.left, top: box.top, width: box.width, height: box.height,
-    viewportWidth: innerWidth, viewportHeight: innerHeight }
+    viewportWidth: innerWidth, viewportHeight: innerHeight, scrollX, scrollY }
 }
 
 /** Capture only rendered public evidence identities; never serialize arbitrary page text. */
@@ -183,7 +184,7 @@ export async function runSmoke(directory = 'dist') {
             const snapshot = () => page.evaluate(`(${targetSnapshot.toString()})(${JSON.stringify(selector)})`)
             const first = await snapshot()
             receipt.traces.push({ column, phase: 'before', ...first })
-            const point = requirePointerTarget(first)
+            const point = await waitForStablePointerTarget(snapshot, (sample) => receipt.traces.push({ column, phase: 'settling', ...sample }))
             await page.evaluate('window.__pointerEvents = []')
             for (const type of ['mouseMoved', 'mousePressed', 'mouseReleased']) {
               const before = await snapshot()
