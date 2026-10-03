@@ -1,4 +1,4 @@
-import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { lstatSync, mkdirSync, readFileSync, realpathSync, statSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -35,6 +35,19 @@ if (outIndex >= 0) {
   const out = process.argv[outIndex + 1]
   if (!out) throw new Error('--out requires a directory')
   mkdirSync(out, { recursive: true })
+  if (realpathSync(out) === realpathSync(here)) {
+    throw new Error('The output directory must not resolve to the source directory')
+  }
+  // Preflight both targets before writing either one. Directory aliases, symlinked
+  // output files and hard links must never turn an export into a source-index write.
+  const sources = Object.keys(results).map((name) => statSync(join(here, `${name}.json`)))
+  for (const name of Object.keys(results)) {
+    const target = lstatSync(join(out, `${name}.json`), { throwIfNoEntry: false })
+    if (target?.isSymbolicLink()) throw new Error('An output target must not be a symlink')
+    if (target && sources.some((source) => source.dev === target.dev && source.ino === target.ino)) {
+      throw new Error('An output target must not alias a source index')
+    }
+  }
   for (const [name, value] of Object.entries(results)) {
     writeFileSync(join(out, `${name}.json`), `${JSON.stringify(value, null, 2)}\n`, 'utf8')
   }

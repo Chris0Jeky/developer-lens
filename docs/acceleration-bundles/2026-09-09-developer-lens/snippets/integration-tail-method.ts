@@ -20,6 +20,16 @@ export function toSurvivalRow(
   batchPrimary: number | null
   batchSensitivity: number | null
 } {
+  const instants = [pr.createdAt, windowEndExclusive, pr.mergedAt, pr.closedAt]
+  if (instants.some((instant) => instant != null && !Number.isFinite(instant))) {
+    throw new RangeError('Lifecycle timestamps must be finite')
+  }
+  if (pr.createdAt >= windowEndExclusive) {
+    throw new RangeError('The exclusive window end must be after creation')
+  }
+  if ([pr.mergedAt, pr.closedAt].some((instant) => instant != null && instant < pr.createdAt)) {
+    throw new RangeError('A lifecycle event cannot occur before creation')
+  }
   const mergedInWindow = pr.mergedAt != null && pr.mergedAt < windowEndExclusive
   const closedInWindow = pr.closedAt != null && pr.closedAt < windowEndExclusive
   const terminal = mergedInWindow
@@ -33,7 +43,7 @@ export function toSurvivalRow(
     : 'right_censored'
 
   return {
-    durationHours: Math.max(0, terminal - pr.createdAt) / 3_600_000,
+    durationHours: (terminal - pr.createdAt) / 3_600_000,
     outcome,
     batchPrimary: pr.changedFiles,
     batchSensitivity:
