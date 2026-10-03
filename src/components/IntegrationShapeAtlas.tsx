@@ -1,6 +1,7 @@
 import { Fragment, Suspense, lazy, useMemo, useState } from 'react'
 import type { ReactNode } from 'react'
 import { EvidenceDrawer } from './EvidenceDrawer'
+import { AtlasTableScroll } from './AtlasTableScroll'
 import { useIntegrationShapeEvidenceResolver } from '../lib/evidenceApiResolver'
 import {
   buildIntegrationShapePresentation,
@@ -104,6 +105,7 @@ function DistributionStage({
   }
   const markIds: Record<number, string> = { 0.5: 'mark_p50_delta', 0.75: 'mark_p75_delta', 0.9: 'mark_p90_delta' }
   return (
+    <AtlasTableScroll label="Integration interval distribution">
     <table className="atlas-table" data-testid="atlas-distribution-table">
       <thead>
         <tr>
@@ -139,6 +141,7 @@ function DistributionStage({
         </tr>
       </tfoot>
     </table>
+    </AtlasTableScroll>
   )
 }
 
@@ -235,6 +238,7 @@ function ResidualList({ segments }: { segments: readonly ResidualSegment[] }) {
 
 function OutcomeTable({ outcomes }: { outcomes: readonly IntegrationShapeOutcomeRow[] }) {
   return (
+    <AtlasTableScroll label="Integration comparison outcomes">
     <table className="atlas-table" data-testid="atlas-outcome-table">
       <thead>
         <tr>
@@ -286,6 +290,7 @@ function OutcomeTable({ outcomes }: { outcomes: readonly IntegrationShapeOutcome
         })}
       </tbody>
     </table>
+    </AtlasTableScroll>
   )
 }
 
@@ -402,6 +407,7 @@ export function IntegrationShapeAtlasPanel({ presentation }: { presentation: Int
         <p data-testid="atlas-robustness" data-status={finding.robustness.status}>
           Robustness: <strong>{finding.robustness.status}</strong>.
         </p>
+        <AtlasTableScroll label="Integration shape sensitivity checks">
         <table className="atlas-table" data-testid="atlas-sensitivity">
           <caption>{presentation.sensitivity.label}: open pull requests added at their observed lower bound.</caption>
           <thead>
@@ -429,6 +435,7 @@ export function IntegrationShapeAtlasPanel({ presentation }: { presentation: Int
             })}
           </tbody>
         </table>
+        </AtlasTableScroll>
         <ul className="atlas-list">
           {finding.robustness.checks.map((check) => (
             <li key={check.checkId} data-check={check.checkId} data-outcome={check.outcome}>

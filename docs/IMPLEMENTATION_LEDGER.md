@@ -5839,3 +5839,68 @@ expected singular stratum wording; matching the new diagnostic preserved rejecti
 #389's integrated `abe21002037f33318aaeb0039c69ba82ea46de7e` passed full Windows qualification
 (117 files, 1881 passed, 13 existing skips), showcase and hosted run `37076231216`. Fresh #390
 qualification, independent fix review, merge and final Pages receipts belong in its PR Proof section.
+
+## 2026-10-02 - completed change-batch integration and deployment handoff
+
+The owner authorized safe merges and the existing synthetic C0 Pages deployment. #385 merged as
+`cbee0c432a2e4b5f3615448d48df689949fcc7c9`; #387 as `76a659efe6d7246c6ae3e2f868f355367c22f239`;
+#389 as `48c8e828589145c7cfed11ed8b48ccd7de4a4a12`; #390 as
+`8893aa806a61acb428e67ccca882b4a7dc5eeaa6`. Issues #375/#376/#386/#388 are closed. All three late
+review findings were reproduced, corrected, independently reviewed and resolved. Separate
+read/triage/merge cells and aged-head sweeps were used for the remaining integrations after FR-109.
+
+**Qualified.** #387's final `47a98e2adf7fc7f821cbc842aaba60d0272409ac` passed 1852 Windows tests;
+#389's `abe21002037f33318aaeb0039c69ba82ea46de7e` passed 1881;
+#390's `8fc2ef2404d47123c66726e58b24414ab0c4783e` passed 1927. Each full run passed 117 files with
+13 existing skips, plus lint/context, all four fixture drift, TypeScript, build and privacy checks.
+Showcase, Taskdeck (128 cards; three existing near-limit warnings), SDK 3.3.1 and diff checks passed.
+The last two milestones used one worker and serial local execution. Hosted proving runs
+`37072423879`, `37076231216` and `37077508522` passed at their respective heads. The prospective
+and actual final-code merge trees equal `811ebc6267116c41cdb0ed0e8a4676392bb008f2`; SDK #391 is
+preserved. Later handoff and narrow-table follow-up checks are recorded in their PR Proof
+section; these campaign receipts do not claim another Windows full run at a different head.
+
+**Deployed.** [Pages run 37078520171 attempt 2](https://github.com/Chris0Jeky/developer-lens/actions/runs/37078520171/attempts/2)
+passed the full gate, showcase build, SDK check and deploy at code merge `8893aa8`; build job
+`111074210283` and deploy job `111074985693` succeeded. Attempt 1 failed live issue-template
+label lookup with HTTP 403 before tests/build/upload, so deploy was skipped. One unchanged-head
+retry succeeded without source, workflow, token, permission or gate changes. The response's
+cause is unknown; [#392](https://github.com/Chris0Jeky/developer-lens/issues/392) and FR-111 retain
+the actionable diagnostic/recovery defect. No failure is relabelled as a pass.
+
+Public synthetic pointer smoke passed at 1280, including three rendered strata and no document
+overflow or stored control. The stronger 390-width check then failed: the p90 center lay outside
+the viewport despite no document overflow. The initial DOM click had missed this clipping defect;
+[#393](https://github.com/Chris0Jeky/developer-lens/issues/393) owns the correction. An isolated
+browser ran with GPU disabled and collector requests blocked. No narrow-screen pointer pass at
+`8893aa8`, physical-device or telemetry acceptance is inferred. The endpoint remains unwired; no
+protected/real history or private projection was read, collected or activated. Release tags stay
+held under q-10(c). This is served consistency, not hostile-writer ground truth or historical
+database reconstruction. Rollback uses reviewed reverts of the campaign merges, preserving SDK
+#391, then the verified C0 Pages workflow. Next scope is existing dependency PR #384 and #392;
+no duplicate dependency PR or new service/credential access was created.
+
+
+## 2026-10-03 - keep Atlas evidence controls reachable at narrow widths (#393)
+
+**Reproduced.** At deployed `8893aa8`, a real pointer smoke at width 390 found the primary p90
+control centered at x=675, beyond the viewport. Document-level overflow checks and DOM-triggered
+clicks had missed the inaccessible target. The five Atlas tables lacked horizontal scroll regions.
+The owner-authorized review/fix/deploy scope includes this synthetic public usability defect.
+
+**Changed.** A shared `AtlasTableScroll` supplies each table with a named, keyboard-focusable
+horizontal region and visible focus outline. It wraps three integration-shape tables and two
+change-size tables; headings and explanatory prose remain outside. Native table/button semantics,
+analytical contracts, fixture data and SDK files are unchanged. One failing-first route regression
+failed without the regions; the two focused component files then passed all 32 tests. Showcase
+build passed. Independent source review found no blocker.
+
+**Local browser proof.** Correctly based showcase preview passed at 1280 and 390 widths: all five
+regions are named and focusable, ArrowRight scrolled all three overflowing narrow tables, and real
+pointer clicks reached p90 and lower-bound controls (x=187 and x=269 at width 390), opening their
+evidence drawers; Escape closed each drawer. No root overflow or stored control appeared. The PR
+Proof section owns fresh exact-head full/hosted gates and final public deployment receipts.
+
+**Friction.** FR-112 records the insufficient initial DOM smoke and the preview base-path mismatch;
+the corrected preview explicitly matches the showcase's `/developer-lens/` base. No real history,
+protected data, stored endpoint activation, model generation or new service installation occurred.

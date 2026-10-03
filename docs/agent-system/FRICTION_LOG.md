@@ -2868,3 +2868,26 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** 1 occurrence during #387 qualification at `47a98e2`.
 - **task:** Existing resource coordination and exact-head proving govern recovery; this is execution evidence, not a product fix or a silently passed interrupted run.
 - **promotion:** Keep bounded one-worker recovery and concrete final receipts; no timeout or machine configuration change was needed.
+
+### FR-111 - a hosted label lookup returned HTTP 403 before Pages proving
+
+- **first-seen:** 2026-10-02
+- **status:** `workaround-documented`
+- **symptom:** Pages run `37078520171` attempt 1 at code merge `8893aa8` failed `verify:context` because the issue-template verifier's unauthenticated live-label request returned HTTP 403. It discarded response diagnostics, so the cause is unknown.
+- **impact:** Tests/build/upload were not reached and deploy was skipped despite successful exact-head local and PR proving.
+- **workaround:** Inspect the failed step first, retain its failure receipt, then retry the unchanged authorized workflow once. Attempt 2 passed full proving/showcase/SDK checks and deployed successfully; no token, permission, source or gate change was made.
+- **occurrences:** 1 occurrence; [failed job](https://github.com/Chris0Jeky/developer-lens/actions/runs/37078520171/job/111073697459), [successful retry](https://github.com/Chris0Jeky/developer-lens/actions/runs/37078520171/attempts/2).
+- **task:** [Product #392](https://github.com/Chris0Jeky/developer-lens/issues/392) owns bounded diagnostics/recovery while preserving strict label validation; authentication or permission changes require separate scope.
+- **promotion:** Keep exact attempt receipts and one bounded retry; do not guess a rate-limit cause, silently skip live validation or broaden access.
+
+
+### FR-112 - DOM clicks missed narrow Atlas clipping; preview base must match the build
+
+- **first-seen:** 2026-10-02
+- **status:** `workaround-documented`
+- **symptom:** Initial synthetic browser smoke used DOM clicks, which opened an evidence drawer even while its button lay outside a 390-width viewport. Actual pointer geometry then failed at deployed `8893aa8`. Separately, a local preview launched without the showcase build's `/developer-lens/` base could not load the panel; both initial attempts failed before usable UI validation.
+- **impact:** The initial smoke did not establish narrow pointer acceptance; document overflow alone also missed clipped content. No failed attempt is counted as a pass.
+- **workaround:** Add named keyboard-focusable horizontal regions to all five Atlas tables, preserve prose/native table semantics, and run the preview with the same explicit base as the build. Real pointer and ArrowRight checks passed locally at 1280/390 widths in an isolated synthetic browser with GPU disabled and collector requests blocked.
+- **occurrences:** One discovered product defect and one corrected preview configuration mismatch in this follow-up.
+- **task:** [Product #393](https://github.com/Chris0Jeky/developer-lens/issues/393) owns the focused UI correction, failing-first route regression and local/public geometry acceptance; final receipts belong in its PR Proof section.
+- **promotion:** Keep actual viewport geometry and native pointer/keyboard interactions in narrow-screen acceptance; do not infer physical-device or telemetry acceptance.

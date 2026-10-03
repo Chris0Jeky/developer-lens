@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react'
 import type { ReactNode } from 'react'
 import { EvidenceDrawer } from './EvidenceDrawer'
+import { AtlasTableScroll } from './AtlasTableScroll'
 import {
   resolveChangeBatchTailReference,
   type ChangeBatchTailView,
@@ -164,7 +165,8 @@ export function ChangeBatchTailPanel({ view, source }: { view: ChangeBatchTailVi
         <>
           <Stage id="cbt-distribution" kicker="Distribution / tail" title="Opened-to-merge quantiles per change-size stratum">
             {view.binnings.filter((binning) => binning.role === 'primary').map((binning) => (
-              <table className="atlas-table" data-testid="change-batch-primary" key={`${binning.basisId}.${binning.binningId}`}>
+              <AtlasTableScroll label="Change-size quantile distribution" key={`${binning.basisId}.${binning.binningId}`}>
+              <table className="atlas-table" data-testid="change-batch-primary">
                 <caption>{binning.basisLabel} · {binning.binningLabel}</caption>
                 <thead>
                   <tr>
@@ -205,6 +207,7 @@ export function ChangeBatchTailPanel({ view, source }: { view: ChangeBatchTailVi
                   })}
                 </tbody>
               </table>
+              </AtlasTableScroll>
             ))}
             <p className="atlas-note">
               The distribution covers merged pull requests only; still-open and closed-without-merge counts sit beside it and
@@ -230,6 +233,7 @@ export function ChangeBatchTailPanel({ view, source }: { view: ChangeBatchTailVi
           </Stage>
 
           <Stage id="cbt-sensitivity" kicker="Sensitivity" title="Does the tail ordering survive other bases and bins?">
+            <AtlasTableScroll label="Change-size sensitivity checks">
             <table className="atlas-table" data-testid="change-batch-sensitivity">
               <thead>
                 <tr>
@@ -263,6 +267,7 @@ export function ChangeBatchTailPanel({ view, source }: { view: ChangeBatchTailVi
                 ))}
               </tbody>
             </table>
+            </AtlasTableScroll>
             <p data-testid="change-batch-robustness" data-status={finding.robustness.status}>Robustness: <strong>{finding.robustness.status}</strong>.</p>
             <ul className="atlas-list">
               {finding.robustness.checks.map((check) => (
