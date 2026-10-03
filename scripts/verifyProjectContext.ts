@@ -1,9 +1,9 @@
+import { createBatchedGitIndexTrackedTextValidationAccess } from './gitIndexMetadata.js'
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import fg from 'fast-glob'
 import {
-  createGitIndexTrackedTextValidationAccess,
   extractMarkdownLinkTargets,
   formatCurrentStateValidationErrors,
   parsePromptLibrary,
@@ -39,13 +39,13 @@ const requiredFiles = [
   '.agent-harness/prompt-parity.json',
   '.agent-harness/tier.json',
   '.agents/skills/developer-lens-continuation/SKILL.md',
+  '.claude/skills/developer-lens-continuation/SKILL.md',
   '.agents/skills/developer-lens-continuation/agents/openai.yaml',
   '.claude/agents/dl-implementer.md',
   '.claude/agents/dl-mechanic.md',
   '.claude/agents/dl-reviewer.md',
   '.claude/agents/dl-scout.md',
   '.claude/settings.json',
-  '.claude/skills/developer-lens-continuation/SKILL.md',
   'AGENTS.md',
   'CLAUDE.md',
   'HUMAN_TODO.md',
@@ -342,7 +342,7 @@ const markdownFiles = await fg(['*.md', 'docs/**/*.md', '.agents/**/*.md', '.cla
 })
 
 if (existsSync(resolve(root, '.git'))) {
-  const trackedTextAccess = createGitIndexTrackedTextValidationAccess((args) =>
+  const trackedTextAccess = createBatchedGitIndexTrackedTextValidationAccess((args) =>
     execFileSync('git', args, { cwd: root, encoding: 'buffer' }),
   )
   for (const error of validateTrackedTextForWindowsUserHomePaths(trackedTextAccess)) {
