@@ -72,6 +72,19 @@ describe('ChangeBatchTailPanel', () => {
 })
 
 describe('Atlas route consumer', () => {
+  it('makes every Atlas table reachable through a named keyboard-scroll region', async () => {
+    render(<IntegrationShapeAtlasRoute />)
+    await screen.findByTestId('change-batch-tail', undefined, { timeout: 10_000 })
+    const names = ['Integration interval distribution', 'Integration comparison outcomes', 'Integration shape sensitivity checks', 'Change-size quantile distribution', 'Change-size sensitivity checks']
+    for (const name of names) {
+      const region = screen.getByRole('region', { name })
+      expect(region).toHaveAttribute('tabindex', '0')
+      expect(within(region).getByRole('table')).toBeInTheDocument()
+      region.focus()
+      expect(region).toHaveFocus()
+    }
+  })
+
   it('renders the second lens beneath integration shape on the existing route without a network call', async () => {
     const fetchMock = vi.fn()
     vi.stubGlobal('fetch', fetchMock)

@@ -5,7 +5,7 @@ observations and must be refreshed before action; `docs/IMPLEMENTATION_LEDGER.md
 completed-slice evidence and history.
 
 ```yaml
-updated: '2026-10-02'
+updated: '2026-10-03'
 state_observed_at: '2026-09-22T23:25:00Z'
 work_class: 'W3 product slices and producer-owned cross-repository contracts'
 active_wave: 'P0.5 v0.1.0 release programme — Product issue #200 (owner-gated); Phase E and #202 readiness advancing'
@@ -16,39 +16,35 @@ observation_semantics: >-
 product_main: 'b4b82535237e0ccbcbe37d4d101e668aafad4e54'
 lab_main: '551c518d0281419d3a009b4c0a56b0ed026011c3'
 active_slice: >-
-  2026-10-02 task: main was refreshed at 9704118b578f2901a18b29753a3b6f7a945572e5.
-  #385 owns #375 on fix/change-batch-withheld-quantiles (68ed29f): typed withholding of
-  cohort values plus sensitivity/tampering checks; 200 focused tests passed. The companion
-  draft #387 on fix/stored-change-batch-preactivation owns all five #376 findings; 119 focused
-  tests, lint, TypeScript, context, fixture drift, showcase/privacy build and independent review
-  passed. Original exact-head Windows full checks passed for #385 (1835 tests) and #387 (1852 tests),
-  each with 13 existing skips. #385's fresh hosted gate passed and it merged as cbee0c4.
-  The owner now authorizes review/fixes/safe merges and the established synthetic Pages deployment.
-  #387 merged as 76a659e after exact-head 47a98e2 passed 1852 Windows tests (13 existing skips),
-  showcase and hosted proving; SDK 3.3.1 from #391 is preserved. #385's ledger thread is resolved.
-  #389 now fixes the review's primary-role swap using canonical cbt.all and full metric/scope/window
-  identity: eight failing-first regressions, then 83 focused tests passed; review added equivalent
-  timestamp spelling support with one failing-first positive case. Exact head abe2100 passed 1881
-  Windows tests (13 existing skips), showcase, hosted proving and scoped independent review.
-  #390 adds a required count-only outcome ledger to local view revision 1.1.0, binding omitted-row
-  and typed-absence counts without withheld quantiles: five failing-first regressions, then 130
-  focused tests passed. Its PR Proof section carries final exact-head qualification.
-  One writer per isolated checkout,
-  one suite/build and one test worker.
-  #390's original bee38fb passed 1904 Windows tests (13 existing skips), showcase and 107 focused
-  tests; final omitted-row correction qualification belongs in its PR Proof section.
-  No real data, endpoint activation, release tag or owner-hold override is selected.
+  2026-10-02 change-batch campaign completed at code merge 8893aa806a61acb428e67ccca882b4a7dc5eeaa6.
+  #385/#387/#389/#390 merged and #375/#376/#386/#388 closed. Qualified heads and Windows passes:
+  68ed29f (1835), 47a98e2 (1852), abe2100 (1881), 8fc2ef2 (1927), each with 13 existing skips.
+  Full checks, showcase builds, required hosted proving and independent reviews passed; final
+  130 focused tests passed. Late ledger, primary-role and omitted-count findings were fixed
+  and resolved. View revision 1.1.0 binds canonical cbt.all and a count-only outcome ledger;
+  withheld quantiles remain absent. Generic metric, analytical method and exported Lab versions
+  stay fixed. SDK 3.3.1 from independently merged #391 is preserved. Main's tree equals the
+  qualified 8fc2ef2 tree. Pages run 37078520171 attempt 2 successfully deployed that code merge;
+  attempt 1's label-lookup HTTP 403 remains recorded in #392 and FR-111, without inferred cause.
+  Public synthetic pointer smoke passed at 1280; the stronger 390-width check found clipped
+  quantile controls (#393). The earlier DOM click did not prove narrow pointer reachability.
+  The 2026-10-03 follow-up adds five named keyboard-focusable horizontal table regions, preserving
+  prose and native table semantics. One failing-first route regression and 32 focused tests
+  passed; corrected local showcase/browser proof and final exact-head full/hosted/deployment
+  receipts belong in its PR Proof section. Collector requests were blocked; no physical-device
+  or telemetry acceptance is inferred. Campaign PR Proof sections retain full heads and receipts.
+  The owner authorized these safe merges and established C0 Pages publication; no real history,
+  protected/private data, endpoint activation, release tag or owner-hold override was selected.
   The September remote snapshots above remain dated history.
 next_value_slice: >-
-  Complete exact-head qualification and safe integration of #389/#390, then verify the final
-  main's Pages deployment and public synthetic smoke. #389 and #390 address the already reproduced
-  #386/#388 consistency findings. Historical/hostile-writer integrity remains separate scope.
-  Other choices after this campaign include
-  #202's remainder:
+  Existing Dependabot #384 (Undici 7.30.0) needs current-main integration and locked-dependency
+  qualification; its earlier hosted proving passed, but it was not duplicated or merged by this
+  campaign. #392 owns opaque/transient hosted label-lookup recovery. Historical/hostile-writer
+  integrity remains separate scope. Other choices include #202's remainder:
   the #86 `v2_coverage_record` id-shape decision, the #168/#177 H5 reassessment, and a Windows
   owner-only ACL / secure task-root check for the installation key. (3) #80's scope-unbound C1
-  expiry and resolver lineage join. (4) #201 Data Charter v2. (5) The low-risk trackers #368, #371
-  and #374. Consumers: CommitAtlas #145/#154 can now vendor PublicLensProjection.v1 (`d34e41b`) and
+  expiry and resolver lineage join. (4) #201 Data Charter v2. (5) The low-risk trackers #371
+  and #374; #368 is closed. Consumers: CommitAtlas #145/#154 can now vendor PublicLensProjection.v1 (`d34e41b`) and
   the amended ResearchFinding v1 (`d9e40c1`); Lab #97 can consume ResearchFinding v1. All three
   consumers were announced on CommitAtlas #111 and Lab #97. The v0.1.0 tag stays blocked on
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c), and the release-prep slice is re-created from
@@ -60,7 +56,8 @@ blockers: >-
   their activation still requires #202's remaining implementation preconditions plus a bounded,
   reviewed activation task card whose parser, transport, projection, storage, rollback, deletion
   and exact-head checks pass before any capability leaves `never_authorized`. The stored Phase E
-  endpoint requires #375/#376. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
+  endpoint remains unwired; #375/#376 fixes landed, while #202's remaining activation preconditions
+  still apply. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 items are deferred and nonblocking for the tag,
   except that Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(f) still owner-gates package-registry
   credentials. No
@@ -68,6 +65,10 @@ blockers: >-
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). Existing verified synthetic Pages publication
   remains permitted by Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4.
 last_verified_checks: >-
+  October campaign proofs are in active_slice and the PR Proof sections; final code head 8fc2ef2
+  passed 117 Windows files, 1927 tests and 13 existing skips; showcase and hosted proving passed.
+  Code merge 8893aa8 passed the full Pages gate and deployment on unchanged-head attempt 2.
+  The remaining statements here are the dated September observation:
   Each merged PR's exact-head `Prove the pull request` run succeeded before merge (#367 also passed
   `Prove native Windows test roots`), and main's `Deploy public showcase` runs succeeded through
   `3a8c34e`; the run for `b4b8253` was in progress at the observation. Local Windows proofs:
