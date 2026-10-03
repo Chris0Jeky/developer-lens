@@ -30,6 +30,9 @@ export function toSurvivalRow(
   if ([pr.mergedAt, pr.closedAt].some((instant) => instant != null && instant < pr.createdAt)) {
     throw new RangeError('A lifecycle event cannot occur before creation')
   }
+  if (pr.mergedAt != null && pr.closedAt != null && pr.mergedAt > pr.closedAt) {
+    throw new RangeError('A merge cannot occur after closure')
+  }
   const mergedInWindow = pr.mergedAt != null && pr.mergedAt < windowEndExclusive
   const closedInWindow = pr.closedAt != null && pr.closedAt < windowEndExclusive
   const terminal = mergedInWindow
