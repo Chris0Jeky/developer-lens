@@ -165,6 +165,7 @@ export async function collectLocalGit(
   const rawRepositories: RawRepository[] = []
   const commits: RawCommit[] = []
   const warnings: string[] = []
+  let successfulInspections = 0
 
   for (const repositoryPath of repositories) {
     try {
@@ -186,6 +187,7 @@ export async function collectLocalGit(
       const matched = parseGitLog(output).filter(
         (commit) => matchesConfiguredIdentity(commit, emails),
       )
+      successfulInspections++
       if (matched.length === 0) continue
 
       rawRepositories.push({
@@ -225,10 +227,10 @@ export async function collectLocalGit(
       status:
         warnings.length === 0 && failedLocations === 0
           ? 'complete'
-          : commits.length > 0
+          : successfulInspections > 0
             ? 'partial'
             : 'unavailable',
-      detail: `${repositories.length} explicitly selected repositories inspected within the no-symlink, six-level discovery scope; only aggregate commit features are retained.${failedLocations > 0 ? ` ${failedLocations} discovery check(s) failed; discovery is incomplete.` : ''}`,
+      detail: `${successfulInspections} explicitly selected repositories successfully inspected within the no-symlink, six-level discovery scope; only aggregate commit features are retained.${failedLocations > 0 ? ` ${failedLocations} discovery check(s) failed; discovery is incomplete.` : ''}`,
       itemCount: commits.length,
     },
     warnings,
