@@ -51,8 +51,8 @@ export async function discoverLocalGitCandidates(
     if (remaining === 0) return
     for (const entry of cache.get(directory) ?? []) {
       if (truncated) break
-      if (entry.isSymbolicLink() || !entry.isDirectory() || excluded.has(entry.name) ||
-          protectedChildren.has(`${basename(directory)}/${entry.name}`)) continue
+      if (entry.isSymbolicLink() || !entry.isDirectory() || excluded.has(entry.name.toLowerCase()) ||
+          protectedChildren.has(`${basename(directory).toLowerCase()}/${entry.name.toLowerCase()}`)) continue
       await visit(join(directory, entry.name), remaining - 1)
     }
   }
