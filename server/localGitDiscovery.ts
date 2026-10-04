@@ -1,5 +1,5 @@
 import { lstat, readdir } from 'node:fs/promises'
-import { basename, join, resolve } from 'node:path'
+import { basename, join, resolve, sep } from 'node:path'
 
 interface FileKind { isDirectory(): boolean; isFile(): boolean; isSymbolicLink(): boolean }
 interface Entry extends FileKind { name: string }
@@ -63,7 +63,16 @@ export async function discoverLocalGitCandidates(
       failedLocations++
       continue
     }
-    await visit(resolve(root), MAX_LOCAL_DISCOVERY_DEPTH)
+    const directory = resolve(root)
+    const components = directory.split(sep).map((part) => part.toLowerCase())
+    const protectedRoot = components.some((part, index) =>
+      excluded.has(part) || protectedChildren.has(`${part}/${components[index + 1] ?? ''}`),
+    )
+    if (protectedRoot) {
+      failedLocations++
+      continue
+    }
+    await visit(directory, MAX_LOCAL_DISCOVERY_DEPTH)
   }
   return { candidates: [...candidates], failedLocations }
 }
