@@ -742,9 +742,11 @@ describe('project context validation', () => {
     const currentState = readFileSync(resolve('docs/analyser-program/CURRENT_STATE.md'), 'utf8')
     const currentStateYaml = currentState.match(/^```yaml\r?\n([\s\S]*?)^```\r?$/m)?.[1] ?? ''
     expect(validateCurrentStateDocument(currentState)).toEqual([])
+    expect(findBareHumanRefs(currentState)).toEqual([])
     expect(parseDocument(currentStateYaml, { version: '1.2', schema: 'core' }).toJS().active_horizon).toEqual([
-      'P0 governor bootstrap PR #206 — delivered',
-      'P0.5 v0.1.0 release programme #200 — active, product-only release preparation',
+      'Product reliability: literal discovery, honest coverage and protected-name pruning',
+      'Unblockers: held #406 dependency patch; #398 remaining graph; #410 identity collision',
+      'Release programme #200: owner-gated, no tag or credential action',
     ])
     expect(
       validateCurrentStateDocument(state(semanticYaml.replace("updated: '2026-08-10'", "updated: '2024-02-29'"))),
@@ -1292,7 +1294,7 @@ describe('prompt operating system parity', () => {
     expect(validateContinuousWorkProtocol(buildContinuousProtocol().replaceAll('\n', '\r\n'))).toEqual([])
   })
 
-  it('requires the continuous impact contract markers exactly once and in order', () => {
+  it('requires the continuous impact markers exactly once and in order', () => {
     const withoutImpactEnd = CONTINUOUS_SECTION_MARKERS.filter(
       (marker) => marker !== 'continuous-impact-end',
     )
