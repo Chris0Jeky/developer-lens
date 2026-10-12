@@ -1,5 +1,7 @@
 # Developer Lens
 
+<p align="center"><img src="docs/assets/developer-lens-loop.svg" alt="developer-lens workflow, animated" width="100%"></p>
+
 A local-first retrospective of a body of work: the evidence stays evidence, the pattern stays a calculation, and the hypothesis stays labelled.
 
 [![Prove the pull request](https://github.com/Chris0Jeky/developer-lens/actions/workflows/pr-gate.yml/badge.svg)](https://github.com/Chris0Jeky/developer-lens/actions/workflows/pr-gate.yml)
