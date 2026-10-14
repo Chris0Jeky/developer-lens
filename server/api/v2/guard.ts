@@ -3,8 +3,8 @@ import { V2Error } from './errors.js'
 
 /**
  * Exact Host and Origin allowlists plus ONE of two authentication channels for `/api/v2`
- * (ADR-04: the V2 endpoints ship with this from birth; legacy endpoints are
- * unchanged until their own retirement cards).
+ * (ADR-04: the V2 endpoints ship with this from birth). Since #416 the legacy private reads
+ * `/api/dashboard` and `/api/status` pass the same check in `server/legacyGuard.ts`.
  *
  * Every check is exact-match and fail-closed: a missing, duplicated, or
  * malformed header is a rejection, never a fallback.
