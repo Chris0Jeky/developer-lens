@@ -1,0 +1,20 @@
+diff --git a/docs/agent-system/FRICTION_LOG.md b/docs/agent-system/FRICTION_LOG.md
+index c1736068ded91dd3baa5d92a0c3deb08fcd0439c..892e88e2d19d6d2889d2dabc1cfbe6c567d882be 100644
+--- a/docs/agent-system/FRICTION_LOG.md
++++ b/docs/agent-system/FRICTION_LOG.md
+@@ -2892,3 +2892,15 @@
+ - **occurrences:** One discovered product defect, one corrected preview configuration mismatch and one strengthened public drawer-state polling predicate in this follow-up.
+ - **task:** [Product #393](https://github.com/Chris0Jeky/developer-lens/issues/393) owns the focused UI correction, failing-first route regression and local/public geometry acceptance; final receipts belong in its PR Proof section.
+ - **promotion:** Keep actual viewport geometry and native pointer/keyboard interactions in narrow-screen acceptance; do not infer physical-device or telemetry acceptance.
++
++
++### FR-113 - source-string transport and unavailable coding environment block exact large-file updates
++
++- **first-seen:** 2026-10-04
++- **status:** `open`
++- **symptom:** A pinned public source-archive request failed DNS. The provided archive was older than live main, so relevant source was reconciled by immutable blob identity. Local preflight reported absent tsc, tsx, vite, vitest and oxlint after an earlier failed installation. The connected source writer accepts complete content strings rather than local files or patches; retranscribing a test file changed one unrelated assertion, detected by Git blob hash before any ref update. An ordinary coding-bot request explicitly reported that this repository has no configured environment.
++- **impact:** No local full-suite or coding-worker result exists. The large central-log update and the separately validated #406 lockfile candidate require a supported exact source write. A stored candidate, patch, successful supplementary probe or earlier CI run cannot establish delivery at a different head.
++- **workaround:** Keep source byte identities and exact patches. Reject mismatched unattached blobs before committing. The corrected test transfer preserved its assertions and was reconciled to blob 94d2fab261d099bcd5f9c3cb5f43d5b263cc051f, including one disclosed cosmetic test-name change. Use ordinary hosted full proving for published heads. Do not retry the blocked write-enabled transfer workflow, widen permissions, retrieve credentials or replace missing tests with passing claims.
++- **occurrences:** One source-recovery/transfer episode in #412/#413, including a rejected assertion mismatch and the coding-environment refusal at #413 comment 5975544438. The earlier local-bootstrap mechanism remains FR-012; this entry does not reset that mechanism or claim local installation succeeded.
++- **task:** [Product #412](https://github.com/Chris0Jeky/developer-lens/pull/412) owns the handoff/test repair; [Product #413](https://github.com/Chris0Jeky/developer-lens/pull/413) owns the selected-root boundary and central-log delivery finding; [Product #406](https://github.com/Chris0Jeky/developer-lens/pull/406) retains the unapplied dependency patch.
++- **promotion:** Hash comparison before each ref update is the enforcement used in this episode. Keep large-file source publication as explicit task debt until an ordinary exact write is performed; preserve the original log prefix and all required proving/owner gates. No runtime, workflow, credential, source or model activation is authorized by this record.

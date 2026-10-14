@@ -1,5 +1,5 @@
 import { lstat, readdir } from 'node:fs/promises'
-import { basename, join, resolve } from 'node:path'
+import { basename, join, resolve, sep } from 'node:path'
 
 interface FileKind { isDirectory(): boolean; isFile(): boolean; isSymbolicLink(): boolean }
 interface Entry extends FileKind { name: string }
@@ -14,6 +14,8 @@ export interface LocalDiscoveryResult { candidates: string[]; failedLocations: n
 const excluded = new Set(['.git', 'node_modules', '.venv', 'vendor', '.cache', 'dist', 'build',
   '.developer-lens', '.developer-lens-synthetic', 'coverage'])
 const protectedChildren = new Set(['public/data', '.claude/worktrees', '.agent-harness/runtime'])
+// Reject ambiguous Win32 suffixes conservatively on every platform; never rewrite a path.
+const hasAmbiguousSuffix = (component: string): boolean => /[ .]$/.test(component)
 
 /** Literal metadata-only traversal. Symlink checks are not hostile-writer confinement. */
 export async function discoverLocalGitCandidates(
@@ -51,7 +53,7 @@ export async function discoverLocalGitCandidates(
     if (remaining === 0) return
     for (const entry of cache.get(directory) ?? []) {
       if (truncated) break
-      if (entry.isSymbolicLink() || !entry.isDirectory() || excluded.has(entry.name.toLowerCase()) ||
+      if (entry.isSymbolicLink() || !entry.isDirectory() || hasAmbiguousSuffix(entry.name) || excluded.has(entry.name.toLowerCase()) ||
           protectedChildren.has(`${basename(directory).toLowerCase()}/${entry.name.toLowerCase()}`)) continue
       await visit(join(directory, entry.name), remaining - 1)
     }
@@ -63,7 +65,16 @@ export async function discoverLocalGitCandidates(
       failedLocations++
       continue
     }
-    await visit(resolve(root), MAX_LOCAL_DISCOVERY_DEPTH)
+    const directory = resolve(root)
+    const components = directory.split(sep).map((part) => part.toLowerCase())
+    const protectedRoot = components.some((part, index) =>
+      hasAmbiguousSuffix(part) || excluded.has(part) || protectedChildren.has(`${part}/${components[index + 1] ?? ''}`),
+    )
+    if (protectedRoot) {
+      failedLocations++
+      continue
+    }
+    await visit(directory, MAX_LOCAL_DISCOVERY_DEPTH)
   }
   return { candidates: [...candidates], failedLocations }
 }
