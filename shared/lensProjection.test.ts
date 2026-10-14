@@ -378,6 +378,7 @@ describe('CoverageWarningCode mapping', () => {
     restrictedContributions: 'private_activity_aggregated',
     localGitIdentityMissing: 'local_git_partial',
     localRepositoryUnreadable: 'local_git_partial',
+    localRepositoryIdentityCollision: 'local_git_partial',
     demoIllustrativeData: 'synthetic_showcase',
     hostedShowcase: 'synthetic_showcase',
   }
