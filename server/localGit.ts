@@ -129,7 +129,7 @@ export async function dedupeByIdentity(
     .map((entry) => entry.topLevel)
 }
 
-async function discoverRepositories(roots: string[]): Promise<{ repositories: string[]; failedLocations: number }> {
+async function discoverRepositories(roots: string[]): Promise<{ repositories: string[]; failedLocations: number; cappedDirectories: number }> {
   const discovery = await discoverLocalGitCandidates(roots)
   let failedLocations = discovery.failedLocations
 
@@ -149,7 +149,7 @@ async function discoverRepositories(roots: string[]): Promise<{ repositories: st
     }
   }
 
-  return { repositories: await dedupeByIdentity(entries), failedLocations }
+  return { repositories: await dedupeByIdentity(entries), failedLocations, cappedDirectories: discovery.cappedDirectories ?? 0 }
 }
 
 export async function collectLocalGit(
@@ -190,7 +190,7 @@ export async function collectLocalGit(
     }
   }
 
-  const { repositories, failedLocations } = await discoverRepositories(roots)
+  const { repositories, failedLocations, cappedDirectories } = await discoverRepositories(roots)
   const rawRepositories: RawRepository[] = []
   const commits: RawCommit[] = []
   const warnings: string[] = []
@@ -263,6 +263,7 @@ export async function collectLocalGit(
     }
   }
 
+  if (cappedDirectories > 0) warnings.push(COLLECTION_WARNINGS.localDiscoveryEntryLimit(cappedDirectories))
   if (identityCollisions > 0) {
     warnings.push(COLLECTION_WARNINGS.localRepositoryIdentityCollision(identityCollisions))
   }
