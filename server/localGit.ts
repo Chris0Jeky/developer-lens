@@ -218,8 +218,11 @@ export async function collectLocalGit(
       const matched = parseGitLog(output).filter(
         (commit) => matchesConfiguredIdentity(commit, emails),
       )
-      successfulInspections++
-      if (matched.length === 0) continue
+      // Zero-activity repositories were inspected; a collision skipped below is not counted.
+      if (matched.length === 0) {
+        successfulInspections++
+        continue
+      }
 
       // Ids and downstream joins stay case-folded, so two repositories sharing one cannot both be
       // kept (the storage import refuses duplicates). Repositories arrive in a fixed order: the
@@ -231,6 +234,7 @@ export async function collectLocalGit(
         continue
       }
       seenIds.add(idKey)
+      successfulInspections++
       rawRepositories.push({
         id,
         nameWithOwner,
