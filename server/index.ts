@@ -3,6 +3,10 @@ import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import express from 'express'
 import type { RangeKey } from '../shared/types.js'
+import { resolveV2RuntimeConfig } from './api/v2/config.js'
+import { V2Error, v2ErrorBody } from './api/v2/errors.js'
+import { assertV2Request } from './api/v2/guard.js'
+import { mountV2, V2_LAUNCH_BEARER_TOKEN } from './api/v2/mount.js'
 import { dashboardPath, loadDashboard } from './dataStore.js'
 
 const app = express()
@@ -20,6 +24,21 @@ app.use((_request, response, next) => {
 
 app.get('/api/health', (_request, response) => {
   response.json({ status: 'ok', privacy: 'local-only' })
+})
+
+// #416: the legacy private routes take the exact `/api/v2` Host/Origin/Fetch-Metadata boundary,
+// so a page on another origin (DNS rebinding, foreign Host) cannot read them. `/api/health` stays public.
+const legacyGuardConfig = resolveV2RuntimeConfig(V2_LAUNCH_BEARER_TOKEN)
+app.use(['/api/dashboard', '/api/status'], (request, response, next) => {
+  response.setHeader('Cache-Control', 'private, no-store')
+  response.setHeader('Vary', 'Origin')
+  try {
+    assertV2Request(request.headers, legacyGuardConfig)
+    next()
+  } catch (error) {
+    if (!(error instanceof V2Error)) throw error
+    response.status(error.status).json(v2ErrorBody(error.code))
+  }
 })
 
 app.get('/api/dashboard', async (request, response, next) => {
@@ -51,7 +70,7 @@ app.get('/api/status', async (_request, response, next) => {
   }
 })
 
-app.use('/api/v2', await import('./api/v2/mount.js').then((module) => module.mountV2()))
+app.use('/api/v2', mountV2())
 
 if (production) {
   const currentDirectory = fileURLToPath(new URL('.', import.meta.url))
