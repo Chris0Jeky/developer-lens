@@ -31,6 +31,8 @@ export const COLLECTION_WARNINGS = {
     `${repositoryName} could not be read; it was excluded from local enrichment.`,
   localRepositoryIdentityCollision: (excluded: number) =>
     `${excluded} local repositories shared a repository identity with another and were excluded from local enrichment.`,
+  localDiscoveryEntryLimit: (directories: number) =>
+    `${directories} local directories exceeded the discovery entry limit; repositories in them may be excluded from local enrichment.`,
   demoIllustrativeData: () =>
     'This is illustrative data. Run npm run collect to reveal your own development story.',
   hostedShowcase: () =>
