@@ -1,0 +1,102 @@
+name: Fast-uri candidate proof (not committed remediation)
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'scripts/fastUri*'
+      - .github/workflows/fast-uri-candidate.yml
+
+permissions:
+  contents: read
+
+jobs:
+  candidate:
+    name: Validate an uncommitted registry-derived candidate
+    if: github.event.pull_request.number == 406
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+      - name: Obtain the exact public registry metadata
+        shell: bash
+        run: |
+          test ! -e npm-shrinkwrap.json && test ! -L npm-shrinkwrap.json
+          mkdir "$RUNNER_TEMP/fast-uri-candidate"
+          timeout 30s npm view fast-uri@3.1.8 --json --registry=https://registry.npmjs.org --fetch-retries=0 --fetch-timeout=10000 > "$RUNNER_TEMP/fast-uri-candidate/registry-metadata.json"
+      - name: Generate and scope-check the candidate without pushing it
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { readFileSync, writeFileSync } from 'node:fs'
+          import { createHash } from 'node:crypto'
+          import { execFileSync } from 'node:child_process'
+          import { join } from 'node:path'
+          import { validateFastUriCandidate } from './scripts/fastUriCandidateValidation.mjs'
+          const output = join(process.env.RUNNER_TEMP, 'fast-uri-candidate')
+          const source = readFileSync('package-lock.json', 'utf8')
+          const before = JSON.parse(source)
+          assert.equal(source, `${JSON.stringify(before, null, 2)}\n`, 'Unexpected lockfile formatting')
+          const metadata = JSON.parse(readFileSync(join(output, 'registry-metadata.json'), 'utf8'))
+          const after = structuredClone(before)
+          Object.assign(after.packages['node_modules/fast-uri'], {
+            version: metadata.version, resolved: metadata.dist.tarball, integrity: metadata.dist.integrity,
+          })
+          const change = validateFastUriCandidate(before, after, metadata)
+          const candidate = `${JSON.stringify(after, null, 2)}\n`
+          const digest = (value) => createHash('sha256').update(value).digest('hex')
+          writeFileSync(join(output, 'package-lock.before.json'), source)
+          writeFileSync(join(output, 'package-lock.json'), candidate)
+          writeFileSync('package-lock.json', candidate)
+          const patch = execFileSync('git', ['diff', '--', 'package-lock.json'], { encoding: 'utf8' })
+          assert.ok(patch.length > 0)
+          execFileSync('git', ['diff', '--exit-code', '--', 'package.json'])
+          writeFileSync(join(output, 'fast-uri-3.1.8.patch'), patch)
+          const receipt = { status: 'candidate-only-not-committed', generatedAt: new Date().toISOString(),
+            integrationCommit: execFileSync('git', ['rev-parse', 'HEAD'], { encoding: 'utf8' }).trim(),
+            beforeSha256: digest(source), candidateSha256: digest(candidate), change }
+          writeFileSync(join(output, 'candidate.json'), `${JSON.stringify(receipt, null, 2)}\n`)
+          console.log(JSON.stringify(receipt))
+          NODE
+      - name: Install exactly the candidate lockfile
+        run: npm ci
+      - name: Prove the full candidate with unchanged project gates
+        run: npm run check
+      - name: Prove the synthetic showcase and locked SDK
+        run: npm run build:showcase && node observatory/check.mjs
+      - name: Verify the candidate audit and unchanged lock bytes
+        shell: bash
+        run: |
+          set +e
+          timeout 60s npm audit --audit-level=info --package-lock-only --include=dev --json --ignore-scripts --fetch-retries=0 --fetch-timeout=10000 > "$RUNNER_TEMP/fast-uri-candidate/audit.json"
+          audit_status=$?
+          set -e
+          node scripts/npmAuditEvidence.mjs "$RUNNER_TEMP/fast-uri-candidate/audit.json" "$audit_status"
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict'
+          import { readFileSync, writeFileSync } from 'node:fs'
+          import { join } from 'node:path'
+          const output = join(process.env.RUNNER_TEMP, 'fast-uri-candidate')
+          const report = JSON.parse(readFileSync(join(output, 'audit.json'), 'utf8'))
+          assert.equal(Object.hasOwn(report.vulnerabilities, 'fast-uri'), false)
+          assert.equal(readFileSync('package-lock.json', 'utf8'), readFileSync(join(output, 'package-lock.json'), 'utf8'))
+          writeFileSync(join(output, 'proof.json'), JSON.stringify({ status: 'candidate-validation-passed-not-committed',
+            checkedAt: new Date().toISOString(), remaining: report.metadata.vulnerabilities }, null, 2) + '\n')
+          console.log('Candidate validated. The PR lockfile is still unchanged; ordinary PR proving remains authoritative.')
+          NODE
+          git diff --exit-code -- package.json
+      - name: Preserve only the validated public dependency candidate
+        uses: actions/upload-artifact@v7
+        with:
+          name: fast-uri-3.1.8-candidate-${{ github.run_id }}
+          path: ${{ runner.temp }}/fast-uri-candidate/
+          if-no-files-found: error
+          retention-days: 30
