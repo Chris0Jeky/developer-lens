@@ -192,7 +192,7 @@ Direction, not a schedule. Detail lives in [`ROADMAP.md`](ROADMAP.md) and [`docs
 
 ## Private by construction
 
-Private output stays under gitignored `.developer-lens/`. Do not publish that directory, raw screenshots, or browser exports without reading them.
+Raw private collection output stays under gitignored `.developer-lens/`. A local export (`--source local`) writes its redacted C1 projection into gitignored `artifacts/` or `profile-export/`, so treat those directories the same way. Do not publish any of them, raw screenshots, or browser exports without reading them.
 
 `npm run collect` stores, in the private raw file:
 
