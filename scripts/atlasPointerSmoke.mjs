@@ -68,7 +68,7 @@ export async function openBrowser(executable = process.env.CHROME_PATH || 'googl
       if (child.exitCode === null && child.signalCode === null) { child.kill('SIGKILL'); await exited }
     }
     rejectPending()
-    await rm(profile, { recursive: true, force: true })
+    await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   }
   try { await send('Browser.getVersion') } catch (error) { await close(); throw error }
   return { send, listeners, close }
@@ -219,5 +219,5 @@ export async function runSmoke(directory = 'dist') {
 if (process.argv[1] && import.meta.url === pathToFileURL(resolve(process.argv[1])).href) {
   runSmoke(process.argv[2] || 'dist').then((receipts) => {
     console.log(`C0 native pointer smoke: ${receipts.length} sequences passed; no click retries. Public deployment and physical-device acceptance remain separate.`)
-  }).catch(() => { console.error('C0 native pointer smoke failed; retain the preceding failed trace.'); process.exitCode = 1 })
+  }).catch((error) => { console.error(`C0 native pointer smoke failed (${error?.name}: ${error?.message}); retain the preceding failed trace.`); process.exitCode = 1 })
 }

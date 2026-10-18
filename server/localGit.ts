@@ -1,8 +1,8 @@
 import { execFile } from 'node:child_process'
-import { access } from 'node:fs/promises'
-import { basename, dirname, join, normalize, resolve } from 'node:path'
+import { stat } from 'node:fs/promises'
+import { basename, normalize } from 'node:path'
 import { promisify } from 'node:util'
-import fg from 'fast-glob'
+import { discoverLocalGitCandidates } from './localGitDiscovery.js'
 import type {
   CoverageSource,
   RawCommit,
@@ -37,15 +37,6 @@ interface ParsedCommit {
   additions: number
   deletions: number
   files: number
-}
-
-async function exists(path: string): Promise<boolean> {
-  try {
-    await access(path)
-    return true
-  } catch {
-    return false
-  }
 }
 
 async function git(cwd: string, args: string[]): Promise<string> {
@@ -110,36 +101,40 @@ function parseGitLog(output: string): ParsedCommit[] {
   return commits
 }
 
-async function discoverRepositories(roots: string[]): Promise<string[]> {
-  const candidates = new Set<string>()
+/**
+ * Repository identity for discovery dedupe (#410). Two paths are one Git common directory exactly
+ * when the filesystem says so (device + inode; `stat` follows symlinks), which stays case-insensitive
+ * on default Windows/macOS volumes and keeps `Repo` and `repo` apart on case-sensitive ones. When
+ * the filesystem gives no usable identity the key falls back to the previous case-folded path.
+ */
+async function filesystemIdentity(directory: string): Promise<string> {
+  const { dev, ino } = await stat(directory, { bigint: true })
+  if (ino === 0n) throw new Error('no inode')
+  return `fs:${dev}:${ino}`
+}
 
-  for (const rootInput of roots) {
-    const root = resolve(rootInput)
-    if (!(await exists(root))) continue
-    if (await exists(join(root, '.git'))) candidates.add(root)
-
-    const matches = await fg('**/.git', {
-      cwd: root,
-      absolute: true,
-      dot: true,
-      onlyFiles: false,
-      followSymbolicLinks: false,
-      deep: 6,
-      suppressErrors: true,
-      ignore: [
-        '**/node_modules/**',
-        '**/.venv/**',
-        '**/vendor/**',
-        '**/.cache/**',
-        '**/dist/**',
-        '**/build/**',
-      ],
-    })
-    for (const match of matches) candidates.add(dirname(match))
+export async function dedupeByIdentity(
+  entries: ReadonlyArray<{ topLevel: string; commonDirectory: string }>,
+  identify: (directory: string) => Promise<string> = filesystemIdentity,
+): Promise<string[]> {
+  const kept = new Map<string, { topLevel: string; order: string }>()
+  for (const { topLevel, commonDirectory } of entries) {
+    const normalized = normalize(commonDirectory)
+    const key = await identify(commonDirectory).catch(() => `path:${normalized.toLowerCase()}`)
+    kept.set(key, { topLevel, order: normalized })
   }
+  // Code-unit order, so which repository wins an identity collision never depends on discovery order.
+  return [...kept.values()]
+    .sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0))
+    .map((entry) => entry.topLevel)
+}
 
-  const repositories = new Map<string, string>()
-  for (const candidate of candidates) {
+async function discoverRepositories(roots: string[]): Promise<{ repositories: string[]; failedLocations: number; cappedDirectories: number }> {
+  const discovery = await discoverLocalGitCandidates(roots)
+  let failedLocations = discovery.failedLocations
+
+  const entries: Array<{ topLevel: string; commonDirectory: string }> = []
+  for (const candidate of discovery.candidates) {
     try {
       const topLevel = await git(candidate, ['rev-parse', '--show-toplevel'])
       const commonDirectory = await git(candidate, [
@@ -147,13 +142,14 @@ async function discoverRepositories(roots: string[]): Promise<string[]> {
         '--path-format=absolute',
         '--git-common-dir',
       ])
-      repositories.set(normalize(commonDirectory).toLowerCase(), topLevel)
+      entries.push({ topLevel, commonDirectory })
     } catch {
-      // A stale or inaccessible .git marker is ignored and reported by count.
+      // Preserve incomplete discovery without retaining paths or exception text.
+      failedLocations++
     }
   }
 
-  return [...repositories.values()]
+  return { repositories: await dedupeByIdentity(entries), failedLocations, cappedDirectories: discovery.cappedDirectories ?? 0 }
 }
 
 export async function collectLocalGit(
@@ -194,10 +190,13 @@ export async function collectLocalGit(
     }
   }
 
-  const repositories = await discoverRepositories(roots)
+  const { repositories, failedLocations, cappedDirectories } = await discoverRepositories(roots)
   const rawRepositories: RawRepository[] = []
   const commits: RawCommit[] = []
   const warnings: string[] = []
+  let successfulInspections = 0
+  const seenIds = new Set<string>()
+  let identityCollisions = 0
 
   for (const repositoryPath of repositories) {
     try {
@@ -219,10 +218,25 @@ export async function collectLocalGit(
       const matched = parseGitLog(output).filter(
         (commit) => matchesConfiguredIdentity(commit, emails),
       )
-      if (matched.length === 0) continue
+      // Zero-activity repositories were inspected; a collision skipped below is not counted.
+      if (matched.length === 0) {
+        successfulInspections++
+        continue
+      }
 
+      // Ids and downstream joins stay case-folded, so two repositories sharing one cannot both be
+      // kept (the storage import refuses duplicates). Repositories arrive in a fixed order: the
+      // first wins and the rest are counted, never named.
+      const id = `local:${nameWithOwner.toLowerCase()}`
+      const idKey = id.normalize('NFC')
+      if (seenIds.has(idKey)) {
+        identityCollisions++
+        continue
+      }
+      seenIds.add(idKey)
+      successfulInspections++
       rawRepositories.push({
-        id: `local:${nameWithOwner.toLowerCase()}`,
+        id,
         nameWithOwner,
         name: nameWithOwner.split('/').at(-1) ?? fallback,
         isPrivate: true,
@@ -249,6 +263,11 @@ export async function collectLocalGit(
     }
   }
 
+  if (cappedDirectories > 0) warnings.push(COLLECTION_WARNINGS.localDiscoveryEntryLimit(cappedDirectories))
+  if (identityCollisions > 0) {
+    warnings.push(COLLECTION_WARNINGS.localRepositoryIdentityCollision(identityCollisions))
+  }
+
   return {
     commits,
     repositories: rawRepositories,
@@ -256,12 +275,12 @@ export async function collectLocalGit(
       id: 'local-git',
       label: 'Local Git enrichment',
       status:
-        warnings.length === 0
+        warnings.length === 0 && failedLocations === 0
           ? 'complete'
-          : commits.length > 0
+          : successfulInspections > 0
             ? 'partial'
             : 'unavailable',
-      detail: `${repositories.length} explicitly selected repositories inspected; only aggregate commit features are retained.`,
+      detail: `${successfulInspections} explicitly selected repositories successfully inspected within the no-symlink, six-level discovery scope; only aggregate commit features are retained.${failedLocations > 0 ? ` ${failedLocations} discovery check(s) failed; discovery is incomplete.` : ''}`,
       itemCount: commits.length,
     },
     warnings,

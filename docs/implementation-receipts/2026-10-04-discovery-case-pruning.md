@@ -1,0 +1,9 @@
+# Case-insensitive protected-directory pruning (#411)
+
+The final pre-merge thread sweep caught late P1 comment 4175479002 on head `25be4454928ea780e295eb61e3ca42d8bf4d3831`. Although its full gate and earlier review passed, the new review identified exact-case exclusion comparisons that could traverse protected aliases on case-insensitive filesystems. The coordinator stopped before merge.
+
+This second bounded correction folds only directory components used for exclusion-set membership. Both the single-component exclusions and the parent/child protected pairs are matched case-insensitively on every platform. Original pathname spelling remains intact for filesystem access, returned candidates and caches. This deliberately conservative pruning is separate from the unresolved repository identity collision in #410; no collection identity, caller, coverage rule or capability changes.
+
+Twenty new injected-filesystem regressions cover ten excluded-directory aliases, nine protected parent/child case variants and one ordinary-path case-preservation control. The actual previous helper failed all nineteen alias cases. After changing the two membership expressions, all sixty discovery/coverage probes passed, including the original forty tests. These supplementary probes use the actual source/import chain with Node TypeScript stripping and test-registration adaptation; they are not native Windows or full local Vitest proof.
+
+Retain the earlier 2,217-test gate as evidence for its earlier head, not this correction. Fresh ordinary hosted proving, exact-head independent review and a final unresolved-thread sweep remain required before merge. No new workflow, permission, dependency, telemetry, release or real-data activation is selected. The earlier discovery receipt remains a timestamped record of the first review correction; this note records the later case-pruning correction.
