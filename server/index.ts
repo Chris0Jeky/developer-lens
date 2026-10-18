@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url'
 import express from 'express'
 import type { RangeKey } from '../shared/types.js'
 import { dashboardPath, loadDashboard } from './dataStore.js'
+import { legacyGuard } from './legacyGuard.js'
 
 const app = express()
 const port = Number(process.env.DEVELOPER_LENS_PORT ?? 4141)
@@ -21,6 +22,9 @@ app.use((_request, response, next) => {
 app.get('/api/health', (_request, response) => {
   response.json({ status: 'ok', privacy: 'local-only' })
 })
+
+// #416: the V2 Host/Origin boundary also covers the legacy private reads; health stays public.
+app.use(['/api/dashboard', '/api/status'], legacyGuard)
 
 app.get('/api/dashboard', async (request, response, next) => {
   try {
