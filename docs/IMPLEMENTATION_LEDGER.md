@@ -5938,3 +5938,52 @@ and records the smoke workaround in the same handoff. It does not claim another 
 at its documentation head. Its own context/diff/hosted checks and the beyond-delay #394 review
 sweep belong in its PR Proof section. Existing #384 (Undici dependency qualification) and #392
 (opaque hosted label lookup) remain next scope; no unrelated dependency/credential change was made.
+
+## 2026-10-22 — concurrent first-import publication
+
+A bounded synthetic maintenance investigation at fresh `origin/main`
+`f4308d518afcb819efaea1cb40e385e0f87595f6` reproduced a key-continuity race in
+`importV1Json`: two first importers could both stage complete SQLite databases while the target
+was absent, then both succeed by renaming over one another. The final rename replaced the first
+installation-key pin. A deterministic regression runs the actual importer in a native Node/tsx
+child and pauses only filesystem publication until all transactions finish; before the repair,
+the different-key case returned two successes instead of one.
+
+First publication now uses atomic no-replace linking. An `EEXIST` contender validates and imports
+against the winning existing target under the existing schema/key-bound transaction; a different
+key refuses, matching-key replay remains idempotent, and the staging name is cleaned in `finally`.
+Two added real-file regressions assert exactly one accepted key, unchanged winning state after
+loser retry, winner replay equivalence, four-request same-key replay, integrity/FKs, source-byte
+preservation and no staging artifacts. No schema, capability, version, CLI/API activation or
+retention boundary changed. Revert this bounded code/test change to roll back.
+
+The earlier incomplete proposal-preservation failure did not reproduce: its unchanged isolated
+suite passed 8/8, and the full bounded run also passed. A separate populated-file probe preserved
+all 18 v2 schema/table inventories and exact source bytes across proposal import, then performed
+actual primary/replay shadow migration and read the validated selected store with three scopes,
+claims and identities. Twelve concurrent real loopback coverage requests returned identical strict
+presentation-safe views, retained null missingness, left bridge bytes unchanged, and confirmed the
+stored lens remains default off (404). The original incomplete failure's cause is not inferred.
+
+Verification on Node 24.19.0 after fresh installation:
+
+- Red concurrency subset: 1 failed, 1 passed, 27 filtered skips; expected one fulfilled import,
+  observed two. Complete migration file after repair: 29/29 passed.
+- Focused proposal/schema/rewrite/orchestration/lease/selection/revocation/HTTP/lifecycle run:
+  10 files, 278/278 passed, zero skips. Includes all 16 rollback checkpoints and primary/replay
+  discard cases, malformed inputs, replay divergence, schema/FK corruption and held-writer refusal.
+- `VITEST_MAX_WORKERS=2 npm run check`: exit 0; 144 files, 2354 passed, 3 existing skips,
+  223.21s for tests; lint, context/generated guards, TypeScript/Vite build, credential-pattern and
+  uninstrumented-build checks passed. No timeout or checked-in worker configuration changed.
+- Taskdeck generation check passed (128 cards; three existing near-limit warnings);
+  `npm run build:showcase` passed synthetic/export/privacy checks; `node observatory/check.mjs`
+  verified locked SDK 3.3.1. The build-generated social card was restored to the tracked original.
+
+FR-113 retains discarded test-harness approaches and their limits. Final read-only remote-ref
+refresh returned HTTP 503 twice after the successful starting fetch; no current remote-head claim
+is inferred from those failed reads. Existing open PR #429 owns unrelated discovery/audit
+portability files, untouched here. This handoff is local-only, pending coordinator independent
+review: no push, PR, merge, deployment, private-data/credential inspection or real-data activation.
+Windows/hard-link filesystem compatibility, crash durability, hostile local writers, hosted CI,
+full opt-in scale lane and owner acceptance remain unverified. Unsupported no-replace publication
+fails closed; no clobbering fallback was added.

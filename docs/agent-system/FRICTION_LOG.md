@@ -2892,3 +2892,25 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** One discovered product defect, one corrected preview configuration mismatch and one strengthened public drawer-state polling predicate in this follow-up.
 - **task:** [Product #393](https://github.com/Chris0Jeky/developer-lens/issues/393) owns the focused UI correction, failing-first route regression and local/public geometry acceptance; final receipts belong in its PR Proof section.
 - **promotion:** Keep actual viewport geometry and native pointer/keyboard interactions in narrow-screen acceptance; do not infer physical-device or telemetry acceptance.
+
+### FR-113 - concurrent-import reproduction required a native publication schedule
+
+- **first-seen:** 2026-10-22
+- **status:** `workaround-documented`
+- **symptom:** Natural concurrent imports often serialized at filesystem publication and did not reproduce an absent-target race. Vitest builtin-module replacement and native export synchronization did not intercept the importer's filesystem bindings in this runner. An initial child-process URL inherited the jsdom HTTP origin and could not load a native module.
+- **impact:** Those attempts did not establish the race and were not accepted as regression evidence. The original proposal-preservation failure also passed in isolation; no state mutation or timeout root cause is inferred from the earlier incomplete run.
+- **workaround:** Run invented imports in a fresh Node/tsx child, derive its module URL from the test filesystem directory, and pause only native publication scheduling until every SQLite transaction finishes. Actual filesystem operations, key validation and SQLite transactions remain real. This reproduces two incompatible first imports both succeeding; the no-replace publication repair yields one success and one key refusal. Run tests with at most two workers using the runner's supported environment budget.
+- **occurrences:** One investigation, including the discarded nondeterministic/builtin-mocking approaches and one corrected child URL. Final read-only remote-ref refresh returned HTTP 503 twice after the successful starting fetch; later remote state remains unverified.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns execution-environment maintenance; the bounded importer regression and fix are recorded in the implementation ledger.
+- **promotion:** Keep scheduling instrumentation in tests only; no global configuration, capability, timeout or schema contract changed.
+
+### FR-114 - Git transport failure requires source-tree verification before API publication
+
+- **first-seen:** 2026-10-22
+- **status:** `workaround-documented`
+- **symptom:** Git HTTPS operations repeatedly returned HTTP 503 after the initial successful fetch; the connected GitHub API remained usable.
+- **impact:** The ordinary Git publication route is unavailable. A successful API read or blob creation alone does not prove publication of the reviewed source.
+- **workaround:** Before any coordinator-managed Git Data API publication, reconstruct the reviewed tree and require its full Git tree hash to equal the verified local tree. Publish the ref atomically, retain the resulting API commit SHA separately from the local qualification SHA, and verify the published tree again. API-created commit metadata can change the commit SHA without changing source bytes. Publication remains pending; this entry claims no successful ref update, PR, merge or deployment.
+- **occurrences:** One maintenance publication attempt with repeated Git transport failures; no transport root cause inferred.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded maintenance-tooling recovery and evidence integrity.
+- **promotion:** Keep exact tree equality and separate qualification/publication receipts mandatory for this workaround; do not treat API availability as permission to alter reviewed source or bypass review.
