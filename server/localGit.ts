@@ -169,6 +169,12 @@ async function discoverRepositories(roots: string[]): Promise<{ repositories: st
         refusedLocations++
         continue
       }
+      // remote and log run from topLevel, which re-discovers its repository: it must resolve to the metadata checked above.
+      const executedGitDirectory = await realpath(await git(topLevel, ['rev-parse', '--path-format=absolute', '--git-dir']))
+      if (executedGitDirectory !== resolvedGitDirectory) {
+        refusedLocations++
+        continue
+      }
       entries.push({ topLevel, commonDirectory })
     } catch {
       // Preserve incomplete discovery without retaining paths or exception text.

@@ -93,6 +93,18 @@ describe('Git metadata stays inside explicitly selected roots (#414)', () => {
     assert.equal(git(selected, 'rev-parse', '--show-toplevel').replaceAll('\\', '/'), outside.replaceAll('\\', '/'))
     assertRefused(await collect([selected]), outside, 'outside-worktree-canary', sha)
   }))
+  it('refuses an in-root core.worktree whose directory re-discovers an outer repository', () => fixture(async (root) => {
+    const workspace = join(root, 'outer-repository-canary')
+    const sha = repository(workspace)
+    const selected = join(workspace, 'selected')
+    const visible = join(selected, 'visible')
+    const visibleSha = repository(visible)
+    const plain = join(selected, 'plain')
+    mkdirSync(plain)
+    git(visible, 'config', 'core.worktree', plain)
+    assert.equal(git(plain, 'rev-parse', 'HEAD'), sha)
+    assertRefused(await collect([selected]), 'outer-repository-canary', sha, visibleSha)
+  }))
   it('refuses a linked worktree whose common directory is outside every selected root', () => fixture(async (root) => {
     const main = join(root, 'external-common-canary')
     const sha = repository(main)
