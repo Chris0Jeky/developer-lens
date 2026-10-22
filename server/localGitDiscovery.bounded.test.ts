@@ -10,7 +10,8 @@ import {
 
 const directory = { isDirectory: () => true, isFile: () => false, isSymbolicLink: () => false }
 const file = { isDirectory: () => false, isFile: () => true, isSymbolicLink: () => false }
-const root = resolve('invented-root')
+// Absolute invented paths are used only by mocks, independent of the checkout.
+const root = resolve('/', 'invented-root')
 
 /** Yields `count` invented entries one at a time and records how many the walker pulled. */
 function stream(count: number, pulled: { value: number }, first: ReadonlyArray<{ name: string }> = []) {

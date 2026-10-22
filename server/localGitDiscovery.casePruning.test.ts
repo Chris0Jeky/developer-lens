@@ -5,6 +5,7 @@ import { discoverLocalGitCandidates } from './localGitDiscovery.js'
 
 const directory = { isDirectory: () => true, isFile: () => false, isSymbolicLink: () => false }
 const marker = { name: '.git', ...directory }
+// Absolute invented paths are used only by mocks, independent of the checkout.
 
 // Case variants are excluded conservatively on every platform. Keep the original
 // path spelling for filesystem access; this is not repository identity folding.
@@ -18,7 +19,7 @@ describe('protected discovery names are pruned independent of case (#411 review)
   ]
   for (const relative of protectedPaths) {
     it(`prunes ${relative} before stat or enumeration of the protected location`, async () => {
-      const root = resolve('invented-case-pruning-root')
+      const root = resolve('/', 'invented-case-pruning-root')
       const forbidden = join(root, relative)
       const visible = join(root, 'VisibleRepo')
       const parts = relative.split('/')
@@ -37,7 +38,7 @@ describe('protected discovery names are pruned independent of case (#411 review)
     })
   }
   it('retains the literal case of ordinary selected and child paths', async () => {
-    const root = resolve('InventedCaseRoot')
+    const root = resolve('/', 'InventedCaseRoot')
     const child = join(root, 'OrdinaryRepo')
     const accessed: string[] = []
     const result = await discoverLocalGitCandidates([root], {
