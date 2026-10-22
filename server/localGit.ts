@@ -142,7 +142,8 @@ export async function dedupeByIdentity(
     const key = await identify(commonDirectory).catch(() => `path:${normalized.toLowerCase()}`)
     kept.set(key, { topLevel, order: normalized })
   }
-  // Code-unit order, so which repository wins an identity collision never depends on discovery order.
+  // Order distinct identities by common directory for later local: id collisions. Entries sharing
+  // a filesystem identity keep the last discovered checkout via Map.set above.
   return [...kept.values()]
     .sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0))
     .map((entry) => entry.topLevel)
