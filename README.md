@@ -134,6 +134,8 @@ Collection defaults to both `6m` and `12m`. Pass `--range 6m` or `--range 12m` t
 
 Local Git history is opt-in. Only roots passed with `--local-root` or `DEV_LENS_LOCAL_ROOTS` are scanned, and only aggregate commit features are written. Developer Lens does not search the machine for repositories. Local attribution uses configured email identities (`user.email` and `DEV_LENS_GIT_EMAILS`), not author-name matching.
 
+Git marker files do not extend selected-root consent: the resolved worktree top-level, Git directory, and common directory must each be inside an explicitly selected root and outside protected discovery paths (ordinary `.git` metadata is allowed). A linked worktree whose shared metadata is outside every selected root is refused until its containing root is also explicitly selected. Refusal records incomplete coverage with `LOCAL_GIT_BOUNDARY_REFUSED`, without exposing the refused path.
+
 ### Sharing and export
 
 ```powershell

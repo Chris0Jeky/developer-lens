@@ -1,5 +1,5 @@
 import { lstat, opendir } from 'node:fs/promises'
-import { basename, join, resolve, sep } from 'node:path'
+import { join, resolve, sep } from 'node:path'
 
 interface FileKind { isDirectory(): boolean; isFile(): boolean; isSymbolicLink(): boolean }
 interface Entry extends FileKind { name: string }
@@ -21,6 +21,15 @@ const excluded = new Set(['.git', 'node_modules', '.venv', 'vendor', '.cache', '
 const protectedChildren = new Set(['public/data', '.claude/worktrees', '.agent-harness/runtime'])
 // Reject ambiguous Win32 suffixes conservatively on every platform; never rewrite a path.
 const hasAmbiguousSuffix = (component: string): boolean => /[ .]$/.test(component)
+
+/** Git metadata may live in .git; all other discovery protections still apply to it. */
+export function isProtectedLocalGitPath(path: string, allowGitMetadata = false): boolean {
+  const components = resolve(path).split(sep).map((part) => part.toLowerCase())
+  return components.some((part, index) =>
+    hasAmbiguousSuffix(part) || (excluded.has(part) && !(allowGitMetadata && part === '.git')) ||
+    protectedChildren.has(`${part}/${components[index + 1] ?? ''}`),
+  )
+}
 
 /** Literal metadata-only traversal. Symlink checks are not hostile-writer confinement. */
 export async function discoverLocalGitCandidates(
@@ -72,8 +81,7 @@ export async function discoverLocalGitCandidates(
     if (remaining === 0) return
     for (const entry of cache.get(directory) ?? []) {
       if (truncated) break
-      if (entry.isSymbolicLink() || !entry.isDirectory() || hasAmbiguousSuffix(entry.name) || excluded.has(entry.name.toLowerCase()) ||
-          protectedChildren.has(`${basename(directory).toLowerCase()}/${entry.name.toLowerCase()}`)) continue
+      if (entry.isSymbolicLink() || !entry.isDirectory() || isProtectedLocalGitPath(join(directory, entry.name))) continue
       await visit(join(directory, entry.name), remaining - 1)
     }
   }
@@ -85,11 +93,7 @@ export async function discoverLocalGitCandidates(
       continue
     }
     const directory = resolve(root)
-    const components = directory.split(sep).map((part) => part.toLowerCase())
-    const protectedRoot = components.some((part, index) =>
-      hasAmbiguousSuffix(part) || excluded.has(part) || protectedChildren.has(`${part}/${components[index + 1] ?? ''}`),
-    )
-    if (protectedRoot) {
+    if (isProtectedLocalGitPath(directory)) {
       failedLocations++
       continue
     }
