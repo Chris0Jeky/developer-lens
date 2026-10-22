@@ -28,6 +28,22 @@ function repository(root: string, name: string, broken = false): string {
 }
 
 describe('successful empty local inspections remain observable (#411 review)', () => {
+  it('counts only retained repositories when another shares an identity', () => fixture(async (root) => {
+    const a = join(root, 'a')
+    const b = join(root, 'b')
+    mkdirSync(a)
+    mkdirSync(b)
+    const result = await collectLocalGit([
+      repository(a, 'app'), repository(b, 'app'), repository(root, 'healthy'),
+    ], '2026-01-01T00:00:00Z', '2026-02-01T00:00:00Z', identity)
+    assert.equal(result.repositories.length, 2)
+    assert.equal(result.commits.length, 2)
+    assert.equal(result.coverage.itemCount, 2)
+    assert.equal(result.coverage.status, 'partial')
+    assert.match(result.coverage.detail, /^2 explicitly selected repositories successfully inspected/)
+    assert.equal(result.warnings.length, 1)
+    assert.match(result.warnings[0], /^1 local repositories shared a repository identity/)
+  }))
   it('reports partial for an inspected zero-activity repository plus a missing root', () => fixture(async (root) => {
     const result = await collectLocalGit([repository(root, 'healthy'), join(root, 'missing')], ...emptyWindow, identity)
     assert.equal(result.commits.length, 0)
