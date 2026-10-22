@@ -12,10 +12,13 @@ import { matchesAtlasDrawer } from './atlasDrawerContract.mjs'
 import { finishPointerReceipt } from './atlasPointerReceipt.mjs'
 import { waitForStablePointerTarget } from './atlasPointerReadiness.mjs'
 
+const BROWSER_STARTUP_TIMEOUT_MS = 45_000
+const CDP_COMMAND_TIMEOUT_MS = 10_000
+
 /** Process-private CDP transport; never attaches to a user's existing browser/profile. */
-export async function openBrowser(executable = process.env.CHROME_PATH || 'google-chrome') {
+export async function openBrowser(executable = process.env.CHROME_PATH || 'google-chrome', launch = spawn) {
   const profile = await mkdtemp(join(tmpdir(), 'lens-c0-pointer-'))
-  const child = spawn(executable, ['--headless=new', '--disable-gpu', '--no-first-run',
+  const child = launch(executable, ['--headless=new', '--disable-gpu', '--no-first-run',
     '--no-default-browser-check', '--disable-background-networking', '--disable-extensions',
     '--remote-debugging-pipe', `--user-data-dir=${profile}`,
     ...(process.getuid?.() === 0 ? ['--no-sandbox'] : [])],
@@ -25,15 +28,16 @@ export async function openBrowser(executable = process.env.CHROME_PATH || 'googl
   let closed = false
   const pending = new Map()
   const listeners = new Set()
-  function rejectPending() {
+  function rejectPending(error = new Error('Browser transport closed')) {
     closed = true
-    for (const value of pending.values()) { clearTimeout(value.timer); value.reject(new Error('Browser transport closed')) }
+    for (const value of pending.values()) { clearTimeout(value.timer); value.reject(error) }
     pending.clear()
   }
-  child.on('error', rejectPending)
-  child.on('exit', rejectPending)
+  child.on('error', () => rejectPending(new Error('Browser process failed')))
+  child.on('exit', (code, signal) => rejectPending(new Error(`Browser exited (code ${code}, signal ${signal})`)))
   child.stdio[3].on('error', rejectPending)
   child.stdio[4].setEncoding('utf8')
+  child.stdio[4].on('error', rejectPending)
   child.stdio[4].on('data', (chunk) => {
     buffered += chunk
     let end
@@ -53,24 +57,31 @@ export async function openBrowser(executable = process.env.CHROME_PATH || 'googl
       }
     }
   })
-  const send = (method, params = {}, sessionId) => new Promise((resolveResult, reject) => {
+  const send = (method, params = {}, sessionId, timeoutMs = CDP_COMMAND_TIMEOUT_MS) => new Promise((resolveResult, reject) => {
     if (closed) { reject(new Error('Browser transport closed')); return }
     const id = ++sequence
-    const timer = setTimeout(() => { pending.delete(id); reject(new Error(`CDP timeout: ${method}`)) }, 10_000)
+    const timer = setTimeout(() => { pending.delete(id); reject(new Error(`CDP timeout: ${method} (${timeoutMs} ms)`)) }, timeoutMs)
     pending.set(id, { resolve: resolveResult, reject, timer, method })
     child.stdio[3].write(`${JSON.stringify({ id, method, params, ...(sessionId ? { sessionId } : {}) })}\0`)
   })
   const close = async () => {
-    const exited = once(child, 'exit').catch(() => {})
-    if (child.exitCode === null && child.signalCode === null) {
+    if (child.pid && child.exitCode === null && child.signalCode === null) {
+      const exited = new Promise((done) => child.once('exit', done))
+      let graceTimer
       child.kill('SIGTERM')
-      await Promise.race([exited, delay(2000)])
+      try {
+        await Promise.race([exited, new Promise((done) => { graceTimer = setTimeout(done, 2000) })])
+      } finally { clearTimeout(graceTimer) }
       if (child.exitCode === null && child.signalCode === null) { child.kill('SIGKILL'); await exited }
     }
     rejectPending()
     await rm(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 100 })
   }
-  try { await send('Browser.getVersion') } catch (error) { await close(); throw error }
+  // Only this first handshake gets the cold-start budget; later calls retain 10 seconds.
+  try { await send('Browser.getVersion', {}, undefined, BROWSER_STARTUP_TIMEOUT_MS) } catch (error) {
+    await close()
+    throw new Error(`Browser startup failed: ${error.message}`, { cause: error })
+  }
   return { send, listeners, close }
 }
 
