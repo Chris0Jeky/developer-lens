@@ -7,6 +7,8 @@ import { discoverLocalGitCandidates, type LocalDiscoveryAccess } from './localGi
 
 const directory = { isDirectory: () => true, isFile: () => false, isSymbolicLink: () => false }
 const marker = { name: '.git', ...directory }
+// Absolute invented paths are used only by mocks, independent of the checkout.
+const fixtureRoot = resolve('/', 'InventedSelection')
 const protectedPaths = [
   '.git', 'node_modules', '.venv', 'vendor', '.cache', 'dist', 'build',
   '.developer-lens', '.developer-lens-synthetic', 'coverage',
@@ -30,7 +32,7 @@ describe('explicit protected roots fail before filesystem access (#411 late revi
     for (const suffix of ['', 'nested/repository']) {
       it(`refuses selected ${relative}/${suffix} without stat or enumeration`, async () => {
         const { access, calls } = recordedAccess()
-        const root = resolve('invented-selection', relative, suffix)
+        const root = resolve(fixtureRoot, relative, suffix)
         assert.deepEqual(await discoverLocalGitCandidates([root], access), {
           candidates: [], failedLocations: 1,
         })
@@ -42,7 +44,7 @@ describe('explicit protected roots fail before filesystem access (#411 late revi
   for (const relative of ['distribution', '.developer-lens-other', 'node_modules-copy', 'public/database', '.claude/worktrees-copy', '.agent-harness/runtime-old']) {
     it(`retains component-boundary lookalike ${relative}`, async () => {
       const { access, calls } = recordedAccess()
-      const root = resolve('InventedSelection', relative)
+      const root = resolve(fixtureRoot, relative)
       assert.deepEqual(await discoverLocalGitCandidates([root], access), {
         candidates: [root], failedLocations: 0,
       })
@@ -52,14 +54,14 @@ describe('explicit protected roots fail before filesystem access (#411 late revi
 
   it('normalizes dot segments before checking the selected boundary', async () => {
     const { access, calls } = recordedAccess()
-    const root = `${resolve('invented-selection')}/ordinary/../public/data/repository`
+    const root = `${fixtureRoot}/ordinary/../public/data/repository`
     assert.deepEqual(await discoverLocalGitCandidates([root], access), { candidates: [], failedLocations: 1 })
     assert.deepEqual(calls, [])
   })
 
   it('continues safe selections in either order without disclosing refused paths', async () => {
-    const safe = resolve('InventedSelection', 'VisibleRepo')
-    const refused = resolve('InventedSelection', '.developer-lens', 'private-canary')
+    const safe = resolve(fixtureRoot, 'VisibleRepo')
+    const refused = resolve(fixtureRoot, '.developer-lens', 'private-canary')
     for (const roots of [[refused, safe], [safe, refused]]) {
       const { access, calls } = recordedAccess()
       const result = await discoverLocalGitCandidates(roots, access)

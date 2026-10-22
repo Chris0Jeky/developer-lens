@@ -5,6 +5,8 @@ import { discoverLocalGitCandidates, type LocalDiscoveryAccess } from './localGi
 
 const directory = { isDirectory: () => true, isFile: () => false, isSymbolicLink: () => false }
 const marker = { name: '.git', ...directory }
+// Absolute invented paths are used only by mocks, independent of the checkout.
+const fixtureRoot = resolve('/', 'InventedAliasRoot')
 const aliases = [
   '.developer-lens.', '.developer-lens ', 'DIST. ', 'dist ',
   'public./data', 'Public /Data.', '.claude./worktrees', '.claude/worktrees ',
@@ -24,14 +26,14 @@ describe('ambiguous trailing-dot and space components fail closed (#413 review)'
           lstat: async (path) => { calls.push(path); return directory },
           readDirectory: async (path) => { calls.push(path); return [marker] },
         }
-        const selected = resolve('InventedAliasRoot', alias, suffix)
+        const selected = resolve(fixtureRoot, alias, suffix)
         assert.deepEqual(await discoverLocalGitCandidates([selected], access), { candidates: [], failedLocations: 1 })
         assert.deepEqual(calls, [])
       })
     }
   }
   it('prunes discovered ambiguous directory components without accessing them', async () => {
-    const root = resolve('InventedAliasRoot')
+    const root = fixtureRoot
     const safe = resolve(root, 'Safe.Repo')
     const calls: string[] = []
     const result = await discoverLocalGitCandidates([root], {
@@ -48,7 +50,7 @@ describe('ambiguous trailing-dot and space components fail closed (#413 review)'
   })
   for (const ordinary of ['Repo Name', 'Version1.2', '.dot-folder']) {
     it(`preserves unambiguous spelling ${ordinary}`, async () => {
-      const root = resolve('InventedAliasRoot', ordinary)
+      const root = resolve(fixtureRoot, ordinary)
       assert.deepEqual(await discoverLocalGitCandidates([root], {
         lstat: async () => directory, readDirectory: async () => [marker],
       }), { candidates: [root], failedLocations: 0 })
