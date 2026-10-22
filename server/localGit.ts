@@ -13,6 +13,13 @@ import { classifyCommit } from './github.js'
 
 const execFileAsync = promisify(execFile)
 
+// Metadata lookups should be quick, but allow slow local disks. Walking every ref with
+// numstat is substantially more expensive, so logs get two minutes before coverage fails.
+const LOCAL_GIT_METADATA_TIMEOUT_MS = 30_000
+const LOCAL_GIT_LOG_TIMEOUT_MS = 120_000
+
+class LocalGitExecutionLimitError extends Error {}
+
 export interface LocalGitResult {
   commits: RawCommit[]
   repositories: RawRepository[]
@@ -40,12 +47,24 @@ interface ParsedCommit {
 }
 
 async function git(cwd: string, args: string[]): Promise<string> {
-  const { stdout } = await execFileAsync('git', ['-C', cwd, ...args], {
-    encoding: 'utf8',
-    windowsHide: true,
-    maxBuffer: 64 * 1024 * 1024,
-  })
-  return stdout.trim()
+  try {
+    const { stdout } = await execFileAsync('git', ['-C', cwd, ...args], {
+      encoding: 'utf8',
+      windowsHide: true,
+      maxBuffer: 64 * 1024 * 1024,
+      timeout: args[0] === 'log' ? LOCAL_GIT_LOG_TIMEOUT_MS : LOCAL_GIT_METADATA_TIMEOUT_MS,
+      // A graceful signal can be ignored; deadline expiry must terminate the Git process.
+      killSignal: 'SIGKILL',
+    })
+    return stdout.trim()
+  } catch (error) {
+    const failure = error as { killed?: boolean; code?: string } | undefined
+    if (failure?.killed === true || failure?.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER') {
+      // Discard partial stdout, stderr, arguments and paths; retain no upstream cause.
+      throw new LocalGitExecutionLimitError('LOCAL_GIT_EXECUTION_LIMIT')
+    }
+    throw error
+  }
 }
 
 function normalizeRepoName(remote: string, fallback: string): string {
@@ -235,7 +254,11 @@ export async function collectLocalGit(
   for (const repositoryPath of repositories) {
     try {
       const remote = await git(repositoryPath, ['remote', 'get-url', 'origin']).catch(
-        () => '',
+        (error: unknown) => {
+          // A missing origin may use the local name; an execution limit is failed coverage.
+          if (error instanceof LocalGitExecutionLimitError) throw error
+          return ''
+        },
       )
       const fallback = basename(repositoryPath)
       const nameWithOwner = normalizeRepoName(remote, fallback)
@@ -292,8 +315,10 @@ export async function collectLocalGit(
           features: classifyCommit(commit.subject),
         })),
       )
-    } catch {
-      warnings.push(COLLECTION_WARNINGS.localRepositoryUnreadable(basename(repositoryPath)))
+    } catch (error) {
+      warnings.push(COLLECTION_WARNINGS.localRepositoryUnreadable(
+        error instanceof LocalGitExecutionLimitError ? 'A selected repository' : basename(repositoryPath),
+      ))
     }
   }
 
