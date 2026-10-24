@@ -16,7 +16,12 @@ function assertReadOnlyPrExecution(source) {
   assert.match(normalized, /^  pull_request:\s*$/m)
   assert.doesNotMatch(normalized, /^  pull_request_target:/m)
   assert.match(normalized, /^permissions:\n  contents: read\s*$/m)
-  assert.deepEqual(parse(normalized).permissions, { contents: 'read' })
+  const parsed = parse(normalized)
+  assert.deepEqual(parsed.permissions, { contents: 'read' })
+  // GitHub applies job-level permissions after the workflow level, so a job may only narrow.
+  for (const job of Object.values(parsed.jobs ?? {})) {
+    if (job?.permissions !== undefined) assert.deepEqual(job.permissions, { contents: 'read' })
+  }
   assert.doesNotMatch(normalized, /secrets\.|contents: write/)
 }
 
@@ -59,6 +64,15 @@ describe('audit workflow line endings and permissions', () => {
           permissions.replace(/\n/g, newline),
         )
         assert.throws(() => assertReadOnlyPrExecution(expanded), assert.AssertionError)
+      })
+    }
+    for (const [name, permissions] of [
+      ['job-level write-all', '    permissions: write-all'],
+      ['job-level write scope', '    permissions:\n      issues: write'],
+    ]) {
+      it(`rejects ${name} with ${label}`, () => {
+        const job = ['jobs:', '  report:', permissions, '    runs-on: ubuntu-latest', ''].join('\n')
+        assert.throws(() => assertReadOnlyPrExecution(fixture + job.replace(/\n/g, newline)), assert.AssertionError)
       })
     }
   }
