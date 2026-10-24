@@ -5987,3 +5987,38 @@ review: no push, PR, merge, deployment, private-data/credential inspection or re
 Windows/hard-link filesystem compatibility, crash durability, hostile local writers, hosted CI,
 full opt-in scale lane and owner acceptance remain unverified. Unsupported no-replace publication
 fails closed; no clobbering fallback was added.
+
+## 2026-10-24 - estate maintenance session: open-PR reconciliation, late-review sweep, dependency advisories
+
+The owner's 2026-10-24 estate wave assigned one development session to this repository. Evidence:
+
+- **#433** (storage: no-replace first-import publication). Draft at session start. Current main was
+  merged in and qualified natively on Windows: 29/29 focused migration tests, and both new
+  concurrency tests fail against main's `rename` code. One fresh-context review found no
+  CRITICAL/HIGH issue and Codex reported no findings. The MEDIUM hard-link-unsupported filesystem
+  limitation is tracked in #439; the LOW findings were declined as pre-existing. The PR was marked
+  ready and merged at its re-proved head after #440 landed.
+- **#438** follows up the untriaged Codex P2 on merged #429: the audit-workflow read-only test now
+  rejects job-level permission overrides. 17/17 tests pass, and the 4 new cases fail without the fix.
+- **#440** is a lockfile-only refresh: body-parser 2.4.0, undici 7.30.1, fast-uri 3.1.9 and
+  vitest 5.0.5 (#398). After it, `npm audit` reports only zod. zod stays at 4.4.3, because its
+  >=4.6.6 fix changes the bytes of the published `research-contracts/research-finding/v1/schema.json`
+  (nullable `anyOf` renders as a type list, with the same meaning). That cross-repository question
+  was posed to the estate hub before any consumer-visible change. The hub answered: keep v1 bytes
+  frozen. **#441** therefore upgrades zod to 4.6.7 and restores the v1 `anyOf` form in the
+  generator, so the contract bytes stay unchanged and no consumer action is needed. Its fresh-context
+  review found no CRITICAL/HIGH issue. It merged, and `npm audit` on main now reports 0 vulnerabilities.
+- **Late-review sweep (law 2h)** over PRs merged 2026-10-14..22: Codex had no findings on #432 and
+  #434-#437, the #417/#413 threads were already triaged, and #429's P2 was handled by #438.
+- **Host note:** on this Windows host without symlink privilege, `accelerationBundleHardening`
+  "refuses file-symlink targets" fails with `EPERM` on every branch, main included. Every other test
+  passed.
+- **Pages:** the main push of `b535dc9` (#437) started no `Deploy public showcase` run, for a reason
+  not established. The next main push deploys normally.
+- **Inventory:** the sibling directories `dl-sol-life03-review-844e7a6` (empty, removed),
+  `dl-worktrees/value01` (deregistered; the owner's manual review from q-8 history, left alone) and
+  `developer-lens-lab-merge-eligibility` (an orphan copy owned by the Lab, left alone, not a Git
+  checkout) were checked. The main clone has no registered extra worktrees.
+
+No protected data, real input, release, tag, package, external model, telemetry or credential path
+was touched.
