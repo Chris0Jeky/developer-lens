@@ -1,7 +1,10 @@
 import { createHash, createHmac } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
+import { execFile } from 'node:child_process'
+import { promisify } from 'node:util'
+import { pathToFileURL } from 'node:url'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -15,6 +18,42 @@ import {
   setupTaskInstallationKey,
   taskInstallationKeyTestSeams,
 } from './taskInstallationKey.js'
+
+// Execute actual concurrent imports in a fresh Node process. Delay only the final
+// filesystem publication so both SQLite transactions finish before either wins.
+// This schedule cannot depend on fs threadpool timing or Vitest's builtin bindings.
+async function concurrentFirstImports(sourcePath: string, targetPath: string, keys: Buffer[]) {
+  const script = `
+    import fs from 'node:fs/promises';
+    import { syncBuiltinESMExports } from 'node:module';
+    const [moduleUrl, sourcePath, targetPath, serializedKeys] = process.argv.slice(1);
+    const keys = JSON.parse(serializedKeys).map((hex) => Buffer.from(hex, 'hex'));
+    let arrived = 0;
+    let release;
+    const ready = new Promise((resolve) => { release = resolve });
+    for (const method of ['rename', 'link']) {
+      const original = fs[method];
+      fs[method] = async (...args) => {
+        if (args[1] === targetPath) {
+          if (++arrived === keys.length) release();
+          await ready;
+        }
+        return original(...args);
+      };
+    }
+    syncBuiltinESMExports();
+    const { importV1Json } = await import(moduleUrl);
+    const results = await Promise.allSettled(keys.map((installationKey) =>
+      importV1Json({ sourcePath, targetPath, installationKey })));
+    process.stdout.write(JSON.stringify(results));
+  `
+  const { stdout } = await promisify(execFile)(process.execPath, [
+    '--import', 'tsx', '--input-type=module', '-e', script,
+    pathToFileURL(join(__dirname, 'migrateV1.ts')).href,
+    sourcePath, targetPath, JSON.stringify(keys.map((key) => key.toString('hex'))),
+  ], { timeout: 10_000 })
+  return JSON.parse(stdout) as PromiseSettledResult<import('./migrateV1.js').ImportProof>[]
+}
 
 const tempDirectories: string[] = []
 const INSTALLATION_KEY = Buffer.from('synthetic-installation-key-material-0123456789', 'utf8')
@@ -171,6 +210,44 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     expect(second.foreignKeyViolations).toBe(0)
     expect(rowCounts).toEqual([1, 1, 1, 1, 2, 2])
     await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
+  it('accepts only one installation key across concurrent first imports and preserves its store', async () => {
+    const { directory, source, target, sourceBytes } = await fixturePaths()
+    const keys = [INSTALLATION_KEY, Buffer.alloc(32, 0x73)]
+    const attempts = await concurrentFirstImports(source, target, keys)
+    expect(attempts.filter(({ status }) => status === 'fulfilled')).toHaveLength(1)
+    const winner = attempts.findIndex(({ status }) => status === 'fulfilled')
+    const loser = 1 - winner
+    expect(attempts[loser]).toMatchObject({
+      status: 'rejected', reason: { code: 'STORAGE_KEY_MISMATCH' },
+    })
+    const before = databaseDigest(target)
+    await expect(importV1Json({ sourcePath: source, targetPath: target, installationKey: keys[loser] }))
+      .rejects.toThrow('STORAGE_KEY_MISMATCH')
+    expect(databaseDigest(target)).toBe(before)
+    await expect(importV1Json({ sourcePath: source, targetPath: target, installationKey: keys[winner] }))
+      .resolves.toEqual((attempts[winner] as PromiseFulfilledResult<unknown>).value)
+    expect(databaseDigest(target)).toBe(before)
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+    expect((await readdir(directory)).sort()).toEqual(['invented-v1.json', 'storage-v2.sqlite'])
+  })
+
+  it('replays concurrent first imports with one key without leaving staging artifacts', async () => {
+    const { directory, source, target, sourceBytes } = await fixturePaths()
+    const attempts = await concurrentFirstImports(source, target, Array(4).fill(INSTALLATION_KEY))
+    expect(attempts.every(({ status }) => status === 'fulfilled')).toBe(true)
+    const proofs = attempts.map((attempt) => (attempt as PromiseFulfilledResult<import('./migrateV1.js').ImportProof>).value)
+    expect(proofs.every((proof) => proof.checksum === proofs[0]!.checksum)).toBe(true)
+    const db = new Database(target, { readonly: true, fileMustExist: true })
+    try {
+      expect(runStorageChecks(db)).toEqual({ integrity: 'ok', quick: 'ok', foreignKeys: [] })
+      expect(db.prepare('SELECT COUNT(*) FROM import_run').pluck().get()).toBe(1)
+      expect(db.prepare('SELECT COUNT(*) FROM repository_identity').pluck().get()).toBe(1)
+      expect(db.prepare('SELECT COUNT(*) FROM import_key_binding').pluck().get()).toBe(1)
+    } finally { db.close() }
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+    expect((await readdir(directory)).sort()).toEqual(['invented-v1.json', 'storage-v2.sqlite'])
   })
 
   it('rejects unknown v1 fields and keeps the fallback non-sensitive', async () => {

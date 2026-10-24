@@ -1,6 +1,6 @@
 import { createHash, randomUUID, timingSafeEqual } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { readFile, rename, unlink } from 'node:fs/promises'
+import { readFile, link, unlink } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { z } from 'zod'
 import { openStorageDatabase, runStorageChecks, StorageDatabaseError } from './database.js'
@@ -619,15 +619,30 @@ export async function importV1Json(options: ImportV1Options): Promise<ImportProo
   let db: ReturnType<typeof openStorageDatabase> | undefined
   try {
     db = openStorageDatabase(workingPath)
-    const result = importIntoDatabase(db, canonical, sourceChecksum, keyMaterial.fingerprint, options.failAt)
+    let result = importIntoDatabase(db, canonical, sourceChecksum, keyMaterial.fingerprint, options.failAt)
     db.close()
     db = undefined
-    if (!existingTarget) await rename(workingPath, options.targetPath)
+    if (!existingTarget) {
+      try {
+        // Publish the closed, complete database without replacing a target another
+        // first importer has just created. A rename would silently replace its key pin.
+        await link(workingPath, options.targetPath)
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
+        // The winner is an existing target now: apply the same schema/key checks
+        // and atomic import as every later caller, rather than trusting our staged pin.
+        db = openStorageDatabase(options.targetPath)
+        result = importIntoDatabase(db, canonical, sourceChecksum, keyMaterial.fingerprint, options.failAt)
+        db.close()
+        db = undefined
+      }
+    }
     return result
   } catch (error) {
     db?.close()
-    if (!existingTarget) await unlink(workingPath).catch(() => undefined)
     throw error
+  } finally {
+    if (!existingTarget) await unlink(workingPath).catch(() => undefined)
   }
 }
 
