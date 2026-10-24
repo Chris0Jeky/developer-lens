@@ -56,21 +56,38 @@ describe('discovery identity is the filesystem identity (#410)', () => {
     const failing = async () => { throw new Error('no stat') }
     assert.equal((await dedupeByIdentity(entries, failing)).length, 1)
   })
-  it('orders survivors by common directory, independent of discovery order', async () => {
+  it('orders distinct identities by common directory, independent of discovery order', async () => {
     const inodes: Record<string, string> = { '/work/Repo/.git': 'a', '/work/repo/.git': 'b' }
     const identify = async (dir: string) => inodes[dir]
-    assert.deepEqual(await dedupeByIdentity([...entries].reverse(), identify), await dedupeByIdentity(entries, identify))
+    for (const order of [entries, [...entries].reverse()]) {
+      assert.deepEqual(await dedupeByIdentity(order, identify), ['/work/Repo', '/work/repo'])
+    }
+  })
+  it('keeps the last discovered checkout for a shared common-directory identity', async () => {
+    const shared = [
+      { topLevel: '/work/main', commonDirectory: '/work/main/.git' },
+      { topLevel: '/work/linked', commonDirectory: '/work/main/.git' },
+    ]
+    const identify = async () => 'dev1:10'
+    assert.deepEqual(await dedupeByIdentity(shared, identify), ['/work/linked'])
+    assert.deepEqual(await dedupeByIdentity([...shared].reverse(), identify), ['/work/main'])
   })
   it('dedupes the real filesystem: repeated roots and a linked worktree are one repository', () => fixture(async (root) => {
     const main = repository(root, 'main')
     execFileSync('git', ['-C', main, 'worktree', 'add', '--quiet', '--detach', join(root, 'linked')])
-    const result = await collectLocalGit([root, root, main], ...window, { emails: [email] })
-    assert.equal(result.repositories.length, 1)
-    // Identical identities keep the last entry in name-sorted discovery order, so the main checkout survives.
-    assert.equal(result.repositories[0]?.id, 'local:main')
-    assert.equal(result.commits.length, 1)
-    assert.equal(result.warnings.length, 0)
-    assert.equal(result.coverage.status, 'complete')
+    // Walking root discovers linked then main; visiting main first makes linked the last new candidate.
+    for (const [roots, survivor] of [
+      [[root, root, main], 'main'],
+      [[main, root, root], 'linked'],
+    ] as const) {
+      const result = await collectLocalGit([...roots], ...window, { emails: [email] })
+      assert.deepEqual(result.repositories.map(({ id }) => id), [`local:${survivor}`])
+      assert.equal(result.repositories[0]?.name, survivor)
+      assert.equal(result.commits.length, 1)
+      assert.equal(result.commits[0]?.sha, head(main))
+      assert.equal(result.warnings.length, 0)
+      assert.equal(result.coverage.status, 'complete')
+    }
   }))
 })
 
@@ -92,12 +109,15 @@ describe('colliding repository ids keep one repository and mark coverage partial
     const b = repository(join(root, 'b'), 'app', 'invented second')
     // Survivors sort by common directory, so the repository under a/ wins in both orders.
     const survivor = head(a)
+    assert.notEqual(survivor, head(b))
     const forward = await collectLocalGit([a, b], ...window, { emails: [email] })
     const reverse = await collectLocalGit([b, a], ...window, { emails: [email] })
     assert.deepEqual(forward.commits, reverse.commits)
-    assert.equal(forward.repositories[0]?.id, 'local:app')
-    assert.equal(forward.commits.length, 1)
-    assert.equal(forward.commits[0]?.sha, survivor)
+    for (const result of [forward, reverse]) {
+      assert.deepEqual(result.repositories.map(({ id }) => id), ['local:app'])
+      assert.equal(result.commits.length, 1)
+      assert.equal(result.commits[0]?.sha, survivor)
+    }
   }))
   it.skipIf(process.platform === 'win32' || process.platform === 'darwin')(
     'discovers both Repo and repo on a case-sensitive filesystem but keeps one',

@@ -11,38 +11,9 @@ import {
 } from '../server/dataStore.js'
 import { collectGithub } from '../server/github.js'
 import { collectLocalGit } from '../server/localGit.js'
+import { parseArguments } from './collectArguments.js'
 
 const execFileAsync = promisify(execFile)
-
-function parseArguments(argv: string[]) {
-  const roots: string[] = []
-  const ranges = new Set<RangeKey>()
-  for (let index = 0; index < argv.length; index += 1) {
-    const argument = argv[index]
-    if (argument === '--local-root' && argv[index + 1]) {
-      roots.push(argv[index + 1])
-      index += 1
-    } else if (argument.startsWith('--local-root=')) {
-      roots.push(argument.slice('--local-root='.length))
-    } else if (argument === '--range' && argv[index + 1]) {
-      const value = argv[index + 1]
-      if (value === '6m' || value === '12m') ranges.add(value)
-      index += 1
-    } else if (argument.startsWith('--range=')) {
-      const value = argument.slice('--range='.length)
-      if (value === '6m' || value === '12m') ranges.add(value)
-    }
-  }
-
-  const environmentRoots = (process.env.DEV_LENS_LOCAL_ROOTS ?? '')
-    .split(';')
-    .map((value) => value.trim())
-    .filter(Boolean)
-  return {
-    roots: [...new Set([...roots, ...environmentRoots])],
-    ranges: ranges.size > 0 ? [...ranges] : (['6m', '12m'] as RangeKey[]),
-  }
-}
 
 async function gitConfig(key: string): Promise<string> {
   try {
@@ -103,7 +74,7 @@ async function collectRange(
 }
 
 async function main() {
-  const { roots, ranges } = parseArguments(process.argv.slice(2))
+  const { roots, ranges } = parseArguments(process.argv.slice(2), process.env.DEV_LENS_LOCAL_ROOTS ?? '')
   await mkdir(PRIVATE_DATA_DIRECTORY, { recursive: true })
   const email = await gitConfig('user.email')
   const configuredEmails = (process.env.DEV_LENS_GIT_EMAILS ?? '')

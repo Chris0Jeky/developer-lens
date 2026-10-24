@@ -119,8 +119,8 @@ describe('literal selected-root Git marker discovery', () => {
     assert.equal(calls, 0)
   })
   it('does not follow symlink children or a symlink selected root', async () => {
-    const root = resolve('invented-root')
-    const link = resolve('invented-link')
+    const root = resolve('/', 'invented-root')
+    const link = resolve('/', 'invented-link')
     const reads: string[] = []
     const result = await discoverLocalGitCandidates([root, link], {
       lstat: async (path) => path === link ? symlink : directory,
@@ -130,7 +130,7 @@ describe('literal selected-root Git marker discovery', () => {
     assert.equal(result.failedLocations, 1)
   })
   it('rechecks directory type before traversal when an entry was replaced by a symlink', async () => {
-    const root = resolve('invented-root')
+    const root = resolve('/', 'invented-root')
     const reads: string[] = []
     const result = await discoverLocalGitCandidates([root], {
       lstat: async (path) => path === root ? directory : symlink,
@@ -140,14 +140,14 @@ describe('literal selected-root Git marker discovery', () => {
     assert.equal(result.failedLocations, 1)
   })
   it('counts a symlink Git marker rather than treating it as a selected repository', async () => {
-    const result = await discoverLocalGitCandidates([resolve('invented-root')], {
+    const result = await discoverLocalGitCandidates([resolve('/', 'invented-root')], {
       lstat: async () => directory,
       readDirectory: async () => [{ name: '.git', ...symlink }],
     })
     assert.deepEqual(result, { candidates: [], failedLocations: 1 })
   })
   it('retains successful candidates while counting an unreadable sibling', async () => {
-    const root = resolve('invented-root')
+    const root = resolve('/', 'invented-root')
     const result = await discoverLocalGitCandidates([root], {
       lstat: async () => directory,
       readDirectory: async (path) => {
@@ -175,7 +175,7 @@ describe('literal selected-root Git marker discovery', () => {
     assert.deepEqual(await discoverLocalGitCandidates([selected]), { candidates: [], failedLocations: 0 })
   }))
   it('caps directory enumeration across the whole request and reports truncation', async () => {
-    const root = resolve('invented-root')
+    const root = resolve('/', 'invented-root')
     let reads = 0
     const result = await discoverLocalGitCandidates([root], {
       lstat: async () => directory,

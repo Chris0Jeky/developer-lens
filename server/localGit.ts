@@ -1,8 +1,8 @@
 import { execFile } from 'node:child_process'
-import { stat } from 'node:fs/promises'
-import { basename, normalize } from 'node:path'
+import { realpath, stat } from 'node:fs/promises'
+import { basename, isAbsolute, normalize, relative, sep } from 'node:path'
 import { promisify } from 'node:util'
-import { discoverLocalGitCandidates } from './localGitDiscovery.js'
+import { discoverLocalGitCandidates, isProtectedLocalGitPath } from './localGitDiscovery.js'
 import type {
   CoverageSource,
   RawCommit,
@@ -12,6 +12,13 @@ import { COLLECTION_WARNINGS } from './collectionWarnings.js'
 import { classifyCommit } from './github.js'
 
 const execFileAsync = promisify(execFile)
+
+// Metadata lookups should be quick, but allow slow local disks. Walking every ref with
+// numstat is substantially more expensive, so logs get two minutes before coverage fails.
+const LOCAL_GIT_METADATA_TIMEOUT_MS = 30_000
+const LOCAL_GIT_LOG_TIMEOUT_MS = 120_000
+
+class LocalGitExecutionLimitError extends Error {}
 
 export interface LocalGitResult {
   commits: RawCommit[]
@@ -40,12 +47,24 @@ interface ParsedCommit {
 }
 
 async function git(cwd: string, args: string[]): Promise<string> {
-  const { stdout } = await execFileAsync('git', ['-C', cwd, ...args], {
-    encoding: 'utf8',
-    windowsHide: true,
-    maxBuffer: 64 * 1024 * 1024,
-  })
-  return stdout.trim()
+  try {
+    const { stdout } = await execFileAsync('git', ['-C', cwd, ...args], {
+      encoding: 'utf8',
+      windowsHide: true,
+      maxBuffer: 64 * 1024 * 1024,
+      timeout: args[0] === 'log' ? LOCAL_GIT_LOG_TIMEOUT_MS : LOCAL_GIT_METADATA_TIMEOUT_MS,
+      // A graceful signal can be ignored; deadline expiry must terminate the Git process.
+      killSignal: 'SIGKILL',
+    })
+    return stdout.trim()
+  } catch (error) {
+    const failure = error as { killed?: boolean; code?: string } | undefined
+    if (failure?.killed === true || failure?.code === 'ERR_CHILD_PROCESS_STDIO_MAXBUFFER') {
+      // Discard partial stdout, stderr, arguments and paths; retain no upstream cause.
+      throw new LocalGitExecutionLimitError('LOCAL_GIT_EXECUTION_LIMIT')
+    }
+    throw error
+  }
 }
 
 function normalizeRepoName(remote: string, fallback: string): string {
@@ -123,25 +142,59 @@ export async function dedupeByIdentity(
     const key = await identify(commonDirectory).catch(() => `path:${normalized.toLowerCase()}`)
     kept.set(key, { topLevel, order: normalized })
   }
-  // Code-unit order, so which repository wins an identity collision never depends on discovery order.
+  // Order distinct identities by common directory for later local: id collisions. Entries sharing
+  // a filesystem identity keep the last discovered checkout via Map.set above.
   return [...kept.values()]
     .sort((a, b) => (a.order < b.order ? -1 : a.order > b.order ? 1 : 0))
     .map((entry) => entry.topLevel)
 }
 
-async function discoverRepositories(roots: string[]): Promise<{ repositories: string[]; failedLocations: number; cappedDirectories: number }> {
+async function discoverRepositories(roots: string[]): Promise<{ repositories: string[]; failedLocations: number; refusedLocations: number; cappedDirectories: number }> {
   const discovery = await discoverLocalGitCandidates(roots)
   let failedLocations = discovery.failedLocations
+  let refusedLocations = 0
+  const selectedRoots: string[] = []
+  for (const root of roots) {
+    if (typeof root !== 'string' || !root.trim() || root.includes('\0') || isProtectedLocalGitPath(root)) continue
+    try {
+      const canonical = await realpath(root)
+      if (!isProtectedLocalGitPath(canonical)) selectedRoots.push(canonical)
+    } catch { /* Discovery already counts inaccessible selected roots. */ }
+  }
+  const insideSelectedRoot = (path: string): boolean => selectedRoots.some((root) => {
+    // path.relative uses path components and Windows case rules, including different drives.
+    const within = relative(root, path)
+    return !isAbsolute(within) && within.split(sep)[0] !== '..'
+  })
 
   const entries: Array<{ topLevel: string; commonDirectory: string }> = []
   for (const candidate of discovery.candidates) {
     try {
       const topLevel = await git(candidate, ['rev-parse', '--show-toplevel'])
+      const gitDirectory = await git(candidate, ['rev-parse', '--path-format=absolute', '--git-dir'])
       const commonDirectory = await git(candidate, [
         'rev-parse',
         '--path-format=absolute',
         '--git-common-dir',
       ])
+      const [resolvedTopLevel, resolvedGitDirectory, resolvedCommonDirectory] = await Promise.all(
+        [topLevel, gitDirectory, commonDirectory].map((path) => realpath(path)),
+      )
+      // Marker files do not extend consent. Linked worktrees with shared metadata outside every
+      // selected root are refused too; explicitly select its containing root to include it.
+      if (![resolvedTopLevel, resolvedGitDirectory, resolvedCommonDirectory].every(insideSelectedRoot) ||
+          isProtectedLocalGitPath(resolvedTopLevel) ||
+          isProtectedLocalGitPath(resolvedGitDirectory, true) ||
+          isProtectedLocalGitPath(resolvedCommonDirectory, true)) {
+        refusedLocations++
+        continue
+      }
+      // remote and log run from topLevel, which re-discovers its repository: it must resolve to the metadata checked above.
+      const executedGitDirectory = await realpath(await git(topLevel, ['rev-parse', '--path-format=absolute', '--git-dir']))
+      if (executedGitDirectory !== resolvedGitDirectory) {
+        refusedLocations++
+        continue
+      }
       entries.push({ topLevel, commonDirectory })
     } catch {
       // Preserve incomplete discovery without retaining paths or exception text.
@@ -149,7 +202,7 @@ async function discoverRepositories(roots: string[]): Promise<{ repositories: st
     }
   }
 
-  return { repositories: await dedupeByIdentity(entries), failedLocations, cappedDirectories: discovery.cappedDirectories ?? 0 }
+  return { repositories: await dedupeByIdentity(entries), failedLocations, refusedLocations, cappedDirectories: discovery.cappedDirectories ?? 0 }
 }
 
 export async function collectLocalGit(
@@ -190,7 +243,7 @@ export async function collectLocalGit(
     }
   }
 
-  const { repositories, failedLocations, cappedDirectories } = await discoverRepositories(roots)
+  const { repositories, failedLocations, refusedLocations, cappedDirectories } = await discoverRepositories(roots)
   const rawRepositories: RawRepository[] = []
   const commits: RawCommit[] = []
   const warnings: string[] = []
@@ -201,7 +254,11 @@ export async function collectLocalGit(
   for (const repositoryPath of repositories) {
     try {
       const remote = await git(repositoryPath, ['remote', 'get-url', 'origin']).catch(
-        () => '',
+        (error: unknown) => {
+          // A missing origin may use the local name; an execution limit is failed coverage.
+          if (error instanceof LocalGitExecutionLimitError) throw error
+          return ''
+        },
       )
       const fallback = basename(repositoryPath)
       const nameWithOwner = normalizeRepoName(remote, fallback)
@@ -258,8 +315,10 @@ export async function collectLocalGit(
           features: classifyCommit(commit.subject),
         })),
       )
-    } catch {
-      warnings.push(COLLECTION_WARNINGS.localRepositoryUnreadable(basename(repositoryPath)))
+    } catch (error) {
+      warnings.push(COLLECTION_WARNINGS.localRepositoryUnreadable(
+        error instanceof LocalGitExecutionLimitError ? 'A selected repository' : basename(repositoryPath),
+      ))
     }
   }
 
@@ -275,12 +334,12 @@ export async function collectLocalGit(
       id: 'local-git',
       label: 'Local Git enrichment',
       status:
-        warnings.length === 0 && failedLocations === 0
+        warnings.length === 0 && failedLocations === 0 && refusedLocations === 0
           ? 'complete'
           : successfulInspections > 0
             ? 'partial'
             : 'unavailable',
-      detail: `${successfulInspections} explicitly selected repositories successfully inspected within the no-symlink, six-level discovery scope; only aggregate commit features are retained.${failedLocations > 0 ? ` ${failedLocations} discovery check(s) failed; discovery is incomplete.` : ''}`,
+      detail: `${successfulInspections} explicitly selected repositories successfully inspected within the no-symlink, six-level discovery scope; only aggregate commit features are retained.${failedLocations > 0 ? ` ${failedLocations} discovery check(s) failed; discovery is incomplete.` : ''}${refusedLocations > 0 ? ` ${refusedLocations} candidate(s) refused (LOCAL_GIT_BOUNDARY_REFUSED); discovery is incomplete.` : ''}`,
       itemCount: commits.length,
     },
     warnings,

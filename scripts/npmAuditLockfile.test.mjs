@@ -6,7 +6,7 @@ import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
 import { describe, it } from 'vitest'
 
-const workflow = readFileSync(resolve('.github/workflows/dependency-audit-evidence.yml'), 'utf8')
+const workflow = readFileSync(resolve('.github/workflows/dependency-audit-evidence.yml'), 'utf8').replace(/\r\n/g, '\n')
 const runBlock = workflow.split('        run: |\n')[1]
 assert.ok(runBlock, 'Expected the audit workflow shell step')
 const command = runBlock.split('\n').map((line) => line.replace(/^          /, '')).join('\n')
