@@ -83,8 +83,22 @@ function enrichSchema(value: unknown): JsonSchemaObject {
   return schema
 }
 
+// The published v1 bytes are frozen and vendored downstream. zod >=4.6 renders `.nullable()`
+// primitives as `type: [X, 'null']`; restore v1's equivalent `anyOf` form so a zod upgrade
+// alone cannot change the contract.
+function frozenV1Nullable(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(frozenV1Nullable)
+  if (!value || typeof value !== 'object') return value
+  const object = value as JsonSchemaObject
+  const { type } = object
+  if (Object.keys(object).length === 1 && Array.isArray(type) && type.length === 2 && type[1] === 'null' && typeof type[0] === 'string') {
+    return { anyOf: [{ type: type[0] }, { type: 'null' }] }
+  }
+  return Object.fromEntries(Object.entries(object).map(([key, entry]) => [key, frozenV1Nullable(entry)]))
+}
+
 export function renderResearchFindingSchema(): string {
-  return stableJson(enrichSchema(z.toJSONSchema(ResearchFindingSchema)))
+  return stableJson(frozenV1Nullable(enrichSchema(z.toJSONSchema(ResearchFindingSchema))))
 }
 
 export function renderResearchFindingFixture(): string {
