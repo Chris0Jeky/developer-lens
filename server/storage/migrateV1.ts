@@ -177,11 +177,19 @@ export type StorageFailureCode =
   | 'source-read-failed'
   | 'v1-validation-failed'
   | 'storage-target-mismatch'
+  | 'storage-publish-unavailable'
   | 'storage-import-failed'
 
 export type StorageSelection =
   | { reader: 'legacy-json'; code: StorageFailureCode }
   | { reader: 'sqlite-v2'; checksum: string }
+
+class StoragePublicationError extends Error {
+  constructor() {
+    super('STORAGE_PUBLISH_UNAVAILABLE')
+    this.name = 'StoragePublicationError'
+  }
+}
 
 export function parseV1Dataset(source: string): V1Dataset {
   let value: unknown
@@ -628,6 +636,10 @@ export async function importV1Json(options: ImportV1Options): Promise<ImportProo
         // first importer has just created. A rename would silently replace its key pin.
         await link(workingPath, options.targetPath)
       } catch (error) {
+        // Only publication failures get this classification; discard paths and causes.
+        if (['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EXDEV'].includes((error as NodeJS.ErrnoException).code ?? '')) {
+          throw new StoragePublicationError()
+        }
         if ((error as NodeJS.ErrnoException).code !== 'EEXIST') throw error
         // The winner is an existing target now: apply the same schema/key checks
         // and atomic import as every later caller, rather than trusting our staged pin.
@@ -672,6 +684,7 @@ export async function selectStorageReader(
     }
     if (error instanceof V1ValidationError) return { reader: 'legacy-json', code: 'v1-validation-failed' }
     if (error instanceof StorageDatabaseError) return { reader: 'legacy-json', code: 'storage-target-mismatch' }
+    if (error instanceof StoragePublicationError) return { reader: 'legacy-json', code: 'storage-publish-unavailable' }
     const nodeError = error as NodeJS.ErrnoException
     if (nodeError.code === 'ENOENT') return { reader: 'legacy-json', code: 'source-read-failed' }
     return { reader: 'legacy-json', code: 'storage-import-failed' }

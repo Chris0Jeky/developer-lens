@@ -6033,3 +6033,41 @@ was touched.
 - Review: one independent read-only adversarial review, plus verification of the incremental absent-directory handling, found no blocking findings. No hostile directory-replacement guarantee is added; scanner-exception behavior is outside this fix.
 - Docs/state: README describes the corrected cleanup boundary; FR-115 records bootstrap and qualification friction under #222. `HUMAN_TODO.md` and owner gates remain unchanged; this is local patch evidence, not landed-main or publication evidence.
 - Resume: review the uncommitted focused diff. Landing requires a green permitted proving environment and authorization beyond the current no-Git-write constraint. Storage hard-link refusal diagnostics (#439) remain a separate bounded opportunity.
+
+## 2026-10-25 - #439 hard-link publication refusal (local candidate)
+
+- Branch `sol/ex-developer-lens-2`, base/HEAD `ea55dea6cf482e41e15761ffbb642b0b7be91d74`;
+  uncommitted coordinator handoff, not a claim of publication or merge.
+- `migrateV1.ts` classifies only publication `EPERM`, `ENOTSUP`, `EOPNOTSUPP`, `ENOSYS`,
+  and `EXDEV` as `storage-publish-unavailable`. Direct errors discard upstream paths/causes;
+  selection keeps legacy JSON. No-replace publication, key pinning and cleanup remain intact.
+- `npm test -- server/storage/migration.test.ts`: baseline 29 passed; new tests before the fix
+  5 failed / 30 passed; fixed 35 passed. Tests exercise real SQLite staging, content-free failure,
+  source preservation, staging removal, successful retry and unrelated `EIO` fallback.
+- Mutation proof: `npm test -- server/storage/migration.test.ts -t 'reports .* publication refusal'`
+  with only the new reader mapping temporarily removed: 5 failed on the generic fallback code.
+  The production file was restored byte-for-byte afterward.
+- `npm run check`: toolchain, lint, context and all four contract-drift checks passed;
+  tests finished 2,438 passed / 21 skipped / 1 failed. The sole failure is the existing Windows
+  file-symlink creation `EPERM` in `scripts/accelerationBundleHardening.test.ts`, before product code.
+  `npm test -- scripts/accelerationBundleHardening.test.ts -t 'refuses file-symlink targets'`
+  reproduces it in isolation; that test and its implementation match HEAD. See FR-116 / #222.
+- `npm run build` passed separately, including TypeScript, Vite and both artifact-boundary scans.
+  One independent read-only adversarial review found no blockers or nonblocking findings.
+- README documents the limitation/retry. `HUMAN_TODO.md` is unchanged; release sign-off
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) remains open. No real/private migration,
+  collection, model, telemetry or credential path was activated. Refusal codes were injected;
+  actual FAT/exFAT/network-mount qualification and hosted proving remain unverified.
+- Resume: re-prove the unchanged symlink case on a capable runner before calling the full gate
+  green; the coordinator owns commit, push and PR creation. No Git writes were performed here.
+
+## 2026-10-25 - PR #444 merge resolution and requalification (working tree)
+
+- Starting head: `6885c06`, branch `sol/ex-developer-lens-2`, with `origin/main` already being merged. Resolved both documentation conflicts by retaining both histories. Main's FR-115 bootstrap entry keeps its ID; the storage symlink entry and its ledger reference use FR-116. Main's export-cleanup implementation and README intent are preserved.
+- Reviewed the PR's own migration diff and connected callers adversarially; a separate fresh-context read-only reviewer also found no defects. No storage code or test repair was needed. The README behavior and all promised refusal, redaction, cleanup, source-preservation and retry regressions are present.
+- Setup: `npm ci --prefer-offline` passed (345 packages installed). Focused `npm test -- server/storage/migration.test.ts scripts/exportArtifacts.cleanup.test.ts scripts/exportArtifacts.test.ts scripts/exportProfile.test.ts scripts/accelerationBundleHardening.test.ts`: 86 passed, one failed. All 35 migration and 32 export tests passed; the only failure is the unchanged file-symlink fixture's native `EPERM`, before materialization.
+- Aggregate `npm run check`: toolchain and lint passed, then context verification stopped at the unresolved Git-index metadata (FR-117). Working-file markers are gone, but the task forbids Git writes, including staging; no index workaround or weaker verification was used.
+- Remaining checks run directly: all four synthetic contract drift checks passed; Taskdeck manifest/index check passed (three existing near-limit description warnings); locked SDK artifact check passed. Full `npm test`: 2,441 passed, 21 skipped, one failed across 148 files; the sole failure remains file-symlink setup `EPERM`. The previously recorded local-Git timeout did not recur in this run.
+- `npm run build` and `npm run build:showcase` passed, including TypeScript and their artifact/privacy boundary scans. The tracked social-card PNG was preserved byte-for-byte around showcase generation. `git diff --check` and explicit marker checks passed. Builds used only the declared synthetic constructors.
+- Docs/state: this entry and FR-116/FR-117 carry current local qualification; historical entries and the timestamped remote observations in CURRENT_STATE remain historical. `HUMAN_TODO.md` is unchanged; Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) still gates release tagging. No Git writes, publication, real-data activation, external-model execution or hosted proving were performed.
+- Resume: a coordinator with Git-write authority stages the two resolved documentation files, completes the pending merge and re-runs the full gate on a file-symlink-capable runner. The current gate is not green and this task claims no merge readiness. Actual FAT/exFAT/network mounts and live hosted CI/review state remain unverified; #222 owns Windows filesystem qualification.
