@@ -6022,3 +6022,30 @@ The owner's 2026-10-24 estate wave assigned one development session to this repo
 
 No protected data, real input, release, tag, package, external model, telemetry or credential path
 was touched.
+
+## 2026-10-25 - #439 hard-link publication refusal (local candidate)
+
+- Branch `sol/ex-developer-lens-2`, base/HEAD `ea55dea6cf482e41e15761ffbb642b0b7be91d74`;
+  uncommitted coordinator handoff, not a claim of publication or merge.
+- `migrateV1.ts` classifies only publication `EPERM`, `ENOTSUP`, `EOPNOTSUPP`, `ENOSYS`,
+  and `EXDEV` as `storage-publish-unavailable`. Direct errors discard upstream paths/causes;
+  selection keeps legacy JSON. No-replace publication, key pinning and cleanup remain intact.
+- `npm test -- server/storage/migration.test.ts`: baseline 29 passed; new tests before the fix
+  5 failed / 30 passed; fixed 35 passed. Tests exercise real SQLite staging, content-free failure,
+  source preservation, staging removal, successful retry and unrelated `EIO` fallback.
+- Mutation proof: `npm test -- server/storage/migration.test.ts -t 'reports .* publication refusal'`
+  with only the new reader mapping temporarily removed: 5 failed on the generic fallback code.
+  The production file was restored byte-for-byte afterward.
+- `npm run check`: toolchain, lint, context and all four contract-drift checks passed;
+  tests finished 2,438 passed / 21 skipped / 1 failed. The sole failure is the existing Windows
+  file-symlink creation `EPERM` in `scripts/accelerationBundleHardening.test.ts`, before product code.
+  `npm test -- scripts/accelerationBundleHardening.test.ts -t 'refuses file-symlink targets'`
+  reproduces it in isolation; that test and its implementation match HEAD. See FR-115 / #222.
+- `npm run build` passed separately, including TypeScript, Vite and both artifact-boundary scans.
+  One independent read-only adversarial review found no blockers or nonblocking findings.
+- README documents the limitation/retry. `HUMAN_TODO.md` is unchanged; release sign-off
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) remains open. No real/private migration,
+  collection, model, telemetry or credential path was activated. Refusal codes were injected;
+  actual FAT/exFAT/network-mount qualification and hosted proving remain unverified.
+- Resume: re-prove the unchanged symlink case on a capable runner before calling the full gate
+  green; the coordinator owns commit, push and PR creation. No Git writes were performed here.

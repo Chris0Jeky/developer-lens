@@ -2914,3 +2914,14 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** One maintenance publication attempt with repeated Git transport failures; no transport root cause inferred.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded maintenance-tooling recovery and evidence integrity.
 - **promotion:** Keep exact tree equality and separate qualification/publication receipts mandatory for this workaround; do not treat API availability as permission to alter reviewed source or bypass review.
+
+### FR-115 - Windows file-symlink privilege prevents a green full local gate
+
+- **first-seen:** 2026-10-24
+- **status:** `open`
+- **symptom:** The acceleration-bundle file-symlink fixture fails with `EPERM` during setup, before materialization runs. The #439 full gate and isolated reproduction both hit the unchanged test.
+- **impact:** `npm run check` cannot finish green on this host and stops before its build stage, even though the changed migration tests pass.
+- **workaround:** Run the production build separately and report the full gate as red; do not skip the test, change host privileges, or call this a successful gate.
+- **occurrences:** Two sessions: the 2026-10-24 ledger host note and the 2026-10-25 full/isolated proofs.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded Windows proving helpers and a runner-capability disposition.
+- **promotion:** Keep actual file-symlink proof on a capable runner. This remains task debt because host privilege changes and gate/test exclusions are outside the focused #439 repair; no weaker assertion substitutes for the missing boundary proof.

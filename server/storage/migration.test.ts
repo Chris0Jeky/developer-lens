@@ -1,6 +1,6 @@
 import { createHash, createHmac } from 'node:crypto'
 import { existsSync } from 'node:fs'
-import { mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
+import { link, mkdir, mkdtemp, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { execFile } from 'node:child_process'
 import { promisify } from 'node:util'
@@ -18,6 +18,11 @@ import {
   setupTaskInstallationKey,
   taskInstallationKeyTestSeams,
 } from './taskInstallationKey.js'
+
+vi.mock('node:fs/promises', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs/promises')>()
+  return { ...actual, link: vi.fn(actual.link) }
+})
 
 // Execute actual concurrent imports in a fresh Node process. Delay only the final
 // filesystem publication so both SQLite transactions finish before either wins.
@@ -63,6 +68,7 @@ function migrationOptions(sourcePath: string, targetPath: string, extra: Record<
 }
 
 afterEach(async () => {
+  vi.mocked(link).mockReset()
   await Promise.all(tempDirectories.splice(0).map((directory) => rm(directory, { recursive: true, force: true })))
 })
 
@@ -210,6 +216,44 @@ describe('v1 to SQLite v2 synthetic migration proof', () => {
     expect(second.foreignKeyViolations).toBe(0)
     expect(rowCounts).toEqual([1, 1, 1, 1, 2, 2])
     await expect(readFile(source)).resolves.toEqual(sourceBytes)
+  })
+
+  it.each(['EPERM', 'ENOTSUP', 'EOPNOTSUPP', 'ENOSYS', 'EXDEV'])(
+    'reports %s publication refusal without exposing filesystem error content', async (code) => {
+      const { directory, source, target, sourceBytes } = await fixturePaths()
+      const refusal = Object.assign(new Error(`Invented sensitive link failure: ${source} -> ${target}`), {
+        code, path: source, dest: target, syscall: 'link', cause: new Error('invented private cause'),
+      })
+      vi.mocked(link).mockRejectedValueOnce(refusal)
+      const failure = await importV1Json(migrationOptions(source, target)).catch((error: unknown) => error)
+      expect(failure).toBeInstanceOf(Error)
+      expect(failure).toMatchObject({ name: 'StoragePublicationError', message: 'STORAGE_PUBLISH_UNAVAILABLE' })
+      expect(failure).not.toHaveProperty('cause')
+      expect(JSON.stringify(failure)).not.toMatch(/Invented|private|path|dest|syscall/)
+
+      vi.mocked(link).mockRejectedValueOnce(refusal)
+      await expect(selectStorageReader(migrationOptions(source, target, { enabled: true }))).resolves.toEqual({
+        reader: 'legacy-json', code: 'storage-publish-unavailable',
+      })
+      await expect(readFile(source)).resolves.toEqual(sourceBytes)
+      expect(existsSync(target)).toBe(false)
+      expect(await readdir(directory)).toEqual(['invented-v1.json'])
+
+      // A retry on a working filesystem still publishes a complete, key-bound store.
+      await expect(selectStorageReader(migrationOptions(source, target, { enabled: true })))
+        .resolves.toMatchObject({ reader: 'sqlite-v2' })
+      expect(databaseDigest(target)).toBeTruthy()
+    },
+  )
+
+  it('keeps unrelated link I/O failures generic and removes their staged database', async () => {
+    const { directory, source, target, sourceBytes } = await fixturePaths()
+    vi.mocked(link).mockRejectedValueOnce(Object.assign(new Error(`Invented private I/O error: ${target}`), { code: 'EIO' }))
+    await expect(selectStorageReader(migrationOptions(source, target, { enabled: true }))).resolves.toEqual({
+      reader: 'legacy-json', code: 'storage-import-failed',
+    })
+    await expect(readFile(source)).resolves.toEqual(sourceBytes)
+    expect(await readdir(directory)).toEqual(['invented-v1.json'])
   })
 
   it('accepts only one installation key across concurrent first imports and preserves its store', async () => {
