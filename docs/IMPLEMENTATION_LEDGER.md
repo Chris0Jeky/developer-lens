@@ -6022,3 +6022,14 @@ The owner's 2026-10-24 estate wave assigned one development session to this repo
 
 No protected data, real input, release, tag, package, external model, telemetry or credential path
 was touched.
+
+## 2026-10-25 - local export cleanup data-loss repair (uncommitted)
+
+- Base: `ea55dea`, branch `sol/ex-developer-lens-1`; no repository commit, push, PR or merge is performed under this task's no-Git-write constraint.
+- Reproduced: a post-write privacy failure recursively deleted unrelated files or populated folders saved during an export. `writeExportSet` now removes only its owned artifacts and attempts empty-directory removal; unrelated entries survive, while an already absent directory remains successful cleanup. Both artifact and profile exporters share this sink.
+- Pinned proof: `npm ci --prefer-offline` completed; all 345 installed package versions match the lockfile. With original cleanup restored, `npm test -- scripts/exportArtifacts.cleanup.test.ts` failed both preservation cases (five other tests passed). Restoring the fix passed all 32 tests across `scripts/exportArtifacts.cleanup.test.ts`, `scripts/exportArtifacts.test.ts` and `scripts/exportProfile.test.ts`.
+- Full gate: `VITEST_MAX_WORKERS=1` with `npm run check` passed lint, context and all four contract drift checks, then reported 2,434 passes, 21 skips and two failures. The unmodified acceleration file-symlink test fails at native symlink creation with `EPERM`; the unmodified local-Git retained-identity case exceeded 15 seconds. That collector case passed in isolation; the full-run timeout cause remains unproved. The full gate is **not green**.
+- Builds: `npm run build` and `npm run build:showcase` passed, including local no-secrets/uninstrumented checks and synthetic showcase/export boundary verification. Generated tracked social-card output is restored from its pre-build copy; other build outputs remain ignored.
+- Review: one independent read-only adversarial review, plus verification of the incremental absent-directory handling, found no blocking findings. No hostile directory-replacement guarantee is added; scanner-exception behavior is outside this fix.
+- Docs/state: README describes the corrected cleanup boundary; FR-115 records bootstrap and qualification friction under #222. `HUMAN_TODO.md` and owner gates remain unchanged; this is local patch evidence, not landed-main or publication evidence.
+- Resume: review the uncommitted focused diff. Landing requires a green permitted proving environment and authorization beyond the current no-Git-write constraint. Storage hard-link refusal diagnostics (#439) remain a separate bounded opportunity.

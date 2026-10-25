@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -10,6 +10,7 @@ import {
   runExportArtifactsCli,
 } from './exportArtifacts.js'
 import { createPublicShowcaseDashboard } from './exportDemo.js'
+import { scanDirectoryForForbiddenPatterns } from './exportPrivacyGuards.js'
 
 const syntheticDashboard = (range: RangeKey): Promise<DashboardData> =>
   Promise.resolve(createPublicShowcaseDashboard(range))
@@ -63,6 +64,37 @@ describe('headless export post-write cleanup', () => {
     )
     expect(readdirSync(output)).toEqual([])
   })
+
+  it('does not report incomplete cleanup when the output was already removed', async () => {
+    await expect(exportArtifacts({
+      ...exportOptions(output),
+      postWriteScanner: async (directory) => {
+        await rm(directory, { force: true, recursive: true })
+        return postWriteViolation()
+      },
+    })).rejects.toThrow(/^privacy scan failed after write: fixture post-write violation$/)
+    expect(() => readdirSync(output)).toThrow()
+  })
+
+  for (const entry of ['file', 'directory'] as const) {
+    it(`preserves an unrelated ${entry} created during a failed export`, async () => {
+      const unowned = join(output, entry === 'file' ? 'operator-note.md' : 'operator-drafts')
+      const note = entry === 'file' ? unowned : join(unowned, 'note.md')
+      await expect(exportArtifacts({
+        ...exportOptions(output),
+        postWriteScanner: async (directory, patterns) => {
+          // Simulate the operator saving work while export and verification are in flight.
+          if (entry === 'directory') mkdirSync(unowned)
+          writeFileSync(note, 'invented operator work to preserve', 'utf8')
+          writeFileSync(join(directory, 'developer-lens-6m-overview.svg'), 'ghp_inventedExportCleanupCanary', 'utf8')
+          return scanDirectoryForForbiddenPatterns(directory, patterns)
+        },
+      })).rejects.toThrow(/^privacy scan failed after write: GitHub token prefix found in /)
+
+      expect(readFileSync(note, 'utf8')).toBe('invented operator work to preserve')
+      expect(readdirSync(output)).toEqual([entry === 'file' ? 'operator-note.md' : 'operator-drafts'])
+    })
+  }
 
   it('attempts every cleanup removal and keeps the privacy failure primary', async () => {
     mkdirSync(output)

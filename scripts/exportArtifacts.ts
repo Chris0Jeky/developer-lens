@@ -1,4 +1,4 @@
-import { readFile, mkdir, readdir, rm, writeFile } from 'node:fs/promises'
+import { readFile, mkdir, readdir, rm, rmdir, writeFile } from 'node:fs/promises'
 import type { Dirent } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -513,9 +513,11 @@ export async function writeExportSet(
     let cleanupFailures = cleanup.failed
     if (!plan.existed) {
       try {
-        await rm(outputDirectory, { force: true, recursive: true })
-      } catch {
-        cleanupFailures += 1
+        // The operator may have saved unrelated work here since the export began.
+        await rmdir(outputDirectory)
+      } catch (error) {
+        const code = (error as NodeJS.ErrnoException).code
+        if (code !== 'ENOTEMPTY' && code !== 'ENOENT') cleanupFailures += 1
       }
     }
     throw new ArtifactExportError(

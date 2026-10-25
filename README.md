@@ -159,7 +159,7 @@ npm run export:profile -- --source local --acknowledge-redaction --range 12m
 
 Aliases reduce identification risk. They are not an anonymity guarantee. Aggregate numbers can still describe your activity.
 
-Files are built in memory, scanned before writing, scanned again after writing, and removed if a privacy guard fails.
+Files are built in memory, scanned before writing, scanned again after writing, and removed if a privacy guard fails. Cleanup preserves unrelated files or folders added to the output directory during the export.
 
 ## Tech stack
 
