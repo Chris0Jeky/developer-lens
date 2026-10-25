@@ -112,9 +112,11 @@ authority_and_boundary:
 
 exact_resume_point: >-
   Refresh live Git/GitHub first. Run one suite/build at a time on this
-  host. On Windows without symlink privilege,
-  accelerationBundleHardening 'refuses file-symlink targets' fails with EPERM on main as well; it is a
-  host limitation, not a regression. Stored Phase E remains unwired, and #202's remainder still governs
+  host. The 2026-10-25 uncommitted #222 qualification patch on sol/ex-developer-lens-3
+  makes accelerationBundleHardening report Windows file-symlink fixture EPERM as an explicit skip;
+  full check passed (2441 tests passed, 22 skipped). Native file-symlink protection still needs
+  a permitted runner. This is worktree evidence, not a landed-main or hosted-CI claim; the ledger
+  records the exact base and regression proof. Stored Phase E remains unwired, and #202's remainder still governs
   activation. Real migration or collection requires a bounded, reviewed activation task card within the
   approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5 boundaries. Do NOT attempt to refresh

@@ -2926,3 +2926,14 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded Windows proof/bootstrap maintenance.
 - **promotion:** Keep one installer active and record concrete completion before treating preflight or test commands as evidence.
 - **qualification:** The pinned one-worker full suite passed 2,434 tests with 21 skips and two failures: the already-recorded file-symlink `EPERM`, and the untouched local-Git retained-identity case exceeding 15 seconds. The latter passed in isolation (one pass, five filtered skips); its full-run timeout cause remains unproved. [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains host-proof maintenance. Neither result authorizes changing privileges, weakening checks, or calling the full gate green.
+
+### FR-116 - file-symlink fixture privilege is a qualification limit
+
+- **first-seen:** 2026-10-25
+- **status:** `promoted`
+- **symptom:** The focused acceleration-bundle suite reproduced Windows `EPERM` during file-symlink fixture creation, before the materializer ran: 19 passed and one failed. Earlier independent full-run occurrences are recorded above and in the implementation ledger.
+- **impact:** An unavailable native primitive prevented unrelated proving, while establishing no file-symlink protection result.
+- **workaround:** Classify only Windows `EPERM` from the file-symlink creation call as an explicit Vitest skip. Keep all other errors fatal and continue real junction/hard-link tests. A permitted runner still executes the unchanged CLI assertions; there is no blanket Windows skip or privilege change.
+- **occurrences:** Reproduced again in this worktree after a successful lockfile installation. The initial absent global skill-path lookup repeated FR-058; the repository-local skill supplied the instructions.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains the broader maintenance backlog and qualification on a symlink-capable Windows runner.
+- **promotion:** The test fixture now encodes the narrow availability rule, with success, Windows refusal, non-Windows refusal and unexpected-error checks. A skip remains unverified evidence, never native acceptance.

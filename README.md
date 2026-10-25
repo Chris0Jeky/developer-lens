@@ -232,6 +232,10 @@ npm run build:showcase
 
 `check` runs toolchain preflight, Oxlint, context verification, generated-contract drift checks, the Vitest suite, and the production build. `build:showcase` exports synthetic ranges, builds for GitHub Pages (`--base=/developer-lens/`), and runs the public-boundary scan.
 
+On Windows, the acceleration-bundle file-symlink test reports a skip if fixture creation is refused
+with `EPERM`. That result leaves native file-symlink protection unverified; it still needs a runner
+that permits file symlinks. Junction and hard-link source-protection tests continue to run.
+
 The required pull-request check is **Prove the pull request** (`.github/workflows/pr-gate.yml`). Pushes to `main` run **Deploy public showcase** (`.github/workflows/pages.yml`), which repeats the full local gate, the showcase build, and `node observatory/check.mjs` before upload.
 
 Three more workflows are real and path-filtered, so they do not run on every pull request:
