@@ -2914,3 +2914,15 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** One maintenance publication attempt with repeated Git transport failures; no transport root cause inferred.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded maintenance-tooling recovery and evidence integrity.
 - **promotion:** Keep exact tree equality and separate qualification/publication receipts mandatory for this workaround; do not treat API availability as permission to alter reviewed source or bypass review.
+
+### FR-115 - fresh-worktree dependency bootstrap encountered nonempty directories
+
+- **first-seen:** 2026-10-25
+- **status:** `workaround-documented`
+- **symptom:** The fresh-worktree test preflight found missing local tools. Lockfile installation then failed with `ENOTEMPTY` during dependency cleanup; a bounded retry failed on another dependency. Automatic approval review refused recursive dependency-directory deletion.
+- **impact:** Those commands established no test result. No host or lockfile change is authorized by the bootstrap failure.
+- **workaround:** Confirm no installer remains active, then repair in place with `npm install --no-save --package-lock=false`. That restored the tools without changing tracked dependency files, but an installed-package comparison found transitive versions differing from the lockfile. Stop the preliminary gate's owned test tree and run `npm ci --prefer-offline`: it completed, and all 345 installed package versions match the lockfile. The interrupted gate is not qualification evidence. Repeat failing-first and final checks on the pinned installation.
+- **occurrences:** One bootstrap investigation. The initial skill lookup also repeated FR-058's absent global path; the repository-local skill supplied the instructions. Windows positional wildcard searches were corrected to directory-scoped `rg -g` searches.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded Windows proof/bootstrap maintenance.
+- **promotion:** Keep one installer active and record concrete completion before treating preflight or test commands as evidence.
+- **qualification:** The pinned one-worker full suite passed 2,434 tests with 21 skips and two failures: the already-recorded file-symlink `EPERM`, and the untouched local-Git retained-identity case exceeding 15 seconds. The latter passed in isolation (one pass, five filtered skips); its full-run timeout cause remains unproved. [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains host-proof maintenance. Neither result authorizes changing privileges, weakening checks, or calling the full gate green.
