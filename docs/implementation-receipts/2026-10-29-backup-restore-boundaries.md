@@ -1,19 +1,17 @@
 # Backup identity and restore cleanup — 2026-10-29
 
-## Scope and behavior
+## Scope
 
-This bounded maintenance slice addresses two pre-existing failure cases under issues #142 and #168. Both programme issues retain their other acceptance criteria.
+Two bounded follow-ups for #142 and #168. Reject an ambiguous all-zero backup file identity before catalogue mutation, while retaining valid identities where just the device or inode is zero. Keep the restore copy's temporary descriptor owned until the backup source has been closed successfully.
 
-An unavailable `(dev, ino) = (0, 0)` identity is refused before it can become the immutable identity of a migration backup or its manifest. A legitimate pair with only one zero component remains accepted and exactly replayable. Refusal leaves the attempt row unchanged, so a subsequent usable identity can still bind.
+The source descriptor is relinquished before its single close attempt. An error after a close may already have released the descriptor; retrying it could close an unrelated descriptor if the number were reused. The temporary descriptor remains owned and is cleaned up on that failure path.
 
-Restore now finishes closing the verified source descriptor while the temporary copy still has a local cleanup owner. If closing the source throws, the existing failure cleanup can close the owned destination descriptor and remove its provisional file. The selected store is not published, the immutable backup, manifest and selection marker remain unchanged, and a fresh verified retry retains the original selection and grace time.
+## Evidence
 
-No schema, artifact format, capability, activation path, filesystem privilege or hostile-writer guarantee changes. Reverting this code/test slice is the rollback; no data migration is involved.
+- The initial tests-only commit `fd5c1adba55161fc2d43b56e071a775dd8ccf322` was exercised by PR gate run [40803530116](https://github.com/Chris0Jeky/developer-lens/actions/runs/40803530116). It produced the three intended regression failures: two accepted all-zero identities and the leaked temporary descriptor. The other 2,463 tests passed, with four platform skips.
+- The regression covers both SQLite and manifest identities, accepts each supported single-zero pair, checks immutable catalogue binding, and exercises a real filesystem source-close failure after the copy handoff.
+- Independent review of the first implementation found that its cleanup could retry an ambiguous source close. The revision relinquishes source ownership before closing and asserts exactly one close attempt. A supplementary actual-source Node 24 probe failed with two close attempts before the correction and passed with one afterward; it also checked the temporary descriptor was closed, the temporary file removed, and backup bytes unchanged.
+- The full restore regression additionally checks backup, manifest and selection-proof bytes remain unchanged and a fresh verified retry restores the same selection.
+- Local `git diff --check` and syntax checks pass. The executor cannot install dependencies because registry access is denied. Full Vitest, SQLite restore/retry, lint, build and showcase verification therefore belong to the exact final GitHub Actions head; the PR records those results when available.
 
-## Discriminating proof
-
-The tests-only PR #447 head `fd5c1adba55161fc2d43b56e071a775dd8ccf322` ran as integration `f7d69fd` against main `bae3bdd` in [hosted run 40803530116](https://github.com/Chris0Jeky/developer-lens/actions/runs/40803530116), job `123216967304`. It failed exactly the three intended assertions: both all-zero identity admissions and the restore temporary-descriptor closure. The other 2,463 tests passed; four were skipped. Production fixes were added after that observed failure.
-
-The tests use invented fixtures and real SQLite/filesystem behavior. The restore fault injector closes the actual source descriptor and then throws once at the copy handoff. It checks descriptor closure, provisional-file removal, no selected-store publication, immutable-byte preservation and an exact-time retry. Its own failure cleanup keeps the counterfactual run self-contained.
-
-`git diff --check` and Node 24 syntax checks passed locally. This executor cannot install the pinned npm graph because its registry connection is refused; no local Vitest/typecheck pass is claimed. Final independent review and the fresh exact-head required gate are recorded on [PR #447](https://github.com/Chris0Jeky/developer-lens/pull/447). Native Windows and hostile concurrent-writer qualifications remain separate.
+This slice changes no persistent schema, retention policy, activation route or private inputs. The umbrella issues remain open for their other native-host and durable-proof acceptance items.

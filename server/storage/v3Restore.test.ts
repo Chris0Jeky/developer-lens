@@ -19,6 +19,7 @@ import {
 const sourceCloseFailure = vi.hoisted(() => ({
   armed: false,
   failed: false,
+  sourceCloseAttempts: 0,
   sourcePath: undefined as string | undefined,
   tempPath: undefined as string | undefined,
   sourceDescriptor: undefined as number | undefined,
@@ -35,6 +36,9 @@ vi.mock('node:fs', async (importOriginal) => {
       return descriptor
     },
     closeSync: (descriptor: number) => {
+      if (sourceCloseFailure.armed && descriptor === sourceCloseFailure.sourceDescriptor) {
+        sourceCloseFailure.sourceCloseAttempts += 1
+      }
       fs.closeSync(descriptor)
       if (sourceCloseFailure.armed && !sourceCloseFailure.failed
         && descriptor === sourceCloseFailure.sourceDescriptor) {
@@ -460,6 +464,7 @@ describe('LIFE-03 restore snapshot normalization', () => {
       )
       sourceCloseFailure.armed = false
       expect(sourceCloseFailure.failed).toBe(true)
+      expect(sourceCloseFailure.sourceCloseAttempts).toBe(1)
       expect(result).toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
       const descriptor = sourceCloseFailure.tempDescriptor
       expect(descriptor).toBeDefined()
@@ -487,6 +492,7 @@ describe('LIFE-03 restore snapshot normalization', () => {
       sourceCloseFailure.sourceDescriptor = undefined
       sourceCloseFailure.tempDescriptor = undefined
       sourceCloseFailure.failed = false
+      sourceCloseFailure.sourceCloseAttempts = 0
       fx.close()
     }
   })
