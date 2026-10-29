@@ -17,6 +17,7 @@ C2 expiry legitimately removes exact dates. The internal explanation projection 
 - Internal contract tests retain coverage semantic checks even after temporal expiry and reject ambiguous timestamp/week combinations. Client-side calendar validation includes years below 100 without JavaScript's Date.UTC year remapping.
 - Fresh independent review caught one remaining direct-coverage summary path still passing a null retained date to the date formatter. It now uses the same unknown-date renderer as the expanded coverage view; the existing expiry regression explicitly asserts the collapsed summary before expansion.
 - The import-boundary test admits only the resolver's read-only schema-identity constants import. No schema installer or writer is invoked by the resolver.
+- The first implementation gate, [40804964000](https://github.com/Chris0Jeky/developer-lens/actions/runs/40804964000), passed all thirteen native regressions and the shared contract tests (2,481 tests passed overall, four skipped), but one Drawer assertion used an exact text-node query for a week rendered in a compound lineage row. The regression now checks the exact lineage row content and each of the five unknown-date facts. The production renderer is unchanged by this test-query correction.
 - Local diff checks pass. Dependency installation is unavailable in the executor; full compilation, legacy/native Vitest, public showcase and contract drift checks run on the exact final GitHub Actions head and are recorded in the PR.
 
 ## Boundaries

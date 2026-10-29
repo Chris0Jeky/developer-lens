@@ -1431,6 +1431,52 @@ describe('LIFE-03 timestamped selected-store backup', { timeout: 30_000 }, () =>
     } finally { fx.cleanup() }
   })
 
+  it.each(['sqlite', 'manifest'] as const)('refuses unavailable all-zero %s identity without binding the attempt', async (file) => {
+    const fx = await fixture()
+    try {
+      const artifactId = `art-${'c'.repeat(64)}`
+      const finalLocator = 'migration-backup-20260806T124005Z.sqlite'
+      beginStorageV3MigrationBackupArtifact({
+        db: fx.db, artifactId, finalLocator, scopeIds: [SCOPE_A, SCOPE_B], installationKey: fx.key,
+      })
+      const context = { db: fx.db, artifactId, finalLocator, installationKey: fx.key }
+      const before = readStorageV3MigrationBackupAttempt(context)
+      expect(() => bindStorageV3MigrationBackupAttemptIdentity({ ...context, file, dev: 0n, ino: 0n }))
+        .toThrow(StorageV3ArtifactError)
+      expect(readStorageV3MigrationBackupAttempt(context)).toEqual(before)
+
+      const bound = bindStorageV3MigrationBackupAttemptIdentity({ ...context, file, dev: 12n, ino: 34n })
+      expect(bound).toMatchObject(file === 'sqlite'
+        ? { sqliteDev: '12', sqliteIno: '34' }
+        : { manifestDev: '12', manifestIno: '34' })
+    } finally { fx.cleanup() }
+  })
+
+  it.each([
+    ['sqlite', 0n, 34n],
+    ['sqlite', 12n, 0n],
+    ['manifest', 0n, 34n],
+    ['manifest', 12n, 0n],
+  ] as const)('accepts and exactly replays %s identity with dev=%s ino=%s', async (file, dev, ino) => {
+    const fx = await fixture()
+    try {
+      const artifactId = `art-${'c'.repeat(64)}`
+      const finalLocator = 'migration-backup-20260806T124006Z.sqlite'
+      beginStorageV3MigrationBackupArtifact({
+        db: fx.db, artifactId, finalLocator, scopeIds: [SCOPE_A, SCOPE_B], installationKey: fx.key,
+      })
+      const context = { db: fx.db, artifactId, finalLocator, installationKey: fx.key }
+      const bound = bindStorageV3MigrationBackupAttemptIdentity({ ...context, file, dev, ino })
+      expect(bound).toMatchObject(file === 'sqlite'
+        ? { sqliteDev: String(dev), sqliteIno: String(ino) }
+        : { manifestDev: String(dev), manifestIno: String(ino) })
+      expect(bindStorageV3MigrationBackupAttemptIdentity({ ...context, file, dev, ino })).toEqual(bound)
+      expect(() => bindStorageV3MigrationBackupAttemptIdentity({ ...context, file, dev: 0n, ino: 0n }))
+        .toThrow(StorageV3ArtifactError)
+      expect(readStorageV3MigrationBackupAttempt(context)).toEqual(bound)
+    } finally { fx.cleanup() }
+  })
+
   it('binds the manifest identity and rejects wrong or forged installation handles before mutation', async () => {
     const left = await fixture('attempt-left')
     const right = await fixture('attempt-right')
