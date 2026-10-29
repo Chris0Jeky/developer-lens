@@ -11,7 +11,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createStorageV3ArtifactRoot,
   openStorageV3ArtifactRoot,
@@ -33,7 +33,7 @@ import {
   readStorageV3MigrationSelection,
   recordStorageV3MigrationSelectionWithInitialization,
   storageV3MigrationRootBinding,
-  v3SelectionReceiptTestSeams,
+  issueStorageV3MigrationSuccessReport,
   type StorageV3MigrationSelection,
 } from './v3SelectionReceipt.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
@@ -43,6 +43,14 @@ import {
   type TaskInstallationKeyHandle,
 } from './taskInstallationKey.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
+
+function issueSuccessReportAt(input: Parameters<typeof issueStorageV3MigrationSuccessReport>[0], at: string) {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  try {
+    vi.setSystemTime(at)
+    return issueStorageV3MigrationSuccessReport(input)
+  } finally { vi.useRealTimers() }
+}
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -113,7 +121,7 @@ async function fixture(claimCount = 0): Promise<Fixture> {
     const selection = withStorageV3WriterLease(rootHandle, (lease) => {
       const recorded = recordStorageV3MigrationSelectionWithInitialization(db, {
         ...reportInput,
-        successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        successReportProof: issueSuccessReportAt(
           reportInput,
           SUCCESS_AT,
         ),
@@ -605,7 +613,7 @@ describe('LIFE-03 external revocation replay', { timeout: 120_000 }, () => {
       expect(() => withStorageV3WriterLease(openStorageV3ArtifactRoot(fx.root), (lease) => {
         recordStorageV3MigrationSelectionWithInitialization(second, {
           ...reportInput,
-          successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
+          successReportProof: issueSuccessReportAt(
             reportInput,
             '2026-08-06T14:00:00.000Z',
           ),

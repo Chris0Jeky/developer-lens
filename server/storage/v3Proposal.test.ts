@@ -442,6 +442,29 @@ describe('storage-v3 B1a proposal', () => {
         const dynamicLiteral = ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword &&
           node.arguments.length >= 1 && ts.isStringLiteral(node.arguments[0]) ? node.arguments[0].text : undefined
         const target = moduleSpecifier ?? requireLiteral ?? dynamicLiteral
+        const sourcePath = relative(root, path).replaceAll('\\', '/')
+        if (target && /(?:^|[\\/])v3SelectionReceiptState(?:\.[cm]?js|\.ts)?$/.test(target)
+          && !['server/storage/v3SelectionReceipt.ts', 'server/storage/v3SelectionProof.ts'].includes(sourcePath)) {
+          offenders.push(`${sourcePath} -> ${target}`)
+        }
+        if (target && /(?:^|[\\/])v3SelectionReceipt(?:\.[cm]?js|\.ts)?$/.test(target)
+          && sourcePath === 'server/storage/v3SelectionProof.ts') {
+          offenders.push(`${sourcePath} -> ${target} creates a receipt/proof authority cycle`)
+        }
+        if (ts.isImportDeclaration(node) && node.importClause?.namedBindings
+          && ts.isNamedImports(node.importClause.namedBindings)) {
+          const authorityOwners: Record<string, string> = {
+            replayStorageV3MigrationSuccessReport: 'server/storage/v3Restore.ts',
+            issueStorageV3MigrationSuccessReport: 'server/storage/v3ReaderSelection.ts',
+            consumeStorageV3MigrationSelectionReplayAuthority: 'server/storage/v3SelectionReceipt.ts',
+            withStorageV3MigrationSelectionRestoreAuthority: 'server/storage/v3Restore.ts',
+          }
+          for (const imported of node.importClause.namedBindings.elements) {
+            const name = imported.propertyName?.text ?? imported.name.text
+            const owner = authorityOwners[name]
+            if (owner !== undefined && sourcePath !== owner) offenders.push(`${sourcePath} imports ${name}`)
+          }
+        }
         if (target && /(?:^|[\\/])v3Proposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           const edge = `${sourcePath} -> ${target.split('/').at(-1)?.replace(/\.(?:[cm]?js|ts)$/, '') ?? target}`
@@ -471,6 +494,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3ArtifactCatalogue.ts',
             'server/storage/v3Backup.ts',
             'server/storage/v3SelectionReceipt.ts',
+            'server/storage/v3SelectionReceiptState.ts',
             'server/storage/v3Restore.ts',
             'server/storage/v3MigrationCleanup.ts',
 
@@ -524,6 +548,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3Backup.ts',
             'server/storage/v3ReaderSelection.ts',
             'server/storage/v3SelectionProof.ts',
+            'server/storage/v3SelectionReceipt.ts', // Type-only replay root parameter.
             'server/storage/v3Restore.ts',
             'server/storage/v3RevocationReplay.ts',
             'server/storage/v3MigrationCleanup.ts',

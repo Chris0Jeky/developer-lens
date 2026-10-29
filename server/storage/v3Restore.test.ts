@@ -16,6 +16,14 @@ import {
 } from './v3Restore.js'
 
 // Keep actual filesystem effects; inject one source-close failure at the copy handoff only.
+function issueSuccessReportAt(input: Parameters<typeof issueStorageV3MigrationSuccessReport>[0], at: string) {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  try {
+    vi.setSystemTime(at)
+    return issueStorageV3MigrationSuccessReport(input)
+  } finally { vi.useRealTimers() }
+}
+
 const sourceCloseFailure = vi.hoisted(() => ({
   armed: false,
   failed: false,
@@ -58,7 +66,7 @@ import {
 import { v3BackupTestSeams } from './v3Backup.js'
 import {
   recordStorageV3MigrationSelectionWithInitialization,
-  replayStorageV3MigrationSuccessReport,
+  issueStorageV3MigrationSuccessReport,
   storageV3MigrationRootBinding,
   type StorageV3MigrationSelection,
 } from './v3SelectionReceipt.js'
@@ -151,7 +159,7 @@ async function publicationFixture(options: Readonly<{
         taskId: installationKey.taskId,
         taskFingerprint: installationKey.fingerprint,
         rootBinding: storageV3MigrationRootBinding(root),
-        successReportProof: replayStorageV3MigrationSuccessReport({
+        successReportProof: issueSuccessReportAt({
           legacySourceId: `legacy-${'5'.repeat(64)}`,
           selectedArtifactId,
           backupArtifactId: backup.artifactId,
@@ -181,8 +189,8 @@ async function publicationFixture(options: Readonly<{
     })
     if (options.interruptSelectionProof === true) {
       try {
-        v3SelectionProofTestSeams.publishWithDirectorySynchronizer(
-          rootHandle, selection, installationKey, () => {}, 'finalLink',
+        v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+          db, rootHandle, installationKey, () => {}, 'finalLink',
         )
         throw new Error('expected invented selection-proof interruption')
       } catch (error) {
@@ -474,6 +482,8 @@ describe('LIFE-03 restore snapshot normalization', () => {
       expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
       expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
       expect(readFileSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final))).toEqual(fx.selectionProofBytes)
+      expect(v3RestorePublicationTestSeams.restoreWithSynchronizer(fx.input, () => {}))
+        .toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
 
       const retried = v3RestorePublicationTestSeams.restoreWithSynchronizer(freshRestoreInput(fx), () => {})
       expect(retried.reader).toBe('sqlite-v3')

@@ -2,7 +2,7 @@ import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, 
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createStorageV3ArtifactRoot,
   openStorageV3ArtifactRoot,
@@ -42,6 +42,14 @@ import {
   STORAGE_V3_LEGACY_SOURCE_LOCATOR,
 } from './v3MigrationCleanup.js'
 
+function atReportTime<T>(at: string, run: () => T): T {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  try {
+    vi.setSystemTime(at)
+    return run()
+  } finally { vi.useRealTimers() }
+}
+
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
 const BACKUP_ARTIFACT_ID = `art-${'1'.repeat(64)}`
@@ -50,7 +58,7 @@ const BACKUP_AT = '2026-08-06T12:34:56Z'
 const SUCCESS_AT = '2026-08-06T12:35:00.000Z'
 
 const selectStorageV3Reader = (input: StorageV3ReaderSelectionInput) =>
-  v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(input, () => {}, SUCCESS_AT)
+  atReportTime(SUCCESS_AT, () => v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(input, () => {}))
 
 type Fixture = Readonly<{
   workspaceRoot: string
@@ -229,16 +237,12 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
     const fx = await fixture()
     try {
       let interrupted = false
-      const first = v3ReaderSelectionTestSeams.selectWithRevocationDirectorySynchronizer(
-        fx.input,
-        (_root, current) => {
+      const first = atReportTime(SUCCESS_AT, () => v3ReaderSelectionTestSeams.selectWithRevocationDirectorySynchronizer(fx.input, (_root, current) => {
           if (current === stage && !interrupted) {
             interrupted = true
             throw new Error(`invented ${stage} initialization crash`)
           }
-        },
-        SUCCESS_AT,
-      )
+        }))
       expect(first).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
       const rolledBack = openSelectedStorageV3Store(fx.root)
       try { expect(readStorageV3MigrationSelection(rolledBack)).toBeUndefined() } finally { rolledBack.close() }
@@ -248,11 +252,7 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
 
       const retrySuccessAt = '2026-08-06T12:36:00.000Z'
       const resumed = expectSelected(
-        v3ReaderSelectionTestSeams.selectWithRevocationDirectorySynchronizer(
-          fx.input,
-          () => {},
-          retrySuccessAt,
-        ),
+        atReportTime(retrySuccessAt, () => v3ReaderSelectionTestSeams.selectWithRevocationDirectorySynchronizer(fx.input, () => {})),
       )
       expect(resumed.selection.successfulReportAt).toBe(retrySuccessAt)
       resumed.db.close()
@@ -270,16 +270,12 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       const fx = await fixture()
       try {
         let occurrences = 0
-        const first = v3ReaderSelectionTestSeams.selectWithRevocationDirectorySynchronizer(
-          fx.input,
-          (_root, current) => {
+        const first = atReportTime(SUCCESS_AT, () => v3ReaderSelectionTestSeams.selectWithRevocationDirectorySynchronizer(fx.input, (_root, current) => {
             if (current === stage) {
               occurrences += 1
               if (occurrences === 2) throw new Error(`invented committed ${stage} crash`)
             }
-          },
-          SUCCESS_AT,
-        )
+          }))
         expect(first).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
         const committed = openSelectedStorageV3Store(fx.root)
         try {
@@ -349,13 +345,9 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
   it('protects a committed receipt when proof publication fails and resumes exactly', async () => {
     const fx = await fixture()
     try {
-      const refused = v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(
-        fx.input,
-        (_root, stage) => {
+      const refused = atReportTime(SUCCESS_AT, () => v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(fx.input, (_root, stage) => {
           if (stage === 'tempDurable') throw new Error('invented proof sync failure')
-        },
-        SUCCESS_AT,
-      )
+        }))
       expect(refused).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
       const selected = openSelectedStorageV3Store(fx.root)
       expect(readStorageV3MigrationSelection(selected)).toMatchObject({ successfulReportAt: SUCCESS_AT })
@@ -372,9 +364,9 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
       const proofPath = join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final)
       const foreign = Buffer.from('invented foreign selection proof\n')
       writeFileSync(proofPath, foreign, { flag: 'wx', mode: 0o600 })
-      expect(v3ReaderSelectionTestSeams.selectWithProofPreflight(fx.input, () => {
+      expect(atReportTime(SUCCESS_AT, () => v3ReaderSelectionTestSeams.selectWithProofPreflight(fx.input, () => {
         throw new Error('invented proof preflight failure')
-      }, SUCCESS_AT)).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
+      }))).toEqual({ reader: 'unavailable', code: 'v3-selection-selected-refused' })
       const beforeReceipt = openSelectedStorageV3Store(fx.root)
       expect(readStorageV3MigrationSelection(beforeReceipt)).toBeUndefined()
       beforeReceipt.close()
@@ -439,10 +431,10 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
     try {
       let calls = 0
       let leaseVisible = false
-      const selected = expectSelected(v3ReaderSelectionTestSeams.selectWithProofPreflight(fx.input, (root) => {
+      const selected = expectSelected(atReportTime(SUCCESS_AT, () => v3ReaderSelectionTestSeams.selectWithProofPreflight(fx.input, (root) => {
         calls += 1
         leaseVisible = existsSync(storageV3WriterLeasePath(root))
-      }, SUCCESS_AT))
+      })))
       expect(calls).toBe(1)
       expect(leaseVisible).toBe(true)
       expect(readStorageV3MigrationSelection(selected.db)).toMatchObject({
@@ -455,9 +447,9 @@ describe('LIFE-03 atomic v3 reader selection', { timeout: 30_000 }, () => {
   it('rolls back an interrupted receipt commit, closes the provisional handle, and resumes', async () => {
     const fx = await fixture()
     try {
-      const interrupted = v3ReaderSelectionTestSeams.selectWithBeforeReceiptCommit(fx.input, () => {
+      const interrupted = atReportTime(SUCCESS_AT, () => v3ReaderSelectionTestSeams.selectWithBeforeReceiptCommit(fx.input, () => {
         throw new Error('invented pre-commit interruption')
-      }, SUCCESS_AT)
+      }))
       expect(interrupted).toEqual({ reader: 'legacy-json', code: 'v3-selection-receipt-refused' })
       expect(existsSync(storageV3WriterLeasePath(openStorageV3ArtifactRoot(fx.root)))).toBe(false)
 

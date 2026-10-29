@@ -13,7 +13,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   createStorageV3ArtifactRoot,
   openStorageV3ArtifactRoot,
@@ -43,6 +43,14 @@ import { STORAGE_V3_SELECTION_PROOF_NAMES } from './v3SelectionProof.js'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 import { taskInstallationKeyTestSeams, type TaskInstallationKeyHandle } from './taskInstallationKey.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
+
+function atReportTime<T>(at: string, run: () => T): T {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  try {
+    vi.setSystemTime(at)
+    return run()
+  } finally { vi.useRealTimers() }
+}
 
 const SCOPE_A = `scope-${'a'.repeat(64)}`
 const SCOPE_B = `scope-${'b'.repeat(64)}`
@@ -130,11 +138,7 @@ async function fixture(options: Readonly<{
       installationKey: key,
     })
     if (options.select !== false) {
-      const selected = v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(
-        selectionInput,
-        () => {},
-        options.successAt ?? SUCCESS_AT,
-      )
+      const selected = atReportTime(options.successAt ?? SUCCESS_AT, () => v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(selectionInput, () => {}))
       if (selected.reader !== 'sqlite-v3') throw new Error(`invented selection refused: ${selected.code}`)
       selected.db.close()
     }
@@ -436,9 +440,7 @@ describe('LIFE-03 seven-day migration cleanup', { timeout: 30_000 }, () => {
   it('selection refuses until the fixed cleanup registry is ready', async () => {
     const fx = await fixture({ register: false, select: false })
     try {
-      expect(v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(
-        fx.selectionInput, () => {}, SUCCESS_AT,
-      )).toEqual({ reader: 'legacy-json', code: 'v3-selection-cleanup-refused' })
+      expect(atReportTime(SUCCESS_AT, () => v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(fx.selectionInput, () => {}))).toEqual({ reader: 'legacy-json', code: 'v3-selection-cleanup-refused' })
       const db = new Database(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))
       try {
         registerStorageV3MigrationCleanup({
@@ -448,9 +450,7 @@ describe('LIFE-03 seven-day migration cleanup', { timeout: 30_000 }, () => {
           installationKey: fx.key,
         })
       } finally { db.close() }
-      const selected = v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(
-        fx.selectionInput, () => {}, SUCCESS_AT,
-      )
+      const selected = atReportTime(SUCCESS_AT, () => v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(fx.selectionInput, () => {}))
       expect(selected.reader).toBe('sqlite-v3')
       if (selected.reader === 'sqlite-v3') selected.db.close()
     } finally { fx.cleanup() }
