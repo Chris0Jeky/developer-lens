@@ -1,8 +1,8 @@
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
+import { closeSync, existsSync, fstatSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, unlinkSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import {
   STORAGE_V3_RESTORE_NORMALIZATION_STAGES,
   StorageV3RestoreError,
@@ -14,6 +14,36 @@ import {
   type StorageV3RestoreFromSelectionInput,
   type StorageV3RestoreSnapshotProof,
 } from './v3Restore.js'
+
+// Keep actual filesystem effects; inject one source-close failure at the copy handoff only.
+const sourceCloseFailure = vi.hoisted(() => ({
+  armed: false,
+  failed: false,
+  sourcePath: undefined as string | undefined,
+  tempPath: undefined as string | undefined,
+  sourceDescriptor: undefined as number | undefined,
+  tempDescriptor: undefined as number | undefined,
+}))
+vi.mock('node:fs', async (importOriginal) => {
+  const fs = await importOriginal<typeof import('node:fs')>()
+  return {
+    ...fs,
+    openSync: (...args: Parameters<typeof fs.openSync>) => {
+      const descriptor = fs.openSync(...args)
+      if (args[0] === sourceCloseFailure.sourcePath) sourceCloseFailure.sourceDescriptor = descriptor
+      if (args[0] === sourceCloseFailure.tempPath) sourceCloseFailure.tempDescriptor = descriptor
+      return descriptor
+    },
+    closeSync: (descriptor: number) => {
+      fs.closeSync(descriptor)
+      if (sourceCloseFailure.armed && !sourceCloseFailure.failed
+        && descriptor === sourceCloseFailure.sourceDescriptor) {
+        sourceCloseFailure.failed = true
+        throw new Error('invented backup source close failure')
+      }
+    },
+  }
+})
 import {
   createStorageV3ArtifactRoot,
   openStorageV3ArtifactRoot,
@@ -415,6 +445,50 @@ describe('LIFE-03 restore snapshot normalization', () => {
       expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
       expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
     } finally { fx.close() }
+  })
+
+  it('closes and removes its owned temp when the copied backup source close fails', async () => {
+    const fx = await publicationFixture()
+    try {
+      const tempPath = join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary)
+      sourceCloseFailure.sourcePath = fx.backupPath
+      sourceCloseFailure.tempPath = tempPath
+      const result = v3RestorePublicationTestSeams.restoreWithSynchronizer(
+        fx.input,
+        () => {},
+        (stage) => { if (stage === 'copy') sourceCloseFailure.armed = true },
+      )
+      sourceCloseFailure.armed = false
+      expect(sourceCloseFailure.failed).toBe(true)
+      expect(result).toEqual({ reader: 'unavailable', code: STORAGE_V3_RESTORE_UNAVAILABLE })
+      const descriptor = sourceCloseFailure.tempDescriptor
+      expect(descriptor).toBeDefined()
+      expect(() => fstatSync(descriptor!)).toThrow(expect.objectContaining({ code: 'EBADF' }))
+      expect(existsSync(tempPath)).toBe(false)
+      expect(existsSync(join(fx.root, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore))).toBe(false)
+      expect(readFileSync(fx.backupPath)).toEqual(fx.backupBytes)
+      expect(readFileSync(fx.manifestPath)).toEqual(fx.manifestBytes)
+      expect(readFileSync(join(fx.root, STORAGE_V3_SELECTION_PROOF_NAMES.final))).toEqual(fx.selectionProofBytes)
+
+      const retried = v3RestorePublicationTestSeams.restoreWithSynchronizer(freshRestoreInput(fx), () => {})
+      expect(retried.reader).toBe('sqlite-v3')
+      if (retried.reader === 'sqlite-v3') {
+        expect(retried.selection).toEqual(fx.selection)
+        retried.db.close()
+      }
+    } finally {
+      sourceCloseFailure.armed = false
+      // The counterfactual implementation leaks this descriptor; keep a red run self-cleaning.
+      if (sourceCloseFailure.tempDescriptor !== undefined) {
+        try { closeSync(sourceCloseFailure.tempDescriptor) } catch { /* already closed by correct cleanup */ }
+      }
+      sourceCloseFailure.sourcePath = undefined
+      sourceCloseFailure.tempPath = undefined
+      sourceCloseFailure.sourceDescriptor = undefined
+      sourceCloseFailure.tempDescriptor = undefined
+      sourceCloseFailure.failed = false
+      fx.close()
+    }
   })
 
   it('finalizes an authenticated proof pair and restores after the selected store is lost', async () => {
