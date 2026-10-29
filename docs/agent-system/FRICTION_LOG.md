@@ -2927,7 +2927,29 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **promotion:** Keep one installer active and record concrete completion before treating preflight or test commands as evidence.
 - **qualification:** The pinned one-worker full suite passed 2,434 tests with 21 skips and two failures: the already-recorded file-symlink `EPERM`, and the untouched local-Git retained-identity case exceeding 15 seconds. The latter passed in isolation (one pass, five filtered skips); its full-run timeout cause remains unproved. [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains host-proof maintenance. Neither result authorizes changing privileges, weakening checks, or calling the full gate green.
 
-### FR-116 - file-symlink fixture privilege is a qualification limit
+### FR-116 - Windows file-symlink privilege prevents a green full local gate
+
+- **first-seen:** 2026-10-24
+- **status:** `open`
+- **symptom:** The acceleration-bundle file-symlink fixture fails with `EPERM` during setup, before materialization runs. The #439 full gate and isolated reproduction both hit the unchanged test.
+- **impact:** `npm run check` cannot finish green on this host and stops before its build stage, even though the changed migration tests pass.
+- **workaround:** Run the production build separately and report the full gate as red; do not skip the test, change host privileges, or call this a successful gate.
+- **occurrences:** The 2026-10-24 ledger host note, the 2026-10-25 #439 full/isolated proofs, and PR #444 focused/full requalification. The latter passed 2,441 tests with 21 skips; file-symlink setup remained the sole test failure.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded Windows proving helpers and a runner-capability disposition.
+- **promotion:** Keep actual file-symlink proof on a capable runner. This remains task debt because host privilege changes and gate/test exclusions are outside the focused #439 repair; no weaker assertion substitutes for the missing boundary proof.
+
+### FR-117 - merge index prevents context qualification under a no-Git-write task
+
+- **first-seen:** 2026-10-25
+- **status:** `open`
+- **symptom:** PR #444's two documentation conflicts are resolved in the working files, but the index still has stages 1/2/3. `npm run check` stops at context verification with `unable to enumerate eligible Git-tracked metadata`.
+- **impact:** The index privacy guard cannot qualify an unresolved index; file-content resolution alone does not establish a green aggregate gate.
+- **workaround:** Preserve the no-Git-write boundary and run the remaining declared checks individually. Do not weaken the verifier or treat their results as a green aggregate gate. A coordinator with Git-write authority must stage the resolved files and re-run `npm run check` on a file-symlink-capable runner.
+- **occurrences:** One PR #444 merge-repair hop. Initial continuation-skill lookup also repeated FR-058; the listed repository-local skill supplied the binding instructions.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains bounded proving-environment maintenance; PR #444 owns this merge-resolution handoff.
+- **promotion:** Keep index-based verification fail-closed; this is an explicit task-authority constraint, not a reason to change the gate. FR-058's existing repository-local lookup rule remains the cheapest prevention for its repeated discovery friction.
+
+### FR-118 - file-symlink fixture privilege is a qualification limit
 
 - **first-seen:** 2026-10-25
 - **status:** `promoted`
@@ -2937,3 +2959,14 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** Reproduced again in this worktree after a successful lockfile installation. The initial absent global skill-path lookup repeated FR-058; the repository-local skill supplied the instructions.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains the broader maintenance backlog and qualification on a symlink-capable Windows runner.
 - **promotion:** The test fixture now encodes the narrow availability rule, with success, Windows refusal, non-Windows refusal and unexpected-error checks. A skip remains unverified evidence, never native acceptance.
+
+### FR-119 - uploaded-source proving requires the hosted dependency environment
+
+- **first-seen:** 2026-10-29
+- **status:** `task-debt`
+- **symptom:** The managed executor's npm cache was unwritable; after choosing a writable temporary cache, the declared npm registry connection was refused with EPERM.
+- **impact:** The exact lockfile cannot be installed locally, so this executor cannot claim the Vitest, compiler or complete project gate passed.
+- **workaround:** Reconcile every tracked archive blob with the live GitHub tree, use connected GitHub branch/commit/PR tooling, and require fresh exact-head hosted proving. No repeated network workaround, credential access, proxy change or dependency substitution.
+- **occurrences:** One cache-write failure followed by one registry-connection refusal in this session.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains proof/bootstrap maintenance; PR #445 records the actual validation receipts.
+- **promotion:** Keep local inspection distinct from hosted proof; do not call a historical green run current-head evidence.

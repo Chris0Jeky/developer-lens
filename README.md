@@ -79,6 +79,8 @@ flowchart TB
 
 `server/analysisPack/` builds coverage packs with SQLite and replays them through an in-memory DuckDB. That path is not the default collector.
 
+The opt-in V1-to-SQLite importer (`server/storage/migrateV1.ts`, separate from the default JSON collector) publishes a first store with a hard link so it cannot overwrite another importer's store. If the filesystem or its policy refuses that operation (`EPERM`, `ENOTSUP`, `EOPNOTSUPP`, `ENOSYS`, or `EXDEV`), reader selection keeps `legacy-json` and returns the content-free code `storage-publish-unavailable`. Use a writable store location that supports hard links and retry. The original JSON stays untouched and the staged database is removed; the importer never substitutes an overwriting rename.
+
 `server/connectors/github/` and `server/externalModel/` hold default-off activation code for a bounded GitHub-core reader and an OpenAI payload preview. Neither is called by `npm run collect`. `cap.external.model` remains `never_authorized`.
 
 Two surfaces, one codebase:
