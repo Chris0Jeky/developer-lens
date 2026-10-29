@@ -6,6 +6,7 @@ import {
   readStorageV3MigrationSelection,
   recordStorageV3MigrationSelection,
   recordStorageV3MigrationSelectionWithInitialization,
+  replayStorageV3MigrationSuccessReport,
 
   StorageV3MigrationSelectionError,
   v3SelectionReceiptTestSeams,
@@ -30,6 +31,30 @@ function fixture(): Database.Database {
 }
 
 describe('LIFE-03 migration selection receipt', () => {
+  it('refuses an ordinary timestamp as replay authority before recording any selection', () => {
+    const db = fixture()
+    try {
+      expect(() => {
+        const issue = replayStorageV3MigrationSuccessReport as (...args: unknown[]) => typeof input.successReportProof
+        const proof = issue(reportInput, '2026-09-01T00:00:00.000Z', {}, {})
+        recordStorageV3MigrationSelection(db, { ...reportInput, successReportProof: proof })
+      }).toThrow(StorageV3MigrationSelectionError)
+      expect(readStorageV3MigrationSelection(db)).toBeUndefined()
+    } finally { db.close() }
+  })
+
+  it('provides no alternate public test-seam mint for a caller-chosen report time', () => {
+    const db = fixture()
+    try {
+      const mint = (v3SelectionReceiptTestSeams as unknown as Record<string, unknown>).issueSuccessReportAt
+      if (typeof mint === 'function') {
+        const proof = mint(reportInput, '2026-09-01T00:00:00.000Z')
+        recordStorageV3MigrationSelection(db, { ...reportInput, successReportProof: proof })
+      }
+      expect(readStorageV3MigrationSelection(db)).toBeUndefined()
+    } finally { db.close() }
+  })
+
   const input = {
     ...reportInput,
     successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(

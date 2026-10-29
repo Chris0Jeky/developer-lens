@@ -80,6 +80,28 @@ async function fixture(taskId = 'invented-selection-proof-task') {
 const noop = () => {}
 
 describe('LIFE-03 durable migration selection proof', () => {
+  it('cannot publish and verify a caller-chosen selection instead of the committed database receipt', async () => {
+    const fx = await fixture()
+    try {
+      const publish = (v3SelectionProofTestSeams as unknown as Record<string, unknown>).publishWithDirectorySynchronizer
+      let accepted: StorageV3MigrationSelection | undefined
+      if (typeof publish === 'function') {
+        publish(fx.root, {
+          ...selection,
+          successfulReportAt: '2026-09-01T00:00:00.000Z',
+          graceDeadlineAt: '2026-09-08T00:00:00.000Z',
+        }, fx.key, noop)
+        accepted = consumeStorageV3MigrationSelectionProof(
+          verifyStorageV3MigrationSelectionProof(fx.root, fx.key), fx.root, fx.key,
+        )
+      }
+      expect(accepted).toBeUndefined()
+      expect(v3SelectionProofTestSeams.publishCommittedWithDirectorySynchronizer(
+        fx.db, fx.root, fx.key, noop,
+      )).toMatchObject({ status: 'published', selection })
+    } finally { fx.cleanup() }
+  })
+
   it('publishes, verifies an opaque handle, consumes exact immutable selection, and replays', async () => {
     const fx = await fixture()
     try {
