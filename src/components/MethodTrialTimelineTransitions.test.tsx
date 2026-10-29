@@ -91,4 +91,55 @@ describe('Method Trial text alternatives retain run endings (#189)', () => {
     expect(states.queryByText('week-104')).not.toBeInTheDocument()
     expect(states.getAllByRole('listitem')).toHaveLength(2)
   })
+
+  describe.each(['ordinary', 'planted', 'confound'] as const)('%s alert weeks', (kind) => {
+    it.each([
+      ['baseline only', true, false],
+      ['candidate only', false, true],
+      ['simultaneous', true, true],
+    ] as const)('announces every %s alert week with its method role', (_label, baseline, candidate) => {
+      const view = structuredClone(fixture)
+      const caseIndex = kind === 'planted' ? 1 : kind === 'confound' ? 2 : 0
+      if (kind !== 'ordinary') addRun(view, caseIndex, 10, 13, kind)
+      // Consecutive alerts must remain individually available, even with identical run state.
+      for (const index of [11, 12]) {
+        const point = view.representative_cases[caseIndex].points[index]
+        point.baseline.alert = baseline
+        point.candidate.alert = candidate
+      }
+      render(<MethodTrialViewPanel view={MethodTrialViewSchema.parse(view)} />)
+
+      const states = within(statesFor(caseIndex))
+      for (const week of ['week-011', 'week-012']) {
+        const row = states.getByText(week).closest('li')!
+        if (baseline) expect(row).toHaveTextContent(/baseline alert/i)
+        else expect(row).not.toHaveTextContent(/baseline alert/i)
+        if (candidate) expect(row).toHaveTextContent(/candidate alert/i)
+        else expect(row).not.toHaveTextContent(/candidate alert/i)
+      }
+      expect(states.queryByText('week-013')).not.toBeInTheDocument()
+      expect(states.queryByText('week-015')).not.toBeInTheDocument()
+      if (kind !== 'ordinary') {
+        expect(states.getByText('week-010')).toBeInTheDocument()
+        expect(states.getByText('week-014').closest('li')).toHaveTextContent('observed; no marker')
+        expect(states.getByText('1 more declared missing/marker events remain in the validated fixture.')).toBeInTheDocument()
+      }
+    })
+  })
+
+  it('announces both alert roles and the offline PELT boundary in the same week', () => {
+    const view = structuredClone(fixture)
+    addRun(view, 1, 10, 12, 'planted')
+    const point = view.representative_cases[1].points[11]
+    point.baseline.alert = true
+    point.candidate.alert = true
+    point.pelt_marker.boundary = true
+    render(<MethodTrialViewPanel view={MethodTrialViewSchema.parse(view)} />)
+
+    const row = within(statesFor(1)).getByText('week-011').closest('li')!
+    expect(row).toHaveTextContent('planted level')
+    expect(row).toHaveTextContent('PELT boundary')
+    expect(row).toHaveTextContent(/baseline alert/i)
+    expect(row).toHaveTextContent(/candidate alert/i)
+  })
 })
