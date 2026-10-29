@@ -120,4 +120,3 @@ export function readStorageV3MigrationSelection(
     return fail()
   }
 }
-

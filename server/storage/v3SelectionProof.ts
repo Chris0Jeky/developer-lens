@@ -686,6 +686,29 @@ export function withStorageV3MigrationSelectionRestoreAuthority<T>(
   }
 }
 
+function closeReplayContext(input: unknown): StorageV3MigrationReportContext {
+  const object = assertPlain(input, [
+    'legacySourceId', 'selectedArtifactId', 'backupArtifactId', 'backupAt',
+    'taskId', 'taskFingerprint', 'rootBinding',
+  ])
+  const legacySourceId = own(object, 'legacySourceId')
+  const selectedArtifactId = own(object, 'selectedArtifactId')
+  const backupArtifactId = own(object, 'backupArtifactId')
+  const backupAt = canonicalBackupTimestamp(own(object, 'backupAt'))
+  const taskId = own(object, 'taskId')
+  const taskFingerprint = own(object, 'taskFingerprint')
+  const rootBinding = own(object, 'rootBinding')
+  if (typeof legacySourceId !== 'string' || !LEGACY.test(legacySourceId)
+    || typeof selectedArtifactId !== 'string' || !ARTIFACT.test(selectedArtifactId)
+    || typeof backupArtifactId !== 'string' || !ARTIFACT.test(backupArtifactId)
+    || typeof taskId !== 'string' || !isCanonicalTaskId(taskId)
+    || typeof taskFingerprint !== 'string' || !HEX.test(taskFingerprint)
+    || typeof rootBinding !== 'string' || !/^root-[0-9a-f]{64}$/.test(rootBinding)) return fail()
+  return Object.freeze({
+    legacySourceId, selectedArtifactId, backupArtifactId, backupAt, taskId, taskFingerprint, rootBinding,
+  })
+}
+
 /** Redeem only a live restore authority, after exact marker and report-context binding checks. */
 export function consumeStorageV3MigrationSelectionReplayAuthority(
   authority: StorageV3MigrationSelectionReplayAuthority,
@@ -694,16 +717,17 @@ export function consumeStorageV3MigrationSelectionReplayAuthority(
   input: StorageV3MigrationReportContext,
 ): StorageV3MigrationSelection {
   try {
+    // Finish caller-controlled metadata access before reading the authority's current state.
+    const context = closeReplayContext(input)
     const record = revalidateHandle(authority, root, installationKey, 'restore')
     const selection = record.selection
-    const backupAt = canonicalBackupTimestamp(input.backupAt)
-    if (input.legacySourceId !== selection.legacySourceId
-      || input.selectedArtifactId !== selection.selectedArtifactId
-      || input.backupArtifactId !== selection.backupArtifactId
-      || input.taskId !== installationKey.taskId
-      || input.taskFingerprint !== installationKey.fingerprint
-      || input.rootBinding !== storageV3MigrationRootBinding(dirname(record.finalPath))
-      || Date.parse(backupAt) > Date.parse(selection.successfulReportAt)) return fail()
+    if (context.legacySourceId !== selection.legacySourceId
+      || context.selectedArtifactId !== selection.selectedArtifactId
+      || context.backupArtifactId !== selection.backupArtifactId
+      || context.taskId !== installationKey.taskId
+      || context.taskFingerprint !== installationKey.fingerprint
+      || context.rootBinding !== storageV3MigrationRootBinding(dirname(record.finalPath))
+      || Date.parse(context.backupAt) > Date.parse(selection.successfulReportAt)) return fail()
     HANDLES.delete(authority as unknown as StorageV3MigrationSelectionProofHandle)
     return selection
   } catch (error) {

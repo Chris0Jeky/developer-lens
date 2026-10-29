@@ -11,6 +11,7 @@ import {
 } from './v3ArtifactCatalogue.js'
 import {
   consumeStorageV3MigrationSelectionProof,
+  consumeStorageV3MigrationSelectionReplayAuthority,
   publishStorageV3MigrationSelectionProof,
   readStorageV3MigrationSelectionProof,
   StorageV3SelectionProofError,
@@ -109,6 +110,85 @@ function publishAndVerify(fx: Awaited<ReturnType<typeof fixture>>) {
 }
 
 describe('LIFE-03 durable migration selection proof', () => {
+  it('rejects an accessor context before its getter can redeem the same authority', async () => {
+    const fx = await fixture()
+    try {
+      withStorageV3MigrationSelectionRestoreAuthority(publishAndVerify(fx), fx.root, fx.key, (_original, authority) => {
+        const context = reportContext(fx)
+        let getterReads = 0
+        let nestedRedemptions = 0
+        const accessor = { ...context }
+        Object.defineProperty(accessor, 'legacySourceId', {
+          enumerable: true,
+          get() {
+            getterReads += 1
+            consumeStorageV3MigrationSelectionReplayAuthority(authority, fx.root, fx.key, context)
+            nestedRedemptions += 1
+            return context.legacySourceId
+          },
+        })
+        expect(() => consumeStorageV3MigrationSelectionReplayAuthority(authority, fx.root, fx.key, accessor))
+          .toThrow(StorageV3SelectionProofError)
+        expect(getterReads).toBe(0)
+        expect(nestedRedemptions).toBe(0)
+        expect(consumeStorageV3MigrationSelectionReplayAuthority(authority, fx.root, fx.key, context)).toEqual(selection)
+        expect(() => consumeStorageV3MigrationSelectionReplayAuthority(authority, fx.root, fx.key, context))
+          .toThrow(StorageV3SelectionProofError)
+      })
+    } finally { fx.cleanup() }
+  })
+
+  it('cannot reuse a cached handle after a proxy context redeems it during snapshotting', async () => {
+    const fx = await fixture()
+    try {
+      withStorageV3MigrationSelectionRestoreAuthority(publishAndVerify(fx), fx.root, fx.key, (_original, authority) => {
+        const context = reportContext(fx)
+        let attempted = false
+        let nestedRedemptions = 0
+        const redeem = (property: PropertyKey) => {
+          if (property !== 'legacySourceId' || attempted) return
+          attempted = true
+          consumeStorageV3MigrationSelectionReplayAuthority(authority, fx.root, fx.key, context)
+          nestedRedemptions += 1
+        }
+        const proxy = new Proxy(context, {
+          get(target, property, receiver) {
+            redeem(property)
+            return Reflect.get(target, property, receiver)
+          },
+          getOwnPropertyDescriptor(target, property) {
+            redeem(property)
+            return Reflect.getOwnPropertyDescriptor(target, property)
+          },
+        })
+        expect(() => consumeStorageV3MigrationSelectionReplayAuthority(authority, fx.root, fx.key, proxy))
+          .toThrow(StorageV3SelectionProofError)
+        expect(nestedRedemptions).toBe(1)
+        expect(() => consumeStorageV3MigrationSelectionReplayAuthority(authority, fx.root, fx.key, context))
+          .toThrow(StorageV3SelectionProofError)
+      })
+    } finally { fx.cleanup() }
+  })
+
+  it('refuses extra and nonplain context without spending a valid own-data retry', async () => {
+    const fx = await fixture()
+    try {
+      withStorageV3MigrationSelectionRestoreAuthority(publishAndVerify(fx), fx.root, fx.key, (_original, authority) => {
+        const context = reportContext(fx)
+        for (const malformed of [
+          { ...context, extra: 'invented extra field' },
+          { ...context, [Symbol('invented')]: true },
+          Object.assign(Object.create({ inherited: true }), context),
+        ]) {
+          expect(() => consumeStorageV3MigrationSelectionReplayAuthority(authority, fx.root, fx.key, malformed))
+            .toThrow(StorageV3SelectionProofError)
+        }
+        const ownData = Object.assign(Object.create(null), context)
+        expect(consumeStorageV3MigrationSelectionReplayAuthority(authority, fx.root, fx.key, ownData)).toEqual(selection)
+      })
+    } finally { fx.cleanup() }
+  })
+
   it('refuses forged, cloned, fresh and ordinarily consumed handles as replay authority', async () => {
     const fx = await fixture()
     try {
