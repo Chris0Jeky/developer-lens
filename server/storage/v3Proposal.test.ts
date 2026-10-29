@@ -8,6 +8,7 @@ import {
   C1_KEY_GENERATION,
   C1_KEY_SCHEMAS,
   ClaimIdV3Schema,
+  IsoWeekV3Schema,
   LEGACY_DELETION_OPERATION_COMPATIBILITY,
   LineageOperationIdV3Schema,
   LineageV3EventSchema,
@@ -56,6 +57,25 @@ const EXPECTED_DISPOSITION_SHAPE = {
 
 const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex')
 
+// Literal calendar expectations: 0003 starts on Wednesday (52 weeks), 0004 on
+// Thursday (53 weeks). Date.UTC's 1900 offset reverses both early-year answers.
+const ISO_WEEK_CALENDAR_CASES = [
+  { value: '0003-W53', valid: false },
+  { value: '0004-W53', valid: true },
+  { value: '0000-W52', valid: true },
+  { value: '0000-W53', valid: false },
+  { value: '0099-W53', valid: true },
+  { value: '2020-W53', valid: true },
+  { value: '2021-W53', valid: false },
+  { value: '2025-W53', valid: false },
+  { value: '2026-W53', valid: true },
+  { value: '9999-W52', valid: true },
+  { value: '004-W53', valid: false },
+  { value: '10000-W01', valid: false },
+  { value: '0004-W00', valid: false },
+  { value: '0004-W54', valid: false },
+]
+
 describe('storage-v3 B1a proposal', () => {
   it('keeps every retained key in the closed prefix + 64 lowercase hex registry', () => {
     for (const [kind, prefix] of Object.entries(C1_KEY_PREFIXES)) {
@@ -78,6 +98,10 @@ describe('storage-v3 B1a proposal', () => {
       operation: 'fresh-random',
       deletion: 'fresh-random',
     })
+  })
+
+  it.each(ISO_WEEK_CALENDAR_CASES)('validates the actual ISO calendar year for $value', ({ value, valid }) => {
+    expect(IsoWeekV3Schema.safeParse(value).success).toBe(valid)
   })
 
   it('is inert, versioned, closed, and validates a typed lineage event', () => {

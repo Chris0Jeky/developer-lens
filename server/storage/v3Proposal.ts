@@ -174,7 +174,11 @@ export const IsoWeekV3Schema = z.string().regex(ISO_WEEK).refine((value) => {
   if (!match) return false
   const year = Number(match[1])
   const week = Number(match[2])
-  const januaryFirst = new Date(Date.UTC(year, 0, 1)).getUTCDay()
+  // Date.UTC remaps years 0–99 to 1900–1999; native SQLite retains the literal year.
+  const firstDay = new Date(0)
+  firstDay.setUTCHours(0, 0, 0, 0)
+  firstDay.setUTCFullYear(year, 0, 1)
+  const januaryFirst = firstDay.getUTCDay()
   const leapYear = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
   const weeksInYear = januaryFirst === 4 || (januaryFirst === 3 && leapYear) ? 53 : 52
   return week <= weeksInYear
