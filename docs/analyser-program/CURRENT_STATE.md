@@ -67,8 +67,8 @@ last_verified_checks: >-
   file-symlink qualification. No fresh audit or deployed-public/physical/owner acceptance
   claim is inferred.
 active_horizon:
-  - 'Bounded 2026-10-29 maintenance: eleven PRs merged; final handoff and late checks selected'
-  - 'P0.5 v0.1.0 release programme #200: owner aesthetic sign-off still required'
+  - 'P0 governor bootstrap PR #206 — delivered'
+  - 'P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
 
 operational_resume:
   consumer: 'The next Product/Lab coordinator.'
