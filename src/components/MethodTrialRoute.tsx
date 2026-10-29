@@ -42,6 +42,8 @@ function markerLabel(point: MethodTrialRepresentativeCase['points'][number]): st
   if (point.planted_marker !== 'none') markers.push(`planted ${point.planted_marker}`)
   if (point.confound_marker !== 'none') markers.push(`confound ${point.confound_marker}`)
   if (point.pelt_marker.boundary) markers.push('PELT boundary')
+  if (point.baseline.alert) markers.push('baseline alert')
+  if (point.candidate.alert) markers.push('candidate alert')
   return markers.length > 0 ? markers.join(', ') : 'no marker'
 }
 
@@ -78,15 +80,18 @@ function selectNotablePoints(points: readonly TimelinePoint[]): {
   const visible: TimelinePoint[] = []
   let collapsedCount = 0
   points.forEach((point, index) => {
+    const isAlert = point.baseline.alert || point.candidate.alert
     const isNotable =
       point.observed.state === 'missing' ||
       point.planted_marker !== 'none' ||
       point.confound_marker !== 'none' ||
-      point.pelt_marker.boundary
+      point.pelt_marker.boundary ||
+      isAlert
     // Retain return-to-ordinary transitions as well as missing/marked run onsets.
     const isDistinctTransition = index > 0 && pointStateTuple(point) !== pointStateTuple(points[index - 1])
     if (!isNotable && !isDistinctTransition) return
-    if (index === 0 || isDistinctTransition || point.pelt_marker.boundary) {
+    // Every alert week stays explicit, including repeated alerts inside a persistent run.
+    if (index === 0 || isDistinctTransition || point.pelt_marker.boundary || isAlert) {
       visible.push(point)
     } else {
       collapsedCount += 1

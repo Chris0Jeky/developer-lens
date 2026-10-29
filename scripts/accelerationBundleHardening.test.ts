@@ -28,6 +28,40 @@ function materialize(agent: string, output?: string) {
   return spawnSync(process.execPath, [join(agent, 'materialize-manifests.mjs'), ...(output === undefined ? [] : ['--out', output])], { encoding: 'utf8' })
 }
 
+// A restricted Windows runner cannot create file symlinks; keep that absence explicit.
+function tryFileSymlink(target: string, path: string, platform = process.platform, create = symlinkSync): boolean {
+  try {
+    create(target, path, 'file')
+    return true
+  } catch (error) {
+    if (platform === 'win32' && (error as NodeJS.ErrnoException)?.code === 'EPERM') return false
+    throw error
+  }
+}
+
+describe('file-symlink fixture qualification', () => {
+  it('reports Windows symlink privilege refusal as unavailable', () => {
+    const denied = Object.assign(new Error('fixture refused'), { code: 'EPERM' })
+    assert.equal(tryFileSymlink('target', 'link', 'win32', () => { throw denied }), false)
+  })
+  for (const [platform, code] of [['linux', 'EPERM'], ['win32', 'EACCES'], ['win32', 'EIO'], ['win32', undefined]] as const) {
+    it(`propagates ${platform} ${code ?? 'unclassified'} fixture errors`, () => {
+      const failure = Object.assign(new Error('fixture failed'), { code })
+      assert.throws(() => tryFileSymlink('target', 'link', platform, () => { throw failure }), (error) => error === failure)
+    })
+  }
+  it('creates file symlinks when the runner permits them', () => {
+    let calls = 0
+    assert.equal(tryFileSymlink('target', 'link', 'win32', (target, path, type) => {
+      assert.equal(target, 'target')
+      assert.equal(path, 'link')
+      assert.equal(type, 'file')
+      calls += 1
+    }), true)
+    assert.equal(calls, 1)
+  })
+})
+
 describe('acceleration bundle lifecycle examples', () => {
   for (const patch of [{ mergedAt: 999 }, { closedAt: 999 }, { mergedAt: 1200, closedAt: 999 }]) {
     it(`rejects negative lifecycle observations ${JSON.stringify(patch)}`, () => {
@@ -98,7 +132,7 @@ describe('acceleration manifest source protection', () => {
     })
   }
   for (const alias of ['file-symlink', 'hard-link'] as const) {
-    it(`refuses ${alias} targets before writing either output`, () => {
+    it(`refuses ${alias} targets before writing either output`, ({ skip }) => {
       withAgent((root, agent) => {
         const output = join(root, 'output')
         mkdirSync(output)
@@ -106,7 +140,9 @@ describe('acceleration manifest source protection', () => {
         const before = names.map((name) => readFileSync(join(agent, name)))
         for (const name of names) {
           if (alias === 'hard-link') linkSync(join(agent, name), join(output, name))
-          else symlinkSync(join(agent, name), join(output, name), 'file')
+          else if (!tryFileSymlink(join(agent, name), join(output, name))) {
+            skip('Windows refused file-symlink creation (EPERM); native symlink protection is unverified')
+          }
         }
         const result = materialize(agent, output)
         assert.notEqual(result.status, 0)
