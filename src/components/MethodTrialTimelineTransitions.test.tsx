@@ -7,6 +7,17 @@ import { MethodTrialViewPanel } from './MethodTrialRoute'
 const fixture = MethodTrialViewSchema.parse(JSON.parse(fixtureText))
 type RunKind = 'missing' | 'planted' | 'confound'
 
+function viewWithoutAlerts(): MethodTrialView {
+  const view = structuredClone(fixture)
+  for (const representativeCase of view.representative_cases) {
+    for (const point of representativeCase.points) {
+      point.baseline.alert = false
+      point.candidate.alert = false
+    }
+  }
+  return view
+}
+
 function addRun(view: MethodTrialView, caseIndex: number, start: number, end: number, kind: RunKind) {
   for (let index = start; index <= end; index += 1) {
     const point = view.representative_cases[caseIndex].points[index]
@@ -36,7 +47,7 @@ describe('Method Trial text alternatives retain run endings (#189)', () => {
   it.each([
     ['missing', 0], ['planted', 1], ['confound', 2],
   ] as const)('announces the first ordinary week after a %s run', (kind, caseIndex) => {
-    const view = structuredClone(fixture)
+    const view = viewWithoutAlerts()
     addRun(view, caseIndex, 10, 12, kind)
     render(<MethodTrialViewPanel view={MethodTrialViewSchema.parse(view)} />)
 
@@ -50,7 +61,7 @@ describe('Method Trial text alternatives retain run endings (#189)', () => {
   })
 
   it('retains each resume point across multiple missing runs', () => {
-    const view = structuredClone(fixture)
+    const view = viewWithoutAlerts()
     addRun(view, 0, 10, 12, 'missing')
     addRun(view, 0, 20, 21, 'missing')
     render(<MethodTrialViewPanel view={MethodTrialViewSchema.parse(view)} />)
@@ -63,7 +74,7 @@ describe('Method Trial text alternatives retain run endings (#189)', () => {
   })
 
   it('retains an offline PELT boundary inside a run as well as its end', () => {
-    const view = structuredClone(fixture)
+    const view = viewWithoutAlerts()
     addRun(view, 0, 10, 12, 'missing')
     view.representative_cases[0].points[11].pelt_marker.boundary = true
     render(<MethodTrialViewPanel view={MethodTrialViewSchema.parse(view)} />)
@@ -75,13 +86,13 @@ describe('Method Trial text alternatives retain run endings (#189)', () => {
   })
 
   it('does not turn ordinary continuation weeks into notable states', () => {
-    render(<MethodTrialViewPanel view={fixture} />)
+    render(<MethodTrialViewPanel view={MethodTrialViewSchema.parse(viewWithoutAlerts())} />)
     const figure = screen.getAllByTestId('method-trial-timeline')[0]
     expect(within(figure).queryByRole('list')).not.toBeInTheDocument()
   })
 
   it('does not invent recovery after a run reaches the end of the window', () => {
-    const view = structuredClone(fixture)
+    const view = viewWithoutAlerts()
     addRun(view, 0, 102, 103, 'missing')
     render(<MethodTrialViewPanel view={MethodTrialViewSchema.parse(view)} />)
 
@@ -98,7 +109,7 @@ describe('Method Trial text alternatives retain run endings (#189)', () => {
       ['candidate only', false, true],
       ['simultaneous', true, true],
     ] as const)('announces every %s alert week with its method role', (_label, baseline, candidate) => {
-      const view = structuredClone(fixture)
+      const view = viewWithoutAlerts()
       const caseIndex = kind === 'planted' ? 1 : kind === 'confound' ? 2 : 0
       if (kind !== 'ordinary') addRun(view, caseIndex, 10, 13, kind)
       // Consecutive alerts must remain individually available, even with identical run state.
@@ -128,7 +139,7 @@ describe('Method Trial text alternatives retain run endings (#189)', () => {
   })
 
   it('announces both alert roles and the offline PELT boundary in the same week', () => {
-    const view = structuredClone(fixture)
+    const view = viewWithoutAlerts()
     addRun(view, 1, 10, 12, 'planted')
     const point = view.representative_cases[1].points[11]
     point.baseline.alert = true
