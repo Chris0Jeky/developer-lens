@@ -950,6 +950,11 @@ function collectMarkerSections(contents: string): { sections: MarkerSection[]; e
   let fenceBuffer: string[] | undefined
 
   lines.forEach((line, index) => {
+    // Alternate fence syntax cannot bypass an active prompt's canonical opening.
+    if (!fenceBuffer && current?.kind === 'prompt' && current.status === 'active'
+      && /^\s*(?:`{3,}|~{3,})/.test(line) && line !== '```text') {
+      errors.push(`prompt ${current.id} (line ${index + 1}) fence info must be exactly text`)
+    }
     if (line.startsWith('```')) {
       if (fenceBuffer) {
         current?.fences.push(fenceBuffer.join('\n'))
