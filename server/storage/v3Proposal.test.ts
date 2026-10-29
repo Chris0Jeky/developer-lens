@@ -548,6 +548,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3Backup.ts',
             'server/storage/v3ReaderSelection.ts',
             'server/storage/v3SelectionProof.ts',
+            'server/storage/v3SelectionReceipt.ts', // Type-only replay root parameter.
             'server/storage/v3Restore.ts',
             'server/storage/v3RevocationReplay.ts',
             'server/storage/v3MigrationCleanup.ts',

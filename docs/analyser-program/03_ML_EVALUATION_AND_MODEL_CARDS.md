@@ -350,9 +350,13 @@ dataset_card:
   known_limitations:    explicit list, always including "planted effects are not real effects"
   not_represented:      what the generator deliberately does not model
   consent_ref:          null for invented and curated_public_real; capability + consent_revision for owner_consented_real
-  curation_ref:         null for invented and owner_consented_real; source + curation-review reference for curated_public_real
+  curation_ref:         null for invented and owner_consented_real; reviewed capability ID + provenance review + source + curation-review reference for curated_public_real
   retention_deletion:   invented = tracked test asset; real = capability cascade (ADR-03)
 ```
+
+For both real-data kinds, the referenced reviewed capability governs activation, revocation,
+retention, and deletion. Each dataset still requires its own reviewed candidate task and Gate B
+proofs; this template grants no dataset, reader, model, or capability activation.
 
 **R2.2 — Negative controls and confound controls are mandatory.** A suite without no-effect fixtures
 cannot measure false alarms; a suite without coverage/parser-shift confounders cannot separate system
@@ -946,11 +950,22 @@ prevents the sunk-cost drift that turns "research" into "shipping because we bui
 
 ---
 
-## 8. Owner gates raised by this document (do not assume)
+## 8. Recorded Gate B scope and additional owner gates
+
+### 8.1 Already-decided scope gate — G-ML-1
+
+**G-ML-1** records the existing ADR-19 Gate B scope decision for a transition from `benchmarked` to
+`validated`. Constitution-v2/DL-Q-CONSENT makes per-candidate validation eligible under the
+existing consent, charter, matrix, and release gates. It requires no additional owner decision.
+Each reviewed candidate task must still supply a representative owner-consented (the owner's own
+data) or curated-public dataset with its own card, reviewed capability ID and provenance record,
+retention/deletion plan, release review, and an untouched holdout, including a consent revision for
+owner-consented data. This scope decision grants no dataset, reader, model, or capability activation.
+
+### 8.2 Additional owner gates (do not assume)
 
 | G | Gate | Why it is a gate, not a decision this document can make |
 |---|---|---|
-| **G-ML-1** | Per-candidate Gate B evidence bundle for a transition from `benchmarked` to `validated` (not an additional owner gate). | ADR-19 requires a representative owner-consented (the owner's own data) or curated-public dataset with its own card, a reviewed capability/provenance record, retention/deletion, release review, and an untouched holdout. Constitution-v2/DL-Q-CONSENT records eligibility under the existing gates; it is not dataset, reader, model, or candidate activation. Each reviewed candidate task must supply these proofs, including a consent revision for owner-consented data. |
 | **G-ML-2** | Any **durable index** (lexical or vector) built by WB-C9. | ADR-20: "any durable index is a separately reviewed sink (owner gate)". |
 | **G-ML-3** | ADR-10 **Tier-2 semantics** (PR/issue prose, durable text embeddings) as an input to WB-C2. | ADR-10 records this as an explicit owner-gated policy proposal; **no card here assumes it**. |
 | **G-ML-4** | Adding **WB-C10** to the ADR-19 candidate register. | **Adjudicated 2026-08-04 (08 §4.8): accepted as DL-TRACE-03's evaluation specification, not a separate register entry or board card.** The register stays C1…C9. |
@@ -983,9 +998,12 @@ prevents the sunk-cost drift that turns "research" into "shipping because we bui
 
 ---
 
-## 10. Proposed ID register (all **proposed**, none authorised)
+## 10. Proposed IDs and recorded gate references
 
-| Kind | Proposed IDs | Style anchor |
+Proposed IDs grant no implementation or activation authority. `G-ML-1` records the existing
+Gate B scope decision in §8.1; the additional owner-gate dispositions remain in §8.2.
+
+| Kind | IDs | Style anchor |
 |---|---|---|
 | Candidate | `WB-C10` (traceability link evaluation) | ADR-19 `WB-C1…C9` |
 | Cards | `WB-03` (preregistration + holdout custody), `WB-04` (leakage checklist harness), `WB-05` (drift monitors + auto-demotion) | ADR-19 `WB-01`, `WB-02` |
@@ -995,7 +1013,8 @@ prevents the sunk-cost drift that turns "research" into "shipping because we bui
 | Tables | `wb_preregistration`, `wb_result`, `wb_benchmark_suite` (additive, C1, STRICT, FK-bound) | ADR-01 additive-table pattern |
 | Limitation codes | `WB_HOLDOUT_CONSUMED`, `WB_MODEL_DEMOTED`, `WB_BENCHMARKED_NOT_VALIDATED`, `WB_PARSER_MAJOR_INCOMPARABLE` | canonical §7 limitation dictionary |
 | Static-analysis gates | `G-SA1` … `G-SA8` | new, scoped to ADR-05/06/07 |
-| Owner gates | `G-ML-1` … `G-ML-7` | brief label **G** |
+| Already-decided scope gate | `G-ML-1` | Gate B evidence requirement (§8.1) |
+| Additional owner gates | `G-ML-2` … `G-ML-7` | brief label **G** (§8.2) |
 
 ---
 

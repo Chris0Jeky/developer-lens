@@ -900,10 +900,11 @@ interface PromptSpec {
   status?: string
   body?: string
   claudeRouting?: string | null
+  fenceInfo?: string
 }
 
-function fenced(body: string): string {
-  return ['```text', body, '```'].join('\n')
+function fenced(body: string, info = 'text'): string {
+  return [`\`\`\`${info}`, body, '```'].join('\n')
 }
 
 function buildLibrary(
@@ -937,7 +938,7 @@ function buildLibrary(
         ? []
         : [prompt.claudeRouting ?? PRODUCT_CLAUDE_ROUTING_CLAUSE]
     lines.push(
-      fenced([body, ...claudeRouting].join('\n')),
+      fenced([body, ...claudeRouting].join('\n'), prompt.fenceInfo),
       '',
     )
   }
@@ -1114,6 +1115,70 @@ describe('prompt operating system parity', () => {
     expect(parsePromptLibrary(unterminated).errors).toContain(
       'prompt library contains an unterminated fenced block',
     )
+  })
+
+  it.each(['', 'json', 'Text', 'text extra', 'text {#copy}', ' text', 'text '])(
+    'rejects active prompt fence info %j instead of exact text',
+    (fenceInfo) => {
+      const prompts = [...COMMON_PROMPT_IDS, ...PRODUCT_EXTENSIONS].map((id, index) => ({
+        id,
+        ...(index === 0 ? { fenceInfo } : {}),
+      }))
+      const errors = checkLibrary(buildLibrary({ prompts }))
+      expect(errors).toEqual([
+        expect.stringContaining('prompt DL-P01-FLAGSHIP-GOVERNOR'),
+      ])
+      expect(errors[0]).toContain('fence info must be exactly text')
+    },
+  )
+
+  it.each([
+    [' ```json', ' ```'],
+    ['   ```text', '   ```'],
+    ['\t```text', '\t```'],
+    ['~~~json', '~~~'],
+    [' ~~~text', ' ~~~'],
+  ])('rejects a noncanonical active fence %j before the canonical body', (opening, closing) => {
+    const marker = '<!-- prompt-id: DL-P01-FLAGSHIP-GOVERNOR status: active -->\n\n'
+    const extraFence = [opening, 'Invented duplicate prompt body.', closing, ''].join('\n')
+    const library = buildLibrary().replace(marker, marker + extraFence)
+    const errors = checkLibrary(library)
+    expect(errors).toEqual(expect.arrayContaining([
+      expect.stringContaining('prompt DL-P01-FLAGSHIP-GOVERNOR'),
+    ]))
+    expect(errors.some((error) => error.includes('fence info must be exactly text'))).toBe(true)
+    expect(parsePromptLibrary(library).prompts).toEqual(parsePromptLibrary(buildLibrary()).prompts)
+  })
+
+  it('keeps indented and tilde fence examples inert inside an active prompt body', () => {
+    const prompts = [...COMMON_PROMPT_IDS, ...PRODUCT_EXTENSIONS].map((id, index) => ({
+      id,
+      ...(index === 0 ? { body: [
+        BOOTSTRAP_BLOCK, FRICTION_BLOCK,
+        ' ```json', '<!-- prompt-id: DL-P00-EXAMPLE status: active -->', ' ```',
+        '~~~json', '{"example":"inert prompt content"}', '~~~',
+      ].join('\n') } : {}),
+    }))
+    expect(checkLibrary(buildLibrary({ prompts }))).toEqual([])
+  })
+
+  it('ignores unrelated Markdown fences and prompt-shaped examples inside them', () => {
+    const introduction = [
+      '# Invented documentation example',
+      '```json',
+      '{"example":"unrelated to executable prompts"}',
+      '<!-- prompt-id: DL-P00-EXAMPLE status: active -->',
+      '```',
+      '',
+    ].join('\n')
+    expect(checkLibrary(introduction + buildLibrary())).toEqual([])
+  })
+
+  it('leaves non-active prompt fence classification unchanged', () => {
+    const library = buildLibrary({
+      prompts: [{ id: 'DL-P01-FLAGSHIP-GOVERNOR', status: 'historical', fenceInfo: 'markdown' }],
+    })
+    expect(parsePromptLibrary(library).errors).toEqual([])
   })
 
   it('detects shared-block digest drift and a block edited in one prompt only', () => {

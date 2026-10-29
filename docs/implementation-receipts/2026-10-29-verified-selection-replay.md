@@ -15,6 +15,9 @@ The arbitrary-time receipt/reader fixture issuers and the plain-selection marker
 - The independent reviewer checked the full production path, fixture clock migration, dependency boundary and cleanup order and found no blocking defect in the intended API paths. Node syntax checks passed for all fourteen changed/new TypeScript files; git diff --check passed. Local dependency execution remains unavailable, so full SQLite/Vitest, compilation and hosted proving are recorded separately in the PR.
 - Before publication, the proposal import-ownership guard was three-way reconciled with merged #448 and #449, preserving both the read-only resolver allowance and the fourteen literal ISO-year cases.
 
+
+- First implementation hosted run [40806932979 / job 123228154282](https://github.com/Chris0Jeky/developer-lens/actions/runs/40806932979/job/123228154282) passed 2,520 tests with four skips. All new authority, receipt, reader-selection and restore regressions passed. One architecture guard failed because its artifact-catalogue allowlist omitted the receipt's new type-only replay root parameter import. The repair adds that exact consumer using the existing guard convention; no production behavior changes. Fresh exact-head full proving remains required.
+
 ## Limits
 
 The scope expires unused replay authority; an already issued, context-bound success-report proof retains its existing lifetime. The marker does not contain backupAt: replay validates its canonical shape and ordering, while restore continues to supply it from verified backup metadata. The import guard is a repository ownership check, not a hostile-code sandbox. A direct-helper accessor reentrancy hardening opportunity is separate from the intended receipt path, which supplies a frozen snapshot; it cannot select a different report time. No source activation or private input is involved.
