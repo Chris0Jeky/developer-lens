@@ -356,6 +356,7 @@ export const COVERAGE_DIMENSION_REGISTRY = {
 
 /** Every code this dimension may cite: its registered codes plus the universal absence codes. */
 export function limitingReasonsFor(dimension: CoverageDimension): readonly CoverageLimitingReason[] {
+  if (typeof dimension !== 'string' || !Object.hasOwn(COVERAGE_DIMENSION_REGISTRY, dimension)) return []
   return [...COVERAGE_DIMENSION_REGISTRY[dimension].limitingReasons, ...UNIVERSAL_LIMITING_REASONS]
 }
 

@@ -123,6 +123,28 @@ describe('coverage dimension registry v2', () => {
       )
     }
   })
+
+  it.each([
+    ['unregistered', 'invented_dimension'],
+    ['empty', ''],
+    ['wrong case', 'Permission'],
+    ['prototype accessor', '__proto__'],
+    ['inherited constructor', 'constructor'],
+    ['inherited method', 'toString'],
+    ['null', null],
+    ['undefined', undefined],
+    ['number', 1],
+    ['symbol', Symbol('invented dimension')],
+    ['array', ['permission']],
+    ['object', { toString() { throw new Error('dimension must not be coerced') } }],
+  ] as const)('registers no reasons for a %s dimension', (_label, invalid) => {
+    const dimension = invalid as unknown as CoverageDimension
+    expect(limitingReasonsFor(dimension)).toEqual([])
+    // Unknown dimensions must not inherit even the universal absence reasons.
+    for (const reason of COVERAGE_LIMITING_REASONS) {
+      expect(isLimitingReasonRegistered(dimension, reason)).toBe(false)
+    }
+  })
 })
 
 describe('coverage vector v2 schema — per-dimension degradation', () => {
