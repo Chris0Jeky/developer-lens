@@ -5,60 +5,67 @@ observations and must be refreshed before action; `docs/IMPLEMENTATION_LEDGER.md
 completed-slice evidence and history.
 
 ```yaml
-updated: '2026-10-24'
-state_observed_at: '2026-10-24T13:10:00Z'
-work_class: 'W3 product slices and producer-owned cross-repository contracts'
-active_wave: 'P0.5 v0.1.0 release programme — Product issue #200 (owner-gated); Phase E and #202 readiness advancing'
-remote_refs_last_observed_at: '2026-10-24T13:10:00Z'
+updated: '2026-10-29'
+state_observed_at: '2026-10-29T02:58:17Z'
+work_class: 'W2 bounded product and privacy repairs; approved W3 explanation-contract work'
+active_wave: 'P0.5 release programme #200 remains owner-gated; bounded synthetic maintenance and #202 prerequisites'
+remote_refs_last_observed_at: '2026-10-29T02:58:17Z'
 observation_semantics: >-
-  product_main and lab_main are last-observed remote-ref snapshots at remote_refs_last_observed_at,
-  not perpetual current-baseline assertions; refresh live Git/GitHub before any action.
-product_main: '98d7727ed6e969eeb6a7d08ebdb9a039823618b0'
-lab_main: '42cc09c67d32b006066d91e2ae76ccdb93f8e018'
+  These are timestamped coordinator observations, not perpetual current-head assertions.
+  product_main records the already-observed merge before this handoff; it does not predict
+  the commit that will publish these docs. Refresh live Git/GitHub before any action.
+product_main: '503ab350cf840096997846af50f51b154d45bd1d'
+lab_main: 'debbf0a6e6c419dbc1de8a057d1d729c28adc658'
 active_slice: >-
-  2026-10-24 estate maintenance session (one development session per repository). Merged #433
-  (storage first import publishes with a no-replace hard link, so two concurrent first imports cannot
-  overwrite each other's key-bound store; Windows-qualified, tests proven able to fail) and #438
-  (audit-workflow test rejects job-level permission overrides, the triaged Codex P2 from #429),
-  #440 (lockfile-only patches for body-parser, undici, fast-uri and vitest advisories, #398) and
-  #441, which upgrades zod to 4.6.7 for its high advisory. zod 4.6 renders nullable primitives as a type list
-  (same meaning), so the generator restores the published ResearchFinding v1 anyOf form and the
-  vendored v1 bytes stay frozen; this follows the estate hub's coordination answer. #439 tracks the hard-link-unsupported filesystem
-  limitation. Between 2026-10-03 and 2026-10-22 the local-Git collector hardening line landed
-  (#403-#437: bounded discovery and subprocesses, protected-root refusal, identity dedupe, legacy
-  Host/Origin guard); per-PR receipts are in each PR's Proof section. The push of b535dc9 (#437)
-  started no Pages run; the next main push deploys normally.
+  The 2026-10-29 campaign merged #445 (explicit Windows file-symlink fixture availability),
+  #446 (all Method Trial alert weeks in accessible timeline text), #447 (backup identity,
+  descriptor ownership and cleanup hardening), #448 (scoped native-v3 explanation walks),
+  #449 (early-year ISO-week validation), #450 (truthful confound-pass display copy),
+  #452 (Gate B scope documentation), #453 (exact active-prompt text fences), and #451
+  (verified-selection replay authorization after its import-boundary guard repair), plus
+  #454 (verified replay-context snapshots) and #455 (safe runtime dimension helper guard).
+  All eleven implementation PRs are merged. #398, #431, #317 and #177 are confirmed
+  closed/completed. No implementation is pending or newly selected; final handoff,
+  late-review and deployment checks remain the closeout work.
 next_value_slice: >-
-  (1) npm audit on main is clean after #441. If a published contract's bytes ever truly must change, use a coordinated producer-then-consumers change or a new contract path.
-  (2) #424 item 2 (dev:ino on Dev Drive) needs a real Dev Drive run; item 4
-  is now documented order-dependent behaviour. (3) #202's remainder, #80, #201 Data Charter v2, and
-  the low-risk trackers #371, #397 and #439. The v0.1.0 tag stays blocked on
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c), and the release-prep slice is re-created from
-  scratch only after that gate (#298).
+  Read the publishing PR's handoff, late-review and deployment receipts and complete any
+  unfinished closeout. Then select a bounded task from the ledger's remaining-work table,
+  without redoing delivered native-resolver, canonical-fence, confound display-condition or
+  dimension-runtime-guard work. Umbrella issues retain their explicit remainders, including
+  #221's cleanup helper. Larger #430 readiness provenance, #201 charter and #202 activation
+  prerequisites remain separate programmes. Keep native
+  Windows/Dev Drive proof gaps explicit. Published v1 bytes remain frozen; any contract
+  effect requires producer/consumer coordination or a new versioned path. Re-create release
+  preparation through #298 only after Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
 blockers: >-
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) remains the sole tag-blocking owner gate. Real
-  migration and collection are already owner-approved within
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5;
-  their activation still requires #202's remaining implementation preconditions plus a bounded,
-  reviewed activation task card whose parser, transport, projection, storage, rollback, deletion
-  and exact-head checks pass before any capability leaves `never_authorized`. The stored Phase E
-  endpoint remains unwired; #375/#376 fixes landed, while #202's remaining activation preconditions
-  still apply. The other Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 items are deferred and nonblocking for the tag,
-  except that Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(f) still owner-gates package-registry
-  credentials. No
-  tag, release or package publication is authorized before
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). Existing verified synthetic Pages publication
-  remains permitted by Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4.
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) remains the sole tag-blocking owner gate.
+  Real migration and collection are already owner-approved within
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5, but activation still requires #202's
+  remaining implementation prerequisites and a bounded reviewed activation task whose
+  parser, transport, projection, storage, rollback, deletion and exact-head checks pass.
+  The stored Phase E endpoint remains unwired and default off. None of these code or
+  documentation repairs activates a capability, reader, dataset or model. Other decisions in
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-6 and
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10 remain deferred/nonblocking for the tag, except that
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(f) separately gates package-registry credentials.
+  No tag, release or package publication is authorized before
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). Existing verified
+  C0 showcase publication remains permitted by
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4.
 last_verified_checks: >-
-  2026-10-24, Windows host: #433 at c7ef9c3 (main b535dc9 merged in) passed 2428 tests with 21
-  skips and one failure, the host-privilege accelerationBundleHardening symlink EPERM that also
-  fails on main. Its concurrency tests fail against main's rename code. One fresh-context review found
-  no CRITICAL/HIGH issues and Codex had no findings. #438 passed 17/17 focused tests (its 4 new cases
-  fail without the fix), hosted proving and a clean Codex outcome. #440 (merged): 2426 passed, the same
-  single EPERM, contract checks clean, build:showcase passed, and npm audit leaves only zod. Earlier
-  campaign receipts live in the ledger and the PR Proof sections. No protected data, real input,
-  release, tag, package, external model, telemetry or credential path was touched.
+  Latest delivered proving is #455 head c5924a2, run 40808705172/job 123234096556:
+  all 149 files, 2548 tests passed, 4 skipped, including 155 coverage tests and every
+  required gate; exact-head Codex and independent review were clean. #454 head 26c9a0b
+  passed 2539 tests with 4 skips and all 14 selection-proof cases in run 40808431133.
+  #451's repaired head 3c82bb4 passed 2536/4 in run 40807899488; its earlier 2520-pass
+  import-boundary failure remains historical in the ledger. Code-head receipts stay
+  separate from the documentation publishing PR's own qualification. The six-sequence
+  local-built Atlas CI proof is recorded under browser_visual_qa. Local dependency
+  installation was refused by executor networking; no local full npm proof is claimed.
+  #447's Windows temp/artifact run was 30 passed/3 skipped, not full-product or native
+  file-symlink qualification. No fresh audit or deployed-public/physical/owner acceptance
+  claim is inferred.
 active_horizon:
   - 'P0 governor bootstrap PR #206 — delivered'
   - 'P0.5 v0.1.0 release programme #200 — active, product-only release preparation'
@@ -67,62 +74,66 @@ operational_resume:
   consumer: 'The next Product/Lab coordinator.'
   question: 'What is landed, parked, unproved, owner-gated, and agent-executable?'
   product_state: >-
-    Product main above is a last-observed remote-ref snapshot, not a perpetual current baseline. At the
-    observation: zero open Product pull requests, zero tags, zero releases, 31 open issues.
+    At 02:58:17 UTC Product main was 503ab350 with 26 open issues and zero open PRs,
+    before the documentation PR. All eleven selected implementation PRs were merged and
+    #177/#317/#398/#431 were closed/completed. This observed predecessor is not the
+    future documentation merge. Refresh live state before acting.
   lab_state: >-
-    Lab main above is a last-observed remote-ref snapshot (the PR #186 merge), with zero open Lab pull
-    requests. Lab #97 may consume ResearchFinding v1; CommitAtlas #145 and #154 may consume their
-    producer contracts.
+    Lab independently advanced to debbf0a6 with zero open PRs after Lab PR #202 merged.
+    This product campaign made no Lab changes and claims no Lab proving run. The earlier product consumer-inventory review
+    found no Lab whyContract dependency; the generated ResearchPack, MethodTrial and
+    ResearchFinding v1 artifacts were unchanged. Refresh Lab PRs/checks before any Lab action.
   next_selection: >-
-    See next_value_slice. #375/#376 fixes landed; #202's remainder still governs activation.
-    Prefer #201 when advancing the charter. Do not tag or publish a release/package before
-    Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c).
-
+    Read the publishing PR's handoff, late-review and deployment receipts; complete any
+    unfinished closeout, then select a bounded task from the ledger's remaining-work table.
+    Preserve #202's activation prerequisites and the release sign-off.
 lab_delivery:
   repository: 'Chris0Jeky/developer-lens-lab'
-  main_check: 'Lab main 42cc09c (PR #186 merge, observed 2026-10-24); refresh its Check run before any Lab action.'
-  open_pull_requests: 'Zero open Lab pull requests at the 2026-10-24 observation; Lab #97 is unblocked.'
+  main_check: 'Lab main debbf0a6, observed 2026-10-29T02:58:17Z; no Lab proving claim, refresh before action.'
+  open_pull_requests: 'Zero at 2026-10-29T02:58:17Z after Lab PR #202 merged; refresh before action.'
 
 release_readiness:
-  lab_q11: 'CLOSED: Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11 is recorded signed off.'
+  lab_q11: 'Recorded CLOSED: Chris0Jeky/developer-lens-lab::HUMAN_TODO.md::q-11.'
   browser_visual_qa: >-
-    Earlier invented C0 Method Trial proof remains historical. The Phase E Atlas has synthetic
-    desktop pointer proof at deployed 8893aa8; #393's narrow clipping is fixed in #394. Corrected
-    local and public 1280/390 pointer and narrow keyboard-scroll checks passed at deployed 8d7fbe1
-    with collector requests blocked. The PR Proof section retains failed/successful receipts.
-    This is interaction evidence,
-    not physical-device acceptance or the owner aesthetic sign-off under q-10(c).
+    #408 already delivered the EvidenceDrawer preventScroll focus repair. The captured
+    failed sixth sequence localized a concrete scroll movement without proving that all
+    older public failures shared its cause. #455 Atlas CI run 40808693744/job 123233635352
+    passed all six native C0 sequences (three at 1280, three at 390) with trusted events,
+    distinct correct drawer bases and no click retries, on merge 4b6e16c of c5924a2 into
+    cf7eb6d. This is new local-built CI browser evidence. The earlier deployed 8d7fbe1
+    smoke and successful post-#453 showcase deployment 40807797830 remain separate
+    receipts; no new deployed-public, physical-device, native Windows, assistive-technology
+    or owner acceptance is inferred. #397 retains those qualification/causality remainders.
   remaining_owner_gate: >-
-    Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c) — five-minute Product aesthetic sign-off.
+    Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c): five-minute Product aesthetic sign-off.
   release_actor_after_owner_gate: >-
-    OWNER_CONSTITUTION.md A1=FULL: agents execute synchronized tag, version, package, and
-    C0-publication mechanics after Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c), under normal
-    exact-head gates.
+    OWNER_CONSTITUTION.md A1=FULL assigns synchronized tag/version/package/C0-publication
+    mechanics to agents after Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c), under
+    normal exact-head gates and any separately
+    applicable package-credential decision. Re-create preparation through #298.
   prohibited_until_then: >-
-    No tag, release, package publication or owner decision is inferred from this state. Only the
-    existing verified C0 showcase follows Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4.
+    No tag, release, package publication or owner decision is inferred. Existing verified
+    C0 showcase publication remains governed by
+    Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4.
 
 authority_and_boundary:
   owner_policy: 'docs/OWNER_CONSTITUTION.md'
   human_actions: 'HUMAN_TODO.md'
   no_activation: >-
-    No real-data collection, external-model call, telemetry, credential handling, or
-    protected-data access is selected. The Phase E stored endpoint is unwired and answers 404.
+    No real-data collection, external-model call, telemetry change, credential handling or
+    protected-data inspection was selected. The stored Phase E endpoint remains unwired
+    and answers 404. Native-v3 explanation support does not wire or activate that endpoint.
   source_of_history: 'docs/IMPLEMENTATION_LEDGER.md'
 
 exact_resume_point: >-
-  Refresh live Git/GitHub first. Run one suite/build at a time on this
-  host. PR #445 contains the #222 qualification patch, now reconciled with main bae3bdd, and
-  makes accelerationBundleHardening report Windows file-symlink fixture EPERM as an explicit skip;
-  full check passed (2441 tests passed, 22 skipped). Native file-symlink protection still needs
-  a permitted runner. The old head c45021c passed hosted proving against d246a1b,
-  including 26/26 Linux acceleration tests; the reconciled head requires fresh CI before merge.
-  The Windows figures above remain the original local evidence; the ledger records provenance. Stored Phase E remains unwired, and #202's remainder still governs
-  activation. Real migration or collection requires a bounded, reviewed activation task card within the
-  approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5 boundaries. Do NOT attempt to refresh
-  release/prepare-product-v0.1.0-20260818 at 54217ff: Product #298 owns re-creating that slice after
-  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). Until that owner action, no tag, release or
-  package publication is authorized. Existing verified synthetic Pages publication remains permitted
-  by Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4.
+  Refresh main/base/head, open PRs, checks and review threads. At the recorded pre-docs
+  snapshot all eleven implementation PRs had merged and no Product PR remained open.
+  Read the publishing PR's handoff, late-review and deployment receipts and complete any
+  unfinished closeout, then select a bounded task from the ledger's remaining-work table.
+  Do not imply local execution of hosted tests or turn a native skip into protection proof. The stored endpoint remains
+  off and #202 still gates activation. Do not revive the old
+  release/prepare-product-v0.1.0-20260818 branch; #298 owns fresh preparation after
+  Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c). No tag, release or package publication
+  is authorized before that sign-off; existing verified synthetic showcase publication
+  remains within Chris0Jeky/developer-lens::HUMAN_TODO.md::q-4.
 ```
