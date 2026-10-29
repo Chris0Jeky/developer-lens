@@ -365,6 +365,7 @@ describe('EvidenceDrawer — retained native-v3 dates', () => {
     }
     render(<EvidenceDrawer open reference={HYPOTHESIS_REFERENCE}
       resolve={() => retained as unknown as typeof projection} onClose={() => {}} />)
+    expect(screen.getByText('coverage unknown · complete')).toBeInTheDocument()
     expandEverything()
     expect(screen.getByText('2026-W53')).toBeInTheDocument()
     expect(screen.getAllByText('unknown').length).toBeGreaterThanOrEqual(5)

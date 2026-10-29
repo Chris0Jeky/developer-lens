@@ -349,7 +349,7 @@ function edgeSummary(edge: WhyEdge): string {
   const target = edge.target
   if (target.kind === 'missing_link') return `${edge.targetRef} — link missing`
   if (target.kind === 'evidence') return `evidence ${target.evidenceId} · ${target.layer}`
-  if (target.kind === 'coverage') return `coverage ${isoWeekLabel(target.coverageKey.rangeStart)} · ${target.status}`
+  if (target.kind === 'coverage') return `coverage ${retainedDateLabel(target.coverageKey.rangeStart)} · ${target.status}`
   return `claim ${target.claimId} · ${target.statementCode}`
 }
 
