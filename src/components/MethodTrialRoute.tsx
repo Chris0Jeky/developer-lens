@@ -27,6 +27,13 @@ function statusLabel(outcome: 'pass' | 'fail' | 'not_applicable'): string {
   return outcome === 'not_applicable' ? 'Not applicable' : outcome === 'pass' ? 'Pass' : 'Fail'
 }
 
+function gateLabel(gate: MethodTrialView['acceptance_gates'][number]): string {
+  // Explain the scored comparison while preserving the frozen v1 wire label.
+  return gate.code === 'confound_guard'
+    ? 'Candidate confound false-alert rate does not exceed the baseline'
+    : gate.label
+}
+
 function selectionLabel(selection: MethodTrialView['scorecard']['threshold_selection']['baseline']): string {
   return `${selection.viable ? 'Viable' : 'Not viable'} · ${selection.reason_code.replaceAll('_', ' ')} · ${numberLabel(selection.selected_value)}`
 }
@@ -330,7 +337,7 @@ export function MethodTrialViewPanel({ view }: { view: MethodTrialView }) {
       <section className="method-trial-section" aria-labelledby="method-trial-gates">
         <div className="method-trial-section__heading"><span>04 · Acceptance ladder</span><h2 id="method-trial-gates">Every gate leaves a reason code</h2></div>
         <ol className="method-trial-gates" aria-label="Ordered acceptance gates">
-          {view.acceptance_gates.map((gate) => <li key={gate.code} data-outcome={gate.outcome}><div><strong>{gate.order}. {gate.label}</strong><span className="method-trial-gate-status">{statusLabel(gate.outcome)}</span></div><p><code>{gate.reason_code}</code> · {gate.reason}</p></li>)}
+          {view.acceptance_gates.map((gate) => <li key={gate.code} data-outcome={gate.outcome}><div><strong>{gate.order}. {gateLabel(gate)}</strong><span className="method-trial-gate-status">{statusLabel(gate.outcome)}</span></div><p><code>{gate.reason_code}</code> · {gate.reason}</p></li>)}
         </ol>
       </section>
 
