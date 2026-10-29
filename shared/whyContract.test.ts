@@ -6,6 +6,8 @@ import {
   WHY_UNRESOLVABLE_REASONS,
   WHY_WALK_TERMINATIONS,
   WhyResolutionSchema,
+  WhyCoverageNodeSchema,
+  WhyLineageEventSchema,
   whyResolutionAnswersReference,
 } from './whyContract.js'
 import * as whyResolver from '../server/storage/whyResolver.js'
@@ -131,5 +133,50 @@ describe('why contract — the runtime schema mirrors the resolver projection ex
         lineage: [],
       }).success,
     ).toBe(false)
+  })
+})
+
+describe('why contract — retained native-v3 projections', () => {
+  const event = { kind: 'lineage_event', subjectId: 'invented-subject', eventKind: 'tombstone_cascade',
+    causedBy: null, occurredAt: null, eventWeek: '2026-W53' }
+
+  it('accepts genuine ISO weeks without inventing a timestamp', () => {
+    expect(WhyLineageEventSchema.parse(event)).toEqual(event)
+    expect(WhyLineageEventSchema.parse({ ...event, eventWeek: '0004-W53' }).eventWeek).toBe('0004-W53')
+    expect(WhyLineageEventSchema.safeParse({ ...event, eventWeek: '0000-W53' }).success).toBe(false)
+    for (const eventWeek of ['2025-W53', '2026-W00', '2026-W54', '2026-03-02']) {
+      expect(WhyLineageEventSchema.safeParse({ ...event, eventWeek }).success).toBe(false)
+    }
+    expect(WhyLineageEventSchema.safeParse({ ...event, occurredAt: '2026-12-28T00:00:00.000Z' }).success).toBe(false)
+    const { eventWeek: _week, ...withoutWeek } = event
+    expect(WhyLineageEventSchema.safeParse(withoutWeek).success).toBe(false)
+  })
+
+  function retainedCoverage() {
+    const observation = INTEGRATION_SHAPE_REFERENCES.find((reference) => reference.kind === 'observation')!
+    const projection = resolveIntegrationShapeEvidence(observation)
+    if (projection.kind !== 'evidence' || projection.coverage.kind !== 'coverage') throw new Error('expected fixture coverage')
+    return { ...projection.coverage, coverageKey: { ...projection.coverage.coverageKey, rangeStart: null },
+      rangeEnd: null, observedAt: null }
+  }
+
+  it('retains coverage counts and capability with an entirely expired C2 timestamp group', () => {
+    const projection = retainedCoverage()
+    expect(WhyCoverageNodeSchema.parse(projection)).toEqual(projection)
+  })
+
+  it('enforces count, status and limitation invariants even when every date is absent', () => {
+    const projection = retainedCoverage()
+    for (const mutation of [
+      { observedUnits: -1 }, { observedUnits: 1.5 }, { status: 'invented-status' },
+      { status: 'complete', expectedUnits: null },
+      { status: 'complete', expectedUnits: 3, observedUnits: 2, omittedUnits: 1 },
+      { expectedUnits: 2, observedUnits: 3 },
+      { expectedUnits: 4, observedUnits: 2, omittedUnits: 1 },
+      { status: 'truncated', saturationReason: null },
+      { status: 'complete', saturationReason: 'INVENTED' },
+      { limitationCode: 'source prose is forbidden' },
+    ]) expect(WhyCoverageNodeSchema.safeParse({ ...projection, ...mutation }).success).toBe(false)
+    expect(WhyCoverageNodeSchema.safeParse({ ...projection, rangeEnd: '2026-03-01T00:00:00.000Z' }).success).toBe(false)
   })
 })

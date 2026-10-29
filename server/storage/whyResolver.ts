@@ -21,6 +21,8 @@ import {
   type WhyWalkTermination,
 } from '../../shared/whyContract.js'
 
+import { STORAGE_V3_SHADOW_APPLICATION_ID, STORAGE_V3_SHADOW_USER_VERSION } from './v3ShadowSchema.js'
+
 /**
  * "Why am I seeing this number?" — the ADR-01 walk as one deterministic, read-only
  * resolver: UI element -> claim -> edges -> evidence -> coverage -> capability ->
@@ -40,17 +42,15 @@ import {
  * 3. **Determinism.** Same store, same request => deep-equal tree. Every collection is
  *    ordered by a documented rule (see ORDERING below); no ordering anywhere depends on
  *    SQLite row order, insertion order, or locale.
- * 4. **The C2 boundary holds.** The tree carries the content-free `scope_id` surrogate
- *    only. `claim_scope.scope_alias` and `coverage_ledger.scope_alias` /
- *    `collection_job.scope_alias` are never selected — the scope node reports
- *    `hasAlias` computed inside SQLite (`scope_alias IS NOT NULL`), so the alias value
- *    never crosses into JavaScript at all. `coverage_id` is likewise never emitted: it is a
- *    storage identifier, and issue #86 closed both halves — the connector mints it
- *    content-free and the ledger's CHECK now admits only `cov-` + 64 lowercase hex, so the
- *    alias-bearing `github.core:${scopeAlias}:${rangeEnd}` shape is not storable at all. A
- *    coverage row is referenced here by `(rangeStart, jobId)` instead —
- *    `coverage_ledger.job_id` is UNIQUE, so that pair identifies the row exactly and the
- *    property holds without depending on what the key contains.
+ * 4. **The C2 boundary holds.** The tree carries the content-free `scope_id`
+ *    surrogate. Alias values are never selected; `hasAlias` is computed inside
+ *    SQLite. Legacy coverage identities stay behind the existing `(rangeStart,
+ *    jobId)` projection, which is unique under that ledger's UNIQUE(job_id).
+ *    Native v3 may retain multiple coverage rows for a job, including after exact
+ *    dates expire. Its direct edge refs and missing/lineage targets therefore name
+ *    the schema-enforced content-free C1 `cov-` anchor. No legacy coverage ID gains
+ *    that exception, and no source_coverage_id or other source_* value is selected.
+
  *
  * WHAT THIS MODULE DOES NOT BOUND. The depth bound and per-claim de-duplication cap the
  * two transitive walks, not the tree's total size: a claim may carry arbitrarily many
@@ -62,9 +62,9 @@ import {
  *   always present, empty ones included — "no contradicting evidence" is a fact the
  *   Drawer must be able to render.
  * - Edges within a group: ascending by `targetRef` (evidence id, claim id, or
- *   `rangeStart|jobId`).
+ *   `rangeStart|jobId` for legacy coverage; the C1 coverage anchor for native v3).
  * - Limitations: ascending by `limitationCode|dimension` (the table's primary key).
- * - Lineage events: ascending by `occurredAt|eventKind|causedBy`.
+ * - Lineage events: ascending by timestamp (legacy) or retained week (native), then event kind and cause.
  * - Walk steps: supersession in chain order; ancestry in depth-first pre-order, each
  *   node's ancestors expanded in ascending id order.
  * - Missing links inside a walk: de-duplicated, then ascending by
@@ -73,10 +73,9 @@ import {
  * never `localeCompare`, which is locale-dependent and would break replay.
  *
  * READ-ONLY CONSUMER: every statement here is a SELECT against the tables installed by
- * `server/storage/claims.ts` and `server/storage/incremental.ts`. This module imports
- * only closed registries and validators from the shared contracts, never a writer
- * helper, so the claim-writer rewrite in DL-SPINE-02 cannot silently change what a
- * "why" answer means.
+ * `server/storage/claims.ts`, `server/storage/incremental.ts`, or the native-v3
+ * schema. The native import provides only store identity constants. No writer or
+ * installer is invoked, and native read failures never select the legacy adapter.
  */
 /**
  * The reason/termination vocabularies and resolver version live in
@@ -103,22 +102,23 @@ export const WHY_DEFAULT_DEPTH_BOUND = 64
 export const WHY_MAX_DEPTH_BOUND = 512
 
 /**
- * How the tree names a `coverage_ledger` row. Deliberately NOT the row's `coverage_id`:
- * #86 made that content-free at both the connector and the ledger CHECK, but a storage
- * identifier is still not presentation material. `job_id` is UNIQUE in `coverage_ledger`,
- * so `(rangeStart, jobId)` identifies the row exactly while staying content-free.
+ * Presentation facts about coverage. Legacy UNIQUE(job_id) makes this an exact key;
+ * native v3 can share a job/range, so only its direct edge targetRef is an identity.
+ * Native rangeStart is null once the C2 provenance group expires.
  */
 export interface WhyCoverageKey {
-  readonly rangeStart: string
+  readonly rangeStart: string | null
   readonly jobId: string
 }
 
 /**
  * The full composite primary key, used only to look the row up. It never leaves this
- * module — every emitted reference is narrowed to `WhyCoverageKey` first.
+ * legacy module path — every legacy emitted reference is narrowed to `WhyCoverageKey` first.
  */
-interface CoverageLookup extends WhyCoverageKey {
+interface CoverageLookup {
   readonly coverageId: string
+  readonly rangeStart: string
+  readonly jobId: string
 }
 
 function emittedCoverageKey(lookup: CoverageLookup): WhyCoverageKey {
@@ -130,7 +130,9 @@ export interface WhyLineageEvent {
   readonly subjectId: string
   readonly eventKind: string
   readonly causedBy: string | null
-  readonly occurredAt: string
+  readonly occurredAt: string | null
+  /** Native v3 retains the week itself; no exact timestamp is reconstructed. */
+  readonly eventWeek?: string
 }
 
 /**
@@ -169,7 +171,7 @@ export interface WhyCollectionJobNode {
 export interface WhyCoverageNode {
   readonly kind: 'coverage'
   readonly coverageKey: WhyCoverageKey
-  readonly rangeEnd: string
+  readonly rangeEnd: string | null
   readonly status: string
   readonly limitationCode: string
   readonly retryable: boolean
@@ -177,7 +179,7 @@ export interface WhyCoverageNode {
   readonly observedUnits: number
   readonly omittedUnits: number | null
   readonly saturationReason: string | null
-  readonly observedAt: string
+  readonly observedAt: string | null
   readonly job: WhyCollectionJobNode | WhyMissingLink
 }
 
@@ -201,7 +203,7 @@ export interface WhyClaimSummary {
   readonly windowEnd: string
   readonly scopeId: string
   readonly schemaVersion: string
-  readonly createdAt: string
+  readonly createdAt: string | null
   readonly supersededBy: string | null
 }
 
@@ -225,7 +227,7 @@ export interface WhyClaimReferenceNode extends WhyClaimSummary {
  * exists; the alias VALUE is never read out of SQLite. Invariant, asserted in tests:
  * `hasAlias === (aliasLink === null)`.
  *
- * `linkedAt` is exported at the millisecond precision the C2 partition table stores,
+ * `linkedAt`, while retained, is exported at the millisecond precision the C2 table stores,
  * while ADR-01's grain rule renders derived surfaces at ISO-week grain or coarser. That
  * is deliberate: the resolver exposes the raw value and the RENDER layer (UX-ED) owns
  * applying the grain floor — a data module that pre-rounded would leave a retention
@@ -235,7 +237,7 @@ export interface WhyScopeNode {
   readonly kind: 'scope'
   readonly scopeId: string
   readonly hasAlias: boolean
-  readonly linkedAt: string
+  readonly linkedAt: string | null
   readonly aliasLink: WhyMissingLink | null
 }
 
@@ -336,6 +338,7 @@ export const WhyRequestSchema = z
   .object({
     claimId: z.string(),
     elementId: OpaqueTokenSchema.optional(),
+    scopeId: z.string().regex(/^scope-[0-9a-f]{64}$/).optional(),
     maxDepth: z.number().int().min(1).optional(),
   })
   .strict()
@@ -359,13 +362,13 @@ interface ClaimRow {
   readonly window_end: string
   readonly scope_id: string
   readonly schema_version: string
-  readonly created_at: string
+  readonly created_at: string | null
   readonly superseded_by: string | null
 }
 
 interface ScopeRow {
   readonly scope_id: string
-  readonly linked_at: string
+  readonly linked_at: string | null
   readonly has_alias: number
 }
 
@@ -389,16 +392,16 @@ interface EvidenceRow {
 
 interface CoverageRow {
   readonly coverage_id: string
-  readonly range_start: string
+  readonly range_start: string | null
   readonly job_id: string
-  readonly range_end: string
+  readonly range_end: string | null
   readonly status: string
   readonly expected_units: number | null
   readonly observed_units: number
   readonly omitted_units: number | null
   readonly saturation_reason: string | null
   readonly retryable: number
-  readonly observed_at: string
+  readonly observed_at: string | null
   readonly limitation_code: string
 }
 
@@ -419,7 +422,8 @@ interface LineageRow {
   readonly subject_id: string
   readonly event_kind: string
   readonly caused_by: string | null
-  readonly occurred_at: string
+  readonly occurred_at: string | null
+  readonly event_week?: string
 }
 
 interface AncestorRow {
@@ -427,6 +431,8 @@ interface AncestorRow {
 }
 
 interface WhyStatements {
+  readonly native: boolean
+  readonly scopeId: string | null
   readonly claim: Database.Statement
   readonly scope: Database.Statement
   readonly edges: Database.Statement
@@ -445,6 +451,8 @@ interface WhyStatements {
  */
 function prepareStatements(db: Database.Database): WhyStatements {
   return {
+    native: false,
+    scopeId: null,
     claim: db.prepare(
       'SELECT claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, created_at, superseded_by FROM claim WHERE claim_id = ?',
     ),
@@ -475,6 +483,57 @@ function prepareStatements(db: Database.Database): WhyStatements {
   }
 }
 
+/**
+ * Native v3 keys are scope-bound C1 anchors. No alias or source_* value is selected.
+ * The first claim read may establish the scope; every descendant uses the pinned scope.
+ * This adapter consumes the installed schema and never installs or mutates it.
+ */
+function prepareNativeStatements(db: Database.Database, scopeId: string | null): WhyStatements {
+  return {
+    native: true,
+    scopeId,
+    claim: db.prepare(
+      'SELECT claim_id, layer, statement_code, method_id, method_version, window_start, window_end, scope_id, schema_version, created_at, superseded_by FROM claim WHERE claim_id = ? AND (? IS NULL OR scope_id = ?)',
+    ),
+    scope: db.prepare('SELECT scope_id, linked_at, (scope_alias IS NOT NULL) AS has_alias FROM claim_scope WHERE scope_id = ?'),
+    edges: db.prepare('SELECT role, target_evidence_id, target_claim_id, target_coverage_id, NULL AS target_coverage_range_start, NULL AS target_coverage_job_id FROM claim_evidence_edge WHERE claim_id = ? AND scope_id = ?'),
+    ancestors: db.prepare("SELECT target_claim_id FROM claim_evidence_edge WHERE claim_id = ? AND scope_id = ? AND role = 'derives_from' AND target_claim_id IS NOT NULL"),
+    evidence: db.prepare('SELECT evidence_id, layer, schema_version, coverage_id, NULL AS coverage_range_start, NULL AS coverage_job_id FROM evidence WHERE evidence_id = ? AND scope_id = ?'),
+    coverage: db.prepare('SELECT coverage_id, range_start, job_id, range_end, status, expected_units, observed_units, omitted_units, saturation_reason, retryable, observed_at, limitation_code FROM coverage_ledger WHERE coverage_id = ? AND scope_id = ?'),
+    job: db.prepare('SELECT job_id, status, consent_revision, capability_id FROM collection_job WHERE job_id = ? AND scope_id = ?'),
+    limitations: db.prepare('SELECT limitation_code, dimension, copy_key FROM limitation_instance WHERE claim_id = ? AND scope_id = ?'),
+    lineage: db.prepare(`SELECT subject_id, event_kind, caused_by, NULL AS occurred_at, event_week
+      FROM lineage_event WHERE subject_id = ? AND subject_kind = ?
+        AND (scope_id = ? OR (scope_id IS NULL AND caused_by = ?
+          AND event_kind IN ('tombstone_cascade', 'index_deleted')))`),
+  }
+}
+
+/** Only exact supported native identities select this adapter; foreign versions fail closed. */
+function nativeStore(db: Database.Database): boolean {
+  const applicationId = Number(db.pragma('application_id', { simple: true }))
+  const userVersion = Number(db.pragma('user_version', { simple: true }))
+  if (applicationId === STORAGE_V3_SHADOW_APPLICATION_ID) {
+    if (userVersion !== STORAGE_V3_SHADOW_USER_VERSION) throw new Error('WHY_STORAGE_UNAVAILABLE')
+    return true
+  }
+  // Native-shaped tables with a missing/foreign identity must never become legacy reads.
+  const columns = db.prepare('PRAGMA table_info(evidence)').all() as { name: string }[]
+  if (columns.some((column) => column.name === 'scope_id')) throw new Error('WHY_STORAGE_UNAVAILABLE')
+  return false
+}
+
+/** Exact claim identity is globally unique in v3, including retained deletion lineage.
+ * Without a surviving root or caller scope, infer only one unambiguous, valid scope cause.
+ */
+function deletedClaimScope(db: Database.Database, claimId: string): string | null {
+  const causes = db.prepare(`SELECT DISTINCT caused_by FROM lineage_event
+    WHERE subject_kind = 'claim' AND subject_id = ? AND scope_id IS NULL
+      AND event_kind = 'tombstone_cascade'`).all(claimId) as { caused_by: string | null }[]
+  return causes.length === 1 && typeof causes[0].caused_by === 'string'
+    && /^scope-[0-9a-f]{64}$/.test(causes[0].caused_by) ? causes[0].caused_by : null
+}
+
 /** UTF-16 code-unit comparison. Deliberately not `localeCompare`. */
 function byKey<T>(key: (value: T) => string): (left: T, right: T) => number {
   return (left, right) => {
@@ -486,7 +545,7 @@ function byKey<T>(key: (value: T) => string): (left: T, right: T) => number {
 }
 
 function coverageRef(key: WhyCoverageKey): string {
-  return `${key.rangeStart}|${key.jobId}`
+  return `${key.rangeStart ?? ''}|${key.jobId}`
 }
 
 function missingLink(
@@ -529,11 +588,16 @@ function normalizeMissingLinks(links: readonly WhyMissingLink[]): WhyMissingLink
 }
 
 function readClaimRow(statements: WhyStatements, claimId: string): ClaimRow | null {
-  return (statements.claim.get(claimId) as ClaimRow | undefined) ?? null
+  const row = statements.native
+    ? statements.claim.get(claimId, statements.scopeId, statements.scopeId)
+    : statements.claim.get(claimId)
+  return (row as ClaimRow | undefined) ?? null
 }
 
-function readLineage(statements: WhyStatements, subjectId: string): WhyLineageEvent[] {
-  const rows = statements.lineage.all(subjectId) as LineageRow[]
+function readLineage(statements: WhyStatements, subjectId: string, subjectKind = 'claim'): WhyLineageEvent[] {
+  const rows = (statements.native
+    ? statements.lineage.all(subjectId, subjectKind, statements.scopeId, statements.scopeId)
+    : statements.lineage.all(subjectId)) as LineageRow[]
   return rows
     .map((row): WhyLineageEvent => ({
       kind: 'lineage_event',
@@ -541,8 +605,9 @@ function readLineage(statements: WhyStatements, subjectId: string): WhyLineageEv
       eventKind: row.event_kind,
       causedBy: row.caused_by,
       occurredAt: row.occurred_at,
+      ...(statements.native ? { eventWeek: row.event_week! } : {}),
     }))
-    .sort(byKey((event) => `${event.occurredAt}|${event.eventKind}|${event.causedBy ?? ''}`))
+    .sort(byKey((event) => `${event.eventWeek ?? event.occurredAt}|${event.eventKind}|${event.causedBy ?? ''}`))
 }
 
 function isTombstoned(lineage: readonly WhyLineageEvent[]): boolean {
@@ -598,8 +663,9 @@ function resolveJob(
   statements: WhyStatements,
   jobId: string,
 ): WhyCollectionJobNode | WhyMissingLink {
-  const row = statements.job.get(jobId) as JobRow | undefined
-  if (!row) return missingLink('MISSING_CAPABILITY_BINDING', 'collection_job', jobId)
+  const row = (statements.native ? statements.job.get(jobId, statements.scopeId) : statements.job.get(jobId)) as JobRow | undefined
+  if (!row) return missingLink('MISSING_CAPABILITY_BINDING', 'collection_job', jobId,
+    statements.native ? { lineage: readLineage(statements, jobId, 'job') } : {})
   return {
     kind: 'collection_job',
     jobId: row.job_id,
@@ -626,6 +692,10 @@ function resolveCoverage(
       coverageKey: emittedCoverageKey(lookup),
     })
   }
+  return coverageNode(statements, row)
+}
+
+function coverageNode(statements: WhyStatements, row: CoverageRow): WhyCoverageNode {
   return {
     kind: 'coverage',
     coverageKey: { rangeStart: row.range_start, jobId: row.job_id },
@@ -642,12 +712,20 @@ function resolveCoverage(
   }
 }
 
+function resolveNativeCoverage(statements: WhyStatements, coverageId: string): WhyCoverageNode | WhyMissingLink {
+  const row = statements.coverage.get(coverageId, statements.scopeId) as CoverageRow | undefined
+  if (!row) return missingLink('MISSING_COVERAGE', 'coverage', coverageId, {
+    lineage: readLineage(statements, coverageId, 'coverage'),
+  })
+  return coverageNode(statements, row)
+}
+
 function resolveEvidence(
   statements: WhyStatements,
   evidenceId: string,
 ): WhyEvidenceNode | WhyMissingLink {
-  const row = statements.evidence.get(evidenceId) as EvidenceRow | undefined
-  const lineage = readLineage(statements, evidenceId)
+  const row = (statements.native ? statements.evidence.get(evidenceId, statements.scopeId) : statements.evidence.get(evidenceId)) as EvidenceRow | undefined
+  const lineage = readLineage(statements, evidenceId, 'evidence')
   if (!row) {
     return missingLink(
       isTombstoned(lineage) ? 'TOMBSTONED_EVIDENCE' : 'MISSING_EVIDENCE',
@@ -661,7 +739,7 @@ function resolveEvidence(
     evidenceId: row.evidence_id,
     layer: row.layer,
     schemaVersion: row.schema_version,
-    coverage: resolveCoverage(statements, {
+    coverage: statements.native ? resolveNativeCoverage(statements, row.coverage_id) : resolveCoverage(statements, {
       coverageId: row.coverage_id,
       rangeStart: row.coverage_range_start,
       jobId: row.coverage_job_id,
@@ -691,7 +769,8 @@ function resolveScope(
     scopeId: row.scope_id,
     hasAlias,
     linkedAt: row.linked_at,
-    aliasLink: hasAlias ? null : missingLink('SCOPE_ALIAS_CLEARED', 'scope', row.scope_id),
+    aliasLink: hasAlias ? null : missingLink('SCOPE_ALIAS_CLEARED', 'scope', row.scope_id,
+      statements.native ? { lineage: readLineage(statements, row.scope_id, 'scope') } : {}),
   }
 }
 
@@ -726,6 +805,16 @@ function resolveEdgeTarget(
       target: resolveClaimReference(statements, row.target_claim_id),
     }
   }
+  // V3 edges intentionally have no legacy range/job columns. Resolve their scoped
+  // C1 key before testing the legacy composite triple (the archived prototype defect).
+  if (statements.native) {
+    if (row.target_coverage_id === null) return null
+    const target = resolveNativeCoverage(statements, row.target_coverage_id)
+    return {
+      targetRef: row.target_coverage_id,
+      target,
+    }
+  }
   if (
     row.target_coverage_id === null ||
     row.target_coverage_range_start === null ||
@@ -756,7 +845,7 @@ interface ResolvedEdges {
 }
 
 function resolveEdges(statements: WhyStatements, claimId: string): ResolvedEdges {
-  const rows = statements.edges.all(claimId) as EdgeRow[]
+  const rows = (statements.native ? statements.edges.all(claimId, statements.scopeId) : statements.edges.all(claimId)) as EdgeRow[]
   const byRole = new Map<ClaimEdgeRole, WhyEdge[]>()
   const unresolved: WhyMissingLink[] = []
 
@@ -789,7 +878,7 @@ function resolveEdges(statements: WhyStatements, claimId: string): ResolvedEdges
 }
 
 function resolveLimitations(statements: WhyStatements, claimId: string): WhyLimitation[] {
-  const rows = statements.limitations.all(claimId) as LimitationRow[]
+  const rows = (statements.native ? statements.limitations.all(claimId, statements.scopeId) : statements.limitations.all(claimId)) as LimitationRow[]
   return rows
     .map((row): WhyLimitation => ({
       kind: 'limitation',
@@ -878,7 +967,7 @@ function walkAncestry(statements: WhyStatements, origin: ClaimRow, bound: number
   let missing = false
 
   const ancestorIds = (claimId: string): string[] => {
-    const rows = statements.ancestors.all(claimId) as AncestorRow[]
+    const rows = (statements.native ? statements.ancestors.all(claimId, statements.scopeId) : statements.ancestors.all(claimId)) as AncestorRow[]
     return [...new Set(rows.map((row) => row.target_claim_id))].sort()
   }
 
@@ -952,13 +1041,26 @@ export function resolveWhy(db: Database.Database, request: unknown): WhyExplanat
 
   let statements: WhyStatements
   try {
-    statements = prepareStatements(db)
+    statements = nativeStore(db)
+      ? prepareNativeStatements(db, null)
+      : prepareStatements(db)
   } catch {
     return unresolvable('STORAGE_UNAVAILABLE', claimId)
   }
 
   const row = readClaimRow(statements, claimId)
-  if (!row) return unresolvable('UNKNOWN_CLAIM', claimId, readLineage(statements, claimId))
+  if (!row) {
+    if (statements.native && statements.scopeId === null) {
+      statements = { ...statements, scopeId: parsed.data.scopeId ?? deletedClaimScope(db, claimId) }
+    }
+    return unresolvable('UNKNOWN_CLAIM', claimId, readLineage(statements, claimId))
+  }
+  // Root lookup is the only unscoped native claim lookup. Every subsequent hop
+  // is constrained even when the store's foreign keys were not enforced.
+  if (parsed.data.scopeId !== undefined && parsed.data.scopeId !== row.scope_id) {
+    return unresolvable('UNKNOWN_CLAIM', claimId)
+  }
+  if (statements.native) statements = { ...statements, scopeId: row.scope_id }
 
   const edges = resolveEdges(statements, claimId)
   return {

@@ -438,6 +438,8 @@ describe('storage-v3 B1a proposal', () => {
         if (target && /(?:^|[\\/])v3ShadowSchema(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           if (![
+            // Read-only why adapter imports schema identity constants; it never installs the schema.
+            'server/storage/whyResolver.ts',
             'server/storage/v3ShadowRewrite.ts',
             'server/storage/v3ShadowSweep.ts',
             'server/storage/v3ContinuityCasProposal.ts',
