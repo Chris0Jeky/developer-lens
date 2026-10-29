@@ -345,3 +345,29 @@ describe('EvidenceDrawer — keyboard operation and focus management', () => {
     expect(document.activeElement?.textContent).not.toMatch(/open evidence/i)
   })
 })
+
+
+describe('EvidenceDrawer — retained native-v3 dates', () => {
+  it('renders absent dates as unknown and retained lineage as its original ISO week', () => {
+    const projection = resolveFixture(HYPOTHESIS_REFERENCE)
+    if (projection.kind !== 'explanation') throw new Error('expected fixture claim')
+    const retained = {
+      ...projection,
+      claim: { ...projection.claim, createdAt: null },
+      scope: projection.scope.kind === 'scope' ? { ...projection.scope, linkedAt: null } : projection.scope,
+      lineage: [{ kind: 'lineage_event' as const, subjectId: projection.claim.claimId,
+        eventKind: 'correction', causedBy: null, occurredAt: null, eventWeek: '2026-W53' }],
+      edges: projection.edges.map((group) => ({ ...group, edges: group.edges.map((edge) => ({
+        ...edge,
+        target: edge.target.kind === 'coverage' ? { ...edge.target,
+          coverageKey: { ...edge.target.coverageKey, rangeStart: null }, rangeEnd: null, observedAt: null,
+        } : edge.target,
+      })) })),
+    }
+    render(<EvidenceDrawer open reference={HYPOTHESIS_REFERENCE}
+      resolve={() => retained as unknown as typeof projection} onClose={() => {}} />)
+    expandEverything()
+    expect(screen.getByText('2026-W53')).toBeInTheDocument()
+    expect(screen.getAllByText('unknown').length).toBeGreaterThanOrEqual(5)
+  })
+})
