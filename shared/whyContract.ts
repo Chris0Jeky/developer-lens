@@ -6,7 +6,7 @@ import {
   ClaimEdgeRoleSchema,
   ClaimEdgeTargetKindSchema,
 } from './claims.js'
-import { CoverageRecordSchema } from './coverage.js'
+import { CoverageRecordSchema, CoverageStatusSchema } from './coverage.js'
 import type { AnalyticReference } from './findings.js'
 import type {
   WhyCapabilityNode,
@@ -108,16 +108,35 @@ const WHY_MISSING_LINK_TARGET_KIND = {
 } as const satisfies Record<WhyMissingLinkReason, WhyTargetKind>
 
 export const WhyCoverageKeySchema = z.strictObject({
-  rangeStart: z.string(),
+  rangeStart: z.string().nullable(),
   jobId: z.string(),
 }) satisfies z.ZodType<WhyCoverageKey>
+
+// Client-safe mirror of the native SQLite calendar-valid ISO-week rule. A week stays a
+// week: the resolver never reconstructs an exact instant from retained lineage.
+const WhyIsoWeekSchema = z.string().regex(/^(\d{4})-W(0[1-9]|[1-4]\d|5[0-3])$/).refine((value) => {
+  const match = /^(\d{4})-W(\d{2})$/.exec(value)
+  if (!match) return false
+  const year = Number(match[1])
+  const januaryFirst = new Date(0)
+  januaryFirst.setUTCHours(0, 0, 0, 0)
+  januaryFirst.setUTCFullYear(year, 0, 1)
+  const firstDay = januaryFirst.getUTCDay()
+  const leap = year % 4 === 0 && (year % 100 !== 0 || year % 400 === 0)
+  return Number(match[2]) <= (firstDay === 4 || (firstDay === 3 && leap) ? 53 : 52)
+}, 'Week must exist in the ISO week-year')
 
 export const WhyLineageEventSchema = z.strictObject({
   kind: z.literal('lineage_event'),
   subjectId: z.string(),
   eventKind: z.string(),
   causedBy: z.string().nullable(),
-  occurredAt: z.string(),
+  occurredAt: z.string().nullable(),
+  eventWeek: WhyIsoWeekSchema.optional(),
+}).superRefine((event, context) => {
+  if ((event.occurredAt === null) !== (event.eventWeek !== undefined)) {
+    context.addIssue({ code: 'custom', message: 'Lineage must carry either its exact legacy timestamp or its retained native week' })
+  }
 }) satisfies z.ZodType<WhyLineageEvent>
 
 export const WhyMissingLinkSchema = z.strictObject({
@@ -175,7 +194,7 @@ export const WhyCollectionJobNodeSchema = z.strictObject({
 export const WhyCoverageNodeSchema = z.strictObject({
   kind: z.literal('coverage'),
   coverageKey: WhyCoverageKeySchema,
-  rangeEnd: z.string(),
+  rangeEnd: z.string().nullable(),
   status: z.string(),
   limitationCode: z.string(),
   retryable: z.boolean(),
@@ -183,34 +202,53 @@ export const WhyCoverageNodeSchema = z.strictObject({
   observedUnits: z.number().int().nonnegative(),
   omittedUnits: z.number().int().nonnegative().nullable(),
   saturationReason: z.string().nullable(),
-  observedAt: z.string(),
+  observedAt: z.string().nullable(),
   job: z.discriminatedUnion('kind', [WhyCollectionJobNodeSchema, WhyMissingLinkSchema]),
 }).superRefine((node, context) => {
   const capabilityId = node.job.kind === 'collection_job' && node.job.capability.kind === 'capability'
     ? node.job.capability.capabilityId
     : CAPABILITY_REGISTRY[0].id
-  const coverage = CoverageRecordSchema.safeParse({
-    coverageId: 'why-contract-projection',
-    capabilityId,
-    scopeAlias: 'why-contract-projection',
-    rangeStart: node.coverageKey.rangeStart,
-    rangeEnd: node.rangeEnd,
-    status: node.status,
-    expectedUnits: node.expectedUnits,
-    observedUnits: node.observedUnits,
-    omittedUnits: node.omittedUnits,
-    ...(node.saturationReason === null ? {} : { saturationReason: node.saturationReason }),
-    retryable: node.retryable,
-    observedAt: node.observedAt,
-    limitationCode: node.limitationCode,
-  })
-  if (!coverage.success) {
-    for (const issue of coverage.error.issues) {
-      context.addIssue({
-        code: 'custom',
-        path: issue.path,
-        message: `coverage record invariant: ${issue.message}`,
-      })
+  const dates = [node.coverageKey.rangeStart, node.rangeEnd, node.observedAt]
+  if (dates.every((date) => date === null)) {
+    // C2 erasure removes only temporal provenance. Retained C1 values still obey
+    // every status, limitation and accounting rule of CoverageRecordSchema.
+    const reject = (path: string, message: string) => context.addIssue({ code: 'custom', path: [path], message })
+    if (!CoverageStatusSchema.safeParse(node.status).success) reject('status', 'Unknown coverage status')
+    if (!/^[A-Z0-9_]+$/.test(node.limitationCode)) reject('limitationCode', 'Invalid limitation code')
+    if (node.saturationReason !== null && !/^[A-Z0-9_]+$/.test(node.saturationReason)) reject('saturationReason', 'Invalid saturation reason')
+    if (node.status === 'complete' && node.expectedUnits === null) reject('expectedUnits', 'Complete coverage requires expectedUnits')
+    if (node.status === 'complete' && node.expectedUnits !== null && node.observedUnits !== node.expectedUnits) reject('observedUnits', 'Complete coverage requires all expected units')
+    if (node.status === 'complete' && node.omittedUnits !== 0) reject('omittedUnits', 'Complete coverage requires zero omitted units')
+    if (node.expectedUnits !== null && node.observedUnits > node.expectedUnits) reject('observedUnits', 'Observed units exceed expected units')
+    if (node.expectedUnits !== null && node.omittedUnits !== null && node.observedUnits + node.omittedUnits !== node.expectedUnits) reject('omittedUnits', 'Counts do not account for expected units')
+    if (node.status === 'truncated' && !node.saturationReason) reject('saturationReason', 'Truncated coverage requires a saturation reason')
+    if (node.status !== 'truncated' && node.saturationReason) reject('saturationReason', 'Only truncated coverage may have a saturation reason')
+  } else if (dates.some((date) => date === null)) {
+    context.addIssue({ code: 'custom', message: 'Coverage temporal provenance must be wholly present or wholly expired' })
+  } else {
+    const coverage = CoverageRecordSchema.safeParse({
+      coverageId: 'why-contract-projection',
+      capabilityId,
+      scopeAlias: 'why-contract-projection',
+      rangeStart: node.coverageKey.rangeStart,
+      rangeEnd: node.rangeEnd,
+      status: node.status,
+      expectedUnits: node.expectedUnits,
+      observedUnits: node.observedUnits,
+      omittedUnits: node.omittedUnits,
+      ...(node.saturationReason === null ? {} : { saturationReason: node.saturationReason }),
+      retryable: node.retryable,
+      observedAt: node.observedAt,
+      limitationCode: node.limitationCode,
+    })
+    if (!coverage.success) {
+      for (const issue of coverage.error.issues) {
+        context.addIssue({
+          code: 'custom',
+          path: issue.path,
+          message: `coverage record invariant: ${issue.message}`,
+        })
+      }
     }
   }
 
@@ -247,7 +285,7 @@ const whyClaimSummaryFields = {
   windowEnd: z.string(),
   scopeId: z.string(),
   schemaVersion: z.string(),
-  createdAt: z.string(),
+  createdAt: z.string().nullable(),
   supersededBy: z.string().nullable(),
 }
 
@@ -272,7 +310,7 @@ export const WhyScopeNodeSchema = z.strictObject({
   kind: z.literal('scope'),
   scopeId: z.string(),
   hasAlias: z.boolean(),
-  linkedAt: z.string(),
+  linkedAt: z.string().nullable(),
   aliasLink: WhyMissingLinkSchema.nullable(),
 }).superRefine((node, ctx) => {
   if (node.hasAlias !== (node.aliasLink === null)) {

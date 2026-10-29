@@ -112,9 +112,12 @@ authority_and_boundary:
 
 exact_resume_point: >-
   Refresh live Git/GitHub first. Run one suite/build at a time on this
-  host. On Windows without symlink privilege,
-  accelerationBundleHardening 'refuses file-symlink targets' fails with EPERM on main as well; it is a
-  host limitation, not a regression. Stored Phase E remains unwired, and #202's remainder still governs
+  host. PR #445 contains the #222 qualification patch, now reconciled with main bae3bdd, and
+  makes accelerationBundleHardening report Windows file-symlink fixture EPERM as an explicit skip;
+  full check passed (2441 tests passed, 22 skipped). Native file-symlink protection still needs
+  a permitted runner. The old head c45021c passed hosted proving against d246a1b,
+  including 26/26 Linux acceleration tests; the reconciled head requires fresh CI before merge.
+  The Windows figures above remain the original local evidence; the ledger records provenance. Stored Phase E remains unwired, and #202's remainder still governs
   activation. Real migration or collection requires a bounded, reviewed activation task card within the
   approved Chris0Jeky/developer-lens::HUMAN_TODO.md::q-1 and
   Chris0Jeky/developer-lens::HUMAN_TODO.md::q-5 boundaries. Do NOT attempt to refresh

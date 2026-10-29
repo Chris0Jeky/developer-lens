@@ -1,7 +1,7 @@
 import Database from 'better-sqlite3'
 import { afterEach, describe, expect, it } from 'vitest'
 import { WhyResolutionSchema } from '../../shared/whyContract.js'
-import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
+import { installStorageV3ShadowSchema, STORAGE_V3_SHADOW_APPLICATION_ID } from './v3ShadowSchema.js'
 import { sweepStorageV3C2 } from './v3ShadowSweep.js'
 import { deleteStorageV3Scope } from './v3Deletion.js'
 import { resolveWhy, type WhyExplanationTree, type WhyEdgeTarget } from './whyResolver.js'
@@ -115,7 +115,9 @@ function hostile(db: Database.Database) {
 describe('native-v3 why walks', () => {
   it('resolves evidence, claim and direct coverage edges through capability and consent', () => {
     const db = fixture()
+    const before = db.serialize()
     const result = tree(db)
+    expect(db.serialize().equals(before)).toBe(true)
     expect(result.unresolvedEdges).toEqual([])
     expect(result.edges.map((group) => group.edges.length)).toEqual([1, 1, 1, 1, 1, 1])
     expect(target(result, 'supports')).toMatchObject({ kind: 'evidence', evidenceId: EVIDENCE,
@@ -127,8 +129,47 @@ describe('native-v3 why walks', () => {
     expect(result.supersession.steps.map((step) => step.claimId)).toEqual([SUCCESSOR])
     expect(result.limitations).toEqual([{ kind: 'limitation', limitationCode: 'SAMPLE_TOO_SMALL', dimension: 'sample', copyKey: 'native.copy' }])
     const serialized = JSON.stringify(result)
-    for (const canary of [ALIAS, SOURCE, FOREIGN_METHOD, COVERAGE, FOREIGN_COVERAGE]) expect(serialized).not.toContain(canary)
+    for (const canary of [ALIAS, SOURCE, FOREIGN_METHOD, `github.core:${ALIAS}:${END}`]) expect(serialized).not.toContain(canary)
     expect(resolveWhy(db, { claimId: CLAIM })).toEqual(result)
+  })
+
+  it('keeps distinct native direct coverage targets when their job and retained dates coincide', () => {
+    const db = fixture()
+    const secondCoverage = key('cov-', 'a')
+    db.prepare(`INSERT INTO coverage_ledger (scope_id, coverage_id, job_id, snapshot_id, capability_id,
+      status, expected_units, observed_units, omitted_units, retryable, limitation_code,
+      source_coverage_id, range_start, range_end, observed_at, c2_expires_at)
+      SELECT scope_id, ?, job_id, snapshot_id, capability_id, status, expected_units,
+        observed_units, omitted_units, retryable, limitation_code, ?, range_start, range_end, observed_at,
+        c2_expires_at FROM coverage_ledger WHERE scope_id = ? AND coverage_id = ?`)
+      .run(secondCoverage, SOURCE + secondCoverage, SCOPE, COVERAGE)
+    db.prepare(`INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_coverage_id)
+      VALUES (?, ?, 'coverage_basis', ?)`).run(SCOPE, CLAIM, secondCoverage)
+    const before = tree(db).edges.find((group) => group.role === 'coverage_basis')!.edges
+    expect(before.map((edge) => edge.targetRef)).toEqual([COVERAGE, secondCoverage])
+    expect(before.map((edge) => edge.target)).toMatchObject([
+      { kind: 'coverage', coverageKey: { rangeStart: START, jobId: JOB }, observedUnits: 3 },
+      { kind: 'coverage', coverageKey: { rangeStart: START, jobId: JOB }, observedUnits: 3 },
+    ])
+    sweepStorageV3C2({ targetDb: db, asOf: EXPIRES })
+    const after = tree(db).edges.find((group) => group.role === 'coverage_basis')!.edges
+    expect(after.map((edge) => edge.targetRef)).toEqual([COVERAGE, secondCoverage])
+    expect(after.map((edge) => edge.target)).toMatchObject([
+      { kind: 'coverage', coverageKey: { rangeStart: null, jobId: JOB }, observedUnits: 3 },
+      { kind: 'coverage', coverageKey: { rangeStart: null, jobId: JOB }, observedUnits: 3 },
+    ])
+  })
+
+  it('refuses native-shaped stores with missing, foreign or unsupported SQLite identity', () => {
+    const db = fixture()
+    for (const pragma of ['application_id = 0', 'application_id = 1']) {
+      db.pragma(pragma)
+      expect(resolveWhy(db, { claimId: CLAIM })).toMatchObject({ kind: 'unresolvable', reason: 'STORAGE_UNAVAILABLE' })
+    }
+    // Restore the application's real discriminator, then try a future schema version.
+    db.pragma(`application_id = ${STORAGE_V3_SHADOW_APPLICATION_ID}`)
+    db.pragma('user_version = 999')
+    expect(resolveWhy(db, { claimId: CLAIM })).toMatchObject({ kind: 'unresolvable', reason: 'STORAGE_UNAVAILABLE' })
   })
 
   it('refuses an explicit scope mismatch without disclosing another scope lineage', () => {
@@ -162,6 +203,19 @@ describe('native-v3 why walks', () => {
     expect(result.supersession.termination).toBe('missing_link')
     expect(JSON.stringify(result)).not.toContain(FOREIGN_METHOD)
     expect(JSON.stringify(result)).not.toContain('foreign.copy')
+  })
+
+  it('ignores foreign edge rows and ancestry rows that reuse the root claim id', () => {
+    const db = fixture()
+    hostile(db)
+    db.prepare(`INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_evidence_id)
+      VALUES (?, ?, 'supports', ?)`).run(OTHER_SCOPE, CLAIM, FOREIGN_EVIDENCE)
+    db.prepare(`INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_claim_id)
+      VALUES (?, ?, 'derives_from', ?)`).run(OTHER_SCOPE, CLAIM, FOREIGN_CLAIM)
+    const result = tree(db)
+    expect(target(result, 'supports')).toMatchObject({ kind: 'evidence', evidenceId: EVIDENCE })
+    expect(target(result, 'derives_from')).toMatchObject({ kind: 'claim_reference', claimId: ANCESTOR })
+    expect(result.ancestry.steps.map((step) => step.claimId)).toEqual([ANCESTOR])
   })
 
   it('does not follow a foreign job or foreign coverage behind local evidence', () => {
@@ -235,7 +289,19 @@ describe('native-v3 why walks', () => {
       { subjectId: CLAIM, eventKind: 'tombstone_cascade', occurredAt: null, eventWeek: '2026-W10', causedBy: SCOPE },
     ] })
     expect(WhyResolutionSchema.parse(JSON.parse(JSON.stringify(result)))).toEqual(result)
+    expect(resolveWhy(db, { claimId: CLAIM })).toEqual(result)
     expect(resolveWhy(db, { claimId: CLAIM, scopeId: OTHER_SCOPE })).toMatchObject({ lineage: [] })
+  })
+
+  it('does not infer deleted-root ownership from ambiguous scope causes', () => {
+    const db = fixture()
+    hostile(db)
+    db.prepare('DELETE FROM claim WHERE claim_id = ?').run(CLAIM)
+    tombstone(db, 'claim', CLAIM)
+    db.prepare(`INSERT INTO lineage_event VALUES (NULL, 'claim', ?, ?, 'github.core', ?, 'tombstone_cascade', '2026-W09')`)
+      .run(CLAIM, key('del-', 'e'), OTHER_SCOPE)
+    expect(resolveWhy(db, { claimId: CLAIM })).toMatchObject({ kind: 'unresolvable', reason: 'UNKNOWN_CLAIM', lineage: [] })
+    expect(resolveWhy(db, { claimId: CLAIM, scopeId: SCOPE })).toMatchObject({ lineage: [{ causedBy: SCOPE }] })
   })
 
   it('bounds native ancestry and supersession and terminates hostile cycles', () => {
@@ -246,6 +312,12 @@ describe('native-v3 why walks', () => {
     const limited = resolveWhy(db, { claimId: CLAIM, maxDepth: 1 }) as WhyExplanationTree
     expect(limited.supersession.steps.map((step) => step.claimId)).toEqual([SUCCESSOR])
     expect(limited.supersession.termination).toBe('depth_limit_reached')
+    db.prepare(`INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_claim_id)
+      VALUES (?, ?, 'derives_from', ?)`).run(SCOPE, ANCESTOR, key('cl_', 'a'))
+    const ancestryLimited = resolveWhy(db, { claimId: CLAIM, maxDepth: 1 }) as WhyExplanationTree
+    expect(ancestryLimited.ancestry.steps.map((step) => step.claimId)).toEqual([ANCESTOR])
+    expect(ancestryLimited.ancestry.termination).toBe('depth_limit_reached')
+    db.prepare("DELETE FROM claim_evidence_edge WHERE claim_id = ? AND role = 'derives_from'").run(ANCESTOR)
     db.prepare('UPDATE claim SET superseded_by = ? WHERE claim_id = ?').run(CLAIM, SUCCESSOR)
     db.prepare(`INSERT INTO claim_evidence_edge (scope_id, claim_id, role, target_claim_id)
       VALUES (?, ?, 'derives_from', ?)`).run(SCOPE, ANCESTOR, CLAIM)

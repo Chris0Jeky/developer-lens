@@ -175,6 +175,11 @@ function LayerBadge({ layer }: { layer: string }) {
   )
 }
 
+/** Expired C2 timestamps are unknown; a retained week is rendered as recorded. */
+function retainedDateLabel(timestamp: string | null): string {
+  return timestamp === null ? 'unknown' : isoWeekLabel(timestamp)
+}
+
 function LineageList({ lineage }: { lineage: readonly WhyLineageEvent[] }) {
   if (lineage.length === 0) {
     return <p className="evidence-drawer__furniture">No correction or tombstone lineage recorded.</p>
@@ -183,7 +188,7 @@ function LineageList({ lineage }: { lineage: readonly WhyLineageEvent[] }) {
     <ul className="evidence-drawer__lineage" aria-label="Lineage events">
       {lineage.map((event, index) => (
         <li key={`${event.subjectId}:${event.occurredAt}:${event.eventKind}:${index}`} data-event-kind={event.eventKind}>
-          <strong>{event.eventKind}</strong> · {isoWeekLabel(event.occurredAt)}
+          <strong>{event.eventKind}</strong> · {event.eventWeek ?? retainedDateLabel(event.occurredAt)}
           {event.causedBy !== null && (
             <>
               {' '}
@@ -210,7 +215,7 @@ function MissingLinkView({ link }: { link: WhyMissingLink }) {
         {link.coverageKey !== null && (
           <Fact term="Coverage">
             <code>
-              {isoWeekLabel(link.coverageKey.rangeStart)} · job {link.coverageKey.jobId}
+              {retainedDateLabel(link.coverageKey.rangeStart)} · job {link.coverageKey.jobId}
             </code>
           </Fact>
         )}
@@ -262,13 +267,13 @@ function CoverageView({ node }: { node: WhyCoverageNode | WhyMissingLink }) {
       <dl className="evidence-drawer__facts">
         <Fact term="Coverage">
           <code>
-            {isoWeekLabel(node.coverageKey.rangeStart)} · job {node.coverageKey.jobId}
+            {retainedDateLabel(node.coverageKey.rangeStart)} · job {node.coverageKey.jobId}
           </code>
         </Fact>
         <Fact term="Status">{node.status}</Fact>
         <Fact term="Limitation">{node.limitationCode}</Fact>
-        <Fact term="Range end">{isoWeekLabel(node.rangeEnd)}</Fact>
-        <Fact term="Observed">{isoWeekLabel(node.observedAt)}</Fact>
+        <Fact term="Range end">{retainedDateLabel(node.rangeEnd)}</Fact>
+        <Fact term="Observed">{retainedDateLabel(node.observedAt)}</Fact>
         <Fact term="Observed units">{node.observedUnits.toLocaleString('en-GB')}</Fact>
         <Fact term="Expected units">
           {node.expectedUnits === null ? 'not declared' : node.expectedUnits.toLocaleString('en-GB')}
@@ -388,7 +393,7 @@ function ScopeView({ node }: { node: WhyScopeNode | WhyMissingLink }) {
           <code>{node.scopeId}</code>
         </Fact>
         <Fact term="Installation alias">{node.hasAlias ? 'linked' : 'cleared'}</Fact>
-        <Fact term="Linked">{isoWeekLabel(node.linkedAt)}</Fact>
+        <Fact term="Linked">{retainedDateLabel(node.linkedAt)}</Fact>
       </dl>
       {node.aliasLink !== null && <MissingLinkView link={node.aliasLink} />}
     </div>
@@ -490,7 +495,7 @@ function ClaimHeader({ claim }: { claim: WhyClaimNode }) {
       <Fact term="Window">
         {isoWeekLabel(claim.windowStart)} → {isoWeekLabel(claim.windowEnd)}
       </Fact>
-      <Fact term="Created">{isoWeekLabel(claim.createdAt)}</Fact>
+      <Fact term="Created">{retainedDateLabel(claim.createdAt)}</Fact>
       <Fact term="Schema">{claim.schemaVersion}</Fact>
       <Fact term="Supersession">
         {claim.supersededBy === null ? (

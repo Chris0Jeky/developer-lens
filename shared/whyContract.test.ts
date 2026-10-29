@@ -136,13 +136,14 @@ describe('why contract — the runtime schema mirrors the resolver projection ex
   })
 })
 
-
 describe('why contract — retained native-v3 projections', () => {
   const event = { kind: 'lineage_event', subjectId: 'invented-subject', eventKind: 'tombstone_cascade',
     causedBy: null, occurredAt: null, eventWeek: '2026-W53' }
 
   it('accepts genuine ISO weeks without inventing a timestamp', () => {
     expect(WhyLineageEventSchema.parse(event)).toEqual(event)
+    expect(WhyLineageEventSchema.parse({ ...event, eventWeek: '0004-W53' }).eventWeek).toBe('0004-W53')
+    expect(WhyLineageEventSchema.safeParse({ ...event, eventWeek: '0000-W53' }).success).toBe(false)
     for (const eventWeek of ['2025-W53', '2026-W00', '2026-W54', '2026-03-02']) {
       expect(WhyLineageEventSchema.safeParse({ ...event, eventWeek }).success).toBe(false)
     }

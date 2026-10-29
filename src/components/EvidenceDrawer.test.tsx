@@ -346,7 +346,6 @@ describe('EvidenceDrawer — keyboard operation and focus management', () => {
   })
 })
 
-
 describe('EvidenceDrawer — retained native-v3 dates', () => {
   it('renders absent dates as unknown and retained lineage as its original ISO week', () => {
     const projection = resolveFixture(HYPOTHESIS_REFERENCE)
