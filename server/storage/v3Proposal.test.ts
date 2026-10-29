@@ -8,6 +8,7 @@ import {
   C1_KEY_GENERATION,
   C1_KEY_SCHEMAS,
   ClaimIdV3Schema,
+  IsoWeekV3Schema,
   LEGACY_DELETION_OPERATION_COMPATIBILITY,
   LineageOperationIdV3Schema,
   LineageV3EventSchema,
@@ -56,6 +57,25 @@ const EXPECTED_DISPOSITION_SHAPE = {
 
 const sha256 = (value: string): string => createHash('sha256').update(value).digest('hex')
 
+// Literal calendar expectations: 0003 starts on Wednesday (52 weeks), 0004 on
+// Thursday (53 weeks). Date.UTC's 1900 offset reverses both early-year answers.
+const ISO_WEEK_CALENDAR_CASES = [
+  { value: '0003-W53', valid: false },
+  { value: '0004-W53', valid: true },
+  { value: '0000-W52', valid: true },
+  { value: '0000-W53', valid: false },
+  { value: '0099-W53', valid: true },
+  { value: '2020-W53', valid: true },
+  { value: '2021-W53', valid: false },
+  { value: '2025-W53', valid: false },
+  { value: '2026-W53', valid: true },
+  { value: '9999-W52', valid: true },
+  { value: '004-W53', valid: false },
+  { value: '10000-W01', valid: false },
+  { value: '0004-W00', valid: false },
+  { value: '0004-W54', valid: false },
+]
+
 describe('storage-v3 B1a proposal', () => {
   it('keeps every retained key in the closed prefix + 64 lowercase hex registry', () => {
     for (const [kind, prefix] of Object.entries(C1_KEY_PREFIXES)) {
@@ -78,6 +98,10 @@ describe('storage-v3 B1a proposal', () => {
       operation: 'fresh-random',
       deletion: 'fresh-random',
     })
+  })
+
+  it.each(ISO_WEEK_CALENDAR_CASES)('validates the actual ISO calendar year for $value', ({ value, valid }) => {
+    expect(IsoWeekV3Schema.safeParse(value).success).toBe(valid)
   })
 
   it('is inert, versioned, closed, and validates a typed lineage event', () => {
@@ -418,6 +442,29 @@ describe('storage-v3 B1a proposal', () => {
         const dynamicLiteral = ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword &&
           node.arguments.length >= 1 && ts.isStringLiteral(node.arguments[0]) ? node.arguments[0].text : undefined
         const target = moduleSpecifier ?? requireLiteral ?? dynamicLiteral
+        const sourcePath = relative(root, path).replaceAll('\\', '/')
+        if (target && /(?:^|[\\/])v3SelectionReceiptState(?:\.[cm]?js|\.ts)?$/.test(target)
+          && !['server/storage/v3SelectionReceipt.ts', 'server/storage/v3SelectionProof.ts'].includes(sourcePath)) {
+          offenders.push(`${sourcePath} -> ${target}`)
+        }
+        if (target && /(?:^|[\\/])v3SelectionReceipt(?:\.[cm]?js|\.ts)?$/.test(target)
+          && sourcePath === 'server/storage/v3SelectionProof.ts') {
+          offenders.push(`${sourcePath} -> ${target} creates a receipt/proof authority cycle`)
+        }
+        if (ts.isImportDeclaration(node) && node.importClause?.namedBindings
+          && ts.isNamedImports(node.importClause.namedBindings)) {
+          const authorityOwners: Record<string, string> = {
+            replayStorageV3MigrationSuccessReport: 'server/storage/v3Restore.ts',
+            issueStorageV3MigrationSuccessReport: 'server/storage/v3ReaderSelection.ts',
+            consumeStorageV3MigrationSelectionReplayAuthority: 'server/storage/v3SelectionReceipt.ts',
+            withStorageV3MigrationSelectionRestoreAuthority: 'server/storage/v3Restore.ts',
+          }
+          for (const imported of node.importClause.namedBindings.elements) {
+            const name = imported.propertyName?.text ?? imported.name.text
+            const owner = authorityOwners[name]
+            if (owner !== undefined && sourcePath !== owner) offenders.push(`${sourcePath} imports ${name}`)
+          }
+        }
         if (target && /(?:^|[\\/])v3Proposal(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           const edge = `${sourcePath} -> ${target.split('/').at(-1)?.replace(/\.(?:[cm]?js|ts)$/, '') ?? target}`
@@ -438,6 +485,8 @@ describe('storage-v3 B1a proposal', () => {
         if (target && /(?:^|[\\/])v3ShadowSchema(?:\.[cm]?js|\.ts)?$/.test(target)) {
           const sourcePath = relative(root, path).replaceAll('\\', '/')
           if (![
+            // Read-only why adapter imports schema identity constants; it never installs the schema.
+            'server/storage/whyResolver.ts',
             'server/storage/v3ShadowRewrite.ts',
             'server/storage/v3ShadowSweep.ts',
             'server/storage/v3ContinuityCasProposal.ts',
@@ -445,6 +494,7 @@ describe('storage-v3 B1a proposal', () => {
             'server/storage/v3ArtifactCatalogue.ts',
             'server/storage/v3Backup.ts',
             'server/storage/v3SelectionReceipt.ts',
+            'server/storage/v3SelectionReceiptState.ts',
             'server/storage/v3Restore.ts',
             'server/storage/v3MigrationCleanup.ts',
 

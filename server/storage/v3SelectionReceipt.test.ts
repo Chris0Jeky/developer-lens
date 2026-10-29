@@ -1,5 +1,5 @@
 import Database from 'better-sqlite3'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { installStorageV3ShadowSchema } from './v3ShadowSchema.js'
 import {
   evaluateStorageV3MigrationGrace,
@@ -7,6 +7,7 @@ import {
   recordStorageV3MigrationSelection,
   recordStorageV3MigrationSelectionWithInitialization,
   replayStorageV3MigrationSuccessReport,
+  issueStorageV3MigrationSuccessReport,
 
   StorageV3MigrationSelectionError,
   v3SelectionReceiptTestSeams,
@@ -28,6 +29,14 @@ function fixture(): Database.Database {
   const db = new Database(':memory:')
   installStorageV3ShadowSchema(db)
   return db
+}
+
+function issueSuccessReportAt(input: Parameters<typeof issueStorageV3MigrationSuccessReport>[0], at: string) {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  try {
+    vi.setSystemTime(at)
+    return issueStorageV3MigrationSuccessReport(input)
+  } finally { vi.useRealTimers() }
 }
 
 describe('LIFE-03 migration selection receipt', () => {
@@ -55,9 +64,22 @@ describe('LIFE-03 migration selection receipt', () => {
     } finally { db.close() }
   })
 
+  it('takes first selection time from the runtime clock even if a caller supplies another time', () => {
+    const db = fixture()
+    vi.useFakeTimers({ toFake: ['Date'] })
+    try {
+      vi.setSystemTime('2026-08-06T12:34:56.789Z')
+      const issue = issueStorageV3MigrationSuccessReport as (...args: unknown[]) => typeof input.successReportProof
+      const proof = issue(reportInput, '2027-01-01T00:00:00.000Z')
+      const result = recordStorageV3MigrationSelection(db, { ...reportInput, successReportProof: proof })
+      expect(result.selection.successfulReportAt).toBe('2026-08-06T12:34:56.789Z')
+      expect(result.selection.graceDeadlineAt).toBe('2026-08-13T12:34:56.789Z')
+    } finally { vi.useRealTimers(); db.close() }
+  })
+
   const input = {
     ...reportInput,
-    successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
+    successReportProof: issueSuccessReportAt(
       reportInput, '2026-08-06T12:34:56.789Z',
     ),
   } as const
@@ -83,7 +105,7 @@ describe('LIFE-03 migration selection receipt', () => {
       expect(readStorageV3MigrationSelection(db)).toEqual(first.selection)
       expect(() => recordStorageV3MigrationSelection(db, {
         ...input,
-        successReportProof: v3SelectionReceiptTestSeams.issueSuccessReportAt(
+        successReportProof: issueSuccessReportAt(
           reportInput, '2026-08-07T12:34:56.789Z',
         ),
 
@@ -146,7 +168,7 @@ describe('LIFE-03 migration selection receipt', () => {
   it('requires an opaque report proof bound to the backup and task/root boundary', () => {
     const db = fixture()
     try {
-      expect(() => v3SelectionReceiptTestSeams.issueSuccessReportAt(
+      expect(() => issueSuccessReportAt(
         reportInput, '2026-08-06T12:34:54.999Z',
       )).toThrow(StorageV3MigrationSelectionError)
       expect(() => recordStorageV3MigrationSelection(db, {

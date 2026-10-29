@@ -3,7 +3,7 @@ import { existsSync, mkdtempSync, rmSync, statSync, writeFileSync } from 'node:f
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { CLAIM_SCHEMA_VERSION } from '../../shared/claims.js'
 import { installV2BridgeStore } from '../api/v2/store.js'
 import { installClaimGraphStorage } from './claims.js'
@@ -25,7 +25,7 @@ import {
 } from './v3Deletion.js'
 import {
   readStorageV3MigrationSelection,
-  replayStorageV3MigrationSuccessReport,
+  issueStorageV3MigrationSuccessReport,
 
   recordStorageV3MigrationSelection,
 } from './v3SelectionReceipt.js'
@@ -41,6 +41,14 @@ import { STORAGE_V3_SHADOW_TABLES } from './v3ShadowSchema.js'
  * refuse conflicting deletion identities, and roll back completely from an
  * injected failure at every stage.
  */
+
+function issueSuccessReportAt(input: Parameters<typeof issueStorageV3MigrationSuccessReport>[0], at: string) {
+  vi.useFakeTimers({ toFake: ['Date'] })
+  try {
+    vi.setSystemTime(at)
+    return issueStorageV3MigrationSuccessReport(input)
+  } finally { vi.useRealTimers() }
+}
 
 const AS_OF = '2026-03-01T00:00:00.000Z'
 const DELETE_AT = '2026-03-02T00:00:00.000Z'
@@ -278,7 +286,7 @@ describe('B3 v3 scope deletion', { timeout: 30_000 }, () => {
         taskId: 'task-deletion-fixture',
         taskFingerprint: 'deletion-fixture-fingerprint',
         rootBinding: 'root-deletion-fixture',
-        successReportProof: replayStorageV3MigrationSuccessReport({
+        successReportProof: issueSuccessReportAt({
           legacySourceId: `legacy-${'a'.repeat(64)}`,
           selectedArtifactId: `art-${'b'.repeat(64)}`,
           backupArtifactId: `art-${'c'.repeat(64)}`,

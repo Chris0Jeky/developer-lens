@@ -39,7 +39,7 @@ import {
   type StorageV3MigrationSelection,
 } from './v3SelectionReceipt.js'
 import {
-  consumeStorageV3MigrationSelectionProof,
+  withStorageV3MigrationSelectionRestoreAuthority,
   type StorageV3MigrationSelectionProofHandle,
 } from './v3SelectionProof.js'
 import { openSelectedStorageV3StoreReadonly } from './v3StoreFiles.js'
@@ -599,138 +599,140 @@ function restoreFromVerifiedSelection(
     root = openStorageV3ArtifactRoot(closed.directory)
     assertStorageV3ArtifactRootInstallationKey(root, closed.installationKey)
     return withStorageV3WriterLease(root, (lease) => {
-      const selection = consumeStorageV3MigrationSelectionProof(
+      return withStorageV3MigrationSelectionRestoreAuthority(
         closed.selectionProof,
         root!,
         closed.installationKey,
+        (selection, replayAuthority) => {
+          const revocations = verifyStorageV3RevocationReplay(
+            root!,
+            closed.installationKey,
+            selection,
+            lease,
+          )
+          const selectedPath = storageV3ArtifactFilePath(root!, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+          const tempLocator = STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary
+          const tempPath = storageV3ArtifactFilePath(root!, tempLocator)
+          const selectedEntry = lstatRestore(selectedPath)
+          if (selectedEntry !== undefined) {
+            if (selectedEntry.isSymbolicLink() || !selectedEntry.isFile()) return restoreUnavailable()
+            recoverPublishedRestore(root!, synchronize)
+            const replay = openSelectedStorageV3StoreReadonly(closed.directory)
+            try {
+              const receipt = readStorageV3MigrationSelection(replay)
+              if (receipt === undefined) return restoreUnavailable()
+              assertExactRestoreSelection(receipt, selection)
+              assertRestoreSelectedArtifact(replay, selection.selectedArtifactId)
+              assertStorageV3RevocationReplayApplied(replay, revocations)
+              return Object.freeze({ reader: 'sqlite-v3' as const, db: replay, selection: receipt })
+            } catch {
+              if (replay.open) replay.close()
+              return restoreUnavailable()
+            }
+          }
+          assertRestoreNoSidecars(root!, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
+          assertRestoreNoSidecars(root!, tempLocator)
+          const verified = verifyStorageV3MigrationBackupForRestore({
+            root: root!,
+            backupAt: closed.backupAt,
+            artifactId: closed.backupArtifactId,
+            installationKey: closed.installationKey,
+          })
+          if (verified.selectedArtifactId !== selection.selectedArtifactId
+            || verified.artifactId !== selection.backupArtifactId) return restoreUnavailable()
+          const copiedTemp = copyRestoreBackup(root!, verified, tempPath, failAfterStage)
+          claimedTemp = Object.freeze({ dev: copiedTemp.dev, ino: copiedTemp.ino })
+          claimedTempDescriptor = copiedTemp.descriptor
+          writable = new Database(tempPath, { fileMustExist: true })
+          bindStorageV3ArtifactRoot(writable, root!)
+          assertSelectableStorageV3Target(writable, { allowContinuityCasState: true })
+          assertStorageV3ArtifactCatalogue(writable)
+          failAfterStage?.('normalize')
+          normalizeStorageV3RestoredSnapshot({
+            db: writable,
+            artifactId: verified.artifactId,
+            stagedLocator: verified.stagedLocator,
+            finalLocator: verified.locator,
+            backupAt: verified.backupAt,
+            selectedArtifactId: verified.selectedArtifactId,
+            ownerScopeIds: verified.ownerScopeIds,
+            intentSha256: verified.intentSha256,
+          })
+          registerRestoredStorageV3MigrationCleanup({
+            db: writable,
+            root: root!,
+            selection,
+            verification: verified,
+            installationKey: closed.installationKey,
+          })
+          replayStorageV3Revocations(writable, revocations)
+          failAfterStage?.('tombstone-replay')
+          failAfterStage?.('receipt')
+          const recorded = recordStorageV3MigrationSelection(writable, {
+            legacySourceId: selection.legacySourceId,
+            selectedArtifactId: selection.selectedArtifactId,
+            backupArtifactId: selection.backupArtifactId,
+            backupAt: verified.backupAt,
+            taskId: closed.installationKey.taskId,
+            taskFingerprint: closed.installationKey.fingerprint,
+            rootBinding: storageV3MigrationRootBinding(closed.directory),
+            successReportProof: replayStorageV3MigrationSuccessReport({
+              legacySourceId: selection.legacySourceId,
+              selectedArtifactId: selection.selectedArtifactId,
+              backupArtifactId: selection.backupArtifactId,
+              backupAt: verified.backupAt,
+              taskId: closed.installationKey.taskId,
+              taskFingerprint: closed.installationKey.fingerprint,
+              rootBinding: storageV3MigrationRootBinding(closed.directory),
+            }, replayAuthority, root!, closed.installationKey),
+          })
+          assertExactRestoreSelection(recorded.selection, selection)
+          writable.close()
+          writable = undefined
+          failAfterStage?.('link')
+          assertRestoreSidecarsAbsent(root!, tempLocator)
+          // The creation handle stays open through normalization and link validation;
+          // it is O_RDWR so the final durability flush remains portable on Windows.
+          if (claimedTempDescriptor === undefined) return fail()
+          try {
+            const stable = assertRestoreRegular(tempPath, claimedTempDescriptor, 1n)
+            fsyncSync(claimedTempDescriptor)
+            if (!sameRestoreIdentity(stable, claimedTemp!)) return fail()
+            const beforeLink = assertRestoreRegular(tempPath, claimedTempDescriptor, 1n)
+            if (!sameRestoreIdentity(beforeLink, claimedTemp!)) return fail()
+            linkSync(tempPath, selectedPath)
+            const selectedDescriptor = openSync(selectedPath, constants.O_RDONLY | NO_FOLLOW)
+            try {
+              const linkedTemp = assertRestoreRegular(tempPath, claimedTempDescriptor, 2n)
+              if (!sameRestoreIdentity(linkedTemp, claimedTemp!)) return fail()
+              const selectedStable = assertRestoreRegular(selectedPath, selectedDescriptor, 2n)
+              if (!sameRestoreIdentity(selectedStable, claimedTemp!)) return fail()
+              publishedIdentity = Object.freeze({ dev: selectedStable.dev, ino: selectedStable.ino })
+            } finally { closeSync(selectedDescriptor) }
+          } finally {
+            closeSync(claimedTempDescriptor)
+            claimedTempDescriptor = undefined
+          }
+          failAfterStage?.('directory-sync')
+          synchronize(root!, 'link')
+          failAfterStage?.('temp-unlink')
+          removePublishedRestoreTemp(root!, publishedIdentity!)
+          synchronize(root!, 'temp-unlink')
+          failAfterStage?.('readonly-reopen')
+          const reader = openSelectedStorageV3StoreReadonly(closed.directory)
+          try {
+            const receipt = readStorageV3MigrationSelection(reader)
+            if (receipt === undefined) return fail()
+            assertExactRestoreSelection(receipt, selection)
+            assertRestoreSelectedArtifact(reader, selection.selectedArtifactId)
+            assertStorageV3RevocationReplayApplied(reader, revocations)
+            return Object.freeze({ reader: 'sqlite-v3' as const, db: reader, selection: receipt })
+          } catch {
+            if (reader.open) reader.close()
+            return fail()
+          }
+        },
       )
-      const revocations = verifyStorageV3RevocationReplay(
-        root!,
-        closed.installationKey,
-        selection,
-        lease,
-      )
-      const selectedPath = storageV3ArtifactFilePath(root!, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
-      const tempLocator = STORAGE_V3_ARTIFACT_LOCATORS.migrationPrimary
-      const tempPath = storageV3ArtifactFilePath(root!, tempLocator)
-      const selectedEntry = lstatRestore(selectedPath)
-      if (selectedEntry !== undefined) {
-        if (selectedEntry.isSymbolicLink() || !selectedEntry.isFile()) return restoreUnavailable()
-        recoverPublishedRestore(root!, synchronize)
-        const replay = openSelectedStorageV3StoreReadonly(closed.directory)
-        try {
-          const receipt = readStorageV3MigrationSelection(replay)
-          if (receipt === undefined) return restoreUnavailable()
-          assertExactRestoreSelection(receipt, selection)
-          assertRestoreSelectedArtifact(replay, selection.selectedArtifactId)
-          assertStorageV3RevocationReplayApplied(replay, revocations)
-          return Object.freeze({ reader: 'sqlite-v3' as const, db: replay, selection: receipt })
-        } catch {
-          if (replay.open) replay.close()
-          return restoreUnavailable()
-        }
-      }
-      assertRestoreNoSidecars(root!, STORAGE_V3_ARTIFACT_LOCATORS.selectedStore)
-      assertRestoreNoSidecars(root!, tempLocator)
-      const verified = verifyStorageV3MigrationBackupForRestore({
-        root: root!,
-        backupAt: closed.backupAt,
-        artifactId: closed.backupArtifactId,
-        installationKey: closed.installationKey,
-      })
-      if (verified.selectedArtifactId !== selection.selectedArtifactId
-        || verified.artifactId !== selection.backupArtifactId) return restoreUnavailable()
-      const copiedTemp = copyRestoreBackup(root!, verified, tempPath, failAfterStage)
-      claimedTemp = Object.freeze({ dev: copiedTemp.dev, ino: copiedTemp.ino })
-      claimedTempDescriptor = copiedTemp.descriptor
-      writable = new Database(tempPath, { fileMustExist: true })
-      bindStorageV3ArtifactRoot(writable, root!)
-      assertSelectableStorageV3Target(writable, { allowContinuityCasState: true })
-      assertStorageV3ArtifactCatalogue(writable)
-      failAfterStage?.('normalize')
-      normalizeStorageV3RestoredSnapshot({
-        db: writable,
-        artifactId: verified.artifactId,
-        stagedLocator: verified.stagedLocator,
-        finalLocator: verified.locator,
-        backupAt: verified.backupAt,
-        selectedArtifactId: verified.selectedArtifactId,
-        ownerScopeIds: verified.ownerScopeIds,
-        intentSha256: verified.intentSha256,
-      })
-      registerRestoredStorageV3MigrationCleanup({
-        db: writable,
-        root: root!,
-        selection,
-        verification: verified,
-        installationKey: closed.installationKey,
-      })
-      replayStorageV3Revocations(writable, revocations)
-      failAfterStage?.('tombstone-replay')
-      failAfterStage?.('receipt')
-      const recorded = recordStorageV3MigrationSelection(writable, {
-        legacySourceId: selection.legacySourceId,
-        selectedArtifactId: selection.selectedArtifactId,
-        backupArtifactId: selection.backupArtifactId,
-        backupAt: verified.backupAt,
-        taskId: closed.installationKey.taskId,
-        taskFingerprint: closed.installationKey.fingerprint,
-        rootBinding: storageV3MigrationRootBinding(closed.directory),
-        successReportProof: replayStorageV3MigrationSuccessReport({
-          legacySourceId: selection.legacySourceId,
-          selectedArtifactId: selection.selectedArtifactId,
-          backupArtifactId: selection.backupArtifactId,
-          backupAt: verified.backupAt,
-          taskId: closed.installationKey.taskId,
-          taskFingerprint: closed.installationKey.fingerprint,
-          rootBinding: storageV3MigrationRootBinding(closed.directory),
-        }, selection.successfulReportAt),
-      })
-      assertExactRestoreSelection(recorded.selection, selection)
-      writable.close()
-      writable = undefined
-      failAfterStage?.('link')
-      assertRestoreSidecarsAbsent(root!, tempLocator)
-      // The creation handle stays open through normalization and link validation;
-      // it is O_RDWR so the final durability flush remains portable on Windows.
-      if (claimedTempDescriptor === undefined) return fail()
-      try {
-        const stable = assertRestoreRegular(tempPath, claimedTempDescriptor, 1n)
-        fsyncSync(claimedTempDescriptor)
-        if (!sameRestoreIdentity(stable, claimedTemp!)) return fail()
-        const beforeLink = assertRestoreRegular(tempPath, claimedTempDescriptor, 1n)
-        if (!sameRestoreIdentity(beforeLink, claimedTemp!)) return fail()
-        linkSync(tempPath, selectedPath)
-        const selectedDescriptor = openSync(selectedPath, constants.O_RDONLY | NO_FOLLOW)
-        try {
-          const linkedTemp = assertRestoreRegular(tempPath, claimedTempDescriptor, 2n)
-          if (!sameRestoreIdentity(linkedTemp, claimedTemp!)) return fail()
-          const selectedStable = assertRestoreRegular(selectedPath, selectedDescriptor, 2n)
-          if (!sameRestoreIdentity(selectedStable, claimedTemp!)) return fail()
-          publishedIdentity = Object.freeze({ dev: selectedStable.dev, ino: selectedStable.ino })
-        } finally { closeSync(selectedDescriptor) }
-      } finally {
-        closeSync(claimedTempDescriptor)
-        claimedTempDescriptor = undefined
-      }
-      failAfterStage?.('directory-sync')
-      synchronize(root!, 'link')
-      failAfterStage?.('temp-unlink')
-      removePublishedRestoreTemp(root!, publishedIdentity!)
-      synchronize(root!, 'temp-unlink')
-      failAfterStage?.('readonly-reopen')
-      const reader = openSelectedStorageV3StoreReadonly(closed.directory)
-      try {
-        const receipt = readStorageV3MigrationSelection(reader)
-        if (receipt === undefined) return fail()
-        assertExactRestoreSelection(receipt, selection)
-        assertRestoreSelectedArtifact(reader, selection.selectedArtifactId)
-        assertStorageV3RevocationReplayApplied(reader, revocations)
-        return Object.freeze({ reader: 'sqlite-v3' as const, db: reader, selection: receipt })
-      } catch {
-        if (reader.open) reader.close()
-        return fail()
-      }
     })
   } catch {
     if (writable?.open) { try { writable.close() } catch { /* refusal remains content-free */ } }

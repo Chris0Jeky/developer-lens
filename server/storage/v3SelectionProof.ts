@@ -32,7 +32,10 @@ import {
 import {
   readStorageV3MigrationSelection,
   type StorageV3MigrationSelection,
-} from './v3SelectionReceipt.js'
+  storageV3MigrationRootBinding,
+  canonicalBackupTimestamp,
+  type StorageV3MigrationReportContext,
+} from './v3SelectionReceiptState.js'
 import { withStorageV3WriterLease } from './v3WriterLease.js'
 import { isCanonicalTaskId } from '../taskId.js'
 
@@ -96,7 +99,13 @@ type Marker = MarkerBody & Readonly<{
   installationKeyBinding: string
 }>
 
+/** Only a live synchronous restore scope can redeem this opaque authority. */
+export interface StorageV3MigrationSelectionReplayAuthority {
+  readonly __storageV3MigrationSelectionReplayAuthority: never
+}
+
 type HandleRecord = Readonly<{
+  phase: 'verified' | 'restore'
   finalPath: string
   selection: StorageV3MigrationSelection
   bytes: Buffer
@@ -104,7 +113,6 @@ type HandleRecord = Readonly<{
 }>
 
 const HANDLES = new WeakMap<StorageV3MigrationSelectionProofHandle, HandleRecord>()
-const CONSUMED = new WeakSet<StorageV3MigrationSelectionProofHandle>()
 
 function own(value: object, key: string): unknown {
   const descriptor = Object.getOwnPropertyDescriptor(value, key)
@@ -599,7 +607,7 @@ function verifyInternal(
       graceDeadlineAt: parsed.graceDeadlineAt,
     })
     const handle = Object.freeze({}) as StorageV3MigrationSelectionProofHandle
-    HANDLES.set(handle, Object.freeze({ finalPath, selection, bytes: Buffer.from(exact), installationKeyFingerprint: installationKey.fingerprint }))
+    HANDLES.set(handle, Object.freeze({ phase: 'verified', finalPath, selection, bytes: Buffer.from(exact), installationKeyFingerprint: installationKey.fingerprint }))
     return handle
   } catch (error) {
     if (error instanceof StorageV3SelectionProofError) throw error
@@ -619,25 +627,85 @@ export function verifyStorageV3MigrationSelectionProof(
   )
 }
 
+function revalidateHandle(
+  handle: StorageV3MigrationSelectionProofHandle | StorageV3MigrationSelectionReplayAuthority,
+  root: StorageV3ArtifactRoot,
+  installationKey: TaskInstallationKeyHandle,
+  phase: HandleRecord['phase'],
+): HandleRecord {
+  const record = HANDLES.get(handle as StorageV3MigrationSelectionProofHandle)
+  if (record === undefined || record.phase !== phase) return fail()
+  assertStorageV3ArtifactRootInstallationKey(root, installationKey)
+  const finalPath = storageV3ArtifactFilePath(root, FINAL_NAME)
+  if (record.finalPath !== finalPath || record.installationKeyFingerprint !== installationKey.fingerprint) return fail()
+  const tempPath = storageV3ArtifactFilePath(root, TEMP_NAME)
+  rejectSidecars(dirname(finalPath))
+  const tempEntry = stat(tempPath)
+  readDescriptor(finalPath, record.bytes, tempEntry === undefined ? 1n : 2n)
+  if (tempEntry !== undefined) exactPair(tempPath, finalPath, record.bytes)
+  parseMarker(record.bytes, installationKey, record.selection)
+  return record
+}
+
+/** Ordinary consumption returns data only; it destroys any future replay authority. */
 export function consumeStorageV3MigrationSelectionProof(
   handle: StorageV3MigrationSelectionProofHandle,
   root: StorageV3ArtifactRoot,
   installationKey: TaskInstallationKeyHandle,
 ): StorageV3MigrationSelection {
   try {
-    const record = HANDLES.get(handle)
-    if (record === undefined || CONSUMED.has(handle)) return fail()
-    assertStorageV3ArtifactRootInstallationKey(root, installationKey)
-    const finalPath = storageV3ArtifactFilePath(root, FINAL_NAME)
-    if (record.finalPath !== finalPath || record.installationKeyFingerprint !== installationKey.fingerprint) return fail()
-    const tempPath = storageV3ArtifactFilePath(root, TEMP_NAME)
-    rejectSidecars(dirname(finalPath))
-    const tempEntry = stat(tempPath)
-    readDescriptor(finalPath, record.bytes, tempEntry === undefined ? 1n : 2n)
-    if (tempEntry !== undefined) exactPair(tempPath, finalPath, record.bytes)
-    parseMarker(record.bytes, installationKey, record.selection)
-    CONSUMED.add(handle)
+    const record = revalidateHandle(handle, root, installationKey, 'verified')
+    HANDLES.delete(handle)
     return record.selection
+  } catch (error) {
+    if (error instanceof StorageV3SelectionProofError) throw error
+    return fail()
+  }
+}
+
+/** Verify and consume once; authority cannot outlive this synchronous restore scope. */
+export function withStorageV3MigrationSelectionRestoreAuthority<T>(
+  handle: StorageV3MigrationSelectionProofHandle,
+  root: StorageV3ArtifactRoot,
+  installationKey: TaskInstallationKeyHandle,
+  restore: (selection: StorageV3MigrationSelection, authority: StorageV3MigrationSelectionReplayAuthority) => T,
+): T {
+  if (typeof restore !== 'function') return fail()
+  let record: HandleRecord
+  try {
+    record = revalidateHandle(handle, root, installationKey, 'verified')
+  } catch (error) {
+    if (error instanceof StorageV3SelectionProofError) throw error
+    return fail()
+  }
+  HANDLES.set(handle, Object.freeze({ ...record, phase: 'restore' }))
+  try {
+    return restore(record.selection, handle as unknown as StorageV3MigrationSelectionReplayAuthority)
+  } finally {
+    HANDLES.delete(handle)
+  }
+}
+
+/** Redeem only a live restore authority, after exact marker and report-context binding checks. */
+export function consumeStorageV3MigrationSelectionReplayAuthority(
+  authority: StorageV3MigrationSelectionReplayAuthority,
+  root: StorageV3ArtifactRoot,
+  installationKey: TaskInstallationKeyHandle,
+  input: StorageV3MigrationReportContext,
+): StorageV3MigrationSelection {
+  try {
+    const record = revalidateHandle(authority, root, installationKey, 'restore')
+    const selection = record.selection
+    const backupAt = canonicalBackupTimestamp(input.backupAt)
+    if (input.legacySourceId !== selection.legacySourceId
+      || input.selectedArtifactId !== selection.selectedArtifactId
+      || input.backupArtifactId !== selection.backupArtifactId
+      || input.taskId !== installationKey.taskId
+      || input.taskFingerprint !== installationKey.fingerprint
+      || input.rootBinding !== storageV3MigrationRootBinding(dirname(record.finalPath))
+      || Date.parse(backupAt) > Date.parse(selection.successfulReportAt)) return fail()
+    HANDLES.delete(authority as unknown as StorageV3MigrationSelectionProofHandle)
+    return selection
   } catch (error) {
     if (error instanceof StorageV3SelectionProofError) throw error
     return fail()
@@ -653,21 +721,6 @@ export const v3SelectionProofTestSeams = Object.freeze({
   ): StorageV3MigrationSelectionProofHandle {
     if (typeof synchronizer !== 'function') return fail()
     return verifyInternal(root, installationKey, synchronizer, () => {})
-  },
-  publishWithDirectorySynchronizer(
-    root: StorageV3ArtifactRoot,
-    selection: StorageV3MigrationSelection,
-    installationKey: TaskInstallationKeyHandle,
-    synchronizer: DirectorySynchronizer,
-    failAtStage?: StorageV3SelectionProofStageFailure,
-  ): StorageV3MigrationSelectionProofPublication {
-    if (typeof synchronizer !== 'function') return fail()
-    try {
-      return publishInternal(root, selection, installationKey, synchronizer, failAtStage)
-    } catch (error) {
-      if (error instanceof StorageV3SelectionProofError) throw error
-      return fail()
-    }
   },
   publishCommittedWithDirectorySynchronizer(
     db: Database.Database,

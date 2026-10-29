@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import Database from 'better-sqlite3'
+import { vi } from 'vitest'
 import {
   createStorageV3ArtifactRoot,
   registerSelectedStorageV3Artifact,
@@ -270,7 +271,13 @@ export async function createInventedSelectedStore(
     return Object.freeze({
       root,
       input,
-      select: () => v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(input, () => {}, SUCCESS_AT),
+      select: () => {
+        vi.useFakeTimers({ toFake: ['Date'] })
+        try {
+          vi.setSystemTime(SUCCESS_AT)
+          return v3ReaderSelectionTestSeams.selectWithProofDirectorySynchronizer(input, () => {})
+        } finally { vi.useRealTimers() }
+      },
       cleanup,
     })
   } catch (error) {

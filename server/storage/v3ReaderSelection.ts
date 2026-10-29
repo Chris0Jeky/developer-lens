@@ -17,10 +17,8 @@ import {
   storageV3MigrationRootBinding,
   readStorageV3MigrationSelection,
   StorageV3MigrationSelectionError,
-  v3SelectionReceiptTestSeams,
   type StorageV3MigrationSelection,
   type StorageV3MigrationSelectionInitializationGrant,
-  type StorageV3MigrationSuccessReportProof,
 } from './v3SelectionReceipt.js'
 import {
   openSelectedStorageV3Store,
@@ -286,15 +284,6 @@ function selectStorageV3ReaderInternal(
   beforeReceiptCommit?: () => void,
   publishProof: SelectionProofPublisher = publishStorageV3MigrationSelectionProof,
   preflightProof: SelectionProofPreflight = assertStorageV3SelectionProofDurability,
-  issueSuccessReport: (input: {
-    legacySourceId: string
-    selectedArtifactId: string
-    backupArtifactId: string
-    backupAt: string
-    taskId: string
-    taskFingerprint: string
-    rootBinding: string
-  }) => StorageV3MigrationSuccessReportProof = issueStorageV3MigrationSuccessReport,
   initializeRevocationReplay: RevocationReplayInitializer = initializeStorageV3RevocationReplay,
   commitRevocationReplay: RevocationReplayCommitter = commitStorageV3RevocationReplayInitialization,
 ): StorageV3ReaderSelection {
@@ -373,7 +362,7 @@ function selectStorageV3ReaderInternal(
           taskId: closed.installationKey.taskId,
           taskFingerprint: closed.installationKey.fingerprint,
           rootBinding: rootBindingFor(closed.directory),
-          successReportProof: issueSuccessReport({
+          successReportProof: issueStorageV3MigrationSuccessReport({
             legacySourceId: closed.legacySourceId,
             selectedArtifactId: backup.selectedArtifactId,
             backupArtifactId: backup.artifactId,
@@ -463,7 +452,6 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
   selectWithBeforeReceiptCommit(
     input: StorageV3ReaderSelectionInput,
     beforeReceiptCommit: () => void,
-    successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof beforeReceiptCommit !== 'function') return fallback('v3-selection-request-invalid')
     return selectStorageV3ReaderInternal(
@@ -473,10 +461,6 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, () => {},
       ),
       () => {},
-      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
-        report,
-        successfulReportAt,
-      ),
       (root, installationKey, selection, initializationGrant, lease) =>
         v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
           root, installationKey, selection, initializationGrant, lease, () => {},
@@ -493,7 +477,6 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
       root: ReturnType<typeof openStorageV3ArtifactRoot>,
       stage: StorageV3SelectionProofPublicationStage,
     ) => void,
-    successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof synchronizer !== 'function') return fallback('v3-selection-request-invalid')
     return selectStorageV3ReaderInternal(
@@ -503,10 +486,6 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, synchronizer,
       ),
       () => {},
-      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
-        report,
-        successfulReportAt,
-      ),
       (root, installationKey, selection, initializationGrant, lease) =>
         v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
           root, installationKey, selection, initializationGrant, lease, () => {},
@@ -520,7 +499,6 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
   selectWithProofPreflight(
     input: StorageV3ReaderSelectionInput,
     preflight: SelectionProofPreflight,
-    successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof preflight !== 'function') return fallback('v3-selection-request-invalid')
     return selectStorageV3ReaderInternal(
@@ -530,10 +508,6 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, () => {},
       ),
       preflight,
-      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
-        report,
-        successfulReportAt,
-      ),
       (root, installationKey, selection, initializationGrant, lease) =>
         v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
           root, installationKey, selection, initializationGrant, lease, () => {},
@@ -552,7 +526,6 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, () => {},
       ),
       () => {},
-      issueStorageV3MigrationSuccessReport,
       (root, installationKey, selection, initializationGrant, lease) =>
         v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
           root, installationKey, selection, initializationGrant, lease, () => {},
@@ -569,7 +542,6 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
       root: ReturnType<typeof openStorageV3ArtifactRoot>,
       stage: StorageV3RevocationReplayPublicationStage,
     ) => void,
-    successfulReportAt: string,
   ): StorageV3ReaderSelection {
     if (typeof synchronizer !== 'function') return fallback('v3-selection-request-invalid')
     return selectStorageV3ReaderInternal(
@@ -579,10 +551,6 @@ export const v3ReaderSelectionTestSeams = Object.freeze({
         db, root, installationKey, () => {},
       ),
       () => {},
-      (report) => v3SelectionReceiptTestSeams.issueSuccessReportAt(
-        report,
-        successfulReportAt,
-      ),
       (root, installationKey, selection, initializationGrant, lease) =>
         v3RevocationReplayTestSeams.ensureWithDirectorySynchronizer(
           root,
