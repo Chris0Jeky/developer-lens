@@ -1249,6 +1249,7 @@ export function bindStorageV3MigrationBackupAttemptIdentity(
   if (closed.file !== 'sqlite' && closed.file !== 'manifest') fail()
   const dev = canonicalIdentity(closed.dev)
   const ino = canonicalIdentity(closed.ino)
+  if (dev === '0' && ino === '0') fail()
   const before = readMigrationBackupAttemptRow(closed.db, closed.artifactId)
   const currentDev = closed.file === 'sqlite' ? before.sqliteDev : before.manifestDev
   const currentIno = closed.file === 'sqlite' ? before.sqliteIno : before.manifestIno

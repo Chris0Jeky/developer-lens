@@ -2948,3 +2948,25 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **occurrences:** One PR #444 merge-repair hop. Initial continuation-skill lookup also repeated FR-058; the listed repository-local skill supplied the binding instructions.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains bounded proving-environment maintenance; PR #444 owns this merge-resolution handoff.
 - **promotion:** Keep index-based verification fail-closed; this is an explicit task-authority constraint, not a reason to change the gate. FR-058's existing repository-local lookup rule remains the cheapest prevention for its repeated discovery friction.
+
+### FR-118 - file-symlink fixture privilege is a qualification limit
+
+- **first-seen:** 2026-10-25
+- **status:** `promoted`
+- **symptom:** The focused acceleration-bundle suite reproduced Windows `EPERM` during file-symlink fixture creation, before the materializer ran: 19 passed and one failed. Earlier independent full-run occurrences are recorded above and in the implementation ledger.
+- **impact:** An unavailable native primitive prevented unrelated proving, while establishing no file-symlink protection result.
+- **workaround:** Classify only Windows `EPERM` from the file-symlink creation call as an explicit Vitest skip. Keep all other errors fatal and continue real junction/hard-link tests. A permitted runner still executes the unchanged CLI assertions; there is no blanket Windows skip or privilege change.
+- **occurrences:** Reproduced again in this worktree after a successful lockfile installation. The initial absent global skill-path lookup repeated FR-058; the repository-local skill supplied the instructions.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains the broader maintenance backlog and qualification on a symlink-capable Windows runner.
+- **promotion:** The test fixture now encodes the narrow availability rule, with success, Windows refusal, non-Windows refusal and unexpected-error checks. A skip remains unverified evidence, never native acceptance.
+
+### FR-119 - uploaded-source proving requires the hosted dependency environment
+
+- **first-seen:** 2026-10-29
+- **status:** `task-debt`
+- **symptom:** The managed executor's npm cache was unwritable; after choosing a writable temporary cache, the declared npm registry connection was refused with EPERM.
+- **impact:** The exact lockfile cannot be installed locally, so this executor cannot claim the Vitest, compiler or complete project gate passed.
+- **workaround:** Reconcile every tracked archive blob with the live GitHub tree, use connected GitHub branch/commit/PR tooling, and require fresh exact-head hosted proving. No repeated network workaround, credential access, proxy change or dependency substitution.
+- **occurrences:** One cache-write failure followed by one registry-connection refusal in this session.
+- **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains proof/bootstrap maintenance; PR #445 records the actual validation receipts.
+- **promotion:** Keep local inspection distinct from hosted proof; do not call a historical green run current-head evidence.

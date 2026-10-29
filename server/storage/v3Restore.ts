@@ -498,6 +498,9 @@ function copyRestoreBackup(
       || hash.digest('hex') !== verified.contentSha256
       || tempAfter.size !== sourceAfter.size
       || tempAfter.size < BigInt(SQLITE_HEADER.length)) return fail()
+    // Complete the source close while the temp still has a local cleanup owner.
+    closeSync(sourceDescriptor)
+    sourceDescriptor = undefined
     const transferredDescriptor = tempDescriptor
     if (transferredDescriptor === undefined) return fail()
     tempDescriptor = undefined
