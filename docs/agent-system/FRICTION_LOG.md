@@ -398,6 +398,17 @@ Rules that bind entries:
   remote branches when deletion requires a bypass until Product #221's checked helper/contract
   exists.
 
+  **2026-10-29 rule-scope inspection:** A connected GitHub read found one active repository
+  ruleset, [24436729](https://github.com/Chris0Jeky/developer-lens/rules/24436729), whose only
+  include is `~DEFAULT_BRANCH`. It prevents deletion and non-fast-forward updates, has no bypass
+  actors, and reports `current_user_can_bypass: never`. Main remains protected; the sampled merged
+  branches `docs/prompt-per-body-routing-20260809` and `docs/record-fr011-20260818` report
+  `protected: false`. `delete_branch_on_merge` remains false. This supersedes the historical
+  all-branches diagnosis, not the checked-cleanup requirement: #221 remains open for a helper and
+  local worktree inventory that refresh protections and preserve owner work. Classic protection
+  details requiring administration permission were unavailable to the integration. No branch,
+  worktree, rule or permission was changed during this read-only inspection.
+
 ### FR-012 — fresh product worktree lacks the Node tool bootstrap
 
 - **first-seen:** 2026-08-09
@@ -2938,16 +2949,30 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) owns bounded Windows proving helpers and a runner-capability disposition.
 - **promotion:** Keep actual file-symlink proof on a capable runner. This remains task debt because host privilege changes and gate/test exclusions are outside the focused #439 repair; no weaker assertion substitutes for the missing boundary proof.
 
+  **2026-10-29 qualification note:** #445 landed the separately reviewed FR-118 availability
+  rule. Its exact-head hosted run [40803337422](https://github.com/Chris0Jeky/developer-lens/actions/runs/40803337422)
+  passed the complete Linux gate, including all 26 acceleration-bundle tests and native
+  file-symlink protection, with 2,465 tests
+  passed and four unrelated skips. The original no-skip workaround above records the narrower
+  historical task boundary. Native file-symlink qualification on a capable Windows host remains
+  open under #222; an explicit unavailable-fixture skip is not a native acceptance result.
+
 ### FR-117 - merge index prevents context qualification under a no-Git-write task
 
 - **first-seen:** 2026-10-25
-- **status:** `open`
+- **status:** `resolved`
 - **symptom:** PR #444's two documentation conflicts are resolved in the working files, but the index still has stages 1/2/3. `npm run check` stops at context verification with `unable to enumerate eligible Git-tracked metadata`.
 - **impact:** The index privacy guard cannot qualify an unresolved index; file-content resolution alone does not establish a green aggregate gate.
 - **workaround:** Preserve the no-Git-write boundary and run the remaining declared checks individually. Do not weaken the verifier or treat their results as a green aggregate gate. A coordinator with Git-write authority must stage the resolved files and re-run `npm run check` on a file-symlink-capable runner.
 - **occurrences:** One PR #444 merge-repair hop. Initial continuation-skill lookup also repeated FR-058; the listed repository-local skill supplied the binding instructions.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains bounded proving-environment maintenance; PR #444 owns this merge-resolution handoff.
-- **promotion:** Keep index-based verification fail-closed; this is an explicit task-authority constraint, not a reason to change the gate. FR-058's existing repository-local lookup rule remains the cheapest prevention for its repeated discovery friction.
+- **promotion:** Keep index-based verification fail-closed; this was an explicit task-authority constraint, not a reason to change the gate. Resolution proof is #445's exact-head hosted context and complete gate in run 40803337422 after #444 merged, with both histories preserved. FR-058's existing repository-local lookup rule remains the cheapest prevention for its repeated discovery friction.
+
+  **2026-10-29 resolution:** GitHub main contained #444 at `bae3bdd`, and all 496 uploaded tracked
+  blobs matched its complete tree. The authorized #445 merge resolution preserved both ledger
+  histories and FR-116/FR-117. Its fresh hosted gate passed context verification and all subsequent
+  checks on head `5d128ce`; no unresolved-index workaround or weaker verifier was used. The old
+  no-Git-write handoff above remains historical evidence, not a current merge blocker.
 
 ### FR-118 - file-symlink fixture privilege is a qualification limit
 
@@ -2963,10 +2988,28 @@ heading-bounded-retry enforcement remains selected; no new parser or structure i
 ### FR-119 - uploaded-source proving requires the hosted dependency environment
 
 - **first-seen:** 2026-10-29
-- **status:** `task-debt`
+- **status:** `workaround-documented`
 - **symptom:** The managed executor's npm cache was unwritable; after choosing a writable temporary cache, the declared npm registry connection was refused with EPERM.
 - **impact:** The exact lockfile cannot be installed locally, so this executor cannot claim the Vitest, compiler or complete project gate passed.
 - **workaround:** Reconcile every tracked archive blob with the live GitHub tree, use connected GitHub branch/commit/PR tooling, and require fresh exact-head hosted proving. No repeated network workaround, credential access, proxy change or dependency substitution.
 - **occurrences:** One cache-write failure followed by one registry-connection refusal in this session.
 - **task:** [Product #222](https://github.com/Chris0Jeky/developer-lens/issues/222) retains proof/bootstrap maintenance; PR #445 records the actual validation receipts.
 - **promotion:** Keep local inspection distinct from hosted proof; do not call a historical green run current-head evidence.
+
+  **2026-10-29 proof-mode note:** A standalone scratch TypeScript `node --check` invocation
+  rejected an inline type import in its parser mode, and the attempted default-module flag was
+  unavailable. Neither command is compiler evidence or evidence of a product defect. The exact
+  published guard repair was independently compared with its prior blob; the hosted TypeScript
+  and full PR gate remain required. The status uses this log's allowed `workaround-documented`
+  value; the underlying local dependency limitation remains.
+
+### FR-120 - tracked diff checks omitted a newly added file's EOF whitespace
+
+- **first-seen:** 2026-10-29
+- **status:** `workaround-documented`
+- **symptom:** Applying the complete #451 patch in a fresh follow-up checkout warned about an extra blank line at EOF in the newly added receipt-state leaf. Earlier `git diff --check` covered tracked edits but did not include that untracked new file.
+- **impact:** The reported tracked-diff check was narrower than the complete publication payload; no behavior or authority defect was caused by the blank line.
+- **workaround:** Inspected the complete patch and explicit new-file list and removed the extra EOF blank line in #454. The published state-leaf blob `fbad2df04bdc7429f67b3f2e9d5a997150a24920` matches the reviewed file; exact-head run 40808431133 passed the complete gate. No owner work was staged or altered to make a check include it.
+- **occurrences:** One new-file handoff in this campaign.
+- **task:** [Product #177](https://github.com/Chris0Jeky/developer-lens/issues/177), completed through [#451](https://github.com/Chris0Jeky/developer-lens/pull/451) and [#454](https://github.com/Chris0Jeky/developer-lens/pull/454), records the full replay-authority handoff and [exact-head hosted result](https://github.com/Chris0Jeky/developer-lens/actions/runs/40808431133/job/123233110498).
+- **promotion:** Retain the explicit full-payload/new-file check in this handoff. One occurrence does not justify a new repository-wide tool or policy layer.

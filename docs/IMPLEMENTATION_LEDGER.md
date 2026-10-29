@@ -6093,3 +6093,146 @@ was touched.
 - Review of original head `c45021ca90f3d764d4a32b8055132e722f592933`: independent fresh-context code review found no blocking defects. Codex reported no findings. Historical hosted run `40215233153`, job `121234816966`, passed against then-base `d246a1b`, including all 26 acceleration tests on Linux. This is not proof of the reconciled head.
 - Verification boundary: local Node 24 is available; dependency installation failed because the executor refuses the npm registry network connection. A writable temporary npm cache resolved the separate cache-write failure; no proxy, credentials, lockfile or package versions were changed. FR-119 records the limitation. Use exact-head hosted CI for the reconciled patch; native Windows file-symlink proof remains outstanding under #222.
 - Acceptance: fresh-head hosted required gate, unchanged native assertion coverage, independent review of the resolution, normal review aging and final head/base refresh. HUMAN_TODO and release/activation gates are unchanged.
+
+
+## 2026-10-29 — bounded product, storage and explanation campaign
+
+This receipt supersedes the previous PR #445 pending-merge resume point while preserving its
+original local/Windows evidence. The coordinator refreshed the public GitHub source before
+publication; the initial uploaded source tree matched main `bae3bdd` exactly. The eleven merged
+slices below were selected and reviewed separately, with invented fixtures only and ordinary
+revert rollback. At 02:58:17 UTC the observed post-#455 main was
+`503ab350cf840096997846af50f51b154d45bd1d`; this is an already observed predecessor,
+not a prediction of the documentation commit that will carry this entry.
+
+| PR | Delivered behavior | Qualified head | Hosted required proving | Tests passed / skipped |
+|---|---|---|---|---|
+| [#445](https://github.com/Chris0Jeky/developer-lens/pull/445) | Explicit Windows file-symlink fixture availability; genuine protection assertions remain active whenever creation succeeds. | `5d128ce` | [40803337422](https://github.com/Chris0Jeky/developer-lens/actions/runs/40803337422) | 2465 / 4 |
+| [#446](https://github.com/Chris0Jeky/developer-lens/pull/446) | Accessible timeline text retains every baseline and candidate alert week, preserving both labels and PELT behavior. | `d65e186` | [40804630285](https://github.com/Chris0Jeky/developer-lens/actions/runs/40804630285) | 2475 / 4 |
+| [#447](https://github.com/Chris0Jeky/developer-lens/pull/447) | Reject all-zero backup device/inode identity before handle mutation; preserve descriptor ownership and cleanup ordering. | `425e943` | [40804633802](https://github.com/Chris0Jeky/developer-lens/actions/runs/40804633802) | 2472 / 4 |
+| [#448](https://github.com/Chris0Jeky/developer-lens/pull/448) | Scoped native-v3 explanations, direct coverage edges, missing/deleted targets and retained week lineage; legacy behavior preserved. | `25d1e22` | [40805672047](https://github.com/Chris0Jeky/developer-lens/actions/runs/40805672047) | 2499 / 4 |
+| [#449](https://github.com/Chris0Jeky/developer-lens/pull/449) | ISO-week validation uses the literal four-digit year, including 0000–0099; native SQLite schema unchanged. | `076fafc` | [40805752146](https://github.com/Chris0Jeky/developer-lens/actions/runs/40805752146) | 2496 / 4 |
+| [#450](https://github.com/Chris0Jeky/developer-lens/pull/450) | Confound display condition states that the candidate false-alert rate does not exceed baseline, beside Pass/Fail/NA. | `357e901` | [40805756327](https://github.com/Chris0Jeky/developer-lens/actions/runs/40805756327) | 2482 / 4 |
+| [#452](https://github.com/Chris0Jeky/developer-lens/pull/452) | G-ML-1 records the existing Gate B scope decision; reviewed curated capability/provenance and per-candidate proof remain required. | `80eaf18` | [40805997558](https://github.com/Chris0Jeky/developer-lens/actions/runs/40805997558) | 2482 / 4 |
+| [#453](https://github.com/Chris0Jeky/developer-lens/pull/453) | Active marker-owned prompt openings must be exactly the canonical text fence; indented/alternate fences cannot bypass it. | `c62d359` | [40807374341](https://github.com/Chris0Jeky/developer-lens/actions/runs/40807374341) | 2528 / 4 |
+| [#451](https://github.com/Chris0Jeky/developer-lens/pull/451) | Verified-selection replay authorization, with the import-boundary guard repaired before merge. | `3c82bb4` | [40807899488](https://github.com/Chris0Jeky/developer-lens/actions/runs/40807899488) | 2536 / 4 |
+| [#454](https://github.com/Chris0Jeky/developer-lens/pull/454) | Validate and freeze report context before reading one-use authority; prevent reentrant reuse. | `26c9a0b` | [40808431133](https://github.com/Chris0Jeky/developer-lens/actions/runs/40808431133) | 2539 / 4 |
+| [#455](https://github.com/Chris0Jeky/developer-lens/pull/455) | Reject unknown/inherited/non-string dimension keys without incidental TypeError or array-to-key coercion. | `c5924a2` | [40808705172](https://github.com/Chris0Jeky/developer-lens/actions/runs/40808705172) | 2548 / 4 |
+
+**Proof and review.** Hosted results are tied to the heads above, not to this later docs draft.
+#448's tests-only hosted red proved 12 regressions against the old resolver (2460 passed, four
+skipped); the final gate is recorded separately above. Native direct-coverage traversal now
+branches before legacy NULL validation. Review also identified that native coverage rows can
+share a job/range, so their content-free C1 anchors keep direct references distinct even after
+C2 dates expire. Deleted-root lineage works without caller scope only when exact claim-kind
+records establish one unambiguous valid scope cause. Every surviving-root child read stays scoped.
+Alias/source values are not selected, and null dates cannot disable coverage accounting checks.
+
+The #447 descriptor review found an interim double-close risk: ownership is cleared before
+closing the source descriptor, and temporary cleanup remains armed until close succeeds. Added
+regressions failed before repair. Its separate native Windows [run 40804548381](https://github.com/Chris0Jeky/developer-lens/actions/runs/40804548381)
+passed 30 temp/artifact tests with three skips; that is not a full Windows-product or
+file-symlink-capable qualification. #449's actual-source Node predicate probe failed the three
+early-year cases before repair (11/14 passed), then passed 14/14 after `setUTCFullYear`.
+#453's independent review found a leading-indentation bypass in the first draft; the repair
+also rejects tilde candidates outside an active body while preserving inert examples, historical
+classification and shared bytes. Its final hosted gate passed 149 files, including 63
+project-context tests, plus context, generated-contract, lint, build, showcase and locked-SDK checks;
+exact-head Codex and independent review were clean. Normal review timing and merge checks were
+coordinator-owned. #450's Codex result was still running at its review-window fallback; no clean
+completion is inferred for that unfinished result.
+
+**Contracts and authority.** Product consumer-inventory review found no Lab whyContract dependency.
+The generated ResearchPack, MethodTrial and ResearchFinding v1 artifacts remain unchanged; v1
+bytes stay frozen. #450 changes presentation copy only; #371 remains open for the serialized
+wire-label question. #452 does not activate any dataset, reader, model or capability and preserves
+G-ML-2…7 dispositions. #398 closed using the dated #440/#441 dependency evidence, #431 closed with
+#448, #317 closed with #452, and #177 closed after #454. The October 24 clean dependency-audit
+observation is historical,
+not a fresh October 29 audit. Lab main independently advanced to
+`debbf0a6e6c419dbc1de8a057d1d729c28adc658` at the 02:58:17 UTC inventory; this product campaign
+made no Lab changes and claims no new Lab proving.
+
+**Replay authorization, context and helper proof.** #451 first exposed an import-boundary guard failure
+with 2520 passing tests. The repaired final head `3c82bb40cbc014c3b476c2778f8caa3a9b62842f`
+passed [run 40807899488](https://github.com/Chris0Jeky/developer-lens/actions/runs/40807899488),
+job `123231105931`: all 149 files, 2536 passed and four skipped, including 22 proposal, 11 proof,
+12 receipt, 24 reader and 28 restore tests; all remaining required gates passed. Independent and
+exact-head Codex review were clean. The coordinator merged it at 02:46:26 UTC as
+`cf7eb6d4870db460466faf46dd75b516c3e50c7b`.
+
+The replay-context snapshot follow-up [#454](https://github.com/Chris0Jeky/developer-lens/pull/454)
+qualified head `26c9a0b32bab0a5eef1424e07db6990602254f95` with all three reviewed source/test blobs
+verified. [Run 40808431133](https://github.com/Chris0Jeky/developer-lens/actions/runs/40808431133),
+job `123233110498`, passed all 149 files, 2539 tests and four skips, including all 14 selection-proof
+cases and every context/drift/lint/TypeScript/build/showcase/privacy/SDK step. Independent and
+Codex review were clean. It merged at 02:51:55 UTC as `bfc6cd103afe2efd1bb26f84e988bee6f9e0882b`,
+and #177 closed completed. The earlier pending follow-up is now delivered; FR-120 records the
+actual published blob and gate proof.
+
+The separate #76 helper guard landed through [#455](https://github.com/Chris0Jeky/developer-lens/pull/455),
+head `c5924a2be48f41bcee6a954bb91a96fb77ce8eda`, based on `cf7eb6d`. One production guard rejects
+unknown, inherited and non-string dimensions without incidental TypeError, including array-to-key
+coercion (`['permission']`). Its actual-source probe failed all 12 invalid cases before repair and
+passed all 12 afterward, preserving all 12 valid dimensions. Independent review was clean and
+published source/test blobs were verified. Its Atlas pointer [run 40808693744](https://github.com/Chris0Jeky/developer-lens/actions/runs/40808693744)
+passed all six native C0 Atlas sequences (three at 1280, three at 390), using trusted events,
+distinct correct drawer bases and no click retries. Job `123233635352` exercised merge `4b6e16c`
+of head `c5924a2` into `cf7eb6d`. This is local-built CI browser evidence. Its aggregate
+[run 40808705172](https://github.com/Chris0Jeky/developer-lens/actions/runs/40808705172),
+job `123234096556`, then passed all 149 files, 2548 tests and four skips, including 155 coverage
+tests and every required gate. Exact-head Codex and independent reviews were clean. The
+coordinator merged it at approximately 02:55:54 UTC as
+`503ab350cf840096997846af50f51b154d45bd1d`. Registries, formulas, controlled reason codes and
+schema artifact bytes are unchanged. All eleven implementation PRs are delivered; no additional
+implementation lane was selected in this dated campaign. The publishing PR records handoff and
+late-review/deployment closeout receipts. Larger #202, #80 and #201 work retains its own scope.
+
+**Remaining work — preserve delivered boundaries.** These tracker remainders are distinct from
+the narrow fixes above; refresh live issue state before selecting one.
+
+| Tracker | Already delivered or verified | Remaining bounded question or proof |
+|---|---|---|
+| #80 | Native-v3 explanation walks, scoped missing/deleted targets and retained week lineage. | Explicit 36-month C1 expiry for scope-unbound deletion lineage; do not rebuild the resolver. |
+| #86 | Connector coverage IDs and incremental storage constraints enforce content-free IDs. | Decide the synthetic `v2_coverage_record` bridge's opaque-ID exception; do not repeat connector hardening. |
+| #182 | Published v1 producer/consumer artifacts remain frozen. | Producer semantic edge cases: empty-present Parquet, future windows, grammar/layers/units. Coordinate any contract effect while preserving frozen v1 bytes. |
+| #183 | No new SQL/index performance claim is made by this campaign. | Profile invented 100k+ data and deletion behavior before selecting SQL/index changes. |
+| #76 | PR #455 delivered the unknown/inherited/non-string guard, including array-coercion refusal, with full hosted and independent proof. | Separate `source_diversity` clamp and producer-unavailable reason policy. Preserve the guard's scope and do not imply those policies are resolved. |
+| #222 / #424 | Linux proving and narrow Windows temp/artifact proof exist; #424 item 4 was documented through #437. | Real Windows file-symlink and Dev Drive dev:ino qualification; remaining identity-policy choice. A primitive skip is not native protection evidence. |
+| #216 | Named routing clauses and canonical active-prompt text fences are verified. | Remaining classification, manifest, stop-rule and scout-consistency work; do not repeat the fence/routing fix. |
+| #221 | Fresh read verified the single active DEFAULT-only protection ruleset. | Checked cleanup helper and local inventory; this observation grants no destructive cleanup authority. |
+| #371 | UI condition copy now states the candidate confound false-alert comparison accurately. | Serialized-label revision under frozen-contract coordination. |
+| #397 | #408 delivered EvidenceDrawer `preventScroll` focus repair; #455's local-built CI Atlas run passed all six native C0 sequences. | Deployed-public, physical-device, native Windows and assistive-technology qualification; the captured sixth-sequence scroll movement does not establish the cause of every older public failure. |
+| #430 / #201 / #202 | No readiness producer, charter-v2 redesign or runtime activation was supplied by these narrow fixes. | Readiness provenance and the larger charter/activation prerequisites remain separate reviewed design/readiness programmes. |
+
+**Local limitations and non-activation.** The local executor refused npm registry access, and
+fresh worktrees therefore lack the required package/shim toolchain; no local full npm proof is
+claimed for this campaign. Native Node predicate/parser probes and clean diff checks are identified separately from hosted tests. No
+credential/proxy/lockfile workaround or dependency-version change was used. Real Windows
+file-symlink/Dev Drive qualification remains under #222/#424; no native primitive skip proves
+source protection. No protected data, real collection, external model, telemetry change, owner
+decision, release, tag or package publication was selected.
+
+The post-#453 [C0 showcase deployment 40807797830](https://github.com/Chris0Jeky/developer-lens/actions/runs/40807797830)
+succeeded; deployment is separate from the local-built Atlas CI proof above. #397's fresh
+issue discussion confirms #408's `preventScroll` repair and a concrete captured sixth-sequence
+scroll movement, without establishing common causality for all older public failures. No new
+deployed-public/physical-device/native Windows/assistive-technology or owner acceptance is
+inferred. The earlier FR-117 Git-index/context blocker was discharged by #445's fresh green
+hosted context gate. The authoritative 02:58:17 UTC snapshot showed Product main `503ab350`
+(tree `1724e8a0`), 26 open issues and zero open PRs before the documentation PR; all four
+#177/#317/#398/#431 closures were confirmed completed. Lab independently advanced to `debbf0a6`
+with zero open PRs after Lab PR #202 merged. This product campaign did not act on that Lab PR
+or claim its proving. These are dated observations, not perpetual current-state assertions.
+
+**Resume.** Refresh live GitHub before acting on this snapshot. Read the publishing PR's
+handoff, late-review and deployment receipts; complete any unfinished closeout, then select a
+bounded task from the remaining-work table. All eleven implementation PRs in this campaign
+are merged. The stored Phase E endpoint remains unwired/default
+off, and #202 plus the reviewed
+activation task prerequisites still govern real use. Release tagging remains blocked on
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(c)`; package credentials remain separately governed by
+`Chris0Jeky/developer-lens::HUMAN_TODO.md::q-10(f)`. Re-create release preparation through #298
+only after the sign-off. The publishing PR records this documentation change's own exact-head
+gate and reviews, separately from the code-head receipts above. The recorded main remains an
+observed predecessor; refresh live state before acting.
